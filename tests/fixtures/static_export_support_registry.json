@@ -9,7 +9,10 @@
     "categorical-axis",
     "temporal-axis",
     "empty",
-    "linear-scale"
+    "linear-scale",
+    "browser-lod-tier",
+    "large-source",
+    "image-tier"
   ],
   "shapes": [
     {
@@ -30,6 +33,14 @@
       "name": "step",
       "trace_kinds": [
         "line"
+      ],
+      "autorange": true
+    },
+    {
+      "name": "layered_line_bar",
+      "trace_kinds": [
+        "line",
+        "bar"
       ],
       "autorange": true
     },
@@ -253,6 +264,36 @@
         "log-scale"
       ],
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    },
+    {
+      "name": "line_m4_decimated",
+      "shape": "line",
+      "axis_mode": "linear-x-linear-y",
+      "concerns": [
+        "browser-lod-tier",
+        "large-source"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "scatter_density_large",
+      "shape": "scatter",
+      "axis_mode": "authored-linear-xy",
+      "concerns": [
+        "browser-lod-tier",
+        "image-tier"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "triangle_mesh_dense_fill",
+      "shape": "triangle_mesh",
+      "axis_mode": "autorange-linear-xy",
+      "concerns": [
+        "image-tier",
+        "large-source"
+      ],
+      "reason_prefix": ""
     }
   ],
   "fail_close": [
@@ -291,10 +332,6 @@
     {
       "name": "violin_orientation_metadata",
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-    },
-    {
-      "name": "layered_autorange",
-      "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
     },
     {
       "name": "annotation_html",

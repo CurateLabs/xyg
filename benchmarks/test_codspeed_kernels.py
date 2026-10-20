@@ -1072,6 +1072,47 @@ def test_native_png_export_stroked_triangle_mesh(benchmark, compatibility_kernel
     assert png.startswith(b"\x89PNG")
 
 
+def _threshold_mesh(faces: int):
+    """A stroked, per-face colored quad mesh of exactly ``faces`` triangles."""
+    cols = 128
+    rows = faces // (2 * cols)
+    mx, my = np.meshgrid(np.linspace(-3.0, 3.0, cols + 1), np.linspace(-2.0, 2.0, rows + 1))
+    mz = np.sin(mx[:-1, :-1]) * np.cos(my[:-1, :-1])
+    mesh = k.quad_mesh_triangles(mx, my, mz)
+    assert len(mesh[0]) == faces
+    return xyg.chart(
+        xyg.triangle_mesh(
+            x0=mesh[0],
+            y0=mesh[1],
+            x1=mesh[2],
+            y1=mesh[3],
+            x2=mesh[4],
+            y2=mesh[5],
+            color=mesh[6],
+            stroke="#111827",
+            stroke_width=0.5,
+        )
+    ).figure()
+
+
+@pytest.mark.parametrize(
+    "faces",
+    [
+        # #1006 mesh thresholds: the 1,024-face painter budget (overdraw is
+        # bounded above it), the last vector face count below the 50,000-face
+        # SVG/PDF ceiling, and the first dense-fill (one raster image) row.
+        1_024,
+        49_920,
+        50_176,
+    ],
+)
+def test_svg_export_triangle_mesh_tier_thresholds(benchmark, faces):
+    """SVG mesh export either side of each static tier threshold (#1006)."""
+    fig = _threshold_mesh(faces)
+    svg = benchmark(fig.to_svg, width=720, height=420)
+    assert ("data-xy-dense-fill" in svg) == (faces > 50_000)
+
+
 def test_native_png_export_heatmap(benchmark, core_2d_data):
     """Native heatmap export must stay screen-bounded after payload preparation."""
     z = core_2d_data["heatmap_z"]

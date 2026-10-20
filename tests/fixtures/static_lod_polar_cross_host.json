@@ -1,0 +1,25 @@
+{
+  "schema": "xyg.static-lod-polar-cross-host/v1",
+  "cases": {
+    "line_1m_m4": {
+      "svg_sha256": "72ce4a52d8dedd254cd26edf0f39fac5bd3dc8a14dc48678c24c9622051148e4",
+      "png_sha256": "f3bed7ce1ae51bb62b9604c29bbc8493a013d681493ce84649974f7b992d4f4d"
+    },
+    "line_y2_100k_log_m4": {
+      "svg_sha256": "8d70605bdacd0fb24e9de905f00f620de04ecd170d253fe02ac377bb967046cf",
+      "png_sha256": "0cc3fe012fb7d809f7ff93dce613528582657af1c6634ddf6225e3f851bbdfc7"
+    },
+    "polar_bar_arcs": {
+      "svg_sha256": "203fbfd4b95d848eddfff8098984bca5b229a534ebc89521301c321664bf2065",
+      "png_sha256": "c7b212b42437dae35b818e1b9483244c9177c824a2e06e2adc261dc0b8cc592a"
+    },
+    "scatter_100k_direct": {
+      "svg_sha256": "217ae9997a1b5a058a19d0a0b0054f09ff7faa379b22d41a6223013bf5c4e70f",
+      "png_sha256": "998e2250cf9d942c6ad350d736ddc5a8614f86877e0ef01e3e03ec92507497ff"
+    },
+    "scatter_150k_categorical": {
+      "svg_sha256": "e86d54f1bd39b66523599339447521a6b8bde87b22ba90009af2eb3301ef3068",
+      "png_sha256": "78aa9cf7df3d97cbe76c15a6c7e250bccccbf2ae1904ddc3ee16503477e2e13f"
+    }
+  }
+}

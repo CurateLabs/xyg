@@ -65,9 +65,28 @@
 //! stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
+//! #1006 admits traces above the 10,000-record budget only on the browser
+//! payload tiers the Scene reproduces: Cartesian lines on the M4 tier (the
+//! row packer decimates them), direct scatters up to `DIRECT_SOFT_CEILING`
+//! summed per figure, and density-blit scatters (`public_lod_tier_admits`).
 
-use crate::scene::{SceneError, MAX_SCENE_IMAGE_PIXELS};
+use crate::lod_plan::{
+    payload_tier, DECIMATION_THRESHOLD, DIRECT_SOFT_CEILING, MAX_SCREEN_DIM, PAYLOAD_KIND_LINE,
+    PAYLOAD_TIER_DECIMATED,
+};
+use crate::scene::{
+    SceneError, CALLOUT_SCENE_RECORDS, MAX_PUBLIC_VECTOR_POLYGON_GROUPS, MAX_SCENE_IMAGE_PIXELS,
+    MAX_SCENE_MARKS, PUBLIC_POLYFILL_GROUP_BUDGET, STRAIGHT_ARROW_MAX_RECORDS,
+};
+use crate::scene_pack::{ANN_BAND_ROWS, ANN_MARKER_ROWS, ANN_RULE_ROWS};
+use crate::scene_xyta_trace_observations_materialize::{
+    xyta_paint_plane_fits, XYTA_MESH_PAINT_ITEM_BYTES, XYTA_SCATTER_PAINT_ITEM_BYTES,
+};
 use crate::static_export_registry::PUBLIC_EXPORT_KINDS;
+
+// #1006: the browser's per-item direct scatter ceiling is the Scene's mark
+// ceiling, so an admitted direct scatter always fits one Scene.
+const _: () = assert!(DIRECT_SOFT_CEILING as usize == MAX_SCENE_MARKS);
 
 const XYEP_MAGIC: &[u8; 4] = b"XYEP";
 const XYEP_VERSION: u32 = 1;
@@ -86,17 +105,35 @@ const MAX_XYEP_KEY_BYTES: usize = 256;
 const MAX_XYEP_TRACES: usize = 4_096;
 const MAX_XYEP_ANNOTATIONS: usize = 128;
 const MAX_XYEP_AXES: usize = 16;
-const MAX_PUBLIC_TRIANGLE_MESHES: usize = 1_024;
+const MAX_PUBLIC_TRIANGLE_MESHES: usize = PUBLIC_POLYFILL_GROUP_BUDGET;
 /// Aggregate hexbin cell budget (one PolyFill group per cell). Independent of
-/// the triangle-mesh budget: the native static consumers bound groups only by
-/// `MAX_SCENE_MARKS`, and a default-gridsize `hexbin` lattice is ~11.6k cells.
-/// A product ceiling documented in `spec/design/static-document.md`, not a
-/// buffer workaround: `xyg_scene_encode_product` reports the exact output size
-/// it needs, so hosts never size the Scene buffer from input size (#887).
-const MAX_PUBLIC_HEXBIN_CELLS: usize = 50_000;
+/// the triangle-mesh painter budget: the native static consumers bound groups
+/// only by `MAX_SCENE_MARKS`, and a default-gridsize `hexbin` lattice is ~11.6k
+/// cells. A product ceiling documented in `spec/design/static-document.md`,
+/// not a buffer workaround: `xyg_scene_encode_product` reports the exact output
+/// size it needs, so hosts never size the Scene buffer from input size (#887).
+/// It is the one shared static vector-group ceiling (#1006): hexbin fails
+/// closed above it, triangle meshes switch SVG/PDF to the dense-fill image.
+const MAX_PUBLIC_HEXBIN_CELLS: usize = MAX_PUBLIC_VECTOR_POLYGON_GROUPS;
 const MAX_PUBLIC_HEATMAP_CELLS: usize = 10_000;
 const MAX_PUBLIC_POINTS: usize = 10_000;
 const MAX_PUBLIC_STEP_POINTS: usize = 10_001;
+/// Scene records one annotation adds against `MAX_SCENE_MARKS` (#1006), tied
+/// to the encoder's own counts: text adds none (it is a label), rule/band/
+/// marker add their packed mark rows, an arrow its worst-case shape records,
+/// and a callout its fixed record set. Unknown kinds (refused below) charge
+/// the maximum so the bound never under-counts.
+fn annotation_scene_records(kind: u8) -> usize {
+    match kind {
+        1 => 0,
+        2 => ANN_RULE_ROWS,
+        3 => ANN_BAND_ROWS,
+        4 => ANN_MARKER_ROWS,
+        5 => STRAIGHT_ARROW_MAX_RECORDS,
+        6 => CALLOUT_SCENE_RECORDS,
+        _ => STRAIGHT_ARROW_MAX_RECORDS.max(CALLOUT_SCENE_RECORDS),
+    }
+}
 
 const FLAG_FLUID_WIDTH: u32 = 1 << 0;
 const FLAG_FLUID_HEIGHT: u32 = 1 << 1;
@@ -139,6 +176,8 @@ const TRACE_COMPANION_AXES_MATCH: u32 = 1 << 19;
 const TRACE_BOX_OUTLIER_FINITE: u32 = 1 << 20;
 const TRACE_SYMBOL_NON_STRING: u32 = 1 << 21;
 const TRACE_DENSITY_BLIT: u32 = 1 << 22;
+/// The trace packs a per-item scatter paint or mesh-face paint plane in XYTA.
+const TRACE_ITEM_PAINT_PLANE: u32 = 1 << 23;
 
 const OBS_HAS_X: u32 = 1 << 0;
 const OBS_HAS_Y: u32 = 1 << 1;
@@ -163,6 +202,11 @@ const OBS_COMPANION_XY_MATCH: u32 = 1 << 21;
 const OBS_COMPANION_AXES_MATCH: u32 = 1 << 22;
 const OBS_SYMBOL_NON_STRING: u32 = 1 << 23;
 const OBS_DENSITY_BLIT: u32 = 1 << 24;
+/// Host observation (#1006): the trace's XYTA record carries a per-item
+/// scatter paint plane (`scatter_paint_plane`) or mesh-face paint plane
+/// (`mesh_paint_plane`), the same facts the hosts pass to
+/// `xyg_scene_xyta_trace_dispatch_plan`.
+const OBS_ITEM_PAINT_PLANE: u32 = 1 << 25;
 
 /// Why an XYEF packing request was rejected. Discriminants are the C-ABI
 /// error codes (returned negated by `xyg_scene_pack_public_export`).
@@ -229,6 +273,26 @@ const PUBLIC_AXIS_KEYS: &[&str] = &[
     "style",
     "minor_style",
     "format",
+];
+/// Authored axis options that only present an autoranged axis; they never
+/// shape its data domain, so Rust autorange may still resolve the domain.
+const AUTORANGE_PRESENTATION_AXIS_KEYS: &[&str] = &[
+    "label",
+    "side",
+    "tick_sides",
+    "tick_label_sides",
+    "tick_values",
+    "tick_count",
+    "tick_labels",
+    "minor_tick_values",
+    "style",
+    "minor_style",
+    "format",
+    "tick_label_strategy",
+    "collision",
+    "tick_label_min_gap",
+    "tick_label_angle",
+    "tick_label_anchor",
 ];
 const CARTESIAN_COLLISION_KEYS: &[&str] = &[
     "tick_label_strategy",
@@ -380,6 +444,80 @@ fn kind_segment(kind: u8) -> bool {
 
 fn kind_band(kind: u8) -> bool {
     matches!(kind, KIND_AREA | KIND_ERROR_BAND)
+}
+
+/// Whether a trace above the public record budget rides a browser payload
+/// tier the static Scene reproduces (#1006, dossier §28).
+///
+/// - A cartesian `line` above `DECIMATION_THRESHOLD` is the browser's M4
+///   decimated tier (`payload_tier`); the Scene row packer applies the same
+///   `payload_m4_indices` before packing. Polar lines ship direct in the
+///   browser, so they keep the record budget.
+/// - A density-blit scatter is one bounded Image record.
+/// - A plain scatter the host's `payload_tier` call left direct (at most
+///   `SCATTER_DENSITY_THRESHOLD` points, `DIRECT_SOFT_CEILING` with per-item
+///   channels, or forced direct) draws one record per point up to
+///   `DIRECT_SOFT_CEILING`, which is also `MAX_SCENE_MARKS`. Graph node and
+///   companion-role scatters keep their own budgets.
+/// - A triangle mesh (not a joined fill) is admitted at any face count here;
+///   its 3 expanded records per face stay bounded by `MAX_SCENE_MARKS` in the
+///   per-kind checks, and Scene compile bounds its overdraw (#1006).
+///
+/// Every other kind keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
+fn public_lod_tier_admits(
+    kind: u8,
+    n_x: u32,
+    trace_flags: u32,
+    role: &str,
+    figure_flags: u32,
+) -> bool {
+    match kind {
+        KIND_LINE => {
+            payload_tier(
+                PAYLOAD_KIND_LINE,
+                u64::from(n_x),
+                figure_flags & FLAG_POLAR != 0,
+                -1,
+                false,
+                false,
+            ) == Some(PAYLOAD_TIER_DECIMATED)
+        }
+        KIND_SCATTER if trace_flags & TRACE_DENSITY_BLIT != 0 => true,
+        // #1006: a non-joined mesh is bounded by its own face rules below
+        // (3 expanded records per face within `MAX_SCENE_MARKS`).
+        KIND_TRIANGLE_MESH => trace_flags & TRACE_JOINED_FILL == 0,
+        KIND_SCATTER => {
+            figure_flags & FLAG_GRAPH_MARKS == 0
+                && role.is_empty()
+                && u64::from(n_x) <= DIRECT_SOFT_CEILING
+        }
+        _ => false,
+    }
+}
+
+/// Upper bound on the Scene rows `scene_trace_rows` packs for one trace,
+/// before step/curve expansion (#1006). A Cartesian line above
+/// `DECIMATION_THRESHOLD` keeps at most four M4 rows per bucket and the
+/// predicate does not know the viewport, so it assumes the widest
+/// `MAX_SCREEN_DIM` buckets; a density blit packs its two domain rows.
+fn public_packed_rows(
+    kind: u8,
+    n_x: u32,
+    n_x0: u32,
+    trace_flags: u32,
+    figure_flags: u32,
+) -> usize {
+    let n = (n_x as usize).max(n_x0 as usize);
+    if kind == KIND_SCATTER && trace_flags & TRACE_DENSITY_BLIT != 0 {
+        return 2;
+    }
+    if kind == KIND_LINE
+        && figure_flags & FLAG_POLAR == 0
+        && u64::from(n_x) > DECIMATION_THRESHOLD
+    {
+        return n.min(4 * MAX_SCREEN_DIM as usize);
+    }
+    n
 }
 
 fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
@@ -773,6 +911,9 @@ fn derive_trace_flags(
     }
     if obs & OBS_DENSITY_BLIT != 0 {
         flags |= TRACE_DENSITY_BLIT;
+    }
+    if obs & OBS_ITEM_PAINT_PLANE != 0 {
+        flags |= TRACE_ITEM_PAINT_PLANE;
     }
     flags
 }
@@ -1176,17 +1317,23 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     if extra_key(&colorbar_keys, PUBLIC_COLORBAR_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR");
     }
-    // Geometry is anchored to the primary Cartesian x/y viewport. Only the
-    // nine ordinary, default-shell chart shapes covered by #856 may consume
-    // Rust-resolved autorange domains. Richer layered, polar, annotated, or
-    // styled figures retain the compatibility renderer until their complete
-    // public contract is represented by Scene; admitting all literal kinds
-    // here silently changed established SVG/PNG semantics.
+    // Geometry is anchored to the primary Cartesian x/y viewport. Every
+    // public Scene compile takes an absent primary domain from the same Rust
+    // figure autorange (`xyg_figure_autorange`) that the browser payload uses,
+    // so ordinary Cartesian figures — any mix of the ordinary literal kinds
+    // below plus scatter, under presentation-only authored axes — consume
+    // that domain (#856, #1006/#889 family 4). Annotated or colorbar
+    // figures, styles outside the ordinary per-kind vocabulary, and
+    // axes with domain-shaping options (type, constant, nonpositive, margin,
+    // reverse) still need an authored domain and fail closed without one.
     let needs_authored_domain = traces.iter().any(|trace| kind_literal_geometry(trace.kind));
     let needs_primary_axes =
         needs_authored_domain || traces.iter().any(|trace| kind_extent_geometry(trace.kind));
     let conservative_autorange_style = |trace: &TraceRec<'_>| -> bool {
         let allowed: &[&str] = match trace.kind {
+            // Scatter never needs an authored domain; its style cannot
+            // change the autorange of the literal traces it is layered with.
+            KIND_SCATTER => return true,
             KIND_LINE => &["color", "opacity", "width", "step"],
             KIND_BAR | KIND_COLUMN => &["color", "opacity", "role", "orientation"],
             KIND_HISTOGRAM => &["color", "opacity", "role", "cumulative", "density"],
@@ -1210,41 +1357,43 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             ],
             KIND_VIOLIN => &["color", "opacity", "role"],
             KIND_HEXBIN => &["color", "opacity", "hex_dx", "hex_dy", "role", "reduce"],
+            // Rust's figure autorange spans all three vertex columns; mesh
+            // paint and the joined-fill ring never move that domain (#1006).
+            KIND_TRIANGLE_MESH => &[
+                "opacity",
+                "role",
+                "color",
+                "fill_opacity",
+                "stroke",
+                "stroke_width",
+                "stroke_opacity",
+                "joined_fill",
+            ],
             _ => &[],
         };
         !allowed.is_empty() && !extra_key(&trace.style_keys, allowed)
     };
-    let ordinary_autorange_shape = if flags & FLAG_POLAR != 0
-        || n_annotations != 0
-        || !legend_keys.is_empty()
-        || !colorbar_keys.is_empty()
-        || axes.iter().any(|axis| extra_key(&axis.keys, &["side"]))
-        || traces
-            .iter()
-            .any(|trace| !conservative_autorange_style(trace))
-    {
-        false
+    // Polar Scene input resolves r from the same figure autorange and theta
+    // from the authored sector (default: one full turn), so polar figures
+    // may also autorange under their literal polar axis vocabulary.
+    let polar_presentation: Vec<&str> = AUTORANGE_PRESENTATION_AXIS_KEYS
+        .iter()
+        .chain(POLAR_AXIS_KEYS.iter())
+        .copied()
+        .collect();
+    let presentation_keys: &[&str] = if flags & FLAG_POLAR != 0 {
+        &polar_presentation
     } else {
-        match traces.as_slice() {
-            [trace] => matches!(
-                trace.kind,
-                KIND_LINE
-                    | KIND_BAR
-                    | KIND_COLUMN
-                    | KIND_HISTOGRAM
-                    | KIND_AREA
-                    | KIND_ERRORBAR
-                    | KIND_VIOLIN
-                    | KIND_HEXBIN
-            ),
-            [whisker, box_trace, median] => {
-                whisker.kind == KIND_BOX_WHISKER
-                    && box_trace.kind == KIND_BOX
-                    && median.kind == KIND_BOX_MEDIAN
-            }
-            _ => false,
-        }
+        AUTORANGE_PRESENTATION_AXIS_KEYS
     };
+    let ordinary_autorange_shape = n_annotations == 0
+        && legend_keys.is_empty()
+        && colorbar_keys.is_empty()
+        && !traces.is_empty()
+        && axes
+            .iter()
+            .all(|axis| !extra_key(&axis.keys, presentation_keys))
+        && traces.iter().all(conservative_autorange_style);
     // Graph marks (#33): the browser paints exactly the edge segments and node
     // scatter, with the same Rust autorange (segment endpoints + points), so
     // the static Scene may consume that domain. Axes are the graph chart's
@@ -1299,6 +1448,14 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     }
 
     let mut public_triangle_mesh_count = 0usize;
+    // #1006: Scene rows the row packer emits across the figure, bounded by
+    // `MAX_SCENE_MARKS` before any host materializes columns or planes.
+    // Annotations add records too, charged per kind (#1006).
+    let mut packed_rows = annotations
+        .iter()
+        .map(|annotation| annotation_scene_records(annotation.kind))
+        .sum::<usize>();
+    let mut mesh_face_records = 0usize;
     let mut public_hexbin_cell_count = 0usize;
     for trace in &traces {
         let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {
@@ -1308,11 +1465,37 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         };
         if trace.flags & TRACE_HAS_X != 0
             && trace.n_x as usize > point_limit
-            && (trace.kind != KIND_SCATTER || trace.flags & TRACE_DENSITY_BLIT == 0)
+            && !public_lod_tier_admits(trace.kind, trace.n_x, trace.flags, trace.role, flags)
             // Hexbin cells are budgeted by `MAX_PUBLIC_HEXBIN_CELLS` below.
             && trace.kind != KIND_HEXBIN
         {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        }
+        // #1006: every trace's packed rows share the Scene's mark ceiling
+        // (a direct scatter is one row per point; a decimated line at most
+        // four rows per bucket; a density blit two).
+        packed_rows = packed_rows
+            .checked_add(public_packed_rows(
+                trace.kind,
+                trace.n_x,
+                trace.n_x0,
+                trace.flags,
+                flags,
+            ))
+            .ok_or(SceneError::Limit)?;
+        if packed_rows > MAX_SCENE_MARKS {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        }
+        // #1006: a per-item paint plane must fit one XYTA record; above that
+        // the trace fails closed here instead of in host materialization.
+        if trace.flags & TRACE_ITEM_PAINT_PLANE != 0 {
+            let item_bytes = match trace.kind {
+                KIND_SCATTER => XYTA_SCATTER_PAINT_ITEM_BYTES,
+                _ => XYTA_MESH_PAINT_ITEM_BYTES,
+            };
+            if !xyta_paint_plane_fits(trace.n_x as usize, item_bytes) {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+            }
         }
         if kind_band(trace.kind) && (trace.flags & TRACE_HAS_X == 0 || trace.n_x < 2) {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_BAND");
@@ -1362,9 +1545,26 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             if trace.flags & TRACE_MESH_PRESENT == 0 {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
             }
-            public_triangle_mesh_count = public_triangle_mesh_count
-                .checked_add(trace.n_x as usize)
-                .ok_or(SceneError::Limit)?;
+            if trace.flags & TRACE_JOINED_FILL == 0 {
+                // #1006: static meshes are not bound by the browser painter's
+                // 1,024-group budget. Vector up to
+                // `MAX_PUBLIC_TRIANGLE_MESH_FACES` faces aggregate, the
+                // SVG/PDF dense-fill image above; the predicate only counts:
+                // 3 expanded records per face share the Scene mark ceiling.
+                // (Overdraw and image-grid bounds need pixel geometry and are
+                // checked at Scene compile, `SceneBatch::check_mesh_budgets`.)
+                mesh_face_records = (trace.n_x as usize)
+                    .checked_mul(3)
+                    .and_then(|records| mesh_face_records.checked_add(records))
+                    .ok_or(SceneError::Limit)?;
+                if mesh_face_records > MAX_SCENE_MARKS {
+                    return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+                }
+            } else {
+                public_triangle_mesh_count = public_triangle_mesh_count
+                    .checked_add(trace.n_x as usize)
+                    .ok_or(SceneError::Limit)?;
+            }
             if trace.flags & TRACE_MESH_LEN_EQUAL == 0
                 || public_triangle_mesh_count > MAX_PUBLIC_TRIANGLE_MESHES
                 || trace.flags & TRACE_MESH_FINITE == 0
@@ -1942,6 +2142,259 @@ mod tests {
         line.extend_from_slice(&f64::NAN.to_le_bytes());
         line.extend_from_slice(&f64::NAN.to_le_bytes());
         assert_eq!(scene_public_export_reason(&line), Ok(""));
+    }
+
+    #[test]
+    fn layered_ordinary_figures_autorange_under_presentation_axes() {
+        // #1006 / #889 family 4: two lines plus a scatter under labelled axes.
+        fn put_axis(buf: &mut Vec<u8>, axis_id: u8, keys: &[&str]) {
+            buf.extend_from_slice(&[axis_id, 0, 0, 0, 0, 0]);
+            buf.extend_from_slice(&(keys.len() as u16).to_le_bytes());
+            put_keys(buf, keys);
+        }
+        fn put_trace(buf: &mut Vec<u8>, kind: u8, style: &[&str]) {
+            buf.push(kind);
+            buf.extend_from_slice(&[0, 255, 255, 255, 0, 0, 0]);
+            buf.extend_from_slice(&0u32.to_le_bytes());
+            buf.extend_from_slice(&[0u8; 36]);
+            buf.extend_from_slice(&(style.len() as u16).to_le_bytes());
+            buf.extend_from_slice(&[0u8; 6]);
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            put_keys(buf, style);
+        }
+        let figure = |x_keys: &[&str], line_style: &[&str]| {
+            let mut buf = header(0, 0, 0, 0, 2, 0, 3);
+            put_axis(&mut buf, 0, x_keys);
+            put_axis(&mut buf, 1, &["label", "format"]);
+            put_trace(&mut buf, KIND_LINE, line_style);
+            put_trace(&mut buf, KIND_LINE, &["color"]);
+            put_trace(&mut buf, KIND_SCATTER, &["color", "size"]);
+            buf
+        };
+        assert_eq!(
+            scene_public_export_reason(&figure(&["label", "side", "style"], &["width"])),
+            Ok("")
+        );
+        // Domain-shaping axis options still require an authored domain.
+        for key in ["margin", "type", "reverse", "constant", "nonpositive"] {
+            assert_eq!(
+                scene_public_export_reason(&figure(&[key], &[])),
+                Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"),
+                "{key}"
+            );
+        }
+        // So do styles outside the ordinary per-kind vocabulary.
+        assert_eq!(
+            scene_public_export_reason(&figure(&[], &["dash"])),
+            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
+        );
+    }
+
+    #[test]
+    fn public_annotation_records_are_charged_per_kind_at_the_mark_ceiling() {
+        // #1006: annotations share MAX_SCENE_MARKS with trace rows at the
+        // encoder's own per-kind counts, so the predicate admits exactly what
+        // the Scene can hold: a rule packs ANN_RULE_ROWS (2) mark rows and a
+        // marker ANN_MARKER_ROWS (1).
+        fn figure(points: u32, annotation_kind: u8) -> Vec<u8> {
+            let mut buf = header(0, 0, 0, 0, 2, 1, 1);
+            for axis_id in [0u8, 1u8] {
+                buf.extend_from_slice(&[axis_id, 0, 0, 1, 0, 0]);
+                buf.extend_from_slice(&0u16.to_le_bytes());
+            }
+            buf.extend_from_slice(&[annotation_kind, 0]);
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&[KIND_SCATTER, 0, 255, 255, 255, 0, 0, 0]);
+            buf.extend_from_slice(&(TRACE_HAS_X | TRACE_HAS_Y).to_le_bytes());
+            buf.extend_from_slice(&points.to_le_bytes());
+            buf.extend_from_slice(&points.to_le_bytes());
+            buf.extend_from_slice(&[0u8; 28]);
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&[0u8; 4]);
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf
+        }
+        const RULE: u8 = 2;
+        const MARKER: u8 = 4;
+        const TEXT: u8 = 1;
+        let marks = MAX_SCENE_MARKS as u32;
+        assert_eq!(ANN_RULE_ROWS, 2);
+        assert_eq!(ANN_MARKER_ROWS, 1);
+        let lod = Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        assert_eq!(scene_public_export_reason(&figure(1_999_998, RULE)), Ok(""));
+        assert_eq!(scene_public_export_reason(&figure(1_999_999, RULE)), lod);
+        assert_eq!(scene_public_export_reason(&figure(1_999_999, MARKER)), Ok(""));
+        assert_eq!(scene_public_export_reason(&figure(marks, MARKER)), lod);
+        // Text is a label, not a mark record.
+        assert_eq!(scene_public_export_reason(&figure(marks, TEXT)), Ok(""));
+    }
+
+    #[test]
+    fn public_lod_admits_exactly_the_browser_payload_tiers() {
+        // #1006: lines above DECIMATION_THRESHOLD take the browser's M4 tier
+        // (cartesian only), direct scatters are admitted up to the
+        // per-item direct ceiling (= MAX_SCENE_MARKS), density scatters are
+        // one Image record, and everything beyond keeps the LOD reason.
+        fn put_axis(buf: &mut Vec<u8>, axis_id: u8) {
+            buf.extend_from_slice(&[axis_id, 0, 0, 0, 0, 0]);
+            buf.extend_from_slice(&0u16.to_le_bytes());
+        }
+        fn figure(figure_flags: u32, traces: &[(u8, u8, u32, u32, &str)]) -> Vec<u8> {
+            let mut buf = header(figure_flags, 0, 0, 0, 2, 0, traces.len() as u32);
+            put_axis(&mut buf, 0);
+            put_axis(&mut buf, 1);
+            for &(kind, step, flags, n, role) in traces {
+                buf.extend_from_slice(&[kind, step, 255, 255, 255, 0, 0, 0]);
+                buf.extend_from_slice(&(flags | TRACE_HAS_X | TRACE_HAS_Y).to_le_bytes());
+                buf.extend_from_slice(&n.to_le_bytes());
+                buf.extend_from_slice(&n.to_le_bytes());
+                buf.extend_from_slice(&[0u8; 28]);
+                buf.extend_from_slice(&0u16.to_le_bytes());
+                buf.extend_from_slice(&(role.len() as u16).to_le_bytes());
+                buf.extend_from_slice(&[0u8; 4]);
+                buf.extend_from_slice(&f64::NAN.to_le_bytes());
+                buf.extend_from_slice(&f64::NAN.to_le_bytes());
+                buf.extend_from_slice(role.as_bytes());
+            }
+            buf
+        }
+        let lod = Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        let ceiling = DIRECT_SOFT_CEILING as u32;
+        let threshold = crate::lod_plan::DECIMATION_THRESHOLD as u32;
+        let density = crate::lod_plan::SCATTER_DENSITY_THRESHOLD as u32;
+        for n in [threshold, threshold + 1, 1_000_000, 100_000_000] {
+            assert_eq!(
+                scene_public_export_reason(&figure(0, &[(KIND_LINE, 0, 0, n, "")])),
+                Ok(""),
+                "line {n}"
+            );
+            assert_eq!(
+                scene_public_export_reason(&figure(0, &[(KIND_LINE, 1, 0, n, "")])),
+                Ok(""),
+                "step line {n}"
+            );
+        }
+        // Polar lines ship direct in the browser, so the record budget holds.
+        assert_eq!(
+            scene_public_export_reason(&figure(FLAG_POLAR, &[(KIND_LINE, 0, 0, threshold, "")])),
+            Ok("")
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                FLAG_POLAR,
+                &[(KIND_LINE, 0, 0, threshold + 1, "")]
+            )),
+            lod
+        );
+        // Other M4-eligible kinds keep the record budget in static export.
+        assert_eq!(
+            scene_public_export_reason(&figure(0, &[(KIND_AREA, 0, 0, threshold + 1, "")])),
+            lod
+        );
+        for n in [threshold + 1, density, density + 1, ceiling] {
+            assert_eq!(
+                scene_public_export_reason(&figure(0, &[(KIND_SCATTER, 0, 0, n, "")])),
+                Ok(""),
+                "direct scatter {n}"
+            );
+        }
+        assert_eq!(
+            scene_public_export_reason(&figure(0, &[(KIND_SCATTER, 0, 0, ceiling + 1, "")])),
+            lod
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[(KIND_SCATTER, 0, TRACE_DENSITY_BLIT, 100_000_000, "")]
+            )),
+            Ok("")
+        );
+        // Direct scatters share the Scene mark ceiling across the figure;
+        // density blits do not count toward it.
+        let half = ceiling / 2 + 1;
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[
+                    (KIND_SCATTER, 0, 0, half, ""),
+                    (KIND_SCATTER, 0, 0, half, "")
+                ]
+            )),
+            lod
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[
+                    (KIND_SCATTER, 0, 0, half, ""),
+                    (KIND_SCATTER, 0, TRACE_DENSITY_BLIT, half, ""),
+                ]
+            )),
+            Ok("")
+        );
+        // Graph node scatters keep the graph's own record budget.
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                FLAG_GRAPH_MARKS,
+                &[(KIND_SCATTER, 0, 0, threshold + 1, "")]
+            )),
+            lod
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[(KIND_SCATTER, 0, 0, threshold + 1, "box-outlier")]
+            )),
+            lod
+        );
+
+        // #1006: every trace's packed rows share the Scene mark ceiling; a
+        // decimated line counts at most 4 x MAX_SCREEN_DIM rows.
+        let m4_rows = 4 * MAX_SCREEN_DIM as u32;
+        for (scatter, line, expected) in [
+            (1_999_000, 9_000, lod),
+            (ceiling - m4_rows + 1, 50_000, lod),
+            (ceiling - m4_rows, 50_000, Ok("")),
+            (ceiling - 9_000, 9_000, Ok("")),
+        ] {
+            assert_eq!(
+                scene_public_export_reason(&figure(
+                    0,
+                    &[
+                        (KIND_SCATTER, 0, 0, scatter, ""),
+                        (KIND_LINE, 0, 0, line, ""),
+                    ]
+                )),
+                expected,
+                "scatter {scatter} + line {line}"
+            );
+        }
+
+        // #1006: a per-item paint plane must fit one 4 MiB XYTA record.
+        let fits = |n: u32, kind: u8| {
+            scene_public_export_reason(&figure(0, &[(kind, 0, TRACE_ITEM_PAINT_PLANE, n, "")]))
+        };
+        let scatter_max = ((crate::scene_xyta_trace_observations_materialize::SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES
+            - crate::scene_trace_attach::XYTA_PREFIX_BYTES
+            - 4 * 1024)
+            / XYTA_SCATTER_PAINT_ITEM_BYTES) as u32;
+        assert_eq!(fits(scatter_max, KIND_SCATTER), Ok(""));
+        assert_eq!(fits(scatter_max + 1, KIND_SCATTER), lod);
+        assert_eq!(fits(300_000, KIND_SCATTER), lod);
+        assert!(xyta_paint_plane_fits(1, XYTA_MESH_PAINT_ITEM_BYTES));
+        assert!(!xyta_paint_plane_fits(usize::MAX, XYTA_MESH_PAINT_ITEM_BYTES));
+        // Without the plane observation a 300k direct scatter is admitted.
+        assert_eq!(
+            scene_public_export_reason(&figure(0, &[(KIND_SCATTER, 0, 0, 300_000, "")])),
+            Ok("")
+        );
+        assert_ne!(
+            derive_trace_flags(OBS_ITEM_PAINT_PLANE, 0, 0, 0, 0, 0, 0) & TRACE_ITEM_PAINT_PLANE,
+            0
+        );
     }
 
     #[test]
@@ -2546,7 +2999,9 @@ mod tests {
     }
 
     #[test]
-    fn public_export_triangle_mesh_counts_companion_traces_toward_group_budget() {
+    fn public_export_joined_mesh_counts_companion_traces_toward_group_budget() {
+        // #1006: a plain mesh is no longer charged the browser painter's
+        // 1,024-group budget in static export; a joined fill still is.
         let mesh_obs = OBS_HAS_X
             | OBS_HAS_Y
             | OBS_X_FINITE
@@ -2589,10 +3044,50 @@ mod tests {
         ));
         mixed.extend_from_slice(&xyef_trace("scatter", scatter_obs, 1, 0, 0, 0, ""));
         let mixed_envelope = pack_public_export(&mixed).unwrap();
+        assert_eq!(scene_public_export_reason(&mixed_envelope), Ok(""));
+
+        let mut joined = xyef_header(0, 0, 0, 0, 2, 0, 2);
+        joined.extend_from_slice(&xyef_axis(0, true));
+        joined.extend_from_slice(&xyef_axis(1, true));
+        joined.extend_from_slice(&xyef_trace(
+            "triangle_mesh",
+            mesh_obs | OBS_JOINED_FILL,
+            1024,
+            0,
+            0,
+            0,
+            "triangle-mesh",
+        ));
+        joined.extend_from_slice(&xyef_trace("scatter", scatter_obs, 1, 0, 0, 0, ""));
+        let joined_envelope = pack_public_export(&joined).unwrap();
         assert_eq!(
-            scene_public_export_reason(&mixed_envelope),
+            scene_public_export_reason(&joined_envelope),
             Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH")
         );
+
+        // The predicate only counts mesh faces: 3 expanded records each share
+        // MAX_SCENE_MARKS (overdraw and the dense-fill grid need pixel
+        // geometry and are checked at Scene compile).
+        let mesh_of = |faces: u32| {
+            let mut facts = xyef_header(0, 0, 0, 0, 2, 0, 1);
+            facts.extend_from_slice(&xyef_axis(0, true));
+            facts.extend_from_slice(&xyef_axis(1, true));
+            facts.extend_from_slice(&xyef_trace(
+                "triangle_mesh",
+                mesh_obs,
+                faces,
+                0,
+                0,
+                0,
+                "triangle-mesh",
+            ));
+            scene_public_export_reason(&pack_public_export(&facts).unwrap())
+        };
+        let max_faces = (MAX_SCENE_MARKS / 3) as u32;
+        for faces in [1_025, 50_000, 50_001, max_faces] {
+            assert_eq!(mesh_of(faces), Ok(""), "{faces} faces");
+        }
+        assert_eq!(mesh_of(max_faces + 1), Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"));
     }
 
     fn xyef_hexbin_trace(cells: u32) -> Vec<u8> {

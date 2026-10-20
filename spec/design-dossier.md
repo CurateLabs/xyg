@@ -487,7 +487,7 @@ re-exports several of them as a historic import path and is not listed for those
 | Constant | Value | What it gates | Read by |
 | --- | --- | --- | --- |
 | `PROTOCOL_VERSION` | `3` | Wire-spec version stamped on every payload; the client refuses a mismatch loudly (§33). | `_payload.py` |
-| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122); `xyg_payload_m4_indices` owns emit/re-decimate (ABI 204). | `_payload.py`, `interaction.py`; lockstep `lod_plan.rs` |
+| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122); `xyg_payload_m4_indices` owns emit/re-decimate (ABI 204). Native static export applies the same tier and kernel to Cartesian lines (#1006, §28). | `_payload.py`, `interaction.py`; lockstep `lod_plan.rs`; static `scene_trace_rows.rs` / `scene_export.rs` |
 | `SCATTER_DENSITY_THRESHOLD` | `200_000` | Tier-0 → Tier-2 count budget for a scatter with **no** per-point channel (`Trace.use_density()` via `xyg_payload_tier`), and the visible-count budget for view-LOD planning and drill decisions. Strict `>`. | `_trace.py`, `interaction.py`; lockstep `lod_plan.rs`; mirrored client-side as `LOD_DIRECT_POINT_BUDGET` in `js/src/45_lod.ts` |
 | `DIRECT_SOFT_CEILING` | `2_000_000` | Tier-0 → Tier-2 count budget for a scatter that **does** carry a per-point color or size channel; above it density is forced and warned about — the color channel aggregates to the surface's per-cell mean point color (LOD doc §2), every other per-item channel is dropped and named, never silently (§5 F5). Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122). | `_trace.py`, `marks.py`; lockstep `lod_plan.rs` |
 | `DENSITY_GRID` | `(512, 384)` | Default density-grid cell dimensions for the initial spec, before the client requests a viewport-matched size via `density_view`. | `_payload.py` |
@@ -505,11 +505,15 @@ re-exports several of them as a historic import path and is not listed for those
 | `LOD_POINTS_REQUEST_BAND` | `4` | The aggregate tier never refines per view (T13, revised): a raw-view `density_view` goes out only when the estimated in-view count sits within `budget × 4` of points territory — the LOWER of an area-scaled cached-window count and the retained sample counted in-view (`lodSampleViewCount`, distribution-true where area-scaling over-estimates sparse tails). | `js/src/45_lod.ts` (`lodAggregateStands`) |
 | `LOD_AGG_STEP_FACTOR` / `LOD_AGG_STEP_MAX` / `LOD_AGG_STEP_SLACK` | `4` / `2` / `1.5` | The stepped aggregate ladder (T13): while standing, the only density request is the view snapped outward to a power-of-4 block grid over the extent (per axis), at most 2 steps below home, and only when every covering texture is coarser than the step by more than the slack. Quantized windows are pan-stable and dedupable — at most 2 smooth-to-smooth swaps before points, worst-case softness ≈ 4× stretch per axis. | `js/src/45_lod.ts` (`lodAggregateStepWindow`) |
 | `DEFAULT_PALETTE` | 8 CVD-safe hex entries | Rust-owned, versioned per-trace default color cycle and fallback categorical palette, used when the chart sets no `theme(palette=...)` (§20/§36). ABI 360 exposes bounded fixed-width `#rrggbb` bytes and RGBA8 rows; Python keeps a lazy immutable sequence proxy, Node initializes from the native contract, and direct WASM exports the same engine rows. Its ORDER is the CVD-safety mechanism — never re-order or extend without re-running the validator and bumping the palette-contract version. | `xyg-engine::kernels`; native/WASM ABI adapters; host palette proxies |
+| `MESH_OVERDRAW_PLOTS` | `64.0` | Static triangle-mesh admission (#1006), not a browser tier: above 1,024 faces, Scene compile charges each face `height × (width + 1)` of its plot-clipped pixel bounding box, plus its outline's padded stroke boxes when stroked, and fails closed with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` past 64 plot rectangles (floor `MAX_SCENE_IMAGE_PIXELS` CSS px²), bounding raster and dense-image painting. Format-agnostic: it also applies to vector SVG/PDF. | `scene.rs` (`SceneBatch::check_mesh_budgets`) |
 | `PYRAMID_MIN_POINTS` | `2_000_000` | Trace size at/above which a Tier-3 tile pyramid is built lazily; smaller traces never pay for one. | `interaction.py` |
 | `PYRAMID_BASE_DIM` | `2048` | Edge of the pyramid's base level in cells (`dim²` u32 counts, ~1/3 overhead for the coarser levels); sets resident pyramid bytes. | `interaction.py` |
 
 Nothing in this table folds mark pixel area or overdraw into a tier decision — that is
-F3, still pending (above).
+F3, still pending (above). One bounded exception is static admission, not a tier: above
+1,024 triangle-mesh faces, Scene compile charges each face's clipped bounding box
+against `MESH_OVERDRAW_PLOTS` and fails closed (#1006; scene-ir.md "Mesh tiers and
+dense-fill rule").
 
 ---
 
@@ -1327,6 +1331,33 @@ recomputes on zoom.*
 | **Streaming (any kind)** | ring capacity declared up front | ring buffer + incremental decimation (Tier-1 buckets updated, not rebuilt); pyramid tiles updated incrementally for touched cells | same as base kind, within retained window | append is O(appended); eviction from ring updates affected buckets only |
 | **Box / violin / stat traces** | raw column | stats computed in worker from canonical (streaming algorithms; KDE on a bounded grid) — drawn geometry is tiny | stat readout (exact) | recompute stats for visible subset if axis-linked |
 | **Graph (node–link)** | canonical f64 layout positions + u64 source edges (GraphForge UUIDs retained host-side) | Direct (every node/edge) → EdgeSample (deterministic stride over rendered edges, `edge_budget`) → Aggregate (grid centroids, `node_budget`; cross-cluster edges collapse per ordered cluster pair, same-cluster edges drop) — Rust `xyg_graph_build_render` records the tier | edge: the exact source edge (UUID) when its render edge has one member (Direct / EdgeSample), else the Aggregate edge's deterministic ascending source-edge membership (count + up to 256 members, truncation flagged); never an unrelated edge. Node: exact at Direct, cluster via `member_of` above it. Semantic style rows (graph-mark.md §7.1.2) paint under the same exactness and are omitted at Aggregate, recorded in `spec.graph.style_contract`; compound frames are omitted at Aggregate (`compound_frames: "omitted:aggregate"`) and compound disclosure (`collapsed=`) fails closed above Direct (§7.1.5); static SVG/PNG export keeps at most the Scene's 128 labels / 8 KiB of label text, choosing the lowest zoom thresholds (graph-mark.md §8) | full `build_render` re-emission for the new viewport/budget; membership CSR is rebuilt with it (graph-mark.md §6) |
+
+**Static export takes the first-paint tier (#1006).** Native SVG/PNG/PDF/JPEG/
+WebP export makes the same compile-time `payload_tier` decision the browser's
+first paint makes and records it in the spec, never silently: a Cartesian line
+above `DECIMATION_THRESHOLD` is M4-decimated in Rust with the browser's
+`payload_m4_indices` (buckets = the figure's CSS width clamped by
+`screen_shape` to 16–4,096; window = the resolved x domain, binned in axis
+coordinates on log/symlog x) before Scene packing and step/curve expansion,
+so every static format of a decimated line is M4 at the figure width and paints
+exactly like a direct line of the kept rows; a direct-tier scatter exports one
+marker per point up to `DIRECT_SOFT_CEILING` (= `MAX_SCENE_MARKS`, summed over
+the figure, and only while a per-item paint plane fits one 4 MiB XYTA record);
+a density-tier scatter exports one Rust-binned density Image; a non-joined
+triangle mesh is not bound by the browser painter's 1,024 groups: the Scene
+keeps every face (raster formats paint them at the requested scale), SVG/PDF
+write vector faces up to 50,000 faces aggregate and above it one raster image
+per mesh that Rust paints from the same faces at the default PNG scale (2,
+falling back to 1, then failing closed at `MAX_SCENE_IMAGE_PIXELS`), and
+above 1,024 faces the faces' overdraw is bounded to 64 plot rectangles so
+painting is never quadratic. Every
+trace's packed rows share `MAX_SCENE_MARKS` before any host materializes them.
+Polar lines (the browser ships them direct), areas, and every other kind above
+the 10,000-record public budget, forced-direct scatters beyond the ceiling,
+and lines whose x is not ascending in its binning space fail closed as
+`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`; a non-finite large line keeps the shared
+non-finite reason because the Scene encodes no gaps (§19). Exact rules:
+`spec/design/scene-ir.md` "Public static LOD tiers (#1006)".
 
 For the bounded composition violin, ABI 98 is the native realization of this
 ownership rule: hosts pack grouped canonical samples and parameters; Rust

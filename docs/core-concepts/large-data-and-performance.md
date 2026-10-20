@@ -25,6 +25,33 @@ and very large density traces can build a lazy multiresolution pyramid for
 viewport queries. These are pre-1.0 policy thresholds, not API guarantees;
 write code against the behavior and recorded `tier`, not a hard-coded count.
 
+Native SVG, PNG, and PDF export make the same first-paint choice the browser
+does: a line above the decimation threshold exports the same M4 rows at the
+export width, a plain scatter on the direct tier exports every point, and a
+density-tier scatter exports its density surface. Two static limits are
+stricter than the browser:
+
+- a scatter with per-point color, size, or stroke channels exports directly
+  only up to about 174,000 points (its per-point paint must fit one 4 MiB
+  attach record); the browser draws it directly up to 2,000,000;
+- the whole figure may pack at most 2,000,000 marks, counting every point of
+  every direct trace and up to 16,384 rows per decimated line.
+
+Large triangle meshes keep every face. PNG, JPEG, and WebP paint all of them
+at the requested scale. SVG and PDF write one vector shape per face up to
+50,000 faces in the figure; above that, each mesh becomes **one raster image**
+of its faces inside the SVG or PDF (painted at twice the figure's pixel size,
+so it is no longer resolution-independent vector art). Above 1,024 faces, a
+mesh is also refused when the bounding boxes of its faces add up to more than
+about 64 plot areas. This is a cost estimate from each face's bounding box, not
+a measure of overlap, so a mesh whose faces do not overlap can trip it too:
+for example a radial fan of long, thin wedges around a centre point. The check
+applies to every format, including SVG and PDF that would not paint the
+faces.
+
+Anything outside those tiers raises `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead
+of drawing a reduced chart.
+
 Polar traces are an explicit exception to this ladder. They always use the
 direct tier because Cartesian M4 and density reductions do not preserve cyclic
 polar geometry. Polar `line`, `scatter`, and `area` traces have a hard

@@ -38,17 +38,25 @@ polygon's vertex count. See `browser-wasm.md` for XYPB derived planes (v16 adds 
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v34, so additive emission is not safe.
-If capability negotiation lands later, only explicitly negotiated additions
-may avoid a version bump. Consumers must reject an unsupported scene version
-and, once decoders land, fail closed on an unknown kind rather than guessing.
+bitmap or schema negotiation in Scene v34, so additive emission of new
+records or new record semantics is not safe. One narrow class is exempt: an
+optional sidecar that only restates records already in the Scene and is
+validated against them (the `XYGR`/`XYDS`/`XYMG` style sidecars, the #1006
+`XYWA` exact polar wedge arcs) may be added without a bump, because every
+consumer is the same Rust source and a decoder that predates the sidecar
+fails closed on the unknown bytes with `SceneError::Length` — not
+`SceneError::Version`, since the version field is unchanged. If capability
+negotiation lands later, only explicitly negotiated additions may avoid a
+version bump. Consumers must reject an unsupported scene version and, once
+decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
 WASM lifecycle foundation; it validates the current Scene v34 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
 canonical hidden-record zeroing, the optional polar XYPL sidecar after
-the chrome trailer, the optional XYIM image-blit sidecar for Scene Image
+the chrome trailer (with its optional XYWA exact-wedge-arc sidecar directly
+before it), the optional XYIM image-blit sidecar for Scene Image
 records, the optional XYDS constant-dash sidecar after XYIM, and the optional
 XYLC constant-linecap sidecar after XYDS rather than
 duplicating offsets in TypeScript.
@@ -496,11 +504,23 @@ fixtures, with separate exact cross-host fixtures for step expansion, histogram
 bins, and Python
 `column`/Node `bar` Rect equivalence. Newly selected line, Rect, Band,
 endpoint-pair, mesh, and ribbon figures retain the authored-domain requirement.
-The bounded ordinary autorange exception is the single-trace line/step,
-bar/column, histogram, area, errorbar, violin, or hexbin shape, plus the exact
-whisker/box/median triple emitted by `box_chart`, with the default Cartesian
-axis/figure/legend/colorbar/annotation shell. Graph marks (#33) are the one
-multi-trace exception: when hosts set XYEP/XYEF flag bit 5
+The ordinary autorange admission (#856, widened by #1006 / #889 family 4) is
+any non-empty mix of line/step, bar/column, histogram, area, errorbar, box
+(whisker/box/median), violin, and hexbin traces in their ordinary per-kind style
+vocabulary, layered with any scatter, on Cartesian or polar axes, with no
+annotations, Scene legend/colorbar options, or axis options outside the
+presentation set (`label`, `side`, tick/format/collision options, `style`,
+`minor_style`, and, for polar, the polar axis vocabulary). Every public Scene
+compile already takes an absent primary domain from the shared Rust
+`xyg_figure_autorange` result the browser payload uses (polar r likewise;
+theta from the authored sector or one full turn), so the document is
+byte-identical to authoring that resolved domain explicitly
+(`tests/test_static_autorange_admission.py`). Domain-shaping axis options
+(`type`, `constant`, `nonpositive`, `margin`, `reverse`), richer per-kind
+styles, annotations, and colorbars keep the authored-domain requirement and
+fail closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`; a non-default primary side
+still fails closed. Graph marks (#33) have their own admission:
+when hosts set XYEP/XYEF flag bit 5
 (`FLAG_GRAPH_MARKS`, "every trace belongs to a recorded graph mark") and Rust
 verifies the traces are consecutive (edge `segments`, node `scatter`) pairs with
 graph style keys only (`color`/`opacity`/`role`/`width`;
@@ -1319,7 +1339,9 @@ encode time. Rust then:
    extras;
 4. uses `polar_position_mask` for visibility;
 5. appends the original XYPL bytes after the chrome trailer **only** for polar
-   scenes.
+   scenes, preceded by the optional `XYWA` exact-wedge-arc sidecar (see
+   "Polar wedge SVG arcs" below), so a polar Scene still ends with XYPL when it
+   has no XYIM or style sidecars.
 
 SVG clip is a circle at `(cx, cy, R)` (evenodd annulus when `hole>0`) for a
 full sector, or the sector path (outer arc + inner + radii) for a partial
@@ -1381,6 +1403,90 @@ cross-renderer tolerance contract, not a pixel-identity claim: Rust raster and
 WebGL have distinct compositing implementations. Custom
 fonts, CSS/classes, and continuous gradients are rejected by both hosts before
 they can form a Scene frame.
+
+### Polar wedge SVG arcs (`XYWA` v1)
+
+Polar bar/column/histogram wedges, constant-style polar heatmap lattice cells,
+and polar density cells all reach the encoded Scene as flattened PolyFill
+vertex runs from `polar_wedge_points` (span-proportional `polar_bar_segments`).
+Native raster and the XYPB browser painter draw those polygons unchanged — their
+display lists have no arc opcode — and their output is byte-identical to the
+pre-`XYWA` Scene. Static SVG instead writes each *plain* annular sector as exact
+SVG elliptical arcs, the compatibility contract of the retired Python writer
+(polar-axes.md §5): a printed or zoomed wind rose keeps circular edges, and the
+PDF converted from that SVG draws the arcs as cubic Béziers.
+
+`SCENE_VERSION` needs no bump for `XYWA` (it is 34 for the unrelated #1034 arrow vocabulary) and `ABI_VERSION` is unchanged (no C signature or
+by-pointer struct changes). Like the optional `XYGR`/`XYDS`/`XYMG` style
+sidecars, `XYWA` adds no record kind and changes no record's meaning, units,
+bounds, or order; it is a validated restatement of records already in the
+Scene. Every Scene decoder (native for Python and Node, and WASM) is the same
+Rust source, and a decoder that predates it fails closed (`SceneError::Length`) on
+the unknown bytes before `XYPL` instead of guessing, so the "Ownership and
+versioning" rule is preserved without a version bump. A polar Scene with no
+exact wedge (polar lines, scatters, rounded corners) is byte-identical to the
+pre-`XYWA` Scene; the polar bar and constant-style polar heatmap fixtures
+(`public_polar_bar_sha256`, `public_polar_heatmap_sha256`) gain the sidecar.
+
+`polar_wedge_geometry` returns the flattened polygon (byte-for-byte the
+`polar_wedge_points_ex` output) plus a `PolarWedgeArc`: centre, outer and inner
+radius in pixels, and the outer-arc start/end and inner-arc start/end screen
+angles after sector clipping and `wedge_gap` inset, in the polygon's traversal
+order (outer forward, inner reversed). `SceneBatch::encode` collects one entry
+per wedge run and writes the optional sidecar immediately **before** XYPL:
+
+```
+offset  size  field
+0       4     magic "XYWA"
+4       u32   version = 1
+8       u32   entry count (1 ..= MAX_SCENE_MARKS / 3)
+12      u32   reserved = 0
+16      f64   centre x (px)
+24      f64   centre y (px)
+32 + 56·i     entry i:
+        u32   first PolyFill record of the wedge run
+        u32   vertex count of the run
+        f64   outer radius (px, > 0)
+        f64   inner radius (px, 0 = slice from the centre)
+        f64   outer-arc start angle, end angle (radians)
+        f64   inner-arc start angle, end angle (radians; 0 when inner = 0)
+```
+
+Angles are math-sense screen radians: a point is `(cx + r cos a, cy − r sin a)`.
+Entries are sorted, non-overlapping, and each names exactly one maximal SVG
+PolyFill run (same kind, style, annotation tag, visibility, and stable ID —
+literal-ID `0x80` scenes whose same-style neighbours merge into one run drop
+those entries at encode). `validate_scene_batch` and `SceneDocument::decode`
+fail closed on a bad version, nonzero reserved bytes, an over-limit count, a
+sidecar without XYPL, non-finite or inverted radii, a span above one turn, an
+inner span wider than or opposite to the outer span, a vertex count that does
+not fit the shape (centre slice: ≥ 3; annulus: even, ≥ 4), or any arc endpoint
+farther than `1e-6·(1 + outer)` px from its stated circle and angle. The sidecar
+is therefore an exact restatement of the flattened runs, never a second
+geometry source.
+
+The SVG writer emits, for a run with an entry,
+`M outer-start A R R 0 0 s outer-end L inner-start A r r 0 0 s' inner-end Z`
+(annulus) or `M centre L outer-start A R R 0 0 s outer-end Z` (centre slice).
+Every endpoint is the run's own flattened vertex (first/last of each arc), so
+SVG and raster agree vertex for vertex; radii and endpoints use the shared
+two-decimal `push_num`. `s` is `0` when the angle increases (visually
+counterclockwise with screen y down) and `1` otherwise; the inner arc runs the
+other way. The large-arc flag is always `0`: an arc spanning more than a half
+turn splits at its mid-angle into two arcs, so a full-turn ring or disc
+(coincident endpoints, which SVG would otherwise drop) and any near-full turn
+survive two-decimal rounding. An arc collapsed to a point by a wide `wedge_gap`
+writes `L`. No entry — and so the flattened `M … L … Z` path — is kept for
+rounded annular corners (`corner_radius > 0` with a positive inner radius; the
+rolled-back corners are not circular arcs), zero-width slices, and wedges whose
+gap swallows the whole outer arc. Scenes with no exact wedge emit no sidecar.
+`pdf.rs` converts each `A` to at most one cubic per quarter turn
+(`arc_cubics`, deterministic). Python and Node consume the same Rust Scene and
+SVG, so the registered polar shapes (`public_polar_bar_sha256`,
+`public_polar_heatmap_sha256`) stay byte-identical across hosts.
+`tests/test_polar_wedge_svg_arcs.py` pins the rose/bar native PNG digests from
+the pre-arc native core (raster output is unchanged), and `benchmarks/test_codspeed_polar.py::test_svg_export_polar_wedges`
+is the exact-arc control row for the flattening PNG row.
 
 ## Version 19 Rust-owned bounded colorbar ticks
 
@@ -1668,6 +1774,232 @@ representations—Cartesian versus polar coordinates, kebab/camel font keys,
 root/chrome/annotation CSS classes and object-valued fills—before any older
 host-local unsupported branch can run. Cross-host tests
 pin the identical Rust diagnostic for each representable case.
+
+### Public static LOD tiers (#1006)
+
+The public static predicate (`scene_export.rs`) keeps a 10,000-record
+authored-column budget per trace (10,001 for compact step lines). A trace above
+it is admitted only when it rides a browser payload tier (`lod_plan.rs`
+`payload_tier`, dossier §28) that the Scene reproduces exactly; anything else
+keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. Charts whose traces are all at or
+below 10,000 points are byte-identical to before; the one change at the
+budget edge is the 10,001-point compact step line (an ECDF of 10,000 samples
+plus its anchor), which the predicate used to admit direct and which is now
+above `DECIMATION_THRESHOLD`, so it takes the browser's M4 tier exactly like
+the browser does.
+
+| Trace above the budget | Browser first-paint tier | Static Scene |
+|---|---|---|
+| Cartesian `line` (step, stairs, ECDF, smooth included), n > `DECIMATION_THRESHOLD` (10,000) | M4 decimated | the same M4 rows, decimated in Rust (below) |
+| Polar `line` | direct | `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
+| Scatter the host's `payload_tier` call marks density (n > `SCATTER_DENSITY_THRESHOLD` 200,000, or > `DIRECT_SOFT_CEILING` with per-item channels, or `density=True`) | density | one `DensityBlit` Image record (`MAX_SCENE_IMAGE_PIXELS`) |
+| Plain scatter `payload_tier` leaves direct (≤ 200,000, or `density=False` up to 2,000,000) | direct | one Scatter record per point, within the figure-wide packed-row bound below |
+| Scatter with a per-item paint or size plane (`color=` array/categories, `size=` array, per-item stroke/width/opacity), ≤ 2,000,000 | direct | one Scatter record per point only while its XYTA paint plane fits one 4 MiB record: at most 24 bytes per point (fill, stroke, f64 width, f64 diameter), so ≤ 174,586 points (`xyta_paint_plane_fits`); above, `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
+| `triangle_mesh` (not `joined_fill`) above 1,024 faces | per-face PolyFill groups (painter ceiling 1,024) | every face kept as a Scene record (3 per face ≤ `MAX_SCENE_MARKS`), overdraw-bounded; SVG/PDF write vector faces up to `MAX_PUBLIC_TRIANGLE_MESH_FACES` = 50,000 faces aggregate and one dense-fill raster image per mesh above it (below) |
+| `hexbin` above 1,024 cells | per-cell PolyFill groups | unchanged: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (hexbin's static budget is #1023's) |
+| Graph node scatter (`FLAG_GRAPH_MARKS`), `box-outlier` / `stem-marker` companions, `area` / `error_band`, segments, every other kind | own budgets | unchanged record budgets (graph-mark.md §8) |
+
+**Line M4 rule.** `encode_product` reads a `LineLodFrame` from the Scene's own
+XYCF and `scene_trace_rows::pack_trace_rows_with_lod` applies it to each
+Cartesian `line` row set in canonical f64, before Scene packing and before
+step/curve expansion (the browser client likewise steps the decimated arrays):
+
+- tier: `payload_tier(LINE, n, polar=false)`; at or below 10,000 points every
+  row packs unchanged;
+- kernel: `payload_m4_indices` (`kernels::m4_indices`, first/min/max/last per
+  bucket, closed window `hi + f64::EPSILON`), then `payload_visible_indices`
+  with the decimated prefilter (log axes drop non-positive rows) — the
+  browser's `PAYLOAD_GATHER_M4` branch;
+- bucket count: the figure's CSS viewport width truncated to an integer and
+  clamped by `screen_shape` to 16–4,096 — the browser's first-paint
+  `_resolve_px_width`. It is the viewport, not the plot-rectangle, width, so
+  (up to the 4,096 clamp) every plot pixel column holds at least one bucket. PNG `scale` and the
+  output format do not change it: SVG, PNG, PDF, JPEG, and WebP of one figure
+  draw one decimated Scene, and that Scene paints exactly like a direct line
+  of the kept rows (`tests/test_static_lod_tiers.py`);
+- window: the resolved primary x domain (`min`, `max`); log and symlog x bin
+  in axis coordinates (`log10`, `sign·log1p(|v|/constant)`) exactly like the
+  browser's `binning_coords`, falling back to raw x when that window is not
+  finite and increasing;
+- bound: at most `4 × buckets` (≤ 16,384) rows per decimated trace, far under
+  `MAX_SCENE_MARKS`; the transient cost is the host's f64 XYCL ingress
+  (16 B/point) plus one Rust decode copy.
+
+**Log axes either side of the threshold.** The decimated prefilter is the
+browser's: above `DECIMATION_THRESHOLD` a log x or y axis drops rows with a
+non-positive coordinate from the kept M4 rows, so the static line bridges
+them exactly like the browser's first paint. At or below the threshold the
+Scene packs every authored row and its log scale applies the axis's
+`nonpositive` policy (masking or clamping, as before #1006); the browser's
+direct tier drops those rows instead (`payload_visible_indices` with
+`prefiltered = false`). The split is deliberate — it keeps sub-threshold
+static output byte-identical and keeps the decimated rows bit-for-bit the
+browser's — and `tests/test_static_lod_tiers.py::test_log_y_nonpositive_rows_follow_each_side_of_the_decimation_threshold`
+pins both sides.
+
+Static export fails closed where the browser kernel's own preconditions do not
+hold instead of drawing an arbitrary subset: non-finite x/y keep the shared
+row reason "Scene v12 does not yet encode missing-data breaks or nonfinite
+coordinates" (the Scene encodes no gaps and §19 forbids bridging a hole,
+whereas the browser kernel skips non-finite y), and binning coordinates that
+are not finite and ascending (a mutated unsorted trace; non-positive x on a
+log axis) return `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` through the encoder's
+support reason (`-801`). Line marks sort x at ingest (§28), so authored lines
+always satisfy the ascending precondition. `TraceRowsCode::Lod = 10` is
+internal to the product encoder; the stepwise `xyg_scene_pack_trace_rows`
+never decimates.
+
+**Mesh tiers and dense-fill rule (#1006).** The browser painter's
+1,024-group budget (`PUBLIC_POLYFILL_GROUP_BUDGET`) does not bound static
+export of a non-joined triangle mesh, matching #1023's treatment of hexbin.
+Both use the one shared static vector-group ceiling
+`MAX_PUBLIC_VECTOR_POLYGON_GROUPS` = 50,000 (`MAX_PUBLIC_HEXBIN_CELLS` and
+`MAX_PUBLIC_TRIANGLE_MESH_FACES` are aliases of it); above it a hexbin fails
+closed (#1023: an image would lose hexagon geometry and per-cell
+attribution) while a mesh switches SVG/PDF to the dense-fill image below.
+The Scene always keeps every face as three `Triangle` records:
+
+- admission (`scene_export.rs`, counts only): any face count, with 3 expanded
+  records per face summed over the figure's meshes within `MAX_SCENE_MARKS`
+  (else `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`); a mesh's per-face paint plane
+  must fit one XYTA record (16 B per face, ≤ 261,880 faces). A `joined_fill`
+  mesh keeps the shared 1,024-group budget and
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH`. Ordinary-styled meshes
+  (`color`, `opacity`, `fill_opacity`, `stroke`, `stroke_width`,
+  `stroke_opacity`, `role`, `joined_fill`) consume the shared Rust autorange
+  over all three vertex columns;
+- compile bounds (`SceneBatch::check_mesh_budgets`, counts only, never
+  rasterizes): above 1,024 faces each face is charged its plot-clipped pixel
+  bounding box as `height × (width + 1)` CSS px² (covered pixels plus one
+  pixel of per-row edge walking). A face whose style has
+  `stroke_width > 0` is also charged its closed outline exactly as the raster
+  stroker scans it: the scratch box over the face's bounds padded by
+  `ext = stroke_width / 2 + 1`, plus each of its three edges' padded bounds,
+  all clipped to the viewport (so 2,000 sub-pixel faces with a 100 px outline
+  fail closed in milliseconds; before this charge a 50,000-face version passed
+  and took 12.6 s to PNG). The outline charge also caps ordinary stroked
+  meshes: a face that is small on screen still charges about 49 CSS px² for
+  its padded scratch and edge boxes, so a stroked mesh on a 320×240 chart
+  fails closed near 73k faces, well below the 666,666-face record ceiling
+  that an unstroked mesh reaches. The total must stay within
+  `MESH_OVERDRAW_PLOTS` = 64 plot rectangles (never less than
+  `MAX_SCENE_IMAGE_PIXELS` = 2,000,000 CSS px², so tiny plots keep a usable
+  floor), so painting — whose cost is
+  that sum — is never quadratic in faces × pixels (1,100 overlapping
+  full-plot faces, or 20,000 full-height zero-width slivers, fail closed; a
+  tessellation of the plot charges about 3). Above 50,000 faces the dense-fill
+  grid must also fit (below). Known limitation: the bound runs at Scene
+  compile, before any format is chosen, and the support predicate has no
+  format, so it also refuses vector-only SVG/PDF of 1,025–50,000 faces that no
+  consumer would rasterize. It is a bounding-box cost model, not an overlap
+  measure: a radial fan of 1,025 long thin wedges (about 0.27 s to PNG at
+  1,024) fails closed although its faces barely overlap, while its 1,024-face
+  vector SVG writes in 4 ms. Moving the bound to the raster and dense-image
+  consumers needs a format-aware predicate; that is a follow-up, not this
+  change. Either overrun is `SceneError::Limit` →
+  `EncodeAssembledCode::Lod` → `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. At or below
+  1,024 faces nothing is checked and every byte is unchanged;
+- raster formats (PNG, JPEG, WebP): the raster consumer paints every face
+  directly at the requested scale (`append_raster_fill_run`: solid fill, the
+  unstroked same-face coverage union, and the closed outline), so a mesh is
+  exact at every PNG scale; no static image stands in for its faces;
+- SVG/PDF: up to `MAX_PUBLIC_TRIANGLE_MESH_FACES` (50,000) faces aggregate,
+  one vector path per face run as before. Above it `SceneDocument::to_svg`
+  writes each mesh trace (its contiguous Triangle records sharing parent id
+  `stable_id >> 32`) as one `<image data-xy-dense-fill="true">`: the same
+  `append_raster_fill_run` lowering painted onto `dense_fill_grid` — the plot
+  rectangle snapped outward to whole device pixels at `DENSE_FILL_SVG_SCALE`
+  = 2 (the native default PNG scale, the recorded SVG/PDF choice), or at
+  scale 1 when that grid exceeds `MAX_SCENE_IMAGE_PIXELS`; Scene compile
+  refuses a plot too large for both. The image's pixels are the default PNG
+  export's pixels for those faces; it overhangs the plot rectangle by under one
+  device pixel and is clipped like every mark, keeps the trace's z-order, has
+  no `image-rendering:pixelated`, and PDF (converted from that SVG) marks it
+  `/Interpolate true`. A gradient-filled face, or a build without the
+  `raster` feature (the direct-browser WASM adapter), keeps vector faces;
+- the Scene bytes, the browser painter, and interactive HTML are unchanged by
+  the tier (it adds no record kind, sidecar, or XYIM format). Static
+  admission does not imply painter admission: a mesh above 1,024 faces with
+  per-face `stroke_width` (which splits runs) exports statically, while
+  `sceneBrowserPainter` / `xyg_scene_browser_painter` on the same Scene still
+  returns `XYG_PAINTER_TRACE_LIMIT` (browser-wasm.md "Painter admission").
+
+`tests/test_static_dense_mesh_tier.py` pins the 1,024-face stroked mesh bytes
+to main, checks a 1,250-face mesh stays vector, checks the 51,200-face dense
+mesh's SVG/PDF image and its PNG at scales 1–4 against the per-polygon raster
+of its two 25,600-face halves (≤ 3 per channel away from the seam), and pins
+the overdraw, image-grid, and mark fail-closes; Rust tests in `scene.rs` pin
+the overdraw charge, the grid fallback, the 50,000/51,200-face SVG switch, and
+the embedded image against the Scene raster at scale 2. Timings (local, release
+build, 640×420 or default figure): 250,632 colored faces — support 0.55 s,
+SVG 1.63 s, PNG 1.15 s; 599,500 constant faces — support 1.43 s, SVG 2.48 s,
+PNG 2.18 s; 1,100 overlapping full-plot faces fail closed in milliseconds
+(before: 24 s per compile). `benchmarks/test_codspeed_kernels.py::test_svg_export_triangle_mesh_tier_thresholds`
+tracks SVG export at 1,024, 49,920, and 50,176 faces.
+
+**Figure-wide bounds (#1006).** Before any host materializes columns or
+paint planes, the predicate also fails closed with
+`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` when:
+
+- the rows `scene_trace_rows` will pack for all traces, plus each
+  annotation's Scene records charged per kind from the encoder's own
+  constants (`annotation_scene_records`: text 0, rule `ANN_RULE_ROWS` = 2,
+  band `ANN_BAND_ROWS` = 1, marker `ANN_MARKER_ROWS` = 1, arrow
+  `STRAIGHT_ARROW_MAX_RECORDS` = 8, the worst admitted #1034 shape, callout
+  `CALLOUT_SCENE_RECORDS` = 5), exceed `MAX_SCENE_MARKS` (2,000,000), so
+  1,999,998 points plus one rule admit and 1,999,999 refuse: a Cartesian line above the threshold counts
+  `4 × MAX_SCREEN_DIM` = 16,384 rows (the predicate does not know the
+  viewport, so it assumes the widest bucket count), a density blit two, and
+  every other trace `max(n_x, n_x0)`. The product encoder maps a row-pack
+  `TraceRowsCode::Limit` and an expansion `SceneError::Limit` (more than
+  `MAX_SCENE_MARKS` expanded records, e.g. step corners) to the same reason
+  (`EncodeAssembledCode::Lod = 7`, `EncodeSidecarsCode::Lod = 22`) as a
+  backstop, as is trace rows plus the annotation mark rows of XYAO exceeding
+  `MAX_SCENE_MARKS` before `splice_annotations` (which would otherwise fail as
+  splice stage `-703`), and as is an arrow or callout whose encoded records
+  overflow `MAX_SCENE_MARKS` in `SceneBatch::with_authored_annotations`
+  (`SceneError::Limit`, mapped through the expansion mapper rather than the
+  `-16` length code), so a figure over the mark ceiling never surfaces as a
+  host `ValueError`;
+- a trace's per-item paint plane (hosts observe `scatter_paint_plane` /
+  `mesh_paint_plane`, the same facts they pass to
+  `xyg_scene_xyta_trace_dispatch_plan`, as XYEF observation bit 25
+  `OBS_ITEM_PAINT_PLANE`) would not fit one XYTA record: 24 bytes per scatter
+  point or 16 per mesh face plus the 128-byte prefix and 4 KiB for constant
+  CSS sidecars within `SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES`. The browser
+  draws such a scatter direct up to 2,000,000 points; static export does not
+  yet source per-item paint from canonical columns, so it refuses instead.
+
+**Secondary y.** Since #1037 product rows record their y axis (`XYCL_Y2`,
+`PackedSceneRow.y2`). A line on `y2` above the threshold decimates with the
+same M4 rows as the browser payload and applies the log prefilter of the
+secondary scale, read from the XYCF `XYY2` block's scale code
+(`LineLodFrame::with_y2`). A `y2` line in a Scene with no `XYY2` block
+cannot be filtered and fails closed as `TraceRowsCode::Lod`
+(`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`). A decimated line also refuses any non-empty column
+that is not row-aligned and any attached per-row plane, rather than gather
+only some columns.
+
+**Density source.** An XYTA record carries a density scatter's x/y only while
+the record fits the 4 MiB `SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES` budget
+(about 262,000 points). Above that, `pack_trace_attach_with_columns` bins the
+same trace's canonical XYCL columns. Before #1006 such a scatter silently
+packed one Scatter record per point.
+
+**Bytes.** A direct Scatter record is one 56-byte packed row (≤ 112 MB at the
+2,000,000 ceiling) and about 80 bytes of SVG per circle; a density scatter is
+one bounded Image; a decimated line is ≤ 16,384 rows. No extern signature,
+XYEP/XYCL/XYTA layout, or Scene version changed; XYEF gains observation bit
+25 (`OBS_ITEM_PAINT_PLANE`), which older hosts leave clear (their per-item
+scatters above the plane budget keep failing in materialization as before).
+A dense-fill mesh adds nothing to the Scene; its SVG/PDF image is at most
+2,000,000 RGBA pixels, PNG-compressed. The stepwise `xyg_scene_encode_assembled`
+now returns `-7` and `xyg_scene_encode_assembled_from_sidecars` `-22` for
+expansion or mesh-budget overruns (formerly `-3` / `-16`), and
+`xyg_scene_xyta_trace_observations_materialize` returns `-3`
+(`SCENE_XYTA_RECORD_OVER_BUDGET`) for a record over its 4 MiB budget, which
+both hosts relay as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
+
 ## Version 12 bounded semantic graph labels
 
 The chrome trailer uses bytes 232–235 for an appended label-block length and
@@ -1735,8 +2067,11 @@ metadata, short capacity, overlapping output planes, overflow, and over-budget r
 option; Node preserves its existing optional authored range. Both submit the
 result as the existing `post` Step. The authored-column preflight remains
 10,000 for ordinary traces but admits 10,001 points only for compact Step lines
-(the ABI100 anchor plus 10,000 occupied bins); 10,002 still fails closed, and
-canonical Scene expansion budgets remain independent.
+(the ABI100 anchor plus 10,000 occupied bins), and canonical Scene expansion
+budgets remain independent. Since #1006 a Cartesian line or step above
+`DECIMATION_THRESHOLD` (including a 10,001-point ECDF) takes the browser's M4
+tier instead ([public static LOD tiers](#public-static-lod-tiers-1006)); a
+polar step above the budget still fails closed.
 
 Omitted-bin composition histograms in Python and Node resolve their uniform
 edges with the existing synchronous Rust `xyg_histogram_edges` auto estimator.

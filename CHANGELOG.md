@@ -14,6 +14,37 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
+  JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing
+  with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` above 10,000 points: Cartesian lines
+  above `DECIMATION_THRESHOLD` export the browser's M4 rows at the export width,
+  direct-tier scatters export every point, density scatters bin their canonical
+  columns, and non-joined triangle meshes keep every face beyond the 1,024-group
+  painter budget (raster formats paint them at the requested scale; SVG/PDF
+  write vector faces up to 50,000 faces and one Rust-painted raster image per
+  mesh above that; overdraw above 1,024 faces is bounded to 64 plot areas).
+  Layered and polar figures, and ordinary triangle meshes, consume the shared
+  Rust autorange. Polar bar/rose wedges are written as exact SVG arcs from an
+  optional `XYWA` sidecar (raster and the browser painter unchanged). Static
+  bounds stricter than the browser fail closed with the LOD reason: per-item
+  scatter paint planes must fit one 4 MiB XYTA record (≤ 174,586 points; XYEF
+  observation bit 25), and all traces' packed rows share 2,000,000 marks. A
+  line on the secondary `y2` axis (#1037) decimates with the browser's M4 rows
+  and the y2 scale's log prefilter. The one shared static vector-group ceiling
+  (50,000) bounds hexbin cells (#1023, fail closed) and vector mesh faces
+  (dense-fill image above it). No C signature, `ABI_VERSION`, or
+  `SCENE_VERSION` change; the WASM gzip budget is 624 KiB. Node also fixes
+  categorical-color static export (palette pointers) and large label
+  factorization (call-stack overflow).
+- Changed C ABI return codes (#1006, no signature change):
+  `xyg_scene_encode_assembled` returns `-7` (was `-3`) and
+  `xyg_scene_encode_assembled_from_sidecars` returns `-22` (was `-16`) when
+  record expansion exceeds the Scene mark ceiling or a triangle mesh exceeds its
+  overdraw or dense-fill image budget; `xyg_scene_encode_product` relays both as
+  `-801` + `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`;
+  `xyg_scene_xyta_trace_observations_materialize` returns `-3` (was `-2`/`-1`)
+  for a record over its 4 MiB budget, which Python and Node relay as
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
 - ABI 390 / Scene v34: bounded static straight-arrow vocabulary (#1006). Rust
   (`scene_arrow.rs`) owns open `v`, filled-triangle and absent heads and tails
   (`->`, `<-`, `<->`, `-`, `-|>`), start offset, label clearance and pixel shrink,

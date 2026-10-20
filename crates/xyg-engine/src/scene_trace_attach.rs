@@ -606,9 +606,16 @@ fn attach_density(
     input: &AttachInput<'_>,
     compiled: &mut CompiledTrace,
     index: usize,
+    canonical: Option<(&[f64], &[f64])>,
 ) -> Result<(Vec<u8>, u32, u32, Option<[f64; 4]>), TraceAttachError> {
-    let x = as_f64s(input.x, index)?;
-    let y = as_f64s(input.y, index)?;
+    // #1006: an XYTA record carries the density source only while it fits
+    // the 4 MiB record budget; above that the trace's canonical XYCL columns
+    // are the source, so the density tier never silently degrades to
+    // one record per point.
+    let (x, y) = match canonical {
+        Some((x, y)) if input.x.is_empty() && input.y.is_empty() => (x.to_vec(), y.to_vec()),
+        _ => (as_f64s(input.x, index)?, as_f64s(input.y, index)?),
+    };
     if x.len() != y.len() {
         return Err(TraceAttachError::new(TraceAttachCode::DensityCols, index));
     }
@@ -890,6 +897,20 @@ pub fn xyta_cell_fill_tessellation(
 
 /// Pack compiled `XYTO` v1 plus authored `XYTA` v1 attach facts into `XYTT` v1.
 pub fn pack_trace_attach(compiled: &[u8], attach: &[u8]) -> Result<Vec<u8>, TraceAttachError> {
+    pack_trace_attach_with_columns(compiled, attach, &[])
+}
+
+/// [`pack_trace_attach`] with the figure's canonical `XYCL` columns (#1006).
+///
+/// A density trace whose XYTA record omitted its x/y source (the source
+/// exceeds the 4 MiB XYTA record budget) bins the same trace's canonical
+/// XYCL x/y instead. Empty `columns` keeps the stepwise behavior.
+pub fn pack_trace_attach_with_columns(
+    compiled: &[u8],
+    attach: &[u8],
+    columns: &[u8],
+) -> Result<Vec<u8>, TraceAttachError> {
+    let mut canonical: Option<Vec<(Vec<f64>, Vec<f64>)>> = None;
     let mut traces = parse_xyto(compiled)?;
     if attach.len() < XYTA_HEADER_BYTES || attach.get(..4) != Some(&XYTA_MAGIC[..]) {
         return Err(TraceAttachError::new(TraceAttachCode::Length, 0));
@@ -935,7 +956,21 @@ pub fn pack_trace_attach(compiled: &[u8], attach: &[u8]) -> Result<Vec<u8>, Trac
             grid_rows = rows;
             grid_cols = cols;
         } else if input.flags & FLAG_DENSITY != 0 {
-            let (plane, rows, cols, coords) = attach_density(&input, compiled, index)?;
+            if input.x.is_empty()
+                && input.y.is_empty()
+                && !columns.is_empty()
+                && canonical.is_none()
+            {
+                canonical = Some(
+                    crate::scene_trace_rows::xycl_xy_series(columns)
+                        .map_err(|_| TraceAttachError::new(TraceAttachCode::Length, index))?,
+                );
+            }
+            let source = canonical
+                .as_ref()
+                .and_then(|series| series.get(index))
+                .map(|(x, y)| (x.as_slice(), y.as_slice()));
+            let (plane, rows, cols, coords) = attach_density(&input, compiled, index, source)?;
             density = plane;
             grid_rows = rows;
             grid_cols = cols;

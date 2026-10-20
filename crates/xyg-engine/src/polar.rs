@@ -842,8 +842,64 @@ pub fn polar_wedge_points_ex(
     norm_lo: f64,
     norm_hi: f64,
 ) -> Vec<(f64, f64)> {
+    polar_wedge_geometry(
+        metrics,
+        theta0,
+        theta1,
+        r0,
+        r1,
+        wedge_gap,
+        corner_radius,
+        steps,
+        norm_lo,
+        norm_hi,
+    )
+    .0
+}
+
+/// Exact circular-arc description of one flattened annular sector.
+///
+/// Angles are screen radians in the math sense (a point at angle `a` and
+/// radius `r` sits at `(cx + r cos a, cy - r sin a)`), already clipped to the
+/// sector and inset by `wedge_gap`. `outer_*` runs in the polygon's outer-arc
+/// order and `inner_*` in its reversed inner-arc order, so arc endpoints are
+/// the first/last flattened vertices of each arc. `inner == 0` is a slice
+/// from the disc centre; its inner angles are zero.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PolarWedgeArc {
+    pub cx: f64,
+    pub cy: f64,
+    pub outer: f64,
+    pub inner: f64,
+    pub outer_start: f64,
+    pub outer_end: f64,
+    pub inner_start: f64,
+    pub inner_end: f64,
+}
+
+/// Flattened polygon plus, when the sector is exactly two circular arcs and
+/// straight edges, its [`PolarWedgeArc`].
+///
+/// The polygon is byte-for-byte [`polar_wedge_points_ex`]. The arc is `None`
+/// for rounded annular corners (`corner_radius > 0` with a positive inner
+/// radius: the rolled-back corners are not circular arcs), for a zero-width
+/// angular span, and whenever the polygon is empty. Static SVG/PDF use the
+/// arc; raster and the browser painter keep the polygon (scene-ir.md "Polar
+/// wedge SVG arcs").
+pub fn polar_wedge_geometry(
+    metrics: &[f64],
+    theta0: f64,
+    theta1: f64,
+    r0: f64,
+    r1: f64,
+    wedge_gap: f64,
+    corner_radius: f64,
+    steps: usize,
+    norm_lo: f64,
+    norm_hi: f64,
+) -> (Vec<(f64, f64)>, Option<PolarWedgeArc>) {
     if metrics.len() < POLAR_METRICS_LEN || steps > POLAR_WEDGE_MAX_STEPS {
-        return Vec::new();
+        return (Vec::new(), None);
     }
     let floor = inner_fraction(metrics);
     let (lo_frac, hi_frac) = if norm_lo.is_finite() && norm_hi.is_finite() {
@@ -856,7 +912,7 @@ pub fn polar_wedge_points_ex(
         let lo_frac = norm_radius_from_metrics(metrics, r0);
         let hi_frac = norm_radius_from_metrics(metrics, r1);
         if !lo_frac.is_finite() || !hi_frac.is_finite() {
-            return Vec::new();
+            return (Vec::new(), None);
         }
         if lo_frac <= hi_frac {
             (lo_frac, hi_frac)
@@ -865,19 +921,19 @@ pub fn polar_wedge_points_ex(
         }
     };
     if !floor.is_finite() {
-        return Vec::new();
+        return (Vec::new(), None);
     }
     let radius = metrics[METRIC_RADIUS];
     let outer = floor.max(hi_frac).min(1.0) * radius;
     let inner = floor.max(lo_frac).min(1.0) * radius;
     if !outer.is_finite() || !inner.is_finite() || outer <= 0.0 || outer <= inner {
-        return Vec::new();
+        return (Vec::new(), None);
     }
     let Some((a0, a1)) = wedge_angles(metrics, theta0, theta1) else {
-        return Vec::new();
+        return (Vec::new(), None);
     };
     if !a0.is_finite() || !a1.is_finite() {
-        return Vec::new();
+        return (Vec::new(), None);
     }
     let steps = if steps == 0 {
         polar_bar_segments(a1 - a0, 2.0 * std::f64::consts::PI)
@@ -887,7 +943,7 @@ pub fn polar_wedge_points_ex(
     let cx = metrics[METRIC_CX];
     let cy = metrics[METRIC_CY];
     if corner_radius > 0.0 && inner > 0.0 {
-        return rounded_wedge_points(
+        let points = rounded_wedge_points(
             cx,
             cy,
             inner,
@@ -898,6 +954,7 @@ pub fn polar_wedge_points_ex(
             steps,
             wedge_gap,
         );
+        return (points, None);
     }
     let half = wedge_gap.max(0.0) / 2.0;
     let sign = if a1 >= a0 { 1.0 } else { -1.0 };
@@ -909,13 +966,16 @@ pub fn polar_wedge_points_ex(
             sign * (half / at_radius).min(span / 2.0)
         }
     };
-    let arc = |at_radius: f64, reverse: bool, out: &mut Vec<(f64, f64)>| {
+    let arc_ends = |at_radius: f64, reverse: bool| -> (f64, f64) {
         let delta = inset(at_radius);
-        let (start, end) = if reverse {
+        if reverse {
             (a1 - delta, a0 + delta)
         } else {
             (a0 + delta, a1 - delta)
-        };
+        }
+    };
+    let arc = |at_radius: f64, reverse: bool, out: &mut Vec<(f64, f64)>| {
+        let (start, end) = arc_ends(at_radius, reverse);
         for i in 0..=steps {
             let t = i as f64 / steps as f64;
             let angle = start + (end - start) * t;
@@ -934,7 +994,29 @@ pub fn polar_wedge_points_ex(
         arc(outer, false, &mut out);
         arc(inner, true, &mut out);
     }
-    out
+    let (outer_start, outer_end) = arc_ends(outer, false);
+    let (inner_start, inner_end) = if inner <= 0.0 {
+        (0.0, 0.0)
+    } else {
+        arc_ends(inner, true)
+    };
+    let exact = PolarWedgeArc {
+        cx,
+        cy,
+        outer,
+        inner: inner.max(0.0),
+        outer_start,
+        outer_end,
+        inner_start,
+        inner_end,
+    };
+    let finite = [cx, cy, outer_start, outer_end, inner_start, inner_end]
+        .iter()
+        .all(|value| value.is_finite());
+    // A zero-width slice (or a gap wider than the outer arc) has no arc to
+    // draw; its degenerate polygon stays the honest shape.
+    let arc = (finite && span > 1e-12 && (outer_end - outer_start).abs() > 1e-12).then_some(exact);
+    (out, arc)
 }
 
 /// Combined angular and radial visibility mask.
@@ -1372,6 +1454,87 @@ mod tests {
             f64::NAN,
         );
         assert_eq!(pinned.len(), 18);
+    }
+
+    #[test]
+    fn wedge_geometry_arc_restates_the_flattened_polygon() {
+        let mut metrics = [0.0; POLAR_METRICS_LEN];
+        polar_layout(default_input(), &mut metrics).unwrap();
+        let cases = [
+            (0.0, FRAC_PI_2, 0.25, 1.0, 0.0, 0.0),
+            (0.0, FRAC_PI_2, 0.0, 1.0, 0.0, 0.0),
+            (FRAC_PI_2, 0.0, 0.25, 0.75, 9.0, 0.0),
+            (0.0, 2.0 * PI, 0.5, 1.0, 0.0, 0.0),
+            (0.0, FRAC_PI_2, 0.0, 1.0, 0.0, 14.0),
+        ];
+        for (theta0, theta1, r0, r1, gap, corner) in cases {
+            let (points, arc) = polar_wedge_geometry(
+                &metrics,
+                theta0,
+                theta1,
+                r0,
+                r1,
+                gap,
+                corner,
+                0,
+                f64::NAN,
+                f64::NAN,
+            );
+            assert_eq!(
+                points,
+                polar_wedge_points(&metrics, theta0, theta1, r0, r1, gap, corner)
+            );
+            let arc = arc.expect("plain wedge has exact arcs");
+            let at = |radius: f64, angle: f64| {
+                (arc.cx + radius * angle.cos(), arc.cy - radius * angle.sin())
+            };
+            let close = |left: (f64, f64), right: (f64, f64)| {
+                (left.0 - right.0).abs() < 1e-9 && (left.1 - right.1).abs() < 1e-9
+            };
+            let n = points.len();
+            if arc.inner == 0.0 {
+                assert_eq!(points[0], (arc.cx, arc.cy));
+                assert_eq!(points[1], at(arc.outer, arc.outer_start));
+                assert!(close(points[n - 1], at(arc.outer, arc.outer_end)));
+            } else {
+                assert_eq!(points[0], at(arc.outer, arc.outer_start));
+                assert!(close(points[n / 2 - 1], at(arc.outer, arc.outer_end)));
+                assert_eq!(points[n / 2], at(arc.inner, arc.inner_start));
+                assert!(close(points[n - 1], at(arc.inner, arc.inner_end)));
+            }
+            // Every flattened vertex lies on one of the two circles (or the centre).
+            for &(x, y) in &points {
+                let distance = (x - arc.cx).hypot(y - arc.cy);
+                assert!((distance - arc.outer).abs() < 1e-9 || (distance - arc.inner).abs() < 1e-9);
+            }
+        }
+        // Rounded annular corners and zero-width spans have no exact arc.
+        let rounded = polar_wedge_geometry(
+            &metrics,
+            0.0,
+            FRAC_PI_2,
+            0.25,
+            1.0,
+            0.0,
+            14.0,
+            0,
+            f64::NAN,
+            f64::NAN,
+        );
+        assert!(rounded.1.is_none() && rounded.0.len() >= 3);
+        let zero = polar_wedge_geometry(
+            &metrics,
+            0.5,
+            0.5,
+            0.25,
+            1.0,
+            0.0,
+            0.0,
+            0,
+            f64::NAN,
+            f64::NAN,
+        );
+        assert!(zero.1.is_none());
     }
 
     #[test]

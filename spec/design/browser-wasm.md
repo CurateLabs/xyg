@@ -258,7 +258,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging enforces 1,504 KiB raw / 620 KiB gzip limits (gzip raised again from 616 KiB by the #1006 straight-arrow vocabulary, below; raised from 1,472 / 608 KiB by the Scene v33 secondary-y axis, #1006: measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The release compiler and pinned Binaryen 132 `-O3
+packaging enforces 1,504 KiB raw / 624 KiB gzip limits. The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -552,7 +552,10 @@ before allocating or transferring a descriptor table. TypeScript repeats the
 generated ceiling as defense in depth. Callers may reduce fragmentation or
 split work into explicitly managed views; the browser never silently merges
 runs because that would change line breaks, styles, symbols, or stable
-identity.
+identity. Static export admission does not imply painter admission (#1006):
+for example a triangle mesh above 1,024 faces with per-face `stroke_width`
+exports to SVG/PNG/PDF, but the browser painter on that Scene returns
+`XYG_PAINTER_TRACE_LIMIT`.
 
 Per-instance batches are not fragmentation (#945). Kinds 8 and 9 carry every
 marker's or segment's resolved paint, width, symbol, diameter, and complete
@@ -1117,7 +1120,8 @@ Binaryen 132.0.0, Node 22.22.1, `node js/package-wasm.mjs`, whose gate counts
 bytes); an independent measurement of the same change reported 627,878, a 13-byte
 spread from its checkout. CI's toolchain adds about 2.7 KB gzip over a local build,
 which leaves under 0.5 KB below the former 616 KiB gate. The gzip gate is therefore
-raised to **620 KiB (634,880 bytes)**; the raw gate is unchanged. Duplicate paint
+raised to **620 KiB (634,880 bytes)**; the raw gate is unchanged (the #1006
+static-export decision under "Artifact size" later raised gzip to 624 KiB). Duplicate paint
 projection was folded into one out-of-line function and the paint buffer is a fixed
 array to keep the addition at that size; the browser consumes the same Rust vertices
 rather than a second arrow renderer. The painter contract is unchanged (XYPB v16,

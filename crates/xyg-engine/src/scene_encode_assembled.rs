@@ -54,7 +54,7 @@ use crate::scene::{
     MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES, SCENE_STYLE_RECORD_BYTES,
 };
 use crate::scene_annotation_splice::{
-    splice_annotations, XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION,
+    splice_annotations, xyao_mark_rows, XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION,
 };
 use crate::scene_annotations::pack_annotation_facts;
 use crate::scene_chrome::{
@@ -65,9 +65,9 @@ use crate::scene_extras::{pack_scene_extras_from_sidecars, ExtrasError};
 use crate::scene_pack::{PackedSceneRow, PACKED_SCENE_ROW_BYTES};
 use crate::scene_style_sidecars::pack_style_sidecars;
 use crate::scene_y2::{SceneY2Axis, SceneY2Domain};
-use crate::scene_trace_attach::pack_trace_attach;
+use crate::scene_trace_attach::pack_trace_attach_with_columns;
 use crate::scene_trace_compile::pack_trace_compile;
-use crate::scene_trace_rows::pack_trace_rows;
+use crate::scene_trace_rows::{pack_trace_rows_with_lod, LineLodFrame, TraceRowsCode};
 use crate::scene_trace_sidecars::{pack_trace_sidecars, parse_xysd_records};
 use crate::tick_layout;
 
@@ -81,6 +81,9 @@ pub enum EncodeAssembledCode {
     Output = 4,
     Payload = 5,
     Encode = 6,
+    /// #1006: Scene record expansion (or a static image tier) exceeds the
+    /// Scene mark/image budget; product encode relays `PUBLIC_LOD_REASON`.
+    Lod = 7,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,6 +128,8 @@ pub enum EncodeSidecarsCode {
     ExtrasLimit = 19,
     ExtrasShape = 20,
     ExtrasPayload = 21,
+    /// `EncodeAssembledCode::Lod` (#1006).
+    Lod = 22,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -180,6 +185,7 @@ fn map_encode(error: EncodeAssembledError) -> EncodeSidecarsError {
     EncodeSidecarsError::new(
         match error.code {
             EncodeAssembledCode::Output => EncodeSidecarsCode::Output,
+            EncodeAssembledCode::Lod => EncodeSidecarsCode::Lod,
             _ => EncodeSidecarsCode::Encode,
         },
         error.index,
@@ -278,6 +284,16 @@ fn map_scene(error: SceneError) -> EncodeAssembledError {
         },
         0,
     )
+}
+
+/// Expansion budget overruns (`SceneError::Limit`: more than
+/// `MAX_SCENE_MARKS` expanded records) are the public LOD fail-close (#1006);
+/// every other expansion error keeps its `map_scene` code.
+fn map_expansion(error: SceneError) -> EncodeAssembledError {
+    match error {
+        SceneError::Limit => EncodeAssembledError::new(EncodeAssembledCode::Lod, 0),
+        other => map_scene(other),
+    }
 }
 
 fn scale_kind(value: u32) -> Result<ScaleKind, EncodeAssembledError> {
@@ -805,7 +821,7 @@ fn encode_assembled_with_radii(
         paint_bytes,
         !polar_bytes.is_empty(),
     )
-    .map_err(map_scene)?;
+    .map_err(map_expansion)?;
     let (fill_rgba, stroke_rgba, stroke_width) = match &painted_styles {
         Some(styles) => (
             styles.fill_rgba.as_slice(),
@@ -909,7 +925,7 @@ fn encode_assembled_with_radii(
         }
         None => batch,
     };
-    Ok(batch
+    let batch = batch
         .with_images(images)
         .map_err(map_scene)?
         .with_dashes(&dash_merged)
@@ -917,10 +933,15 @@ fn encode_assembled_with_radii(
         .with_polar(polar_bytes)
         .map_err(map_scene)?
         .with_authored_annotations(&parsed.xyad)
-        .map_err(map_scene)?
+        // #1006: arrow/callout records past `MAX_SCENE_MARKS` (and the other
+        // authored-annotation budgets) are `Limit`, relayed as the LOD reason.
+        .map_err(map_expansion)?
         .with_corner_radii(corner_radii)
-        .map_err(map_scene)?
-        .encode())
+        .map_err(map_scene)?;
+    // #1006: triangle-mesh overdraw and dense-fill grid budgets (counted,
+    // never rasterized here) fail closed with the LOD reason.
+    batch.check_mesh_budgets().map_err(map_expansion)?;
+    Ok(batch.encode())
 }
 
 fn axes_from_chrome_facts(
@@ -1010,6 +1031,35 @@ fn corner_radii_from_xysd(
         .collect())
 }
 
+/// Stable reason for a line the browser decimates but whose columns the
+/// static M4 tier cannot bin faithfully (#1006, dossier §28).
+pub const PUBLIC_LOD_REASON: &str = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
+
+/// The browser payload's line M4 inputs, read from the Scene's own XYCF
+/// (viewport width, primary x axis, primary y scale kind, and whether a `y2`
+/// sidecar is present) (#1006). Malformed
+/// chrome facts skip decimation; the encoder rejects them with its own
+/// envelope error later.
+fn line_lod_frame(xycf: &[u8]) -> Option<LineLodFrame> {
+    let (viewport_width, _, x_axis, y_axis) = axes_from_chrome_facts(xycf).ok()?;
+    // The secondary axis's scale code is the XYY2 block's first field.
+    let y2_kind = match xycf_y2_sidecar(xycf).ok()? {
+        Some(y2) => Some(u32::from_le_bytes(y2.get(4..8)?.try_into().ok()?)),
+        None => None,
+    };
+    Some(
+        LineLodFrame::new(
+            viewport_width,
+            x_axis.kind,
+            x_axis.lo,
+            x_axis.hi,
+            x_axis.constant,
+            y_axis.kind,
+        )
+        .with_y2(y2_kind),
+    )
+}
+
 /// Encode a product Scene from packed authored blobs.
 ///
 /// Rust owns compile, attach, sidecar, row, annotation, style-sidecar, splice,
@@ -1053,18 +1103,43 @@ pub fn encode_product(
     }
     let compiled = pack_trace_compile(xytc)
         .map_err(|error| map_stage(PRODUCT_STAGE_COMPILE, error.code as i32, error.index))?;
-    let attached = pack_trace_attach(&compiled, xyta)
+    let attached = pack_trace_attach_with_columns(&compiled, xyta, xycl)
         .map_err(|error| map_stage(PRODUCT_STAGE_ATTACH, error.code as i32, error.index))?;
     let sidecars = pack_trace_sidecars(&attached, xynm)
         .map_err(|error| map_stage(PRODUCT_STAGE_SIDECARS, error.code as i32, error.index))?;
-    let packed_rows = pack_trace_rows(&attached, xycl)
-        .map_err(|error| map_stage(PRODUCT_STAGE_ROWS, error.code as i32, error.index))?;
+    let line_lod = line_lod_frame(xycf);
+    let packed_rows =
+        pack_trace_rows_with_lod(&attached, xycl, line_lod.as_ref()).map_err(|error| {
+            // `Limit` is the row packer's `MAX_SCENE_MARKS` backstop for a
+            // figure the predicate's row bound did not already refuse.
+            if matches!(error.code, TraceRowsCode::Lod | TraceRowsCode::Limit) {
+                ProductEncodeError {
+                    code: PRODUCT_SUPPORT_UNSUPPORTED,
+                    index: error.index,
+                    reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+                }
+            } else {
+                map_stage(PRODUCT_STAGE_ROWS, error.code as i32, error.index)
+            }
+        })?;
+    let trace_rows = packed_rows.len();
     let mut row_bytes = Vec::with_capacity(packed_rows.len() * PACKED_SCENE_ROW_BYTES);
     for row in packed_rows {
         row_bytes.extend_from_slice(&row.to_bytes());
     }
     let annotations = pack_annotation_facts(xyaf, style_ref_base, x_lo, x_hi, y_lo, y_hi)
         .map_err(|error| map_stage(PRODUCT_STAGE_ANNOTATION, error as i32, 0))?;
+    // #1006 backstop: trace rows plus annotation mark rows over the Scene
+    // mark ceiling are the public LOD fail-close, not a splice stage error.
+    let annotation_rows = xyao_mark_rows(&annotations)
+        .map_err(|error| map_stage(PRODUCT_STAGE_SPLICE, error.code as i32, error.index))?;
+    if trace_rows.saturating_add(annotation_rows) > MAX_SCENE_MARKS {
+        return Err(ProductEncodeError {
+            code: PRODUCT_SUPPORT_UNSUPPORTED,
+            index: 0,
+            reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+        });
+    }
     let extras_facts = pack_style_sidecars(&sidecars, &annotations)
         .map_err(|error| map_stage(PRODUCT_STAGE_STYLE, error.code as i32, error.index))?;
     let xyas = splice_annotations(&row_bytes, &sidecars, &annotations)
@@ -1075,10 +1150,18 @@ pub fn encode_product(
         reason: Vec::new(),
     })?;
     encode_assembled_from_sidecars(&xyas, &xycf, &sidecars, polar, &extras_facts).map_err(|error| {
-        ProductEncodeError {
-            code: error.code as i32,
-            index: error.index,
-            reason: Vec::new(),
+        if error.code == EncodeSidecarsCode::Lod {
+            ProductEncodeError {
+                code: PRODUCT_SUPPORT_UNSUPPORTED,
+                index: error.index,
+                reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+            }
+        } else {
+            ProductEncodeError {
+                code: error.code as i32,
+                index: error.index,
+                reason: Vec::new(),
+            }
         }
     })
 }
@@ -1305,9 +1388,9 @@ mod tests {
         let xynm = empty_header(XYNM_MAGIC, XYNM_VERSION, XYNM_HEADER_BYTES);
         let xycl = empty_header(XYCL_MAGIC, XYCL_VERSION, XYCL_HEADER_BYTES);
         let compiled = pack_trace_compile(&xytc).unwrap();
-        let attached = pack_trace_attach(&compiled, &xyta).unwrap();
+        let attached = crate::scene_trace_attach::pack_trace_attach(&compiled, &xyta).unwrap();
         let sidecars = pack_trace_sidecars(&attached, &xynm).unwrap();
-        let packed_rows = pack_trace_rows(&attached, &xycl).unwrap();
+        let packed_rows = crate::scene_trace_rows::pack_trace_rows(&attached, &xycl).unwrap();
         let mut row_bytes = Vec::new();
         for row in packed_rows {
             row_bytes.extend_from_slice(&row.to_bytes());
@@ -1486,6 +1569,126 @@ mod tests {
         assert_eq!(error.code, PRODUCT_SUPPORT_UNSUPPORTED);
         let reason = std::str::from_utf8(&error.reason).unwrap();
         assert!(reason.contains("XYG_SCENE_UNSUPPORTED_POLAR"));
+    }
+
+    /// Raw XYTC/XYTA/XYCL blobs for one direct scatter of `n` points.
+    fn scatter_product_blobs(n: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+        use crate::scene_trace_attach::XYTA_PREFIX_BYTES;
+        use crate::scene_trace_compile::{XYTR_MAGIC, XYTR_PREFIX_BYTES};
+        use crate::scene_trace_rows::XYCL_PREFIX_BYTES;
+        let kind = b"scatter";
+        let mut prefix = vec![0u8; XYTR_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(XYTR_MAGIC);
+        prefix[4..6].copy_from_slice(&1u16.to_le_bytes());
+        prefix[6..8].copy_from_slice(&(kind.len() as u16).to_le_bytes());
+        for at in [16, 24, 32, 40] {
+            prefix[at..at + 8].copy_from_slice(&1.0f64.to_le_bytes());
+        }
+        for at in [48, 56, 88, 96] {
+            prefix[at..at + 8].copy_from_slice(&f64::NAN.to_le_bytes());
+        }
+        let mut xytc = Vec::from(*XYTC_MAGIC);
+        xytc.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        xytc.extend_from_slice(&1u32.to_le_bytes());
+        xytc.extend_from_slice(&0u32.to_le_bytes());
+        xytc.extend_from_slice(&prefix);
+        xytc.extend_from_slice(kind);
+        let mut xyta = empty_header(XYTA_MAGIC, XYTA_VERSION, XYTA_HEADER_BYTES);
+        xyta[8..12].copy_from_slice(&1u32.to_le_bytes());
+        xyta.extend_from_slice(&vec![0u8; XYTA_PREFIX_BYTES]);
+        let mut xycl = empty_header(XYCL_MAGIC, XYCL_VERSION, XYCL_HEADER_BYTES);
+        xycl[8..12].copy_from_slice(&1u32.to_le_bytes());
+        let mut trace = vec![0u8; XYCL_PREFIX_BYTES];
+        trace[0..2].copy_from_slice(&(kind.len() as u16).to_le_bytes());
+        trace[8..16].copy_from_slice(&7u64.to_le_bytes());
+        trace[16..20].copy_from_slice(&(n as u32).to_le_bytes());
+        trace[20..24].copy_from_slice(&(n as u32).to_le_bytes());
+        trace.extend_from_slice(kind);
+        xycl.extend_from_slice(&trace);
+        for column in 0..2 {
+            for i in 0..n {
+                let value = (i % 1_000) as f64 / 1_000.0 + column as f64 * 1e-4;
+                xycl.extend_from_slice(&value.to_le_bytes());
+            }
+        }
+        (xytc, xyta, xycl)
+    }
+
+    fn product_with_annotations(
+        n: usize,
+        annotations: &[crate::scene_xyaf_bulk_pack::XyafBulkAnnotationObs<'_>],
+    ) -> Result<Vec<u8>, ProductEncodeError> {
+        let (xytc, xyta, xycl) = scatter_product_blobs(n);
+        // One empty legend name for the one trace.
+        let mut xynm = empty_header(XYNM_MAGIC, XYNM_VERSION, XYNM_HEADER_BYTES);
+        xynm[8..12].copy_from_slice(&1u32.to_le_bytes());
+        xynm.extend_from_slice(&0u16.to_le_bytes());
+        let xyaf = crate::scene_xyaf_bulk_pack::scene_xyaf_bulk_pack(annotations).unwrap();
+        encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &xyaf,
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &empty_chrome_facts(),
+            &[],
+            &[],
+        )
+    }
+
+    fn annotation_obs(kind: &str) -> crate::scene_xyaf_bulk_pack::XyafBulkAnnotationObs<'_> {
+        crate::scene_xyaf_bulk_pack::XyafBulkAnnotationObs {
+            kind,
+            text: None,
+            x: None,
+            y: None,
+            x0: Some(0.25),
+            y0: Some(0.25),
+            x1: Some(0.75),
+            y1: Some(0.75),
+            value: Some(0.5),
+            start: None,
+            end: None,
+            dx: None,
+            dy: None,
+            size: None,
+            wrap: None,
+            rotation: None,
+            anchor: None,
+            axis: Some("y"),
+            symbol: None,
+            record_index: None,
+            style: crate::scene_xyaf_bulk_pack::XyafBulkStyleObs {
+                color: Some("#000000"),
+                ..Default::default()
+            },
+        }
+    }
+
+    fn assert_public_lod(result: Result<Vec<u8>, ProductEncodeError>) {
+        let error = result.unwrap_err();
+        assert_eq!(error.code, PRODUCT_SUPPORT_UNSUPPORTED);
+        assert_eq!(error.reason, PUBLIC_LOD_REASON.as_bytes());
+    }
+
+    #[test]
+    fn product_annotation_records_over_the_mark_ceiling_are_public_lod() {
+        // #1006: a rule's 2 packed mark rows past MAX_SCENE_MARKS hit the
+        // pre-splice backstop; an arrow's encoded records past it are the
+        // annotation stage's `Limit`. Both relay the public LOD reason
+        // (-801), never a stage code.
+        let rule = [annotation_obs("rule")];
+        assert_public_lod(product_with_annotations(MAX_SCENE_MARKS - 1, &rule));
+        let arrow = [annotation_obs("arrow")];
+        assert_public_lod(product_with_annotations(MAX_SCENE_MARKS - 1, &arrow));
+        // Below the ceiling the same annotations encode.
+        assert!(product_with_annotations(10, &rule).is_ok());
+        assert!(product_with_annotations(10, &arrow).is_ok());
     }
 
     #[test]

@@ -77,8 +77,11 @@ vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
 plot clipping, legend swatch, SVG/raster/browser lowering, and the public
 PolyFill group budget (companion traces share the 1,024-group ceiling; hexbin
 cells use a separate 50,000-cell aggregate ceiling, #887).
-`joined_fill` plus per-face paint, alternate axes, polar meshes, and
-larger meshes remain compatibility behavior.
+A non-joined mesh above that budget keeps every face in static export; Rust
+bounds its overdraw and writes one raster image per mesh in SVG/PDF above
+50,000 faces (#1006; scene-ir.md "Mesh tiers and dense-fill rule").
+`joined_fill` plus per-face paint, alternate axes, and polar meshes remain
+compatibility behavior.
 
 ABI 98 removes composition-violin geometry policy from both hosts. They retain
 coercion, group/category factorization, rollback, and literal style authoring,
@@ -767,6 +770,7 @@ Forbidden:
 | `crates/xyg-engine/src/scene_xytc_trace_pack.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_y2.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Scene v33 `XYY2` secondary-y block codec | — |
 | `crates/xyg-engine/src/scene_y2_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Scene v33 secondary-y proofs | — |
+| `crates/xyg-engine/src/scene_wedge_arcs.rs` | Rust safe engine | `rust-engine` | `keep-rust`; XYWA exact polar wedge-arc sidecar validated against the flattened PolyFill vertices for SVG/PDF arcs (#1006) | — |
 | `crates/xyg-core/src/payload_trace_emit_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-core/src/scene_bulk_pack_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-core/src/scene_xyta_trace_observations_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |

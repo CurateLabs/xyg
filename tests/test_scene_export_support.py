@@ -1242,11 +1242,28 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     assert scene_export_support_reason(boundary) is None
     painter = _native.scene_browser_painter(figure_scene(boundary))
     assert int.from_bytes(painter[20:24], "little") == 1
-    assert (
-        scene_export_support_reason(_public_triangle_mesh(1025))
-        == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+    assert b"data-xy-dense-fill" not in _native.scene_svg(figure_scene(boundary)).encode()
+    # #1006: static export is not bound by the painter's 1,024 groups. A
+    # tessellation one face over it stays vector (the SVG dense-fill image
+    # starts above 50,000 faces) ...
+    cols = 41
+    index = np.arange(cols * 25, dtype=np.float64)
+    step = 2.0 / cols
+    gx, gy = (index % cols) * step, np.floor(index / cols) * step
+    tiles = Figure(width=360, height=260)
+    tiles.axis_options["x"]["domain"] = (0.0, 2.0)
+    tiles.axis_options["y"]["domain"] = (0.0, 2.0)
+    tiles.triangle_mesh(gx, gy, gx + step, gy, gx, gy + step, color="#22c55e")
+    assert len(tiles.traces[0].x0.values) == 1_025
+    assert scene_export_support_reason(tiles) is None
+    tiles_svg = _native.scene_svg(figure_scene(tiles))
+    assert "data-xy-dense-fill" not in tiles_svg
+    assert '<path d="M ' in tiles_svg
+    # ... while 1,025 copies of the same two large faces overdraw far more than
+    # 64 plot rectangles and fail closed, one mesh or split across two.
+    assert scene_export_support_reason(_public_triangle_mesh(1025)) == (
+        "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
     )
-
     aggregate = _public_triangle_mesh(513)
     trace = aggregate.traces[0]
     aggregate.triangle_mesh(
@@ -1258,11 +1275,15 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
         trace.y.values,
         color="#22c55e",
     )
-    assert scene_export_support_reason(aggregate) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-
+    assert scene_export_support_reason(aggregate) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+    # Companion traces no longer share the painter budget with a plain mesh.
     mixed = _public_triangle_mesh(1024)
     mixed.scatter([1.0], [1.0], color="#3987e5")
-    assert scene_export_support_reason(mixed) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+    assert scene_export_support_reason(mixed) is None
+    # A joined fill keeps the shared 1,024-group budget.
+    joined = _public_triangle_mesh(1025)
+    joined.traces[0].style["joined_fill"] = True
+    assert scene_export_support_reason(joined) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
 
 
 def test_public_triangle_mesh_admits_custom_role() -> None:
@@ -1426,12 +1447,18 @@ def test_public_triangle_mesh_keeps_nonliteral_geometry_fail_closed(
     assert scene_export_support_reason(figure) is not None
 
 
-def test_public_triangle_mesh_keeps_autorange_on_compatibility() -> None:
+def test_public_triangle_mesh_consumes_the_shared_rust_autorange() -> None:
+    # Mesh paint never moves the domain, so an unauthored mesh takes the same
+    # Rust figure autorange (all three vertex columns) as the browser payload.
     figure = _public_triangle_mesh()
     figure.axis_options["x"]["domain"] = None
     figure.axis_options["y"]["domain"] = None
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-    assert public_static_export(figure, "svg") is None
+    assert scene_export_support_reason(figure) is None
+    spec, _ = figure.build_payload()
+    authored = _public_triangle_mesh()
+    authored.axis_options["x"]["domain"] = tuple(spec["axes"]["x"]["range"])
+    authored.axis_options["y"]["domain"] = tuple(spec["axes"]["y"]["range"])
+    assert public_static_export(figure, "svg") == public_static_export(authored, "svg")
 
 
 @pytest.mark.parametrize("reduce", ["count", "mean", "sum"])
@@ -2058,7 +2085,8 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
             setattr(figure, "coords", "polar"),
             figure.stem([1.0], [1.5], base=0.25),
         ),
-        lambda figure: figure.scatter(range(10_001), range(10_001)),
+        # #1006: a forced-direct scatter beyond the Scene mark ceiling.
+        lambda figure: figure.scatter(np.zeros(2_000_001), np.zeros(2_000_001), density=False),
     ],
 )
 def test_builtin_symbol_cutover_keeps_nonliteral_scatter_fail_closed(
@@ -2383,7 +2411,8 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
 @pytest.mark.parametrize(
     "factory",
     [
-        lambda: _supported().scatter(range(10_001), range(10_001)),
+        # #1006: a forced-direct scatter beyond the Scene mark ceiling.
+        lambda: _supported().scatter(np.zeros(2_000_001), np.zeros(2_000_001), density=False),
     ],
 )
 def test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior(factory) -> None:
@@ -2578,7 +2607,7 @@ def test_graph_segment_overflow_and_point_overflow_share_lod_reason_cross_host()
     assert scene_export_support_reason(seg_fig) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
-def test_compact_step_allows_only_the_binned_ecdf_anchor_above_ten_thousand() -> None:
+def test_compact_step_above_ten_thousand_takes_the_browser_m4_tier() -> None:
     maximum_values = np.concatenate(
         (np.arange(10_000, dtype=np.float64) + 0.5, np.array([0.0, 10_000.0]))
     )
@@ -2597,12 +2626,19 @@ def test_compact_step_allows_only_the_binned_ecdf_anchor_above_ten_thousand() ->
     assert scene_export_support_reason(accepted) is None
     assert accepted.to_scene()
 
-    rejected = Figure(width=320, height=240).step(
+    # #1006: above DECIMATION_THRESHOLD a cartesian step line is the browser's
+    # M4 tier (decimated before step expansion), not a record-budget refusal.
+    decimated = Figure(width=320, height=240).step(
         np.arange(10_002, dtype=np.float64), np.arange(10_002, dtype=np.float64)
     )
-    rejected.axis_options["x"]["domain"] = (0.0, 10_002.0)
-    rejected.axis_options["y"]["domain"] = (0.0, 10_002.0)
-    assert scene_export_support_reason(rejected) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+    decimated.axis_options["x"]["domain"] = (0.0, 10_002.0)
+    decimated.axis_options["y"]["domain"] = (0.0, 10_002.0)
+    assert scene_export_support_reason(decimated) is None
+    assert decimated.to_scene()
+    polar = Figure(width=320, height=240)
+    polar.coords = "polar"
+    polar.step(np.linspace(0.0, 1.0, 10_002), np.arange(10_002, dtype=np.float64))
+    assert scene_export_support_reason(polar) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
 def test_public_stem_marker_must_immediately_follow_its_exact_stem_geometry() -> None:
