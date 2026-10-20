@@ -355,8 +355,8 @@ surface Rust's reasons; no host adds admission or layout policy.
   `packages/xy-node/scripts/static_dual_axis_cross_host.mjs`,
   `packages/xy-node/test/static-dual-axis.test.mjs`, and the Rust test
   `scene_trace_rows::y2_flag_selects_the_secondary_scale_for_that_trace_only`.
-  Corpus case 26 passes (52/55 overall; the three open cases are the named
-  annotation/hexbin gaps in `spec/matplotlib/compat.md`).
+  Corpus case 26 passes (52/55 overall; the three open cases, 25, 47 and 53, are the named
+  gaps in `spec/matplotlib/compat.md`).
 - **Title direction.** The y2 title now reads bottom to top: SVG/PDF
   `rotate(-90 …)` (`push_svg_chrome_text` path in `scene.rs`) and the styled
   raster text command angle −90°, like the left title. The title baseline
