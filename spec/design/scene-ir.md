@@ -2031,7 +2031,10 @@ already carries the `compat_layout::right_y_room()` floor for `RIGHT_SECONDARY`.
 SVG, raster, PDF and the browser painter draw the axis through the one axis
 loop shared with x and y (spine and ticks at the right edge, labels anchored
 start, title rotated 90° counter-clockwise in the right gutter, reading bottom to
-top like the left title). There is no y2 grid
+top like the left title). The browser client's default title rotation is a
+TypeScript default (XYPB carries no title-angle fact) and is −90° for both the y
+and y2 titles, so every surface agrees; `tests/browser/wasm_foundation_page.mjs`
+asserts the rendered y2 title transform. There is no y2 grid
 (Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
 
 **XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are

@@ -49,7 +49,7 @@ def node_exports() -> dict[str, Any]:
     return json.loads(proc.stdout)
 
 
-def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right", raw_y2=None):
+def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right", raw_y2=None, raw_y=None):
     """The public dual-axis chart; `raw_y2` sets axis options the component validators
     would refuse (or do not expose), so the host-to-Rust path sees them untouched."""
     figure = c.line_chart(
@@ -62,6 +62,7 @@ def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right", raw_y2
         height=HEIGHT,
     ).figure()
     figure.axis_options["y2"].update(raw_y2 or {})
+    figure.axis_options["y"].update(raw_y or {})
     return figure
 
 
@@ -83,6 +84,8 @@ CASES: dict[str, dict[str, Any]] = {
     "gap": {"y2": {"tick_label_min_gap": 200}},
     "preserve": {"y2": {"tick_label_min_gap": 200, "tick_label_strategy": "preserve"}},
     "collision_key": {"y2": {"tick_label_min_gap": 200}, "raw_y2": {"collision": "preserve"}},
+    "empty_y2_ticks": {"raw_y2": {"tick_values": []}},
+    "empty_y_ticks": {"raw_y": {"tick_values": []}},
     "strategy_wins": {
         "y2": {"tick_label_min_gap": 200, "tick_label_strategy": "preserve"},
         "raw_y2": {"collision": "hide"},
@@ -143,6 +146,18 @@ def test_python_and_node_report_the_same_rust_reasons(node_exports: dict[str, An
     }
     assert python == node_exports["reasons"]
     assert all(reason and reason.startswith("XYG_SCENE_UNSUPPORTED_") for reason in python.values())
+
+
+def test_empty_tick_values_are_automatic_on_both_axes_in_both_hosts(
+    node_exports: dict[str, Any],
+) -> None:
+    """An authored empty tick list is the same output as no tick list, for y2 and y."""
+    auto = node_exports["cases"]["dual"]
+    for name in ("empty_y2_ticks", "empty_y_ticks"):
+        assert node_exports["cases"][name] == auto, name
+        assert export_figure(_case(name), "svg", width=WIDTH, height=HEIGHT) == export_figure(
+            _case("dual"), "svg", width=WIDTH, height=HEIGHT
+        )
 
 
 def test_invalid_authored_y2_values_get_the_same_rust_rejection(

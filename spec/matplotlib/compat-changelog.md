@@ -100,10 +100,15 @@ Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus i
   (XYST/SVG/PNG/PDF) for the same public dual-axis chart
   (`tests/test_static_dual_axis_cross_host.py`).
 - The right-hand title reads bottom to top like the left title and Matplotlib's
-  `twinx` label (rotation 90°) in SVG, PDF and PNG; PR 1 had drawn it clockwise.
+  `twinx` label (rotation 90°) in SVG, PDF, PNG and the interactive browser
+  client; PR 1 had drawn it clockwise.
+- An authored empty `tick_values` on y2 means automatic ticks, as it already did
+  for x and y.
 - Invalid authored y2 values (zero or negative scale constant, non-finite domain or
-  tick-label angle) are not defaulted by either host: Rust rejects them and both
-  hosts surface the same rejection. A category y2 gets
+  tick-label angle) are not defaulted by the y2 marshalling in either host: they
+  reach the Scene encoder, which refuses them, and both hosts surface the same
+  generic malformed-scene message (`invalid canonical scene batch`, not a stable
+  `XYG_SCENE_UNSUPPORTED_*` reason). A category y2 gets
   `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`.
 - `secondary_xaxis()`/`secondary_yaxis()` and `twiny` remain interactive-only or
   fail closed (no x2).

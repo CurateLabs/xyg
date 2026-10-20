@@ -324,10 +324,13 @@ surface Rust's reasons; no host adds admission or layout policy.
   (`tick_strategy_code`, `tick_anchor_nibble`), the 4 px minimum label gap
   (`DEFAULT_Y_MIN_GAP`) and the scale constant default 1
   (`DEFAULT_SCALE_CONSTANT`) are Rust's; the y axis shares the same functions
-  and constant. No host holds a default for any `XYY2` field: an absent fact
+  and constant. No host holds a default for a y2-specific `XYY2` field (scale
+  constant, tick strategy/anchor, minimum gap, ticks, labels): an absent fact
   stays absent and an authored value (a zero constant, an infinite angle or
-  domain) passes through untouched, so both hosts receive Rust's rejection
-  (`SceneY2Axis::decode` / the scene encoder). Python:
+  domain) passes through untouched to Rust's scene validation. The shared chrome
+  axis marshalling is unchanged and still resolves the side code and the
+  tick/label side masks from the authored side and `tick_sides` /
+  `tick_label_sides` before packing, for y and y2 alike. Python:
   `_scene_marshal._marshal_y2`; Node: `scene.js marshalY2`. A non-finite
   `tick_label_angle` is rejected; only NaN on the wire means "no angle".
 - **XYCS/XYCO.** `resolve_chrome_style` / `resolveStaticChromeStyle` set XYCS flag
@@ -363,10 +366,29 @@ surface Rust's reasons; no host adds admission or layout policy.
   swaps the roles of ascent and depth accordingly
   (`y2_title_baseline`: ink spans `[x − ascent, x + depth]`). Pinned by
   `y2_title_reads_bottom_to_top_like_the_y_title_in_svg_and_raster` (Rust) and
-  `test_y2_title_reads_bottom_to_top_in_svg_pdf_and_raster` (Python). The live
-  browser client's DOM title is not changed here.
+  `test_y2_title_reads_bottom_to_top_in_svg_pdf_and_raster` (Python). The
+  browser client's default title rotation is a TypeScript default
+  (`js/src/50_chartview.ts`, `_axisLabelCss` and `renderYTitle`; XYPB has no
+  title-angle fact): both y and y2 titles now default to −90°, which changes the
+  interactive y2 title from reading top to bottom to reading bottom to top.
+  Pinned by the rendered-transform assertion in
+  `tests/browser/wasm_foundation_page.mjs` (CI job `wasm_foundation`). An authored
+  `label_angle` still wins.
+- **Empty `tick_values` means automatic.** `xyg_scene_chrome_pack` has always
+  treated a zero-length major list as "not authored" for the primary y and x axes
+  (`scene_bulk_pack_ffi.rs`: `major_len == 0 → None`); y2 now follows the same
+  rule, so an authored `tick_values=[]` gives automatic ticks, not "no ticks"
+  (an earlier host-packed y2 sidecar encoded it as zero ticks). Labels follow
+  suit (an empty `tick_labels` is automatic). To hide ticks, author
+  `tick_length=0` / `tick_label_sides`. Pinned at the pack boundary by
+  `test_empty_y2_tick_values_mean_automatic_ticks_like_the_primary_axis` and
+  across hosts by the `empty_y2_ticks` / `empty_y_ticks` cross-host cases and the
+  Node `an authored empty tick list is automatic ticks` test.
 - **Invalid-input tests.** `tests/test_static_dual_axis_cross_host.py` sends a zero
   and a negative constant, an infinite domain and ±infinite
-  `tick_label_angle`; Python and Node get the same Rust rejection
-  (`invalid canonical scene batch`, which Python raises and Node returns). A
+  `tick_label_angle`; Python and Node get the same rejection message,
+  `invalid canonical scene batch`. That is the generic host malformed-scene
+  message for any Scene the encoder refuses, not a stable
+  `XYG_SCENE_UNSUPPORTED_*` reason; Python raises it as a `ValueError` and Node
+  returns it from `sceneExportSupportReason`. A
   category y2 gets `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS` in both.

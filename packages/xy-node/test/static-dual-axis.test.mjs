@@ -11,10 +11,10 @@ import { Figure, sceneExportSupportReason } from "../src/index.js";
 const WIDTH = 480;
 const HEIGHT = 320;
 
-function dual({ y2Side = "right", y2 = {} } = {}) {
+function dual({ y2Side = "right", y2 = {}, y = {} } = {}) {
   const figure = new Figure({ width: WIDTH, height: HEIGHT });
   figure.setAxis("x", { domain: [0, 4] });
-  figure.setAxis("y", { domain: [0, 4], label: "L" });
+  figure.setAxis("y", { domain: [0, 4], label: "L", ...y });
   figure.setAxis("y2", { side: y2Side, label: "R", domain: [0, 400], ...y2 });
   figure.line([1, 2, 3], [1, 2, 3]);
   figure.line([1, 2, 3], [100, 200, 300], { yAxis: "y2" });
@@ -145,4 +145,11 @@ test("invalid authored y2 values are rejected by Rust, never defaulted", () => {
 
 test("a category y2 is rejected with Rust's reason", () => {
   assert.equal(sceneExportSupportReason(dual({ y2: { type: "category" } })), "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+});
+
+test("an authored empty tick list is automatic ticks, for y2 as for y", () => {
+  const auto = svgOf(dual());
+  assert.equal(svgOf(dual({ y2: { tick_values: [] } })), auto);
+  assert.equal(svgOf(dual({ y: { tick_values: [] } })), auto);
+  assert.notEqual(svgOf(dual({ y2: { tick_values: [0, 400] } })), auto);
 });

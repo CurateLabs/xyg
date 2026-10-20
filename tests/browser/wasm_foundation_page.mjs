@@ -3313,6 +3313,7 @@ async function run() {
       titleStyle: y2Title && getComputedStyle(y2Title).fontStyle,
       titleColor: y2Title && getComputedStyle(y2Title).color,
       titleSize: y2Title && getComputedStyle(y2Title).fontSize,
+      titleTransform: y2Title && getComputedStyle(y2Title).transform,
       tickLeft: Math.min(...y2Labels.map((node) => node.getBoundingClientRect().left)) - host.getBoundingClientRect().left,
       count: y2Labels.length,
     };
@@ -3333,6 +3334,12 @@ async function run() {
       || roomy.tickSizes.some((size) => size !== "20px") || tight.tickSizes.some((size) => size !== "12px")
       || !(roomy.tickLeft >= tight.tickLeft + 7)) {
     throw new Error(`Scene v33 y2 chrome lost its resolved typography or paints: ${detail}`);
+  }
+  // The right-hand title reads bottom to top (rotate -90deg), like the left title,
+  // Matplotlib's twinx label and the static SVG/PDF/raster path.
+  const titleMatrix = (roomy.titleTransform ?? "").match(/^matrix\(([^)]*)\)$/)?.[1].split(",").map(Number);
+  if (!titleMatrix || Math.abs(titleMatrix[0]) > 1e-6 || Math.abs(titleMatrix[1] + 1) > 1e-6) {
+    throw new Error(`the y2 title must rotate -90deg like the y title: ${roomy.titleTransform}`);
   }
   // Non-zero typography flags: tick labels bold+italic, title italic only (and the
   // reverse), resolved by Rust and applied by the client per slot.

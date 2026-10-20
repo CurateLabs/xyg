@@ -28,7 +28,10 @@ in the README).
   `y2_tick_labels`) and Rust builds the `XYY2` block, owning every default
   (scale constant, tick strategy/anchor, minimum label gap) and rejecting invalid
   authored values (zero/negative constant, non-finite domain or angle) identically
-  for both hosts. The y2 title now reads bottom to top like the left title. Hosts
+  for both hosts. The y2 title now reads bottom to top like the left title in SVG,
+  PDF, PNG and the interactive browser client (a behaviour change: the live y2
+  title previously read top to bottom). An authored empty y2 `tick_values` means
+  automatic ticks, as for x and y. Hosts
   translate axis ids (`y2` = 2, `x2` = 3) into the `XYFS` observation, and set the
   new `XYCL` column flag bit 1 (`XYCL_Y2`) so Rust stamps the record y selector on
   every row of a y2 trace. Rust alone admits or rejects and returns the same

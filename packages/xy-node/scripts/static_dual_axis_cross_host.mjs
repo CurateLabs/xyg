@@ -43,6 +43,9 @@ const CASES = {
   strategy_wins: () => dualFigure({
     y2: { tick_label_min_gap: 200, tick_label_strategy: "preserve", collision: "hide" },
   }),
+  // An authored empty tick list means automatic ticks, for y2 as for y.
+  empty_y2_ticks: () => dualFigure({ y2: { tick_values: [] } }),
+  empty_y_ticks: () => dualFigure({ y: { tick_values: [] } }),
 };
 
 // Authored values the Scene rejects: both hosts must pass them through untouched
