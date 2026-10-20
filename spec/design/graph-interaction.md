@@ -146,10 +146,12 @@ mode Replace/Add/Toggle; policy Nodes/Edges/NodesAndInducedEdges. Hover sets HOV
 `session_render(camera)` with `camera = f64[scale_x, scale_y, offset_x, offset_y, vp_w, vp_h, dpr]` produces one `RenderOutput`:
 ```
 tier u32, edges_kept u64, node_x/y f64, member_of u64, edge_src/tgt u64, edge_members CSR u64,
-visible u8, visual_states u8, emphasis u8 (nodes), edge_visual_states u8, edge_emphasis u8 (edges)
+visual_states u8, emphasis u8 (nodes), edge_visual_states u8, edge_emphasis u8 (edges)
+(no separate `visible` plane: `member_of == NOT_RENDERED` says a source node is hidden, culled, or temporally
+invisible; a node hidden by a collapsed group rides its representative's render node)
 ```
-Pipeline order (source index space until the last step): (1) the bound temporal frame's source visibility (nodes and edges) masks the source graph (§2.9); (2) `compound_collapse` (`graph_style.rs`) over the document hierarchy, `load.collapsed`, and the propagated state flags yields visibility, `representative[]`, and rerouted endpoints with edge provenance; (3) `graph::build_render` (budgets, viewport culling, LOD) runs over the collapsed source graph; (4) membership composes source -> representative -> render node and source edge -> render edge CSR; then `resolve_visual_state` per render element. A collapsed parent that is off-viewport with an on-viewport child renders and picks the representative, not the child; aggregate centroids exclude hidden descendants. **The same `RenderOutput` value is (a) copied into the `render.*` result sections the host packs into its existing §29 paint payload (`_graph_wire.py` keys `visual_states` etc. unchanged, plus `emphasis`) and (b) the only input to the pick index.** Hosts never run `layout_render` beside a session. Proof: pick index node count equals `render.n_nodes`, every hit index `< n_nodes`; the Python wire payload built from result bytes is byte-equal to `_graph.layout_render` on the same inputs at direct tier.
-Pick index: render nodes, and render-edge pieces from `edge_route_segments_with_ends` trimmed by `node_border_distance` and extended by `GRAPH_EDGE_HEAD_LENGTH_PX` (as painters do, `edge_route.rs:481-494`); self-loop = 3 pieces; parallel lanes separate (ties: draw order, then `order`); compound frame band hits the compound, interior passes through; collapsed representative selects members. Admission (`interaction.rs`, geo's shape `geo_interaction.rs:8-14`): `MAX_GRAPH_PICK_PRIMITIVES=131_072`, `_GRID_ENTRIES=1_048_576`, `_CANDIDATES=65_536`, `MAX_GRAPH_INTERACTION_WORK=4_000_000`, 64×64 grid. Over the primitive budget the index keeps nodes and single-piece edges, `pick.degraded=1` (recorded, §28); brush/lasso stay exact for nodes, edges fall back to induced. Work exceeded mid-query → `GF_INTERACTION_BUDGET`, no change. Each render `render_revision += 1`.
+Pipeline order (source index space until the last step): (1) the bound temporal frame's source visibility (nodes and edges) masks the source graph *and its hierarchy* (§2.9: an invisible node leaves the forest, its children re-attach to the nearest surviving ancestor, its collapsed flag is dropped); (2) `compound_collapse` (`graph_style.rs`) over that surviving hierarchy, `load.collapsed`, and the propagated state flags yields visibility, `representative[]`, and rerouted endpoints with edge provenance; (3) `graph::build_render` (budgets, viewport culling, LOD) runs over the collapsed source graph; (4) membership composes source -> representative -> render node and source edge -> render edge CSR; then `resolve_visual_state` per render element. A collapsed parent that is off-viewport with an on-viewport child renders and picks the representative, not the child; aggregate centroids exclude hidden descendants. **The same `RenderOutput` value is (a) copied into the `render.*` result sections the host packs into its existing §29 paint payload (`_graph_wire.py` keys `visual_states` etc. unchanged, plus `emphasis`) and (b) the only input to the pick index.** Hosts never run `layout_render` beside a session. Proof: pick index node count equals `render.n_nodes`, every hit index `< n_nodes`; the Python wire payload built from result bytes is byte-equal to `_graph.layout_render` on the same inputs at direct tier.
+Pick index: render nodes, and render-edge pieces from `edge_route_segments_with_ends` trimmed by `node_border_distance` and extended by `GRAPH_EDGE_HEAD_LENGTH_PX` (as painters do, `edge_route.rs:481-494`); self-loop = 3 pieces; parallel lanes separate (ties: draw order, then `order`); compound frame band hits the compound, interior passes through; collapsed representative selects members. Admission (`interaction.rs`, geo's shape `geo_interaction.rs:8-14`): `MAX_GRAPH_PICK_PRIMITIVES=131_072`, `_GRID_ENTRIES=1_048_576`, `_CANDIDATES=65_536`, `MAX_GRAPH_INTERACTION_WORK=4_000_000`, 64×64 grid. Over the primitive budget the index keeps nodes and single-piece edges, `pick.degraded=1` (recorded, §28); brush/lasso stay exact for nodes, edges fall back to induced. Work exceeded mid-query → `GF_INTERACTION_BUDGET`, no change. `render_revision` advances on *structural* change only (pin, move, relayout, an effective disclosure, a changed temporal frame, bind/unbind, or a render requested with a different camera than the previous publication); a render with nothing structural changed republishes the same revision with fresh style planes. This supersedes "each render bumps": selection, focus, hover and highlight change style planes only, and aggregate refs must stay valid across them. The revision never wraps: at `u32::MAX` a structural change fails `GF_INTERACTION_REVISION_EXHAUSTED` before any mutation.
 
 ### 2.4 Stamps and coordination
 Destination stamp `(instance_id, render_revision)` on every local event; mismatch → `GF_INTERACTION_STALE`, no change (host repaints, resubmits). Origin stamp on `ApplyRemote`: `GraphCoordinationEvent { group_id, source_instance, revision, generation uuid, refs[0..10_000] sorted unique }`. The gate (`group_id!=0`, wrong group no-op, self → SelfEcho, `revision<=last_seen` → StaleRevision, atomic apply, no local bump, no echo; `temporal_controller.rs:346-389`) is extracted to `coordination.rs::CoordinationGate` and used by both controllers. Outbound: after a local selection change in a nonzero group Rust queues one snapshot; `poll_event` → host link channel kind `graph_select` (`interaction.md:294-297`) or same-process `coordinate_deliver`. Receiver fires `graph.select` with `source:"linked"`, never rebroadcast.
@@ -166,7 +168,7 @@ The session owns `positions: (Vec<f64>, Vec<f64>)`, `pinned: Vec<u8>`, `parents`
 ### 2.8 Status codes
 Stable codes (`InteractionStatus::code`): `GF_INTERACTION_STALE`, `_UNLINKED`,
 `_INVALID`, `_BUDGET`, `_CAPACITY`, `_SELF_ECHO`, `_STALE_REMOTE`,
-`_SELECTION_TOO_LARGE`, `_COMPOUND_TOO_LARGE`, `_UNBOUND`. A failed operation
+`_SELECTION_TOO_LARGE`, `_COMPOUND_TOO_LARGE`, `_UNBOUND`, `_REVISION_EXHAUSTED`. A failed operation
 never changes state and never consumes its `op_seq`. Composition failures that
 belong to the hierarchy keep their composition codes: `GF_BASE_PARENT_UNKNOWN`,
 `GF_BASE_PARENT_SELF`, `GF_BASE_PARENT_CYCLE`, `GF_BASE_PARENT_CONFLICT`.
@@ -188,7 +190,7 @@ Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_gra
 Native (`xyg-core`, ABI 383→384, regenerate manifest): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
 Request `XYGI`: `header.u64`[instance_id, group_id, op_seq]; `header.u32`[render_revision, operation, mode, policy, plane, action, commit, steps, space]; `camera.f64`; `coordinates.f64`; `refs.bytes` (kind-tagged refs; transported derived refs carry the exact result id, §2.1; byte layout fixed with the ABI); `uuids.uuid`; `remote.bytes`; `companion.u32`[page, size≤200]; `load.*` (§1.2).
 Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, when revision changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`; `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`. Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
-Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
+Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND, _REVISION_EXHAUSTED`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
 
 ## 4. Events (all hosts)
 `graph.select` (stamp, source user|api|linked, mode, selected refs, changed refs); `graph.focus` (ref, summary); `graph.hover`; `graph.disclosure` (ref, collapsed, members, revision); `graph.positions` (changed, revision); `graph.relayout` (alpha, done, revision); `graph.render` (revision, tier, degraded); `graph.stale`. Browser `CustomEvent("xy:graph-*")`; `xy:graphforge-select` alias one release. Python `ChannelCallbacks.on_graph_*` via `handle_message` kind `graph_interact` → `graph_result`; Node `session.interact(bytes)`/`on("select")`; VS Code `xyg.pick` / `xyg.select {uuids|refs}`.
@@ -233,7 +235,7 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 | S1 | Hierarchy in composition (`parent_uuid` -> `node.parent`, composition v2); identity (`ElementRef`, exact result-id table); `GraphInteractionState` extraction and 10,000-ref cap; `GraphSession` create / select / clear / focus / bind / unbind with stamps and `op_seq` idempotency | **implemented** |
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
 | S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | planned |
-| S4 | Native + WASM session ABI, browser `DT.u32`, manifest | planned |
+| S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | planned |
 | S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | planned |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
@@ -261,11 +263,41 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
   holding a pre-frame render is rejected `Stale` and repaints. `render(None)`
   is the unculled render the host `layout_render` produces; `Some(camera)` culls
   to the camera's data-space viewport (`screen = data * scale + offset`).
-- **Visibility is not a published plane.** `member_of == NOT_RENDERED` already
-  says a source node is hidden, culled, or temporally invisible; the design's
-  separate `visible` u8 would restate it, so S2 omits it (S3's pick index and
-  the S4 wire read `member_of`). A collapsed group is visible and rendered; its
-  hidden members map to its render node.
+- **Visibility is not a published plane, and membership is not source
+  visibility.** `member_of == NOT_RENDERED` says a source node is hidden,
+  culled, or temporally invisible; the design's separate `visible` u8 would
+  restate it, so S2 omits it (S3's pick index and the S4 wire read `member_of`).
+  A collapsed group is visible and rendered, and its collapse-hidden members
+  map to its render node: a member can be hidden from the source graph yet
+  have a render node. Consumers must not read "has a render node" as "was
+  drawn as itself".
+- **One locked world per operation (F4).** A bound session validates the
+  temporal revision, applies the stamp check, mutates the shared state, and
+  captures the render inputs (revision, visibility, state) under a single
+  registry lock (`TemporalGraph::world_parts`); a render builds and publishes
+  inside it. A frame therefore cannot advance between the check and the apply,
+  and no render pairs new visibility with an old revision. An Owned session has
+  no lock to hold.
+- **Temporal masking precedes the hierarchy.** An invisible node leaves the
+  parent forest (its children re-attach to the nearest surviving ancestor, its
+  collapsed flag is dropped) *before* `compound_collapse`, so an expired
+  collapsed group neither hides nor reroutes its live members.
+- **Layout follows the snapshot.** The initial layout and every relayout run on
+  the visible subgraph with the surviving hierarchy (invisible nodes do not
+  repel, invisible edges do not pull) and write back to source indices;
+  invisible nodes keep their positions (an unplaced one is parked at the
+  visible centroid). The retained force state is dropped on a frame change,
+  bind/unbind, and whenever the visible nodes or the authoritative pin set
+  differ from those it was built with, including pins changed through
+  `TemporalGraph::set_pinned_nodes`.
+- **Admission before expansion.** A request carries at most 10,000 refs; each
+  distinct aggregate expands once, and the total is admitted against the
+  selection cap before anything is allocated.
+- **Keyboard selection is whole.** `select_focused` selects what the focused
+  drawn stop stands for (an aggregate's or collapsed group's member nodes, an
+  aggregate edge's member edges), as a pointer selection does; with no current
+  publication it is the focused element.
+- **Revision exhaustion.** `GF_INTERACTION_REVISION_EXHAUSTED` replaces wrapping.
 - **Focus on a group.** Focus is UUID-keyed state, so an aggregate render node
   (or collapsed group) is focused through its lowest-index visible member
   (`RenderOutput::focus_node`), a rendered aggregate edge through its

@@ -423,7 +423,9 @@ browser/Python/Node hosts follow per its slice table.
   CoSE layout (300 steps, document parents) the host path uses. A collapsed
   group that is culled does not render its on-screen child (collapse runs
   before culling), and aggregate centroids exclude hidden descendants.
-  Style planes: per-render-node and per-render-edge `visual_states`
+  Membership is not source visibility: a node hidden by a collapsed group has a
+  render node (its representative's), while a temporally invisible or culled
+  node has none (`NOT_RENDERED`). Style planes: per-render-node and per-render-edge `visual_states`
   (`resolve_visual_state`, unchanged precedence) and an independent `emphasis`
   u8 (`(flags >> 7) & 0xF`: FOCUSED, PATH, COMMUNITY, EXTERNAL; they never
   enter the precedence). Emphasis flags and `SELECTED/HOVERED/NEIGHBOR/PINNED`
@@ -441,6 +443,12 @@ browser/Python/Node hosts follow per its slice table.
   refs stay valid across them. An aggregate ref is valid only for the current
   publication (`Stale` otherwise); selecting one selects its member source
   nodes (a collapsed group's render node includes its hidden descendants).
+  The revision never wraps: at `u32::MAX` a structural change fails
+  `GF_INTERACTION_REVISION_EXHAUSTED` before any mutation. Under a bound
+  temporal graph the revision check, the mutation, and the render inputs share
+  one registry lock, and the temporal snapshot masks the hierarchy before
+  collapse (an expired collapsed group hides nothing); layout and relayout run
+  on the visible subgraph only.
 - **Positions.** Pin writes the node's current f64 into the UUID-keyed pin set.
   Move: preview (updates the position, remembers the origin once), commit (applies
   any last delta, pins, reports the position), cancel (restores the origin bit

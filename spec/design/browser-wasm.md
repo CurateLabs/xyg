@@ -1106,10 +1106,10 @@ retained interaction session itself is not exported from WASM until the session
 ABI slice, which will record its own size decision. Compiler profile unchanged.
 
 **Retained session render (#36 S2) size check.** S2 adds the Rust-only session
-render pipeline and widens the interaction-state mask; no WASM export changed,
-so the session code is not linked. The packaged artifact measures 1,514,183 raw
-bytes (1,337 under the unchanged 1,515,520-byte gate; +1,565 over S1) and
-622,333 level-6 gzip bytes (4,355 under the 626,688-byte gate; −1,711 against
+render pipeline and `TemporalGraph::world_parts`; no WASM export changed, so
+the session code is not linked. The packaged artifact measures 1,514,304 raw
+bytes (1,216 under the unchanged 1,515,520-byte gate; +1,686 over S1) and
+622,593 level-6 gzip bytes (4,095 under the 626,688-byte gate; −1,452 against
 S1's 624,045). Neither budget is raised; the raw margin is thin, and the
 session ABI slice owns the next size decision.
 

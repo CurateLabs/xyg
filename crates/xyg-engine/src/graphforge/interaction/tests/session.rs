@@ -1161,7 +1161,10 @@ fn relayout_is_bounded_and_rejects_without_changing_anything() {
         Err(InteractionStatus::Budget)
     );
     assert_eq!(big.render_revision(), 0);
-    assert_eq!(big.work(), 0, "rejected before any work");
+    assert!(
+        big.work() <= u64::from(n),
+        "rejected after one linear visibility pass, before any force work"
+    );
     assert!(64 * u64::from(n) > MAX_GRAPH_INTERACTION_WORK);
 }
 
@@ -1460,7 +1463,9 @@ fn exercise(s: &mut GraphSession) -> u64 {
         render_revision: s.published().unwrap().revision,
         index: 0,
     });
-    s.select_refs(header(s, 4), &[root], SelectMode::Replace)
+    // A thousand repeats of one aggregate expand it once.
+    let repeated = vec![root; 1_000];
+    s.select_refs(header(s, 4), &repeated, SelectMode::Replace)
         .unwrap();
     s.render(None).unwrap();
     s.work()
@@ -1505,4 +1510,712 @@ fn a_hundred_thousand_deep_parent_chain_renders_and_collapses_without_a_quadrati
         "every edge is internal to the group"
     );
     assert_eq!(STATE_AGGREGATE, 1);
+}
+
+// -- review round 1: temporal masking, layout, atomicity, pins, caps ----------------
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use crate::graph::{ForceState, LAYOUT_COSE};
+
+/// A temporal registry over `nodes` and persisted `edges` (uuid, source,
+/// target); node `i` is valid until `node_end[i]` (half-open).
+fn registry_for(nodes: &[Uuid], edges: &[(Uuid, usize, usize)], node_end: &[i64]) -> Arc<Registry> {
+    let valid = vec![1u8; nodes.len()];
+    let col = |values: &[i64]| {
+        TemporalColumn::from_utc_micros(values, &valid, "UTC", TemporalPrecision::Microsecond)
+            .unwrap()
+    };
+    let (starts, ends) = (col(&vec![0; nodes.len()]), col(node_end));
+    let projection = GraphProjection::new(
+        nodes,
+        &edges.iter().map(|e| e.0).collect::<Vec<_>>(),
+        &edges.iter().map(|e| nodes[e.1]).collect::<Vec<_>>(),
+        &edges.iter().map(|e| nodes[e.2]).collect::<Vec<_>>(),
+        None,
+        true,
+    )
+    .unwrap();
+    let graph = TemporalGraph::bind(
+        &projection,
+        TemporalBindingInput {
+            valid_from: Some(&starts),
+            valid_to: Some(&ends),
+            event_at: None,
+        },
+        TemporalBindingInput::default(),
+    )
+    .unwrap();
+    Arc::new(Registry {
+        graph: Mutex::new(Some(graph)),
+    })
+}
+
+fn bound(doc: &[u8], load: SessionLoad, registry: &Arc<Registry>) -> GraphSession {
+    let mut s = loaded(doc, load);
+    s.bind_temporal(registry.clone(), HANDLE).unwrap();
+    s
+}
+
+#[test]
+fn an_expired_collapsed_group_hands_its_live_members_to_the_survivors() {
+    // A(0) ⊃ B(1), C(2); D(3). B→D, A→D, B→C. A is collapsed and expires.
+    let doc = handmade_ends(
+        COMPOSITION_VERSION,
+        &node_ids(4),
+        &persisted(3),
+        &[],
+        Some((&[NONE, 0, 0, NONE], &[0, 1, 1, 0])),
+        Some(&[(1, 3), (0, 3), (1, 2)]),
+    );
+    let edges = [(id(11), 1, 3), (id(12), 0, 3), (id(13), 1, 2)];
+    let registry = registry_for(&node_ids(4), &edges, &[20, 100, 100, 100]);
+    let load = SessionLoad {
+        collapsed: Some(vec![1, 0, 0, 0]),
+        ..at(&[0.0, 1.0, 2.0, 10.0], &[0.0; 4])
+    };
+    let mut s = bound(&doc, load, &registry);
+
+    frame_at(&registry, 1, 10);
+    let live = s.render(None).unwrap().clone();
+    assert_eq!(live.member_of, [0, 0, 0, 1], "A collapsed: B and C ride A");
+
+    frame_at(&registry, 2, 20);
+    let out = s.render(None).unwrap().clone();
+    assert_eq!(out.node_count(), 3, "B, C and D survive the expired group");
+    assert_eq!(out.member_of, [NOT_RENDERED, 0, 1, 2]);
+    assert_eq!(
+        out.edge_render,
+        [0, NOT_RENDERED, 1],
+        "B→D and B→C are drawn between the live members; A→D left with A"
+    );
+    assert_eq!(
+        (out.edge_source.clone(), out.edge_target.clone()),
+        (vec![0, 0], vec![2, 1])
+    );
+}
+
+#[test]
+fn an_expired_grandparent_reattaches_a_collapsed_group_to_the_root() {
+    // G(0) ⊃ A(1) ⊃ B(2); D(3). B→D. A is collapsed; G expires.
+    let doc = handmade_ends(
+        COMPOSITION_VERSION,
+        &node_ids(4),
+        &persisted(1),
+        &[],
+        Some((&[NONE, 0, 1, NONE], &[0, 1, 1, 0])),
+        Some(&[(2, 3)]),
+    );
+    let registry = registry_for(&node_ids(4), &[(id(11), 2, 3)], &[20, 100, 100, 100]);
+    let load = SessionLoad {
+        collapsed: Some(vec![0, 1, 0, 0]),
+        ..at(&[0.0, 1.0, 2.0, 10.0], &[0.0; 4])
+    };
+    let mut s = bound(&doc, load, &registry);
+    frame_at(&registry, 1, 20);
+    let out = s.render(None).unwrap().clone();
+    assert_eq!(out.member_of, [NOT_RENDERED, 0, 0, 1]);
+    assert_eq!(
+        (out.edge_source.clone(), out.edge_target.clone()),
+        (vec![0], vec![1]),
+        "B→D reroutes to A, which is still collapsed"
+    );
+}
+
+#[test]
+fn the_initial_layout_is_the_visible_subgraph_only() {
+    let doc = handmade_ends(
+        COMPOSITION_VERSION,
+        &node_ids(4),
+        &persisted(3),
+        &[],
+        None,
+        Some(&[(0, 1), (1, 2), (2, 3)]),
+    );
+    let edges = [(id(11), 0, 1), (id(12), 1, 2), (id(13), 2, 3)];
+    let registry = registry_for(&node_ids(4), &edges, &[100, 20, 100, 100]);
+    let load = SessionLoad {
+        seed: 5,
+        ..SessionLoad::default()
+    };
+    let mut s = bound(&doc, load, &registry);
+    frame_at(&registry, 1, 20); // node 2 (index 1) and its edges are gone
+    s.render(None).unwrap();
+
+    // Nodes 0, 2, 3 and the surviving edge 2→3, in compact indices.
+    let layout = |nodes: u64, sources: &[u64], targets: &[u64]| {
+        let mut f = ForceState::new_configured(
+            nodes,
+            sources,
+            targets,
+            None,
+            None,
+            5,
+            LAYOUT_COSE,
+            CoseOptions::default(),
+            &[],
+            &vec![COSE_NO_PARENT; nodes as usize],
+        )
+        .unwrap();
+        f.tick(INITIAL_LAYOUT_STEPS);
+        (f.x, f.y)
+    };
+    let (ex, ey) = layout(3, &[1], &[2]);
+    let (x, y) = s.positions().unwrap();
+    for (k, node) in [0usize, 2, 3].into_iter().enumerate() {
+        assert_eq!(
+            (x[node].to_bits(), y[node].to_bits()),
+            (ex[k].to_bits(), ey[k].to_bits())
+        );
+    }
+    let centroid = (ex.iter().sum::<f64>() / 3.0, ey.iter().sum::<f64>() / 3.0);
+    assert_eq!(
+        (x[1], y[1]),
+        centroid,
+        "the expired node is parked, not laid out"
+    );
+    let (fx, _) = layout(4, &[0, 1, 2], &[1, 2, 3]);
+    assert_ne!(
+        bits(&[x[0], x[2], x[3]]),
+        bits(&[fx[0], fx[2], fx[3]]),
+        "the expired node and edges would have moved the others"
+    );
+}
+
+#[test]
+fn relayout_runs_on_the_visible_subgraph_and_drops_state_when_the_frame_changes() {
+    let doc = handmade_ends(
+        COMPOSITION_VERSION,
+        &node_ids(4),
+        &persisted(3),
+        &[],
+        None,
+        Some(&[(0, 1), (1, 2), (2, 3)]),
+    );
+    let edges = [(id(11), 0, 1), (id(12), 1, 2), (id(13), 2, 3)];
+    let registry = registry_for(&node_ids(4), &edges, &[100, 20, 100, 100]);
+    let mut s = bound(
+        &doc,
+        at(&[0.0, 5.0, 10.0, 15.0], &[0.0, 1.0, 0.0, 1.0]),
+        &registry,
+    );
+    frame_at(&registry, 1, 10);
+    s.render(None).unwrap();
+    s.relayout_step(header(&s, 1), 8).unwrap();
+
+    frame_at(&registry, 2, 20); // node index 1 expires
+    s.render(None).unwrap();
+    let (x, y) = s
+        .positions()
+        .map(|(a, b)| (a.to_vec(), b.to_vec()))
+        .unwrap();
+    s.relayout_step(header(&s, 2), 8).unwrap();
+
+    // Fresh force state over nodes 0, 2, 3 (edge 2→3) from the positions at
+    // the frame change; the retained all-nodes state must not continue.
+    let pick = |p: &[f64]| vec![p[0], p[2], p[3]];
+    let mut expected = ForceState::new_configured(
+        3,
+        &[1],
+        &[2],
+        Some(&pick(&x)),
+        Some(&pick(&y)),
+        0,
+        LAYOUT_COSE,
+        CoseOptions::default(),
+        &[0, 0, 0],
+        &[COSE_NO_PARENT; 3],
+    )
+    .unwrap();
+    expected.tick(8);
+    let (nx, ny) = s.positions().unwrap();
+    for (k, node) in [0usize, 2, 3].into_iter().enumerate() {
+        assert_eq!(
+            (nx[node].to_bits(), ny[node].to_bits()),
+            (expected.x[k].to_bits(), expected.y[k].to_bits()),
+            "node {node}"
+        );
+    }
+    assert_eq!(
+        (nx[1].to_bits(), ny[1].to_bits()),
+        (x[1].to_bits(), y[1].to_bits())
+    );
+}
+
+// -- atomicity of the temporal check -----------------------------------------------
+
+/// A temporal host that counts registry locks and runs injected callbacks just
+/// before the Nth one: the deterministic interleaving a racing frame would
+/// produce, without a production branch.
+struct Hooked {
+    inner: Arc<Registry>,
+    calls: AtomicUsize,
+    hooks: Mutex<Vec<(usize, Box<dyn FnOnce() + Send>)>>,
+}
+
+impl Hooked {
+    fn new(inner: &Arc<Registry>) -> Arc<Self> {
+        Arc::new(Self {
+            inner: inner.clone(),
+            calls: AtomicUsize::new(0),
+            hooks: Mutex::new(Vec::new()),
+        })
+    }
+
+    fn calls(&self) -> usize {
+        self.calls.load(Ordering::SeqCst)
+    }
+
+    /// Run `hook` just before lock number `call` (1-based, absolute).
+    fn before(&self, call: usize, hook: impl FnOnce() + Send + 'static) {
+        self.hooks.lock().unwrap().push((call, Box::new(hook)));
+    }
+
+    fn pending(&self) -> usize {
+        self.hooks.lock().unwrap().len()
+    }
+}
+
+impl TemporalHost for Hooked {
+    fn with_graph(&self, handle: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool {
+        let call = self.calls.fetch_add(1, Ordering::SeqCst) + 1;
+        let due: Vec<_> = {
+            let mut hooks = self.hooks.lock().unwrap();
+            let (due, rest) = std::mem::take(&mut *hooks)
+                .into_iter()
+                .partition(|(at, _)| *at == call);
+            *hooks = rest;
+            due
+        };
+        for (_, hook) in due {
+            hook();
+        }
+        self.inner.with_graph(handle, f)
+    }
+}
+
+fn hooked_session() -> (GraphSession, Arc<Registry>, Arc<Hooked>) {
+    let registry = temporal_registry();
+    let host = Hooked::new(&registry);
+    let mut s = loaded(&standard_doc(), at(&[0.0, 10.0, 20.0], &[0.0; 3]));
+    s.bind_temporal(host.clone(), HANDLE).unwrap();
+    frame_at(&registry, 1, 10);
+    s.render(None).unwrap();
+    (s, registry, host)
+}
+
+#[test]
+fn every_operation_and_render_takes_exactly_one_registry_lock() {
+    let (mut s, _registry, host) = hooked_session();
+    let n2 = ElementRef::Node(id(2));
+    let locks = |s: &mut GraphSession, run: &dyn Fn(&mut GraphSession)| {
+        let before = host.calls();
+        run(s);
+        host.calls() - before
+    };
+    assert_eq!(
+        locks(&mut s, &|s| {
+            select(s, 1, &[2], SelectMode::Replace);
+        }),
+        1
+    );
+    assert_eq!(
+        locks(&mut s, &|s| {
+            s.hover(header(s, 2), Some(&n2)).unwrap();
+        }),
+        1
+    );
+    assert_eq!(
+        locks(&mut s, &|s| {
+            s.pin(header(s, 3), &n2, true).unwrap();
+        }),
+        1
+    );
+    assert_eq!(
+        locks(&mut s, &|s| {
+            s.clear(header(s, 4)).unwrap();
+        }),
+        1
+    );
+    assert_eq!(
+        locks(&mut s, &|s| {
+            s.render(None).unwrap();
+        }),
+        1
+    );
+    assert_eq!(
+        locks(&mut s, &|s| {
+            s.focus_step(header(s, 5), 1).unwrap();
+        }),
+        1
+    );
+}
+
+#[test]
+fn a_frame_advancing_inside_the_lock_window_is_seen_whole_or_not_at_all() {
+    let (mut s, registry, host) = hooked_session();
+    let before = s.selection().unwrap();
+
+    // The frame advances just as the operation takes its lock: the op was
+    // stamped against the old world, so it is rejected and changes nothing.
+    let stamped = header(&s, 1);
+    let next = host.calls() + 1;
+    let r = registry.clone();
+    host.before(next, move || frame_at(&r, 2, 20));
+    assert_eq!(
+        s.select_refs(stamped, &[ElementRef::Node(id(1))], SelectMode::Replace),
+        Err(InteractionStatus::Stale)
+    );
+    assert_eq!(s.selection().unwrap(), before);
+
+    // A render whose lock is preceded by another frame publishes that frame's
+    // visibility under that frame's revision, and no second lock exists in
+    // which a later frame could split the two.
+    let r = registry.clone();
+    let next = host.calls() + 1;
+    host.before(next, move || frame_at(&r, 3, 10));
+    let stale_second_phase = host.calls() + 2;
+    host.before(stale_second_phase, || panic!("a second lock was taken"));
+    let out = s.render(None).unwrap().clone();
+    assert_eq!(out.member_of, [0, 1, 2], "cursor 10: everything visible");
+    assert_eq!(s.published().unwrap().revision, out.revision);
+    assert_eq!(host.pending(), 1, "the second-phase hook never ran");
+}
+
+// -- shared pins -------------------------------------------------------------------
+
+#[test]
+fn a_pin_changed_through_the_temporal_graph_reaches_the_next_relayout() {
+    let registry = temporal_registry();
+    let mut s = bound(
+        &standard_doc(),
+        at(&[0.0, 10.0, 20.0], &[0.0, 3.0, 0.0]),
+        &registry,
+    );
+    frame_at(&registry, 1, 10);
+    s.render(None).unwrap();
+    s.relayout_step(header(&s, 1), 16).unwrap();
+    let moved = pos(&s, 1);
+    assert_ne!(
+        moved,
+        (10f64.to_bits(), 3f64.to_bits()),
+        "the first relayout moves node 2"
+    );
+
+    // Pin it from outside the session, on the shared state.
+    registry
+        .graph
+        .lock()
+        .unwrap()
+        .as_mut()
+        .unwrap()
+        .set_pinned_nodes([id(2)])
+        .unwrap();
+    s.render(None).unwrap();
+    s.relayout_step(header(&s, 2), 32).unwrap();
+    assert_eq!(
+        pos(&s, 1),
+        moved,
+        "pinned where it stood; the retained state was rebuilt"
+    );
+
+    // Unpinning through the same authority releases it again.
+    registry
+        .graph
+        .lock()
+        .unwrap()
+        .as_mut()
+        .unwrap()
+        .set_pinned_nodes([])
+        .unwrap();
+    s.relayout_step(header(&s, 3), 32).unwrap();
+    assert_ne!(pos(&s, 1), moved);
+}
+
+#[test]
+fn binding_and_unbinding_change_the_pin_authority_for_relayout() {
+    let load = SessionLoad {
+        pinned: Some(vec![0, 1, 0]),
+        ..at(&[0.0, 10.0, 20.0], &[0.0, 3.0, 0.0])
+    };
+    let mut s = loaded(&standard_doc(), load);
+    s.render(None).unwrap();
+    let start = pos(&s, 1);
+    s.relayout_step(header(&s, 1), 16).unwrap();
+    assert_eq!(pos(&s, 1), start, "pinned by load.pinned");
+
+    // The temporal graph has no pins; binding hands it the authority.
+    let registry = temporal_registry();
+    s.bind_temporal(registry, HANDLE).unwrap();
+    s.render(None).unwrap();
+    s.relayout_step(header(&s, 2), 16).unwrap();
+    assert_ne!(
+        pos(&s, 1),
+        start,
+        "no longer pinned once the shared state decides"
+    );
+    let free = pos(&s, 1);
+
+    s.unbind().unwrap();
+    s.render(None).unwrap();
+    s.relayout_step(header(&s, 3), 16).unwrap();
+    assert_ne!(pos(&s, 1), free, "an unbound session starts with no pins");
+}
+
+// -- caps before expansion ---------------------------------------------------------
+
+fn aggregate_session(n: u32) -> GraphSession {
+    let doc = handmade_ends(COMPOSITION_VERSION, &node_ids(n), &[], &[], None, Some(&[]));
+    let xs: Vec<f64> = (0..n).map(f64::from).collect();
+    let mut s = loaded(
+        &doc,
+        SessionLoad {
+            budgets: Some((1, 10)),
+            ..at(&xs, &xs)
+        },
+    );
+    assert_eq!(s.render(None).unwrap().tier, LodTier::Aggregate);
+    s
+}
+
+fn the_aggregate(s: &GraphSession) -> ElementRef {
+    ElementRef::Aggregate(AggregateRef {
+        render_revision: s.published().unwrap().revision,
+        index: 0,
+    })
+}
+
+#[test]
+fn repeated_aggregate_refs_expand_once() {
+    let mut s = aggregate_session(1_000);
+    let agg = the_aggregate(&s);
+    let before = s.work();
+    s.select_refs(header(&s, 1), &vec![agg; 1_000], SelectMode::Replace)
+        .unwrap();
+    assert_eq!(s.selection().unwrap().len(), 1_000);
+    let spent = s.work() - before;
+    assert!(
+        spent <= 3_000,
+        "1,000 refs × 1,000 members would be 1,000,000; spent {spent}"
+    );
+}
+
+#[test]
+fn an_oversized_aggregate_is_rejected_before_it_is_expanded() {
+    let mut s = aggregate_session(10_001);
+    let agg = the_aggregate(&s);
+    let before = s.work();
+    assert_eq!(
+        s.select_refs(
+            header(&s, 1),
+            std::slice::from_ref(&agg),
+            SelectMode::Replace
+        ),
+        Err(InteractionStatus::SelectionTooLarge)
+    );
+    assert!(s.selection().unwrap().is_empty(), "atomic");
+    assert!(
+        s.work() - before < 100,
+        "no expansion work: {}",
+        s.work() - before
+    );
+    // The request itself is bounded too: more refs than the cap is rejected
+    // without being resolved.
+    let before = s.work();
+    assert_eq!(
+        s.select_refs(
+            header(&s, 1),
+            &vec![ElementRef::Node(id(1)); 10_001],
+            SelectMode::Replace
+        ),
+        Err(InteractionStatus::SelectionTooLarge)
+    );
+    assert_eq!(s.work(), before);
+    assert_eq!(
+        s.set_highlight(
+            header(&s, 1),
+            HighlightPlane::External,
+            &[agg],
+            SelectMode::Replace
+        ),
+        Err(InteractionStatus::SelectionTooLarge),
+        "highlights are admitted the same way"
+    );
+}
+
+// -- keyboard selection keeps what the stop stands for -------------------------------
+
+#[test]
+fn keyboard_selection_of_an_aggregate_stop_selects_all_its_members() {
+    let mut s = aggregate_session(2);
+    s.focus_step(header(&s, 1), 1).unwrap();
+    s.select_focused(header(&s, 2), SelectMode::Replace)
+        .unwrap();
+    let keyboard = selected_nodes(&s);
+    assert_eq!(
+        keyboard,
+        [id(1), id(2)],
+        "both members, not the stand-in alone"
+    );
+
+    // Exactly what a pointer selection of the same stop does.
+    s.clear(header(&s, 3)).unwrap();
+    let agg = the_aggregate(&s);
+    s.select_refs(header(&s, 4), &[agg], SelectMode::Replace)
+        .unwrap();
+    assert_eq!(selected_nodes(&s), keyboard);
+}
+
+#[test]
+fn keyboard_selection_of_a_collapsed_group_and_an_aggregate_edge_is_whole() {
+    // The collapsed group selects with its hidden members.
+    let mut s = loaded(&compound_doc(), compound_load(true));
+    s.render(None).unwrap();
+    s.focus_step(header(&s, 1), 1).unwrap();
+    s.select_focused(header(&s, 2), SelectMode::Replace)
+        .unwrap();
+    assert_eq!(selected_nodes(&s), [id(1), id(2), id(3)]);
+
+    // Two source edges between the same two clusters are one drawn edge.
+    let doc = handmade_ends(
+        COMPOSITION_VERSION,
+        &node_ids(4),
+        &persisted(2),
+        &[],
+        None,
+        Some(&[(0, 2), (1, 3)]),
+    );
+    let mut s = loaded(
+        &doc,
+        SessionLoad {
+            budgets: Some((2, 10)),
+            ..at(&[0.0, 0.1, 100.0, 100.1], &[0.0; 4])
+        },
+    );
+    let render = s.render(None).unwrap().clone();
+    assert_eq!((render.node_count(), render.edge_count()), (2, 1));
+    assert_eq!(render.members_of_edge(0), [0, 1], "an aggregate edge");
+    s.focus_ref(header(&s, 1), Some(&ElementRef::Edge(id(11))))
+        .unwrap();
+    s.select_focused(header(&s, 2), SelectMode::Replace)
+        .unwrap();
+    let mut edges: Vec<_> = s.selection().unwrap();
+    edges.sort_by_key(|r| format!("{r:?}"));
+    assert_eq!(edges, [ElementRef::Edge(id(11)), ElementRef::Edge(id(12))]);
+}
+
+// -- revision exhaustion -----------------------------------------------------------
+
+/// Start a rendered session `remaining` structural changes from exhaustion.
+fn near_exhaustion(s: &mut GraphSession, remaining: u32) {
+    let revision = u32::MAX - remaining;
+    s.render_revision = revision;
+    s.published_revision = revision;
+    s.published.as_mut().unwrap().revision = revision;
+}
+
+#[test]
+fn the_revision_never_wraps_and_exhaustion_fails_before_any_mutation() {
+    let mut s = line_session();
+    near_exhaustion(&mut s, 1);
+    let n2 = ElementRef::Node(id(2));
+
+    s.pin(header(&s, 1), &n2, true).unwrap();
+    assert_eq!(s.render_revision(), u32::MAX, "the last revision is usable");
+
+    let snapshot = (pos(&s, 1), s.pinned().unwrap(), s.collapsed().to_vec());
+    for result in [
+        s.pin(header(&s, 2), &n2, false),
+        s.move_node(
+            header(&s, 2),
+            &n2,
+            (1.0, 1.0),
+            MoveSpace::Data,
+            MoveCommit::Preview,
+        ),
+        s.relayout_step(header(&s, 2), 1),
+    ] {
+        assert_eq!(result, Err(InteractionStatus::RevisionExhausted));
+    }
+    assert_eq!(
+        (pos(&s, 1), s.pinned().unwrap(), s.collapsed().to_vec()),
+        snapshot
+    );
+    assert_eq!(s.render_revision(), u32::MAX, "no wrap");
+    assert_eq!(
+        InteractionStatus::RevisionExhausted.code(),
+        "GF_INTERACTION_REVISION_EXHAUSTED"
+    );
+
+    // Style-only operations still work at the last revision, and a stale stamp
+    // from the start of the session is not revived.
+    s.render(None).unwrap();
+    select(&mut s, 2, &[1], SelectMode::Replace);
+    let mut ancient = header(&s, 3);
+    ancient.stamp.render_revision = 1;
+    assert_eq!(s.clear(ancient), Err(InteractionStatus::Stale));
+
+    // A new camera needs a new revision.
+    let camera = Camera {
+        scale_x: 1.0,
+        scale_y: 1.0,
+        offset_x: 0.0,
+        offset_y: 0.0,
+        viewport_width: 5.0,
+        viewport_height: 5.0,
+        dpr: 1.0,
+    };
+    assert!(matches!(
+        s.render(Some(camera)),
+        Err(InteractionStatus::RevisionExhausted)
+    ));
+    assert_eq!(s.render_revision(), u32::MAX);
+    assert_eq!(s.published().unwrap().revision, u32::MAX);
+}
+
+#[test]
+fn exhaustion_blocks_disclosure_binding_and_a_changed_temporal_frame() {
+    let mut s = loaded(&compound_doc(), compound_load(false));
+    s.render(None).unwrap();
+    near_exhaustion(&mut s, 0);
+    let a = ElementRef::Node(id(1));
+    assert_eq!(
+        s.toggle_disclosure(header(&s, 1), &a, DisclosureAction::Collapse),
+        Err(InteractionStatus::RevisionExhausted)
+    );
+    assert_eq!(s.collapsed(), [0; 5]);
+    assert_eq!(
+        s.bind_temporal(temporal_registry(), HANDLE),
+        Err(InteractionStatus::RevisionExhausted)
+    );
+    assert!(!s.is_bound());
+
+    // A bound session whose temporal frame moves at the last revision fails
+    // every operation without applying it, and keeps failing consistently.
+    let registry = temporal_registry();
+    let mut b = bound(
+        &standard_doc(),
+        at(&[0.0, 10.0, 20.0], &[0.0; 3]),
+        &registry,
+    );
+    frame_at(&registry, 1, 10);
+    b.render(None).unwrap();
+    near_exhaustion(&mut b, 0);
+    frame_at(&registry, 2, 20);
+    for seq in 1..=2 {
+        assert_eq!(
+            b.select_refs(
+                header(&b, seq),
+                &[ElementRef::Node(id(1))],
+                SelectMode::Replace
+            ),
+            Err(InteractionStatus::RevisionExhausted)
+        );
+        assert!(b.selection().unwrap().is_empty());
+    }
+    assert!(matches!(
+        b.render(None),
+        Err(InteractionStatus::RevisionExhausted)
+    ));
+    assert!(b.unbind().is_err());
 }

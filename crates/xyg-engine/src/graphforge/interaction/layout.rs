@@ -7,9 +7,9 @@
 
 use std::collections::HashMap;
 
-use super::render::Resolved;
+use super::render::{Resolved, Visible};
 use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome};
-use crate::graph::{CoseOptions, ForceState, LAYOUT_COSE};
+use crate::graph::{CoseOptions, ForceState, COSE_NO_PARENT, LAYOUT_COSE};
 use crate::graph_interaction_state::{ElementSet, HighlightPlane, SelectMode};
 use crate::graph_style::{
     compound_collapse_transition, COMPOUND_ACTION_COLLAPSE, COMPOUND_ACTION_EXPAND,
@@ -83,33 +83,105 @@ pub(super) struct MoveOrigin {
     y: f64,
 }
 
+/// The retained force layout and the world it was built from. It is valid
+/// only while both still hold: the same visible nodes (a frame change) and the
+/// same pin set (which the shared state can change from outside the session).
+pub(super) struct Relayout {
+    force: ForceState,
+    active: Vec<usize>,
+    pins: Vec<u8>,
+}
+
+/// The visible subgraph the force layout runs on, in compact indices, with
+/// the map back to source indices. Invisible nodes do not repel, invisible
+/// edges do not pull, and an invisible parent hands its children to the
+/// nearest surviving ancestor.
+struct Problem {
+    active: Vec<usize>,
+    sources: Vec<u64>,
+    targets: Vec<u64>,
+    parents: Vec<u64>,
+}
+
 impl GraphSession {
+    fn layout_problem(&mut self, vis: &Visible) -> Problem {
+        let n = self.identity.node_count();
+        let mut dense = vec![COSE_NO_PARENT; n];
+        let mut active = Vec::new();
+        for (node, &visible) in vis.node.iter().enumerate() {
+            if visible == 1 {
+                dense[node] = active.len() as u64;
+                active.push(node);
+            }
+        }
+        let hierarchy = self.surviving_hierarchy(&vis.node);
+        let parents = active
+            .iter()
+            .map(|&node| match hierarchy.parent[node] {
+                COSE_NO_PARENT => COSE_NO_PARENT,
+                parent => dense[parent as usize],
+            })
+            .collect();
+        let work = hierarchy.work;
+        drop(hierarchy);
+        let (mut sources, mut targets) = (Vec::new(), Vec::new());
+        for edge in 0..self.edge_source.len() {
+            if vis.edge[edge] == 1 {
+                sources.push(dense[self.edge_source[edge] as usize]);
+                targets.push(dense[self.edge_target[edge] as usize]);
+            }
+        }
+        self.work += work + (n + self.edge_source.len()) as u64;
+        Problem {
+            active,
+            sources,
+            targets,
+            parents,
+        }
+    }
+
     /// Lay the graph out from the deterministic seed when the document and
-    /// load authored no positions (CoSE with the document hierarchy).
-    pub(super) fn ensure_positions(&mut self) -> Result<(), InteractionStatus> {
+    /// load authored no positions: CoSE over the *visible* subgraph and its
+    /// surviving hierarchy. A node invisible at that moment is parked at the
+    /// visible layout's centroid until a relayout moves it.
+    pub(super) fn ensure_positions(&mut self, vis: &Visible) -> Result<(), InteractionStatus> {
         if self.positions.is_some() {
             return Ok(());
         }
         let n = self.identity.node_count();
+        let problem = self.layout_problem(vis);
+        let m = problem.active.len();
         let mut layout = ForceState::new_configured(
-            n as u64,
-            &self.edge_source,
-            &self.edge_target,
+            m as u64,
+            &problem.sources,
+            &problem.targets,
             None,
             None,
             self.seed,
             LAYOUT_COSE,
             CoseOptions::default(),
             &[],
-            &self.parent,
+            &problem.parents,
         )
         .ok_or(InteractionStatus::Invalid)?;
         layout.tick(INITIAL_LAYOUT_STEPS);
-        self.work += u64::from(INITIAL_LAYOUT_STEPS) * (n + self.edge_source.len()) as u64;
+        self.work += u64::from(INITIAL_LAYOUT_STEPS) * (m + problem.sources.len()) as u64;
         if !layout.alpha.is_finite() || layout.x.iter().chain(&layout.y).any(|v| !v.is_finite()) {
             return Err(InteractionStatus::Invalid);
         }
-        self.positions = Some((layout.x, layout.y));
+        let centroid = |plane: &[f64]| {
+            if plane.is_empty() {
+                0.0
+            } else {
+                plane.iter().sum::<f64>() / plane.len() as f64
+            }
+        };
+        let (mut x, mut y) = (vec![centroid(&layout.x); n], vec![centroid(&layout.y); n]);
+        for (k, &node) in problem.active.iter().enumerate() {
+            x[node] = layout.x[k];
+            y[node] = layout.y[k];
+        }
+        self.positions = Some((x, y));
         Ok(())
     }
 
@@ -135,7 +207,7 @@ impl GraphSession {
     }
 
     /// A position change invalidates the relayout state (it was built from the
-    /// old positions and pins) and the render.
+    /// old positions and pins) and the render. Callers reserved the revision.
     fn positions_changed(&mut self) {
         self.relayout = None;
         self.bump();
@@ -148,15 +220,18 @@ impl GraphSession {
         target: &ElementRef,
         on: bool,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let node = session.node_target(target)?;
-            session.ensure_positions()?;
             let id = session.identity.node_uuids()[node];
-            let changed = session.write_state(|state| state.set_pin(id, on))?;
+            let changed = world.state.pinned_nodes().contains(&id) != on;
             if changed {
+                session.reserve_revision()?;
+                let vis = session.visible(world.visibility)?;
+                session.ensure_positions(&vis)?;
+                world.state.set_pin(id, on);
                 session.positions_changed();
             }
-            let mut outcome = session.outcome(changed)?;
+            let mut outcome = session.outcome(world, changed);
             if changed {
                 outcome.positions = vec![session.node_position(node, on)];
             }
@@ -173,9 +248,11 @@ impl GraphSession {
         space: MoveSpace,
         commit: MoveCommit,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let node = session.node_target(target)?;
-            session.ensure_positions()?;
+            session.reserve_revision()?;
+            let vis = session.visible(world.visibility)?;
+            session.ensure_positions(&vis)?;
             if let Some(origin) = session.move_origin {
                 if origin.node != node {
                     return Err(InteractionStatus::Invalid);
@@ -216,7 +293,7 @@ impl GraphSession {
             let id = session.identity.node_uuids()[node];
             let pin = commit == MoveCommit::Commit;
             if pin {
-                session.write_state(|state| state.set_pin(id, true))?;
+                world.state.set_pin(id, true);
             }
             if let Some((px, py)) = session.positions.as_mut() {
                 px[node] = next.0;
@@ -228,7 +305,7 @@ impl GraphSession {
                 None
             };
             session.positions_changed();
-            let mut outcome = session.outcome(true)?;
+            let mut outcome = session.outcome(world, true);
             if pin {
                 outcome.positions = vec![session.node_position(node, true)];
             }
@@ -236,67 +313,90 @@ impl GraphSession {
         })
     }
 
-    /// Step the CoSE relayout, seeded from the current positions with pinned
-    /// nodes held bit-exact. Always CoSE regardless of the composition's
-    /// original layout: it is the one engine honoring pins and parents.
+    /// Step the CoSE relayout over the visible subgraph, seeded from the
+    /// current positions with pinned nodes held bit-exact and the surviving
+    /// hierarchy. Always CoSE regardless of the composition's original layout:
+    /// it is the one engine honoring pins and parents. The retained force
+    /// state is rebuilt whenever the visible nodes or the authoritative pin
+    /// set differ from the ones it was built with.
     pub fn relayout_step(
         &mut self,
         header: OpHeader,
         steps: u32,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             if steps == 0 || steps > MAX_RELAYOUT_STEPS {
                 return Err(InteractionStatus::Invalid);
             }
-            let (n, e) = (session.identity.node_count(), session.edge_source.len());
-            if u64::from(steps) * (n + e) as u64 > MAX_GRAPH_INTERACTION_WORK {
+            let vis = session.visible(world.visibility)?;
+            let active = vis.node.iter().filter(|&&v| v == 1).count();
+            let live_edges = vis.edge.iter().filter(|&&v| v == 1).count();
+            if u64::from(steps) * (active + live_edges) as u64 > MAX_GRAPH_INTERACTION_WORK {
                 return Err(InteractionStatus::Budget);
             }
-            session.ensure_positions()?;
-            if session.relayout.is_none() {
-                let mut mask = vec![0u8; n];
-                session.read_state(|state| {
-                    for id in state.pinned_nodes() {
-                        if let Some(i) = session.identity.node_index(id) {
-                            mask[i] = 1;
-                        }
-                    }
-                })?;
+            session.reserve_revision()?;
+            session.ensure_positions(&vis)?;
+            let n = session.identity.node_count();
+            let mut pins = vec![0u8; n];
+            for id in world.state.pinned_nodes() {
+                if let Some(i) = session.identity.node_index(id) {
+                    pins[i] = 1;
+                }
+            }
+            session.work += (n + world.state.pinned_nodes().len()) as u64;
+            let problem = session.layout_problem(&vis);
+            let fresh = session
+                .relayout
+                .as_ref()
+                .is_some_and(|r| r.active == problem.active && r.pins == pins);
+            if !fresh {
                 let (x, y) = session
                     .positions
                     .as_ref()
                     .ok_or(InteractionStatus::Invalid)?;
-                session.relayout = Some(
-                    ForceState::new_configured(
-                        n as u64,
-                        &session.edge_source,
-                        &session.edge_target,
-                        Some(x),
-                        Some(y),
-                        session.seed,
-                        LAYOUT_COSE,
-                        CoseOptions::default(),
-                        &mask,
-                        &session.parent,
-                    )
-                    .ok_or(InteractionStatus::Invalid)?,
-                );
+                let pick = |plane: &[f64]| -> Vec<f64> {
+                    problem.active.iter().map(|&i| plane[i]).collect()
+                };
+                let mask: Vec<u8> = problem.active.iter().map(|&i| pins[i]).collect();
+                let force = ForceState::new_configured(
+                    problem.active.len() as u64,
+                    &problem.sources,
+                    &problem.targets,
+                    Some(&pick(x)),
+                    Some(&pick(y)),
+                    session.seed,
+                    LAYOUT_COSE,
+                    CoseOptions::default(),
+                    &mask,
+                    &problem.parents,
+                )
+                .ok_or(InteractionStatus::Invalid)?;
+                session.relayout = Some(Relayout {
+                    force,
+                    active: problem.active.clone(),
+                    pins,
+                });
             }
-            let layout = session
+            let retained = session
                 .relayout
                 .as_mut()
                 .ok_or(InteractionStatus::Invalid)?;
-            layout.tick(steps);
-            session.work += u64::from(steps) * (n + e) as u64;
-            if !layout.alpha.is_finite() || layout.x.iter().chain(&layout.y).any(|v| !v.is_finite())
-            {
+            retained.force.tick(steps);
+            session.work += u64::from(steps) * (active + live_edges) as u64;
+            let force = &retained.force;
+            if !force.alpha.is_finite() || force.x.iter().chain(&force.y).any(|v| !v.is_finite()) {
                 session.relayout = None;
                 return Err(InteractionStatus::Invalid);
             }
-            let alpha = layout.alpha;
-            session.positions = Some((layout.x.clone(), layout.y.clone()));
+            let alpha = force.alpha;
+            if let Some((px, py)) = session.positions.as_mut() {
+                for (k, &node) in retained.active.iter().enumerate() {
+                    px[node] = force.x[k];
+                    py[node] = force.y[k];
+                }
+            }
             session.bump();
-            let mut outcome = session.outcome(true)?;
+            let mut outcome = session.outcome(world, true);
             outcome.relayout = Some(RelayoutReport {
                 alpha,
                 done: alpha < RELAYOUT_SETTLED_ALPHA,
@@ -314,7 +414,7 @@ impl GraphSession {
         target: &ElementRef,
         action: DisclosureAction,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let n = session.identity.node_count();
             if n > MAX_COMPOUND_TRANSITION_NODES {
                 return Err(InteractionStatus::CompoundTooLarge);
@@ -341,10 +441,11 @@ impl GraphSession {
             .ok_or(InteractionStatus::Invalid)?;
             session.work += n as u64;
             if changed {
+                session.reserve_revision()?;
                 session.collapsed = next;
                 session.bump();
             }
-            let mut outcome = session.outcome(changed)?;
+            let mut outcome = session.outcome(world, changed);
             outcome.disclosure = Some(DisclosureReport {
                 node: session.identity.node_ref(node),
                 collapsed: session.collapsed[node] == 1,
@@ -364,15 +465,15 @@ impl GraphSession {
         refs: &[ElementRef],
         mode: SelectMode,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let mut delta = session.resolve_all(refs)?;
             match plane {
                 HighlightPlane::Path => session.path_edges(refs, &mut delta)?,
                 HighlightPlane::Community => session.induced_edges(&mut delta),
                 HighlightPlane::External => {}
             }
-            let changed = session.write_state(|state| state.highlight(plane, mode, &delta))??;
-            let mut outcome = session.outcome(!changed.is_empty())?;
+            let changed = world.state.highlight(plane, mode, &delta)?;
+            let mut outcome = session.outcome(world, !changed.is_empty());
             outcome.changed = session.identity.refs_of(&changed);
             Ok(outcome)
         })

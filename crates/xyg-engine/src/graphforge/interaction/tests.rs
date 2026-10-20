@@ -1135,7 +1135,7 @@ fn disposing_the_temporal_graph_unbinds_until_the_session_unbinds() {
         s.select_uuids(header(&s, 2), &[id(2)], SelectMode::Replace),
         Err(InteractionStatus::Unbound)
     );
-    s.unbind();
+    s.unbind().unwrap();
     assert!(!s.is_bound());
     assert!(
         s.selection().unwrap().is_empty(),

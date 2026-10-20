@@ -258,6 +258,27 @@ impl TemporalGraph {
             .map(|(nodes, edges)| (&nodes[..], &edges[..]))
     }
 
+    /// Everything a bound `GraphSession` needs from one locked access: the
+    /// shared interaction state (mutable), the last published frame's source
+    /// visibility `(nodes, edges)`, and that frame's revision. One borrow, so
+    /// the revision a session validates is the one whose visibility and state
+    /// it then reads and mutates.
+    pub fn world_parts(
+        &mut self,
+    ) -> (
+        &mut GraphInteractionState,
+        Option<(&[u8], &[u8])>,
+        u64,
+    ) {
+        (
+            &mut self.state,
+            self.visibility
+                .as_ref()
+                .map(|(nodes, edges)| (&nodes[..], &edges[..])),
+            self.applied_revision,
+        )
+    }
+
     /// Canonical node UUIDs in dense order.
     pub fn node_ids(&self) -> &[Uuid] {
         &self.node_ids

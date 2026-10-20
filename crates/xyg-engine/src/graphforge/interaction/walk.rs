@@ -8,13 +8,13 @@
 use std::collections::BTreeSet;
 
 use super::render::{RenderOutput, NOT_RENDERED};
-use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome};
-use crate::graph_interaction_state::{Focus, GraphEntity};
+use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome, World};
+use crate::graph_interaction_state::{ElementSet, Focus, GraphEntity, MAX_GRAPH_SELECTION_REFS};
 use crate::graphforge::identity::ElementIndex;
 
 /// One stop of a focus ring, in render indices.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum Stop {
+pub(super) enum Stop {
     Node(u64),
     Edge(u64),
 }
@@ -25,10 +25,9 @@ impl GraphSession {
         self.published().ok_or(InteractionStatus::Stale)
     }
 
-    /// The render stop the current focus sits on, if it is drawn.
-    fn focus_stop(&self, render: &RenderOutput) -> Result<Option<Stop>, InteractionStatus> {
-        let focus = self.read_state(|state| state.focus().cloned())?;
-        let index = match &focus {
+    /// The render stop a focus sits on, if it is drawn.
+    pub(super) fn stop_of(&self, render: &RenderOutput, focus: Option<&Focus>) -> Option<Stop> {
+        let index = match focus {
             Some(Focus::Entity(GraphEntity::Node(id))) => {
                 self.identity.node_index(id).map(ElementIndex::Node)
             }
@@ -41,7 +40,7 @@ impl GraphSession {
                 .map(ElementIndex::Edge),
             None => None,
         };
-        Ok(match index {
+        match index {
             Some(ElementIndex::Node(node)) => {
                 let r = render.member_of[node];
                 (r != NOT_RENDERED).then_some(Stop::Node(r))
@@ -51,7 +50,43 @@ impl GraphSession {
                 (r != NOT_RENDERED).then_some(Stop::Edge(r))
             }
             None => None,
-        })
+        }
+    }
+
+    /// Everything the focused stop stands for: the member nodes of an
+    /// aggregate or collapsed group, the member edges of an aggregate edge.
+    /// The size is admitted against the selection cap before it is expanded.
+    /// With no current publication, or a focus that is not drawn, it is the
+    /// focused element alone.
+    pub(super) fn focus_membership(
+        &mut self,
+        focus: &Focus,
+    ) -> Result<ElementSet, InteractionStatus> {
+        let mut delta = ElementSet::default();
+        let stop = self
+            .published()
+            .and_then(|render| self.stop_of(render, Some(focus)).map(|stop| (render, stop)));
+        let Some((render, stop)) = stop else {
+            self.identity.insert_focus(&mut delta, focus);
+            return Ok(delta);
+        };
+        let members = match stop {
+            Stop::Node(r) => render.members_of_node(r as usize),
+            Stop::Edge(r) => render.members_of_edge(r as usize),
+        };
+        if members.len() > MAX_GRAPH_SELECTION_REFS {
+            return Err(InteractionStatus::SelectionTooLarge);
+        }
+        for &member in members {
+            let element = match stop {
+                Stop::Node(_) => ElementIndex::Node(member as usize),
+                Stop::Edge(_) => ElementIndex::Edge(member as usize),
+            };
+            self.identity.insert_into(&mut delta, element);
+        }
+        let expanded = members.len() as u64;
+        self.work += expanded;
+        Ok(delta)
     }
 
     fn stop_focus(&self, render: &RenderOutput, stop: Stop) -> Focus {
@@ -62,13 +97,10 @@ impl GraphSession {
         self.identity.focus_of(element)
     }
 
-    fn apply_focus(&mut self, focus: Focus) -> Result<OpOutcome, InteractionStatus> {
-        let changed = self.write_state(|state| {
-            let changed = state.focus() != Some(&focus);
-            state.set_focus(Some(focus));
-            changed
-        })?;
-        self.outcome(changed)
+    fn apply_focus(&mut self, world: &mut World<'_>, focus: Focus) -> OpOutcome {
+        let changed = world.state.focus() != Some(&focus);
+        world.state.set_focus(Some(focus));
+        self.outcome(world, changed)
     }
 
     fn direction(delta: i32) -> Result<i64, InteractionStatus> {
@@ -86,13 +118,13 @@ impl GraphSession {
         delta: i32,
     ) -> Result<OpOutcome, InteractionStatus> {
         let dir = Self::direction(delta)?;
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let render = session.current_render()?;
             let count = render.node_count() as i64;
             if count == 0 {
                 return Err(InteractionStatus::Invalid);
             }
-            let from = match session.focus_stop(render)? {
+            let from = match session.stop_of(render, world.state.focus()) {
                 Some(Stop::Node(r)) => Some(r as i64),
                 Some(Stop::Edge(r)) => Some(render.edge_source[r as usize] as i64),
                 None => None,
@@ -104,7 +136,7 @@ impl GraphSession {
             };
             let focus = session.stop_focus(render, Stop::Node(next as u64));
             session.ring_anchor = None;
-            session.apply_focus(focus)
+            Ok(session.apply_focus(world, focus))
         })
     }
 
@@ -142,12 +174,12 @@ impl GraphSession {
         delta: i32,
     ) -> Result<OpOutcome, InteractionStatus> {
         let dir = Self::direction(delta)?;
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let render = session.current_render()?;
             if render.node_count() == 0 {
                 return Err(InteractionStatus::Invalid);
             }
-            let current = session.focus_stop(render)?;
+            let current = session.stop_of(render, world.state.focus());
             let kept = session
                 .ring_anchor
                 .map(|anchor| (anchor, Self::ring(render, anchor)));
@@ -166,7 +198,7 @@ impl GraphSession {
                     let stop = Stop::Node(if dir > 0 { 0 } else { last });
                     let focus = session.stop_focus(render, stop);
                     session.ring_anchor = None;
-                    return session.apply_focus(focus);
+                    return Ok(session.apply_focus(world, focus));
                 }
             };
             let at = current
@@ -174,10 +206,11 @@ impl GraphSession {
                 .unwrap_or(0) as i64;
             let next = stops[(at + dir).rem_euclid(stops.len() as i64) as usize];
             let focus = session.stop_focus(render, next);
-            session.work += render.edge_count() as u64;
-            let outcome = session.apply_focus(focus);
+            let edges = render.edge_count() as u64;
+            session.work += edges;
+            let outcome = session.apply_focus(world, focus);
             session.ring_anchor = Some(anchor);
-            outcome
+            Ok(outcome)
         })
     }
 }

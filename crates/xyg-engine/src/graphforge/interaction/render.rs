@@ -3,22 +3,29 @@
 //!
 //! Pipeline, in source index space until the last step:
 //! 1. temporal visibility (F4) masks source nodes and edges, read from the
-//!    bound temporal graph under the same lock as the shared state;
-//! 2. [`compound_collapse`] over the document hierarchy gives visibility,
+//!    bound temporal graph under the same lock as the shared state, *and* the
+//!    hierarchy itself: an invisible node leaves the forest and its children
+//!    re-attach to the nearest surviving ancestor;
+//! 2. [`compound_collapse`] over that surviving hierarchy gives visibility,
 //!    representatives, and rerouted endpoints with edge provenance;
 //! 3. [`build_render`] culls and applies LOD over the collapsed source graph;
 //! 4. membership composes source node -> representative -> render node and
 //!    render edge -> source edges.
 
-use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome};
-use crate::graph::{build_render, LodTier, Viewport};
-use crate::graph_interaction_state::{ElementSet, Focus, GraphEntity, HighlightPlane};
+use std::borrow::Cow;
+
+use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome, World};
+use crate::graph::{build_render, LodTier, Viewport, COSE_NO_PARENT};
+use crate::graph_interaction_state::{
+    ElementSet, Focus, GraphEntity, GraphInteractionState, HighlightPlane,
+};
 use crate::graph_style::{
     compound_collapse, resolve_visual_state, EMPHASIS_MASK, EMPHASIS_SHIFT, FLAG_AGGREGATE,
     FLAG_COMMUNITY, FLAG_EXTERNAL, FLAG_FOCUSED, FLAG_HOVERED, FLAG_NEIGHBOR, FLAG_PATH,
     FLAG_PINNED, FLAG_SELECTED,
 };
 
+use super::super::compose::nearest_visible_ancestors;
 use super::super::identity::{AggregateRef, ElementIndex, ElementRef, ResolveError};
 
 /// Sentinel for "not in the render set" in every membership map.
@@ -136,10 +143,25 @@ impl RenderOutput {
     }
 }
 
-/// State a render reads, collected under one lock.
+/// Source node and edge visibility under one temporal snapshot (F4); `1` is
+/// visible. An edge is invisible when its own temporal validity, or either
+/// endpoint, is.
+pub(super) struct Visible {
+    pub node: Vec<u8>,
+    pub edge: Vec<u8>,
+}
+
+/// The parent forest and collapse plane after temporal masking.
+pub(super) struct Hierarchy<'a> {
+    pub parent: Cow<'a, [u64]>,
+    pub valid: Cow<'a, [u8]>,
+    pub collapsed: Cow<'a, [u8]>,
+    /// Work units spent resolving surviving ancestors.
+    pub work: u64,
+}
+
+/// State a render reads, collected under the same lock as its visibility.
 struct Inputs {
-    node_visible: Vec<u8>,
-    edge_visible: Vec<u8>,
     node_flags: Vec<u32>,
     edge_flags: Vec<u32>,
 }
@@ -147,38 +169,14 @@ struct Inputs {
 /// A reference resolved against the current publication.
 pub(super) enum Resolved {
     Element(ElementIndex),
-    /// Member source nodes of an aggregate render node.
-    Group(Vec<usize>),
+    /// A render node of the current publication standing for several source
+    /// nodes (an aggregate, or a collapsed group with its hidden members).
+    Group {
+        render: usize,
+    },
 }
 
 impl GraphSession {
-    pub(super) fn bump(&mut self) {
-        self.render_revision = self.render_revision.wrapping_add(1);
-        self.ring_anchor = None;
-    }
-
-    /// Fold a changed temporal frame into the revision (F4). A graph that is
-    /// gone is `Unbound`.
-    pub(super) fn sync_temporal(&mut self) -> Result<(), InteractionStatus> {
-        let super::StateSlot::Bound { host, handle } = &self.slot else {
-            return Ok(());
-        };
-        let mut revision = None;
-        let found = host.with_graph(*handle, &mut |graph| {
-            revision = Some(graph.applied_revision());
-        });
-        match (found, revision) {
-            (true, Some(revision)) => {
-                if revision != self.seen_temporal {
-                    self.seen_temporal = revision;
-                    self.bump();
-                }
-                Ok(())
-            }
-            _ => Err(InteractionStatus::Unbound),
-        }
-    }
-
     /// The latest publication, if it is still current (no revision bump since).
     pub fn published(&self) -> Option<&RenderOutput> {
         self.published
@@ -201,13 +199,7 @@ impl GraphSession {
                 if index >= render.node_count() {
                     return Err(InteractionStatus::Invalid);
                 }
-                Ok(Resolved::Group(
-                    render
-                        .members_of_node(index)
-                        .iter()
-                        .map(|&s| s as usize)
-                        .collect(),
-                ))
+                Ok(Resolved::Group { render: index })
             }
             other => match self.identity.resolve(other) {
                 Ok(index) => Ok(Resolved::Element(index)),
@@ -218,58 +210,121 @@ impl GraphSession {
         }
     }
 
-    /// Publish the render for the current state. The revision advances when a
-    /// structural change (pin, move, relayout, disclosure, temporal frame) did,
-    /// or when the camera of the previous publication differs; otherwise the
-    /// same revision is republished with fresh style planes.
-    pub fn render(&mut self, camera: Option<Camera>) -> Result<&RenderOutput, InteractionStatus> {
-        if let Some(camera) = &camera {
-            camera.validate()?;
-        }
-        self.sync_temporal()?;
-        self.ensure_positions()?;
-        if self.render_revision == self.published_revision
-            && (self.published.is_none() || camera != self.camera)
-        {
-            self.bump();
-        }
-        let output = self.build_output(camera)?;
-        self.camera = camera;
-        self.published_revision = self.render_revision;
-        Ok(&*self.published.insert(output))
-    }
-
-    fn collect_inputs(
-        &self,
-        state: &crate::graph_interaction_state::GraphInteractionState,
+    /// Source visibility under the snapshot the caller holds locked.
+    pub(super) fn visible(
+        &mut self,
         visibility: Option<(&[u8], &[u8])>,
-        work: &mut u64,
-    ) -> Result<Inputs, InteractionStatus> {
+    ) -> Result<Visible, InteractionStatus> {
         let (n, e) = (self.identity.node_count(), self.identity.edge_count());
-        let mut node_visible = vec![1u8; n];
-        let mut edge_visible = vec![1u8; e];
+        let mut node = vec![1u8; n];
+        let mut edge = vec![1u8; e];
         if let Some((nodes, edges)) = visibility {
             if nodes.len() != n {
                 return Err(InteractionStatus::Invalid);
             }
-            node_visible.copy_from_slice(nodes);
-            for (edge, &ordinal) in self.edge_ordinal.iter().enumerate() {
+            node.copy_from_slice(nodes);
+            for (index, &ordinal) in self.edge_ordinal.iter().enumerate() {
                 if ordinal != u32::MAX {
-                    edge_visible[edge] = *edges
+                    edge[index] = *edges
                         .get(ordinal as usize)
                         .ok_or(InteractionStatus::Invalid)?;
                 }
             }
         }
-        for edge in 0..e {
+        for index in 0..e {
             let (s, t) = (
-                self.edge_source[edge] as usize,
-                self.edge_target[edge] as usize,
+                self.edge_source[index] as usize,
+                self.edge_target[index] as usize,
             );
-            edge_visible[edge] &= node_visible[s] & node_visible[t];
+            edge[index] &= node[s] & node[t];
         }
-        *work += (n + e) as u64;
+        self.work += (n + e) as u64;
+        Ok(Visible { node, edge })
+    }
 
+    /// The hierarchy the temporal snapshot leaves (F2 step 1): `(parent,
+    /// valid, collapsed)` per source node. An invisible node leaves the forest
+    /// with its collapsed flag, and its children re-attach to the nearest
+    /// surviving ancestor, so an expired group never hides or reroutes live
+    /// members.
+    pub(super) fn surviving_hierarchy(&self, node_visible: &[u8]) -> Hierarchy<'_> {
+        if node_visible.iter().all(|&v| v == 1) {
+            return Hierarchy {
+                parent: Cow::Borrowed(&self.parent[..]),
+                valid: Cow::Borrowed(&self.parent_valid[..]),
+                collapsed: Cow::Borrowed(&self.collapsed[..]),
+                work: 0,
+            };
+        }
+        let visible: Vec<bool> = node_visible.iter().map(|&v| v == 1).collect();
+        let (ancestor, links) = nearest_visible_ancestors(&self.parent, &visible);
+        let parent: Vec<u64> = (0..visible.len())
+            .map(|i| {
+                if visible[i] {
+                    ancestor[i]
+                } else {
+                    COSE_NO_PARENT
+                }
+            })
+            .collect();
+        let valid = parent
+            .iter()
+            .map(|&p| u8::from(p != COSE_NO_PARENT))
+            .collect();
+        let collapsed = (0..visible.len())
+            .map(|i| if visible[i] { self.collapsed[i] } else { 0 })
+            .collect();
+        Hierarchy {
+            parent: Cow::Owned(parent),
+            valid: Cow::Owned(valid),
+            collapsed: Cow::Owned(collapsed),
+            work: links + visible.len() as u64,
+        }
+    }
+
+    /// Publish the render for the current state. The revision advances when a
+    /// structural change (pin, move, relayout, disclosure, temporal frame) did,
+    /// or when the camera of the previous publication differs; otherwise the
+    /// same revision is republished with fresh style planes. The temporal
+    /// revision, visibility, and shared state are one locked snapshot.
+    pub fn render(&mut self, camera: Option<Camera>) -> Result<&RenderOutput, InteractionStatus> {
+        if let Some(camera) = &camera {
+            camera.validate()?;
+        }
+        self.locked(|session, world| session.publish(camera, world))??;
+        self.published.as_ref().ok_or(InteractionStatus::Invalid)
+    }
+
+    fn publish(
+        &mut self,
+        camera: Option<Camera>,
+        world: World<'_>,
+    ) -> Result<(), InteractionStatus> {
+        self.sync_world(&world)?;
+        let advance = self.render_revision == self.published_revision
+            && (self.published.is_none() || camera != self.camera);
+        if advance {
+            self.reserve_revision()?;
+        }
+        let vis = self.visible(world.visibility)?;
+        self.ensure_positions(&vis)?;
+        let revision = if advance {
+            self.render_revision + 1
+        } else {
+            self.render_revision
+        };
+        let output = self.build_output(camera, revision, world.state, &vis)?;
+        if advance {
+            self.bump();
+        }
+        self.camera = camera;
+        self.published_revision = self.render_revision;
+        self.published = Some(output);
+        Ok(())
+    }
+
+    fn collect_inputs(&mut self, state: &GraphInteractionState, vis: &Visible) -> Inputs {
+        let (n, e) = (self.identity.node_count(), self.identity.edge_count());
         let mut node_flags = vec![0u32; n];
         let mut edge_flags = vec![0u32; e];
         let mark = |set: &ElementSet, flag: u32, nodes: &mut [u32], edges: &mut [u32]| {
@@ -330,7 +385,7 @@ impl GraphSession {
             }
             None => {}
         }
-        *work += (state.selection().len() + state.pinned_nodes().len()) as u64;
+        self.work += (state.selection().len() + state.pinned_nodes().len()) as u64;
 
         // Hover is transient session state: HOVERED on the target, NEIGHBOR on
         // nodes one visible edge away.
@@ -341,7 +396,7 @@ impl GraphSession {
                 node_flags[h] |= FLAG_HOVERED;
             }
             for edge in 0..e {
-                if edge_visible[edge] == 0 {
+                if vis.edge[edge] == 0 {
                     continue;
                 }
                 let (s, t) = (
@@ -354,50 +409,54 @@ impl GraphSession {
                     node_flags[s] |= FLAG_NEIGHBOR;
                 }
             }
-            *work += (self.hover.nodes.len() + e) as u64;
+            self.work += (self.hover.nodes.len() + e) as u64;
         }
         if let Some(edge) = self.hover.edge {
             edge_flags[edge] |= FLAG_HOVERED;
         }
         // State of an element that is not visible is not drawn; its identity
         // key survives, so re-entry restores it.
-        for (flag, &visible) in node_flags.iter_mut().zip(&node_visible) {
+        for (flag, &visible) in node_flags.iter_mut().zip(&vis.node) {
             if visible == 0 {
                 *flag = 0;
             }
         }
-        for (flag, &visible) in edge_flags.iter_mut().zip(&edge_visible) {
+        for (flag, &visible) in edge_flags.iter_mut().zip(&vis.edge) {
             if visible == 0 {
                 *flag = 0;
             }
         }
-        Ok(Inputs {
-            node_visible,
-            edge_visible,
+        Inputs {
             node_flags,
             edge_flags,
-        })
+        }
     }
 
-    fn build_output(&mut self, camera: Option<Camera>) -> Result<RenderOutput, InteractionStatus> {
+    fn build_output(
+        &mut self,
+        camera: Option<Camera>,
+        revision: u32,
+        state: &GraphInteractionState,
+        vis: &Visible,
+    ) -> Result<RenderOutput, InteractionStatus> {
         let (n, e) = (self.identity.node_count(), self.identity.edge_count());
-        let mut work = 0u64;
-        let inputs = self
-            .read_world(|state, visibility| self.collect_inputs(state, visibility, &mut work))??;
+        let inputs = self.collect_inputs(state, vis);
+        let hierarchy = self.surviving_hierarchy(&vis.node);
         let collapse = compound_collapse(
-            &self.parent,
-            &self.parent_valid,
-            &self.collapsed,
+            &hierarchy.parent,
+            &hierarchy.valid,
+            &hierarchy.collapsed,
             &inputs.node_flags,
             &self.edge_source,
             &self.edge_target,
         )
         .ok_or(InteractionStatus::Invalid)?;
-        work += (n + e) as u64;
+        let mut work = (n + e) as u64 + hierarchy.work;
+        drop(hierarchy);
 
         let (x, y) = self.positions.as_ref().ok_or(InteractionStatus::Invalid)?;
         let active: Vec<bool> = (0..n)
-            .map(|s| inputs.node_visible[s] == 1 && collapse.visible[s])
+            .map(|s| vis.node[s] == 1 && collapse.visible[s])
             .collect();
         let masked = |plane: &[f64]| -> Vec<f64> {
             plane
@@ -408,7 +467,7 @@ impl GraphSession {
         };
         let (mx, my) = (masked(x), masked(y));
         let kept: Vec<usize> = (0..e)
-            .filter(|&i| inputs.edge_visible[i] == 1 && collapse.edge_keep[i])
+            .filter(|&i| vis.edge[i] == 1 && collapse.edge_keep[i])
             .collect();
         let ks: Vec<u64> = kept
             .iter()
@@ -463,10 +522,12 @@ impl GraphSession {
         }
         work += (rn + re + members.len()) as u64;
 
-        // Source node -> representative -> render node.
+        // Source node -> representative -> render node. A temporally invisible
+        // node is in no render node; a node hidden by a collapsed group rides
+        // that group's render node (membership is not source visibility).
         let member_of: Vec<u64> = (0..n)
             .map(|s| {
-                if inputs.node_visible[s] == 0 {
+                if vis.node[s] == 0 {
                     NOT_RENDERED
                 } else {
                     built_member[collapse.representative[s]]
@@ -541,7 +602,7 @@ impl GraphSession {
         let (visual_states, emphasis) = states(&node_flags);
         let (edge_visual_states, edge_emphasis) = states(&edge_flags);
         Ok(RenderOutput {
-            revision: self.render_revision,
+            revision,
             tier: decision.tier,
             edges_kept: decision.edges_kept,
             node_x: out_x,
@@ -570,20 +631,27 @@ impl GraphSession {
         header: OpHeader,
         target: Option<&ElementRef>,
     ) -> Result<OpOutcome, InteractionStatus> {
-        self.operate(header, |session| {
+        self.operate(header, |session, world| {
             let mut next = super::Hover::default();
             match target {
                 None => {}
                 Some(element) => match session.resolve(element)? {
                     Resolved::Element(ElementIndex::Node(node)) => next.nodes.push(node),
                     Resolved::Element(ElementIndex::Edge(edge)) => next.edge = Some(edge),
-                    Resolved::Group(nodes) => next.nodes = nodes,
+                    Resolved::Group { render } => {
+                        let published = session.published().ok_or(InteractionStatus::Stale)?;
+                        next.nodes = published
+                            .members_of_node(render)
+                            .iter()
+                            .map(|&s| s as usize)
+                            .collect();
+                    }
                 },
             }
             let changed = session.hover != next;
             session.work += next.nodes.len() as u64;
             session.hover = next;
-            session.outcome(changed)
+            Ok(session.outcome(world, changed))
         })
     }
 }
