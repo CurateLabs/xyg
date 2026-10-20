@@ -21,7 +21,7 @@ in the README).
   (v1 `XYAF` is rejected), and unsupported styles fail closed with
   `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`. `annotate(arrowprops=)` maps `arrowstyle`,
   `shrinkA` and `shrinkB` onto it, and the browser painter hydrates the new runs.
-- ABI 388: Python and Node marshal the native secondary right-hand y axis
+- ABI 389: Python and Node marshal the native secondary right-hand y axis
   (`twinx`, #1006 PRs 2+3 of 3). Hosts pass the authored y2 observation to
   `xyg_scene_chrome_pack` (presence plus authored values; its `y2`/`y2_len` bytes
   are replaced by an `XygChromeY2In` struct and `y2_major`/`y2_minor`/

@@ -710,7 +710,7 @@ back. Only the right-hand secondary y axis (Scene v33) is admitted, and only by
 Rust's XYFS admission; `x2`, left y2, extra axes and tick-only secondary axes stay
 fail-closed. Python and Node marshal that axis identically (twinx PRs 2+3,
 `spec/design/twinx-secondary-y-axis.md`): the `XYY2` sidecar, XYCO y2 outputs,
-`XYFS` axis codes (`y2` = 2, `x2` = 3) and the `XYCL` y2 column flag (ABI 388);
+`XYFS` axis codes (`y2` = 2, `x2` = 3) and the `XYCL` y2 column flag (ABI 389);
 `tests/test_static_dual_axis_cross_host.py` pins byte-identical XYST/SVG/PNG/PDF
 and identical Rust reasons.
 Hosts still choose tick families and

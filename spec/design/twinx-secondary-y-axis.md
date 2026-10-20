@@ -299,10 +299,10 @@ right-hand y axis). Where the implementation refines this document:
 
 ## PRs 2+3 implementation record (Python and Node hosts)
 
-PRs 2 and 3 shipped as one host PR at `ABI_VERSION` 388. Hosts marshal facts and
+PRs 2 and 3 shipped as one host PR at `ABI_VERSION` 389. Hosts marshal facts and
 surface Rust's reasons; no host adds admission or layout policy.
 
-- **Per-trace selector needs a wire carrier (ABI 388).** PR 1 stamped the record
+- **Per-trace selector needs a wire carrier (ABI 389).** PR 1 stamped the record
   selector (`0x40`) in XYGS records and XYAS rows, but the product pipeline
   (XYTC → XYTT → XYCL rows) had no way to say which trace is on y2, so every row
   was packed `y2 = false`. `XYCL` prefix byte 3 gains bit 1, `XYCL_Y2`
@@ -316,7 +316,7 @@ surface Rust's reasons; no host adds admission or layout policy.
   scale kind, domain, optional constant, nonpositive mask, the same chrome-axis
   and collision observations as y, title, format) and the `y2_major`,
   `y2_minor`, `y2_tick_labels` arrays, replacing the earlier `y2`/`y2_len` bytes
-  (still ABI 388). `scene_chrome_pack.rs::pack_y2_sidecar` resolves the axis
+  (still ABI 389). `scene_chrome_pack.rs::pack_y2_sidecar` resolves the axis
   chrome record from the y2 style exactly as the y style resolves
   (`scene_style::resolve_chrome_style`, y record bytes 112..200) and writes the
   payload through `scene_y2::SceneY2Wire`, the one layout writer shared with
