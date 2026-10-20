@@ -854,6 +854,12 @@ pub unsafe extern "C" fn xyg_scene_splice_annotations(
 /// `out_cap >= 4`, writes the failing index as a little-endian u32. Encoded
 /// Scene v31 is unchanged.
 ///
+/// `-7` (`EncodeAssembledCode::Lod`, #1006): record expansion exceeds
+/// `MAX_SCENE_MARKS`, or a triangle mesh exceeds its static overdraw or
+/// dense-fill image budget (`SceneBatch::check_mesh_budgets`). Before #1006 an
+/// expansion overflow returned `-3` (`Limit`); `-3` now means only the other
+/// input-size limits.
+///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many
 /// readable bytes. When `out_cap` is non-zero, `out` must address that many
@@ -966,6 +972,11 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled(
 /// codes 1–15; extras failures except Output occupy 17–21; remaining encode
 /// failures are `Encode=16`. On encode error, when `out_cap >= 4`, writes the
 /// failing index as a little-endian u32. Encoded Scene v31 is unchanged.
+///
+/// `-22` (`EncodeSidecarsCode::Lod`, #1006): the assembled encode's `Lod`
+/// (record expansion over `MAX_SCENE_MARKS`, or a triangle-mesh overdraw or
+/// dense-fill image budget). Before #1006 those cases returned `-16`
+/// (`Encode`).
 ///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many
@@ -1084,7 +1095,11 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// stages occupy `base + original` except shared `Output=4` retry. Support
 /// rejection (`-801`) writes a little-endian u32 reason length then UTF-8;
 /// other errors write the failing index as a little-endian u32 when
-/// `out_cap >= 4`. Encoded Scene v31 is unchanged.
+/// `out_cap >= 4`. Encoded Scene v31 is unchanged. Since #1006 the row
+/// packer's static LOD failures (`TraceRowsCode::Lod`/`Limit`) and the
+/// assembled encode's `Lod` (expansion over `MAX_SCENE_MARKS`, triangle-mesh
+/// budgets) are relayed as `-801` with reason
+/// `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead of a stage code.
 ///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many

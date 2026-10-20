@@ -19,8 +19,10 @@ in the README).
   with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` above 10,000 points: Cartesian lines
   above `DECIMATION_THRESHOLD` export the browser's M4 rows at the export width,
   direct-tier scatters export every point, density scatters bin their canonical
-  columns, and non-joined triangle meshes above the 1,024-group painter budget
-  export one Rust-rasterized dense-fill Image (smooth XYIM plane format 1).
+  columns, and non-joined triangle meshes keep every face beyond the 1,024-group
+  painter budget (raster formats paint them at the requested scale; SVG/PDF
+  write vector faces up to 50,000 faces and one Rust-painted raster image per
+  mesh above that; overdraw above 1,024 faces is bounded to 64 plot areas).
   Layered and polar figures, and ordinary triangle meshes, consume the shared
   Rust autorange. Polar bar/rose wedges are written as exact SVG arcs from an
   optional `XYWA` sidecar (raster and the browser painter unchanged). Static
@@ -31,6 +33,15 @@ in the README).
   or `SCENE_VERSION` change; the WASM gzip budget is 624 KiB. Node also fixes
   categorical-color static export (palette pointers) and large label
   factorization (call-stack overflow).
+- Changed C ABI return codes (#1006, no signature change):
+  `xyg_scene_encode_assembled` returns `-7` (was `-3`) and
+  `xyg_scene_encode_assembled_from_sidecars` returns `-22` (was `-16`) when
+  record expansion exceeds the Scene mark ceiling or a triangle mesh exceeds its
+  overdraw or dense-fill image budget; `xyg_scene_encode_product` relays both as
+  `-801` + `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`;
+  `xyg_scene_xyta_trace_observations_materialize` returns `-3` (was `-2`/`-1`)
+  for a record over its 4 MiB budget, which Python and Node relay as
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
 - ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
   (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
   `XYY2` block (scale, axis chrome record, resolved typography and paints, tick
