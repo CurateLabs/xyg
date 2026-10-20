@@ -26,6 +26,8 @@ import copy
 import html as _html
 from typing import Any, Optional
 
+import numpy as np
+
 
 def _html_figure_labels(labels: list[dict[str, Any]]) -> str:
     body = []
@@ -393,6 +395,44 @@ def _pyplot_static_document(
 _GRID_DASH_CODES = {"solid": 0, "dashed": 1, "dotted": 2, "dashdot": 3}
 
 
+def _lower_scalar_artist_alpha(trace: Any) -> None:
+    """Lower pyplot's scalar ``alpha=`` onto the paint Scene already consumes.
+
+    Matplotlib's artist alpha *replaces* the intrinsic paint alpha, whereas the
+    Scene ``opacity`` multiplies it. Constant paints take the alpha as the
+    literal CSS alpha of their fill and stroke; per-item paints get a constant
+    ``artist_alpha`` style channel, which Rust's per-item paint path composes
+    with the same replace-then-multiply rule. This is API coercion: Rust owns
+    the compositing in both cases.
+    """
+    from xyg import _native
+    from xyg._channels_types import StyleChannel
+
+    alpha = trace.style.pop("artist_alpha", None)
+    if alpha is None:
+        return
+    alpha = float(alpha)
+    if trace.per_item_channel_names():
+        channels = dict(trace.style_channels or {})
+        channels["artist_alpha"] = StyleChannel(np.full(len(trace.x.values), alpha))
+        trace.style_channels = channels
+        return
+
+    def with_alpha(css: Any) -> str:
+        red, green, blue, _alpha = _native.css_color_rgba(str(css), 1.0)
+        return f"rgba({red}, {green}, {blue}, {alpha!r})"
+
+    for key in ("color", "stroke"):
+        if trace.style.get(key) is not None:
+            trace.style[key] = with_alpha(trace.style[key])
+    for name in ("color_ch", "stroke_ch"):
+        channel = getattr(trace, name, None)
+        if channel is not None and channel.mode == "constant" and channel.constant is not None:
+            replaced = copy.copy(channel)
+            replaced.constant = with_alpha(channel.constant)
+            setattr(trace, name, replaced)
+
+
 def _pyplot_scene_figure(figure: Any) -> Any:
     """Translate pyplot's fixed CSS theme into literal Scene chrome facts.
 
@@ -410,6 +450,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             for key, value in (trace.style or {}).items()
             if not str(key).startswith("_legend_")
         }
+        _lower_scalar_artist_alpha(cloned)
         if (
             trace.kind == "heatmap"
             and trace.grid is not None
@@ -539,6 +580,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
     projected.show_legend = False
     projected.legend_options = {}
     projected.extra_legends = []
+    _static_document.drop_empty_point_traces(projected)
     colorbar = dict(getattr(figure, "colorbar_options", None) or {})
     projected._static_document_colorbar_layout = None
     projected._static_document_colorbar_scale = None

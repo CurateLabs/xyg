@@ -1173,6 +1173,23 @@ def encode(
     return header + records + title_bytes + decorations + scenes
 
 
+def drop_empty_point_traces(figure: Any) -> None:
+    """Drop zero-point line/scatter traces from a projected figure, in place.
+
+    An empty line or scatter draws nothing (Matplotlib's empty-artist
+    semantics, e.g. a boxplot without fliers or a legend proxy), but Scene
+    compile rejects a zero-point trace. Call after the legend entries were
+    lifted from the named traces; trace ids stay contiguous.
+    """
+    figure.traces = [
+        trace
+        for trace in figure.traces
+        if not (trace.kind in {"line", "scatter"} and len(trace.x.values) == 0)
+    ]
+    for index, trace in enumerate(figure.traces):
+        trace.id = index
+
+
 def project_figure(
     figure: Any,
     *,
@@ -1280,6 +1297,7 @@ def project_figure(
     projected.show_legend = False
     projected.legend_options = {}
     projected.extra_legends = []
+    drop_empty_point_traces(projected)
     reason, scene = _scene_v3._public_scene_or_reason(projected, width=width, height=height)
     if reason is not None or scene is None:
         raise UnsupportedStaticExport(reason or "XYG_STATIC_UNSUPPORTED_PANEL")

@@ -8500,7 +8500,9 @@ class Axes(PlotTypeMixin):
         # first-seen category, and FixedLocator/set_*ticks draw every authored
         # location even when labels collide. The core chart API deliberately
         # auto-thins ordinary category axes; author the stronger policy only at
-        # this compatibility boundary.
+        # this compatibility boundary. Polar axes have no edge-relative
+        # collision pass (rim labels are never culled), so "preserve" is inert
+        # there and the polar axis components refuse it.
         for axis_id in ("x", "y"):
             options = core_figure.axis_options.get(axis_id, {})
             categories = core_figure._axis_categories.get(axis_id)
@@ -8510,9 +8512,11 @@ class Axes(PlotTypeMixin):
             if categories and options.get("tick_values") is None:
                 options["tick_values"] = [float(index) for index in range(len(categories))]
                 options["tick_count"] = max(1, len(categories))
-            if (categories or isinstance(locator, FixedLocator) or explicit_ticks) and options.get(
-                "tick_label_strategy"
-            ) not in {"off", "none"}:
+            if (
+                (categories or isinstance(locator, FixedLocator) or explicit_ticks)
+                and self._projection != "polar"
+                and options.get("tick_label_strategy") not in {"off", "none"}
+            ):
                 options["tick_label_strategy"] = "preserve"
         claimed_legend_traces = self._apply_legend_handle_styles(core_figure)
         if self._twin is not None:
