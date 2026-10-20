@@ -178,8 +178,8 @@ def test_pyplot_legend_placement_does_not_execute_legacy_policy(format: str, loc
         ([{"font_family": "serif"}], "XYG_STATIC_UNSUPPORTED_CUSTOM_FONT"),
         ([{"math_italic_ranges": "0:1"}], "XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE"),
         (
-            [{"font_size": 12}, {"font_size": 18}],
-            "XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE",
+            [{"background": "#ffffff", "border_radius": 5.0}],
+            "XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE",
         ),
     ],
 )

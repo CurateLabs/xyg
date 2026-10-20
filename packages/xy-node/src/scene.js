@@ -3034,8 +3034,13 @@ function staticLabelBytes(labels, encoder) {
   return staticDocumentLabels(request);
 }
 
-/** XYST layout version; 2 widened the panel record to 128 bytes (#1004). */
-const XYST_VERSION = 2;
+/**
+ * XYST layout version; 2 widened the panel record to 128 bytes (#1004), 3
+ * replaced the uniform annotation facts with a per-label table region (#1006).
+ */
+const XYST_VERSION = 3;
+/** Bytes of one per-label annotation-table entry (XYAO label entry). */
+const STATIC_LABEL_ENTRY_BYTES = 20;
 
 /**
  * A static paint: a CSS color string (converted by the native color
@@ -3095,6 +3100,7 @@ export function staticDocumentEncode({
   if (normalizedTitleFlags > 3) throw new RangeError("StaticDocument title flags must contain only italic/bold bits");
   const normalized = [];
   let sceneBytes = 0;
+  let labelTableBytes = 0;
   for (let index = 0; index < panels.length; index += 1) {
     const panel = panels[index];
     const scene = panel?.scene instanceof Uint8Array ? panel.scene : new Uint8Array(panel?.scene ?? []);
@@ -3112,14 +3118,10 @@ export function staticDocumentEncode({
       colorbarLayout: panel.colorbarLayout == null
         ? null
         : Array.from(panel.colorbarLayout, Number),
-      annotationFontSize: panel.annotationFontSize == null ? null : Number(panel.annotationFontSize),
+      annotationLabels: panel.annotationLabels == null ? new Uint8Array(0) : Uint8Array.from(panel.annotationLabels),
       arrowMetrics: panel.arrowMetrics == null ? null : Array.from(panel.arrowMetrics, Number),
       axisSides: panel.axisSides == null ? null : Array.from(panel.axisSides, Number),
-      annotationTextFlags: panel.annotationTextFlags == null ? null : Number(panel.annotationTextFlags),
-      annotationPadding: panel.annotationPadding == null ? null : Number(panel.annotationPadding),
       titleStyle: panel.titleStyle == null ? null : staticTitleStyle(panel.titleStyle, index),
-      annotationVerticalAlign: panel.annotationVerticalAlign == null
-        ? null : Number(panel.annotationVerticalAlign),
       colorbarScale: panel.colorbarScale == null ? null : String(panel.colorbarScale),
       colorbarExtend: panel.colorbarExtend == null ? null : String(panel.colorbarExtend),
       colorbarPyplotLabel: Boolean(panel.colorbarPyplotLabel),
@@ -3146,20 +3148,15 @@ export function staticDocumentEncode({
       || record.axisSides.some((value) => !Number.isInteger(value) || value < 0 || value > 3))) {
       throw new RangeError(`StaticDocument panel ${index} axis sides must contain two low/high masks`);
     }
-    if (record.annotationTextFlags != null
-      && (!Number.isInteger(record.annotationTextFlags) || record.annotationTextFlags < 0
-        || record.annotationTextFlags > 3)) {
-      throw new RangeError(`StaticDocument panel ${index} annotation text flags use only italic/bold bits`);
+    if (record.annotationLabels.length % STATIC_LABEL_ENTRY_BYTES !== 0) {
+      throw new RangeError(`StaticDocument panel ${index} annotation labels must be 20-byte entries`);
     }
+    record.labelOffset = labelTableBytes;
+    labelTableBytes += record.annotationLabels.length;
     if (record.chromeText != null
       && (!Number.isInteger(record.chromeText.bits) || record.chromeText.bits < 0
         || record.chromeText.paints.length !== 4)) {
       throw new RangeError(`StaticDocument panel ${index} chrome text needs a word and four RGBA paints`);
-    }
-    if (record.annotationVerticalAlign != null
-      && (!Number.isInteger(record.annotationVerticalAlign)
-        || record.annotationVerticalAlign < 0 || record.annotationVerticalAlign > 3)) {
-      throw new RangeError(`StaticDocument panel ${index} annotation vertical align must be 0..3`);
     }
     if (record.colorbarScale != null && !["linear", "log"].includes(record.colorbarScale)) {
       throw new RangeError(`StaticDocument panel ${index} colorbar scale must be linear or log`);
@@ -3224,7 +3221,7 @@ export function staticDocumentEncode({
     decorationAt += colorbarBytes.length;
     decorations.set(panelLegendBytes, decorationAt);
   }
-  const out = new Uint8Array(64 + panels.length * 128 + titleBytes.length + decorations.length + sceneBytes);
+  const out = new Uint8Array(64 + panels.length * 128 + titleBytes.length + decorations.length + labelTableBytes + sceneBytes);
   const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
   out.set([88, 89, 83, 84], 0);
   view.setUint32(4, XYST_VERSION, true);
@@ -3243,6 +3240,7 @@ export function staticDocumentEncode({
   out[49] = normalizedTitleFlags;
   view.setUint32(52, decorations.length, true);
   view.setUint32(56, staticU32(cropPadding, "StaticDocument crop padding"), true);
+  view.setUint32(60, labelTableBytes, true);
   let at = 64;
   for (const panel of normalized) {
     view.setInt32(at, panel.x, true);
@@ -3254,13 +3252,10 @@ export function staticDocumentEncode({
     }
     view.setUint32(at, (panel.chromeMetrics == null ? 0 : 3)
       | (panel.colorbarLayout == null ? 0 : 4)
-      | (panel.annotationFontSize == null ? 0 : 8)
+      | (panel.annotationLabels.length ? 8 : 0)
       | (panel.arrowMetrics == null ? 0 : 16)
       | (panel.axisSides == null ? 0 : 32)
-      | (panel.annotationTextFlags == null ? 0 : 64)
-      | (panel.annotationPadding == null ? 0 : 128)
       | (panel.titleStyle == null ? 0 : 256)
-      | (panel.annotationVerticalAlign == null ? 0 : 512)
       | (panel.colorbarScale === "log" ? 1 << 10 : 0)
       | (["min", "both"].includes(panel.colorbarExtend) ? 1 << 11 : 0)
       | (["max", "both"].includes(panel.colorbarExtend) ? 1 << 12 : 0)
@@ -3268,7 +3263,7 @@ export function staticDocumentEncode({
       | (panel.gridDash == null ? 0 : 1 << 14)
       | (panel.chromeText == null ? 0 : 1 << 15)
       | (panel.colorbarFillPlot ? 1 << 24 : 0), true);
-    view.setFloat32(at + 4, panel.annotationFontSize ?? 0, true);
+    view.setUint32(at + 4, panel.annotationLabels.length ? panel.labelOffset : 0, true);
     at += 8;
     for (const value of panel.chromeMetrics ?? [0, 0, 0, 0, 0, 0]) {
       view.setFloat32(at, value, true);
@@ -3284,15 +3279,15 @@ export function staticDocumentEncode({
     }
     view.setUint32(at, panel.axisSides == null ? 0 : panel.axisSides[0] | (panel.axisSides[1] << 8), true);
     at += 4;
-    view.setUint32(at, panel.annotationTextFlags ?? 0, true);
+    view.setUint32(at, panel.annotationLabels.length, true);
     at += 4;
-    view.setFloat32(at, panel.annotationPadding ?? 0, true);
+    view.setFloat32(at, 0, true);
     at += 4;
     view.setFloat32(at, Number(panel.titleStyle?.[0] ?? 0), true);
     at += 4;
     out.set(panel.titleStyle == null ? [0, 0, 0, 0] : panel.titleStyle[1], at);
     at += 4;
-    view.setUint32(at, panel.annotationVerticalAlign ?? 0, true);
+    view.setUint32(at, 0, true);
     at += 4;
     const gridDash = panel.gridDash ?? null;
     view.setUint32(
@@ -3312,6 +3307,10 @@ export function staticDocumentEncode({
   at += titleBytes.length;
   out.set(decorations, at);
   at += decorations.length;
+  for (const panel of normalized) {
+    out.set(panel.annotationLabels, at);
+    at += panel.annotationLabels.length;
+  }
   for (const panel of normalized) {
     out.set(panel.scene, at);
     at += panel.scene.length;
@@ -3473,12 +3472,9 @@ export function figureStaticDocument(figure, {
       width: documentWidth,
       height: documentHeight,
       chromeMetrics: chrome.chromeMetrics,
-      annotationFontSize: annotationFacts.fontSize,
+      annotationLabels: annotationFacts.labels,
       axisSides,
-      annotationTextFlags: annotationFacts.textFlags,
-      annotationPadding: annotationFacts.padding,
       titleStyle: chrome.titleStyle,
-      annotationVerticalAlign: annotationFacts.verticalAlign,
       gridDash: staticGridDashFact(gridDash, gridDashMinor),
       chromeText: chrome.chromeText,
     }],
@@ -3773,7 +3769,7 @@ function staticAnnotationStyleFacts(sources) {
     if (value == null) pushU32(0xffffffff);
     else pushText(value);
   };
-  pushU32(1);
+  pushU32(2);
   pushU32(sources.length);
   pushU32(0);
   for (const source of sources) {
@@ -3781,7 +3777,10 @@ function staticAnnotationStyleFacts(sources) {
     const style = annotation.style ?? {};
     const keys = Object.keys(style).sort();
     pushU32(keys.length);
-    pushU32(0);
+    // Host facts that route the label (Rust owns the label order): an authored
+    // `wrap` and any authored `dx`/`dy`/`anchor`/`rotation`.
+    pushU32((Object.hasOwn(annotation, "wrap") ? 1 : 0)
+      | (["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key)) ? 2 : 0));
     pushOptionalText(annotation.text);
     pushOptionalText(annotation.kind);
     for (const key of keys) {
@@ -3791,20 +3790,16 @@ function staticAnnotationStyleFacts(sources) {
   }
   const request = concatBytes([new Uint8Array([88, 89, 65, 83]), ...chunks]);
   const output = staticAnnotationStyle(request);
-  if (output.length < 32) throw new Error("invalid XYAO output");
+  if (output.length < 16) throw new Error("invalid XYAO output");
   const view = new DataView(output.buffer, output.byteOffset, output.byteLength);
   const magic = String.fromCharCode(output[0], output[1], output[2], output[3]);
   const version = view.getUint32(4, true);
   const count = view.getUint32(8, true);
-  const presence = view.getUint32(12, true);
-  if (magic !== "XYAO" || version !== 1 || count !== sources.length || presence & ~0xf) {
+  const labelCount = view.getUint32(12, true);
+  if (magic !== "XYAO" || version !== 2 || count !== sources.length) {
     throw new Error("invalid XYAO output");
   }
-  const size = view.getFloat32(16, true);
-  const padding = view.getFloat32(20, true);
-  const textFlags = view.getUint32(24, true);
-  const vertical = view.getUint32(28, true);
-  let at = 32;
+  let at = 16;
   const takeU32 = () => {
     if (at + 4 > output.length) throw new Error("invalid XYAO output");
     const value = view.getUint32(at, true);
@@ -3839,14 +3834,12 @@ function staticAnnotationStyleFacts(sources) {
     }
     if (!drop) retained.push(annotation);
   }
-  if (at !== output.length) throw new Error("invalid XYAO output");
-  return {
-    annotations: retained,
-    fontSize: presence & 1 ? size : null,
-    textFlags: presence & 2 ? textFlags : null,
-    padding: presence & 4 ? padding : null,
-    verticalAlign: presence & 8 ? vertical : null,
-  };
+  const labels = output.slice(at, at + labelCount * STATIC_LABEL_ENTRY_BYTES);
+  at += labels.length;
+  if (at !== output.length || labels.length !== labelCount * STATIC_LABEL_ENTRY_BYTES) {
+    throw new Error("invalid XYAO output");
+  }
+  return { annotations: retained, labels };
 }
 
 export function staticDocumentExport(encoded, format, { scale = DEFAULT_PNG_EXPORT_SCALE, quality = 90 } = {}) {

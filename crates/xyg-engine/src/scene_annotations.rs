@@ -1357,6 +1357,78 @@ pub fn pack_annotation_facts(
     Ok(out)
 }
 
+/// Host facts that decide which Scene label, if any, an annotation row yields.
+#[derive(Clone, Copy, Debug)]
+pub struct LabelSlotRow<'a> {
+    pub kind: &'a str,
+    pub authored_wrap: bool,
+    /// `dx`/`dy`/`anchor`/`rotation` authored on the annotation.
+    pub layout: bool,
+    pub labelled: bool,
+}
+
+// Label-section order of a compiled Scene: unwrapped text (XYAT), attached
+// rule/band/marker labels (XYAL), wrapped text and laid-out marker labels
+// (XYAW), then the callout labels (XYAC) and wrapped callout labels (XYAW).
+const SLOT_GROUPS: usize = 5;
+
+/// The position of every retained annotation's label in the compiled Scene's
+/// label section (`None` when the row yields none) and the section length.
+///
+/// This is the single owner of the annotation-to-label order: it follows
+/// `pack_annotation_facts` routing, so a per-label table can be built
+/// without a host repeating the rule.
+pub fn label_slots(rows: &[LabelSlotRow<'_>]) -> (Vec<Option<u32>>, u32) {
+    let mut groups: Vec<Option<usize>> = Vec::with_capacity(rows.len());
+    let mut counts = [0u32; SLOT_GROUPS];
+    for row in rows {
+        let mut plan = crate::scene_pack_orchestrate::XyafAnnotationDispatchPlan {
+            wrapped: 0,
+            pack_rule_dash: 0,
+            pack_rule_linecap: 0,
+            pack_axis: 0,
+            pack_symbol: 0,
+        };
+        let valid = crate::scene_pack_orchestrate::scene_xyaf_annotation_dispatch_plan(
+            row.kind,
+            i32::from(row.authored_wrap),
+            i32::from(row.layout && row.kind == "text"),
+            &mut plan,
+        ) == 1;
+        let wrapped = valid && plan.wrapped != 0;
+        let group = match row.kind {
+            "text" if wrapped => Some(2),
+            "text" => Some(0),
+            "callout" if wrapped => Some(4),
+            "callout" => Some(3),
+            "rule" | "band" if row.labelled => Some(1),
+            "marker" if row.labelled && row.layout => Some(2),
+            "marker" if row.labelled => Some(1),
+            _ => None,
+        };
+        if let Some(group) = group {
+            counts[group] += 1;
+        }
+        groups.push(group);
+    }
+    let mut bases = [0u32; SLOT_GROUPS];
+    for group in 1..SLOT_GROUPS {
+        bases[group] = bases[group - 1] + counts[group - 1];
+    }
+    let mut next = bases;
+    let slots = groups
+        .into_iter()
+        .map(|group| {
+            group.map(|group| {
+                let slot = next[group];
+                next[group] += 1;
+                slot
+            })
+        })
+        .collect();
+    (slots, counts.iter().sum())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

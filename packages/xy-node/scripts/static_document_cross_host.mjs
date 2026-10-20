@@ -12,7 +12,7 @@ const document = staticDocumentEncode({
     width: request.panelWidth,
     height: request.panelHeight,
     chromeMetrics: [12, 13, 4, 12, 13, 4],
-    annotationFontSize: request.annotationFontSize ?? null,
+    annotationLabels: request.annotationLabels == null ? null : Buffer.from(request.annotationLabels, "base64"),
   })),
   width: request.panelWidth * scenes.length,
   height: request.panelHeight,

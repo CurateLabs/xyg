@@ -174,10 +174,8 @@ for(const p of panels){{
                     panel_height,
                     chrome_metrics=panel.chrome_metrics,
                     axis_sides=panel.axis_sides,
-                    annotation_text_flags=panel.annotation_text_flags,
-                    annotation_padding=panel.annotation_padding,
+                    annotation_labels=panel.annotation_labels,
                     title_style=panel.title_style,
-                    annotation_vertical_align=panel.annotation_vertical_align,
                     grid_dash=panel.grid_dash,
                     chrome_text=panel.chrome_text,
                 )

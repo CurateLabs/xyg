@@ -13,7 +13,7 @@ import numpy as np
 
 from . import _native
 
-_HEADER = struct.Struct("<4s6I4B4BfffBB2xII4x")
+_HEADER = struct.Struct("<4s6I4B4BfffBB2xIII")
 _PANEL = struct.Struct("<2i6I12fII2f4B2II16B")
 _DECORATION_HEADER = struct.Struct("<4s7I")
 _DOCUMENT_LABELS_HEADER = struct.Struct("<4s3I")
@@ -30,12 +30,13 @@ _LEGEND_FIT_HEADER = struct.Struct("<4s11I12d")
 _LEGEND_FIT_ENTRY = struct.Struct("<6I")
 _LEGEND_FIT_OUTPUT = struct.Struct("<4s3I21d")
 _ANNOTATION_STYLE_HEADER = struct.Struct("<4s3I")
-_ANNOTATION_STYLE_OUTPUT = struct.Struct("<4s3I2f2I")
+_ANNOTATION_STYLE_OUTPUT = struct.Struct("<4s3I")
+_ANNOTATION_STYLE_LABEL_ENTRY = 20
 _CHROME_STYLE_HEADER = struct.Struct("<4s3I")
 _CHROME_STYLE_OUTPUT = struct.Struct("<4s2II16Bd4B6d")
 _MAX_U32 = (1 << 32) - 1
 #: XYST layout version; 2 widened the panel record to 128 bytes (#1004).
-XYST_VERSION = 2
+XYST_VERSION = 3
 _MAX_PANELS = 256
 _MAX_TITLE_BYTES = 4096
 _FLAG_BACKGROUND = 1
@@ -85,19 +86,16 @@ class Panel:
     chrome_metrics: Optional[tuple[float, float, float, float, float, float]] = None
     # shrink, anchor-x, anchor-y for a canonical Scene colorbar.
     colorbar_layout: Optional[tuple[float, float, float]] = None
-    # One pyplot panel-wide annotation size; heterogeneous sizes fail closed.
-    annotation_font_size: Optional[float] = None
+    # Rust-resolved per-label annotation table (the XYAO label entries): one
+    # 20-byte entry per annotation label, in annotation-label order. Empty keeps
+    # the canonical label typography.
+    annotation_labels: bytes = b""
     # uniform pyplot arrow head size and start/end shaft widths.
     arrow_metrics: Optional[tuple[float, float, float]] = None
     # x low/high and y low/high visible-spine bitmasks.
     axis_sides: Optional[tuple[int, int]] = None
-    # uniform deterministic italic/bold bits and label-box padding.
-    annotation_text_flags: Optional[int] = None
-    annotation_padding: Optional[float] = None
-    # panel title size and paint (CSS color string or resolved RGBA8) and
-    # uniform annotation vertical align.
+    # panel title size and paint (CSS color string or resolved RGBA8).
     title_style: Optional[tuple[float, Union[str, tuple[int, int, int, int]]]] = None
-    annotation_vertical_align: Optional[int] = None
     # XYST-only pyplot colorbar compatibility flags. Scene keeps the canonical
     # color scale while Rust owns log projection, endpoint extends, and label
     # orientation for the static product.
@@ -131,10 +129,8 @@ class ResolvedLayout:
 @dataclass(frozen=True)
 class ResolvedAnnotationStyles:
     annotations: list[dict[str, Any]]
-    font_size: Optional[float]
-    text_flags: Optional[int]
-    padding: Optional[float]
-    vertical_align: Optional[int]
+    # The XYAO per-label table, forwarded verbatim into the XYST panel record.
+    labels: bytes
 
 
 @dataclass(frozen=True)
@@ -696,7 +692,7 @@ def resolve_annotation_styles(
 ) -> ResolvedAnnotationStyles:
     """Marshal authored maps; Rust returns mechanical patches and XYST facts."""
     annotations = [copy.deepcopy(dict(source)) for source in sources]
-    request = bytearray(_ANNOTATION_STYLE_HEADER.pack(b"XYAS", 1, len(annotations), 0))
+    request = bytearray(_ANNOTATION_STYLE_HEADER.pack(b"XYAS", 2, len(annotations), 0))
 
     def put_text(value: Any, *, optional: bool = False) -> None:
         if optional and value is None:
@@ -707,7 +703,12 @@ def resolve_annotation_styles(
     for annotation in annotations:
         style = dict(annotation.get("style") or {})
         entries = sorted(style.items(), key=lambda item: str(item[0]))
-        request.extend(struct.pack("<2I", len(entries), 0))
+        # Host facts that route the label (Rust owns the label order): an
+        # authored ``wrap`` and any authored ``dx``/``dy``/``anchor``/``rotation``.
+        row_flags = int("wrap" in annotation) | (
+            2 * any(key in annotation for key in ("dx", "dy", "anchor", "rotation"))
+        )
+        request.extend(struct.pack("<2I", len(entries), row_flags))
         put_text(annotation.get("text"), optional=True)
         put_text(annotation.get("kind"), optional=True)
         for key, value in entries:
@@ -724,10 +725,8 @@ def resolve_annotation_styles(
         raise
     if len(output) < _ANNOTATION_STYLE_OUTPUT.size:
         raise RuntimeError("invalid XYAO output")
-    magic, version, count, presence, size, padding, text_flags, vertical = (
-        _ANNOTATION_STYLE_OUTPUT.unpack_from(output)
-    )
-    if magic != b"XYAO" or version != 1 or count != len(annotations) or presence & ~0xF:
+    magic, version, count, label_count = _ANNOTATION_STYLE_OUTPUT.unpack_from(output)
+    if magic != b"XYAO" or version != 2 or count != len(annotations):
         raise RuntimeError("invalid XYAO output")
     at = _ANNOTATION_STYLE_OUTPUT.size
 
@@ -766,15 +765,10 @@ def resolve_annotation_styles(
                 raise RuntimeError("invalid XYAO output")
         if not drop:
             retained.append(annotation)
+    labels = take(label_count * _ANNOTATION_STYLE_LABEL_ENTRY)
     if at != len(output):
         raise RuntimeError("invalid XYAO output")
-    return ResolvedAnnotationStyles(
-        retained,
-        float(size) if presence & 1 else None,
-        int(text_flags) if presence & 2 else None,
-        float(padding) if presence & 4 else None,
-        int(vertical) if presence & 8 else None,
-    )
+    return ResolvedAnnotationStyles(retained, labels)
 
 
 def _label_bytes(labels: Sequence[dict[str, Any]]) -> bytes:
@@ -1041,6 +1035,7 @@ def encode(
     )
     records = bytearray()
     scenes = bytearray()
+    label_tables = bytearray()
     for index, panel in enumerate(panels):
         scene = bytes(panel.scene)
         if not scene:
@@ -1063,12 +1058,15 @@ def encode(
                 )
             colorbar_layout = tuple(float(value) for value in panel.colorbar_layout)
             metric_flags |= 4
-        annotation_bits = 0
-        if panel.annotation_font_size is not None:
-            annotation_bits = struct.unpack(
-                "<I", struct.pack("<f", float(panel.annotation_font_size))
-            )[0]
+        label_table = bytes(panel.annotation_labels)
+        label_offset = len(label_tables)
+        if label_table:
+            if len(label_table) % _ANNOTATION_STYLE_LABEL_ENTRY:
+                raise ValueError(
+                    f"StaticDocument panel {index} annotation labels must be 20-byte entries"
+                )
             metric_flags |= 8
+        label_tables.extend(label_table)
         arrow_metrics = (0.0, 0.0, 0.0)
         if panel.arrow_metrics is not None:
             if len(panel.arrow_metrics) != 3:
@@ -1093,21 +1091,6 @@ def encode(
                 )
             axis_sides = x_sides | (y_sides << 8)
             metric_flags |= 32
-        annotation_text_flags = 0
-        if panel.annotation_text_flags is not None:
-            annotation_text_flags = _u32(
-                panel.annotation_text_flags,
-                f"StaticDocument panel {index} annotation text flags",
-            )
-            if annotation_text_flags & ~3:
-                raise ValueError(
-                    f"StaticDocument panel {index} annotation text flags use only italic/bold bits"
-                )
-            metric_flags |= 64
-        annotation_padding = 0.0
-        if panel.annotation_padding is not None:
-            annotation_padding = float(panel.annotation_padding)
-            metric_flags |= 128
         panel_title_size = 0.0
         panel_title_rgba = (0, 0, 0, 0)
         if panel.title_style is not None:
@@ -1116,17 +1099,6 @@ def encode(
             panel_title_size = float(panel.title_style[0])
             panel_title_rgba = _paint(panel.title_style[1], f"StaticDocument panel {index} title")
             metric_flags |= 256
-        annotation_vertical_align = 0
-        if panel.annotation_vertical_align is not None:
-            annotation_vertical_align = _u32(
-                panel.annotation_vertical_align,
-                f"StaticDocument panel {index} annotation vertical align",
-            )
-            if annotation_vertical_align > 3:
-                raise ValueError(
-                    f"StaticDocument panel {index} annotation vertical align must be 0..3"
-                )
-            metric_flags |= 512
         if panel.colorbar_scale is not None:
             if panel.colorbar_scale not in {"linear", "log"}:
                 raise ValueError(
@@ -1180,16 +1152,16 @@ def encode(
             _u32(offset, f"StaticDocument panel {index} offset"),
             _u32(len(scene), f"StaticDocument panel {index} Scene length", positive=True),
             metric_flags,
-            annotation_bits,
+            label_offset if label_table else 0,
             *metrics,
             *colorbar_layout,
             *arrow_metrics,
             axis_sides,
-            annotation_text_flags,
-            annotation_padding,
+            len(label_table),
+            0.0,
             panel_title_size,
             *panel_title_rgba,
-            annotation_vertical_align,
+            0,
             grid_dash,
             chrome_text_bits,
             *chrome_text_rgba,
@@ -1214,9 +1186,10 @@ def encode(
         title_flags,
         len(decorations),
         _u32(crop_padding, "StaticDocument crop padding"),
+        len(label_tables),
     )
     assert len(header) == 64
-    return header + records + title_bytes + decorations + scenes
+    return header + records + title_bytes + decorations + bytes(label_tables) + scenes
 
 
 def project_figure(
@@ -1353,15 +1326,12 @@ def project_figure(
         width,
         height,
         chrome_metrics=chrome.chrome_metrics,
-        annotation_font_size=annotation_style.font_size,
+        annotation_labels=annotation_style.labels,
         axis_sides=(
             (1 if "bottom" in frame_sides else 0) | (2 if "top" in frame_sides else 0),
             (1 if "left" in frame_sides else 0) | (2 if "right" in frame_sides else 0),
         ),
-        annotation_text_flags=annotation_style.text_flags,
-        annotation_padding=annotation_style.padding,
         title_style=chrome.title_style,
-        annotation_vertical_align=annotation_style.vertical_align,
         grid_dash=_grid_dash_fact(grid_dash, grid_dash_minor),
         chrome_text=chrome.chrome_text,
     )

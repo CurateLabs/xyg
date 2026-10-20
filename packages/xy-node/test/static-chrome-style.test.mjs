@@ -169,7 +169,7 @@ test("the Node host carries no chrome-style policy tables", async () => {
 
 // -- XYST version 2 and the exported encoder's paint input contract.
 
-function legacyV1(document) {
+function legacyV1Document(document) {
   const count = document.readUInt32LE(20);
   const parts = [Buffer.from(document.subarray(0, 64))];
   parts[0].writeUInt32LE(1, 4);
@@ -182,18 +182,22 @@ function legacyV1(document) {
   return Buffer.concat(parts);
 }
 
-test("XYST is version 2 and a v1 (108-byte panel) document is rejected actionably", () => {
+test("XYST is version 3 and v1/v2 documents are rejected actionably", () => {
   const document = Buffer.from(chart({ styles: TYPOGRAPHY }).toStaticDocument());
-  assert.equal(document.readUInt32LE(4), 2);
+  assert.equal(document.readUInt32LE(4), 3);
   assert.ok(staticDocumentExport(document, "svg").length > 0);
-  const legacy = legacyV1(document);
-  assert.equal(legacy.readUInt32LE(4), 1);
-  for (const format of ["svg", "png", "pdf", "jpeg", "webp"]) {
-    assert.throws(
-      () => staticDocumentExport(legacy, format),
-      (e) => e.code === "XYG_STATIC_DOCUMENT_VERSION" && e.message.includes("re-encode"),
-      format,
-    );
+  const v2 = Buffer.from(document);
+  v2.writeUInt32LE(2, 4);
+  const legacyV1 = legacyV1Document(document);
+  assert.equal(legacyV1.readUInt32LE(4), 1);
+  for (const legacy of [legacyV1, v2]) {
+    for (const format of ["svg", "png", "pdf", "jpeg", "webp"]) {
+      assert.throws(
+        () => staticDocumentExport(legacy, format),
+        (e) => e.code === "XYG_STATIC_DOCUMENT_VERSION" && e.message.includes("re-encode"),
+        format,
+      );
+    }
   }
 });
 

@@ -4,6 +4,7 @@ import base64
 import json
 import os
 import shutil
+import struct
 import subprocess
 from pathlib import Path
 
@@ -118,7 +119,7 @@ def test_python_and_node_share_static_document_decoration_bytes() -> None:
                 160,
                 120,
                 (12, 13, 4, 12, 13, 4),
-                annotation_font_size=15,
+                annotation_labels=struct.pack("<I3fB3x", 1, 15.0, 0.0, 0.0, 2),
             )
         ],
         width=160,
@@ -142,7 +143,7 @@ def test_python_and_node_share_static_document_decoration_bytes() -> None:
         "titleX": 80,
         "titleY": 14,
         "titleFlags": 3,
-        "annotationFontSize": 15,
+        "annotationLabels": base64.b64encode(struct.pack("<I3fB3x", 1, 15.0, 0.0, 0.0, 2)).decode(),
         "labels": labels,
         "legend": legend,
         "encodeOnly": True,

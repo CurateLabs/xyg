@@ -188,15 +188,21 @@ header vocabulary includes Rust-resolved title centering (bit 3), including an
 odd-width positive witness and rejection of a nonzero inactive title-x slot. The
 panel vocabulary includes the #873 colorbar log-scale, minimum/maximum extend,
 pyplot label-placement bits (10 through 13), the grid-dash fact (bit 14),
-and the Rust-resolved chrome-text fact (bit 15, #1004; full panel mask
-`0xffff`); minimum, maximum, and combined extension
+the Rust-resolved chrome-text fact (bit 15, #1004), and the per-label
+annotation table (bit 3, #1006, with typography/padding entry facts and the
+vertical-alignment codes) and the explicit-`cax` fill-plot fact (bit 24, with
+the `document_colorbar_fill_plot` positive witness in both hosts). XYST v3
+retires the v2 uniform annotation bits 6, 7 and 9, so the full panel mask is
+`0x0100fd3f` (a Rust test pins the registry masks to the decoder's admitted
+`PANEL_FLAGS`/`FLAGS`) and rejection mutations pin the retired bits (`panel_retired_annotation_*`) together with the explicitly empty present
+table (`panel_label_table_empty_present`); minimum, maximum, and combined extension
 have distinct runtime case rows, and `document_grid_dash` drives both hosts'
 dashed-grid output through the shared Rust pattern table. Rust tests require
 complete vocabulary coverage, unique rows, all-format case coverage, valid
 witness references, and masks matching their registered bits. The integrated
 decoder validates every registered mask, the runtime Python/Node builders match
 every case/mutation name exactly, and each output is compared through the
-actual native consumer — 41 cases, 22 rejection mutations, and all five formats
+actual native consumer — 42 cases, 26 rejection mutations, and all five formats
 run green under `tests/test_static_document_registry_cross_host.py`.
 
 Chrome style (#1004, ABI 384): `xyg_static_chrome_style` is the one Rust

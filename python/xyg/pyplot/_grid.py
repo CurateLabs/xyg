@@ -331,13 +331,10 @@ def _pyplot_static_document(
                 height,
                 figure._static_document_chrome_metrics,
                 figure._static_document_colorbar_layout,
-                figure._static_document_annotation_font_size,
+                figure._static_document_annotation_labels,
                 figure._static_document_arrow_metrics,
                 figure._static_document_axis_sides,
-                figure._static_document_annotation_text_flags,
-                figure._static_document_annotation_padding,
                 figure._static_document_title_style,
-                figure._static_document_annotation_vertical_align,
                 figure._static_document_colorbar_scale,
                 figure._static_document_colorbar_extend,
                 figure._static_document_colorbar_pyplot_label,
@@ -667,12 +664,9 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             grid_dash_minor["y"] or 0,
         )
     )
-    projected._static_document_annotation_font_size = resolved_annotations.font_size
+    projected._static_document_annotation_labels = resolved_annotations.labels
     projected._static_document_arrow_metrics = next(iter(arrow_metrics), None)
     projected._static_document_panel_legend = panel_legend
-    projected._static_document_annotation_text_flags = resolved_annotations.text_flags
-    projected._static_document_annotation_padding = resolved_annotations.padding
-    projected._static_document_annotation_vertical_align = resolved_annotations.vertical_align
     frame_sides = set(getattr(figure, "frame_sides", ("left", "bottom")))
     projected._static_document_axis_sides = (
         (1 if "bottom" in frame_sides else 0) | (2 if "top" in frame_sides else 0),

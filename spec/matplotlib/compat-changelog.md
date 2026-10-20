@@ -4,6 +4,23 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## Per-annotation static style and boxes — 2026-10-20 (Matplotlib 3.11.0 reference)
+
+- Static export (SVG/PNG/PDF/JPEG/WebP, Python and Node) no longer carries one
+  panel-wide annotation size, italic/bold, vertical alignment and box padding.
+  `static_annotation_style.rs` resolves them per Scene label and the XYST v3
+  panel record carries the table, so `annotate`, `text`, `bar_label`,
+  `pie_label` and `bbox=` boxes with different styles share a panel. This
+  removes the `XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE` rejection
+  and the `..._ANNOTATION_BBOX` rejection of two-value (vertical, horizontal) box
+  padding.
+- `bbox=dict(boxstyle="round...")` still fails closed, now with the stable
+  `XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE` instead of a Scene allowlist
+  message; the Scene label box has no corner radius.
+- Reference-corpus cases 25 and 53 clear this gate. They still stop at separate,
+  unrelated Scene gaps (arrow head vocabulary, `axes_fraction` table cells,
+  zero-point `bxp` fliers) tracked in #1006.
+
 ## Reference corpus restore on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 
 Repairs for the pinned 3.11 reference lane after the static-export cutover.

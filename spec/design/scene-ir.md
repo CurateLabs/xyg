@@ -1115,6 +1115,24 @@ and paint order. Older ingress and `XYLB` v1--v3 frames remain byte-valid.
 Padding, radius, wrapping, collision, markup, custom typography, CSS/classes,
 and host-resolved coordinates remain unsupported.
 
+## XYLB v7 label provenance (#1006)
+
+`XYLB` v7 is the v6 rotated record plus a `u32` flags word (bit 0 = **annotation
+label**; other bits fail) and a zero reserved word. Labels created by authored
+annotation decoration (`XYAT`/`XYAL`/`XYAW`/`XYAC`) set the bit; chart, graph and
+geo labels do not. Literal source ids are arbitrary, so provenance is this flag
+and never a stable-id pattern or an annotation-record lookup (text and wrapped
+labels have no record). Annotation decoration assigns reserved ids (text `4`,
+attached `5`, callout `6`, wrapped `7` under the `0x5859` annotation prefix), so
+frames before v7 carry no flag and decode by that pattern, which every annotation
+label satisfies. The encoder emits v7 **only when the flag disagrees with the
+id pattern** (an ordinary chart/graph/geo label whose literal id looks like an
+annotation id): every other Scene keeps its prior bytes, and v7 makes the
+collision exact. The static annotation-style table
+([static-annotation-style.md](static-annotation-style.md)) targets exactly the
+flagged labels. The browser painter's label table strips the flag and keeps
+its existing client-readable versions.
+
 ## Version 24 bounded multiline and wrapped annotations
 
 `XYAD` v3 adds one exact-length `XYAW` v1 section after `XYAC`.  A row carries

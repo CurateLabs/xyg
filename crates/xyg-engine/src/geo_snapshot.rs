@@ -2731,6 +2731,7 @@ mod tests {
             anchor: 0,
             rotation: 0.,
             text: text.into(),
+            annotation: false,
         }
     }
     fn scene(labels: Vec<SceneLabel>) -> Vec<u8> {

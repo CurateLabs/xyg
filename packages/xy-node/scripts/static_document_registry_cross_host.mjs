@@ -7,6 +7,18 @@ import { Figure, staticDocumentEncode, staticDocumentExport } from "../src/index
 const registryPath = process.env.XYG_STATIC_EXPORT_REGISTRY ?? fileURLToPath(new URL("../../../tests/fixtures/static_export_support_registry.json", import.meta.url));
 const registry = JSON.parse(readFileSync(registryPath, "utf8")).document;
 const formats = ["svg", "png", "pdf", "jpeg", "webp"];
+/** One per-label annotation entry (the XYAO label-table layout). */
+function labelEntry({ size = 12, flags = 0, padding = null, align = 0 } = {}) {
+  const entry = Buffer.alloc(20);
+  entry.writeUInt32LE(1 | (padding ? 2 : 0), 0);
+  entry.writeFloatLE(size, 4);
+  entry.writeFloatLE(padding ? padding[0] : 0, 8);
+  entry.writeFloatLE(padding ? padding[1] : 0, 12);
+  entry[16] = flags;
+  entry[17] = align;
+  return entry;
+}
+
 const options = {
   document_title_x_center: [{}, {}],
   document_panel_colorbar_log_scale: [{ colorbarScale: "log" }, {}],
@@ -14,22 +26,23 @@ const options = {
   document_panel_colorbar_extend_max: [{ colorbarExtend: "max" }, {}],
   document_panel_colorbar_pyplot_label: [{ colorbarPyplotLabel: true }, {}],
   document_colorbar_extend_both: [{ colorbarExtend: "both" }, {}],
-  document_annotation_baseline: [{ annotationVerticalAlign: 0 }, {}],
-  document_annotation_top: [{ annotationVerticalAlign: 1 }, {}],
-  document_annotation_bottom: [{ annotationVerticalAlign: 2 }, {}],
-  document_annotation_center: [{ annotationVerticalAlign: 3 }, {}],
+  document_annotation_baseline: [{ annotationLabels: labelEntry({ align: 0 }) }, {}],
+  document_annotation_top: [{ annotationLabels: labelEntry({ align: 1 }) }, {}],
+  document_annotation_bottom: [{ annotationLabels: labelEntry({ align: 2 }) }, {}],
+  document_annotation_center: [{ annotationLabels: labelEntry({ align: 3 }) }, {}],
   document_axis_sides_none: [{ axisSides: [0, 0] }, {}],
   document_axis_sides_low: [{ axisSides: [1, 1] }, {}],
   document_axis_sides_high: [{ axisSides: [2, 2] }, {}],
   document_axis_sides_both: [{ axisSides: [3, 3] }, {}],
   document_grid_dash: [{ gridDash: [1, 0, 0, 2] }, {}],
   document_chrome_text: [{ chromeText: [2 | (1 << 2) | (2 << 4) | (3 << 6) | (1 << 8) | (0xF << 10), [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [10, 20, 30, 255]]] }, {}],
+  document_colorbar_fill_plot: [{ colorbarFillPlot: true }, {}],
   document_defaults: [{}, {}],
   document_background: [{}, { background: "#ddeeff80" }],
   document_optimized_png: [{}, { optimizePng: true }],
   document_tight_crop: [{}, { tightCrop: true, cropPadding: 3 }],
   document_panel_chrome: [{ chromeMetrics: [14, 16, 6, 13, 15, 5], axisSides: [3, 3] }, {}],
-  document_annotation_style: [{ annotationFontSize: 15, annotationTextFlags: 3, annotationPadding: 5, annotationVerticalAlign: 3, arrowMetrics: [9, 2, 2] }, {}],
+  document_annotation_style: [{ annotationLabels: labelEntry({ size: 15, flags: 3, padding: [5, 5], align: 3 }), arrowMetrics: [9, 2, 2] }, {}],
   document_panel_title: [{ titleStyle: [18, "#654321"] }, {}],
   document_title_start: [{}, { titleAnchor: 0, titleFlags: 0 }],
   document_title_middle: [{}, { titleAnchor: 1, titleFlags: 1 }],
@@ -106,19 +119,29 @@ function build(name) {
     quality: name === "document_jpeg_quality_low" ? 1 : name === "document_jpeg_quality_high" ? 100 : 90 };
 }
 
-const rejectionNames = ["header_truncated", "version_unknown", "version_legacy_layout", "header_flags_unknown", "header_reserved_nonzero", "panels_empty", "dimensions_zero", "panel_flags_unknown", "panel_inactive_nonzero", "panel_ranges_overlap", "panel_scene_corrupt", "title_invalid_utf8", "title_nul", "title_anchor_unknown", "text_flags_unknown", "label_alignment_unknown", "label_opacity_invalid", "legend_kind_unknown", "legend_reserved_nonzero", "decoration_trailing_bytes", "document_trailing_bytes"];
+const rejectionNames = ["header_truncated", "version_unknown", "version_legacy_layout", "header_flags_unknown", "header_label_table_len_invalid", "panels_empty", "dimensions_zero", "panel_flags_unknown", "panel_retired_annotation_text_flags", "panel_retired_annotation_padding", "panel_retired_annotation_vertical_align", "panel_label_table_empty_present", "panel_inactive_nonzero", "panel_ranges_overlap", "panel_scene_corrupt", "title_invalid_utf8", "title_nul", "title_anchor_unknown", "text_flags_unknown", "label_alignment_unknown", "label_opacity_invalid", "legend_kind_unknown", "legend_reserved_nonzero", "decoration_trailing_bytes", "document_trailing_bytes"];
 function rejectedDocument(name) {
-  const seed = name === "panel_ranges_overlap" ? "document_signed_panels" : name.startsWith("title_") ? "document_title_start" : name.startsWith("label_") || name === "decoration_trailing_bytes" ? "document_labels_start_top" : name.startsWith("legend_") ? "document_legend" : "document_defaults";
+  const seed = name === "panel_ranges_overlap" ? "document_signed_panels" : name.startsWith("title_") ? "document_title_start" : name.startsWith("label_") || name === "decoration_trailing_bytes" ? "document_labels_start_top" : name.startsWith("legend_") ? "document_legend" : name === "panel_label_table_empty_present" ? "document_annotation_baseline" : "document_defaults";
   let data = Buffer.from(build(seed).document);
   const count = data.readUInt32LE(20), titleLength = data.readUInt32LE(24);
   const decorations = 64 + count * 128 + titleLength;
   const sceneAt = decorations + data.readUInt32LE(52);
   if (name === "header_truncated") return data.subarray(0, 63);
-  const offsets = { version_unknown: [4, 99], version_legacy_layout: [4, 1], header_flags_unknown: [16, 16], header_reserved_nonzero: [60, 1], panels_empty: [20, 0], dimensions_zero: [8, 0], panel_flags_unknown: [88, 1 << 16], panel_inactive_nonzero: [96, 1], panel_ranges_overlap: [64 + 128 + 16, 0] };
+  const offsets = { version_unknown: [4, 99], version_legacy_layout: [4, 1], header_flags_unknown: [16, 16], header_label_table_len_invalid: [60, 1], panels_empty: [20, 0], dimensions_zero: [8, 0], panel_flags_unknown: [88, 1 << 16], panel_retired_annotation_text_flags: [88, 1 << 6], panel_retired_annotation_padding: [88, 1 << 7], panel_retired_annotation_vertical_align: [88, 1 << 9], panel_inactive_nonzero: [96, 1], panel_ranges_overlap: [64 + 128 + 16, 0] };
   if (name in offsets) data.writeUInt32LE(offsets[name][1], offsets[name][0]);
   else if (name === "centered_title_x_nonzero") {
     data.writeUInt32LE(data.readUInt32LE(16) | 8, 16);
     data.writeFloatLE(1, 40);
+  }
+  else if (name === "panel_label_table_empty_present") {
+    // Panel flag 3 with an explicitly empty table over a Scene that has an
+    // annotation label: the flag demands exact label coverage.
+    const tableLength = data.readUInt32LE(60);
+    assert.equal(tableLength, 20);
+    data = Buffer.concat([data.subarray(0, sceneAt), data.subarray(sceneAt + tableLength)]);
+    data.writeUInt32LE(0, 60);
+    data.writeUInt32LE(0, 64 + 28);
+    data.writeUInt32LE(0, 64 + 84);
   }
   else if (name === "panel_scene_corrupt") data[sceneAt] = 0;
   else if (["title_invalid_utf8", "title_nul"].includes(name)) data[64 + count * 128] = name.endsWith("utf8") ? 255 : 0;

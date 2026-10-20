@@ -1,13 +1,18 @@
 //! XYAS static annotation normalization (M2 #873; dossier §21/§28).
-//! Returns mechanical patches and uniform XYST facts, never rendered geometry.
+//! Returns mechanical patches and a per-label typography/box table, never
+//! rendered geometry.
 use crate::css::{color_rgba8, parse_color, Checked};
 use crate::scene::MAX_SCENE_CHROME_LENGTH;
+use crate::scene_annotations::{label_slots, LabelSlotRow};
 use std::collections::BTreeMap;
 
 const MAX_BYTES: usize = 2 * 1024 * 1024;
 const MAX_TEXT: usize = 4096;
 const MAX_ROWS: usize = 128;
 const MAX_STYLES: usize = 64;
+const ROW_WRAP: u32 = 1;
+const ROW_LAYOUT: u32 = 2;
+const ROW_FLAGS: u32 = ROW_WRAP | ROW_LAYOUT;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AnnotationStyleError {
@@ -21,7 +26,7 @@ pub enum AnnotationStyleError {
     Typography,
     Vertical,
     Bbox,
-    Heterogeneous,
+    Boxstyle,
     Style,
 }
 impl AnnotationStyleError {
@@ -37,7 +42,7 @@ impl AnnotationStyleError {
             Self::Typography => "XYG_STATIC_UNSUPPORTED_ANNOTATION_TYPOGRAPHY",
             Self::Vertical => "XYG_STATIC_UNSUPPORTED_ANNOTATION_VERTICAL_ALIGN",
             Self::Bbox => "XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX",
-            Self::Heterogeneous => "XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE",
+            Self::Boxstyle => "XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE",
             Self::Style => "XYG_STATIC_UNSUPPORTED_ANNOTATION_STYLE",
         }
     }
@@ -186,20 +191,40 @@ fn pixels(value: Value<'_>) -> Result<f64> {
         AnnotationStyleError::Bbox,
     )
 }
-fn uniform<T: Copy + PartialEq>(target: &mut Option<T>, value: T) -> Result<()> {
-    if target.is_some_and(|previous| previous != value) {
-        Err(AnnotationStyleError::Heterogeneous)
-    } else {
-        *target = Some(value);
-        Ok(())
-    }
-}
 fn put_text(out: &mut Vec<u8>, text: &str) {
     out.extend_from_slice(&(text.len() as u32).to_le_bytes());
     out.extend_from_slice(text.as_bytes());
 }
 
-/// Resolve a complete bounded batch atomically into XYAO v1.
+/// One label's resolved typography/box facts, in XYAO label-table order.
+#[derive(Clone, Copy, Default)]
+struct LabelEntry {
+    typography: Option<(f32, u8, u8)>,
+    padding: Option<(f32, f32)>,
+}
+const ENTRY_TYPOGRAPHY: u32 = 1;
+const ENTRY_PADDING: u32 = 2;
+/// Bytes of one XYAO / XYST label-table entry.
+pub const LABEL_ENTRY_BYTES: usize = 20;
+
+/// CSS `padding` shorthand (`<v>px` or `<v>px <h>px`) as `(horizontal, vertical)`.
+fn padding_pair(value: Value<'_>) -> Result<(f64, f64)> {
+    let Value::Text(text) = value else {
+        return Err(AnnotationStyleError::Bbox);
+    };
+    let mut parts = text.split(' ');
+    let vertical = pixels(Value::Text(parts.next().unwrap_or("")))?;
+    let horizontal = match parts.next() {
+        Some(part) => pixels(Value::Text(part))?,
+        None => vertical,
+    };
+    if parts.next().is_some() {
+        return Err(AnnotationStyleError::Bbox);
+    }
+    Ok((horizontal, vertical))
+}
+
+/// Resolve a complete bounded batch atomically into XYAO v2.
 pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     if bytes.len() > MAX_BYTES {
         return Err(AnnotationStyleError::Limit);
@@ -208,7 +233,7 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     if reader.take(4)? != b"XYAS" {
         return Err(AnnotationStyleError::Header);
     }
-    if reader.u32()? != 1 {
+    if reader.u32()? != 2 {
         return Err(AnnotationStyleError::Version);
     }
     let count = reader.u32()? as usize;
@@ -218,14 +243,16 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     if reader.u32()? != 0 {
         return Err(AnnotationStyleError::Flags);
     }
-    let (mut size, mut flags, mut padding, mut vertical) = (None, None, None, None);
     let mut rows = Vec::with_capacity(count);
+    let mut slot_rows = Vec::with_capacity(count);
+    let mut pending: Vec<LabelEntry> = Vec::with_capacity(count);
     for _ in 0..count {
         let entries = reader.u32()? as usize;
         if entries > MAX_STYLES {
             return Err(AnnotationStyleError::Limit);
         }
-        if reader.u32()? != 0 {
+        let row_flags = reader.u32()?;
+        if row_flags & !ROW_FLAGS != 0 {
             return Err(AnnotationStyleError::Flags);
         }
         let text = reader.text(true)?;
@@ -276,22 +303,10 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
             _ => return Err(AnnotationStyleError::Typography),
         };
         let font_size = alias(&style, "font_size", "fontSize", &mut patches);
+        let mut entry = LabelEntry::default();
+        let labelled = text.is_some_and(|text| !text.is_empty())
+            && matches!(kind, Some("text" | "callout" | "rule" | "band" | "marker"));
         if kind == Some("text") {
-            let font_size = if absent(font_size) {
-                12.0
-            } else {
-                number(font_size.unwrap(), AnnotationStyleError::Typography)?
-            };
-            uniform(
-                &mut size,
-                bounded(
-                    font_size,
-                    1.0,
-                    MAX_SCENE_CHROME_LENGTH,
-                    AnnotationStyleError::Typography,
-                )?,
-            )?;
-            uniform(&mut flags, italic | bold)?;
             if let Some(color) = strip(&style, "label_color", &mut patches) {
                 patches.push(Patch::Text(
                     "color",
@@ -300,7 +315,18 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
             }
         }
         let align = strip(&style, "vertical_align", &mut patches);
-        if kind == Some("text") {
+        if labelled {
+            let font_size = if absent(font_size) {
+                12.0
+            } else {
+                number(font_size.unwrap(), AnnotationStyleError::Typography)?
+            };
+            let font_size = bounded(
+                font_size,
+                1.0,
+                MAX_SCENE_CHROME_LENGTH,
+                AnnotationStyleError::Typography,
+            )?;
             let align = match align {
                 None | Some(Value::Text("baseline")) => 0,
                 Some(Value::Text("top")) => 1,
@@ -308,18 +334,24 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
                 Some(Value::Text("center" | "center_baseline")) => 3,
                 _ => return Err(AnnotationStyleError::Vertical),
             };
-            uniform(&mut vertical, align)?;
+            entry.typography = Some((font_size as f32, (italic | bold) as u8, align));
         }
-        if let Some(value) = style
+        let rotation = style
             .get("rotation")
             .copied()
-            .filter(|value| *value != Value::Null)
-        {
+            .filter(|value| *value != Value::Null);
+        if let Some(value) = rotation {
             let n = number(value, AnnotationStyleError::Style)?.rem_euclid(360.0);
             patches.push(Patch::Number(
                 "rotation",
                 if n == 0.0 || n == 360.0 { 0.0 } else { n },
             ));
+        }
+        // CSS-like box keys. `border_radius` is the Matplotlib `round` boxstyle;
+        // the Scene label box is a rectangle, so it fails closed.
+        let radius = strip(&style, "border_radius", &mut patches);
+        if !empty_default(radius) {
+            return Err(AnnotationStyleError::Boxstyle);
         }
         let background = strip(&style, "background", &mut patches);
         let border = strip(&style, "border", &mut patches);
@@ -349,35 +381,47 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         }
         let boxed = !absent(background) || !absent(style.get("label_background").copied());
         if !absent(raw_padding) {
-            uniform(
-                &mut padding,
+            let (horizontal, vertical) = padding_pair(raw_padding.unwrap())?;
+            entry.padding = Some((
                 bounded(
-                    pixels(raw_padding.unwrap())?,
+                    horizontal,
                     0.0,
                     MAX_SCENE_CHROME_LENGTH,
                     AnnotationStyleError::Bbox,
-                )?,
-            )?;
+                )? as f32,
+                bounded(
+                    vertical,
+                    0.0,
+                    MAX_SCENE_CHROME_LENGTH,
+                    AnnotationStyleError::Bbox,
+                )? as f32,
+            ));
         } else if boxed {
-            uniform(&mut padding, 3.0)?;
+            entry.padding = Some((3.0, 3.0));
         }
+        let kind_name = kind.unwrap_or("");
+        let layout_key = row_flags & ROW_LAYOUT != 0;
+        slot_rows.push(LabelSlotRow {
+            kind: kind_name,
+            authored_wrap: row_flags & ROW_WRAP != 0,
+            layout: layout_key || (matches!(kind_name, "text" | "marker") && rotation.is_some()),
+            labelled: text.is_some_and(|text| !text.is_empty()),
+        });
+        pending.push(entry);
         rows.push((false, patches));
     }
     if reader.at != bytes.len() {
         return Err(AnnotationStyleError::Header);
     }
+    let (slots, label_count) = label_slots(&slot_rows);
+    let mut table = vec![LabelEntry::default(); label_count as usize];
+    for (slot, entry) in slots.into_iter().zip(pending) {
+        if let Some(slot) = slot {
+            table[slot as usize] = entry;
+        }
+    }
     let mut out = b"XYAO".to_vec();
-    let presence = u32::from(size.is_some())
-        | (u32::from(flags.is_some()) << 1)
-        | (u32::from(padding.is_some()) << 2)
-        | (u32::from(vertical.is_some()) << 3);
-    for value in [1, count as u32, presence] {
-        out.extend_from_slice(&value.to_le_bytes());
-    }
-    for value in [size.unwrap_or(0.0), padding.unwrap_or(0.0)] {
-        out.extend_from_slice(&(value as f32).to_le_bytes());
-    }
-    for value in [flags.unwrap_or(0_u32), vertical.unwrap_or(0_u32)] {
+    for value in [2, count as u32, label_count] {
         out.extend_from_slice(&value.to_le_bytes());
     }
     for (drop, patches) in rows {
@@ -402,6 +446,17 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
             }
         }
     }
+    for entry in table {
+        let present = (u32::from(entry.typography.is_some()) * ENTRY_TYPOGRAPHY)
+            | (u32::from(entry.padding.is_some()) * ENTRY_PADDING);
+        let (size, flags, align) = entry.typography.unwrap_or((0.0, 0, 0));
+        let (pad_x, pad_y) = entry.padding.unwrap_or((0.0, 0.0));
+        out.extend_from_slice(&present.to_le_bytes());
+        for value in [size, pad_x, pad_y] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&[flags, align, 0, 0]);
+    }
     Ok(out)
 }
 
@@ -410,14 +465,14 @@ mod tests {
     use super::*;
 
     type Row<'a> = (Option<&'a str>, Option<&'a str>, Vec<(&'a str, Value<'a>)>);
-    fn frame(rows: &[Row<'_>]) -> Vec<u8> {
+    fn frame_flags(rows: &[(u32, Row<'_>)]) -> Vec<u8> {
         let mut out = b"XYAS".to_vec();
-        for n in [1, rows.len() as u32, 0] {
+        for n in [2, rows.len() as u32, 0] {
             out.extend(n.to_le_bytes());
         }
-        for (text, kind, entries) in rows {
+        for (flags, (text, kind, entries)) in rows {
             out.extend((entries.len() as u32).to_le_bytes());
-            out.extend(0_u32.to_le_bytes());
+            out.extend(flags.to_le_bytes());
             for text in [text, kind] {
                 if let Some(text) = text {
                     put_text(&mut out, text);
@@ -447,6 +502,9 @@ mod tests {
         }
         out
     }
+    fn frame(rows: &[Row<'_>]) -> Vec<u8> {
+        frame_flags(&rows.iter().map(|row| (0, row.clone())).collect::<Vec<_>>())
+    }
     fn text_row<'a>(entries: Vec<(&'a str, Value<'a>)>) -> Row<'a> {
         (Some("hello"), Some("text"), entries)
     }
@@ -456,37 +514,64 @@ mod tests {
     fn f32_at(bytes: &[u8], at: usize) -> f32 {
         f32::from_le_bytes(bytes[at..at + 4].try_into().unwrap())
     }
-    fn patches(bytes: &[u8]) -> Vec<(String, Value<'_>)> {
-        assert_eq!(u32_at(bytes, 32), 0);
-        let mut reader = Reader { bytes, at: 40 };
-        let mut values = Vec::new();
-        for _ in 0..u32_at(bytes, 36) {
-            let key = reader.text(false).unwrap().unwrap().to_owned();
-            let value = match reader.u32().unwrap() {
-                0 => Value::Null,
-                1 => Value::Text(reader.text(false).unwrap().unwrap()),
-                2 => Value::Number(f64::from_le_bytes(
-                    reader.take(8).unwrap().try_into().unwrap(),
-                )),
-                _ => panic!("invalid patch opcode"),
-            };
-            values.push((key, value));
+    type Patches<'a> = Vec<(String, Value<'a>)>;
+    /// Decode XYAO v2 into per-row `(drop, patches)` and the label table.
+    fn parse(bytes: &[u8]) -> (Vec<(u32, Patches<'_>)>, Vec<[u8; LABEL_ENTRY_BYTES]>) {
+        assert_eq!(&bytes[..4], b"XYAO");
+        assert_eq!(u32_at(bytes, 4), 2);
+        let (count, labels) = (u32_at(bytes, 8), u32_at(bytes, 12));
+        let mut reader = Reader { bytes, at: 16 };
+        let mut rows = Vec::new();
+        for _ in 0..count {
+            let drop = reader.u32().unwrap();
+            let mut values = Vec::new();
+            for _ in 0..reader.u32().unwrap() {
+                let key = reader.text(false).unwrap().unwrap().to_owned();
+                let value = match reader.u32().unwrap() {
+                    0 => Value::Null,
+                    1 => Value::Text(reader.text(false).unwrap().unwrap()),
+                    2 => Value::Number(f64::from_le_bytes(
+                        reader.take(8).unwrap().try_into().unwrap(),
+                    )),
+                    _ => panic!("invalid patch opcode"),
+                };
+                values.push((key, value));
+            }
+            rows.push((drop, values));
         }
+        let table = (0..labels)
+            .map(|_| reader.take(LABEL_ENTRY_BYTES).unwrap().try_into().unwrap())
+            .collect();
         assert_eq!(reader.at, bytes.len());
-        values
+        (rows, table)
+    }
+    fn patches(bytes: &[u8]) -> Patches<'_> {
+        parse(bytes).0.remove(0).1
+    }
+    /// `(present, size, pad_x, pad_y, text flags, vertical align)`.
+    fn entry(raw: &[u8; LABEL_ENTRY_BYTES]) -> (u32, f32, f32, f32, u8, u8) {
+        (
+            u32_at(raw, 0),
+            f32_at(raw, 4),
+            f32_at(raw, 8),
+            f32_at(raw, 12),
+            raw[16],
+            raw[17],
+        )
     }
     #[test]
     fn empty_and_default_golden() {
         let mut expected = b"XYAO".to_vec();
-        for n in [1_u32, 0, 0, 0, 0, 0, 0] {
+        for n in [2_u32, 0, 0] {
             expected.extend(n.to_le_bytes());
         }
         assert_eq!(resolve_packed(&frame(&[])).unwrap(), expected);
         let bytes = resolve_packed(&frame(&[text_row(vec![])])).unwrap();
-        expected[8..12].copy_from_slice(&1_u32.to_le_bytes());
-        expected[12..16].copy_from_slice(&11_u32.to_le_bytes());
-        expected[16..20].copy_from_slice(&12_f32.to_le_bytes());
+        expected[8..16].copy_from_slice(&[1, 0, 0, 0, 1, 0, 0, 0]);
         expected.extend([0; 8]);
+        expected.extend(1_u32.to_le_bytes());
+        expected.extend(12_f32.to_le_bytes());
+        expected.extend([0; 12]);
         assert_eq!(bytes, expected);
     }
     #[test]
@@ -506,18 +591,10 @@ mod tests {
             ("unknown", Value::Opaque),
         ])]))
         .unwrap();
+        let (rows, table) = parse(&bytes);
+        assert_eq!(entry(&table[0]), (3, 18.0, 4.0, 4.0, 3, 3));
         assert_eq!(
-            (
-                u32_at(&bytes, 12),
-                f32_at(&bytes, 16),
-                f32_at(&bytes, 20),
-                u32_at(&bytes, 24),
-                u32_at(&bytes, 28)
-            ),
-            (15, 18.0, 4.0, 3, 3)
-        );
-        assert_eq!(
-            patches(&bytes),
+            rows[0].1,
             vec![
                 ("font_family".into(), Value::Null),
                 ("fontFamily".into(), Value::Null),
@@ -538,14 +615,14 @@ mod tests {
         );
     }
     #[test]
-    fn admitted_typography_and_effective_defaults() {
+    fn admitted_typography_is_per_label() {
         for (weight, expected) in [(400.0, 0), (600.0, 2), (700.0, 2), (800.0, 2), (900.0, 2)] {
             let bytes = resolve_packed(&frame(&[text_row(vec![(
                 "font_weight",
                 Value::Number(weight),
             )])]))
             .unwrap();
-            assert_eq!(u32_at(&bytes, 24), expected);
+            assert_eq!(entry(&parse(&bytes).1[0]).4, expected);
         }
         for style in ["normal", "italic", "oblique"] {
             for weight in [
@@ -562,38 +639,95 @@ mod tests {
                 }
             }
         }
-        for (key, value) in [
-            ("font_size", Value::Number(13.0)),
-            ("font_style", Value::Text("italic")),
-            ("font_weight", Value::Text("bold")),
-            ("vertical_align", Value::Text("top")),
-        ] {
-            assert_eq!(
-                resolve_packed(&frame(&[text_row(vec![]), text_row(vec![(key, value)])])),
-                Err(AnnotationStyleError::Heterogeneous)
-            );
-        }
-        assert!(resolve_packed(&frame(&[
+        // Heterogeneous typography is carried per label, never rejected.
+        let bytes = resolve_packed(&frame(&[
             text_row(vec![]),
-            text_row(vec![
-                ("font_size", Value::Number(12.0)),
-                ("font_style", Value::Text("normal")),
-                ("vertical_align", Value::Text("baseline"))
-            ])
+            text_row(vec![("font_size", Value::Number(13.0))]),
+            text_row(vec![("font_style", Value::Text("italic"))]),
+            text_row(vec![("font_weight", Value::Text("bold"))]),
+            text_row(vec![("vertical_align", Value::Text("top"))]),
         ]))
-        .is_ok());
-        for background in ["background", "label_background"] {
+        .unwrap();
+        let table = parse(&bytes).1;
+        let facts: Vec<_> = table.iter().map(entry).collect();
+        assert_eq!(
+            facts,
+            vec![
+                (1, 12.0, 0.0, 0.0, 0, 0),
+                (1, 13.0, 0.0, 0.0, 0, 0),
+                (1, 12.0, 0.0, 0.0, 1, 0),
+                (1, 12.0, 0.0, 0.0, 2, 0),
+                (1, 12.0, 0.0, 0.0, 0, 1),
+            ]
+        );
+    }
+    #[test]
+    fn box_padding_is_per_label_and_two_axis() {
+        let bytes = resolve_packed(&frame(&[
+            text_row(vec![("background", Value::Text("white"))]),
+            text_row(vec![("label_background", Value::Text("white"))]),
+            text_row(vec![
+                ("background", Value::Text("white")),
+                ("padding", Value::Text("5px")),
+            ]),
+            text_row(vec![
+                ("background", Value::Text("white")),
+                ("padding", Value::Text("2px 6.5px")),
+            ]),
+            text_row(vec![]),
+        ]))
+        .unwrap();
+        let facts: Vec<_> = parse(&bytes).1.iter().map(entry).collect();
+        assert_eq!(
+            facts,
+            vec![
+                (3, 12.0, 3.0, 3.0, 0, 0),
+                (3, 12.0, 3.0, 3.0, 0, 0),
+                (3, 12.0, 5.0, 5.0, 0, 0),
+                (3, 12.0, 6.5, 2.0, 0, 0),
+                (1, 12.0, 0.0, 0.0, 0, 0),
+            ]
+        );
+        for padding in ["1px 2px 3px", "1px  2px", "1 2px", "2px 3"] {
             assert_eq!(
-                resolve_packed(&frame(&[
-                    text_row(vec![(background, Value::Text("white"))]),
-                    text_row(vec![
-                        ("background", Value::Text("white")),
-                        ("padding", Value::Text("5px"))
-                    ])
-                ])),
-                Err(AnnotationStyleError::Heterogeneous)
+                resolve_packed(&frame(&[text_row(vec![("padding", Value::Text(padding))])])),
+                Err(AnnotationStyleError::Bbox),
+                "{padding}"
             );
         }
+    }
+    #[test]
+    fn label_table_follows_scene_label_order() {
+        let sized = |size: f64| vec![("font_size", Value::Number(size))];
+        let rows = [
+            (0, (Some("callout"), Some("callout"), sized(31.0))),
+            (0, (Some("plain"), Some("text"), sized(21.0))),
+            (ROW_WRAP, (Some("wrapped"), Some("text"), sized(22.0))),
+            (0, (Some("plain"), Some("text"), sized(23.0))),
+            (0, (None, Some("arrow"), vec![])),
+            (0, (Some("rule"), Some("rule"), sized(41.0))),
+            (ROW_LAYOUT, (Some("laid out"), Some("text"), sized(24.0))),
+            (0, (Some("marker"), Some("marker"), sized(42.0))),
+            (ROW_LAYOUT, (Some("moved"), Some("marker"), sized(43.0))),
+            (0, (Some("callout"), Some("callout"), sized(32.0))),
+            (ROW_WRAP, (Some("callout"), Some("callout"), sized(33.0))),
+            // A rule without text has no label, so no table entry.
+            (0, (None, Some("rule"), sized(99.0))),
+        ];
+        let table = parse(&resolve_packed(&frame_flags(&rows)).unwrap()).1;
+        // XYAT text, XYAL rule/marker, XYAW text and laid-out marker,
+        // XYAC callouts, then XYAW callouts.
+        let sizes: Vec<_> = table.iter().map(|raw| entry(raw).1).collect();
+        assert_eq!(
+            sizes,
+            vec![
+                21.0, 23.0, // XYAT: rows 1 and 3
+                41.0, 42.0, // XYAL: rule row 5 and marker row 7
+                22.0, 24.0, 43.0, // XYAW: rows 2, 6 and laid-out marker row 8
+                31.0, 32.0, // XYAC: rows 0 and 9
+                33.0, // wrapped callout: row 10
+            ]
+        );
     }
     #[test]
     fn numeric_bounds_precede_narrowing_and_rotation_is_finite() {
@@ -633,7 +767,6 @@ mod tests {
                 patches(&bytes),
                 vec![("rotation".into(), Value::Number(0.0))]
             );
-            assert_eq!(&bytes[bytes.len() - 8..], &0_f64.to_le_bytes());
         }
         assert_eq!(
             resolve_packed(&frame(&[text_row(vec![(
@@ -677,20 +810,32 @@ mod tests {
                 AnnotationStyleError::Bbox,
             ),
             ("label_color", Value::Null, AnnotationStyleError::Style),
+            (
+                "border_radius",
+                Value::Number(5.0),
+                AnnotationStyleError::Boxstyle,
+            ),
         ] {
             assert_eq!(
                 resolve_packed(&frame(&[text_row(vec![(key, value)])])),
                 Err(error)
             );
         }
+        // A zero radius is the square boxstyle: stripped, not rejected.
+        let bytes = resolve_packed(&frame(&[text_row(vec![(
+            "border_radius",
+            Value::Number(0.0),
+        )])]))
+        .unwrap();
+        assert_eq!(patches(&bytes), vec![("border_radius".into(), Value::Null)]);
         let bytes = resolve_packed(&frame(&[(
             None,
             Some("text"),
             vec![("font_family", Value::Opaque)],
         )]))
         .unwrap();
-        assert_eq!(u32_at(&bytes, 12), 0);
-        assert_eq!(&bytes[32..], &[1, 0, 0, 0, 0, 0, 0, 0]);
+        let (rows, table) = parse(&bytes);
+        assert_eq!((rows, table.len()), (vec![(1, vec![])], 0));
         let bytes = resolve_packed(&frame(&[(
             None,
             Some("arrow"),
@@ -701,9 +846,10 @@ mod tests {
             ],
         )]))
         .unwrap();
-        assert_eq!(u32_at(&bytes, 12), 0);
+        let (rows, table) = parse(&bytes);
+        assert!(table.is_empty());
         assert_eq!(
-            patches(&bytes),
+            rows[0].1,
             vec![
                 ("font_size".into(), Value::Null),
                 ("vertical_align".into(), Value::Null)
@@ -723,11 +869,12 @@ mod tests {
         trailing.push(0);
         assert_eq!(resolve_packed(&trailing), Err(AnnotationStyleError::Header));
         for (offset, value, error) in [
-            (4, 2, AnnotationStyleError::Version),
+            (4, 1, AnnotationStyleError::Version),
+            (4, 3, AnnotationStyleError::Version),
             (8, 129, AnnotationStyleError::Limit),
             (12, 1, AnnotationStyleError::Flags),
             (16, 65, AnnotationStyleError::Limit),
-            (20, 1, AnnotationStyleError::Flags),
+            (20, 4, AnnotationStyleError::Flags),
             (24, 4097, AnnotationStyleError::Limit),
         ] {
             let mut bad = bytes.clone();

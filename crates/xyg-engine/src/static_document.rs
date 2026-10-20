@@ -12,7 +12,7 @@ use crate::pdf;
 use crate::png_encode;
 use crate::raster;
 use crate::scene::{
-    legend_marker_geometry, push_legend_marker_svg, SceneDocument,
+    legend_marker_geometry, push_legend_marker_svg, SceneDocument, StaticLabelStyle,
 };
 use crate::scene_static::{flatten_rgba_over_white, scene_static_export, SceneStaticFormat};
 use crate::textblock;
@@ -20,26 +20,25 @@ use crate::webp;
 
 const MAGIC: &[u8; 4] = b"XYST";
 /// XYST layout version. Version 2 widened the panel record to 128 bytes
-/// (chrome-text fact, #1004); version 1 documents are rejected, never decoded.
-const VERSION: u32 = 2;
+/// (chrome-text fact, #1004). Version 3 replaces the uniform annotation
+/// font-size/flags/padding/alignment facts with a per-label table region
+/// (#1006); older documents are rejected, never decoded.
+const VERSION: u32 = 3;
 const HEADER_BYTES: usize = 64;
 const PANEL_BYTES: usize = 128;
 const FLAG_BACKGROUND: u32 = 1 << 0;
 const FLAG_OPTIMIZE_PNG: u32 = 1 << 1;
 const FLAG_TIGHT_CROP: u32 = 1 << 2;
 const FLAG_TITLE_X_CENTER: u32 = 1 << 3;
-const FLAGS: u32 =
+pub(crate) const FLAGS: u32 =
     FLAG_BACKGROUND | FLAG_OPTIMIZE_PNG | FLAG_TIGHT_CROP | FLAG_TITLE_X_CENTER;
 const PANEL_FLAG_X_CHROME_METRICS: u32 = 1 << 0;
 const PANEL_FLAG_Y_CHROME_METRICS: u32 = 1 << 1;
 const PANEL_FLAG_COLORBAR_LAYOUT: u32 = 1 << 2;
-const PANEL_FLAG_ANNOTATION_FONT_SIZE: u32 = 1 << 3;
+const PANEL_FLAG_ANNOTATION_LABELS: u32 = 1 << 3;
 const PANEL_FLAG_ARROW_METRICS: u32 = 1 << 4;
 const PANEL_FLAG_AXIS_SIDES: u32 = 1 << 5;
-const PANEL_FLAG_ANNOTATION_TEXT_FLAGS: u32 = 1 << 6;
-const PANEL_FLAG_ANNOTATION_PADDING: u32 = 1 << 7;
 const PANEL_FLAG_TITLE_STYLE: u32 = 1 << 8;
-const PANEL_FLAG_ANNOTATION_VERTICAL_ALIGN: u32 = 1 << 9;
 const PANEL_FLAG_COLORBAR_LOG_SCALE: u32 = 1 << 10;
 const PANEL_FLAG_COLORBAR_EXTEND_MIN: u32 = 1 << 11;
 const PANEL_FLAG_COLORBAR_EXTEND_MAX: u32 = 1 << 12;
@@ -50,16 +49,13 @@ const PANEL_FLAG_CHROME_TEXT: u32 = 1 << 15;
 /// marker block that is zero unless the item kind is 3).
 const LEGEND_ITEM_BYTES: usize = 44;
 const PANEL_FLAG_COLORBAR_FILL_PLOT: u32 = 1 << 24;
-const PANEL_FLAGS: u32 = PANEL_FLAG_X_CHROME_METRICS
+pub(crate) const PANEL_FLAGS: u32 = PANEL_FLAG_X_CHROME_METRICS
     | PANEL_FLAG_Y_CHROME_METRICS
     | PANEL_FLAG_COLORBAR_LAYOUT
-    | PANEL_FLAG_ANNOTATION_FONT_SIZE
+    | PANEL_FLAG_ANNOTATION_LABELS
     | PANEL_FLAG_ARROW_METRICS
     | PANEL_FLAG_AXIS_SIDES
-    | PANEL_FLAG_ANNOTATION_TEXT_FLAGS
-    | PANEL_FLAG_ANNOTATION_PADDING
     | PANEL_FLAG_TITLE_STYLE
-    | PANEL_FLAG_ANNOTATION_VERTICAL_ALIGN
     | PANEL_FLAG_COLORBAR_LOG_SCALE
     | PANEL_FLAG_COLORBAR_EXTEND_MIN
     | PANEL_FLAG_COLORBAR_EXTEND_MAX
@@ -71,6 +67,10 @@ const MAX_PANELS: usize = 256;
 const MAX_TITLE_BYTES: usize = 4096;
 const MAX_DECORATION_BYTES: usize = 1 << 20;
 const MAX_DOCUMENT_LABELS: usize = 64;
+/// Bytes of one per-label annotation entry (the static annotation-style
+/// projection's label table).
+const LABEL_ENTRY_BYTES: usize = 20;
+const MAX_LABEL_TABLE_BYTES: usize = 1 << 20;
 const MAX_DOCUMENT_BYTES: usize = 256 * 1024 * 1024;
 const MAX_DIMENSION: usize = 65_535;
 const MAX_PIXELS: usize = 268_435_456;
@@ -98,7 +98,7 @@ impl StaticDocumentError {
             Self::Header => "XYG_STATIC_DOCUMENT_HEADER",
             Self::Version => {
                 "XYG_STATIC_DOCUMENT_VERSION: unsupported XYST version (this build reads \
-                 version 2); re-encode the document with the current encoder"
+                 version 3); re-encode the document with the current encoder"
             }
             Self::Flags => "XYG_STATIC_DOCUMENT_FLAGS",
             Self::Limit => "XYG_STATIC_DOCUMENT_LIMIT",
@@ -127,14 +127,13 @@ struct PanelRecord {
     x_metrics: [f64; 3],
     y_metrics: [f64; 3],
     colorbar_layout: [f64; 3],
-    annotation_font_size: f64,
+    /// Offset and length of this panel's per-label annotation table inside the
+    /// document's label-table region (bytes; multiples of `LABEL_ENTRY_BYTES`).
+    label_table: (usize, usize),
     arrow_metrics: [f64; 3],
     axis_sides: u32,
-    annotation_text_flags: u32,
-    annotation_padding: f64,
     title_size: f64,
     title_rgba: [u8; 4],
-    annotation_vertical_align: u32,
     grid_dash: u32,
     chrome_text: u32,
     chrome_text_rgba: [[u8; 4]; 4],
@@ -500,6 +499,46 @@ fn decode_document_legend(bytes: &[u8]) -> Result<DocumentLegend, StaticDocument
     })
 }
 
+/// Decode one panel's per-label annotation table (`record.label_table`, the
+/// static annotation-style projection's XYAO entries). Absent facts must be
+/// canonical zero; panels consume the region sequentially.
+fn decode_label_table(
+    region: &[u8],
+    (offset, len): (usize, usize),
+    expected_offset: &mut usize,
+) -> Result<Vec<StaticLabelStyle>, StaticDocumentError> {
+    if offset != *expected_offset || len % LABEL_ENTRY_BYTES != 0 {
+        return Err(StaticDocumentError::Panel);
+    }
+    let end = offset.checked_add(len).ok_or(StaticDocumentError::Limit)?;
+    let table = region.get(offset..end).ok_or(StaticDocumentError::Panel)?;
+    *expected_offset = end;
+    table
+        .chunks_exact(LABEL_ENTRY_BYTES)
+        .map(|entry| {
+            let present = u32_at(entry, 0)?;
+            let (size, pad_x, pad_y) =
+                (f32_at(entry, 4)?, f32_at(entry, 8)?, f32_at(entry, 12)?);
+            let (flags, align) = (entry[16], entry[17]);
+            let typography = present & 1 != 0;
+            let padding = present & 2 != 0;
+            if present & !3 != 0
+                || entry[18..20] != [0; 2]
+                || (!typography && (size != 0.0 || flags != 0 || align != 0))
+                || (!padding && (pad_x != 0.0 || pad_y != 0.0))
+                || flags & !0b11 != 0
+                || align > 3
+            {
+                return Err(StaticDocumentError::Panel);
+            }
+            Ok(StaticLabelStyle {
+                typography: typography.then_some((f64::from(size), flags, align)),
+                padding: padding.then_some((f64::from(pad_x), f64::from(pad_y))),
+            })
+        })
+        .collect()
+}
+
 impl StaticDocument {
     pub fn decode(bytes: &[u8]) -> Result<Self, StaticDocumentError> {
         if bytes.len() < HEADER_BYTES || bytes.len() > MAX_DOCUMENT_BYTES || &bytes[..4] != MAGIC {
@@ -515,7 +554,8 @@ impl StaticDocument {
         let title_len = u32_at(bytes, 24)? as usize;
         let decorations_len = u32_at(bytes, 52)? as usize;
         let crop_padding = u32_at(bytes, 56)? as usize;
-        if flags & !FLAGS != 0 || bytes[60..64] != [0; 4] {
+        let label_table_len = u32_at(bytes, 60)? as usize;
+        if flags & !FLAGS != 0 {
             return Err(StaticDocumentError::Flags);
         }
         if width == 0
@@ -526,6 +566,8 @@ impl StaticDocument {
             || panel_count > MAX_PANELS
             || title_len > MAX_TITLE_BYTES
             || decorations_len > MAX_DECORATION_BYTES
+            || label_table_len > MAX_LABEL_TABLE_BYTES
+            || label_table_len % LABEL_ENTRY_BYTES != 0
             || crop_padding > MAX_DIMENSION
         {
             return Err(StaticDocumentError::Limit);
@@ -540,8 +582,11 @@ impl StaticDocument {
         let decorations_at = table_end
             .checked_add(title_len)
             .ok_or(StaticDocumentError::Limit)?;
-        let scenes_at = decorations_at
+        let label_table_at = decorations_at
             .checked_add(decorations_len)
+            .ok_or(StaticDocumentError::Limit)?;
+        let scenes_at = label_table_at
+            .checked_add(label_table_len)
             .ok_or(StaticDocumentError::Limit)?;
         if scenes_at > bytes.len() {
             return Err(StaticDocumentError::Header);
@@ -577,7 +622,8 @@ impl StaticDocument {
         };
         let background: [u8; 4] = bytes[28..32].try_into().unwrap();
         let title_rgba: [u8; 4] = bytes[32..36].try_into().unwrap();
-        let (labels, legends, colorbar) = decode_decorations(&bytes[decorations_at..scenes_at])?;
+        let (labels, legends, colorbar) =
+            decode_decorations(&bytes[decorations_at..label_table_at])?;
         if legends
             .iter()
             .any(|(panel, _)| panel.is_some_and(|panel| panel >= panel_count))
@@ -586,6 +632,7 @@ impl StaticDocument {
         }
         let mut panels = Vec::with_capacity(panel_count);
         let mut expected_offset = 0usize;
+        let mut expected_label_offset = 0usize;
         for index in 0..panel_count {
             let at = HEADER_BYTES + index * PANEL_BYTES;
             let record = PanelRecord {
@@ -596,7 +643,10 @@ impl StaticDocument {
                 offset: u32_at(bytes, at + 16)? as usize,
                 len: u32_at(bytes, at + 20)? as usize,
                 metric_flags: u32_at(bytes, at + 24)?,
-                annotation_font_size: f64::from(f32_at(bytes, at + 28)?),
+                label_table: (
+                    u32_at(bytes, at + 28)? as usize,
+                    u32_at(bytes, at + 84)? as usize,
+                ),
                 x_metrics: [
                     f64::from(f32_at(bytes, at + 32)?),
                     f64::from(f32_at(bytes, at + 36)?),
@@ -618,11 +668,8 @@ impl StaticDocument {
                     f64::from(f32_at(bytes, at + 76)?),
                 ],
                 axis_sides: u32_at(bytes, at + 80)?,
-                annotation_text_flags: u32_at(bytes, at + 84)?,
-                annotation_padding: f64::from(f32_at(bytes, at + 88)?),
                 title_size: f64::from(f32_at(bytes, at + 92)?),
                 title_rgba: bytes[at + 96..at + 100].try_into().unwrap(),
-                annotation_vertical_align: u32_at(bytes, at + 100)?,
                 grid_dash: u32_at(bytes, at + 104)?,
                 chrome_text: u32_at(bytes, at + 108)?,
                 chrome_text_rgba: [
@@ -647,22 +694,16 @@ impl StaticDocument {
                     && bytes[at + 44..at + 56] != [0; 12])
                 || (record.metric_flags & PANEL_FLAG_COLORBAR_LAYOUT == 0
                     && bytes[at + 56..at + 68] != [0; 12])
-                || (record.metric_flags & PANEL_FLAG_ANNOTATION_FONT_SIZE == 0
-                    && u32_at(bytes, at + 28)? != 0)
+                || (record.metric_flags & PANEL_FLAG_ANNOTATION_LABELS == 0
+                    && record.label_table != (0, 0))
+                || bytes[at + 88..at + 92] != [0; 4]
+                || bytes[at + 100..at + 104] != [0; 4]
                 || (record.metric_flags & PANEL_FLAG_ARROW_METRICS == 0
                     && bytes[at + 68..at + 80] != [0; 12])
                 || (record.metric_flags & PANEL_FLAG_AXIS_SIDES == 0 && record.axis_sides != 0)
                 || record.axis_sides & !0x0303 != 0
-                || record.annotation_text_flags & !0b11 != 0
-                || (record.metric_flags & PANEL_FLAG_ANNOTATION_TEXT_FLAGS == 0
-                    && record.annotation_text_flags != 0)
-                || (record.metric_flags & PANEL_FLAG_ANNOTATION_PADDING == 0
-                    && u32_at(bytes, at + 88)? != 0)
                 || (record.metric_flags & PANEL_FLAG_TITLE_STYLE == 0
                     && bytes[at + 92..at + 100] != [0; 8])
-                || record.annotation_vertical_align > 3
-                || (record.metric_flags & PANEL_FLAG_ANNOTATION_VERTICAL_ALIGN == 0
-                    && record.annotation_vertical_align != 0)
                 || record.grid_dash & !0x3333_3333 != 0
                 || (record.metric_flags & PANEL_FLAG_GRID_DASH == 0 && record.grid_dash != 0)
                 || (record.metric_flags & PANEL_FLAG_CHROME_TEXT == 0
@@ -718,11 +759,17 @@ impl StaticDocument {
                     )
                     .map_err(|_| StaticDocumentError::Panel)?;
             }
+            let label_styles = if record.metric_flags & PANEL_FLAG_ANNOTATION_LABELS != 0 {
+                Some(decode_label_table(
+                    &bytes[label_table_at..scenes_at],
+                    record.label_table,
+                    &mut expected_label_offset,
+                )?)
+            } else {
+                None
+            };
             scene
-                .apply_static_annotation_font_size(
-                    (record.metric_flags & PANEL_FLAG_ANNOTATION_FONT_SIZE != 0)
-                        .then_some(record.annotation_font_size),
-                )
+                .apply_static_annotation_labels(label_styles.as_deref())
                 .map_err(|_| StaticDocumentError::Panel)?;
             scene
                 .apply_static_arrow_metrics(
@@ -739,27 +786,9 @@ impl StaticDocument {
                 )
                 .map_err(|_| StaticDocumentError::Panel)?;
             scene
-                .apply_static_annotation_text_flags(
-                    (record.metric_flags & PANEL_FLAG_ANNOTATION_TEXT_FLAGS != 0)
-                        .then_some(record.annotation_text_flags as u8),
-                )
-                .map_err(|_| StaticDocumentError::Panel)?;
-            scene
-                .apply_static_annotation_padding(
-                    (record.metric_flags & PANEL_FLAG_ANNOTATION_PADDING != 0)
-                        .then_some(record.annotation_padding),
-                )
-                .map_err(|_| StaticDocumentError::Panel)?;
-            scene
                 .apply_static_title_style(
                     (record.metric_flags & PANEL_FLAG_TITLE_STYLE != 0)
                         .then_some((record.title_size, record.title_rgba)),
-                )
-                .map_err(|_| StaticDocumentError::Panel)?;
-            scene
-                .apply_static_annotation_vertical_align(
-                    (record.metric_flags & PANEL_FLAG_ANNOTATION_VERTICAL_ALIGN != 0)
-                        .then_some(record.annotation_vertical_align as u8),
                 )
                 .map_err(|_| StaticDocumentError::Panel)?;
             scene
@@ -793,7 +822,9 @@ impl StaticDocument {
                 .ok_or(StaticDocumentError::Limit)?;
             panels.push((record, scene, scene_bytes));
         }
-        if scenes_at.checked_add(expected_offset) != Some(bytes.len()) {
+        if scenes_at.checked_add(expected_offset) != Some(bytes.len())
+            || expected_label_offset != label_table_len
+        {
             return Err(StaticDocumentError::Panel);
         }
         let mut document = Self {
@@ -1744,7 +1775,7 @@ mod tests {
     fn rejects_unknown_version_and_empty_panels() {
         let mut bytes = vec![0u8; HEADER_BYTES];
         bytes[..4].copy_from_slice(MAGIC);
-        for unsupported in [0u32, 1, 3] {
+        for unsupported in [0u32, 1, 2, 4] {
             bytes[4..8].copy_from_slice(&unsupported.to_le_bytes());
             assert!(matches!(
                 StaticDocument::decode(&bytes),
@@ -1758,6 +1789,120 @@ mod tests {
             StaticDocument::decode(&bytes),
             Err(StaticDocumentError::Limit)
         ));
+    }
+
+    fn label_entry(
+        present: u32,
+        size: f32,
+        pad_x: f32,
+        pad_y: f32,
+        flags: u8,
+        align: u8,
+    ) -> Vec<u8> {
+        let mut entry = present.to_le_bytes().to_vec();
+        for value in [size, pad_x, pad_y] {
+            entry.extend(value.to_le_bytes());
+        }
+        entry.extend([flags, align, 0, 0]);
+        entry
+    }
+
+    #[test]
+    fn label_table_decodes_per_label_facts_and_rejects_noncanonical_entries() {
+        let mut region = label_entry(3, 13.0, 6.5, 2.0, 3, 2);
+        region.extend(label_entry(0, 0.0, 0.0, 0.0, 0, 0));
+        region.extend(label_entry(2, 0.0, 4.0, 4.0, 0, 0));
+        let mut next = 0;
+        let styles = decode_label_table(&region, (0, region.len()), &mut next).unwrap();
+        assert_eq!(next, region.len());
+        assert_eq!(
+            styles,
+            [
+                StaticLabelStyle {
+                    typography: Some((13.0, 3, 2)),
+                    padding: Some((6.5, 2.0)),
+                },
+                StaticLabelStyle::default(),
+                StaticLabelStyle {
+                    typography: None,
+                    padding: Some((4.0, 4.0)),
+                },
+            ]
+        );
+        // The next panel must start exactly where this one ended.
+        assert!(decode_label_table(&region, (0, 20), &mut next).is_err());
+        let mut next = 0;
+        assert!(decode_label_table(&region, (0, 30), &mut next).is_err());
+        for bad in [
+            label_entry(4, 0.0, 0.0, 0.0, 0, 0),
+            label_entry(0, 12.0, 0.0, 0.0, 0, 0),
+            label_entry(0, 0.0, 3.0, 0.0, 0, 0),
+            label_entry(1, 12.0, 0.0, 0.0, 4, 0),
+            label_entry(1, 12.0, 0.0, 0.0, 0, 4),
+            {
+                let mut entry = label_entry(0, 0.0, 0.0, 0.0, 0, 0);
+                entry[18] = 1;
+                entry
+            },
+        ] {
+            let mut next = 0;
+            assert!(decode_label_table(&bad, (0, 20), &mut next).is_err());
+        }
+    }
+
+    /// A one-panel XYST v3 document around the 200x120 three-annotation-label
+    /// Scene, with panel flag 3 (`labels`) and the given label-table region.
+    fn labelled_document(table: Option<&[u8]>) -> Vec<u8> {
+        let scene = crate::scene::tests::per_label_style_scene_bytes();
+        let region = table.unwrap_or(&[]);
+        let mut out = vec![0u8; HEADER_BYTES];
+        out[..4].copy_from_slice(MAGIC);
+        for (at, value) in [
+            (4, VERSION),
+            (8, 200),
+            (12, 120),
+            (20, 1),
+            (60, region.len() as u32),
+        ] {
+            out[at..at + 4].copy_from_slice(&value.to_le_bytes());
+        }
+        let mut panel = vec![0u8; PANEL_BYTES];
+        for (at, value) in [(8, 200u32), (12, 120), (20, scene.len() as u32)] {
+            panel[at..at + 4].copy_from_slice(&value.to_le_bytes());
+        }
+        if table.is_some() {
+            panel[24..28].copy_from_slice(&PANEL_FLAG_ANNOTATION_LABELS.to_le_bytes());
+            panel[84..88].copy_from_slice(&(region.len() as u32).to_le_bytes());
+        }
+        out.extend(panel);
+        out.extend(region);
+        out.extend(scene);
+        out
+    }
+
+    #[test]
+    fn label_table_flag_requires_exact_annotation_label_coverage() {
+        let entry = |size: f32| {
+            let mut entry = 1u32.to_le_bytes().to_vec();
+            entry.extend(size.to_le_bytes());
+            entry.extend([0; 8]);
+            entry.extend([0, 0, 0, 0]);
+            entry
+        };
+        let three: Vec<u8> = [12.0, 14.0, 16.0].into_iter().flat_map(entry).collect();
+        assert!(StaticDocument::decode(&labelled_document(None)).is_ok());
+        assert!(StaticDocument::decode(&labelled_document(Some(&three))).is_ok());
+        // Panel flag 3 with an explicitly present but empty table, or a short
+        // or long one, is rejected: the flag requires one entry per annotation
+        // label, whatever the Scene's label count is.
+        for bad in [&three[..0], &three[..40], &[three.clone(), entry(9.0)].concat()[..]] {
+            assert_eq!(
+                StaticDocument::decode(&labelled_document(Some(bad))).err(),
+                Some(StaticDocumentError::Panel),
+                "{} bytes",
+                bad.len()
+            );
+        }
     }
 
     #[test]

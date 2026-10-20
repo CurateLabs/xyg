@@ -100,6 +100,10 @@ const SCENE_LABEL_RECORD_BYTES: usize = 40;
 const SCENE_LABEL_BOX_RECORD_BYTES: usize = 84;
 const SCENE_LABEL_WRAPPED_RECORD_BYTES: usize = 104;
 const SCENE_LABEL_ROTATED_RECORD_BYTES: usize = 112;
+/// XYLB v7 = the v6 record plus `u32` flags (bit 0 = annotation label) and a
+/// zero reserved `u32`. It is emitted only when the provenance flag disagrees
+/// with the reserved-id pattern, so every other Scene keeps its prior bytes.
+const SCENE_LABEL_PROVENANCE_RECORD_BYTES: usize = 120;
 const CALLOUT_LABEL_BOX_INSET: f64 = 3.0;
 const MAX_SCENE_LABEL_COORDINATE: f64 = 1_000_000.0;
 const WRAPPED_LABEL_LINE_HEIGHT: f64 = 1.2;
@@ -147,6 +151,17 @@ const SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT: u8 = 6;
 const STRAIGHT_ARROW_HEAD_LENGTH: f64 = 8.0;
 const STRAIGHT_ARROW_HEAD_HALF_WIDTH: f64 = 4.0;
 
+/// The ids annotation decoration assigns to labels (text 4, attached 5,
+/// callout 6, wrapped 7 under the reserved annotation prefix). Labels written
+/// before XYLB v7 carry no flag and are classified by this pattern, which every
+/// annotation label satisfies; v7 records the flag exactly for the labels where
+/// an ordinary label's literal id collides with it.
+#[inline(always)]
+fn annotation_looking_id(stable_id: u64) -> bool {
+    // Prefix 0x5859 and tag byte 4..=7 share the top 22 bits (0x585904 >> 2).
+    stable_id >> 42 == 0x161641
+}
+
 fn is_scene_annotation_id(stable_id: u64) -> bool {
     stable_id & SCENE_ANNOTATION_ID_MASK == SCENE_ANNOTATION_ID_PREFIX
 }
@@ -167,6 +182,15 @@ const _: () = assert!(
             + 32
             + MAX_SCENE_LEGEND_ENTRIES * (40 + MAX_BROWSER_LEGEND_PATH_BYTES)
 );
+
+/// Per-label typography and label-box facts applied while Rust consumes XYST
+/// (never serialized in the Scene wire): `(size, italic/bold bits, vertical
+/// alignment)` and the `(horizontal, vertical)` box padding.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct StaticLabelStyle {
+    pub(crate) typography: Option<(f64, u8, u8)>,
+    pub(crate) padding: Option<(f64, f64)>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 struct SceneLabelBox {
@@ -213,6 +237,11 @@ pub struct SceneLabel {
     /// admits it on labelled cartesian marker XYAW rows.
     pub rotation: f64,
     pub text: String,
+    /// Provenance: the label was created by authored annotation decoration
+    /// (XYAT/XYAL/XYAW/XYAC), as opposed to a chart, graph or geo label that
+    /// may carry any literal source id. XYLB v7 serializes it; the static
+    /// annotation-style table targets exactly these labels.
+    pub annotation: bool,
 }
 
 fn encode_scene_labels(
@@ -231,7 +260,14 @@ fn encode_scene_labels(
     if labels.len() > MAX_SCENE_LABELS || text_bytes > MAX_SCENE_LABEL_TEXT_BYTES {
         return Err(SceneError::Limit);
     }
-    let version = if labels.iter().any(|label| label.rotation != 0.0) {
+    // Every annotation label carries a reserved id, so only an ordinary label
+    // whose literal id looks like one needs the explicit flag.
+    let version = if labels
+        .iter()
+        .any(|label| !label.annotation && annotation_looking_id(label.stable_id))
+    {
+        7
+    } else if labels.iter().any(|label| label.rotation != 0.0) {
         6
     } else if labels.iter().any(|label| label.text.contains('\n')) {
         5
@@ -255,6 +291,7 @@ fn encode_scene_labels(
         4 => SCENE_LABEL_BOX_RECORD_BYTES + 16,
         5 => SCENE_LABEL_WRAPPED_RECORD_BYTES,
         6 => SCENE_LABEL_ROTATED_RECORD_BYTES,
+        7 => SCENE_LABEL_PROVENANCE_RECORD_BYTES,
         _ => unreachable!(),
     };
     let mut out =
@@ -340,6 +377,10 @@ fn encode_scene_labels(
         if version >= 6 {
             out.extend_from_slice(&label.rotation.to_le_bytes());
         }
+        if version >= 7 {
+            // Flags word (bit 0) and its zero reserved word as one u64.
+            out.extend_from_slice(&u64::from(label.annotation).to_le_bytes());
+        }
     }
     for label in labels {
         out.extend_from_slice(label.text.as_bytes());
@@ -357,7 +398,7 @@ fn decode_scene_labels(
         return Err(SceneError::Length);
     }
     let version = batch_u32(bytes, 4)?;
-    if !(1..=6).contains(&version) {
+    if !(1..=7).contains(&version) {
         return Err(SceneError::Length);
     }
     let record_bytes = match version {
@@ -367,6 +408,7 @@ fn decode_scene_labels(
         4 => SCENE_LABEL_BOX_RECORD_BYTES + 16,
         5 => SCENE_LABEL_WRAPPED_RECORD_BYTES,
         6 => SCENE_LABEL_ROTATED_RECORD_BYTES,
+        7 => SCENE_LABEL_PROVENANCE_RECORD_BYTES,
         _ => unreachable!(),
     };
     let count = batch_u32(bytes, 8)? as usize;
@@ -469,6 +511,16 @@ fn decode_scene_labels(
         } else {
             0.0
         };
+        let stable_id = batch_u64(bytes, at)?;
+        let annotation = if version >= 7 {
+            match batch_u64(bytes, at + 112)? {
+                0 => false,
+                1 => true,
+                _ => return Err(SceneError::Length),
+            }
+        } else {
+            annotation_looking_id(stable_id)
+        };
         let end = text_at.checked_add(len).ok_or(SceneError::Limit)?;
         let text = std::str::from_utf8(bytes.get(text_at..end).ok_or(SceneError::Length)?)
             .map_err(|_| SceneError::Length)?
@@ -482,7 +534,7 @@ fn decode_scene_labels(
             return Err(SceneError::Length);
         }
         labels.push(SceneLabel {
-            stable_id: batch_u64(bytes, at)?,
+            stable_id,
             x: batch_f64(bytes, at + 8)?,
             y: batch_f64(bytes, at + 16)?,
             font_size: batch_f64(bytes, at + 24)?,
@@ -490,6 +542,7 @@ fn decode_scene_labels(
             anchor,
             rotation,
             text,
+            annotation,
         });
         backgrounds.push(background);
         text_at = end;
@@ -2596,6 +2649,7 @@ fn decode_xyat(
             anchor: 0,
             rotation: 0.0,
             text: text.to_owned(),
+            annotation: true,
         };
         backgrounds.push(match (background, border) {
             (Some(fill), border) => resolved_callout_label_background(
@@ -2763,6 +2817,7 @@ fn decode_xyal(
             anchor: 0,
             rotation: 0.0,
             text,
+            annotation: true,
         };
         backgrounds.push(match background {
             Some(fill) => resolved_callout_label_background(
@@ -2947,6 +3002,7 @@ fn decode_xyaw(
             anchor,
             rotation,
             text,
+            annotation: true,
         };
         let background = resolved_callout_label_background(
             lx,
@@ -8257,6 +8313,7 @@ impl<'a> SceneBatch<'a> {
                     anchor: 0,
                     rotation: 0.0,
                     text,
+                    annotation: true,
                 };
                 label_backgrounds.push(match background {
                     Some(fill) => resolved_callout_label_background(
@@ -10331,6 +10388,7 @@ fn decode_xyac(
                 anchor,
                 rotation: 0.0,
                 text: text.to_owned(),
+                annotation: true,
             },
             label_background: resolved_callout_label_background(
                 tip[0],
@@ -11256,7 +11314,9 @@ pub struct SceneDocument {
     colorbar: Option<SceneColorbar>,
     labels: Vec<SceneLabel>,
     label_backgrounds: Vec<Option<SceneLabelBox>>,
-    static_label_text_flags: u8,
+    /// Per-label italic/bold bits applied while consuming XYST; empty means
+    /// every label is upright/normal. Not serialized in the Scene wire.
+    static_label_text_flags: Vec<u8>,
     static_title_style: Option<(f64, [u8; 4])>,
     static_title_flags: u8,
     styles: Vec<EncodedStyle>,
@@ -11307,7 +11367,7 @@ impl SceneDocument {
             || d.gradients.iter().any(Option::is_some)
             || d.marker_glyphs.iter().any(Option::is_some)
             || d.static_title_style.is_some()
-            || d.static_label_text_flags != 0
+            || !d.static_label_text_flags.is_empty()
             || d.styles.iter().any(|s| s.dash_count != 0)
             || d.labels.len() + missing.len() > MAX_SCENE_LABELS
         {
@@ -11351,6 +11411,7 @@ impl SceneDocument {
                 rgba: [0, 0, 0, 255],
                 anchor: 2,
                 text: (*text).to_owned(),
+                annotation: false,
             });
             // Existing XYLB boxes paint identically in SVG, raster and browser
             // DOM; opaque contrast remains independent of the underlying tile.
@@ -11443,7 +11504,7 @@ impl SceneDocument {
                 && d.gradients.iter().all(Option::is_none)
                 && d.marker_glyphs.iter().all(Option::is_none)
                 && d.static_title_style.is_none()
-                && d.static_label_text_flags == 0
+                && d.static_label_text_flags.is_empty()
                 && d.styles.iter().all(|s| s.dash_count == 0)
         };
         // Identical canonical layout/scales, no second chrome/decor owner.
@@ -11954,50 +12015,117 @@ impl SceneDocument {
         Ok(())
     }
 
-    /// Apply one bounded pyplot annotation size after Scene decoding. Pyplot
-    /// panels currently use a single rc-resolved text size; heterogeneous
-    /// annotation typography is rejected by the host preflight.
-    pub(crate) fn apply_static_annotation_font_size(
+    /// Apply the per-label pyplot typography and label-box facts after Scene
+    /// decoding. `styles` is the label table of the static annotation-style
+    /// projection: `None` means the panel carries no table (labels keep their
+    /// canonical typography); `Some` must hold exactly one entry per
+    /// **annotation** label, in label-section order (owned by
+    /// `scene_annotations::label_slots`), and an empty `Some` is checked like
+    /// any other length. Annotation labels are identified by their wire provenance
+    /// flag (`SceneLabel::annotation`, XYLB v7), never by id, so a Scene that also carries non-annotation labels
+    /// (composed graph labels, chrome) leaves those untouched. Typography
+    /// (size, italic/bold, vertical alignment) and the box `(horizontal,
+    /// vertical)` padding are resolved against Rust text metrics and the
+    /// canonical 3px label-box inset, per label.
+    pub(crate) fn apply_static_annotation_labels(
         &mut self,
-        size: Option<f64>,
+        styles: Option<&[StaticLabelStyle]>,
     ) -> Result<(), SceneError> {
-        let Some(size) = size else {
+        let Some(styles) = styles else {
             return Ok(());
         };
-        if !size.is_finite() || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&size) {
-            return Err(SceneError::NonFinite);
-        }
-        for (label, background) in self.labels.iter_mut().zip(&mut self.label_backgrounds) {
-            label.font_size = size;
-            if let Some(current) = background.as_ref() {
-                *background = resolved_callout_label_background(
-                    label.x,
-                    label.y,
-                    size,
-                    label.anchor,
-                    &label.text,
-                    current.rgba,
-                    current.border.clone(),
-                    self.layout,
-                )?;
-            }
-        }
-        Ok(())
-    }
-
-    /// Apply uniform deterministic italic/bold text facts to this panel's
-    /// annotations without changing the canonical Scene wire format.
-    pub(crate) fn apply_static_annotation_text_flags(
-        &mut self,
-        flags: Option<u8>,
-    ) -> Result<(), SceneError> {
-        let Some(flags) = flags else {
-            return Ok(());
-        };
-        if flags & !0b11 != 0 || self.labels.is_empty() {
+        let targets: Vec<usize> = self
+            .labels
+            .iter()
+            .enumerate()
+            .filter_map(|(index, label)| label.annotation.then_some(index))
+            .collect();
+        if styles.len() != targets.len() {
             return Err(SceneError::Length);
         }
-        self.static_label_text_flags = flags;
+        self.static_label_text_flags = vec![0; self.labels.len()];
+        for (&index, style) in targets.iter().zip(styles) {
+            let label = &mut self.labels[index];
+            let background = &mut self.label_backgrounds[index];
+            if let Some((size, flags, _)) = style.typography {
+                if !size.is_finite()
+                    || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&size)
+                    || flags & !0b11 != 0
+                {
+                    return Err(SceneError::NonFinite);
+                }
+                label.font_size = size;
+                self.static_label_text_flags[index] = flags;
+                if let Some(current) = background.as_ref() {
+                    *background = resolved_callout_label_background(
+                        label.x,
+                        label.y,
+                        size,
+                        label.anchor,
+                        &label.text,
+                        current.rgba,
+                        current.border.clone(),
+                        self.layout,
+                    )?;
+                }
+            }
+            if let Some((horizontal, vertical)) = style.padding {
+                let max = MAX_SCENE_CHROME_LENGTH;
+                if !horizontal.is_finite()
+                    || !vertical.is_finite()
+                    || !(0.0..=max).contains(&horizontal)
+                    || !(0.0..=max).contains(&vertical)
+                {
+                    return Err(SceneError::NonFinite);
+                }
+                let Some(background) = background.as_mut() else {
+                    return Err(SceneError::Length);
+                };
+                let (dx, dy) = (
+                    horizontal - CALLOUT_LABEL_BOX_INSET,
+                    vertical - CALLOUT_LABEL_BOX_INSET,
+                );
+                background.x -= dx;
+                background.y -= dy;
+                background.width += 2.0 * dx;
+                background.height += 2.0 * dy;
+                if background.x < 0.0
+                    || background.y < 0.0
+                    || background.width <= 0.0
+                    || background.height <= 0.0
+                    || background.x + background.width > self.layout.viewport_width
+                    || background.y + background.height > self.layout.viewport_height
+                {
+                    return Err(SceneError::Length);
+                }
+            }
+            if let Some((_, _, align)) = style.typography {
+                if align > 3 {
+                    return Err(SceneError::Length);
+                }
+                let block = textblock::measure(
+                    &label.text,
+                    label.font_size,
+                    textblock::LINE_HEIGHT,
+                    None,
+                )
+                .ok_or(SceneError::Length)?;
+                let trailing = (block.line_count().saturating_sub(1)) as f64 * block.line_step;
+                let shift = match align {
+                    0 => 0.0,
+                    1 => block.ascent,
+                    2 => -trailing - block.descent,
+                    _ => (block.ascent - trailing - block.descent) * 0.5,
+                };
+                label.y += shift;
+                if let Some(background) = background {
+                    background.y += shift;
+                }
+            }
+        }
+        if self.static_label_text_flags.iter().all(|flags| *flags == 0) {
+            self.static_label_text_flags.clear();
+        }
         Ok(())
     }
 
@@ -12019,72 +12147,6 @@ impl SceneDocument {
         Ok(())
     }
 
-    /// Resolve one uniform pyplot vertical alignment against Rust text
-    /// metrics. Mixed alignments fail closed at the document marshal seam.
-    pub(crate) fn apply_static_annotation_vertical_align(
-        &mut self,
-        align: Option<u8>,
-    ) -> Result<(), SceneError> {
-        let Some(align) = align else {
-            return Ok(());
-        };
-        if align > 3 || self.labels.is_empty() {
-            return Err(SceneError::Length);
-        }
-        for (label, background) in self.labels.iter_mut().zip(&mut self.label_backgrounds) {
-            let block =
-                textblock::measure(&label.text, label.font_size, textblock::LINE_HEIGHT, None)
-                    .ok_or(SceneError::Length)?;
-            let trailing = (block.line_count().saturating_sub(1)) as f64 * block.line_step;
-            let shift = match align {
-                0 => 0.0,
-                1 => block.ascent,
-                2 => -trailing - block.descent,
-                _ => (block.ascent - trailing - block.descent) * 0.5,
-            };
-            label.y += shift;
-            if let Some(background) = background {
-                background.y += shift;
-            }
-        }
-        Ok(())
-    }
-
-    /// Replace the canonical 3px label-box inset with one bounded pyplot
-    /// padding value after labels have been decoded and measured in Rust.
-    pub(crate) fn apply_static_annotation_padding(
-        &mut self,
-        padding: Option<f64>,
-    ) -> Result<(), SceneError> {
-        let Some(padding) = padding else {
-            return Ok(());
-        };
-        if !padding.is_finite() || !(0.0..=MAX_SCENE_CHROME_LENGTH).contains(&padding) {
-            return Err(SceneError::NonFinite);
-        }
-        let delta = padding - CALLOUT_LABEL_BOX_INSET;
-        let mut found = false;
-        for background in self.label_backgrounds.iter_mut().flatten() {
-            found = true;
-            background.x -= delta;
-            background.y -= delta;
-            background.width += 2.0 * delta;
-            background.height += 2.0 * delta;
-            if background.x < 0.0
-                || background.y < 0.0
-                || background.width <= 0.0
-                || background.height <= 0.0
-                || background.x + background.width > self.layout.viewport_width
-                || background.y + background.height > self.layout.viewport_height
-            {
-                return Err(SceneError::Length);
-            }
-        }
-        if !found {
-            return Err(SceneError::Length);
-        }
-        Ok(())
-    }
 
     /// Apply one bounded pyplot straight-arrow metric set to every arrow in a
     /// panel. The canonical Scene owns projected endpoints; XYST supplies the
@@ -12876,7 +12938,7 @@ impl SceneDocument {
             colorbar,
             labels,
             label_backgrounds,
-            static_label_text_flags: 0,
+            static_label_text_flags: Vec::new(),
             static_title_style: None,
             static_title_flags: 0,
             styles,
@@ -12951,8 +13013,16 @@ impl SceneDocument {
                 anchor: 1,
                 rotation: 0.0,
                 text: glyph.to_string(),
+                annotation: false,
             });
             backgrounds.push(None);
+        }
+        // Provenance is a Scene-wire fact (XYLB v7); the browser painter's
+        // label table stays at the versions its client reads, so every painter
+        // label (existing and glyph alike) carries only the id-implied flag.
+        // Normalizing once after the last append keeps the table below v7.
+        for label in &mut labels {
+            label.annotation = annotation_looking_id(label.stable_id);
         }
         Ok((labels, backgrounds))
     }
@@ -13501,7 +13571,10 @@ impl SceneDocument {
         out.push_str(
             "<g data-xy-chrome=\"graph_labels\" role=\"list\" aria-label=\"Graph labels\">",
         );
-        for (label, background) in self.labels.iter().zip(&self.label_backgrounds) {
+        for (index, (label, background)) in
+            self.labels.iter().zip(&self.label_backgrounds).enumerate()
+        {
+            let text_flags = self.static_label_text_flags.get(index).copied().unwrap_or(0);
             if let Some(background) = background {
                 out.push_str(
                     "<rect data-xy-slot=\"annotation_label_box\" aria-hidden=\"true\" x=\"",
@@ -13533,10 +13606,10 @@ impl SceneDocument {
             out.push_str(&rgba_css(label.rgba));
             out.push_str("\" font-size=\"");
             push_num(out, label.font_size);
-            if self.static_label_text_flags & 1 != 0 {
+            if text_flags & 1 != 0 {
                 out.push_str("\" font-style=\"italic");
             }
-            if self.static_label_text_flags & 2 != 0 {
+            if text_flags & 2 != 0 {
                 out.push_str("\" font-weight=\"bold");
             }
             if label.anchor != 0 {
@@ -15266,7 +15339,10 @@ impl SceneDocument {
     }
 
     fn append_raster_labels(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
-        for (label, background) in self.labels.iter().zip(&self.label_backgrounds) {
+        for (index, (label, background)) in
+            self.labels.iter().zip(&self.label_backgrounds).enumerate()
+        {
+            let text_flags = self.static_label_text_flags.get(index).copied().unwrap_or(0);
             if let Some(background) = background {
                 out.push(1);
                 out.extend_from_slice(&4u32.to_le_bytes());
@@ -15316,7 +15392,7 @@ impl SceneDocument {
                 } else {
                     (label.x, label.y + line_dy)
                 };
-                if label.rotation != 0.0 || self.static_label_text_flags != 0 {
+                if label.rotation != 0.0 || text_flags != 0 {
                     out.push(17);
                     push_raster_f32(out, x, scale)?;
                     push_raster_f32(out, y, scale)?;
@@ -15327,7 +15403,7 @@ impl SceneDocument {
                         return Err(SceneError::NonFinite);
                     }
                     out.extend_from_slice(&angle.to_le_bytes());
-                    out.push(self.static_label_text_flags);
+                    out.push(text_flags);
                     out.extend_from_slice(&0u32.to_le_bytes());
                     out.extend_from_slice(&label.rgba);
                     out.extend_from_slice(&(line.len() as u32).to_le_bytes());
@@ -17235,7 +17311,7 @@ fn fit_plot_gutters(viewport: f64, lo: f64, hi: f64) -> (f64, f64) {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
 
     #[test]
     fn graph_edge_ends_clip_to_outlines_and_add_filled_heads() {
@@ -17635,6 +17711,7 @@ mod tests {
                 anchor: 0,
                 rotation: 0.0,
                 text: "Feature".into(),
+                annotation: false,
             });
             fixture.label_backgrounds.push(None);
             fixture.legend = Some(SceneLegend {
@@ -20773,6 +20850,26 @@ mod tests {
         }
     }
 
+    /// The browser painter's label table must never reach XYLB v7, whose
+    /// provenance record the TS decoder (`48_wasm_scene.ts`) rejects: a glyph
+    /// marker whose literal id looks like an annotation id gets the id-implied
+    /// flag like every other painter label.
+    #[test]
+    fn painter_label_table_stays_below_v7_for_glyphs_with_annotation_looking_ids() {
+        let mut document = admission_document(1, false);
+        document.records[0].stable_id = 0x5859_0400_0000_0001;
+        document.marker_glyphs = vec![Some("A".into())];
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let at = painter.windows(4).position(|window| window == b"XYLB").unwrap();
+        let version = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap());
+        // The TS decoder reads versions 1..=5; this unrotated glyph table must
+        // stay in that range (and in particular never reach v7).
+        assert!(version <= 5, "painter label table is XYLB v{version}");
+        let count = u32::from_le_bytes(painter[at + 8..at + 12].try_into().unwrap());
+        assert_eq!(count, 1);
+        assert!(painter.windows(1).any(|window| window == b"A"));
+    }
+
     #[test]
     fn glyph_marker_labels_are_bounded_before_label_allocation() {
         let mut document = admission_document(MAX_SCENE_LABELS, false);
@@ -22975,6 +23072,359 @@ mod tests {
         assert_eq!(&painter[64..72], &style_input[..8]);
     }
 
+    /// A decorated 200x120 Scene with three XYAT v2 text rows: a boxed
+    /// "alpha", an unboxed "beta", and a boxed "gamma".
+    pub(crate) fn per_label_style_scene_bytes() -> Vec<u8> {
+        let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false)
+            .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false)
+            .unwrap();
+        let batch = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap();
+        let mut xyat = Vec::new();
+        xyat.extend_from_slice(b"XYAT");
+        xyat.extend_from_slice(&2u32.to_le_bytes());
+        xyat.extend_from_slice(&3u32.to_le_bytes());
+        for (y, fill, text) in [
+            (0.8f64, [255u8, 255, 255, 255], "alpha"),
+            (0.5, [0, 0, 0, 0], "beta"),
+            (0.2, [250, 240, 230, 255], "gamma"),
+        ] {
+            xyat.extend_from_slice(&0.3f64.to_le_bytes());
+            xyat.extend_from_slice(&y.to_le_bytes());
+            xyat.extend_from_slice(&[1, 2, 3, 255]);
+            xyat.extend_from_slice(&fill);
+            xyat.extend_from_slice(&(text.len() as u32).to_le_bytes());
+            xyat.extend_from_slice(text.as_bytes());
+        }
+        let mut envelope = b"XYAD".to_vec();
+        envelope.extend_from_slice(&1u32.to_le_bytes());
+        envelope.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&xyat);
+        batch.with_authored_annotations(&envelope).unwrap().encode()
+    }
+
+    fn per_label_style_scene() -> SceneDocument {
+        SceneDocument::decode(&per_label_style_scene_bytes()).unwrap()
+    }
+
+    #[test]
+    fn static_annotation_labels_apply_typography_and_padding_per_label() {
+        let mut document = per_label_style_scene();
+        assert_eq!(document.labels.len(), 3);
+        let base: Vec<_> = document.label_backgrounds.clone();
+        let (alpha_y, gamma_y) = (document.labels[0].y, document.labels[2].y);
+        document
+            .apply_static_annotation_labels(Some(&[
+                StaticLabelStyle {
+                    typography: Some((13.0, 3, 0)),
+                    padding: Some((6.0, 2.0)),
+                },
+                StaticLabelStyle {
+                    typography: Some((9.0, 1, 0)),
+                    padding: None,
+                },
+                StaticLabelStyle {
+                    typography: Some((12.0, 0, 3)),
+                    padding: Some((5.0, 5.0)),
+                },
+            ]))
+            .unwrap();
+        let sizes: Vec<_> = document.labels.iter().map(|label| label.font_size).collect();
+        assert_eq!(sizes, [13.0, 9.0, 12.0]);
+        assert_eq!(document.static_label_text_flags, [3, 1, 0]);
+        // alpha: re-resolved at 13px, then a (6, 2) box inset instead of 3.
+        let alpha = document.label_backgrounds[0].as_ref().unwrap();
+        let advance = text_advance("alpha", 13.0);
+        assert!((alpha.width - (advance + 12.0)).abs() < 1e-9);
+        assert!((alpha.height - (13.0 * WRAPPED_LABEL_LINE_HEIGHT + 4.0)).abs() < 1e-9);
+        assert!((alpha.x - (document.labels[0].x - 6.0)).abs() < 1e-9);
+        assert!((alpha.y - (alpha_y - 13.0 - 2.0)).abs() < 1e-9);
+        assert!(document.label_backgrounds[1].is_none());
+        // gamma: centred alignment moved the label and its box together, and
+        // the (5, 5) padding grew the canonical 3px box by 2px per side.
+        assert!(document.labels[2].y != gamma_y);
+        let gamma = document.label_backgrounds[2].as_ref().unwrap();
+        let unshifted = base[2].as_ref().unwrap();
+        let shift = document.labels[2].y - gamma_y;
+        assert!((gamma.y - (unshifted.y - 2.0 + shift)).abs() < 1e-9);
+        assert!((gamma.height - (unshifted.height + 4.0)).abs() < 1e-9);
+        let svg = document.to_svg();
+        assert_eq!(svg.matches("font-style=\"italic\"").count(), 2);
+        assert_eq!(svg.matches("font-weight=\"bold\"").count(), 1);
+    }
+
+    #[test]
+    fn static_annotation_labels_fail_closed() {
+        let boxed = StaticLabelStyle {
+            typography: None,
+            padding: Some((4.0, 4.0)),
+        };
+        let plain = StaticLabelStyle::default();
+        // The table must cover the Scene's label section exactly.
+        assert!(per_label_style_scene()
+            .apply_static_annotation_labels(Some(&[plain, plain]))
+            .is_err());
+        // Padding needs a label box.
+        assert!(per_label_style_scene()
+            .apply_static_annotation_labels(Some(&[plain, boxed, plain]))
+            .is_err());
+        for typography in [(0.5, 0, 0), (1.0, 4, 0), (1.0, 0, 4), (f64::NAN, 0, 0)] {
+            assert!(per_label_style_scene()
+                .apply_static_annotation_labels(Some(&[
+                    StaticLabelStyle {
+                        typography: Some(typography),
+                        padding: None
+                    },
+                    plain,
+                    plain
+                ]))
+                .is_err());
+        }
+        // A present but empty table is checked like any other: it cannot
+        // stand in for the three annotation labels.
+        assert!(per_label_style_scene()
+            .apply_static_annotation_labels(Some(&[]))
+            .is_err());
+        // An absent table is a no-op that keeps every label untouched.
+        let mut document = per_label_style_scene();
+        document.apply_static_annotation_labels(None).unwrap();
+        assert!(document.static_label_text_flags.is_empty());
+        assert!(document.labels.iter().all(|label| label.font_size == 12.0));
+    }
+
+    /// Provenance is a Scene fact, not an id pattern: literal source ids are
+    /// arbitrary, so an ordinary label (and literal-tagged 0x80 geometry) may
+    /// carry exactly the ids annotation labels get. Only labels created by
+    /// annotation decoration are style targets, through the XYLB v7 round trip.
+    #[test]
+    fn static_annotation_labels_use_wire_provenance_not_reserved_ids() {
+        let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false)
+            .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false)
+            .unwrap();
+        let ordinary = |stable_id, text: &str| SceneLabel {
+            stable_id,
+            x: 60.0,
+            y: 50.0,
+            font_size: 11.0,
+            rgba: [9, 9, 9, 255],
+            anchor: 0,
+            rotation: 0.0,
+            text: text.to_owned(),
+            annotation: false,
+        };
+        // The first annotation label of this Scene is re-identified as
+        // 0x5859_0400_0000_0001 (one existing label); the ordinary labels carry
+        // that id and the id of the literal 0x80 geometry record.
+        let literal_geometry_id = 0x5859_aa00_0000_0001u64;
+        let literal_ids = [literal_geometry_id];
+        let batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            None,
+            vec![
+                ordinary(0x5859_0400_0000_0001, "collides with annotation id"),
+                ordinary(literal_geometry_id, "shares literal geometry id"),
+            ],
+            &[SceneRecordKind::Scatter as u8],
+            &literal_ids,
+            &[0],
+            &[255, 0, 0, 255],
+            &[0, 0, 0, 255],
+            &[1.0],
+            &[6.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap();
+        let mut xyat = b"XYAT".to_vec();
+        xyat.extend_from_slice(&2u32.to_le_bytes());
+        xyat.extend_from_slice(&1u32.to_le_bytes());
+        xyat.extend_from_slice(&0.3f64.to_le_bytes());
+        xyat.extend_from_slice(&0.8f64.to_le_bytes());
+        xyat.extend_from_slice(&[1, 2, 3, 255]);
+        xyat.extend_from_slice(&[255, 255, 255, 255]);
+        xyat.extend_from_slice(&5u32.to_le_bytes());
+        xyat.extend_from_slice(b"alpha");
+        let mut envelope = b"XYAD".to_vec();
+        envelope.extend_from_slice(&1u32.to_le_bytes());
+        envelope.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&xyat);
+        // The composed route (#922): decode the base Scene with its ordinary
+        // labels, then append authored annotations to the document.
+        let encoded_base = batch.encode();
+        let compose = || {
+            let base = SceneDocument::decode(&encoded_base).unwrap();
+            assert_eq!(base.labels.len(), 2);
+            base.with_authored_annotations(&envelope).unwrap()
+        };
+        let mut document = compose();
+        let ids: Vec<_> = document.labels.iter().map(|l| (l.stable_id, l.annotation)).collect();
+        assert_eq!(
+            ids,
+            [
+                (0x5859_0400_0000_0001, false),
+                (literal_geometry_id, false),
+                (0x5859_0400_0000_0002, true)
+            ]
+        );
+        let style = StaticLabelStyle {
+            typography: Some((17.0, 1, 0)),
+            padding: None,
+        };
+        // Exactly one annotation label: two entries (styling an ordinary label
+        // that shares an annotation-looking id) fail, one entry succeeds.
+        assert!(compose()
+            .apply_static_annotation_labels(Some(&[style, style]))
+            .is_err());
+        document.apply_static_annotation_labels(Some(&[style])).unwrap();
+        let sizes: Vec<_> = document.labels.iter().map(|l| l.font_size).collect();
+        assert_eq!(sizes, [11.0, 11.0, 17.0]);
+        assert_eq!(document.static_label_text_flags, [0, 0, 1]);
+    }
+
+    #[test]
+    fn label_provenance_round_trips_through_xylb_v7_and_fails_closed() {
+        let label = |stable_id, annotation| SceneLabel {
+            stable_id,
+            x: 10.0,
+            y: 20.0,
+            font_size: 12.0,
+            rgba: [0, 0, 0, 255],
+            anchor: 0,
+            rotation: 0.0,
+            text: "t".to_owned(),
+            annotation,
+        };
+        let none = vec![None; 2];
+        // Ordinary labels and annotation labels with their reserved ids keep the
+        // pre-provenance bytes; the flag is implied by the id pattern.
+        let ordinary = [label(1, false), label(2, false)];
+        assert_eq!(encode_scene_labels(&ordinary, &none).unwrap()[4], 1);
+        let implied = [label(1, false), label(0x5859_0400_0000_0001, true)];
+        let encoded = encode_scene_labels(&implied, &none).unwrap();
+        assert_eq!(encoded[4], 1);
+        assert_eq!(decode_scene_labels(&encoded).unwrap().0, implied);
+        // An ordinary label that collides with the annotation id pattern, or a
+        // literal-tagged geometry id, needs v7 to round-trip as ordinary.
+        let mixed = [
+            label(0x5859_0400_0000_0001, false),
+            label(0x5859_aa00_0000_0001, false),
+            label(0x5859_0400_0000_0002, true),
+        ];
+        let none = vec![None; 3];
+        let encoded = encode_scene_labels(&mixed, &none).unwrap();
+        assert_eq!(encoded[4], 7);
+        let (decoded, _) = decode_scene_labels(&encoded).unwrap();
+        assert_eq!(decoded, mixed);
+        // Unknown flag bits and the reserved word are rejected.
+        for (offset, value) in [(16 + 112, 2u32), (16 + 116, 1)] {
+            let mut bad = encoded.clone();
+            bad[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+            assert!(decode_scene_labels(&bad).is_err());
+        }
+    }
+
+    /// The shape a composed graph with authored annotations produces: the
+    /// graph's own labels (non-annotation ids) come first and annotation labels
+    /// follow (#922). The table covers annotation labels only.
+    #[test]
+    fn static_annotation_labels_leave_non_annotation_labels_untouched() {
+        let graph_label = |stable_id, text: &str| SceneLabel {
+            stable_id,
+            x: 60.0,
+            y: 50.0,
+            font_size: 11.0,
+            rgba: [9, 9, 9, 255],
+            anchor: 0,
+            rotation: 0.0,
+            text: text.to_owned(),
+            annotation: false,
+        };
+        let mut document = per_label_style_scene();
+        // Graph labels before, and one interleaved between, the annotation labels.
+        document.labels.insert(0, graph_label(7, "node a"));
+        document.label_backgrounds.insert(0, None);
+        document.labels.insert(3, graph_label(0x4000_0000_0000_0001, "node b"));
+        document.label_backgrounds.insert(3, None);
+        let styles = [
+            StaticLabelStyle {
+                typography: Some((13.0, 3, 0)),
+                padding: None,
+            },
+            StaticLabelStyle {
+                typography: Some((9.0, 1, 2)),
+                padding: None,
+            },
+            StaticLabelStyle {
+                typography: Some((15.0, 2, 0)),
+                padding: Some((5.0, 5.0)),
+            },
+        ];
+        let before: Vec<_> = document.labels.iter().map(|l| (l.y, l.font_size)).collect();
+
+        // One entry per label (the old positional contract) is now a mismatch.
+        let mut positional = per_label_style_scene();
+        positional.labels.insert(0, graph_label(7, "node a"));
+        positional.label_backgrounds.insert(0, None);
+        assert!(positional
+            .apply_static_annotation_labels(Some(&[styles[0]; 4]))
+            .is_err());
+
+        document
+            .apply_static_annotation_labels(Some(&styles))
+            .unwrap();
+        let texts: Vec<_> = document.labels.iter().map(|l| l.text.as_str()).collect();
+        assert_eq!(texts, ["node a", "alpha", "beta", "node b", "gamma"]);
+        // Non-annotation labels keep size, position, and upright text.
+        for index in [0, 3] {
+            assert_eq!(
+                (document.labels[index].y, document.labels[index].font_size),
+                before[index]
+            );
+            assert_eq!(document.static_label_text_flags[index], 0);
+        }
+        let sizes: Vec<_> = document.labels.iter().map(|l| l.font_size).collect();
+        assert_eq!(sizes, [11.0, 13.0, 9.0, 11.0, 15.0]);
+        assert_eq!(document.static_label_text_flags, [0, 3, 1, 0, 2]);
+        assert!(document.label_backgrounds[4].is_some());
+    }
+
     #[test]
     fn scene_v8_cartesian_chrome_round_trips_all_consumers_and_bounds() {
         let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
@@ -23909,8 +24359,11 @@ mod tests {
         assert!(boxes[0].is_none());
         assert!(callouts.is_empty());
         let encoded = encode_scene_labels(&labels, &boxes).unwrap();
+        // XYAW labels keep the v6 rotated record: their reserved ids already
+        // classify them as annotation labels.
         assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 6);
         let (roundtrip, _) = decode_scene_labels(&encoded).unwrap();
+        assert!(roundtrip[0].annotation);
         assert_eq!(roundtrip[0].rotation, 30.0);
         assert_eq!(roundtrip[0].text, "rotated");
     }
