@@ -59,7 +59,7 @@ jobs:
 
   matplotlib_reference:
     name: Matplotlib 3.11 reference compatibility
-    needs: release_surface_changes
+    needs: [release_surface_changes, wasm_assets]
     if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
@@ -80,6 +80,19 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+      - name: Install JS build toolchain
+        run: npm ci
+      # The pyplot browser probes need the packaged WASM tick assets (§33). wasm-worker.js is
+      # built by the client build, not carried in the artifact, so build it before verifying.
+      - name: Build render client
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python3 scripts/verify_wasm_assets.py
       - name: Install XYG and released reference wheel
         run: |
           uv venv .venv

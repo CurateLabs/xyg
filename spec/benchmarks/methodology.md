@@ -783,7 +783,10 @@ matplotlib-dependent pyplot test, so this lane is the only gate for them: a fail
 newly added matplotlib-dependent pyplot test blocks the merge through `Release surfaces`.
 Measured runtime is about 3.5 minutes serial (1,240 passed, `-rs` lists the skips), so the job has
 a 30-minute ceiling and no parallelization. Skips are optional-dependency skips (pandas) and
-browser probes when no Chromium is present.
+browser probes when no Chromium is present. The lane is also a `wasm_assets` consumer
+(`needs`, download, build the client, verify): the pyplot browser probes need the packaged WASM tick
+assets, and running without them failed `test_browser_keeps_connector_outside_axes_when_target_is_inside`
+with `missing packaged tick asset ... xyg-wasm.wasm`.
 
 The real coverage gap is narrower and is on the speed side: no workflow invokes
 `bench_pyplot_vs_matplotlib.py`. The per-family 10x PNG target is therefore

@@ -1023,7 +1023,7 @@ def test_ci_pr_lane_policy_rejects_filters_required_skips_and_breadth_prs(
         ),
         (
             "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
-            "    needs: release_surface_changes\n"
+            "    needs: [release_surface_changes, wasm_assets]\n"
             "    if: github.event_name != 'pull_request' || "
             "needs.release_surface_changes.outputs.required == 'true'\n",
             "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
@@ -2104,6 +2104,7 @@ _WASM_CONSUMERS = (
     "test",
     "wasm_foundation",
     "python_floor",
+    "matplotlib_reference",
     "benchmark_methodology",
     "wheels",
     "sdist",

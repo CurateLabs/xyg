@@ -1132,6 +1132,7 @@ WASM_CONSUMER_JOBS = (
     "test",
     "wasm_foundation",
     "python_floor",
+    "matplotlib_reference",
     "benchmark_methodology",
     "wheels",
     "sdist",
