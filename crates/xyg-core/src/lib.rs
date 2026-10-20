@@ -1089,7 +1089,7 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// `out_cap >= 4` (nothing is written for `out_cap` 0–3), so hosts retry once
 /// with that size. An encoded product longer than `i32::MAX` bytes cannot be
 /// represented by the return value or the size slot: it returns `-3` (Limit)
-/// with `u32::MAX` in `out[0..4]` and is never copied. Encoded Scene v31 is
+/// with `u32::MAX` in `out[0..4]` and is never copied. Encoded Scene v33 is
 /// unchanged.
 ///
 /// # Safety

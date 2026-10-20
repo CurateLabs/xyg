@@ -145,7 +145,6 @@ falling back to a second renderer. Currently open (tracked under #1006):
 | `25_annotate_text` | mixed annotation text styles in one panel; annotation `bbox=` | `XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE`, `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX` |
 | `26_twinx_dual_axis` | secondary y axis | `Scene v12 figure compilation currently supports exactly x/y axes` |
 | Not in the corpus | `text(..., transform=fig.transFigure)` / `fig.text`, i.e. `figure_fraction` text: a panel Scene does not own the figure rectangle (pyplot compiles panels separately), so static export names the gap instead of guessing a panel-relative position | `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE` |
-| `47_statistical_families` | default-gridsize `hexbin` lattice above the 1,024 PolyFill-group ceiling ([#887](https://github.com/CurateLabs/xyg/issues/887)) | `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
 
 Legend placement relative to the axes is reproduced in static output (#1026):
 `loc` resolves against the panel's plot box. For `upper left`, `upper right`,

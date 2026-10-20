@@ -432,7 +432,7 @@ def test_manifest_documents_product_encode_required_size_contract() -> None:
         "unit": "bytes",
         "capacity_argument": "out_cap",
         "maximum_total_bytes": "i32::MAX",
-        "payload_format": "encoded Scene v31 batch",
+        "payload_format": "encoded Scene v33 batch",
         "short_capacity": "report_required_size",
         "required_size_slot": "out[0..4] little-endian u32 when capacity >= 4",
         "required_size_status": -4,
