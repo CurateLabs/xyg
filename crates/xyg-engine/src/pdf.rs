@@ -2288,6 +2288,49 @@ mod tests {
     }
 
     #[test]
+    fn svg_arcs_convert_to_deterministic_cubics() {
+        let kappa = 4.0 / 3.0 * (std::f64::consts::PI / 8.0).tan();
+        let close = |left: f64, right: f64| (left - right).abs() < 1e-12;
+        // Quarter circle about the origin: one cubic with the standard kappa.
+        let segs = parse_path("M 10 0 A 10 10 0 0 1 0 10").unwrap();
+        assert_eq!(segs.len(), 2);
+        match segs[1] {
+            Seg::C(x1, y1, x2, y2, x, y) => {
+                assert!(close(x1, 10.0) && close(y1, 10.0 * kappa));
+                assert!(close(x2, 10.0 * kappa) && close(y2, 10.0));
+                assert!(close(x, 0.0) && close(y, 10.0));
+            }
+            _ => panic!("arc must become a cubic"),
+        }
+        // A polar wedge path (outer arc, line, reversed inner arc): one cubic
+        // per quarter turn, ending exactly on each written endpoint.
+        let wedge = "M 300 200 A 100 100 0 0 0 200 100 L 200 150 A 50 50 0 0 1 250 200 Z";
+        let segs = parse_path(wedge).unwrap();
+        let ends: Vec<(f64, f64)> = segs
+            .iter()
+            .filter_map(|seg| match *seg {
+                Seg::C(_, _, _, _, x, y) => Some((x, y)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(ends, vec![(200.0, 100.0), (250.0, 200.0)]);
+        // Two half-turn arcs draw a full circle as four quarter cubics.
+        let circle = parse_path("M 110 0 A 10 10 0 0 0 90 0 A 10 10 0 0 0 110 0 Z").unwrap();
+        assert_eq!(
+            circle
+                .iter()
+                .filter(|seg| matches!(seg, Seg::C(..)))
+                .count(),
+            4
+        );
+        let pdf = svg_to_pdf(&format!(
+            "<svg width=\"400\" height=\"400\"><path d=\"{wedge}\" fill=\"rgb(0,0,0)\"/></svg>"
+        ))
+        .unwrap();
+        assert!(pdf.starts_with(b"%PDF-1.4"));
+    }
+
+    #[test]
     fn empty_svg_is_a_valid_page() {
         let pdf =
             svg_to_pdf(r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50"></svg>"#)

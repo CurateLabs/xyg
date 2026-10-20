@@ -48,7 +48,8 @@ including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
 canonical hidden-record zeroing, the optional polar XYPL sidecar after
-the chrome trailer, the optional XYIM image-blit sidecar for Scene Image
+the chrome trailer (with its optional XYWA exact-wedge-arc sidecar directly
+before it), the optional XYIM image-blit sidecar for Scene Image
 records, the optional XYDS constant-dash sidecar after XYIM, and the optional
 XYLC constant-linecap sidecar after XYDS rather than
 duplicating offsets in TypeScript.
@@ -1326,7 +1327,9 @@ encode time. Rust then:
    extras;
 4. uses `polar_position_mask` for visibility;
 5. appends the original XYPL bytes after the chrome trailer **only** for polar
-   scenes.
+   scenes, preceded by the optional `XYWA` exact-wedge-arc sidecar (see
+   "Polar wedge SVG arcs" below), so a polar Scene still ends with XYPL when it
+   has no XYIM or style sidecars.
 
 SVG clip is a circle at `(cx, cy, R)` (evenodd annulus when `hole>0`) for a
 full sector, or the sector path (outer arc + inner + radii) for a partial
@@ -1388,6 +1391,90 @@ cross-renderer tolerance contract, not a pixel-identity claim: Rust raster and
 WebGL have distinct compositing implementations. Custom
 fonts, CSS/classes, and continuous gradients are rejected by both hosts before
 they can form a Scene frame.
+
+### Polar wedge SVG arcs (`XYWA` v1)
+
+Polar bar/column/histogram wedges, constant-style polar heatmap lattice cells,
+and polar density cells all reach the encoded Scene as flattened PolyFill
+vertex runs from `polar_wedge_points` (span-proportional `polar_bar_segments`).
+Native raster and the XYPB browser painter draw those polygons unchanged — their
+display lists have no arc opcode — and their output is byte-identical to the
+pre-`XYWA` Scene. Static SVG instead writes each *plain* annular sector as exact
+SVG elliptical arcs, the compatibility contract of the retired Python writer
+(polar-axes.md §5): a printed or zoomed wind rose keeps circular edges, and the
+PDF converted from that SVG draws the arcs as cubic Béziers.
+
+`SCENE_VERSION` stays 33 and `ABI_VERSION` is unchanged (no C signature or
+by-pointer struct changes). Like the optional `XYGR`/`XYDS`/`XYMG` style
+sidecars, `XYWA` adds no record kind and changes no record's meaning, units,
+bounds, or order; it is a validated restatement of records already in the
+Scene. Every Scene decoder (native for Python and Node, and WASM) is the same
+Rust source, and a decoder that predates it fails closed (`SceneError::Length`) on
+the unknown bytes before `XYPL` instead of guessing, so the "Ownership and
+versioning" rule is preserved without a version bump. A polar Scene with no
+exact wedge (polar lines, scatters, rounded corners) is byte-identical to the
+pre-`XYWA` Scene; the polar bar and constant-style polar heatmap fixtures
+(`public_polar_bar_sha256`, `public_polar_heatmap_sha256`) gain the sidecar.
+
+`polar_wedge_geometry` returns the flattened polygon (byte-for-byte the
+`polar_wedge_points_ex` output) plus a `PolarWedgeArc`: centre, outer and inner
+radius in pixels, and the outer-arc start/end and inner-arc start/end screen
+angles after sector clipping and `wedge_gap` inset, in the polygon's traversal
+order (outer forward, inner reversed). `SceneBatch::encode` collects one entry
+per wedge run and writes the optional sidecar immediately **before** XYPL:
+
+```
+offset  size  field
+0       4     magic "XYWA"
+4       u32   version = 1
+8       u32   entry count (1 ..= MAX_SCENE_MARKS / 3)
+12      u32   reserved = 0
+16      f64   centre x (px)
+24      f64   centre y (px)
+32 + 56·i     entry i:
+        u32   first PolyFill record of the wedge run
+        u32   vertex count of the run
+        f64   outer radius (px, > 0)
+        f64   inner radius (px, 0 = slice from the centre)
+        f64   outer-arc start angle, end angle (radians)
+        f64   inner-arc start angle, end angle (radians; 0 when inner = 0)
+```
+
+Angles are math-sense screen radians: a point is `(cx + r cos a, cy − r sin a)`.
+Entries are sorted, non-overlapping, and each names exactly one maximal SVG
+PolyFill run (same kind, style, annotation tag, visibility, and stable ID —
+literal-ID `0x80` scenes whose same-style neighbours merge into one run drop
+those entries at encode). `validate_scene_batch` and `SceneDocument::decode`
+fail closed on a bad version, nonzero reserved bytes, an over-limit count, a
+sidecar without XYPL, non-finite or inverted radii, a span above one turn, an
+inner span wider than or opposite to the outer span, a vertex count that does
+not fit the shape (centre slice: ≥ 3; annulus: even, ≥ 4), or any arc endpoint
+farther than `1e-6·(1 + outer)` px from its stated circle and angle. The sidecar
+is therefore an exact restatement of the flattened runs, never a second
+geometry source.
+
+The SVG writer emits, for a run with an entry,
+`M outer-start A R R 0 0 s outer-end L inner-start A r r 0 0 s' inner-end Z`
+(annulus) or `M centre L outer-start A R R 0 0 s outer-end Z` (centre slice).
+Every endpoint is the run's own flattened vertex (first/last of each arc), so
+SVG and raster agree vertex for vertex; radii and endpoints use the shared
+two-decimal `push_num`. `s` is `0` when the angle increases (visually
+counterclockwise with screen y down) and `1` otherwise; the inner arc runs the
+other way. The large-arc flag is always `0`: an arc spanning more than a half
+turn splits at its mid-angle into two arcs, so a full-turn ring or disc
+(coincident endpoints, which SVG would otherwise drop) and any near-full turn
+survive two-decimal rounding. An arc collapsed to a point by a wide `wedge_gap`
+writes `L`. No entry — and so the flattened `M … L … Z` path — is kept for
+rounded annular corners (`corner_radius > 0` with a positive inner radius; the
+rolled-back corners are not circular arcs), zero-width slices, and wedges whose
+gap swallows the whole outer arc. Scenes with no exact wedge emit no sidecar.
+`pdf.rs` converts each `A` to at most one cubic per quarter turn
+(`arc_cubics`, deterministic). Python and Node consume the same Rust Scene and
+SVG, so the registered polar shapes (`public_polar_bar_sha256`,
+`public_polar_heatmap_sha256`) stay byte-identical across hosts.
+`tests/test_polar_wedge_svg_arcs.py` pins the rose/bar native PNG digests from
+the pre-arc native core (raster output is unchanged), and `benchmarks/test_codspeed_polar.py::test_svg_export_polar_wedges`
+is the exact-arc control row for the flattening PNG row.
 
 ## Version 19 Rust-owned bounded colorbar ticks
 

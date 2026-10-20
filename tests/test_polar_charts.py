@@ -343,11 +343,6 @@ def test_authored_tick_labels_beat_the_angle_format() -> None:
 # -- bars and wind rose (P4) -----------------------------------------------
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_polar_bars_render_as_wedge_paths_in_svg() -> None:
     """A polar bar is an annular sector: SVG expresses the arcs with `A`.
 

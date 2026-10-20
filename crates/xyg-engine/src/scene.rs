@@ -20,6 +20,11 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Write;
 
+#[path = "scene_wedge_arcs.rs"]
+mod wedge_arcs;
+use wedge_arcs::{SceneWedgeArc, SceneWedgeArcs, WedgeRecordView};
+pub use wedge_arcs::{XYWA_ENTRY_BYTES, XYWA_HEADER_BYTES, XYWA_MAGIC, XYWA_VERSION};
+
 pub const SCENE_VERSION: u32 = 33;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
@@ -4323,7 +4328,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             return Err(SceneError::Length);
         }
     }
-    let (xypl, xyim, xyds) = scene_sidecars_after_chrome(bytes, total)?;
+    let (xypl, xywa, xyim, xyds) = scene_sidecars_after_chrome(bytes, total)?;
 
     let viewport_width = batch_f64(bytes, 32)?;
     let viewport_height = batch_f64(bytes, 40)?;
@@ -4637,6 +4642,20 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             _ => return Err(SceneError::Length),
         }
         annotation_cursor = run_end;
+    }
+    if let Some(arcs) = wedge_arcs::parse_xywa(xywa)? {
+        arcs.validate(records, |index| {
+            let offset = records_offset + index * SCENE_BATCH_RECORD_BYTES;
+            Ok(WedgeRecordView {
+                kind: bytes[offset],
+                visible: bytes[offset + 1] == 1,
+                annotation_tag: bytes[offset + 3] & !SCENE_RECORD_Y2_BIT,
+                style_ref: batch_u32(bytes, offset + 4)? as usize,
+                stable_id: batch_u64(bytes, offset + 8)?,
+                x: batch_f64(bytes, offset + 16)?,
+                y: batch_f64(bytes, offset + 24)?,
+            })
+        })?;
     }
 
     Ok(SceneBatchSummary { records, styles })
@@ -6598,18 +6617,30 @@ fn apply_style_sidecars(
     Ok((gradients, marker_glyphs))
 }
 
+/// Optional sidecars after the chrome trailer, in order: `XYWA` exact polar
+/// wedge arcs (#1006), `XYPL` polar, `XYIM` images, then the style sidecars.
+/// XYWA sits before XYPL so a polar Scene without exact wedges is unchanged.
+/// Returned as `(xypl, xywa, xyim, style)`.
+type SceneSidecars<'a> = (&'a [u8], &'a [u8], &'a [u8], &'a [u8]);
+
 fn scene_sidecars_after_chrome(
     bytes: &[u8],
     total: usize,
-) -> Result<(&[u8], &[u8], &[u8]), SceneError> {
+) -> Result<SceneSidecars<'_>, SceneError> {
     let rest = bytes.get(total..).unwrap_or(&[]);
+    let xywa_len = wedge_arcs::xywa_prefix_len(rest)?;
+    let (xywa, rest) = rest.split_at(xywa_len);
     let (xypl, after) = if rest.len() >= XYPL_V1_BYTES && rest.get(..4) == Some(&XYPL_MAGIC[..]) {
         (&rest[..XYPL_V1_BYTES], &rest[XYPL_V1_BYTES..])
     } else {
         (&[][..], rest)
     };
+    // Exact wedge arcs describe polar PolyFill runs only.
+    if !xywa.is_empty() && xypl.is_empty() {
+        return Err(SceneError::Length);
+    }
     if after.is_empty() {
-        return Ok((xypl, after, after));
+        return Ok((xypl, xywa, after, after));
     }
     if after.get(..4) == Some(&XYDS_MAGIC[..])
         || after.get(..4) == Some(&XYLC_MAGIC[..])
@@ -6618,7 +6649,7 @@ fn scene_sidecars_after_chrome(
         || after.get(..4) == Some(&XYMG_MAGIC[..])
     {
         split_style_sidecars(after)?;
-        return Ok((xypl, &[][..], after));
+        return Ok((xypl, xywa, &[][..], after));
     }
     let (images, xyim_end) = parse_xyim_envelope(after)?;
     if images.is_empty() || xyim_end == 0 {
@@ -6629,7 +6660,7 @@ fn scene_sidecars_after_chrome(
     if !xyds.is_empty() {
         split_style_sidecars(xyds)?;
     }
-    Ok((xypl, xyim, xyds))
+    Ok((xypl, xywa, xyim, xyds))
 }
 
 fn heatmap_lattice_extent(
@@ -7985,6 +8016,8 @@ struct PolarSceneState {
     grid_shape: u8,
     xypl: Vec<u8>,
     legend_box: Option<[f64; 4]>,
+    /// Decoded `XYWA` exact wedge arcs (static SVG/PDF only).
+    wedge_arcs: Option<SceneWedgeArcs>,
 }
 
 impl PolarSceneState {
@@ -8004,6 +8037,7 @@ impl PolarSceneState {
             grid_shape: envelope.grid_shape,
             xypl: bytes.to_vec(),
             legend_box: None,
+            wedge_arcs: None,
         })
     }
 
@@ -9301,10 +9335,12 @@ impl<'a> SceneBatch<'a> {
         Ok(())
     }
 
-    /// Mark records plus the edge `style_ref`s whose arrowheads need a derived
-    /// filled style (appended after arrow/callout styles in `encode`, #33).
-    fn prepared_mark_records(&self) -> (Vec<PreparedMarkRecord>, Vec<u32>) {
+    /// Mark records, the edge `style_ref`s whose arrowheads need a derived
+    /// filled style (appended after arrow/callout styles in `encode`, #33),
+    /// and the exact arcs of plain polar wedges (`XYWA`).
+    fn prepared_mark_records(&self) -> (Vec<PreparedMarkRecord>, Vec<u32>, Option<SceneWedgeArcs>) {
         let mut out = Vec::with_capacity(self.kinds.len());
+        let mut wedges: Vec<SceneWedgeArc> = Vec::new();
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
             let (y2_row, y_scale) = self.row_y_scale(index);
@@ -9318,7 +9354,7 @@ impl<'a> SceneBatch<'a> {
                     let corner_radius = extra
                         .map(|value| value.r_tip.max(value.r_base))
                         .unwrap_or(0.0);
-                    let points = polar::polar_wedge_points(
+                    let (points, arc) = polar::polar_wedge_geometry(
                         &polar.metrics,
                         self.x0[index],
                         self.x1[index],
@@ -9326,6 +9362,9 @@ impl<'a> SceneBatch<'a> {
                         self.y1[index],
                         wedge_gap,
                         corner_radius,
+                        0,
+                        f64::NAN,
+                        f64::NAN,
                     );
                     if points.len() < 3
                         || points
@@ -9343,6 +9382,18 @@ impl<'a> SceneBatch<'a> {
                         0
                     };
                     let mark_id = self.stable_ids[index].wrapping_shl(32) | ((index as u64) << 8);
+                    if let Some(arc) = arc {
+                        wedges.push(SceneWedgeArc {
+                            first: out.len(),
+                            count: points.len(),
+                            outer: arc.outer,
+                            inner: arc.inner,
+                            outer_start: arc.outer_start,
+                            outer_end: arc.outer_end,
+                            inner_start: arc.inner_start,
+                            inner_end: arc.inner_end,
+                        });
+                    }
                     for (px, py) in points {
                         let visible = px.is_finite() && py.is_finite();
                         out.push(PreparedMarkRecord {
@@ -9618,11 +9669,40 @@ impl<'a> SceneBatch<'a> {
         }
         let head_style_base =
             (self.stroke_width.len() + self.arrows.len() + self.callouts.len()) as u32;
-        trim_graph_edge_ends(out, head_style_base)
+        let (out, head_styles) = trim_graph_edge_ends(out, head_style_base);
+        let wedge_arcs = self.polar.as_ref().and_then(|polar| {
+            if wedges.is_empty() {
+                return None;
+            }
+            let views: Vec<WedgeRecordView> = out
+                .iter()
+                .map(|record| WedgeRecordView {
+                    kind: record.kind as u8,
+                    visible: record.visible,
+                    annotation_tag: record.annotation_tag,
+                    style_ref: record.style_ref as usize,
+                    stable_id: record.stable_id,
+                    x: record.coordinates[0],
+                    y: record.coordinates[1],
+                })
+                .collect();
+            let mut arcs = SceneWedgeArcs {
+                cx: polar.metrics[polar::METRIC_CX],
+                cy: polar.metrics[polar::METRIC_CY],
+                entries: wedges,
+            };
+            arcs.retain_maximal_runs(&views);
+            // The sidecar is an exact restatement of the flattened runs; if
+            // any entry disagrees, every wedge keeps its polygon.
+            arcs.validate(views.len(), |index| Ok(views[index]))
+                .ok()
+                .map(|()| arcs)
+        });
+        (out, head_styles, wedge_arcs)
     }
 
     pub fn encode(&self) -> Vec<u8> {
-        let (marks, head_styles) = self.prepared_mark_records();
+        let (marks, head_styles, wedge_arcs) = self.prepared_mark_records();
         let mut labels = self.labels.clone();
         let mut label_backgrounds = self.label_backgrounds.clone();
         for callout in &self.callouts {
@@ -9813,6 +9893,9 @@ impl<'a> SceneBatch<'a> {
             self.y2.as_ref(),
         );
         if let Some(polar) = &self.polar {
+            if let Some(arcs) = &wedge_arcs {
+                out.extend_from_slice(&arcs.encode());
+            }
             out.extend_from_slice(&polar.xypl);
         }
         out.extend_from_slice(&encode_xyim(&self.images).expect("validated Scene images"));
@@ -12604,7 +12687,7 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let (chrome, text, legend, colorbar, labels, label_backgrounds, total, y2_range) =
             read_chrome_trailer(bytes, body)?;
-        let (xypl, xyim, xyds) = scene_sidecars_after_chrome(bytes, total)?;
+        let (xypl, xywa, xyim, xyds) = scene_sidecars_after_chrome(bytes, total)?;
         let viewport_width = f64_at(32);
         let viewport_height = f64_at(40);
         let left = f64_at(48);
@@ -12898,6 +12981,12 @@ impl SceneDocument {
             offset += SCENE_BATCH_RECORD_BYTES;
         }
         validate_primitive_records(&records)?;
+        if let Some(arcs) = wedge_arcs::parse_xywa(xywa)? {
+            arcs.validate(records.len(), |index| {
+                Ok(wedge_arcs::encoded_record_view(&records, index))
+            })?;
+            polar.as_mut().ok_or(SceneError::Length)?.wedge_arcs = Some(arcs);
+        }
         let mut annotation_cursor = 0;
         let mut annotations_started = false;
         while annotation_cursor < records.len() {
@@ -14456,17 +14545,27 @@ impl SceneDocument {
                     }
                     let run = &self.records[start..index];
                     if run.len() >= 3 {
-                        out.push_str("<path d=\"M ");
-                        push_num(&mut out, run[0].coordinates[0]);
-                        out.push(' ');
-                        push_num(&mut out, run[0].coordinates[1]);
-                        for point in &run[1..] {
-                            out.push_str(" L ");
-                            push_num(&mut out, point.coordinates[0]);
+                        // Exact polar wedges write circular arcs; raster and
+                        // the browser painter keep the flattened run (XYWA).
+                        let exact = self.polar.as_ref().and_then(|polar| {
+                            let arcs = polar.wedge_arcs.as_ref()?;
+                            Some((arcs, arcs.find(start, run.len())?))
+                        });
+                        if let Some((arcs, entry)) = exact {
+                            wedge_arcs::push_svg_wedge_path(&mut out, arcs, entry, run);
+                        } else {
+                            out.push_str("<path d=\"M ");
+                            push_num(&mut out, run[0].coordinates[0]);
                             out.push(' ');
-                            push_num(&mut out, point.coordinates[1]);
+                            push_num(&mut out, run[0].coordinates[1]);
+                            for point in &run[1..] {
+                                out.push_str(" L ");
+                                push_num(&mut out, point.coordinates[0]);
+                                out.push(' ');
+                                push_num(&mut out, point.coordinates[1]);
+                            }
+                            out.push_str(" Z\"");
                         }
-                        out.push_str(" Z\"");
                         self.push_svg_fill(&mut out, style, record.style_ref);
                         if style.stroke_width > 0.0 {
                             push_paint(&mut out, "stroke", style.stroke, None);

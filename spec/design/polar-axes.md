@@ -301,9 +301,11 @@ ABI 169 admits polar `curve="smooth"` combined with `step`: authored
 Hermite-flattening in (θ, r) then projecting would be a different visual from
 this section and from the compatibility polar `_curve_path`. Arcs
 flatten to polylines wherever the medium lacks a real arc: the raster display
-list always, and the GPU bar sweep by construction. SVG needs no count: it draws
-real `A` arcs (`_polar_wedge_path`), and `polar_wedge_points` is the flattened
-twin the raster path consumes through ABI 209 `xyg_polar_wedge_points`.
+list always, and the GPU bar sweep by construction. SVG needs no count: the
+Rust Scene SVG writer draws real `A` arcs from the Scene's `XYWA` sidecar
+(scene-ir.md "Polar wedge SVG arcs"), whose arc endpoints are the flattened
+run's own vertices, and `polar_wedge_points` is the flattened twin the raster
+path consumes (compatibility ABI 209 `xyg_polar_wedge_points`).
 
 The subdivision count is **span-proportional and recorded as a formula**
 (`config.polar_bar_segments`, mirrored by `xyPolarBarSegments` in
