@@ -73,7 +73,13 @@ axis the `style` and `minor_style` keys the host must drop: the size keys XYST
 carries and any null/empty `tick_label_color` / `label_color` (an unauthored
 colour must not reach the Scene encoder as text). The `chrome_text` word packs two-bit flags (bit 0 italic, bit 1 bold) for
 title, x title, y title, x ticks, y ticks (bits 0..10) and four paint-present bits
-(10..14).
+(10..14). With XYCS flag bit 2 (a secondary right-hand y axis) XYCO flags bit 1 is set
+and the record ends with the y2 tick paint, y2 title paint, the y2
+`(tick, title, padding)` f64s and the y2 style / minor-style key lists; the
+`chrome_text` word then also carries the y2 title flags (bits 14..15), y2 tick
+flags (16..17) and the y2 tick / title paint-present bits (18, 19). Those facts
+travel in the Scene `XYY2` block (see `scene-ir.md`), never in an XYST panel record,
+whose `chrome_text` mask stays `0x3fff`.
 
 ## XYST consumption
 

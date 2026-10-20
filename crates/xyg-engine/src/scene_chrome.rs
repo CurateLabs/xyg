@@ -534,6 +534,18 @@ fn rewrite_legend_loc(
 }
 
 /// Pack authored XYCF v1 chrome facts into the XYCC v1 encode-ready bundle.
+/// The optional trailing `XYY2` secondary-y sidecar of a packed `XYCF`.
+pub fn xycf_y2_sidecar(facts: &[u8]) -> Result<Option<&[u8]>, ChromePackError> {
+    if facts.len() < XYCF_HEADER_BYTES || facts.get(..4) != Some(&XYCF_MAGIC[..]) {
+        return Err(ChromePackError::Length);
+    }
+    let y2_len = read_u32(facts, 284)? as usize;
+    if y2_len > facts.len() - XYCF_HEADER_BYTES {
+        return Err(ChromePackError::Length);
+    }
+    Ok((y2_len != 0).then(|| &facts[facts.len() - y2_len..]))
+}
+
 pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
     pack_figure_chrome_with_polar(facts, &[], &[])
 }
@@ -653,6 +665,10 @@ pub fn pack_figure_chrome_with_polar(
     let colorbar_lo = read_f64(facts, 264)?;
     let colorbar_hi = read_f64(facts, 272)?;
     let colorbar_text_rgba = rgba4(facts.get(280..284).ok_or(ChromePackError::Length)?)?;
+    let y2_len = read_u32(facts, 284)? as usize;
+    if y2_len > facts.len() - XYCF_HEADER_BYTES {
+        return Err(ChromePackError::Length);
+    }
 
     if title_len > MAX_SCENE_TEXT_BYTES
         || xlabel_len > MAX_SCENE_TEXT_BYTES
@@ -754,7 +770,9 @@ pub fn pack_figure_chrome_with_polar(
     } else {
         None
     };
-    if at != facts.len() {
+    // The trailing `XYY2` sidecar (length in the reserved header word) belongs
+    // to Scene encode; chrome packing only requires it to be exactly the tail.
+    if at != facts.len() - y2_len {
         return Err(ChromePackError::Length);
     }
 

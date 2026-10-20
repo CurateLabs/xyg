@@ -96,7 +96,7 @@ def test_scene32_refresh_preserves_native_bytes_and_changes_painter_layout() -> 
         for consumer in ("svg_sha256", "raster_sha256", "png_sha256"):
             assert fixture["goldens"][theme][consumer] == previous[consumer]
         painter = _native.scene_browser_painter(scene)
-        assert struct.unpack_from("<II", painter, 4) == (15, 32)
+        assert struct.unpack_from("<II", painter, 4) == (16, _native.scene_version())
         header, descriptor, count = struct.unpack_from("<III", painter, 12)
         assert any(painter[header + i * descriptor] == 8 for i in range(count))
         old_painter_versions = bytearray(painter)

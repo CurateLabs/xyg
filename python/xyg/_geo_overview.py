@@ -129,8 +129,8 @@ class OverviewData:
             raise ValueError("overview plane length mismatch")
         for start, end in ((104, 112), (168, 176), (216, 224), (228, 232), (248, 256)):
             scale._zero(b, start, end)
-        if struct.unpack_from("<4sI", b, 2304) != (b"XYGS", 32):
-            raise ValueError("invalid overview Scene32")
+        if struct.unpack_from("<4sI", b, 2304) != (b"XYGS", scale.scene_version()):
+            raise ValueError("invalid overview Scene")
         if (
             u32(72) not in (4326, 3857)
             or u32(76) not in (1, 4)

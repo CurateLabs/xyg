@@ -60,7 +60,7 @@
 //! XYEP layout, kind/step/annotation codes, and flag derivation from packed
 //! XYEF v1.
 
-use crate::scene::MAX_SCENE_MARKS;
+use crate::scene::{MAX_SCENE_MARKS, SCENE_RECORD_Y2_BIT};
 
 pub const PACKED_SCENE_ROW_BYTES: usize = 56;
 
@@ -155,6 +155,10 @@ pub struct PackedSceneRow {
     pub y0: f64,
     pub x1: f64,
     pub y1: f64,
+    /// Plotted against the secondary y scale: row byte 3 bit
+    /// [`crate::scene::SCENE_RECORD_Y2_BIT`]. Every other bit of byte 3 is
+    /// reserved zero.
+    pub y2: bool,
 }
 
 impl PackedSceneRow {
@@ -163,6 +167,7 @@ impl PackedSceneRow {
         out[0] = self.kind;
         out[1] = self.symbol;
         out[2] = self.expansion_mode;
+        out[3] = if self.y2 { SCENE_RECORD_Y2_BIT } else { 0 };
         out[4..8].copy_from_slice(&self.style_ref.to_le_bytes());
         out[8..16].copy_from_slice(&self.stable_id.to_le_bytes());
         out[16..24].copy_from_slice(&self.diameter.to_le_bytes());
@@ -177,10 +182,14 @@ impl PackedSceneRow {
         if bytes.len() != PACKED_SCENE_ROW_BYTES {
             return None;
         }
+        if bytes[3] & !SCENE_RECORD_Y2_BIT != 0 {
+            return None;
+        }
         Some(Self {
             kind: bytes[0],
             symbol: bytes[1],
             expansion_mode: bytes[2],
+            y2: bytes[3] & SCENE_RECORD_Y2_BIT != 0,
             style_ref: u32::from_le_bytes(bytes[4..8].try_into().ok()?),
             stable_id: u64::from_le_bytes(bytes[8..16].try_into().ok()?),
             diameter: f64::from_le_bytes(bytes[16..24].try_into().ok()?),
@@ -628,6 +637,7 @@ fn pack_xy(
         push_row(
             &mut out,
             PackedSceneRow {
+                y2: false,
                 kind,
                 symbol,
                 expansion_mode: expansion,
@@ -664,6 +674,7 @@ fn pack_quad(
         push_row(
             &mut out,
             PackedSceneRow {
+                y2: false,
                 kind,
                 symbol,
                 expansion_mode: expansion,
@@ -733,6 +744,7 @@ fn pack_edge_segment(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, P
             push_row(
                 &mut out,
                 PackedSceneRow {
+                    y2: false,
                     kind: KIND_POLYLINE,
                     symbol,
                     expansion_mode: EXP_EDGE_SEGMENT,
@@ -769,6 +781,7 @@ fn pack_band(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError
         push_row(
             &mut out,
             PackedSceneRow {
+                y2: false,
                 kind: KIND_BAND,
                 symbol: outline,
                 expansion_mode: expansion,
@@ -801,6 +814,7 @@ fn pack_ribbon(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackErr
             push_row(
                 &mut out,
                 PackedSceneRow {
+                    y2: false,
                     kind: KIND_BAND,
                     symbol: 2,
                     expansion_mode: EXP_RIBBON,
@@ -831,6 +845,7 @@ fn pack_triangle(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackE
                     push_row(
                         &mut out,
                         PackedSceneRow {
+                            y2: false,
                             kind: KIND_POLYFILL,
                             symbol: 0,
                             expansion_mode: EXP_NONE,
@@ -854,6 +869,7 @@ fn pack_triangle(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackE
         push_row(
             &mut out,
             PackedSceneRow {
+                y2: false,
                 kind: KIND_POLYFILL,
                 symbol: 0,
                 expansion_mode: EXP_TRIANGLE,
@@ -869,6 +885,7 @@ fn pack_triangle(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackE
         push_row(
             &mut out,
             PackedSceneRow {
+                y2: false,
                 kind: KIND_POLYFILL,
                 symbol: 0,
                 expansion_mode: EXP_TRIANGLE,
@@ -900,6 +917,7 @@ fn pack_hexbin(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackErr
         push_row(
             &mut out,
             PackedSceneRow {
+                y2: false,
                 kind: KIND_POLYFILL,
                 symbol: 0,
                 expansion_mode: EXP_HEX,
@@ -944,6 +962,7 @@ fn pack_heatmap(
     push_row(
         &mut out,
         PackedSceneRow {
+            y2: false,
             kind: KIND_RECT,
             symbol: 0,
             expansion_mode: expansion,
@@ -959,6 +978,7 @@ fn pack_heatmap(
     push_row(
         &mut out,
         PackedSceneRow {
+            y2: false,
             kind: KIND_RECT,
             symbol: 0,
             expansion_mode: expansion,
@@ -1050,6 +1070,7 @@ fn push_ann_row(
     push_row(
         out,
         PackedSceneRow {
+            y2: false,
             kind,
             symbol,
             expansion_mode: EXP_NONE,

@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 386;
+pub const ABI_VERSION: u32 = 387;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -22050,6 +22050,8 @@ pub unsafe extern "C" fn xyg_scene_xycf_pack(
     colorbar_ticks: *const f64,
     colorbar_title: *const u8,
     collision_extra: *const u8,
+    y2: *const u8,
+    y2_len: usize,
     out: *mut u8,
     out_cap: usize,
     out_len: *mut usize,
@@ -22058,6 +22060,9 @@ pub unsafe extern "C" fn xyg_scene_xycf_pack(
         return -1;
     }
     let input = &*input;
+    let Some(y2_b) = optional_bytes(y2, y2_len) else {
+        return -1;
+    };
     let Some(title_b) = optional_bytes(title, input.title_len) else {
         return -1;
     };
@@ -22206,6 +22211,7 @@ pub unsafe extern "C" fn xyg_scene_xycf_pack(
         colorbar_ticks: colorbar_ticks_b,
         colorbar_title: colorbar_title_b,
         collision_extra: collision_extra_b,
+        y2: y2_b,
     };
     match scene_xycf_pack::scene_xycf_pack(&header, &sidecars) {
         Ok(packed) => {
@@ -22233,6 +22239,7 @@ fn parse_figure_support_axes(
             return Err(-1);
         }
         let axis_code = blob[at];
+        let side = blob[at + 1];
         let key_count = u32::from_le_bytes(blob[at + 4..at + 8].try_into().unwrap()) as usize;
         at += 8;
         let mut keys = Vec::with_capacity(key_count);
@@ -22251,7 +22258,11 @@ fn parse_figure_support_axes(
             keys.push(key);
             at += key_len;
         }
-        axes.push(scene_figure_support_pack::FigureSupportAxisInput { axis_code, keys });
+        axes.push(scene_figure_support_pack::FigureSupportAxisInput {
+            axis_code,
+            side,
+            keys,
+        });
     }
     Ok(axes)
 }

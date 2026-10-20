@@ -369,9 +369,10 @@ fn put_text(out: &mut Vec<u8>, text: &str) {
 /// Resolve one bounded XYCS v1 frame atomically into XYCO v1.
 ///
 /// XYCS: `"XYCS"`, version 1, flags (bit 0 = the panel has a title, bit 1 =
-/// admit the pyplot-owned `legend` slot key set), 0, root
+/// admit the pyplot-owned `legend` slot key set, bit 2 = the figure has a
+/// secondary right-hand y axis), 0, root
 /// theme entries, slot count then `(name, entries)`, then the x and y axis
-/// `(style entries, minor-style entries)`. Entries are `count` then
+/// `(style entries, minor-style entries)` and, with bit 2, the y2 pair. Entries are `count` then
 /// `(key text, tagged value)`; values tag 0 null, 1 text, 2 f64, 3 bool,
 /// 4 opaque.
 ///
@@ -379,7 +380,13 @@ fn put_text(out: &mut Vec<u8>, text: &str) {
 /// word, four paints (x tick, y tick, x title, y title; zero when absent),
 /// title size (f64) and paint, then x and y `(tick, title, padding)` f64s and
 /// the axis-style keys the host must drop from `style` / `minor_style`
-/// because XYST, not the Scene wire, carries them.
+/// because XYST, not the Scene wire, carries them. With XYCS bit 2 the XYCO
+/// flags word has bit 1 set and the record ends with the y2 tick paint, y2
+/// title paint, the y2 `(tick, title, padding)` f64s, and the y2 style /
+/// minor-style key lists; the `chrome_text` word then also carries the y2
+/// title flags (bits 14..15), y2 tick flags (16..17), and y2 tick / title
+/// paint-present bits (18, 19). Those y2 facts feed the Scene `XYY2` block,
+/// never an XYST panel record.
 pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     if bytes.len() > MAX_BYTES {
         return Err(ChromeStyleError::Limit);
@@ -392,11 +399,13 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         return Err(ChromeStyleError::Version);
     }
     let flags = reader.u32()?;
-    if flags & !0b11 != 0 || reader.u32()? != 0 {
+    if flags & !0b111 != 0 || reader.u32()? != 0 {
         return Err(ChromeStyleError::Flags);
     }
     let has_title = flags & 1 != 0;
     let admit_legend = flags & 2 != 0;
+    let has_y2 = flags & 4 != 0;
+    let axis_count = if has_y2 { 3 } else { 2 };
     let root = reader.entries()?;
     let slot_count = reader.u32()? as usize;
     if slot_count > MAX_SLOTS {
@@ -419,9 +428,9 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         }
         slots.insert(name, slot(&entries)?);
     }
-    let mut axes = Vec::with_capacity(2);
-    let mut axis_entries = Vec::with_capacity(2);
-    for _ in 0..2 {
+    let mut axes = Vec::with_capacity(axis_count);
+    let mut axis_entries = Vec::with_capacity(axis_count);
+    for _ in 0..axis_count {
         axis_entries.push((reader.entries()?, reader.entries()?));
     }
     if reader.at != bytes.len() {
@@ -448,7 +457,7 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     if has_title {
         chrome_text |= u32::from(panel_title.flags);
     }
-    for (index, axis) in axes.iter().enumerate() {
+    for (index, axis) in axes.iter().take(2).enumerate() {
         chrome_text |= u32::from(title_slot.flags) << (2 + 2 * index);
         chrome_text |= u32::from(tick_slot.flags) << (6 + 2 * index);
         for (offset, color) in [(0, axis.tick_rgba), (2, axis.title_rgba)] {
@@ -458,29 +467,52 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
             }
         }
     }
+    let mut y2_paints = [[0u8; 4]; 2];
+    if let Some(axis) = axes.get(2) {
+        chrome_text |= u32::from(title_slot.flags) << 14;
+        chrome_text |= u32::from(tick_slot.flags) << 16;
+        for (slot, bit, color) in [(0, 18, axis.tick_rgba), (1, 19, axis.title_rgba)] {
+            if let Some(rgba) = color {
+                chrome_text |= 1 << bit;
+                y2_paints[slot] = rgba;
+            }
+        }
+    }
 
     let mut out = Vec::with_capacity(128);
     out.extend_from_slice(b"XYCO");
     out.extend_from_slice(&1u32.to_le_bytes());
-    out.extend_from_slice(&u32::from(has_title).to_le_bytes());
+    out.extend_from_slice(&(u32::from(has_title) | (u32::from(has_y2) << 1)).to_le_bytes());
     out.extend_from_slice(&chrome_text.to_le_bytes());
     for paint in paints {
         out.extend_from_slice(&paint);
     }
     out.extend_from_slice(&title_size.to_le_bytes());
     out.extend_from_slice(&title_rgba);
-    for axis in &axes {
+    for axis in axes.iter().take(2) {
         for value in [axis.tick_size, axis.label_size, axis.tick_padding] {
             out.extend_from_slice(&value.to_le_bytes());
         }
     }
-    for axis in &axes {
+    let put_removed = |out: &mut Vec<u8>, axis: &Axis| {
         for removed in [&axis.removed_style, &axis.removed_minor] {
             out.extend_from_slice(&(removed.len() as u32).to_le_bytes());
             for key in removed {
-                put_text(&mut out, key);
+                put_text(out, key);
             }
         }
+    };
+    for axis in axes.iter().take(2) {
+        put_removed(&mut out, axis);
+    }
+    if let Some(axis) = axes.get(2) {
+        for paint in y2_paints {
+            out.extend_from_slice(&paint);
+        }
+        for value in [axis.tick_size, axis.label_size, axis.tick_padding] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        put_removed(&mut out, axis);
     }
     Ok(out)
 }

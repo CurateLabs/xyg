@@ -44,8 +44,9 @@
 //! unchanged.
 
 use crate::scene::{
-    decode_tick_labels, expand_scene_records_painted, merge_dash_gradients,
-    resolve_numeric_tick_formats, scene_text_advance, split_scene_extras, AxisScale, PlotLayout,
+    decode_tick_labels, expand_scene_records_with_y2, merge_dash_gradients,
+    resolve_numeric_tick_formats, resolve_y2_tick_format, scene_text_advance, split_scene_extras,
+    AxisScale, PlotLayout,
     ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius,
     SceneError, SceneExpansionInput, SceneLegend, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS,
     MAX_SCENE_AXIS_FORMAT_BYTES, MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_LABEL_TEXT_BYTES,
@@ -57,12 +58,13 @@ use crate::scene_annotation_splice::{
 };
 use crate::scene_annotations::pack_annotation_facts;
 use crate::scene_chrome::{
-    pack_figure_chrome_with_polar, settle_legend_best_loc, ChromePackError, XYCC_HEADER_BYTES,
-    XYCC_MAGIC, XYCC_VERSION, XYCF_HEADER_BYTES, XYCF_MAGIC,
+    pack_figure_chrome_with_polar, settle_legend_best_loc, xycf_y2_sidecar, ChromePackError,
+    XYCC_HEADER_BYTES, XYCC_MAGIC, XYCC_VERSION, XYCF_HEADER_BYTES, XYCF_MAGIC,
 };
 use crate::scene_extras::{pack_scene_extras_from_sidecars, ExtrasError};
 use crate::scene_pack::{PackedSceneRow, PACKED_SCENE_ROW_BYTES};
 use crate::scene_style_sidecars::pack_style_sidecars;
+use crate::scene_y2::{SceneY2Axis, SceneY2Domain};
 use crate::scene_trace_attach::pack_trace_attach;
 use crate::scene_trace_compile::pack_trace_compile;
 use crate::scene_trace_rows::pack_trace_rows;
@@ -321,6 +323,8 @@ struct ParsedXyAs {
     x1: Vec<f64>,
     y1: Vec<f64>,
     xyad: Vec<u8>,
+    /// Per-row y2 selector (record byte 3 bit 0x40).
+    y2_rows: Vec<bool>,
 }
 
 fn parse_xyas(bytes: &[u8]) -> Result<ParsedXyAs, EncodeAssembledError> {
@@ -382,11 +386,13 @@ fn parse_xyas(bytes: &[u8]) -> Result<ParsedXyAs, EncodeAssembledError> {
     let mut y0 = Vec::with_capacity(n_rows);
     let mut x1 = Vec::with_capacity(n_rows);
     let mut y1 = Vec::with_capacity(n_rows);
+    let mut y2_rows = Vec::with_capacity(n_rows);
     for index in 0..n_rows {
         let at = index * PACKED_SCENE_ROW_BYTES;
         let row = PackedSceneRow::from_bytes(&rows[at..at + PACKED_SCENE_ROW_BYTES]).ok_or(
             EncodeAssembledError::new(EncodeAssembledCode::Length, index),
         )?;
+        y2_rows.push(row.y2);
         kinds.push(row.kind);
         symbols.push(row.symbol);
         expansion_modes.push(row.expansion_mode);
@@ -413,6 +419,7 @@ fn parse_xyas(bytes: &[u8]) -> Result<ParsedXyAs, EncodeAssembledError> {
         x1,
         y1,
         xyad,
+        y2_rows,
     })
 }
 
@@ -596,6 +603,9 @@ fn widen_gutters(
     chrome: &ParsedXyCc<'_>,
     x_axis: EncodeAssembledAxis,
     y_axis: EncodeAssembledAxis,
+    y2: Option<&SceneY2Axis>,
+    viewport_width: f64,
+    viewport_height: f64,
 ) -> (f64, f64, f64) {
     let mut margin_left = chrome.margin_left;
     let mut margin_right = chrome.margin_right;
@@ -627,10 +637,37 @@ fn widen_gutters(
             margin_right = margin_right.max(8.0 + scene_text_advance(last, 12.0) * 0.5);
         }
     }
+    if let Some(y2) = y2 {
+        let plot_height = viewport_height - chrome.margin_top - margin_bottom;
+        if plot_height > 0.0 {
+            // Measure the labels that will actually be painted: seat the axis on
+            // the settled vertical span and materialize its number format from
+            // the same tick ladder the encoder uses, so a format such as
+            // `.20f` reserves room for its long labels.
+            let mut measured = y2.clone();
+            let seated = PlotLayout::new(
+                viewport_width,
+                viewport_height,
+                margin_left,
+                margin_right,
+                chrome.margin_top,
+                margin_bottom,
+            )
+            .ok()
+            .and_then(|layout| {
+                let (kind, lo, hi, constant, mask) = measured.scale.wire_scale(true);
+                measured.scale =
+                    AxisScale::new(kind, lo, hi, layout.bottom, layout.top, constant, mask).ok()?;
+                resolve_y2_tick_format(layout, &mut measured).ok()
+            });
+            let measured = if seated.is_some() { &measured } else { y2 };
+            margin_right = margin_right.max(measured.right_gutter(plot_height));
+        }
+    }
     (margin_left, margin_right, margin_bottom)
 }
 
-/// Encode packed XYAS + XYCC + extras into a canonical Scene v31 batch.
+/// Encode packed XYAS + XYCC + extras into a canonical Scene v33 batch.
 pub fn encode_assembled(
     xyas: &[u8],
     chrome: &[u8],
@@ -648,6 +685,7 @@ pub fn encode_assembled(
         viewport_height,
         x_axis,
         y_axis,
+        None,
         Vec::new(),
     )
 }
@@ -661,6 +699,7 @@ fn encode_assembled_with_radii(
     viewport_height: f64,
     x_axis: EncodeAssembledAxis,
     y_axis: EncodeAssembledAxis,
+    y2_facts: Option<&[u8]>,
     corner_radii: Vec<Option<SceneCornerRadius>>,
 ) -> Result<Vec<u8>, EncodeAssembledError> {
     if !matches!(x_axis.mask_nonpositive, 0 | 1) || !matches!(y_axis.mask_nonpositive, 0 | 1) {
@@ -672,7 +711,43 @@ fn encode_assembled_with_radii(
         .ok_or(EncodeAssembledError::new(EncodeAssembledCode::Payload, 0))?;
     let x_kind = scale_kind(x_axis.kind)?;
     let y_kind = scale_kind(y_axis.kind)?;
-    let (margin_left, margin_right, margin_bottom) = widen_gutters(&chrome, x_axis, y_axis);
+    // Rows may select y2 (record byte 3 bit 0x40) only when the XYCF carried an
+    // XYY2 sidecar, and one trace never straddles both y scales.
+    let y2_rows = parsed.y2_rows.as_slice();
+    let mut y2_ids: Vec<u64> = parsed
+        .stable_ids
+        .iter()
+        .zip(y2_rows)
+        .filter_map(|(id, selected)| selected.then_some(*id))
+        .collect();
+    y2_ids.sort_unstable();
+    y2_ids.dedup();
+    if (y2_facts.is_none() && !y2_ids.is_empty())
+        || parsed
+            .stable_ids
+            .iter()
+            .zip(y2_rows)
+            .any(|(id, selected)| !selected && y2_ids.binary_search(id).is_ok())
+    {
+        return Err(EncodeAssembledError::new(EncodeAssembledCode::Payload, 0));
+    }
+    // Gutter measurement sees the secondary axis on a provisional scale; the
+    // final scale is rebuilt against the settled plot rectangle below.
+    let provisional_height = (viewport_height - chrome.margin_top - chrome.margin_bottom).max(1.0);
+    let provisional_y2 = y2_facts
+        .map(|facts| {
+            SceneY2Axis::decode(facts, SceneY2Domain::Data, provisional_height, 0.0)
+        })
+        .transpose()
+        .map_err(map_scene)?;
+    let (margin_left, margin_right, margin_bottom) = widen_gutters(
+        &chrome,
+        x_axis,
+        y_axis,
+        provisional_y2.as_ref(),
+        viewport_width,
+        viewport_height,
+    );
     let layout = PlotLayout::new(
         viewport_width,
         viewport_height,
@@ -702,7 +777,13 @@ fn encode_assembled_with_radii(
         y_axis.mask_nonpositive != 0,
     )
     .map_err(map_scene)?;
-    let (records, painted_styles, images) = expand_scene_records_painted(
+    let y2 = y2_facts
+        .map(|facts| {
+            SceneY2Axis::decode(facts, SceneY2Domain::Data, layout.bottom, layout.top)
+        })
+        .transpose()
+        .map_err(map_scene)?;
+    let (records, painted_styles, images) = expand_scene_records_with_y2(
         SceneExpansionInput {
             kinds: &parsed.kinds,
             stable_ids: &parsed.stable_ids,
@@ -717,6 +798,7 @@ fn encode_assembled_with_radii(
         },
         x_scale,
         y_scale,
+        y2.as_ref().map(|axis| (axis.scale, y2_rows)),
         &parsed.fill_rgba,
         &parsed.stroke_rgba,
         &parsed.stroke_width,
@@ -820,6 +902,13 @@ fn encode_assembled_with_radii(
         &records.y1,
     )
     .map_err(map_scene)?;
+    let batch = match y2 {
+        Some(mut axis) => {
+            resolve_y2_tick_format(layout, &mut axis).map_err(map_scene)?;
+            batch.with_y2(axis, y2_ids).map_err(map_scene)?
+        }
+        None => batch,
+    };
     Ok(batch
         .with_images(images)
         .map_err(map_scene)?
@@ -880,6 +969,7 @@ pub fn encode_assembled_from_sidecars(
     let extras = pack_scene_extras_from_sidecars(polar, xysd, extras_facts).map_err(map_extras)?;
     let (viewport_width, viewport_height, x_axis, y_axis) = axes_from_chrome_facts(chrome_facts)?;
     let corner_radii = corner_radii_from_xysd(xysd).map_err(map_encode)?;
+    let y2_facts = xycf_y2_sidecar(chrome_facts).map_err(map_chrome)?;
     encode_assembled_with_radii(
         xyas,
         &chrome,
@@ -888,6 +978,7 @@ pub fn encode_assembled_from_sidecars(
         viewport_height,
         x_axis,
         y_axis,
+        y2_facts,
         corner_radii,
     )
     .map_err(map_encode)
@@ -1128,6 +1219,7 @@ mod tests {
     #[test]
     fn packed_row_round_trips() {
         let row = PackedSceneRow {
+            y2: false,
             kind: 1,
             symbol: 0,
             expansion_mode: 11,

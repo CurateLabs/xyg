@@ -784,6 +784,9 @@ def pack_figure_support(
         axes.append(
             {
                 "axis_code": axis_code,
+                "side": {None: 0, "bottom": 1, "left": 2, "top": 3, "right": 4}.get(
+                    options.get("side"), 255
+                ),
                 "keys": _significant_scene_axis_keys(options, polar=polar),
                 "tick_label_strategy": _optional_str(options.get("tick_label_strategy")),
                 "collision": _optional_str(options.get("collision")),
@@ -795,6 +798,7 @@ def pack_figure_support(
     return _native.scene_figure_support_materialize(
         polar=polar,
         colorbar_unsupported=colorbar_unsupported,
+        has_colorbar=bool(getattr(figure, "colorbar_options", None)),
         has_custom_font=any("font-family" in (style or {}) for style in chrome_styles.values())
         or any(_annotation_has_custom_typography(a) for a in annotations),
         has_browser_css=bool(

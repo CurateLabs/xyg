@@ -24,7 +24,7 @@ try {
   const smallHit=withExternalGLState(gl,()=>view._pickAt(35,90));
   assert(smallHit&&view.sceneStableId(2,smallHit.index)===42n,"small marker source pick lost");
   let rejected=0;
-  const d=300,image=d+64;
+  const d=new DataView(painter).getUint32(12,true),image=d+64;
   for(const [offset,value] of [[d+4,0],[d+16,0],[d+48,0],[d+56,0],[d+60,47],[image+4,2],[image+48,0],[image+52,0],[image+56,0],[image+60,15],[image+32,1],[d+128+20,1],[d+128+48,0],[d+128+60,0],[d+192+60,1],[d+192+52,0]]) {
     const bad=painter.slice(0);new DataView(bad).setUint32(offset,value,true);
     let failed=false;try{makeView(bad);}catch(error){failed=error.code==='XYG_WASM_MALFORMED_OUTPUT';}

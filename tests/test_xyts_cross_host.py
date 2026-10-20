@@ -32,8 +32,8 @@ def _records(scene: bytes) -> list[tuple[int, int, int, tuple[float, ...]]]:
 
 def test_native_python_consumes_exact_rust_generated_xyts_scenes() -> None:
     assert FIXTURE["authority"] == "crates/xyg-wasm/src/compile.rs"
-    assert FIXTURE["scene_version"] == 32
-    assert FIXTURE["painter_version"] == 15
+    assert FIXTURE["scene_version"] == _native.scene_version()
+    assert FIXTURE["painter_version"] == 16
     for fixture in FIXTURE["successful"]:
         scene = bytes.fromhex(fixture["scene_hex"])
         assert scene[:4] == b"XYGS"
@@ -96,4 +96,4 @@ def test_xyts_v2_visible_area_stroke_preserves_legacy_perimeter() -> None:
     assert 'stroke="rgb(17,34,51)"' in svg
     assert 'stroke-opacity="0.5"' in svg
     painter = _native.scene_browser_painter(scene)
-    assert painter[300 + 1] == 2
+    assert painter[struct.unpack_from("<I", painter, 12)[0] + 1] == 2

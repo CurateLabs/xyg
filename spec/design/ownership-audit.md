@@ -764,6 +764,8 @@ Forbidden:
 | `crates/xyg-engine/src/scene_xyta_trace_pack.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_xytc_trace_observations_materialize.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_xytc_trace_pack.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene_y2.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Scene v33 `XYY2` secondary-y block codec | — |
+| `crates/xyg-engine/src/scene_y2_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Scene v33 secondary-y proofs | — |
 | `crates/xyg-core/src/payload_trace_emit_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-core/src/scene_bulk_pack_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-core/src/scene_xyta_trace_observations_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |

@@ -1,6 +1,7 @@
 // Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.
 /** Typed nonfinal data-domain counts. All temporal/geometry policy is Rust-owned. */
 import { encodeGeoScaleRequest,                          } from './geoscale.js';
+const XYG_WASM_SCENE_VERSION=33; // generated: scripts/geo_node_scene_version.mjs
 
 
 const MAX_PACKET=32*1024*1024, HEADER=256, TICKET=128;
@@ -52,7 +53,7 @@ export function parseGeoOverviewData(packet            ) {
   for(const [a,z] of [[104,112],[168,176],[216,224],[228,232],[248,256]])zeros(b,a,z);
   const sceneLength=v.getBigUint64(32,true);if(sceneLength!==BigInt(packet.byteLength-2304))throw new TypeError('overview Scene length mismatch');
   const scene=b.subarray(2304),sv=new DataView(packet,2304);
-  if(sv.getUint32(0,true)!==0x53475958||sv.getUint32(4,true)!==32)throw new TypeError('invalid overview Scene32');
+  if(sv.getUint32(0,true)!==0x53475958||sv.getUint32(4,true)!==XYG_WASM_SCENE_VERSION)throw new TypeError('invalid overview Scene');
   if(![4326,3857].includes(v.getUint32(72,true))||![1,4].includes(v.getUint32(76,true))||![4326,3857].includes(v.getUint32(96,true))||v.getUint32(100,true)>1)throw new TypeError('invalid overview CRS/geometry');
   const numbers=Array.from({length:7},(_,i)=>v.getFloat64(112+8*i,true));if(numbers.some(n=>!Number.isFinite(n))||numbers[3]<=0||numbers[4]<=0)throw new TypeError('invalid overview camera');
   const kind=v.getUint32(224,true),start=v.getBigInt64(232,true),end=v.getBigInt64(240,true);

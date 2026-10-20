@@ -6,7 +6,7 @@ and derived-cache inputs (#47; current ABI 386), GeoViewport perspective camera
 Direct-browser WASM ABI 33 shares typed descriptor ingestion (`XYGD` to `XYGM`),
 frozen point/outline scene lowering (`XYGP` to canonical `XYGS`), perspective
 camera transitions and catalog/interaction lowering (`XYLK` to `XYLM`) with
-native Rust. Scene32/painter15 supplies explicit Triangle/Segment records and
+native Rust. the current Scene and XYPB versions supplies explicit Triangle/Segment records and
 instanced style planes. See [geographic-layers.md](geographic-layers.md),
 [geo-layer-protocol.md](geo-layer-protocol.md) and the
 [geographic capability matrix](geographic-capabilities.md) for the catalog,

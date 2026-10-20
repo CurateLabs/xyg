@@ -82,6 +82,7 @@
   "figure_support": {
     "polar": false,
     "colorbar_unsupported": false,
+    "has_colorbar": false,
     "has_custom_font": false,
     "has_browser_css": false,
     "has_extra_legends": false,

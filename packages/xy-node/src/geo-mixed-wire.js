@@ -1,5 +1,6 @@
 // Mechanical type stripping of js/src/66_geo_mixed.ts; no host policy.
 /** Thin XYMX/XYMY/XYMF framing. Rust owns every composition/admission decision. */
+const XYG_WASM_SCENE_VERSION=33; // generated: scripts/geo_node_scene_version.mjs
 const MAX_MIXED_BYTES=32*1024*1024, MIXED_PHASE_BYTES=128*1024*1024;
                                    
                                                                        
@@ -37,7 +38,7 @@ export function parseGeoMixedData(packet            ){
  if(String.fromCharCode(...b.subarray(0,4))!=='XYMF'||v.getUint32(4,true)!==1||v.getUint32(8,true)!==0||v.getUint32(128,true)>1||mixedCount(v,136)!==packet.byteLength||256+sceneLength+tileLength+208!==packet.byteLength||sceneLength<160||tileLength<384)throw new TypeError('mixed data framing');
  mixedZero(b.subarray(12,16));mixedZero(b.subarray(132,136));mixedZero(b.subarray(160,256));
  const scene=b.subarray(256,256+sceneLength),sv=new DataView(packet,256,sceneLength),tile=b.subarray(256+sceneLength,256+sceneLength+tileLength),tv=new DataView(tile.buffer,tile.byteOffset,tile.byteLength);
- if(String.fromCharCode(...scene.subarray(0,4))!=='XYGS'||sv.getUint32(4,true)!==32||sv.getUint32(8,true)!==160||String.fromCharCode(...tile.subarray(0,4))!=='XYGU'||tv.getUint32(4,true)!==1||tv.getUint32(8,true)!==1||tv.getBigUint64(16,true)!==v.getBigUint64(112,true)||tv.getBigUint64(24,true)!==v.getBigUint64(104,true)||tv.getBigUint64(32,true)!==v.getBigUint64(120,true))throw new TypeError('mixed embedded authority');
+ if(String.fromCharCode(...scene.subarray(0,4))!=='XYGS'||sv.getUint32(4,true)!==XYG_WASM_SCENE_VERSION||sv.getUint32(8,true)!==160||String.fromCharCode(...tile.subarray(0,4))!=='XYGU'||tv.getUint32(4,true)!==1||tv.getUint32(8,true)!==1||tv.getBigUint64(16,true)!==v.getBigUint64(112,true)||tv.getBigUint64(24,true)!==v.getBigUint64(104,true)||tv.getBigUint64(32,true)!==v.getBigUint64(120,true))throw new TypeError('mixed embedded authority');
  const records=mixedCount(sv,16,2000000),styles=mixedCount(sv,24,2000000),recordStart=mixedCount(v,48,records),recordEnd=mixedCount(v,56,records),styleStart=mixedCount(v,64,styles),styleEnd=mixedCount(v,72,styles);
  if(recordEnd<recordStart||styleEnd<styleStart)throw new TypeError('mixed retained ranges');
  const snapshot=b.subarray(packet.byteLength-208,packet.byteLength-48),style=b.subarray(packet.byteLength-48),q=new DataView(snapshot.buffer,snapshot.byteOffset,160);

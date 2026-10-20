@@ -24,8 +24,8 @@ layer properties rather than additional families:
 | `polygons`, `choropleth` | Polygon / MultiPolygon | Explicit three-vertex Triangle fills and source-edge Segment outlines |
 | `density` | Point / MultiPoint | Top-first RGBA Image, complete contributor CSR and state overlays |
 
-Scene32 explicitly frames Triangle6 and Segment7 primitives. Repeated feature
-IDs do not join adjacent triangles or routes. XYPB15 batches their existing
+the current Scene version explicitly frames Triangle6 and Segment7 primitives. Repeated feature
+IDs do not join adjacent triangles or routes. the current XYPB version batches their existing
 GPU programs and varied Scatter instances; density reuses the texture program.
 Labels and legends reuse Rust-resolved Scene sidecars and existing DOM/SVG
 consumers. A separate geographic painter or host projection is not permitted.

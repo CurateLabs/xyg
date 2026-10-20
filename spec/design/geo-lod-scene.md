@@ -1,7 +1,7 @@
 # Geographic point tier Scene lowering (#50)
 
 `geo_lod_scene` lowers the authoritative Rust `GeoPointResult` to ordinary
-Scatter/Image Scene32 records. It does not count, filter, choose bins, sample
+Scatter/Image the current Scene version records. It does not count, filter, choose bins, sample
 members or project source geometry. Direct records keep exact full-u64 feature
 IDs and projected f64 positions. Reduced Scatter IDs are explicitly cell
 ordinals; they are not representative source IDs. Picking must retain the

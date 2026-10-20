@@ -12,6 +12,7 @@ use crate::kernels::{
     colormap_color, density_mean_color_rgba_into, density_rgba_into, normalize_one_f32,
 };
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
+use crate::scene_y2::{SceneY2Axis, SceneY2Domain};
 use crate::svg::push_num;
 use crate::textblock;
 use crate::tick_layout;
@@ -19,7 +20,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 32;
+pub const SCENE_VERSION: u32 = 33;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -33,13 +34,24 @@ const MAX_NUMERIC_TICK_FORMAT_PRECISION: usize = 100;
 pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
 pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
+/// Record byte 3 bit selecting the secondary y scale (`y2`). The remaining
+/// bits stay the annotation tag namespace (0..=6 and 0x80), so every
+/// annotation-tag comparison masks this bit first.
+pub const SCENE_RECORD_Y2_BIT: u8 = 0x40;
 /// Fixed chrome trailer before UTF-8 labels and authored tick payloads (Scene v9).
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 15;
-pub const BROWSER_PAINTER_HEADER_BYTES: usize = 300;
+pub const BROWSER_PAINTER_VERSION: u32 = 16;
+pub const BROWSER_PAINTER_HEADER_BYTES: usize = 420;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
+/// XYPB v16 header map beyond the v15 prefix: the y2 axis block (same 88-byte
+/// record as x/y) follows the chrome input at 264, then the fixed y2 text
+/// record, the text/legend/colorbar/label lengths, and the y2 tick count.
+const PAINTER_Y2_AXIS_BYTES: usize = 88;
+const PAINTER_Y2_TEXT_AT: usize = 264 + PAINTER_Y2_AXIS_BYTES;
+const PAINTER_TEXT_LENGTHS_AT: usize = PAINTER_Y2_TEXT_AT + 32;
+const PAINTER_Y2_TICK_COUNT_AT: usize = PAINTER_TEXT_LENGTHS_AT + 28;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 /// Hard ceiling on browser-side trace objects created from one painter output.
 /// A valid Scene can alternate run identity/style on every record, so this is
@@ -1093,7 +1105,7 @@ impl SceneAxisChromeStyle {
         }
     }
 
-    fn default_style(side: AxisSide) -> Self {
+    pub(crate) fn default_style(side: AxisSide) -> Self {
         Self {
             side,
             tick_sides: 1 << side as u8,
@@ -1384,7 +1396,7 @@ impl SceneChromeText {
     }
 }
 
-fn read_axis_chrome_style(bytes: &[u8], offset: usize) -> Result<SceneAxisChromeStyle, SceneError> {
+pub(crate) fn read_axis_chrome_style(bytes: &[u8], offset: usize) -> Result<SceneAxisChromeStyle, SceneError> {
     let axis = bytes.get(offset..offset + 88).ok_or(SceneError::Length)?;
     if axis[5..8] != [0; 3] {
         return Err(SceneError::Length);
@@ -1602,6 +1614,52 @@ impl AxisScale {
             coord_hi - coord_lo
         };
         Ok(scale)
+    }
+
+    /// Rebuild a scale from the transformed-coordinate domain the Scene wire
+    /// stores, preserving those coordinates exactly so re-encoding is
+    /// byte-identical on log and symlog axes too.
+    pub(crate) fn from_wire_coords(
+        kind: ScaleKind,
+        coord_lo: f64,
+        coord_hi: f64,
+        px0: f64,
+        px1: f64,
+        constant: f64,
+        mask_nonpositive: bool,
+    ) -> Result<Self, SceneError> {
+        if [coord_lo, coord_hi, px0, px1, constant]
+            .iter()
+            .any(|value| !value.is_finite())
+            || constant <= 0.0
+        {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(Self {
+            kind,
+            px0,
+            coord_lo,
+            coord_span: if coord_hi == coord_lo {
+                1.0
+            } else {
+                coord_hi - coord_lo
+            },
+            px_delta: px1 - px0,
+            constant,
+            mask_nonpositive,
+        })
+    }
+
+    /// `(kind, lo, hi, constant, mask)` for a wire scale record: transformed
+    /// coordinates for the Scene, data values for authored sidecars.
+    pub(crate) fn wire_scale(self, data: bool) -> (ScaleKind, f64, f64, f64, bool) {
+        let (lo, hi) = (self.coord_lo, self.coord_lo + self.coord_span);
+        let (lo, hi) = if data {
+            (self.value(lo), self.value(hi))
+        } else {
+            (lo, hi)
+        };
+        (self.kind, lo, hi, self.constant, self.mask_nonpositive)
     }
 
     #[inline(always)]
@@ -3044,16 +3102,39 @@ type SceneChromeTrailer = (
     Vec<SceneLabel>,
     Vec<Option<SceneLabelBox>>,
     usize,
+    Option<std::ops::Range<usize>>,
 );
+
+/// Trailer byte 15 bit 5: a length-prefixed `XYY2` block follows the optional
+/// collision extras.
+const SCENE_TRAILER_HAS_Y2: u8 = 1 << 5;
 
 fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrailer, SceneError> {
     let trailer = bytes
         .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
         .ok_or(SceneError::Length)?;
-    if trailer[15] & !0b11111 != 0 {
+    if trailer[15] & !0b111111 != 0 {
         return Err(SceneError::Length);
     }
     let extras_len = if trailer[15] & 1 != 0 { 32 } else { 0 };
+    let y2_range = if trailer[15] & SCENE_TRAILER_HAS_Y2 != 0 {
+        let at = body_end + SCENE_CHROME_TRAILER_BYTES + extras_len;
+        let len = u32::from_le_bytes(
+            bytes
+                .get(at..at + 4)
+                .ok_or(SceneError::Length)?
+                .try_into()
+                .unwrap(),
+        ) as usize;
+        let end = (at + 4)
+            .checked_add(len)
+            .filter(|end| *end <= bytes.len())
+            .ok_or(SceneError::Length)?;
+        Some(at + 4..end)
+    } else {
+        None
+    };
+    let y2_block_len = y2_range.as_ref().map_or(0, |range| range.end - range.start + 4);
     let x_tick_strategy = trailer[12];
     let y_tick_strategy = trailer[13];
     let x_tick_anchor = trailer[14] & 0x0f;
@@ -3150,7 +3231,7 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     {
         return Err(SceneError::Limit);
     }
-    let text_start = body_end + SCENE_CHROME_TRAILER_BYTES + extras_len;
+    let text_start = body_end + SCENE_CHROME_TRAILER_BYTES + extras_len + y2_block_len;
     let tick_count = counts
         .into_iter()
         .filter(|count| *count != u32::MAX)
@@ -3267,6 +3348,7 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
         labels,
         label_backgrounds,
         total,
+        y2_range,
     ))
 }
 
@@ -3334,6 +3416,146 @@ fn svg_text_anchor(code: u8) -> &'static str {
     }
 }
 
+impl SceneY2Axis {
+    /// Visible major tick label texts for a plot `length` px tall, from the same
+    /// resolved ladder the drawn axis uses. Gutter measurement and painting
+    /// therefore agree on what is rendered.
+    pub(crate) fn visible_label_texts(&self, length: f64) -> Result<Vec<String>, SceneError> {
+        // Re-seat the same domain on a [length, 0] pixel run so the answer
+        // depends only on the plot height, not on where the scale was built.
+        let (kind, lo, hi, constant, mask) = self.scale.wire_scale(true);
+        let scale = AxisScale::new(kind, lo, hi, length, 0.0, constant, mask)?;
+        let ticks = resolved_axis_ticks(
+            scale,
+            length,
+            false,
+            0.0,
+            length,
+            self.major_ticks.as_deref(),
+            &self.minor_ticks,
+        )?;
+        Ok(ticks
+            .labeled
+            .iter()
+            .map(|value| match (&self.tick_labels, &self.major_ticks) {
+                (Some(labels), Some(values)) => values
+                    .iter()
+                    .position(|candidate| candidate == value)
+                    .and_then(|position| labels.get(position))
+                    .cloned()
+                    .unwrap_or_default(),
+                _ => format_tick(*value, ticks.step, self.scale.kind),
+            })
+            .collect())
+    }
+
+    /// Right-hand room the axis needs outside the plot for a plot `plot_height`
+    /// px tall: the 8 px canvas margin, outward ticks, tick padding, the widest
+    /// visible label at the resolved size, and the rotated title with the same
+    /// 0.4 em gap the painter uses. The caller keeps its own floor.
+    pub(crate) fn right_gutter(&self, plot_height: f64) -> f64 {
+        let axis = self.axis;
+        let tick_label_size = axis.tick_label_size(12.0);
+        let label_size = axis.label_size(12.0);
+        let tick_out = if axis.tick_sides & 0b10 != 0 && axis.tick_length > 0.0 {
+            tick_span(axis.major_direction, axis.tick_length).1
+        } else {
+            0.0
+        };
+        let labels_shown = axis.tick_label_sides & 0b10 != 0
+            && axis.tick_label_paint()[3] != 0
+            && !matches!(
+                u32::from(self.tick_strategy),
+                tick_layout::STRATEGY_NONE | tick_layout::STRATEGY_OFF
+            );
+        let (padding, widest) = if labels_shown {
+            let widest = self
+                .visible_label_texts(plot_height)
+                .map(|texts| {
+                    texts
+                        .iter()
+                        .map(|text| scene_text_advance(text, tick_label_size))
+                        .fold(0.0, f64::max)
+                })
+                .unwrap_or(0.0);
+            (axis.static_tick_padding.unwrap_or(0.0), widest)
+        } else {
+            (0.0, 0.0)
+        };
+        let title = if self.title.is_empty() {
+            0.0
+        } else {
+            0.4 * label_size + 1.25 * label_size
+        };
+        8.0 + tick_out + padding + widest + title
+    }
+}
+
+/// Materialize the y2 numeric-format grammar into explicit ticks and labels,
+/// exactly as the primary y axis does at encode, so Scene consumers never
+/// re-interpret a format string.
+pub fn resolve_y2_tick_format(
+    layout: PlotLayout,
+    y2: &mut SceneY2Axis,
+) -> Result<(), SceneError> {
+    // Only the y slot carries a format here; the x scale is never consulted.
+    let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false)?;
+    let mut slot = SceneChromeStyle {
+        y_major_ticks: y2.major_ticks.take(),
+        y_minor_ticks: std::mem::take(&mut y2.minor_ticks),
+        y_tick_labels: y2.tick_labels.take(),
+        ..SceneChromeStyle::default_style()
+    };
+    let format = (!y2.format.is_empty()).then_some(y2.format.as_str());
+    let resolved = resolve_numeric_tick_formats(
+        layout,
+        x_scale,
+        y2.scale,
+        &mut slot,
+        None,
+        format,
+        TICK_FORMAT_KIND_NUMERIC,
+        TICK_FORMAT_KIND_NUMERIC,
+        &[],
+    );
+    y2.major_ticks = slot.y_major_ticks;
+    y2.minor_ticks = slot.y_minor_ticks;
+    y2.tick_labels = slot.y_tick_labels;
+    resolved
+}
+
+/// Which axis a tick/label/chrome query addresses. `Y2` is the secondary
+/// right-hand y axis of a Scene v33 twin-axis document.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AxisSlot {
+    X,
+    Y,
+    Y2,
+}
+
+impl From<bool> for AxisSlot {
+    fn from(is_x: bool) -> Self {
+        if is_x {
+            Self::X
+        } else {
+            Self::Y
+        }
+    }
+}
+
+struct AxisSlotPolicy<'a> {
+    style: SceneAxisChromeStyle,
+    scale: AxisScale,
+    major: Option<&'a [f64]>,
+    labels: Option<&'a [String]>,
+    strategy: u8,
+    min_gap: f64,
+    angle: Option<f64>,
+    category: bool,
+    anchor_authored: bool,
+    anchor: u8,
+}
+
 struct AxisTickLabelItem {
     value: f64,
     text: String,
@@ -3349,43 +3571,45 @@ fn chrome_collision_has_extras(chrome: &SceneChromeStyle) -> bool {
         || chrome.y_tick_angle.is_some()
 }
 
+/// One 88-byte axis chrome record, shared by the x/y trailer and `XYY2`.
+pub(crate) fn write_axis_chrome_style(out: &mut Vec<u8>, axis: &SceneAxisChromeStyle) {
+    out.extend_from_slice(&[
+        axis.side as u8,
+        axis.tick_sides,
+        axis.tick_label_sides,
+        axis.major_direction as u8,
+        axis.minor_direction as u8,
+        0,
+        0,
+        0,
+    ]);
+    out.extend_from_slice(&axis.axis_rgba);
+    out.extend_from_slice(&axis.grid_rgba);
+    out.extend_from_slice(&axis.tick_rgba);
+    out.extend_from_slice(&axis.minor_grid_rgba);
+    out.extend_from_slice(&axis.minor_tick_rgba);
+    out.extend_from_slice(&axis.label_rgba);
+    for value in [
+        axis.axis_width,
+        axis.grid_width,
+        axis.tick_width,
+        axis.tick_length,
+        axis.minor_grid_width,
+        axis.minor_tick_width,
+        axis.minor_tick_length,
+    ] {
+        out.extend_from_slice(&value.to_le_bytes());
+    }
+}
+
 fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
     out.extend_from_slice(&chrome.chart_background_rgba);
     out.extend_from_slice(&chrome.plot_background_rgba);
     out.extend_from_slice(&chrome.label_rgba);
     out.extend_from_slice(&chrome_collision_header(chrome));
     out.extend_from_slice(&chrome.label_font_size.to_le_bytes());
-    let write_axis = |out: &mut Vec<u8>, axis: &SceneAxisChromeStyle| {
-        out.extend_from_slice(&[
-            axis.side as u8,
-            axis.tick_sides,
-            axis.tick_label_sides,
-            axis.major_direction as u8,
-            axis.minor_direction as u8,
-            0,
-            0,
-            0,
-        ]);
-        out.extend_from_slice(&axis.axis_rgba);
-        out.extend_from_slice(&axis.grid_rgba);
-        out.extend_from_slice(&axis.tick_rgba);
-        out.extend_from_slice(&axis.minor_grid_rgba);
-        out.extend_from_slice(&axis.minor_tick_rgba);
-        out.extend_from_slice(&axis.label_rgba);
-        for value in [
-            axis.axis_width,
-            axis.grid_width,
-            axis.tick_width,
-            axis.tick_length,
-            axis.minor_grid_width,
-            axis.minor_tick_width,
-            axis.minor_tick_length,
-        ] {
-            out.extend_from_slice(&value.to_le_bytes());
-        }
-    };
-    write_axis(out, &chrome.x_axis);
-    write_axis(out, &chrome.y_axis);
+    write_axis_chrome_style(out, &chrome.x_axis);
+    write_axis_chrome_style(out, &chrome.y_axis);
 }
 
 fn write_chrome_trailer(
@@ -3395,8 +3619,13 @@ fn write_chrome_trailer(
     legend: Option<&SceneLegend>,
     colorbar: Option<&SceneColorbar>,
     label_bytes: &[u8],
+    y2: Option<&SceneY2Axis>,
 ) {
+    let trailer_at = out.len();
     write_chrome_style_input(out, chrome);
+    if y2.is_some() {
+        out[trailer_at + 15] |= SCENE_TRAILER_HAS_Y2;
+    }
     out.extend_from_slice(&(text.title.len() as u32).to_le_bytes());
     out.extend_from_slice(&(text.x_label.len() as u32).to_le_bytes());
     out.extend_from_slice(&(text.y_label.len() as u32).to_le_bytes());
@@ -3445,6 +3674,11 @@ fn write_chrome_trailer(
         ] {
             out.extend_from_slice(&value.to_le_bytes());
         }
+    }
+    if let Some(y2) = y2 {
+        let payload = y2.encode(SceneY2Domain::Coordinates);
+        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.extend_from_slice(&payload);
     }
     out.extend_from_slice(text.title.as_bytes());
     out.extend_from_slice(text.x_label.as_bytes());
@@ -3994,7 +4228,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 .and_then(|record_bytes| value.checked_add(record_bytes))
         })
         .ok_or(SceneError::Limit)?;
-    let (_chrome, _text, legend, _colorbar, _labels, _label_backgrounds, total) =
+    let (_chrome, _text, legend, _colorbar, _labels, _label_backgrounds, total, y2_range) =
         read_chrome_trailer(bytes, body)?;
     if let Some(legend) = legend {
         if legend.entries.iter().any(|entry| entry.style_ref >= styles) {
@@ -4034,6 +4268,14 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         )?;
         PolarSceneState::from_xypl(xypl, layout)?;
     }
+    let y2_axis = y2_range
+        .map(|range| {
+            if !xypl.is_empty() {
+                return Err(SceneError::Length);
+            }
+            SceneY2Axis::decode(&bytes[range], SceneY2Domain::Coordinates, bottom, top)
+        })
+        .transpose()?;
     let images = parse_xyim(xyim)?;
     let (dash_bytes, cap_bytes, marker_bytes, grad_bytes, glyph_bytes) =
         split_style_sidecars(xyds)?;
@@ -4101,7 +4343,11 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         let kind = SceneRecordKind::from_code(bytes[offset])?;
         let visible = bytes[offset + 1];
         let symbol = bytes[offset + 2];
-        if visible > 1 || !matches!(bytes[offset + 3], 0..=6 | 0x80) {
+        let selector = bytes[offset + 3] & SCENE_RECORD_Y2_BIT != 0;
+        if visible > 1
+            || (selector && y2_axis.is_none())
+            || !matches!(bytes[offset + 3] & !SCENE_RECORD_Y2_BIT, 0..=6 | 0x80)
+        {
             return Err(SceneError::Length);
         }
         let style = batch_u32(bytes, offset + 4)? as usize;
@@ -4188,7 +4434,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             2
         };
         if triangle_cursor + arity > records
-            || !matches!(bytes[first + 3], 0 | 0x80)
+            || !matches!(bytes[first + 3] & !SCENE_RECORD_Y2_BIT, 0 | 0x80)
             || (1..arity).any(|vertex| {
                 let next = first + vertex * SCENE_BATCH_RECORD_BYTES;
                 bytes[next..next + 16] != bytes[first..first + 16]
@@ -4209,7 +4455,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
     while annotation_cursor < records {
         let offset = records_offset + annotation_cursor * SCENE_BATCH_RECORD_BYTES;
         let stable_id = batch_u64(bytes, offset + 8)?;
-        let tag = bytes[offset + 3];
+        let tag = bytes[offset + 3] & !SCENE_RECORD_Y2_BIT;
         if tag == 0 || tag == 0x80 {
             if annotations_started {
                 return Err(SceneError::Length);
@@ -4221,7 +4467,9 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         let mut run_end = annotation_cursor + 1;
         while run_end < records {
             let candidate = records_offset + run_end * SCENE_BATCH_RECORD_BYTES;
-            if bytes[candidate + 3] != tag || batch_u64(bytes, candidate + 8)? != stable_id {
+            if bytes[candidate + 3] & !SCENE_RECORD_Y2_BIT != tag
+                || batch_u64(bytes, candidate + 8)? != stable_id
+            {
                 break;
             }
             run_end += 1;
@@ -4276,13 +4524,14 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     coordinates: [0.0; 4],
                     diameter: 0.0,
                     annotation_tag: 0,
+                    y2: false,
                 }; 5];
                 for (row, record) in arrow.iter_mut().enumerate() {
                     let at = records_offset + (annotation_cursor + row) * SCENE_BATCH_RECORD_BYTES;
                     record.kind = SceneRecordKind::from_code(bytes[at])?;
                     record.visible = bytes[at + 1] != 0;
                     record.symbol = bytes[at + 2];
-                    record.annotation_tag = bytes[at + 3];
+                    record.annotation_tag = bytes[at + 3] & !SCENE_RECORD_Y2_BIT;
                     record.style_ref = batch_u32(bytes, at + 4)? as usize;
                     record.stable_id = batch_u64(bytes, at + 8)?;
                     record.coordinates = [
@@ -6576,7 +6825,48 @@ pub fn expand_scene_records_painted(
     ),
     SceneError,
 > {
+    expand_scene_records_with_y2(
+        input,
+        x_scale,
+        y_scale,
+        None,
+        fill_rgba,
+        stroke_rgba,
+        stroke_width,
+        paint,
+        polar,
+    )
+}
+
+/// [`expand_scene_records_painted`] for a twin-axis figure: `y2` is the
+/// secondary y scale plus one selector per input row, and expansion groups
+/// (one trace each) evaluate scale-dependent geometry on their own y scale.
+pub fn expand_scene_records_with_y2(
+    input: SceneExpansionInput<'_>,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    y2: Option<(AxisScale, &[bool])>,
+    fill_rgba: &[u8],
+    stroke_rgba: &[u8],
+    stroke_width: &[f64],
+    paint: &[u8],
+    polar: bool,
+) -> Result<
+    (
+        ExpandedSceneRecords,
+        Option<ExpandedSceneStyles>,
+        Vec<SceneImage>,
+    ),
+    SceneError,
+> {
     let len = input.kinds.len();
+    if y2.is_some_and(|(_, rows)| rows.len() != len) {
+        return Err(SceneError::Length);
+    }
+    let row_y_scale = |index: usize| match y2 {
+        Some((scale, rows)) if rows[index] => scale,
+        _ => y_scale,
+    };
     if [
         input.stable_ids.len(),
         input.style_refs.len(),
@@ -6714,6 +7004,7 @@ pub fn expand_scene_records_painted(
     let mut expanded_len = 0usize;
     let mut cursor = 0usize;
     while cursor < len {
+        let y_scale = row_y_scale(cursor);
         let mode = SceneExpansionMode::from_code(input.expansion_modes[cursor])?;
         if mode == SceneExpansionMode::None {
             expanded_len = expanded_len.checked_add(1).ok_or(SceneError::Limit)?;
@@ -6899,6 +7190,7 @@ pub fn expand_scene_records_painted(
     let mut output = ExpandedSceneRecords::with_capacity(expanded_len);
     cursor = 0;
     while cursor < len {
+        let y_scale = row_y_scale(cursor);
         let mode = SceneExpansionMode::from_code(input.expansion_modes[cursor])?;
         if mode == SceneExpansionMode::None {
             let mut style_ref = input.style_refs[cursor];
@@ -7508,6 +7800,7 @@ fn tessellate_rounded_rect_record(
     mapped: [f64; 4],
     radius: SceneCornerRadius,
     annotation_tag: u8,
+    y2: bool,
     style_ref: u32,
     stable_id: u64,
     symbol: u8,
@@ -7547,6 +7840,7 @@ fn tessellate_rounded_rect_record(
             visible,
             symbol,
             annotation_tag,
+            y2,
             style_ref,
             stable_id,
             coordinates: if visible {
@@ -7592,6 +7886,9 @@ pub struct SceneBatch<'a> {
     dashes: Vec<u8>,
     marker_paths: Vec<Option<AuthoredMarkerPath>>,
     corner_radii: Vec<Option<SceneCornerRadius>>,
+    y2: Option<SceneY2Axis>,
+    /// Sorted stable ids of the rows plotted against `y2`.
+    y2_ids: Vec<u64>,
 }
 
 #[derive(Clone, Debug)]
@@ -8683,7 +8980,51 @@ impl<'a> SceneBatch<'a> {
             dashes: Vec::new(),
             marker_paths: Vec::new(),
             corner_radii: Vec::new(),
+            y2: None,
+            y2_ids: Vec::new(),
         })
+    }
+
+    /// Whether row `index` is plotted against `y2`, and its y scale.
+    fn row_y_scale(&self, index: usize) -> (bool, AxisScale) {
+        match &self.y2 {
+            Some(y2) if self.y2_ids.binary_search(&self.stable_ids[index]).is_ok() => {
+                (true, y2.scale)
+            }
+            _ => (false, self.y_scale),
+        }
+    }
+
+    /// Attach the secondary right-hand y axis and the stable ids of the trace
+    /// rows plotted against it (Scene v33). Cartesian only; annotation ids
+    /// always use the primary axes.
+    pub fn with_y2(mut self, y2: SceneY2Axis, mut y2_ids: Vec<u64>) -> Result<Self, SceneError> {
+        // A twin axis shares the right gutter with neither a polar rim nor a
+        // colorbar; Rust refuses the combination whatever the host reported.
+        if self.polar.is_some() || self.colorbar.is_some() {
+            return Err(SceneError::Length);
+        }
+        let y2 = y2.validated()?;
+        resolved_axis_ticks(
+            y2.scale,
+            self.layout.bottom - self.layout.top,
+            false,
+            self.layout.top,
+            self.layout.bottom,
+            y2.major_ticks.as_deref(),
+            &y2.minor_ticks,
+        )?;
+        y2_ids.sort_unstable();
+        y2_ids.dedup();
+        if y2_ids
+            .iter()
+            .any(|id| is_scene_annotation_id(*id) || !self.stable_ids.contains(id))
+        {
+            return Err(SceneError::Length);
+        }
+        self.y2 = Some(y2);
+        self.y2_ids = y2_ids;
+        Ok(self)
     }
 
     /// Attach decoded density/image blit planes. Empty keeps the Scene without
@@ -8795,7 +9136,11 @@ impl<'a> SceneBatch<'a> {
         if bytes.is_empty() {
             return Ok(self);
         }
-        if !self.arrows.is_empty() || !self.callouts.is_empty() || !self.labels.is_empty() {
+        if !self.arrows.is_empty()
+            || !self.callouts.is_empty()
+            || !self.labels.is_empty()
+            || self.y2.is_some()
+        {
             return Err(SceneError::Length);
         }
         let (layout, legend_box) = recut_polar_scene_layout(
@@ -8873,6 +9218,7 @@ impl<'a> SceneBatch<'a> {
         let mut out = Vec::with_capacity(self.kinds.len());
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
+            let (y2_row, y_scale) = self.row_y_scale(index);
             if let Some(polar) = &self.polar {
                 if kind == SceneRecordKind::Rect {
                     let extra = self
@@ -8915,6 +9261,7 @@ impl<'a> SceneBatch<'a> {
                             visible,
                             symbol: self.symbols[index],
                             annotation_tag,
+                            y2: false,
                             style_ref: self.style_refs[index],
                             stable_id: mark_id,
                             coordinates: if visible {
@@ -8965,9 +9312,9 @@ impl<'a> SceneBatch<'a> {
                     {
                         [
                             self.x_scale.pixel(self.x0[index]),
-                            self.y_scale.pixel(self.y0[index]),
+                            y_scale.pixel(self.y0[index]),
                             self.x_scale.pixel(self.x1[index]),
-                            self.y_scale.pixel(self.y1[index]),
+                            y_scale.pixel(self.y1[index]),
                         ]
                     }
                     SceneRecordKind::Scatter
@@ -8976,15 +9323,15 @@ impl<'a> SceneBatch<'a> {
                     | SceneRecordKind::Triangle
                     | SceneRecordKind::Segment => [
                         self.x_scale.pixel(self.x0[index]),
-                        self.y_scale.pixel(self.y0[index]),
+                        y_scale.pixel(self.y0[index]),
                         0.0,
                         0.0,
                     ],
                     SceneRecordKind::Rect | SceneRecordKind::Band | SceneRecordKind::Image => [
                         self.x_scale.pixel(self.x0[index]),
-                        self.y_scale.pixel(self.y0[index]),
+                        y_scale.pixel(self.y0[index]),
                         self.x_scale.pixel(self.x1[index]),
-                        self.y_scale.pixel(self.y1[index]),
+                        y_scale.pixel(self.y1[index]),
                     ],
                 }
             };
@@ -9086,6 +9433,7 @@ impl<'a> SceneBatch<'a> {
                         mapped,
                         radius,
                         annotation_tag,
+                        y2_row,
                         self.style_refs[index],
                         mark_id,
                         symbol,
@@ -9127,6 +9475,7 @@ impl<'a> SceneBatch<'a> {
                                     visible: true,
                                     symbol: 0,
                                     annotation_tag,
+                                    y2: y2_row,
                                     style_ref: self.style_refs[index],
                                     stable_id: mark_id,
                                     coordinates: [
@@ -9148,6 +9497,7 @@ impl<'a> SceneBatch<'a> {
                 visible,
                 symbol,
                 annotation_tag,
+                y2: y2_row,
                 style_ref: self.style_refs[index],
                 stable_id: self.stable_ids[index],
                 coordinates,
@@ -9301,7 +9651,7 @@ impl<'a> SceneBatch<'a> {
             out.push(mark.kind as u8);
             out.push(u8::from(mark.visible));
             out.push(mark.symbol);
-            out.push(mark.annotation_tag);
+            out.push(mark.annotation_tag | if mark.y2 { SCENE_RECORD_Y2_BIT } else { 0 });
             out.extend_from_slice(&mark.style_ref.to_le_bytes());
             out.extend_from_slice(&mark.stable_id.to_le_bytes());
             for value in mark.coordinates {
@@ -9371,6 +9721,7 @@ impl<'a> SceneBatch<'a> {
             self.legend.as_ref(),
             self.colorbar.as_ref(),
             &label_bytes,
+            self.y2.as_ref(),
         );
         if let Some(polar) = &self.polar {
             out.extend_from_slice(&polar.xypl);
@@ -9512,6 +9863,7 @@ struct PreparedMarkRecord {
     visible: bool,
     symbol: u8,
     annotation_tag: u8,
+    y2: bool,
     style_ref: u32,
     stable_id: u64,
     coordinates: [f64; 4],
@@ -9652,7 +10004,10 @@ pub(crate) struct EncodedRecord {
     pub(crate) stable_id: u64,
     pub(crate) coordinates: [f64; 4],
     pub(crate) diameter: f64,
+    /// Annotation tag with the y2 selector bit already masked off.
     pub(crate) annotation_tag: u8,
+    /// Plotted against the secondary y scale (record byte 3 bit 0x40).
+    pub(crate) y2: bool,
 }
 
 fn validate_primitive_records(records: &[EncodedRecord]) -> Result<(), SceneError> {
@@ -10048,6 +10403,7 @@ fn valid_straight_arrow_run(records: &[EncodedRecord]) -> bool {
 // while legacy and annotation records additionally require stable-ID equality.
 fn same_record_run(left: EncodedRecord, right: EncodedRecord) -> bool {
     left.annotation_tag == right.annotation_tag
+        && left.y2 == right.y2
         && (left.annotation_tag == 0x80 || left.stable_id == right.stable_id)
         && (left.kind != SceneRecordKind::Band || left.symbol == right.symbol)
 }
@@ -10862,6 +11218,28 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         push_escaped_attribute(out, &text.y_label);
         out.push_str("</text></g>");
     }
+    if let Some(y2) = document.y2.as_ref().filter(|y2| !y2.title.is_empty()) {
+        let label_size = y2.axis.label_size(chrome.label_font_size);
+        let x = document.y2_title_baseline();
+        let y = 0.5 * (layout.top + layout.bottom);
+        out.push_str("<g data-xy-chrome=\"y2-label\"><text x=\"");
+        push_num(out, x);
+        out.push_str("\" y=\"");
+        push_num(out, y);
+        out.push_str("\" fill=\"");
+        out.push_str(&rgba_css(y2.axis.title_paint()));
+        out.push_str("\" font-size=\"");
+        push_num(out, label_size);
+        out.push('"');
+        push_svg_text_flags(out, y2.axis.static_text.title_flags);
+        out.push_str(" text-anchor=\"middle\" transform=\"rotate(90 ");
+        push_num(out, x);
+        out.push(' ');
+        push_num(out, y);
+        out.push_str(")\">");
+        push_escaped_attribute(out, &y2.title);
+        out.push_str("</text></g>");
+    }
 }
 
 /// Validated, owned Scene v9 document consumed identically by vector and
@@ -10870,6 +11248,8 @@ pub struct SceneDocument {
     layout: PlotLayout,
     x_scale: AxisScale,
     y_scale: AxisScale,
+    /// Secondary right-hand y axis (Scene v33), absent for single-y Scenes.
+    y2: Option<SceneY2Axis>,
     chrome: SceneChromeStyle,
     text: SceneChromeText,
     legend: Option<SceneLegend>,
@@ -10921,6 +11301,7 @@ impl SceneDocument {
             return Ok(bytes.to_vec());
         }
         if d.polar.is_some()
+            || d.y2.is_some()
             || d.colorbar.is_some()
             || d.label_backgrounds.iter().any(Option::is_some)
             || d.gradients.iter().any(Option::is_some)
@@ -11032,7 +11413,7 @@ impl SceneDocument {
         for (i, r) in d.records.iter().enumerate() {
             let at = offset + i * SCENE_BATCH_RECORD_BYTES;
             out[at + 1] = u8::from(r.visible);
-            out[at + 3] = r.annotation_tag;
+            out[at + 3] = r.annotation_tag | if r.y2 { SCENE_RECORD_Y2_BIT } else { 0 };
             for (j, value) in r.coordinates.iter().enumerate() {
                 out[at + 16 + j * 8..at + 24 + j * 8].copy_from_slice(&value.to_le_bytes());
             }
@@ -11057,6 +11438,7 @@ impl SceneDocument {
         let front = Self::decode(foreground)?;
         let supported = |d: &Self| {
             d.polar.is_none()
+                && d.y2.is_none()
                 && d.colorbar.is_none()
                 && d.gradients.iter().all(Option::is_none)
                 && d.marker_glyphs.iter().all(Option::is_none)
@@ -11169,7 +11551,7 @@ impl SceneDocument {
         for (i, record) in records.iter().enumerate() {
             let at = offset + i * SCENE_BATCH_RECORD_BYTES;
             out[at + 1] = u8::from(record.visible);
-            out[at + 3] = record.annotation_tag;
+            out[at + 3] = record.annotation_tag | if record.y2 { SCENE_RECORD_Y2_BIT } else { 0 };
             for (j, value) in record.coordinates.iter().enumerate() {
                 out[at + 16 + j * 8..at + 24 + j * 8].copy_from_slice(&value.to_le_bytes());
             }
@@ -11249,6 +11631,7 @@ impl SceneDocument {
     /// refuses rather than silently dropping them (#34).
     pub(crate) fn into_graph_parts(self) -> Result<SceneGraphParts, SceneError> {
         if self.polar.is_some()
+            || self.y2.is_some()
             || self.colorbar.is_some()
             || !self.images.is_empty()
             || !self.labels.is_empty()
@@ -11347,6 +11730,51 @@ impl SceneDocument {
             // Axis labels are hidden: keep the historical fractional gutter.
             None => (self.layout.left * 0.35).max(label_size),
         }
+    }
+
+    /// Right-gutter counterpart of [`Self::y_title_baseline`]: the quarter-turned
+    /// y2 title sits outside the widest y2 tick label with the same 0.4 em gap,
+    /// and its ink is kept inside the canvas.
+    fn y2_title_baseline(&self) -> f64 {
+        let y2 = self
+            .y2
+            .as_ref()
+            .expect("the y2 title is only placed when the Scene carries y2");
+        let label_size = y2.axis.label_size(self.chrome.label_font_size);
+        let tick_label_size = y2.axis.tick_label_size(self.chrome.label_font_size);
+        let tick_right = self.resolved_axis_ticks(AxisSlot::Y2).ok().map(|ticks| {
+            let extent = ticks
+                .labeled
+                .iter()
+                .enumerate()
+                .map(|(index, value)| {
+                    let label = self.axis_tick_label(AxisSlot::Y2, index, *value, &ticks);
+                    textblock::measure(&label, tick_label_size, 1.25, None)
+                        .map(|block| block.width)
+                        .unwrap_or(0.0)
+                })
+                .fold(0.0f64, f64::max);
+            let (_, major_out) = tick_span(y2.axis.major_direction, y2.axis.tick_length);
+            let offset = y2
+                .axis
+                .tick_label_offset(false, 1, major_out, self.chrome.label_font_size);
+            self.layout.right + offset + extent
+        });
+        let gap = 0.4 * label_size;
+        let block = textblock::measure(&y2.title, label_size, 1.25, None);
+        let depth = block
+            .as_ref()
+            .map(|block| block.descent + (block.line_count() - 1) as f64 * block.line_step)
+            .unwrap_or(label_size * 0.2);
+        let ascent = block
+            .as_ref()
+            .map(|block| block.ascent)
+            .unwrap_or(label_size * 0.8);
+        let x = match tick_right {
+            Some(tick_right) => tick_right + gap + depth,
+            None => self.layout.right + (self.layout.viewport_width - self.layout.right) * 0.65,
+        };
+        x.min(self.layout.viewport_width - ascent)
     }
 
     /// Apply bounded static-document text metrics to one decoded Scene.
@@ -11781,6 +12209,7 @@ impl SceneDocument {
                 coordinates,
                 diameter: 0.0,
                 annotation_tag: SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT,
+                y2: false,
             };
             self.records.push(record(
                 SceneRecordKind::Polyline,
@@ -11863,6 +12292,7 @@ impl SceneDocument {
                 coordinates,
                 diameter: 0.0,
                 annotation_tag: SCENE_ANNOTATION_TAG_STRAIGHT_ARROW,
+                y2: false,
             };
             self.records.push(record(
                 SceneRecordKind::Polyline,
@@ -12078,7 +12508,7 @@ impl SceneDocument {
                 value.checked_add(record_count.checked_mul(SCENE_BATCH_RECORD_BYTES)?)
             })
             .ok_or(SceneError::Limit)?;
-        let (chrome, text, legend, colorbar, labels, label_backgrounds, total) =
+        let (chrome, text, legend, colorbar, labels, label_backgrounds, total, y2_range) =
             read_chrome_trailer(bytes, body)?;
         let (xypl, xyim, xyds) = scene_sidecars_after_chrome(bytes, total)?;
         let viewport_width = f64_at(32);
@@ -12095,11 +12525,24 @@ impl SceneDocument {
             top,
             viewport_height - bottom,
         )?;
+        let y2 = y2_range
+            .map(|range| {
+                SceneY2Axis::decode(
+                    &bytes[range],
+                    SceneY2Domain::Coordinates,
+                    layout.bottom,
+                    layout.top,
+                )
+            })
+            .transpose()?;
         let mut polar = if xypl.is_empty() {
             None
         } else {
             Some(PolarSceneState::from_xypl(xypl, layout)?)
         };
+        if y2.is_some() && polar.is_some() {
+            return Err(SceneError::Length);
+        }
         if let Some(state) = polar.as_mut() {
             state.legend_box = polar_legend_box_after_recut(layout, legend.as_ref());
         }
@@ -12243,8 +12686,10 @@ impl SceneDocument {
                 _ => return Err(SceneError::Length),
             };
             let symbol = bytes[offset + 2];
-            let annotation_tag = bytes[offset + 3];
-            if !matches!(annotation_tag, 0..=6 | 0x80)
+            let annotation_tag = bytes[offset + 3] & !SCENE_RECORD_Y2_BIT;
+            let y2_row = bytes[offset + 3] & SCENE_RECORD_Y2_BIT != 0;
+            if (y2_row && y2.is_none())
+                || !matches!(annotation_tag, 0..=6 | 0x80)
                 || (kind == SceneRecordKind::Scatter && symbol > ScatterSymbol::VerticalLine as u8)
                 || (kind == SceneRecordKind::Band && BandOutline::from_code(symbol).is_err())
                 || (!matches!(kind, SceneRecordKind::Scatter | SceneRecordKind::Band)
@@ -12354,6 +12799,7 @@ impl SceneDocument {
                 coordinates,
                 diameter,
                 annotation_tag,
+                y2: y2_row,
             });
             offset += SCENE_BATCH_RECORD_BYTES;
         }
@@ -12423,6 +12869,7 @@ impl SceneDocument {
             layout,
             x_scale,
             y_scale,
+            y2,
             chrome,
             text,
             legend,
@@ -12531,38 +12978,118 @@ impl SceneDocument {
         }
     }
 
-    fn resolved_axis_ticks(&self, is_x: bool) -> Result<AxisTicks, SceneError> {
-        if let Some(polar) = &self.polar {
-            return self.resolved_polar_axis_ticks(is_x, polar);
+    fn resolved_axis_ticks(&self, slot: impl Into<AxisSlot>) -> Result<AxisTicks, SceneError> {
+        let slot = slot.into();
+        if slot != AxisSlot::Y2 {
+            if let Some(polar) = &self.polar {
+                return self.resolved_polar_axis_ticks(slot == AxisSlot::X, polar);
+            }
         }
-        let (scale, length, pixel_min, pixel_max, authored_major, authored_minor) = if is_x {
-            (
+        let (scale, length, pixel_min, pixel_max, authored_major, authored_minor) = match slot {
+            AxisSlot::X => (
                 self.x_scale,
                 self.layout.right - self.layout.left,
                 self.layout.left,
                 self.layout.right,
                 self.chrome.x_major_ticks.as_deref(),
                 self.chrome.x_minor_ticks.as_slice(),
-            )
-        } else {
-            (
+            ),
+            AxisSlot::Y => (
                 self.y_scale,
                 self.layout.bottom - self.layout.top,
                 self.layout.top,
                 self.layout.bottom,
                 self.chrome.y_major_ticks.as_deref(),
                 self.chrome.y_minor_ticks.as_slice(),
-            )
+            ),
+            AxisSlot::Y2 => {
+                let y2 = self.y2.as_ref().ok_or(SceneError::Length)?;
+                (
+                    y2.scale,
+                    self.layout.bottom - self.layout.top,
+                    self.layout.top,
+                    self.layout.bottom,
+                    y2.major_ticks.as_deref(),
+                    y2.minor_ticks.as_slice(),
+                )
+            }
         };
         resolved_axis_ticks(
             scale,
             length,
-            is_x,
+            slot == AxisSlot::X,
             pixel_min,
             pixel_max,
             authored_major,
             authored_minor,
         )
+    }
+
+    /// The per-axis chrome, tick policy, and scale of one axis slot.
+    fn slot_policy(&self, slot: AxisSlot) -> AxisSlotPolicy<'_> {
+        let chrome = &self.chrome;
+        match slot {
+            AxisSlot::X => AxisSlotPolicy {
+                style: chrome.x_axis,
+                scale: self.x_scale,
+                major: chrome.x_major_ticks.as_deref(),
+                labels: chrome.x_tick_labels.as_deref(),
+                strategy: chrome.x_tick_strategy,
+                min_gap: chrome.x_tick_min_gap,
+                angle: chrome.x_tick_angle,
+                category: chrome.x_tick_category,
+                anchor_authored: chrome.x_tick_anchor_authored,
+                anchor: chrome.x_tick_anchor,
+            },
+            AxisSlot::Y => AxisSlotPolicy {
+                style: chrome.y_axis,
+                scale: self.y_scale,
+                major: chrome.y_major_ticks.as_deref(),
+                labels: chrome.y_tick_labels.as_deref(),
+                strategy: chrome.y_tick_strategy,
+                min_gap: chrome.y_tick_min_gap,
+                angle: chrome.y_tick_angle,
+                category: chrome.y_tick_category,
+                anchor_authored: chrome.y_tick_anchor_authored,
+                anchor: chrome.y_tick_anchor,
+            },
+            AxisSlot::Y2 => {
+                let y2 = self
+                    .y2
+                    .as_ref()
+                    .expect("the y2 slot is only addressed when the Scene carries y2");
+                AxisSlotPolicy {
+                    style: y2.axis,
+                    scale: y2.scale,
+                    major: y2.major_ticks.as_deref(),
+                    labels: y2.tick_labels.as_deref(),
+                    strategy: y2.tick_strategy,
+                    min_gap: y2.tick_min_gap,
+                    angle: y2.tick_angle,
+                    category: y2.tick_category,
+                    anchor_authored: y2.tick_anchor_authored,
+                    anchor: y2.tick_anchor,
+                }
+            }
+        }
+    }
+
+    /// The axes chrome is drawn for, in paint order: x, y, then y2 when the
+    /// Scene carries one. Every axis shares one emission body.
+    fn axis_slots<'a>(
+        &self,
+        x_ticks: &'a AxisTicks,
+        y_ticks: &'a AxisTicks,
+        y2_ticks: Option<&'a AxisTicks>,
+    ) -> Vec<(AxisSlot, &'a AxisTicks, AxisScale, SceneAxisChromeStyle)> {
+        let mut axes = vec![
+            (AxisSlot::X, x_ticks, self.x_scale, self.chrome.x_axis),
+            (AxisSlot::Y, y_ticks, self.y_scale, self.chrome.y_axis),
+        ];
+        if let (Some(y2), Some(ticks)) = (&self.y2, y2_ticks) {
+            axes.push((AxisSlot::Y2, ticks, y2.scale, y2.axis));
+        }
+        axes
     }
 
     fn minor_ticks(ticks: &AxisTicks) -> impl Iterator<Item = f64> + '_ {
@@ -12573,18 +13100,17 @@ impl SceneDocument {
             .filter(|value| !ticks.labeled.contains(value))
     }
 
-    fn axis_tick_label(&self, is_x: bool, index: usize, value: f64, ticks: &AxisTicks) -> String {
-        let authored = if is_x {
-            self.chrome.x_tick_labels.as_deref()
-        } else {
-            self.chrome.y_tick_labels.as_deref()
-        };
-        let authored_ticks = if is_x {
-            self.chrome.x_major_ticks.as_deref()
-        } else {
-            self.chrome.y_major_ticks.as_deref()
-        };
-        if let (Some(labels), Some(values)) = (authored, authored_ticks) {
+    fn axis_tick_label(
+        &self,
+        slot: impl Into<AxisSlot>,
+        index: usize,
+        value: f64,
+        ticks: &AxisTicks,
+    ) -> String {
+        let slot = slot.into();
+        let is_x = slot == AxisSlot::X;
+        let policy = self.slot_policy(slot);
+        if let (Some(labels), Some(values)) = (policy.labels, policy.major) {
             // `index` is only the resolved/final labelled-tick index; never
             // use it as an authored-table index because off-domain major
             // positions are intentionally filtered by Rust.
@@ -12609,73 +13135,40 @@ impl SceneDocument {
                 }
             }
         }
-        format_tick(
-            value,
-            ticks.step,
-            if is_x {
-                self.x_scale.kind
-            } else {
-                self.y_scale.kind
-            },
-        )
+        format_tick(value, ticks.step, policy.scale.kind)
     }
 
-    fn axis_hides_chrome(&self, is_x: bool) -> bool {
-        let strategy = if is_x {
-            self.chrome.x_tick_strategy
-        } else {
-            self.chrome.y_tick_strategy
-        };
-        strategy == tick_layout::STRATEGY_NONE as u8
+    fn axis_hides_chrome(&self, slot: impl Into<AxisSlot>) -> bool {
+        self.slot_policy(slot.into()).strategy == tick_layout::STRATEGY_NONE as u8
     }
 
-    fn axis_hides_labels(&self, is_x: bool) -> bool {
-        let strategy = if is_x {
-            self.chrome.x_tick_strategy
-        } else {
-            self.chrome.y_tick_strategy
-        };
+    fn axis_hides_labels(&self, slot: impl Into<AxisSlot>) -> bool {
+        let strategy = self.slot_policy(slot.into()).strategy;
         strategy == tick_layout::STRATEGY_NONE as u8 || strategy == tick_layout::STRATEGY_OFF as u8
     }
 
     fn axis_tick_collision_items(
         &self,
-        is_x: bool,
+        slot: impl Into<AxisSlot>,
         ticks: &AxisTicks,
         scale: AxisScale,
         side_code: u8,
     ) -> Vec<AxisTickLabelItem> {
-        if self.axis_hides_labels(is_x) {
+        let slot = slot.into();
+        let is_x = slot == AxisSlot::X;
+        if self.axis_hides_labels(slot) {
             return Vec::new();
         }
-        let font_size = if is_x {
-            self.chrome
-                .x_axis
-                .tick_label_size(self.chrome.label_font_size)
-        } else {
-            self.chrome
-                .y_axis
-                .tick_label_size(self.chrome.label_font_size)
-        };
-        let (strategy, min_gap, explicit_angle, category, authored, anchor_code) = if is_x {
-            (
-                self.chrome.x_tick_strategy,
-                self.chrome.x_tick_min_gap,
-                self.chrome.x_tick_angle,
-                self.chrome.x_tick_category,
-                self.chrome.x_tick_anchor_authored,
-                self.chrome.x_tick_anchor,
-            )
-        } else {
-            (
-                self.chrome.y_tick_strategy,
-                self.chrome.y_tick_min_gap,
-                self.chrome.y_tick_angle,
-                self.chrome.y_tick_category,
-                self.chrome.y_tick_anchor_authored,
-                self.chrome.y_tick_anchor,
-            )
-        };
+        let policy = self.slot_policy(slot);
+        let font_size = policy.style.tick_label_size(self.chrome.label_font_size);
+        let (strategy, min_gap, explicit_angle, category, authored, anchor_code) = (
+            policy.strategy,
+            policy.min_gap,
+            policy.angle,
+            policy.category,
+            policy.anchor_authored,
+            policy.anchor,
+        );
         let side = if is_x {
             if side_code == 0 {
                 tick_layout::SIDE_BOTTOM
@@ -12696,7 +13189,7 @@ impl SceneDocument {
         let texts: Vec<String> = values
             .iter()
             .enumerate()
-            .map(|(index, value)| self.axis_tick_label(is_x, index, *value, ticks))
+            .map(|(index, value)| self.axis_tick_label(slot, index, *value, ticks))
             .collect();
         let positions: Vec<f64> = values.iter().map(|value| scale.pixel(*value)).collect();
         let labels: Vec<&str> = texts.iter().map(String::as_str).collect();
@@ -13616,6 +14109,13 @@ impl SceneDocument {
             labeled: Vec::new(),
             step: 1.0,
         });
+        let y2_ticks = self.y2.as_ref().map(|_| {
+            self.resolved_axis_ticks(AxisSlot::Y2).unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            })
+        });
         if self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid() {
             out.push_str("<g data-xy-chrome=\"grid\">");
             self.append_svg_grid(&mut out, &x_ticks, &y_ticks);
@@ -13900,17 +14400,19 @@ impl SceneDocument {
         if self.polar.is_some() {
             self.append_svg_polar_frame(&mut out, &x_ticks);
             self.append_svg_polar_tick_labels(&mut out, &x_ticks, &y_ticks);
-        } else if self.chrome.x_axis.has_visible_axis() || self.chrome.y_axis.has_visible_axis() {
+        } else if self.chrome.x_axis.has_visible_axis()
+            || self.chrome.y_axis.has_visible_axis()
+            || self.y2.as_ref().is_some_and(|y2| y2.axis.has_visible_axis())
+        {
             out.push_str("<g data-xy-chrome=\"axes\">");
-            for (is_x, ticks, scale, style) in [
-                (true, &x_ticks, self.x_scale, self.chrome.x_axis),
-                (false, &y_ticks, self.y_scale, self.chrome.y_axis),
-            ] {
+            for (slot, ticks, scale, style) in self.axis_slots(&x_ticks, &y_ticks, y2_ticks.as_ref())
+            {
+                let is_x = slot == AxisSlot::X;
                 let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
                 let (minor_in, minor_out) =
                     tick_span(style.minor_direction, style.minor_tick_length);
                 for side_code in 0..2 {
-                    if !self.axis_hides_chrome(is_x)
+                    if !self.axis_hides_chrome(slot)
                         && style.tick_sides & (1 << side_code) != 0
                         && style.tick_length > 0.0
                         && SceneAxisChromeStyle::visible_stroke(style.tick_rgba, style.tick_width)
@@ -13946,7 +14448,7 @@ impl SceneDocument {
                         }
                     }
                     if style.tick_label_sides & (1 << side_code) != 0 && style.tick_label_paint()[3] != 0 {
-                        for item in self.axis_tick_collision_items(is_x, ticks, scale, side_code) {
+                        for item in self.axis_tick_collision_items(slot, ticks, scale, side_code) {
                             let p = scale.pixel(item.value);
                             let font_size = style.tick_label_size(self.chrome.label_font_size);
                             let row_offset = f64::from(item.row) * (font_size + 4.0);
@@ -14013,7 +14515,7 @@ impl SceneDocument {
                     }
                 }
                 let side_code = style.side as u8;
-                if !self.axis_hides_chrome(is_x)
+                if !self.axis_hides_chrome(slot)
                     && style.minor_tick_length > 0.0
                     && SceneAxisChromeStyle::visible_stroke(
                         style.minor_tick_rgba,
@@ -14342,6 +14844,7 @@ impl SceneDocument {
         scale: f64,
         x_ticks: &AxisTicks,
         y_ticks: &AxisTicks,
+        y2_ticks: Option<&AxisTicks>,
     ) -> Result<(), SceneError> {
         out.push(0);
         for value in [
@@ -14355,10 +14858,8 @@ impl SceneDocument {
         if self.polar.is_some() {
             return Ok(());
         }
-        for (is_x, ticks, axis_scale, style) in [
-            (true, x_ticks, self.x_scale, self.chrome.x_axis),
-            (false, y_ticks, self.y_scale, self.chrome.y_axis),
-        ] {
+        for (slot, ticks, axis_scale, style) in self.axis_slots(x_ticks, y_ticks, y2_ticks) {
+            let is_x = slot == AxisSlot::X;
             let edge = if is_x {
                 if style.side == AxisSide::Low {
                     self.layout.bottom
@@ -14403,7 +14904,7 @@ impl SceneDocument {
             }
             let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
             for side_code in 0..2 {
-                if !self.axis_hides_chrome(is_x)
+                if !self.axis_hides_chrome(slot)
                     && style.tick_sides & (1 << side_code) != 0
                     && style.tick_length > 0.0
                     && SceneAxisChromeStyle::visible_stroke(style.tick_rgba, style.tick_width)
@@ -14443,7 +14944,7 @@ impl SceneDocument {
             } else {
                 -1.0
             };
-            if !self.axis_hides_chrome(is_x)
+            if !self.axis_hides_chrome(slot)
                 && style.minor_tick_length > 0.0
                 && SceneAxisChromeStyle::visible_stroke(
                     style.minor_tick_rgba,
@@ -14470,7 +14971,7 @@ impl SceneDocument {
                 if style.tick_label_sides & (1 << side_code) == 0 || style.tick_label_paint()[3] == 0 {
                     continue;
                 }
-                for item in self.axis_tick_collision_items(is_x, ticks, axis_scale, side_code) {
+                for item in self.axis_tick_collision_items(slot, ticks, axis_scale, side_code) {
                     let p = axis_scale.pixel(item.value);
                     let font_size = style.tick_label_size(self.chrome.label_font_size);
                     let row_offset = f64::from(item.row) * (font_size + 4.0);
@@ -14621,6 +15122,21 @@ impl SceneDocument {
             self.chrome.y_axis.static_text.title_flags,
             -90.0,
         )?;
+        if let Some(y2) = self.y2.as_ref().filter(|y2| !y2.title.is_empty()) {
+            // The right-gutter title is quarter-turned clockwise, which only the
+            // styled text command (explicit angle) can express.
+            out.push(17);
+            push_raster_f32(out, self.y2_title_baseline(), scale)?;
+            push_raster_f32(out, 0.5 * (self.layout.top + self.layout.bottom), scale)?;
+            out.push(1);
+            push_raster_f32(out, y2.axis.label_size(self.chrome.label_font_size), scale)?;
+            out.extend_from_slice(&90.0f32.to_le_bytes());
+            out.push(y2.axis.static_text.title_flags);
+            out.extend_from_slice(&0u32.to_le_bytes());
+            out.extend_from_slice(&y2.axis.title_paint());
+            out.extend_from_slice(&(y2.title.len() as u32).to_le_bytes());
+            out.extend_from_slice(y2.title.as_bytes());
+        }
         Ok(())
     }
 
@@ -14651,8 +15167,29 @@ impl SceneDocument {
             .saturating_add(Self::minor_ticks(x_ticks).count())
             .saturating_add(Self::minor_ticks(y_ticks).count())
             .saturating_add(2);
+        let (y2_strokes, y2_labels, y2_title) = match (&self.y2, self.y2.as_ref().and_then(|_| self.resolved_axis_ticks(AxisSlot::Y2).ok())) {
+            (Some(y2), Some(ticks)) => (
+                ticks
+                    .ticks
+                    .len()
+                    .saturating_add(
+                        ticks
+                            .labeled
+                            .len()
+                            .saturating_mul(y2.axis.tick_sides.count_ones() as usize),
+                    )
+                    .saturating_add(Self::minor_ticks(&ticks).count()),
+                label_capacity(&ticks, y2.scale.kind)
+                    .saturating_mul(y2.axis.tick_label_sides.count_ones() as usize),
+                80usize.saturating_add(y2.title.len()),
+            ),
+            _ => (0, 0, 0),
+        };
+        let stroke_count = stroke_count.saturating_add(y2_strokes);
         let chrome_capacity = stroke_count
             .saturating_mul(35)
+            .saturating_add(y2_labels)
+            .saturating_add(y2_title)
             .saturating_add(
                 label_capacity(x_ticks, self.x_scale.kind)
                     .saturating_mul(self.chrome.x_axis.tick_label_sides.count_ones() as usize),
@@ -15260,6 +15797,11 @@ impl SceneDocument {
         }
         let x_ticks = self.resolved_axis_ticks(true)?;
         let y_ticks = self.resolved_axis_ticks(false)?;
+        let y2_ticks = self
+            .y2
+            .as_ref()
+            .map(|_| self.resolved_axis_ticks(AxisSlot::Y2))
+            .transpose()?;
         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
         // plus a bounded text command; reserve their space up front so adding
         // constant-size chrome never copies the full mark command buffer.
@@ -15318,7 +15860,7 @@ impl SceneDocument {
         self.append_raster_marks(&mut out, scale)?;
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
-        self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
+        self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks, y2_ticks.as_ref())?;
         self.append_raster_labels(&mut out, scale)?;
         self.append_raster_legend(&mut out, scale)?;
         self.append_raster_colorbar(&mut out, scale)?;
@@ -15345,6 +15887,7 @@ impl SceneDocument {
             symbol: u8,
             diameter: f64,
             annotation_tag: u8,
+            y2: bool,
         }
 
         let f32_value = |value: f64| -> Result<f32, SceneError> {
@@ -15357,7 +15900,7 @@ impl SceneDocument {
         // Serialize every AxisTicks::ticks position so log minor grid lines
         // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
         // (empty UTF-8 for unlabeled minor ticks).
-        let browser_ticks = |is_x: bool, scale: AxisScale, axis: AxisTicks| {
+        let browser_ticks = |slot: AxisSlot, scale: AxisScale, axis: AxisTicks| {
             axis.ticks
                 .iter()
                 .copied()
@@ -15369,7 +15912,7 @@ impl SceneDocument {
                             .iter()
                             .position(|candidate| *candidate == value)
                             .ok_or(SceneError::Length)?;
-                        self.axis_tick_label(is_x, index, value, &axis)
+                        self.axis_tick_label(slot, index, value, &axis)
                     } else {
                         String::new()
                     };
@@ -15377,8 +15920,16 @@ impl SceneDocument {
                 })
                 .collect::<Result<Vec<_>, SceneError>>()
         };
-        let x_ticks = browser_ticks(true, self.x_scale, self.resolved_axis_ticks(true)?)?;
-        let y_ticks = browser_ticks(false, self.y_scale, self.resolved_axis_ticks(false)?)?;
+        let x_ticks = browser_ticks(AxisSlot::X, self.x_scale, self.resolved_axis_ticks(true)?)?;
+        let y_ticks = browser_ticks(AxisSlot::Y, self.y_scale, self.resolved_axis_ticks(false)?)?;
+        let y2_ticks = match &self.y2 {
+            Some(y2) => browser_ticks(
+                AxisSlot::Y2,
+                y2.scale,
+                self.resolved_axis_ticks(AxisSlot::Y2)?,
+            )?,
+            None => Vec::new(),
+        };
 
         let mut groups = Vec::new();
         let mut index = 0;
@@ -15411,6 +15962,7 @@ impl SceneDocument {
                         if !next.visible
                             || next.kind != SceneRecordKind::Segment
                             || next.annotation_tag != record.annotation_tag
+                            || next.y2 != record.y2
                         {
                             break;
                         }
@@ -15428,6 +15980,7 @@ impl SceneDocument {
                             || self.style_glyph(next.style_ref).is_some()
                             || (record.annotation_tag <= 6 && record.annotation_tag != 0)
                             || next.annotation_tag != record.annotation_tag
+                            || next.y2 != record.y2
                         {
                             break;
                         }
@@ -15465,6 +16018,7 @@ impl SceneDocument {
                         if !next.visible
                             || next.kind != SceneRecordKind::Triangle
                             || next.annotation_tag != record.annotation_tag
+                            || next.y2 != record.y2
                             || self.styles[next.style_ref].stroke != style.stroke
                             || self.styles[next.style_ref].stroke_width.to_bits()
                                 != style.stroke_width.to_bits()
@@ -15520,6 +16074,7 @@ impl SceneDocument {
                 symbol: record.symbol,
                 diameter: record.diameter,
                 annotation_tag: record.annotation_tag,
+                y2: record.y2,
             });
             if groups.len() > MAX_BROWSER_PAINTER_TRACES {
                 return Err(SceneError::PainterTraceLimit);
@@ -15563,6 +16118,7 @@ impl SceneDocument {
         let tick_count = x_ticks
             .len()
             .checked_add(y_ticks.len())
+            .and_then(|value| value.checked_add(y2_ticks.len()))
             .ok_or(SceneError::Limit)?;
         required = required
             .checked_add(
@@ -15571,13 +16127,15 @@ impl SceneDocument {
                     .ok_or(SceneError::Limit)?,
             )
             .ok_or(SceneError::Limit)?;
-        for (_, label, _) in x_ticks.iter().chain(&y_ticks) {
+        for (_, label, _) in x_ticks.iter().chain(&y_ticks).chain(&y2_ticks) {
             required = required.checked_add(label.len()).ok_or(SceneError::Limit)?;
         }
+        let y2_title = self.y2.as_ref().map_or("", |y2| y2.title.as_str());
         required = required
             .checked_add(self.text.title.len())
             .and_then(|value| value.checked_add(self.text.x_label.len()))
             .and_then(|value| value.checked_add(self.text.y_label.len()))
+            .and_then(|value| value.checked_add(y2_title.len()))
             .ok_or(SceneError::Limit)?;
         let legend_bytes = self.painter_legend_bytes()?;
         let colorbar_bytes = self.painter_colorbar_bytes()?;
@@ -15612,6 +16170,8 @@ impl SceneDocument {
         }
         out[48..52].copy_from_slice(&(x_ticks.len() as u32).to_le_bytes());
         out[52..56].copy_from_slice(&(y_ticks.len() as u32).to_le_bytes());
+        out[PAINTER_Y2_TICK_COUNT_AT..PAINTER_Y2_TICK_COUNT_AT + 4]
+            .copy_from_slice(&(y2_ticks.len() as u32).to_le_bytes());
 
         for (group_index, group) in groups.iter().enumerate() {
             let descriptor =
@@ -15635,6 +16195,7 @@ impl SceneDocument {
             } else {
                 0
             };
+            out[descriptor + 3] = u8::from(group.y2);
             let stride = if triangle {
                 3
             } else if segment {
@@ -15823,21 +16384,53 @@ impl SceneDocument {
         write_chrome_style_input(&mut chrome_input, &self.chrome);
         debug_assert_eq!(chrome_input.len(), SCENE_CHROME_STYLE_INPUT_BYTES);
         out[64..264].copy_from_slice(&chrome_input);
+        if let Some(y2) = &self.y2 {
+            let mut axis = Vec::with_capacity(PAINTER_Y2_AXIS_BYTES);
+            write_axis_chrome_style(&mut axis, &y2.axis);
+            out[264..264 + PAINTER_Y2_AXIS_BYTES].copy_from_slice(&axis);
+            // Fixed y2 chrome-text record: the resolved XYCO typography and
+            // paints, so the browser applies them rather than the shared
+            // label size and single paint of the primary axes.
+            let text = &y2.axis.static_text;
+            let at = PAINTER_Y2_TEXT_AT;
+            for (slot, value) in [
+                y2.axis.static_tick_label_size,
+                y2.axis.static_label_size,
+                y2.axis.static_tick_padding,
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                out[at + slot * 4..at + slot * 4 + 4]
+                    .copy_from_slice(&f32_value(value.unwrap_or(0.0))?.to_le_bytes());
+            }
+            let flags = u32::from(text.tick_label_flags) | (u32::from(text.title_flags) << 2);
+            out[at + 12..at + 16].copy_from_slice(&flags.to_le_bytes());
+            out[at + 16..at + 20].copy_from_slice(&text.tick_label_rgba.unwrap_or([0; 4]));
+            out[at + 20..at + 24].copy_from_slice(&text.title_rgba.unwrap_or([0; 4]));
+            out[at + 24] = u8::from(y2.axis.static_tick_label_size.is_some())
+                | (u8::from(text.tick_label_rgba.is_some()) << 1)
+                | (u8::from(text.title_rgba.is_some()) << 2);
+        }
         for (offset, value) in [
-            (264, self.text.title.len()),
-            (268, self.text.x_label.len()),
-            (272, self.text.y_label.len()),
+            (PAINTER_TEXT_LENGTHS_AT, self.text.title.len()),
+            (PAINTER_TEXT_LENGTHS_AT + 4, self.text.x_label.len()),
+            (PAINTER_TEXT_LENGTHS_AT + 8, self.text.y_label.len()),
+            (PAINTER_TEXT_LENGTHS_AT + 12, y2_title.len()),
+            (PAINTER_TEXT_LENGTHS_AT + 16, legend_bytes.len()),
+            (PAINTER_TEXT_LENGTHS_AT + 20, colorbar_bytes.len()),
+            (PAINTER_TEXT_LENGTHS_AT + 24, label_bytes.len()),
         ] {
             out[offset..offset + 4].copy_from_slice(&(value as u32).to_le_bytes());
         }
-        out[280..284].copy_from_slice(&(legend_bytes.len() as u32).to_le_bytes());
-        out[284..288].copy_from_slice(&(colorbar_bytes.len() as u32).to_le_bytes());
-        out[288..292].copy_from_slice(&(label_bytes.len() as u32).to_le_bytes());
         out.resize(string_offset, 0);
         out.extend_from_slice(self.text.title.as_bytes());
         out.extend_from_slice(self.text.x_label.as_bytes());
         out.extend_from_slice(self.text.y_label.as_bytes());
-        for (tick_index, (position, label, major)) in x_ticks.iter().chain(&y_ticks).enumerate() {
+        out.extend_from_slice(y2_title.as_bytes());
+        for (tick_index, (position, label, major)) in
+            x_ticks.iter().chain(&y_ticks).chain(&y2_ticks).enumerate()
+        {
             let descriptor = tick_offset + tick_index * BROWSER_PAINTER_TICK_BYTES;
             let label_offset = out.len();
             out[descriptor..descriptor + 4].copy_from_slice(&position.to_le_bytes());
@@ -16653,6 +17246,7 @@ mod tests {
                 visible: true,
                 symbol,
                 annotation_tag: 0,
+                y2: false,
                 style_ref: 0,
                 stable_id: 7,
                 coordinates: [x, y, center.0, center.1],
@@ -16839,6 +17433,7 @@ mod tests {
                 coordinates: [20.0, 20.0, 0.0, 0.0],
                 diameter: 2.0 + (index % 97) as f64,
                 annotation_tag: 0x80,
+                y2: false,
             });
         }
         for index in 0..10_000 {
@@ -16852,6 +17447,7 @@ mod tests {
                     coordinates: [x, y, 0.0, 0.0],
                     diameter: 0.0,
                     annotation_tag: 0x80,
+                    y2: false,
                 });
             }
         }
@@ -16898,6 +17494,7 @@ mod tests {
             coordinates: [50.0, 50.0, 80.0, 80.0],
             diameter: 0.0,
             annotation_tag: 0x80,
+            y2: false,
         });
         document.images.push(SceneImage {
             stable_id: 99,
@@ -16964,6 +17561,7 @@ mod tests {
                 coordinates: [50.0, 50.0, 80.0, 80.0],
                 diameter: 0.0,
                 annotation_tag: 0x80,
+                y2: false,
             });
             fixture.images.push(SceneImage {
                 stable_id: 99,
@@ -16992,6 +17590,7 @@ mod tests {
                     coordinates: [x, 90.0, 0.0, 0.0],
                     diameter,
                     annotation_tag: 0x80,
+                    y2: false,
                 });
             }
             for [x, y] in [[50.0, 90.0], [70.0, 90.0]] {
@@ -17004,6 +17603,7 @@ mod tests {
                     coordinates: [x, y, 0.0, 0.0],
                     diameter: 0.0,
                     annotation_tag: 0x80,
+                    y2: false,
                 });
             }
             #[cfg(feature = "raster")]
@@ -19304,7 +19904,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 32);
+        assert_eq!(SCENE_VERSION, 33);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -22450,12 +23050,15 @@ mod tests {
         assert_eq!(&raster[78..82], &[4, 5, 6, 128]);
         let painter = document.to_browser_painter(16_384).unwrap();
         assert_eq!(&painter[64..264], style_input.as_slice());
-        assert_eq!(u32::from_le_bytes(painter[264..268].try_into().unwrap()), 5);
+        // XYPB v16: the title/x/y/y2-title lengths follow the y2 axis block and
+        // the fixed y2 text record (zero here: no secondary axis).
+        assert!(painter[264..384].iter().all(|byte| *byte == 0));
+        assert_eq!(u32::from_le_bytes(painter[384..388].try_into().unwrap()), 5);
         assert_eq!(
-            u32::from_le_bytes(painter[268..272].try_into().unwrap()),
+            u32::from_le_bytes(painter[388..392].try_into().unwrap()),
             10
         );
-        assert_eq!(u32::from_le_bytes(painter[272..276].try_into().unwrap()), 8);
+        assert_eq!(u32::from_le_bytes(painter[392..396].try_into().unwrap()), 8);
         let tick_offset = u32::from_le_bytes(painter[56..60].try_into().unwrap()) as usize;
         let string_offset = u32::from_le_bytes(painter[60..64].try_into().unwrap()) as usize;
         assert_eq!(

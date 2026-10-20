@@ -5,6 +5,11 @@ import type { BorrowedGLSurface } from "./42_glhost";
 import { XYG_WASM_PAINTER_HEADER_BYTES, XYG_WASM_PAINTER_MAX_LEGEND_BYTES, XYG_WASM_PAINTER_MAX_TRACES, XYG_WASM_PAINTER_TICK_BYTES, XYG_WASM_PAINTER_TRACE_BYTES, XYG_WASM_PAINTER_VERSION, XYG_WASM_SCENE_VERSION } from "./wasm_abi_generated";
 
 const HEADER_BYTES = XYG_WASM_PAINTER_HEADER_BYTES, TRACE_BYTES = XYG_WASM_PAINTER_TRACE_BYTES;
+// XYPB v16 header map beyond the x/y chrome input (64..264): the y2 axis block,
+// the fixed y2 chrome-text record, then the text/legend/colorbar/label lengths
+// and the y2 tick count. All of it is zero when the Scene has no y2.
+const CHROME_AT = 64, Y2_AXIS_AT = 264, Y2_AXIS_BYTES = 88, Y2_TEXT_AT = Y2_AXIS_AT + Y2_AXIS_BYTES, Y2_TEXT_BYTES = 32;
+const LENGTHS_AT = Y2_TEXT_AT + Y2_TEXT_BYTES, Y2_TICK_COUNT_AT = LENGTHS_AT + 28;
 const SYMBOLS = ["circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star", "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel", "thin_diamond", "plus_line", "x_line", "horizontal_line", "vertical_line"] as const;
 
 function cssRgba(bytes: Uint8Array): string {
@@ -31,6 +36,8 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
     return value;
   };
   if (String.fromCharCode(...bytes.subarray(0, 4)) !== "XYPB" || u32(4) !== XYG_WASM_PAINTER_VERSION || u32(8) !== XYG_WASM_SCENE_VERSION || u32(12) !== HEADER_BYTES || u32(16) !== TRACE_BYTES) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter contract version is incompatible");
+  const hasY2 = bytes.subarray(Y2_AXIS_AT, Y2_AXIS_AT + Y2_AXIS_BYTES).some((value) => value !== 0);
+  if (!hasY2 && bytes.subarray(Y2_TEXT_AT, Y2_TEXT_AT + Y2_TEXT_BYTES).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter y2 text record has no y2 axis");
   const traceCount = u32(20);
   if (traceCount > XYG_WASM_PAINTER_MAX_TRACES || HEADER_BYTES + traceCount * TRACE_BYTES > bytes.length) throw new XygWasmError("XYG_WASM_RESOURCE_LIMIT", "Rust painter descriptor table exceeds its bound");
   const width = f32(24), height = f32(28), left = f32(32), top = f32(36), right = f32(40), bottom = f32(44);
@@ -48,8 +55,8 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
   };
   for (let index = 0; index < traceCount; index++) {
     const descriptor = HEADER_BYTES + index * TRACE_BYTES;
-    const kind = bytes[descriptor], symbol = bytes[descriptor + 1], annotationKind = bytes[descriptor + 2], count = u32(descriptor + 4);
-    if (annotationKind > 6 || bytes[descriptor + 3] !== 0 || ((kind !== 5 && kind !== 7 && kind !== 8 && kind !== 9) && bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0)) || !count || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
+    const kind = bytes[descriptor], symbol = bytes[descriptor + 1], annotationKind = bytes[descriptor + 2], yAxisCode = bytes[descriptor + 3], count = u32(descriptor + 4);
+    if (annotationKind > 6 || yAxisCode > 1 || (yAxisCode === 1 && !hasY2) || ((kind !== 5 && kind !== 7 && kind !== 8 && kind !== 9) && bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0)) || !count || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
     if (awaitingCalloutHead && !(annotationKind === 6 && kind === 4 && count === 3)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust Cartesian callout leader has no matching head");
     const fill = rgba(bytes.subarray(descriptor + 32, descriptor + 36)), stroke = rgba(bytes.subarray(descriptor + 36, descriptor + 40));
     const strokeWidth = f32(descriptor + 40), diameter = f32(descriptor + 44);
@@ -176,19 +183,19 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
       if (annotationKind !== 5 && annotationKind !== 6) continue;
     }
     const markCount = kind === 4 ? 1 : count;
-    Object.assign(trace, { id: index, name: null, tier: "direct", n_points: markCount, n_marks: markCount, x_axis: "x", y_axis: "y" });
+    Object.assign(trace, { id: index, name: null, tier: "direct", n_points: markCount, n_marks: markCount, x_axis: "x", y_axis: yAxisCode ? "y2" : "y" });
     traces.push(trace);
   }
   if (awaitingCalloutHead) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust Cartesian callout leader has no matching head");
-  const xTickCount = u32(48), yTickCount = u32(52), tickOffset = u32(56), stringOffset = u32(60);
-  const tickCount = xTickCount + yTickCount;
+  const xTickCount = u32(48), yTickCount = u32(52), y2TickCount = u32(Y2_TICK_COUNT_AT), tickOffset = u32(56), stringOffset = u32(60);
+  const tickCount = xTickCount + yTickCount + y2TickCount;
   const tickBytes = tickCount * XYG_WASM_PAINTER_TICK_BYTES;
-  if (!Number.isSafeInteger(tickCount) || tickCount > 400 || tickOffset !== expectedOffset || stringOffset !== tickOffset + tickBytes || stringOffset > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome table is invalid");
+  if ((!hasY2 && y2TickCount) || !Number.isSafeInteger(tickCount) || tickCount > 600 || tickOffset !== expectedOffset || stringOffset !== tickOffset + tickBytes || stringOffset > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome table is invalid");
   const decoder = new TextDecoder("utf-8", { fatal: true });
   const tickValues: number[] = [], tickLabels: string[] = [], tickMajor: boolean[] = [];
   let nextString = stringOffset;
-  const textLengths = [u32(264), u32(268), u32(272)];
-  if (textLengths.some((value) => value > 4096) || bytes.subarray(276, 280).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text header is invalid");
+  const textLengths = [u32(LENGTHS_AT), u32(LENGTHS_AT + 4), u32(LENGTHS_AT + 8), u32(LENGTHS_AT + 12)];
+  if (textLengths.some((value) => value > 4096) || (!hasY2 && textLengths[3]) || bytes.subarray(HEADER_BYTES - 4, HEADER_BYTES).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text header is invalid");
   const text = textLengths.map((length) => {
     const end = nextString + length;
     if (!Number.isSafeInteger(end) || end > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text range is invalid");
@@ -206,7 +213,7 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
     catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter tick label is invalid UTF-8"); }
     tickValues.push(position); tickLabels.push(label); tickMajor.push(major === 1); nextString += labelLength;
   }
-  const legendLength = u32(280), colorbarLength = u32(284), sceneLabelLength = u32(288);
+  const legendLength = u32(LENGTHS_AT + 16), colorbarLength = u32(LENGTHS_AT + 20), sceneLabelLength = u32(LENGTHS_AT + 24);
   // XYCB input (4,600 bytes) is followed by bounded XYRG/XYCT geometry and
   // resolved labels. This is deliberately the Rust-owned painter ceiling, not
   // merely the host-framed input ceiling.
@@ -324,10 +331,27 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
   }
   nextString += sceneLabelLength;
   if (nextString !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter output has trailing bytes");
-  const chrome = 64;
+  const chrome = CHROME_AT;
   if (bytes.subarray(chrome + 12, chrome + 16).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome reserved bytes are nonzero");
   const labelSize = f64(chrome + 16);
-  const axis = (id: string, range: number[], start: number, count: number, isX: boolean, axisOffset: number) => {
+  // Resolved y2 typography and paints (the XYCO facts), or none for x/y.
+  type AxisText = { tickSize?: number; titleSize?: number; padding?: number; tickColor?: string; titleColor?: string; tickFlags: number; titleFlags: number };
+  const y2Text: AxisText | null = (() => {
+    if (!hasY2) return null;
+    const present = bytes[Y2_TEXT_AT + 24], flags = u32(Y2_TEXT_AT + 12);
+    const tickSize = f32(Y2_TEXT_AT), titleSize = f32(Y2_TEXT_AT + 4), padding = f32(Y2_TEXT_AT + 8);
+    const tickPaint = bytes.subarray(Y2_TEXT_AT + 16, Y2_TEXT_AT + 20), titlePaint = bytes.subarray(Y2_TEXT_AT + 20, Y2_TEXT_AT + 24);
+    if (present > 7 || flags > 0xf || bytes.subarray(Y2_TEXT_AT + 25, Y2_TEXT_AT + Y2_TEXT_BYTES).some((value) => value !== 0)
+      || (present & 1 ? !(tickSize >= 1 && tickSize <= 1000 && titleSize >= 1 && titleSize <= 1000 && padding >= -1000 && padding <= 1000) : (tickSize !== 0 || titleSize !== 0 || padding !== 0))
+      || (!(present & 2) && tickPaint.some((value) => value !== 0)) || (!(present & 4) && titlePaint.some((value) => value !== 0))) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter y2 text record is invalid");
+    return {
+      ...(present & 1 ? { tickSize, titleSize, padding } : {}),
+      ...(present & 2 ? { tickColor: rgba(tickPaint) } : {}),
+      ...(present & 4 ? { titleColor: rgba(titlePaint) } : {}),
+      tickFlags: flags & 3, titleFlags: (flags >> 2) & 3,
+    };
+  })();
+  const axis = (id: string, range: number[], start: number, count: number, isX: boolean, axisOffset: number, axisText: AxisText | null = null) => {
     if (bytes.subarray(axisOffset + 5, axisOffset + 8).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter axis reserved bytes are nonzero");
     const sideCode = bytes[axisOffset], tickMask = bytes[axisOffset + 1], labelMask = bytes[axisOffset + 2], majorDirection = bytes[axisOffset + 3], minorDirection = bytes[axisOffset + 4];
     if (sideCode > 1 || tickMask > 3 || labelMask > 3 || majorDirection > 2 || minorDirection > 2) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter axis style is invalid");
@@ -341,11 +365,13 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
       else minorValues.push(tickValues[index]);
     }
     const labelColor = rgba(bytes.subarray(axisOffset + 28, axisOffset + 32));
-    return { id, scale: "linear", range, tick_values: majorValues, minor_tick_values: minorValues, tick_labels: majorLabels, tick_resolution: "rust_scene", tick_label_strategy: "auto", tick_sides: sides.filter((_, index) => tickMask & (1 << index)), tick_label_sides: sides.filter((_, index) => labelMask & (1 << index)), grid: true, side: sides[sideCode], style: { axis_color: rgba(bytes.subarray(axisOffset + 8, axisOffset + 12)), grid_color: rgba(bytes.subarray(axisOffset + 12, axisOffset + 16)), tick_color: rgba(bytes.subarray(axisOffset + 16, axisOffset + 20)), tick_label_color: labelColor, label_color: labelColor, axis_width: numbers[0], grid_width: numbers[1], tick_width: numbers[2], tick_length: numbers[3], tick_direction: direction[majorDirection], tick_label_size: labelSize, label_size: labelSize }, minor_style: { grid_color: rgba(bytes.subarray(axisOffset + 20, axisOffset + 24)), tick_color: rgba(bytes.subarray(axisOffset + 24, axisOffset + 28)), grid_width: numbers[4], tick_width: numbers[5], tick_length: numbers[6], tick_direction: direction[minorDirection] } };
+    return { id, scale: "linear", range, tick_values: majorValues, minor_tick_values: minorValues, tick_labels: majorLabels, tick_resolution: "rust_scene", tick_label_strategy: "auto", tick_sides: sides.filter((_, index) => tickMask & (1 << index)), tick_label_sides: sides.filter((_, index) => labelMask & (1 << index)), grid: true, side: sides[sideCode], style: { axis_color: rgba(bytes.subarray(axisOffset + 8, axisOffset + 12)), grid_color: rgba(bytes.subarray(axisOffset + 12, axisOffset + 16)), tick_color: rgba(bytes.subarray(axisOffset + 16, axisOffset + 20)), tick_label_color: axisText?.tickColor ?? labelColor, label_color: axisText?.titleColor ?? labelColor, axis_width: numbers[0], grid_width: numbers[1], tick_width: numbers[2], tick_length: numbers[3], tick_direction: direction[majorDirection], tick_label_size: axisText?.tickSize ?? labelSize, label_size: axisText?.titleSize ?? labelSize, ...(axisText?.padding !== undefined ? { tick_padding: axisText.padding } : {}), ...(axisText?.titleFlags ? { ...(axisText.titleFlags & 1 ? { label_font_style: "italic" } : {}), ...(axisText.titleFlags & 2 ? { label_font_weight: "bold" } : {}) } : {}), ...(axisText?.tickFlags ? { ...(axisText.tickFlags & 1 ? { tick_label_font_style: "italic" } : {}), ...(axisText.tickFlags & 2 ? { tick_label_font_weight: "bold" } : {}) } : {}) }, minor_style: { grid_color: rgba(bytes.subarray(axisOffset + 20, axisOffset + 24)), tick_color: rgba(bytes.subarray(axisOffset + 24, axisOffset + 28)), grid_width: numbers[4], tick_width: numbers[5], tick_length: numbers[6], tick_direction: direction[minorDirection] } };
   };
   const xAxis = { ...axis("x", [left, right], 0, xTickCount, true, chrome + 24), label: text[1] };
   const yAxis = { ...axis("y", [bottom, top], xTickCount, yTickCount, false, chrome + 112), label: text[2] };
-  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: text[0] || null, x_axis: xAxis, y_axis: yAxis, axes: { x: xAxis, y: yAxis }, traces, annotations, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) }, styles: { title: { color: rgba(bytes.subarray(chrome + 8, chrome + 12)), "font-size": labelSize + 2 }, ...(legend ? { legend_title: { color: legend.style.color, "font-size": legend.title_style["font-size"] }, legend_label: { color: legend.style.color, "font-size": legend.style["font-size"] } } : {}) } }, legend, colorbar, show_legend: legend != null, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes, sceneLabels };
+  const y2Axis = hasY2 ? { ...axis("y2", [bottom, top], xTickCount + yTickCount, y2TickCount, false, Y2_AXIS_AT, y2Text), label: text[3] } : null;
+  if (y2Axis && (y2Axis.side !== "right" || y2Axis.tick_sides.some((side: string) => side !== "right") || y2Axis.tick_label_sides.some((side: string) => side !== "right"))) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter y2 axis must be right-sided");
+  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: text[0] || null, x_axis: xAxis, y_axis: yAxis, ...(y2Axis ? { y2_axis: y2Axis } : {}), axes: { x: xAxis, y: yAxis, ...(y2Axis ? { y2: y2Axis } : {}) }, traces, annotations, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) }, styles: { title: { color: rgba(bytes.subarray(chrome + 8, chrome + 12)), "font-size": labelSize + 2 }, ...(legend ? { legend_title: { color: legend.style.color, "font-size": legend.title_style["font-size"] }, legend_label: { color: legend.style.color, "font-size": legend.style["font-size"] } } : {}) } }, legend, colorbar, show_legend: legend != null, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes, sceneLabels };
 }
 
 export interface RenderWasmSceneOptions { el: HTMLElement; scene: ArrayBuffer | Uint8Array; worker: XygWasmWorker; transfer?: boolean }

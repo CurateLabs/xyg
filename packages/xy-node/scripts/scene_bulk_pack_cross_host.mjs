@@ -17,6 +17,7 @@ const xycf = sceneChromePack(chrome);
 const fs = sceneFigureSupportMaterialize({
   polar: support.polar,
   colorbarUnsupported: support.colorbar_unsupported,
+  hasColorbar: support.has_colorbar,
   hasCustomFont: support.has_custom_font,
   hasBrowserCss: support.has_browser_css,
   hasExtraLegends: support.has_extra_legends,

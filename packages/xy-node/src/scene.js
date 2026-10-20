@@ -4129,6 +4129,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   for (const [axisId, options] of Object.entries(figureAxisOptions(figure) ?? {})) {
     axes.push({
       axis_code: axisId === "x" ? 0 : axisId === "y" ? 1 : 255,
+      side: options.side == null ? 0 : ({ bottom: 1, left: 2, top: 3, right: 4 })[options.side] ?? 255,
       keys: significantSceneAxisKeys(options, polar),
       tick_label_strategy: optionalStr(options.tick_label_strategy),
       collision: optionalStr(options.collision),
@@ -4138,6 +4139,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   return sceneFigureSupportMaterialize({
     polar,
     colorbarUnsupported,
+    hasColorbar: Boolean(figureColorbarOptions(figure)),
     hasCustomFont: Object.values(chromeStyles).some((style) => Object.hasOwn(style ?? {}, "font-family"))
       || annotations.some((annotation) => annotationHasCustomTypography(annotation)),
     hasBrowserCss: Boolean(

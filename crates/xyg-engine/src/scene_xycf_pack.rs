@@ -89,6 +89,9 @@ pub struct XycfPackSidecars<'a> {
     pub colorbar_ticks: &'a [f64],
     pub colorbar_title: &'a [u8],
     pub collision_extra: &'a [u8],
+    /// Optional `XYY2` secondary-y facts (see `scene_y2`), appended last. The
+    /// header's reserved word carries its byte length; empty means no y2.
+    pub y2: &'a [u8],
 }
 
 fn write_header_full(out: &mut [u8], header: &XycfPackHeader) -> Result<(), i32> {
@@ -166,6 +169,7 @@ fn write_header_full(out: &mut [u8], header: &XycfPackHeader) -> Result<(), i32>
     out[264..272].copy_from_slice(&header.colorbar_lo.to_le_bytes());
     out[272..280].copy_from_slice(&header.colorbar_hi.to_le_bytes());
     out[280..284].copy_from_slice(&header.colorbar_text_rgba);
+    // Bytes 284..288 are the y2 sidecar length, written by `scene_xycf_pack`.
     out[284..288].copy_from_slice(&0u32.to_le_bytes());
     Ok(())
 }
@@ -233,6 +237,8 @@ pub fn scene_xycf_pack(header: &XycfPackHeader, sidecars: &XycfPackSidecars<'_>)
     append_f64s(&mut out, sidecars.colorbar_ticks);
     out.extend_from_slice(sidecars.colorbar_title);
     out.extend_from_slice(sidecars.collision_extra);
+    out[284..288].copy_from_slice(&(sidecars.y2.len() as u32).to_le_bytes());
+    out.extend_from_slice(sidecars.y2);
     if out.len() > SCENE_XYCF_PACK_MAX {
         return Err(-2);
     }
@@ -320,9 +326,21 @@ mod tests {
             colorbar_ticks: &[],
             colorbar_title: b"",
             collision_extra: b"",
+            y2: b"",
         };
         let packed = scene_xycf_pack(&header, &sidecars).unwrap();
         assert_eq!(&packed[..4], b"XYCF");
         assert_eq!(packed.len(), XYCF_HEADER_BYTES + 4);
+        assert_eq!(packed[284..288], [0; 4]);
+        let with_y2 = scene_xycf_pack(
+            &header,
+            &XycfPackSidecars {
+                y2: b"XYY2-payload",
+                ..sidecars
+            },
+        )
+        .unwrap();
+        assert_eq!(u32::from_le_bytes(with_y2[284..288].try_into().unwrap()), 12);
+        assert!(with_y2.ends_with(b"XYY2-payload"));
     }
 }

@@ -14,6 +14,19 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
+  (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
+  `XYY2` block (scale, axis chrome record, resolved typography and paints, tick
+  policy, ticks, title, format) plus the record y-selector bit `0x40`; XYPB v16
+  adds the y2 axis block, a fixed y2 chrome-text record, y2 ticks and a per-trace
+  y-axis byte. Rust owns right-only admission (`XYFS` axis ids 2/3, authored side,
+  stable `XYG_SCENE_UNSUPPORTED_*` reasons), right-gutter measurement, and
+  SVG/raster/PDF drawing through the shared axis loop. Every Scene version reader
+  now uses its owning constant. Hosts still fail closed on y2; Python and Node
+  marshalling land in the next two PRs. The `XYCF` reserved word is now the y2
+  sidecar length; `xyg_scene_xycf_pack` and `xyg_scene_chrome_pack` gain `y2`
+  pointer/length arguments; `xyg_scene_figure_support_materialize` axis rows gain
+  the authored `side`.
 - ABI 379: GeoColumn closure (#47). Rust now also rejects holes outside their
   exterior ring (`-11`), one-vertex line parts and zero-area rings (`-12`), and
   null features that own vertices or parts (`-14`), checks the byte budget

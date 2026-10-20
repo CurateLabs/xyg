@@ -4,6 +4,11 @@ Issue [#58](https://github.com/CurateLabs/xyg/issues/58) moves parity-affecting
 scene and static-export decisions into `xyg-engine` in bounded vertical slices.
 This document is the version contract for that migration.
 
+Scene v33 adds the secondary right-hand y axis (`y2`, Matplotlib `twinx`); see
+[Secondary right-hand y axis](#secondary-right-hand-y-axis-scene-v33-xypb-v16)
+and the authoritative design in `twinx-secondary-y-axis.md`. A Scene without y2
+is byte-identical to its v32 form except for the version word.
+
 Scene v32 adds `Triangle=6` and `Segment=7` as explicit primitive kinds.
 Three consecutive Triangle records or two consecutive Segment records form one
 primitive regardless of repeated identity/style. Each primitive must share its
@@ -24,21 +29,21 @@ and `n*6` contiguous little-endian f32 coordinates; coverage is unioned and
 blended once. Stroke/gradient triangles retain fixed three-vertex traversal.
 The browser painter batches explicit triangles and segments into existing
 instanced mesh/segment programs; it never infers primitive framing from a
-polygon's vertex count. See `browser-wasm.md` for XYPB v15 derived planes.
+polygon's vertex count. See `browser-wasm.md` for XYPB derived planes (v16 adds the y2 axis block).
 
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 32 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 33 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v32, so additive emission is not safe.
+bitmap or schema negotiation in Scene v33, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v32 batch layout,
+WASM lifecycle foundation; it validates the current Scene v33 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
@@ -54,7 +59,7 @@ cross the C ABI as bounded typed buffers and remain subject to the dossier's
 
 ### Hidden traces and final per-item paint (#1006)
 
-XYFS trace flag bit 12 (`XYFS_TRACE_HIDDEN`, widened mask `(1 << 13) - 1`) marks
+XYFS trace flag bit 12 (`XYFS_TRACE_HIDDEN`, mask `(1 << 14) - 1` since the y2 flag, bit 13) marks
 a hidden trace. The figure-support probe rejects it with the stable
 `Scene v12 does not yet encode hidden or per-item styled marks` reason before
 any per-item-paint exemption (hexbin, ribbon, mesh, scatter, segments/contour)
@@ -478,7 +483,7 @@ for `segments`, error-bar stems/caps, and `stem` with its immediate generated
 built-in constant marker; at most 1,024 finite unjoined `triangle_mesh` faces
 with a constant fill and scalar overall opacity; plus finite literal solid-color
 ribbons whose two-row host ingress Rust-expands after axis transformation. Each
-mesh face is one explicitly framed three-row Triangle primitive. XYPB v15
+mesh face is one explicitly framed three-row Triangle primitive. XYPB v15+
 batches adjacent compatible faces into a single trace; the public route retains
 its bounded 1,024-face eligibility policy and also asks the authoritative
 consumer to validate the complete mixed-figure trace budget before routing. Joined fills,
@@ -1154,7 +1159,9 @@ already fit; overflowing compact pads stay `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
 Polar rim auto/hide/rotate/stagger/preserve stay fail-closed. Invalid ABI 96 grammar still produces the ordinary deterministic label
 instead of an error, and a sub-unit log value that would collapse to
 formatted zero also uses its ordinary distinguishable label without affixes.
-Secondary axes stay fail-closed.
+Only a right-side secondary y axis is admitted (Scene v33); `x2`, left-side
+`y2`, more than one extra axis, tick-only secondary axes, and y2 with polar or a
+colorbar stay fail-closed with stable reasons (see the y2 section below).
 
 Python and Node pack only those strings. Rust parses them, resolves the final
 major positions and labels, measures their gutters, and materializes the result
@@ -1195,8 +1202,8 @@ Annotation custom typography stays fail-closed as
 `XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309). Text/marker `style.rotation`
 lifts onto the ABI 187/188 rotation field.
 Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
-grammar still falls back. Secondary axes stay
-fail-closed. Remaining #275
+grammar still falls back. Only the right-hand
+secondary y axis is admitted (Scene v33). Remaining #275
 debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
 measurement and `_svg._legend_layout` CSS remaps.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,
@@ -1205,7 +1212,7 @@ exact payloads). Exact lengths are overflow-checked; malformed, trailing,
 invalid UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw
 `XYAD` bytes remain accepted byte-for-byte.
 
-Polar/secondary Scene paths and broader numeric grammars remain on their
+Polar, `x2`/left secondary Scene paths and broader numeric grammars remain on their
 documented compatibility routes except the bounded polar
 line/scatter/area/bar/column/errorbar
 slice above and ABI 202 Scene product-path time/angular formatting
@@ -1834,6 +1841,87 @@ style, and conversion to existing Rect, Polyline, and Scatter Scene families.
 Constant-style primary-Cartesian boxes route public SVG/PNG/PDF through those
 Scene consumers; alternate axes, polar, gradients, and per-item styles remain
 explicit compatibility paths.
+
+## Secondary right-hand y axis (Scene v33, XYPB v16)
+
+Scene v33 carries one optional secondary y axis, `y2`, drawn on the right edge
+of the plot. It exists so Matplotlib `twinx()` (reference-corpus case 26,
+#1006) renders on the single Rust Scene/XYST path; there is no compatibility
+renderer. Everything below is Rust-owned; hosts marshal facts and surface Rust's
+reasons.
+
+**Scene wire.** Trailer byte 15 bit 5 (`0x20`; bits 1–4 are the x/y collision
+category/anchor flags and bit 0 the collision extras) sets `has_y2`. A
+length-prefixed (`u32`) `XYY2` payload then follows the optional 32-byte
+collision extras and precedes the text tables, so every later trailer offset
+shifts by `4 + len`. The payload is a fixed 204-byte head plus variable data
+(little endian): `"XYY2"`; scale (`kind u32`, `lo f64`, `hi f64`, `constant f64`,
+`mask u8`, pad 3 — `lo`/`hi` are transformed coordinates on the Scene wire so
+re-encoding is byte-identical, and data values in the `XYCF` sidecar); the same
+88-byte axis chrome record as x/y (side must be High, tick and label sides
+confined to the right edge); the resolved XYCO metrics (`tick_label_size`,
+`label_size`, `tick_padding` f64, `text_flags u32` — bits 0..1 tick labels, 2..3
+title, each bit 0 italic / bit 1 bold — tick RGBA, title RGBA, `present u8`:
+bit 0 metrics, 1 tick paint, 2 title paint, pad 3); tick policy (`strategy`,
+`anchor`, `anchor_authored`, `category` u8, `min_gap f64`, `angle f64`, NaN =
+none); counts (`major` with `u32::MAX` = automatic, `minor`, `labels_len`,
+`title_len`, `format_len`); then major/minor f64s, the NUL-joined label table,
+title, and numeric-format grammar. Reserved bytes are zero; every field is
+bounded like y. The numeric-format grammar is materialized into explicit ticks
+and labels at encode (as for y), so Scene consumers never re-interpret it.
+
+**Record selector.** Record byte 3 keeps the annotation tag namespace (`0..=6`,
+`0x80`); bit `0x40` selects the y2 scale. The bit is preserved by Rust packing
+and expansion (XYAS stays v1: byte 3 of a 56-byte row is the selector, all other
+bits reserved zero), decode, pick/inversion and re-encode, and is masked off
+before every annotation-tag comparison. A selector without a y2 block is
+`SceneError::Length`; a selected XYAS row without an `XYY2` sidecar is
+`EncodeAssembledCode::Payload`. One trace never straddles both y scales.
+
+**Layout and drawing.** The `XYCF` header's reserved word (284..288) is the byte
+length of a trailing `XYY2` sidecar (0 = none; `xyg_scene_xycf_pack` and
+`xyg_scene_chrome_pack` gain `y2` pointer/length arguments). Gutter widening in
+`encode_assembled` measures the y2 labels — styled automatic ticks via the same
+`resolved_axis_ticks` ladder as y (no copy), authored/explicit labels, outward
+ticks, padding, and the rotated title — and takes `margin_right = max(chrome
+margin, 8 + tick_out + padding + widest label + title room)`; the chrome margin
+already carries the `compat_layout::right_y_room()` floor for `RIGHT_SECONDARY`.
+SVG, raster, PDF and the browser painter draw the axis through the one axis
+loop shared with x and y (spine and ticks at the right edge, labels anchored
+start, title quarter-turned clockwise in the right gutter). There is no y2 grid
+(Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
+
+**XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are
+the y2 axis block (88 bytes, zero without y2), 352–383 the fixed y2 chrome-text
+record (`tick_label_size`, `label_size`, `tick_padding` f32; `text_flags u32`;
+tick RGBA; title RGBA; `present u8`; 7 reserved zero bytes), 384–407 the title /
+x / y / y2-title UTF-8 lengths and the legend / colorbar / label lengths (shifted
+from 264–291), 412–415 the y2 tick count, 416–419 reserved zero. The y2 tick
+run follows x and y; the y2 title follows the y label in the string table. Byte
+3 of each 64-byte trace descriptor is the y axis (0 = y, 1 = y2). The browser
+reader exposes `spec.axes.y2` / `spec.y2_axis` and applies the y2 sizes,
+padding, paints and title flags rather than the shared label size and single
+paint. XYPB v15 is rejected as an incompatible contract.
+
+**Admission.** `XYFS` axis ids are 0 = x, 1 = y, 2 = y2, 3 = x2; the second axis
+header byte is the authored side (the `XYEP` codes: 1 bottom, 2 left, 3 top, 4
+right, 255 other). Trace flag bit 13 marks a trace plotted against y2. Rust
+admits y2 only when `side == right`, and returns the stable reasons
+`XYG_SCENE_UNSUPPORTED_Y2_SIDE`, `_X2`, `_EXTRA_AXES`, `_Y2_TICK_ONLY` (no trace
+on the axis), `_Y2_POLAR`, and `_Y2_COLORBAR`. XYFS observation bit 10 reports that the
+figure carries any colorbar (supported or not; `xyg_scene_figure_support_materialize`
+takes a separate `has_colorbar`), so a valid colorbar cannot hide from the y2
+prohibition; `SceneBatch::with_y2` also refuses a colorbar, and the gutter
+measurement materializes the y2 number format from the same tick ladder it will be
+painted from.
+
+**Static chrome style.** `XYCS` flag bit 2 adds a third `(style, minor_style)`
+pair; XYCO flags bit 1 then appends the y2 tick paint, title paint,
+`(tick, title, padding)` f64s and style/minor-style key lists, and `chrome_text`
+bits 14..15 (y2 title flags), 16..17 (y2 tick flags), 18/19 (y2 tick/title
+paint present) are set. Those facts feed the `XYY2` metrics, never an XYST
+panel record (whose `chrome_text` mask stays `0x3fff`).
+
 
 ### Per-point scatter size (#1006)
 

@@ -109,7 +109,7 @@ class MixedData:
         self.tile = b[HEADER + scene_length : HEADER + scene_length + tile_length]
         if (
             self.scene[:4] != b"XYGS"
-            or struct.unpack_from("<II", self.scene, 4) != (32, 160)
+            or struct.unpack_from("<II", self.scene, 4) != (scale.scene_version(), 160)
             or self.tile[:4] != b"XYGU"
             or struct.unpack_from("<II", self.tile, 4) != (1, 1)
             or struct.unpack_from("<3Q", self.tile, 16) != (cache, self.tile_epoch, view)

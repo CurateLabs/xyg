@@ -56,6 +56,13 @@ class _NativeMutationCapture:
             return None
 
 
+def scene_version() -> int:
+    """The Rust-owned canonical Scene schema version; readers never restate it."""
+    from . import _native
+
+    return _native.scene_version()
+
+
 @contextmanager
 def _capture_native_mutation(request):
     """Exact per-call native outcome, held through settlement and reset in finally."""
@@ -527,8 +534,11 @@ class SceneData:
             _zero(b, 248, 256)
         self.selection = parse_selection_footer(b, HEADER + scene_len + metadata_len, rows=False)
         self.packet, self.scene = b, b[HEADER : HEADER + scene_len]
-        if bytes(self.scene[:4]) != b"XYGS" or struct.unpack_from("<I", self.scene, 4)[0] != 32:
-            raise ValueError("invalid Scene32 packet")
+        if (
+            bytes(self.scene[:4]) != b"XYGS"
+            or struct.unpack_from("<I", self.scene, 4)[0] != scene_version()
+        ):
+            raise ValueError("invalid Scene packet")
         self.aggregate, self.grid_capped = bool(aggregate), bool(capped)
         self._stride = 24 if aggregate else 40
         self.metadata = b[HEADER + scene_len : HEADER + scene_len + metadata_len]

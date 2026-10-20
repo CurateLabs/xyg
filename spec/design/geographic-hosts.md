@@ -70,7 +70,7 @@ canonical query-plus-style authoring key returned by `build_payload()` exists
 only for deterministic module-scope Reflex token identity; its source handle is
 zero and it is not a painter or a source payload.
 
-Rust validates and prepares immutable Scene32 and XYPB15. The client uses the
+Rust validates and prepares immutable the current Scene version and the current XYPB version. The client uses the
 ordinary shared Scene painter and ChartView, without acquiring a Worker or
 claiming native Scene bytes have the private WASM FrameData authority. No host
 implements projection, LOD, cell membership or pick policy. Pick and membership

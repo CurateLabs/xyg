@@ -42,7 +42,7 @@ All v2 header fields at0..192 retain their meanings. V3's header is208 bytes:
 
 Exact order is208-byte header → layer80 records → direct48 records → membership96
 records → grid232 records with base u64 count planes → selected records → bounded
-attributions → optional tile blob → Scene32. No padding or trailing bytes are
+attributions → optional tile blob → the current Scene version. No padding or trailing bytes are
 permitted. Scene/tile lengths retain their original header locations.
 
 Each selected record is **full grid key160 + exact XYSE v1 footer128 + IDs/counts**.

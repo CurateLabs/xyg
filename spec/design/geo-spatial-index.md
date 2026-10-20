@@ -179,7 +179,7 @@ vertices. No fill/line/polygon index or temporal aggregate pyramid is claimed.
 ## Evidence and remaining gates
 
 Focused Rust fixtures compare direct/cluster/density keys, full IDs, visible
-records, counts, centroid bits and Scene32 bytes against canonical full scans.
+records, counts, centroid bits and the current Scene version bytes against canonical full scans.
 They cover unordered sources, MultiPoint/null rows, signed half-open time,
 source/camera CRS combinations, both wrap modes, pitch ±60/bearing, cross-chunk
 full-page flushes/scalars, corruption/omission, stale tickets, cancel/ACK,

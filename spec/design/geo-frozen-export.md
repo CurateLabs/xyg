@@ -68,7 +68,7 @@ profile and count authority without reconstructing live source capabilities.
 All numeric fields are little endian raw integers/f64 bit patterns. There are
 no JSON numeric payloads, platform pointers or implicit fetch instructions.
 The exact concatenation is header192, layer records80 each, direct records48,
-membership records96, compact LOD descriptors/count planes, attribution records, an optional tile authority blob and the canonical Scene32. There is
+membership records96, compact LOD descriptors/count planes, attribution records, an optional tile authority blob and the canonical the current Scene version. There is
 no padding, overlapping range or trailing data. Unknown versions/flags and
 nonzero reserved bytes reject the envelope.
 
@@ -211,7 +211,7 @@ cargo check -p xyg-engine --offline --no-default-features
 cargo clippy -p xyg-engine --offline --all-targets -- -D warnings
 ```
 
-Tests use actual Scene32 Scatter/Triangle/Segment output, full-u64 duplicate
+Tests use actual the current Scene version Scatter/Triangle/Segment output, full-u64 duplicate
 source IDs, extreme i64 windows, exact roundtrip bytes, every stale identity
 dimension, malformed framing/UTF-8/Scene/provenance, visible-attribution
 negative controls, an exact byte-budget boundary and memory lifetime after
@@ -271,7 +271,7 @@ mode2 at4u32; explicit time policy at8u32 (4Timeless,5ProducerWindow); source
 count12/stamp count16/foreground Scene byte count20u32; original receipt bytes24u64;
 retained record start32/end40 and style start48/end56, four u64. It contains the
 existing exact source configuration records and96-byte stamps, original Tile
-receipt, then exact retained foreground Scene32. The final outer Scene is the
+receipt, then exact retained foreground the current Scene version. The final outer Scene is the
 whole mixed Scene. Mode2 requires one bound analysis layer/compact grid, exact
 source time/style/state revision and original direct/reduced provenance. Decode
 validates tile time policy, selected vector layer authority and ranges, then

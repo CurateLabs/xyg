@@ -3,7 +3,7 @@
 The existing `XygGeographicChart.fromOverview` controller exposes
 `freezeBinary({budgetBytes?, signal?})`. It freezes the exact privately accepted
 immutable Data owner and publication sequence using snapshot command6. It never
-requeries the index. Rust owns XYGXv4, its inert XYOF domain counts, Scene32 and
+requeries the index. Rust owns XYGXv4, its inert XYOF domain counts, the current Scene version and
 all source/camera/time/revision checks. Dossier §17/§27/§28/§29/§34 applies.
 
 ```ts
@@ -36,7 +36,7 @@ The fixed256B XYGW command6 receipt must have exact version/kind/sequence/length
 a positive owner and zero reserved/companion fields. One pure command20 read then
 validates its exact length and all2432 bytes of the XYGXv4 fixed prefix against
 the private2304B accepted XYOV authority, including all256 exact-u64 counts.
-Scene magic/version must be Scene32. Maximum Scene757920B and binary760352B are
+Scene magic/version must be the current Scene version. Maximum Scene757920B and binary760352B are
 the existing Rust overview profile. Import policy remains Rust-owned; this
 mechanical framing check adds no projection, time predicate, palette or LOD rule.
 

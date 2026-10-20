@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 import xyg
+from xyg import _native
 from xyg._graphforge import compose_graphforge_request
 from xyg._tooltip_columns import decode_tooltip_rows
 
@@ -91,12 +92,12 @@ def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
         )
         name = document[names + name_offset : names + name_offset + name_length].decode()
         if name == "scene.version":
-            assert struct.unpack_from("<I", document, offset)[0] == 32
+            assert struct.unpack_from("<I", document, offset)[0] == _native.scene_version()
             struct.pack_into("<I", document, offset, 31)
             changed.add(name)
         elif name == "scene.canonical":
             assert document[offset : offset + 4] == b"XYGS"
-            assert struct.unpack_from("<I", document, offset + 4)[0] == 32
+            assert struct.unpack_from("<I", document, offset + 4)[0] == _native.scene_version()
             struct.pack_into("<I", document, offset + 4, 31)
             changed.add(name)
     assert changed == {"scene.version", "scene.canonical"}
