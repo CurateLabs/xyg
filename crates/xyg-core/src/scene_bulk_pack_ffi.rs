@@ -118,7 +118,7 @@ pub struct XygChromeColorbarIn {
     pub tick_count: u32,
 }
 
-/// Authored secondary right-hand y axis for ``xyg_scene_chrome_pack`` (ABI 389).
+/// Authored secondary right-hand y axis for ``xyg_scene_chrome_pack`` (ABI 390).
 ///
 /// Presence flags plus authored values only: the scale constant, tick-policy
 /// defaults, axis chrome record and `XYY2` layout are Rust's. The XYCO metrics

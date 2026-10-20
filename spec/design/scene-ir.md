@@ -518,7 +518,7 @@ exports this plain Scene first; `xyg_graph_composed_scene` then decodes it
 chrome, and text, and re-emits the records, labels, and explicit legend from the
 graph's resolved per-item planes (graph-mark.md §8). The flag is a new bit in the
 unchanged XYEP v1 envelope (no C-signature change).
-Secondary y (#1006, ABI 389): hosts set XYCL prefix byte 3 bit 1 (`XYCL_Y2`) on
+Secondary y (#1006, ABI 390): hosts set XYCL prefix byte 3 bit 1 (`XYCL_Y2`) on
 every trace bound to the `y2` axis; Rust stamps the record y selector (byte 3 bit
 `0x40`, see *Secondary right-hand y axis*) on every row packed from it. Other bits
 of that byte stay rejected, and the flag is meaningless without an `XYY2` block

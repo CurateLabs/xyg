@@ -299,10 +299,10 @@ right-hand y axis). Where the implementation refines this document:
 
 ## PRs 2+3 implementation record (Python and Node hosts)
 
-PRs 2 and 3 shipped as one host PR at `ABI_VERSION` 389. Hosts marshal facts and
+PRs 2 and 3 shipped as one host PR at `ABI_VERSION` 390. Hosts marshal facts and
 surface Rust's reasons; no host adds admission or layout policy.
 
-- **Per-trace selector needs a wire carrier (ABI 389).** PR 1 stamped the record
+- **Per-trace selector needs a wire carrier (ABI 390).** PR 1 stamped the record
   selector (`0x40`) in XYGS records and XYAS rows, but the product pipeline
   (XYTC → XYTT → XYCL rows) had no way to say which trace is on y2, so every row
   was packed `y2 = false`. `XYCL` prefix byte 3 gains bit 1, `XYCL_Y2`
@@ -316,7 +316,7 @@ surface Rust's reasons; no host adds admission or layout policy.
   scale kind, domain, optional constant, nonpositive mask, the same chrome-axis
   and collision observations as y, title, format) and the `y2_major`,
   `y2_minor`, `y2_tick_labels` arrays, replacing the earlier `y2`/`y2_len` bytes
-  (still ABI 389). `scene_chrome_pack.rs::pack_y2_sidecar` resolves the axis
+  (still ABI 390). `scene_chrome_pack.rs::pack_y2_sidecar` resolves the axis
   chrome record from the y2 style exactly as the y style resolves
   (`scene_style::resolve_chrome_style`, y record bytes 112..200) and writes the
   payload through `scene_y2::SceneY2Wire`, the one layout writer shared with
@@ -358,7 +358,7 @@ surface Rust's reasons; no host adds admission or layout policy.
   `packages/xy-node/scripts/static_dual_axis_cross_host.mjs`,
   `packages/xy-node/test/static-dual-axis.test.mjs`, and the Rust test
   `scene_trace_rows::y2_flag_selects_the_secondary_scale_for_that_trace_only`.
-  Corpus case 26 passes (52/55 overall; the three open cases, 25, 47 and 53, are the named
+  Corpus case 26 passes (53/55 overall; the two open cases, 25 and 47, are the named
   gaps in `spec/matplotlib/compat.md`).
 - **Title direction.** The y2 title now reads bottom to top: SVG/PDF
   `rotate(-90 …)` (`push_svg_chrome_text` path in `scene.rs`) and the styled

@@ -79,13 +79,13 @@ remaining case is 26 (`twinx`, PRs 2 and 3, #1037).
 ## Secondary y axis (`twinx`) on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 
 Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus is
-52/55; the three remaining cases (25, 47, 53) are the named gaps in `compat.md`
-(unrelated Scene gaps tracked in #1006). Design: `spec/design/twinx-secondary-y-axis.md`.
+53/55 with case 53 from #1039; the two remaining cases (25, 47) are the named gaps in
+`compat.md` (unrelated Scene gaps tracked in #1006). Design: `spec/design/twinx-secondary-y-axis.md`.
 
 - `twinx()` exports through Scene v33's `XYY2` block. Python and Node marshal only
   facts: the axis id/side, scale, ticks, title and format, the XYCO-resolved y2
   chrome (tick/title size, padding, paints, italic/bold flags), the per-trace y
-  selector (`XYCL` column flag bit 1, ABI 389), and `has_colorbar` presence. They
+  selector (`XYCL` column flag bit 1, ABI 390), and `has_colorbar` presence. They
   add no admission, default or layout policy (Rust builds the `XYY2` block from the
   authored observation); Rust returns the stable
   `XYG_SCENE_UNSUPPORTED_Y2_*` / `_X2` / `_EXTRA_AXES` reasons identically to both.
