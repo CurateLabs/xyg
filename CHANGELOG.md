@@ -14,7 +14,7 @@ in the README).
 ## [Unreleased]
 
 ### Added
-- ABI 389 / Scene v34: bounded static straight-arrow vocabulary (#1006). Rust
+- ABI 390 / Scene v34: bounded static straight-arrow vocabulary (#1006). Rust
   (`scene_arrow.rs`) owns open `v`, filled-triangle and absent heads and tails
   (`->`, `<-`, `<->`, `-`, `-|>`), start offset, label clearance and pixel shrink,
   drawn identically in SVG, raster and PDF; `XYAR` v2 / `XYAF` v2 carry the facts

@@ -640,3 +640,49 @@ fn a_supported_colorbar_cannot_hide_from_the_y2_prohibition() {
     assert_eq!(reason(0), "");
     assert!(reason(1).starts_with("XYG_SCENE_UNSUPPORTED_Y2_COLORBAR"));
 }
+
+/// A twin-axis Scene with one default straight-arrow run (annotation tag 5) in
+/// its trailing annotation records, returned with the arrow's first record
+/// offset. The arrow is pixel-space on the primary plane.
+fn twin_scene_with_arrow() -> (Vec<u8>, usize) {
+    let mut scene = twin_scene(&y2_axis(0.0, 100.0));
+    let records = u64::from_le_bytes(scene[16..24].try_into().unwrap()) as usize;
+    let at = record_at(records);
+    let mut run = Vec::new();
+    for (kind, point) in [
+        (1u8, [60.0f64, 100.0]),
+        (1, [192.0, 100.0]),
+        (4, [200.0, 100.0]),
+        (4, [192.0, 104.0]),
+        (4, [192.0, 96.0]),
+    ] {
+        run.extend_from_slice(&[kind, 1, 0, 5]);
+        run.extend_from_slice(&0u32.to_le_bytes());
+        run.extend_from_slice(&0x5859_0500_0000_0001u64.to_le_bytes());
+        for value in [point[0], point[1], 0.0, 0.0, 0.0] {
+            run.extend_from_slice(&value.to_le_bytes());
+        }
+    }
+    scene.splice(at..at, run);
+    scene[16..24].copy_from_slice(&((records + 5) as u64).to_le_bytes());
+    (scene, at)
+}
+
+#[test]
+fn arrow_run_on_the_secondary_plane_is_rejected_by_both_validators_on_the_same_bytes() {
+    let (scene, at) = twin_scene_with_arrow();
+    // The unmodified arrow is accepted by both readers.
+    validate_scene_batch(&scene).unwrap();
+    SceneDocument::decode(&scene).unwrap();
+    // Arrows are screen-space and primary-plane: a y2 selector on any record of
+    // the run is rejected by the byte validator and the document decoder alike
+    // (the byte validator once masked the bit and let the run through).
+    for row in 0..5 {
+        let mut tampered = scene.clone();
+        tampered[at + row * SCENE_BATCH_RECORD_BYTES + 3] |= SCENE_RECORD_Y2_BIT;
+        let validator = validate_scene_batch(&tampered);
+        let decoder = SceneDocument::decode(&tampered);
+        assert_eq!(validator.err(), Some(SceneError::Length), "row {row}");
+        assert_eq!(decoder.err(), Some(SceneError::Length), "row {row}");
+    }
+}

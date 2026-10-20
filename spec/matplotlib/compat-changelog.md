@@ -40,8 +40,8 @@ which covers user-visible releases across the whole package.
   `XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE` instead of a Scene allowlist
   message; the Scene label box has no corner radius.
 - Reference-corpus cases 25 and 53 clear this gate. Case 25's arrow head vocabulary
-  gap is closed by the entry below; 53 still stops at `axes_fraction` table cells
-  and zero-point `bxp` fliers (#1006).
+  gap is closed by the entry below; case 53 passes with the annotation coordinate
+  spaces entry above (#1006).
 
 ## Static `annotate(arrowprops=dict(arrowstyle=...))` on the Rust Scene — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 
@@ -72,8 +72,9 @@ straight-arrow run grammar bumps Scene to v34, and the browser painter hydrates 
 open-head runs.
 
 With the per-annotation label styles above, reference-corpus case 25 (arrow plus a
-differently styled `text`) passes on the Matplotlib 3.11.0 lane; the remaining
-corpus gaps are 26 (twinx PRs 2 and 3), 47 and 53.
+differently styled `text`) passes on the Matplotlib 3.11.0 lane. With cases 47
+(hexbin groups, #1023) and 53 already passing on main, the corpus is 54/55; the only
+remaining case is 26 (`twinx`, PRs 2 and 3, #1037).
 
 ## Reference corpus restore on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 

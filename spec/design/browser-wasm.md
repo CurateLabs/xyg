@@ -1110,9 +1110,13 @@ Scene v34's bounded arrow vocabulary (`crates/xyg-engine/src/scene_arrow.rs`: op
 heads, tails, shrink and label clearance, one geometry shared by encode, document
 lowering, batch validation and the XYST arrow-metric pass) adds about 5 KB raw and
 2.4 KB gzip to the module. On top of the Scene v33 secondary-y axis the packaged
-module measures 1,525,677 raw bytes (inside the 1,504 KiB = 1,540,096-byte gate) and
-627,558 gzip bytes at level 6 locally, which with CI's ~2.7 KB toolchain offset
-leaves under 0.5 KB below the former 616 KiB gate. The gzip gate is therefore
+module measures **1,527,224 raw bytes** (inside the 1,504 KiB = 1,540,096-byte gate)
+and **627,891 gzip bytes**. Measurement: Rust 1.96.0 release profile, pinned
+Binaryen 132.0.0, Node 22.22.1, `node js/package-wasm.mjs`, whose gate counts
+`zlib.gzipSync` at its default level 6 (GNU `gzip -6 -n` gives 628,161 on the same
+bytes); an independent measurement of the same change reported 627,878, a 13-byte
+spread from its checkout. CI's toolchain adds about 2.7 KB gzip over a local build,
+which leaves under 0.5 KB below the former 616 KiB gate. The gzip gate is therefore
 raised to **620 KiB (634,880 bytes)**; the raw gate is unchanged. Duplicate paint
 projection was folded into one out-of-line function and the paint buffer is a fixed
 array to keep the addition at that size; the browser consumes the same Rust vertices

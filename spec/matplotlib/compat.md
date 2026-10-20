@@ -142,7 +142,6 @@ falling back to a second renderer. Currently open (tracked under #1006):
 
 | Corpus case | Gap | Diagnostic |
 |---|---|---|
-| `25_annotate_text` | mixed annotation text styles in one panel; annotation `bbox=` | `XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE`, `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX` |
 | `26_twinx_dual_axis` | secondary y axis | `Scene v12 figure compilation currently supports exactly x/y axes` |
 | Not in the corpus | `text(..., transform=fig.transFigure)` / `fig.text`, i.e. `figure_fraction` text: a panel Scene does not own the figure rectangle (pyplot compiles panels separately), so static export names the gap instead of guessing a panel-relative position | `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE` |
 

@@ -4630,6 +4630,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     record.visible = bytes[at + 1] != 0;
                     record.symbol = bytes[at + 2];
                     record.annotation_tag = bytes[at + 3] & !SCENE_RECORD_Y2_BIT;
+                    record.y2 = bytes[at + 3] & SCENE_RECORD_Y2_BIT != 0;
                     record.style_ref = batch_u32(bytes, at + 4)? as usize;
                     record.stable_id = batch_u64(bytes, at + 8)?;
                     record.coordinates = [

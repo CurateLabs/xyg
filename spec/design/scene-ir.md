@@ -1548,7 +1548,7 @@ Run grammar (tag 5, shaft vertices then an optional 3-vertex fill):
 | 5 | 3 | `[wing, p0, wing, p0, base]`, head fill |
 | 8 | 0 | `[wing, p0, wing, p0, p1, wing, p1, wing]` |
 
-Arrow runs are screen-space and primary-plane: Scene v33's record byte-3 y2 selector (`0x40`) is masked when grouping a run by its annotation tag (as for every annotation run) but a run whose records carry it is rejected, and the encoder always writes it clear.
+Arrow runs are screen-space and primary-plane: Scene v33's record byte-3 y2 selector (`0x40`) is masked when grouping a run by its annotation tag (as for every annotation run) but a run whose records carry it is rejected by both the byte validator (`validate_scene_batch`) and the document decoder, and the encoder always writes it clear.
 
 Batch validation rebuilds each run from its recovered ends and head length and
 rejects any drift; `apply_static_arrow_metrics` re-derives every head through
