@@ -218,7 +218,8 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     out.extend_from_slice(loc.as_bytes());
     for _ in 0..count {
         let flags = r.u32()?;
-        if flags & !255 != 0 || r.u32()? != 0 {
+        // Bits 64 / 128 qualify the marker numbers, so they require bit 32.
+        if flags & !255 != 0 || (flags & 32 == 0 && flags & 192 != 0) || r.u32()? != 0 {
             return Err(DocumentLegendError::Flags);
         }
         let width = r.number(flags & 1 != 0, 1.5)?;
@@ -460,6 +461,15 @@ mod tests {
         let at = empty.len() - 16;
         empty[at..at + 8].copy_from_slice(&5.0f64.to_le_bytes());
         assert_eq!(resolve_packed(&empty), Err(DocumentLegendError::Flags));
+    }
+    #[test]
+    fn marker_number_presence_bits_require_the_marker_bit() {
+        for bits in [64u32, 128, 192] {
+            let mut input = request([None; 11], &["line"]);
+            let item = 64 + 11 * 4;
+            input[item..item + 4].copy_from_slice(&bits.to_le_bytes());
+            assert_eq!(resolve_packed(&input), Err(DocumentLegendError::Flags), "{bits}");
+        }
     }
     #[test]
     fn line_handle_marker_rejects_unknown_symbols_and_non_line_kinds() {

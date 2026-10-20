@@ -86,6 +86,8 @@ pub enum StaticDocumentError {
     Scene,
     Raster,
     Encode,
+    /// A legend box does not fit, or leaves the document canvas.
+    LegendBounds,
 }
 
 impl StaticDocumentError {
@@ -105,6 +107,10 @@ impl StaticDocumentError {
             Self::Scene => "XYG_STATIC_DOCUMENT_SCENE",
             Self::Raster => "XYG_STATIC_DOCUMENT_RASTER",
             Self::Encode => "XYG_STATIC_DOCUMENT_ENCODE",
+            Self::LegendBounds => {
+                "XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_BOUNDS: a legend box does not fit inside \
+                 the document canvas"
+            }
         }
     }
 }
@@ -202,6 +208,8 @@ pub struct StaticDocument {
     labels: Vec<DocumentLabel>,
     /// `None` anchors to the document; `Some(panel)` to that panel's plot box.
     legends: Vec<(Option<usize>, DocumentLegend)>,
+    /// Resolved box per legend, validated to lie inside the canvas at decode.
+    legend_layouts: Vec<LegendBoxLayout>,
     colorbar: Option<String>,
     crop_padding: usize,
     panels: Vec<(PanelRecord, SceneDocument, Vec<u8>)>,
@@ -788,7 +796,7 @@ impl StaticDocument {
         if scenes_at.checked_add(expected_offset) != Some(bytes.len()) {
             return Err(StaticDocumentError::Panel);
         }
-        Ok(Self {
+        let mut document = Self {
             width,
             height,
             flags,
@@ -802,10 +810,64 @@ impl StaticDocument {
             title,
             labels,
             legends,
+            legend_layouts: Vec::new(),
             colorbar,
             crop_padding,
             panels,
-        })
+        };
+        document.legend_layouts = document.resolve_legend_layouts()?;
+        Ok(document)
+    }
+
+    /// Resolve every legend box in document coordinates: document legends
+    /// against the canvas, panel legends against their Scene's visible plot box
+    /// (a polar Scene's visible sector). A legend that cannot be laid out, or
+    /// whose box leaves the canvas, rejects the document; nothing is clipped or
+    /// dropped silently.
+    fn resolve_legend_layouts(&self) -> Result<Vec<LegendBoxLayout>, StaticDocumentError> {
+        let mut layouts = Vec::with_capacity(self.legends.len());
+        for (panel, legend) in &self.legends {
+            let (plot_x, plot_y, plot_w, plot_h) = match panel {
+                None => (0.0, 0.0, self.width as f64, self.height as f64),
+                Some(index) => {
+                    let (record, scene, _) = &self.panels[*index];
+                    let (x, y, width, height) = scene.plot_bounds();
+                    (f64::from(record.x) + x, f64::from(record.y) + y, width, height)
+                }
+            };
+            let names: Vec<&str> = legend.items.iter().map(|item| item.name.as_str()).collect();
+            let layout = legend_box_layout(LegendBoxRequest {
+                plot_x,
+                plot_y,
+                plot_w,
+                plot_h,
+                names: &names,
+                title: (!legend.title.is_empty()).then_some(legend.title.as_str()),
+                loc: &legend.location,
+                font_size: f64::from(legend.font_size),
+                handlelength: Some(f64::from(legend.handle_length)),
+                handletextpad: Some(f64::from(legend.handle_text_pad)),
+                handleheight: None,
+                ncols: legend.ncols,
+                padding_em: f64::from(legend.padding_em),
+                row_gap_em: f64::from(legend.row_gap_em),
+                anchor: legend
+                    .anchor
+                    .map(|anchor| (f64::from(anchor[0]), f64::from(anchor[1]), 0.0, 0.0)),
+                border_axes_pad: f64::from(legend.border_pad),
+            })
+            .ok_or(StaticDocumentError::LegendBounds)?;
+            const EPS: f64 = 1e-6;
+            if !(layout.x >= -EPS
+                && layout.y >= -EPS
+                && layout.x + layout.box_w <= self.width as f64 + EPS
+                && layout.y + layout.box_h <= self.height as f64 + EPS)
+            {
+                return Err(StaticDocumentError::LegendBounds);
+            }
+            layouts.push(layout);
+        }
+        Ok(layouts)
     }
 
     pub fn export(
@@ -973,7 +1035,7 @@ impl StaticDocument {
             }
             out.push_str("</text>");
         }
-        for (legend, layout) in self.document_legend_layouts() {
+        for ((_, legend), layout) in self.legends.iter().zip(&self.legend_layouts) {
             out.push_str("<g data-xy-static-legend=\"\"><rect x=\"");
             out.push_str(&layout.x.to_string());
             out.push_str("\" y=\"");
@@ -1111,45 +1173,6 @@ impl StaticDocument {
         ))
     }
 
-    /// Resolve every legend box in document coordinates: document legends
-    /// against the canvas, panel legends against their Scene plot box.
-    fn document_legend_layouts(&self) -> Vec<(&DocumentLegend, LegendBoxLayout)> {
-        self.legends
-            .iter()
-            .filter_map(|(panel, legend)| {
-                let (plot_x, plot_y, plot_w, plot_h) = match panel {
-                    None => (0.0, 0.0, self.width as f64, self.height as f64),
-                    Some(index) => {
-                        let (record, scene, _) = &self.panels[*index];
-                        let (x, y, width, height) = scene.plot_bounds();
-                        (f64::from(record.x) + x, f64::from(record.y) + y, width, height)
-                    }
-                };
-                let names: Vec<&str> = legend.items.iter().map(|item| item.name.as_str()).collect();
-                let layout = legend_box_layout(LegendBoxRequest {
-                    plot_x,
-                    plot_y,
-                    plot_w,
-                    plot_h,
-                    names: &names,
-                    title: (!legend.title.is_empty()).then_some(legend.title.as_str()),
-                    loc: &legend.location,
-                    font_size: f64::from(legend.font_size),
-                    handlelength: Some(f64::from(legend.handle_length)),
-                    handletextpad: Some(f64::from(legend.handle_text_pad)),
-                    handleheight: None,
-                    ncols: legend.ncols,
-                    padding_em: f64::from(legend.padding_em),
-                    row_gap_em: f64::from(legend.row_gap_em),
-                    anchor: legend
-                        .anchor
-                        .map(|anchor| (f64::from(anchor[0]), f64::from(anchor[1]), 0.0, 0.0)),
-                    border_axes_pad: f64::from(legend.border_pad),
-                })?;
-                Some((legend, layout))
-            })
-            .collect()
-    }
 
     fn export_raster(
         &self,
@@ -1266,7 +1289,7 @@ impl StaticDocument {
                     commands.extend_from_slice(line.as_bytes());
                 }
             }
-            for (legend, layout) in self.document_legend_layouts() {
+            for ((_, legend), layout) in self.legends.iter().zip(&self.legend_layouts) {
                 push_document_rect(
                     &mut commands,
                     layout.x,
@@ -1770,6 +1793,7 @@ mod tests {
                 text: "Label".into(),
             }],
             legends: Vec::new(),
+            legend_layouts: Vec::new(),
             colorbar: None,
             crop_padding: 0,
             panels: Vec::new(),

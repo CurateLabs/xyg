@@ -151,3 +151,52 @@ def test_marker_legend_alpha_matches_the_plotted_data_alpha():
     assert float(marker.group(1)) == pytest.approx(0.5, abs=5e-3)
     # The plotted series uses the same alpha.
     assert 'stroke-opacity="0.5"' in svg.split("data-xy-static-legend", 1)[0]
+
+
+def _polar_axes(figsize=(4, 4.5)):
+    fig = plt.figure(figsize=figsize)
+    return fig, fig.add_subplot(projection="polar")
+
+
+@pytest.mark.parametrize(("lo", "hi"), [(0, 180), (180, 360), (0, 90)])
+@pytest.mark.parametrize("loc", ["lower left", "upper right", "lower right", "center"])
+def test_partial_sector_legends_stay_inside_the_canvas(lo, hi, loc):
+    fig, ax = _polar_axes()
+    theta = np.linspace(np.radians(lo), np.radians(hi), 9)
+    ax.plot(theta, np.linspace(0.2, 0.9, 9), label="a")
+    ax.set_thetamin(lo)
+    ax.set_thetamax(hi)
+    ax.legend(loc=loc)
+    svg = _svg(fig)
+    width, height = (float(v) for v in re.search(r'viewBox="0 0 (\d+) (\d+)"', svg).groups())
+    ((x, y, w, h),) = _legend_frames(svg)
+    assert x >= 0 and x + w <= width and y >= 0 and y + h <= height, (x, y, w, h)
+
+
+def test_partial_sector_legend_follows_the_visible_sector_not_the_full_disc():
+    # Upper semicircle: the visible box is half as tall as the disc square, so a
+    # `lower` legend sits well above the bottom of the full-disc square.
+    fig, ax = _polar_axes((4, 4))
+    ax.plot(np.linspace(0, np.pi, 9), np.linspace(0.2, 0.9, 9), label="a")
+    ax.set_thetamin(0)
+    ax.set_thetamax(180)
+    ax.legend(loc="lower left")
+    ((_, y, _, h),) = _legend_frames(_svg(fig))
+    fig2, ax2 = _polar_axes((4, 4))
+    ax2.plot(np.linspace(0, 2 * np.pi, 9), np.linspace(0.2, 0.9, 9), label="a")
+    ax2.legend(loc="lower left")
+    ((_, y_full, _, _),) = _legend_frames(_svg(fig2))
+    assert y + h < y_full + h  # strictly higher than the full disc's lower-left
+
+
+def test_polar_plot_with_a_colorbar_keeps_its_legend_inside_the_canvas():
+    fig, ax = _polar_axes((6, 4))
+    scatter = ax.scatter(
+        np.linspace(0, 6, 20), np.linspace(0.1, 1, 20), c=np.arange(20), label="pts"
+    )
+    fig.colorbar(scatter, ax=ax)
+    ax.legend(loc="lower left")
+    svg = _svg(fig)
+    width, height = (float(v) for v in re.search(r'viewBox="0 0 (\d+) (\d+)"', svg).groups())
+    ((x, y, w, h),) = _legend_frames(svg)
+    assert x >= 0 and x + w <= width and y >= 0 and y + h <= height

@@ -51,8 +51,9 @@ Each is regression-tested in `tests/pyplot/test_corpus_regressions_1006.py`,
 
 Still open on this lane (named gaps, all fail closed with stable diagnostics):
 per-item scatter sizes (`s=array`), secondary y axes (`twinx`), heterogeneous
-annotation styles and annotation `bbox=`, line+marker legend swatches, more
-than 1,024 hexbin cells (#887), and a panel legend in a multi-panel document.
+annotation styles and annotation `bbox=`, and more than 1,024 hexbin cells
+(#887). (Line+marker legend swatches and multi-panel legends, listed open when
+this entry was written, are closed by the legend entry below.)
 
 ## Per-item scatter size — #1006
 
@@ -72,10 +73,10 @@ than 1,024 hexbin cells (#887), and a panel legend in a multi-panel document.
   one-legend-per-document limit. Single-axes legends also move from the canvas
   corner into their axes, as in Matplotlib. The XYDD legend item record grows
   from 28 to 44 bytes; the document header's first reserved word carries the
-  panel-legend section length. Polar panels anchor to the drawn disc's
-  bounding square (never the overflowing layout rectangle). A legend marker is
-  present whenever authored, with Rust resolving all of its defaults (closes
-  #1026 together with the `loc` position matrix test).
+  panel-legend section length. Polar panels anchor to the visible disc or
+  sector bounds, and Rust rejects (`XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_BOUNDS`)
+  any legend box that leaves the canvas rather than clipping it. A legend marker is
+  present whenever authored, with Rust resolving all of its defaults (`loc` placement matches Matplotlib 3.11 within 0.01 axes fraction).
 
 ## Patch bodies and geometry — 2026-07-30 (Matplotlib 3.11.1 reference)
 

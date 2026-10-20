@@ -1304,6 +1304,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "reference test commands",
         ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py",
         ".venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py",
+        ".venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
         allow_job_gate=True,

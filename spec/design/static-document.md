@@ -46,12 +46,15 @@ rejected. Documents without panel legends keep a zero word. The
 `XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS` rejection now applies only to a
 second legend within one axes (`extra_legends`). Both hosts marshal the same
 facts (`_static_document.encode(panel_legends=)`, Node
-`staticDocumentEncode({ panelLegends })`). The anchor is `SceneDocument::plot_bounds`:
-the Scene plot box, except that a polar Scene's box is the drawn disc's
-bounding square clipped to its layout (the layout rectangle itself can extend
-past the disc and the canvas), so a legend is never placed outside the figure.
-Tests pin containment for every `loc` (including `best`) against the axes plot
-box and for the polar corpus layout against the canvas.
+`staticDocumentEncode({ panelLegends })`). The anchor is `SceneDocument::plot_bounds`: the Scene plot box, except that a
+polar Scene's box is the **visible** disc or sector (`polar::visible_box`, the
+same sector bounds `partial_sector_layout` fits into the layout rectangle),
+which always lies inside that rectangle. At decode, Rust resolves every legend
+box and **rejects** the document with
+`XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_BOUNDS` if a layout fails or any box
+leaves the document canvas; nothing is clipped or silently dropped. (Legend
+boxes are otherwise clamped into their anchor box by `legend_box_layout`, so the
+guard only fires for authored anchors or boxes that cannot fit.)
 
 ### 1.1 XYST v2 framing
 

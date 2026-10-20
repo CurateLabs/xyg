@@ -269,3 +269,16 @@ def test_item_opacity_applies_to_the_marker_paint():
     line = re.findall(r'<line[^>]*stroke="rgba\(31,119,180,([\d.]+)\)"', svg)
     assert rect and line, (rect, line)
     assert float(rect[0]) == pytest.approx(float(line[0]), abs=5e-3)
+
+
+def test_a_legend_that_leaves_the_canvas_is_rejected_not_clipped():
+    def legend(anchor):
+        return {
+            "loc": "upper left",
+            "anchor": anchor,
+            "items": [{"kind": "line", "name": "a", "style": {}}],
+        }
+
+    _native.static_document_export(_single(legend((0.5, 0.5))), "svg")
+    with pytest.raises(Exception, match="XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_BOUNDS"):
+        _native.static_document_export(_single(legend((5.0, 5.0))), "svg")

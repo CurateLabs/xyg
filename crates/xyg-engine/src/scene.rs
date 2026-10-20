@@ -11274,25 +11274,23 @@ impl SceneDocument {
         (self.layout.viewport_width, self.layout.viewport_height)
     }
 
-    /// Plot box `(x, y, width, height)` inside the Scene viewport. StaticDocument
-    /// anchors panel-owned legends to it after document-level chrome overrides.
-    /// A polar Scene's layout rectangle can extend past the drawn disc (and the
-    /// viewport), so its box is the disc's bounding square clipped to the layout.
+    /// Visible plot box `(x, y, width, height)` inside the Scene viewport.
+    /// StaticDocument anchors panel-owned legends to it after document-level
+    /// chrome overrides. A polar Scene's layout rectangle can be larger than
+    /// what is drawn, so its box is the visible disc or sector (which always
+    /// lies inside that layout rectangle).
     pub(crate) fn plot_bounds(&self) -> (f64, f64, f64, f64) {
-        let (mut left, mut top) = (self.layout.left, self.layout.top);
-        let (mut right, mut bottom) = (self.layout.right, self.layout.bottom);
         if let Some(polar) = &self.polar {
-            let (cx, cy, radius) = (
-                polar.metrics[crate::polar::METRIC_CX],
-                polar.metrics[crate::polar::METRIC_CY],
-                polar.metrics[crate::polar::METRIC_RADIUS],
-            );
-            left = left.max(cx - radius);
-            top = top.max(cy - radius);
-            right = right.min(cx + radius);
-            bottom = bottom.min(cy + radius);
+            if let Some(visible) = crate::polar::visible_box(&polar.metrics) {
+                return visible;
+            }
         }
-        (left, top, right - left, bottom - top)
+        (
+            self.layout.left,
+            self.layout.top,
+            self.layout.right - self.layout.left,
+            self.layout.bottom - self.layout.top,
+        )
     }
 
     /// Replace authored chart/plot backdrops with transparent paint so one

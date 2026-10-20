@@ -145,12 +145,15 @@ falling back to a second renderer. Currently open (tracked under #1006):
 | `12_scatter_size_array` | per-item scatter sizes (`s=array`) | `Scene v12 does not yet encode hidden or per-item styled marks` |
 | `25_annotate_text`, `53_matplotlib_311_plotting` | mixed annotation text styles in one panel; annotation `bbox=` | `XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE`, `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX` |
 | `26_twinx_dual_axis` | secondary y axis | `Scene v12 figure compilation currently supports exactly x/y axes` |
-| `41_line_kwargs` | line+marker legend swatch (`legend_marker`) | `XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE` |
 | `47_statistical_families` | default-gridsize `hexbin` lattice above the 1,024 PolyFill-group ceiling ([#887](https://github.com/CurateLabs/xyg/issues/887)) | `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
-| `55_polar_projection` | a panel legend in a multi-panel document | `XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS` |
 
-Matplotlib's legend placement relative to the axes is also not yet reproduced in
-static output: the document legend lays out against the document rectangle.
+Legend placement relative to the axes is reproduced in static output (#1026):
+`loc` resolves against the panel's plot box. For `upper left`, `upper right`,
+`lower left`, `lower right`, `center` and `best`, the legend box in axes-fraction
+coordinates matches Matplotlib 3.11's `Legend.get_window_extent` within **0.01
+axes fraction per edge** (measured spread below 0.005, from differing font
+metrics); `tests/pyplot/test_legend_reference_1026.py` runs in the Matplotlib
+3.11 lane.
 
 ## Sharp edges
 
@@ -172,7 +175,11 @@ static output: the document legend lays out against the document rectangle.
   legend handle, and a second legend inside one axes, still fail closed with
   `XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE` /
   `XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS`. Polar panels anchor the
-  legend to the drawn disc's bounding square, so it stays inside the figure.
+  legend to the visible disc or sector bounds. Rust enforces that every legend
+  box lies inside the document canvas: a legend that cannot be laid out or would
+  leave the canvas rejects the document with
+  `XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_BOUNDS` instead of being clipped or
+  dropped.
 - Custom Matplotlib marker paths, arbitrary clipping graphs, and unsupported
   collection gradients are rejected rather than silently approximated.
 - The shim's figure/axes bookkeeping adds ~50µs of fixed per-figure cost over

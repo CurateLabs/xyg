@@ -28,7 +28,7 @@ kind, name, color, symbol. Bit 32 marks a **line-handle marker** (Matplotlib's
 an empty object, and both hosts use that same presence rule. Three optional
 strings follow (marker symbol, fill, stroke) and then two f64 (marker size,
 marker stroke width) that are meaningful only with presence bits 64 and 128
-(inactive bytes zero). Hosts marshal absent fields as absent; **Rust resolves
+(inactive bytes zero). Bits 64 / 128 without bit 32 are rejected (`XYG_STATIC_DOCUMENT_LEGEND_FLAGS`). The first encoding of these marker numbers (always present) never shipped — the change landed inside one unmerged PR — so XYDL stays version 1; bump the version if a released consumer ever reads it. Hosts marshal absent fields as absent; **Rust resolves
 every default**: symbol `circle`, fill = item color, stroke = fill, size 8,
 stroke width 0 (unstroked, like `markeredgecolor="none"`). The marker symbol
 is a built-in Scene scatter symbol name; hosts name `marker_path` /
