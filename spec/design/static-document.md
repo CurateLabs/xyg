@@ -184,9 +184,14 @@ call raises the listed stable `XYG_*` reason.
   (`MAX_PUBLIC_HEXBIN_CELLS`; the default-gridsize Matplotlib lattice is
   11,558 cells and the original 100,000-row `gridsize=50` gallery witness is
   1,226). One cell over fails closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in
-  both hosts, with no host-renderer retry (ceiling chosen below the ~55k-cell
-  point where the product-encode buffer is exhausted, so the stable diagnostic
-  is always reached first). The browser painter keeps its separate
+  both hosts, with no host-renderer retry. The ceiling is product policy, not
+  a buffer limit: when a host's initial output buffer is too small,
+  `xyg_scene_encode_product` returns `-4` and writes the exact required byte
+  count as a little-endian u32 into `out[0..4]`; hosts retry once with that
+  size and otherwise raise a specific "output buffer too small" diagnostic
+  (never the generic scene-batch error). Constant-paint hexbin (tiny input, six
+  56-byte Scene records per cell) and mixed documents are covered by the
+  cross-host test. The browser painter keeps its separate
   1,024-group ceiling (`XYG_PAINTER_TRACE_LIMIT`); this change does not alter
   any browser resource budget. Evidence for issue #887:
   `tests/test_static_hexbin_cross_host.py` (Python/Node byte identity, scene

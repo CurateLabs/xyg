@@ -1084,7 +1084,10 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// stages occupy `base + original` except shared `Output=4` retry. Support
 /// rejection (`-801`) writes a little-endian u32 reason length then UTF-8;
 /// other errors write the failing index as a little-endian u32 when
-/// `out_cap >= 4`. Encoded Scene v31 is unchanged.
+/// `out_cap >= 4`. A top-level `-4` (`Output`, buffer too small) instead
+/// writes the exact required byte count as a little-endian u32 when
+/// `out_cap >= 4`, so hosts retry once with that size. Encoded Scene v31 is
+/// unchanged.
 ///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many
@@ -1187,6 +1190,13 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
         ) {
             Ok(bytes) => {
                 if bytes.len() > out_cap {
+                    // Insufficient buffer: report the exact required byte
+                    // count so hosts retry once instead of guessing (#887).
+                    if out_cap >= 4 {
+                        let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                        let required = u32::try_from(bytes.len()).unwrap_or(u32::MAX);
+                        dest[..4].copy_from_slice(&required.to_le_bytes());
+                    }
                     return -(EncodeSidecarsCode::Output as i32);
                 }
                 if bytes.is_empty() {
@@ -29205,6 +29215,40 @@ mod tests {
         assert_eq!(
             product_encoded[..product_code as usize],
             encoded_out[..encoded_code as usize]
+        );
+        // A too-small buffer reports the exact required size (#887).
+        let mut small = vec![0u8; product_code as usize - 1];
+        let small_code = unsafe {
+            xyg_scene_encode_product(
+                xytc.as_ptr(),
+                xytc.len(),
+                xyta.as_ptr(),
+                xyta.len(),
+                xynm.as_ptr(),
+                xynm.len(),
+                xycl.as_ptr(),
+                xycl.len(),
+                std::ptr::null(),
+                0,
+                0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                xycf.as_ptr(),
+                xycf.len(),
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                small.as_mut_ptr(),
+                small.len(),
+            )
+        };
+        assert_eq!(small_code, -(EncodeSidecarsCode::Output as i32));
+        assert_eq!(
+            u32::from_le_bytes(small[..4].try_into().unwrap()),
+            product_code as u32
         );
     }
 

@@ -90,9 +90,9 @@ const MAX_PUBLIC_TRIANGLE_MESHES: usize = 1_024;
 /// Aggregate hexbin cell budget (one PolyFill group per cell). Independent of
 /// the triangle-mesh budget: the native static consumers bound groups only by
 /// `MAX_SCENE_MARKS`, and a default-gridsize `hexbin` lattice is ~11.6k cells.
-/// Documented in `spec/design/static-document.md`; kept below the ~55k-cell
-/// point where the hosts' product-encode buffer (four capacity doublings from
-/// ~1 MiB) would otherwise overflow before this stable diagnostic is reached.
+/// A product ceiling documented in `spec/design/static-document.md`, not a
+/// buffer workaround: `xyg_scene_encode_product` reports the exact output size
+/// it needs, so hosts never size the Scene buffer from input size (#887).
 const MAX_PUBLIC_HEXBIN_CELLS: usize = 50_000;
 const MAX_PUBLIC_HEATMAP_CELLS: usize = 10_000;
 const MAX_PUBLIC_POINTS: usize = 10_000;

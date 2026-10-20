@@ -46,19 +46,33 @@ LIB = (
 N = 20000
 X = [((i * 7919) % 10007) / 10007 for i in range(N)]
 Y = [((i * 104729) % 10009) / 10009 for i in range(N)]
-CASES = {
-    "above_former_group_ceiling": (40, 30),
-    "default_gridsize_lattice": (100, 100),
-    "near_cell_ceiling": (155, 155),
-    "above_cell_ceiling": (330, 330),
+# name -> (gridsize, constant color or None, extra scatter points)
+CASES: dict[str, tuple[tuple[int, int], str | None, int]] = {
+    "above_former_group_ceiling": ((40, 30), None, 0),
+    "default_gridsize_lattice": ((100, 100), None, 0),
+    "near_cell_ceiling": ((155, 155), None, 0),
+    # Constant paint has no per-cell paint plane, so its encode input is tiny
+    # while its Scene output (6 records per cell) is not: output sizing must
+    # not be inferred from input size (#887 review).
+    "near_cell_ceiling_constant_color": ((155, 155), "#3987e5", 0),
+    "near_cell_ceiling_mixed": ((155, 155), "#3987e5", 5000),
+    "above_cell_ceiling": ((330, 330), None, 0),
 }
 CEILING = 50_000
 GROUP_CEILING = 1_024
 
 
-def _figure(gridsize: tuple[int, int]) -> Any:
-    chart = xyg.hexbin_chart(xyg.hexbin(X, Y, gridsize=gridsize), width=640, height=480)
-    return chart.figure()
+def _figure(name: str) -> Any:
+    gridsize, color, extra = CASES[name]
+    marks = [xyg.hexbin(X, Y, gridsize=gridsize, **({"color": color} if color else {}))]
+    if extra:
+        # Mixed documents need authored domains for the Scene route.
+        marks += [
+            xyg.scatter(X[:extra], Y[:extra], color="#ef4444", size=3),
+            xyg.x_axis(domain=(-0.2, 1.2)),
+            xyg.y_axis(domain=(-0.2, 1.2)),
+        ]
+    return xyg.hexbin_chart(*marks, width=640, height=480).figure()
 
 
 @pytest.fixture(scope="module")
@@ -79,13 +93,14 @@ def node_cases() -> dict[str, dict[str, Any]]:
     return {case["name"]: case for case in payload["cases"]}
 
 
-@pytest.mark.parametrize(
-    "name", ["above_former_group_ceiling", "default_gridsize_lattice", "near_cell_ceiling"]
-)
+ADMITTED = [name for name in CASES if name != "above_cell_ceiling"]
+
+
+@pytest.mark.parametrize("name", ADMITTED)
 def test_oversized_hexbin_exports_every_cell_identically_in_both_hosts(
     name: str, node_cases: dict[str, dict[str, Any]]
 ) -> None:
-    figure = _figure(CASES[name])
+    figure = _figure(name)
     cells = len(figure.traces[0].x.values)
     assert GROUP_CEILING < cells <= CEILING
     assert scene_export_support_reason(figure) is None
@@ -106,7 +121,7 @@ def test_oversized_hexbin_exports_every_cell_identically_in_both_hosts(
 def test_hexbin_above_cell_ceiling_fails_closed_identically_in_both_hosts(
     node_cases: dict[str, dict[str, Any]],
 ) -> None:
-    figure = _figure(CASES["above_cell_ceiling"])
+    figure = _figure("above_cell_ceiling")
     assert len(figure.traces[0].x.values) > CEILING
     reason = scene_export_support_reason(figure)
     assert reason is not None and reason.startswith("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD")

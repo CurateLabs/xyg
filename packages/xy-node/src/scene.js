@@ -6064,7 +6064,7 @@ function encodeProduct(
       + 512 * 384 * 5
       + 4096,
   );
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     const out = new Uint8Array(capacity);
     const code = xySceneEncodeProduct(
       compileBytes.length ? u8Ptr(compileBytes) : 0,
@@ -6092,7 +6092,10 @@ function encodeProduct(
       BigInt(out.length),
     );
     if (code === -4) {
-      capacity *= 2;
+      // Rust reports the exact required size; the second attempt is final.
+      const required = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      if (required <= capacity) break;
+      capacity = required;
       continue;
     }
     if (code === -801) {
@@ -6132,10 +6135,7 @@ function encodeProduct(
     if (code < 0) throw new RangeError("invalid scene chrome packing");
     return out.subarray(0, code);
   }
-  const error = new RangeError("invalid canonical scene batch");
-  error.code = -4;
-  error.index = 0;
-  throw error;
+  throw new RangeError("scene product encode output buffer too small for the reported size");
 }
 
 function unpackXyAs(blob) {
