@@ -33,11 +33,11 @@ for (let i = 0; i < nodes; i += 1) {
 const rows = [];
 for (let rep = 0; rep < reps; rep += 1) {
   const arrivals = [];
-  let maxLagMs = 0;
+  const lags = [];
   let last = performance.now();
   const ticker = setInterval(() => {
     const now = performance.now();
-    maxLagMs = Math.max(maxLagMs, now - last - 5);
+    lags.push(Math.max(0, now - last - 5));
     last = now;
   }, 5);
   const started = performance.now();
@@ -58,7 +58,8 @@ for (let rep = 0; rep < reps; rep += 1) {
     checkpoints: arrivals.length,
     steps: result.steps,
     wall_ms: wall,
-    max_event_loop_lag_ms: Math.max(0, maxLagMs),
+    p95_event_loop_lag_ms: [...lags].sort((a, b) => a - b)[Math.min(lags.length - 1, Math.round(0.95 * (lags.length - 1)))],
+    max_event_loop_lag_ms: lags.reduce((a, b) => Math.max(a, b), 0),
   });
 }
 process.stdout.write(`${JSON.stringify({

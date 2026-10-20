@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import resource
 import statistics
 import subprocess
@@ -47,10 +48,10 @@ CHUNK_STEPS = 10
 # rung is the Node/WASM request ceiling (MAX_NODES = 1_000_000); few chunks and a
 # single cold run bound wall time and memory (<= 16 GB host budget).
 RUNGS = {
-    "1k": (1_000, 40, 5),
-    "10k": (10_000, 30, 5),
-    "100k": (100_000, 10, 3),
-    "1M": (1_000_000, 3, 1),
+    "1k": (1_000, 40, 7),
+    "10k": (10_000, 30, 7),
+    "100k": (100_000, 10, 5),
+    "1M": (1_000_000, 5, 1),
 }
 MAX_WALL_MS = 300_000
 
@@ -86,6 +87,7 @@ def summarize(host_row: dict[str, Any]) -> dict[str, Any]:
             "p95": _pct(cadence, 0.95) if cadence else None,
             "max": max(cadence) if cadence else None,
         },
+        "p95_event_loop_lag_ms": _pct([rep["p95_event_loop_lag_ms"] for rep in reps], 0.95),
         "max_event_loop_lag_ms": max(rep["max_event_loop_lag_ms"] for rep in reps),
         "peak_rss_mb": host_row["peak_rss_mb"],
     }
@@ -93,16 +95,15 @@ def summarize(host_row: dict[str, Any]) -> dict[str, Any]:
 
 async def _python_rep(controller: Any, n_steps: int) -> dict[str, Any]:
     arrivals: list[float] = []
-    lag = 0.0
+    lags: list[float] = []
     stop = asyncio.Event()
 
     async def ticker() -> None:
-        nonlocal lag
         last = time.perf_counter()
         while not stop.is_set():
             await asyncio.sleep(0.005)
             now = time.perf_counter()
-            lag = max(lag, (now - last - 0.005) * 1000.0)
+            lags.append(max(0.0, (now - last - 0.005) * 1000.0))
             last = now
 
     watch = asyncio.create_task(ticker())
@@ -126,7 +127,8 @@ async def _python_rep(controller: Any, n_steps: int) -> dict[str, Any]:
         "checkpoints": len(arrivals),
         "steps": result.step,
         "wall_ms": wall * 1000.0,
-        "max_event_loop_lag_ms": max(0.0, lag),
+        "p95_event_loop_lag_ms": _pct(lags, 0.95),
+        "max_event_loop_lag_ms": max(lags),
     }
 
 
@@ -162,8 +164,12 @@ def run_python_child(nodes: int, chunks: int, reps: int) -> dict[str, Any]:
 
 
 def _run_child(cmd: list[str], timeout_s: float) -> dict[str, Any]:
+    env = dict(os.environ)
+    native = ROOT / "target" / "release" / "libxyg_core.so"
+    if "XYG_NATIVE_LIB" not in env and native.exists():
+        env["XYG_NATIVE_LIB"] = str(native)
     done = subprocess.run(  # noqa: S603
-        cmd, capture_output=True, text=True, timeout=timeout_s, cwd=ROOT, check=False
+        cmd, capture_output=True, text=True, timeout=timeout_s, cwd=ROOT, check=False, env=env
     )
     if done.returncode != 0:
         raise RuntimeError(f"{cmd[:3]} failed ({done.returncode}): {done.stderr[-800:]}")
@@ -178,6 +184,7 @@ def run(rungs: list[str], hosts: list[str], chromium: str | None) -> dict[str, A
         nodes, chunks, reps = RUNGS[rung]
         for host in hosts:
             started = time.time()
+            load_start = os.getloadavg()
             try:
                 if host == "python":
                     raw = _run_child(
@@ -213,6 +220,7 @@ def run(rungs: list[str], hosts: list[str], chromium: str | None) -> dict[str, A
                         "summary": summarize(raw),
                         "reps": raw["reps"],
                         "elapsed_s": time.time() - started,
+                        "loadavg_1m": {"start": load_start[0], "end": os.getloadavg()[0]},
                     }
                 )
             except Exception as error:  # a failed rung is recorded, never dropped

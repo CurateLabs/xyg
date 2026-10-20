@@ -12,6 +12,7 @@ separately; every repetition is a fresh job on that worker.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import functools
 import http.server
 import json
@@ -34,24 +35,27 @@ window.runRung = async ({ nodes, chunks, chunkSteps, reps }) => {
   }
   const totalSteps = 1 + chunks * chunkSteps;
   const readyStart = performance.now();
-  const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 768 * 1024 * 1024 });
+  const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 402653184 });
   await worker.ready;
   const workerReadyMs = performance.now() - readyStart;
   const out = [];
   for (let rep = 0; rep < reps; rep += 1) {
     const arrivals = [];
-    let last = performance.now(), lag = 0;
-    const ticker = setInterval(() => { const now = performance.now(); lag = Math.max(lag, now - last - 5); last = now; }, 5);
+    let last = performance.now(); const lags = [];
+    const ticker = setInterval(() => { const now = performance.now(); lags.push(Math.max(0, now - last - 5)); last = now; }, 5);
     const started = performance.now();
     const task = layoutWasmCose(worker, { nNodes: nodes, sources, targets, totalSteps, seed: 7n },
       { revision: rep + 1, chunkSteps, maxWallMs: 300000, onUpdate: () => arrivals.push(performance.now()) });
     const result = await task.result;
+    // The complete checkpoint resolves the task instead of firing onUpdate.
+    if (arrivals.length < 1 + chunks) arrivals.push(performance.now());
     clearInterval(ticker);
     out.push({
       first_paint_ms: arrivals[0] - started,
       cadence_ms: arrivals.slice(1).map((t, i) => t - arrivals[i]),
       checkpoints: arrivals.length, steps: result.step, wall_ms: performance.now() - started,
-      max_event_loop_lag_ms: Math.max(0, lag),
+      p95_event_loop_lag_ms: [...lags].sort((a, b) => a - b)[Math.min(lags.length - 1, Math.round(0.95 * (lags.length - 1)))],
+      max_event_loop_lag_ms: lags.reduce((a, b) => Math.max(a, b), 0),
     });
   }
   const heap = performance.memory ? performance.memory.usedJSHeapSize / 1048576 : null;
@@ -97,35 +101,40 @@ def main() -> None:
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
     try:
-        with Browser(
+        browser = Browser(
             chromium, gl="software", extra_flags=["--js-flags=--max-old-space-size=8192"]
-        ) as browser:
+        )
+        try:
             page = browser.new_page()
             page.navigate(f"{base}/__cose_ladder.html")
             page.eval(
                 "new Promise(r => { const t = setInterval(() => { if (window.ready) { clearInterval(t); r(true); } }, 20); })",
                 timeout_s=120,
             )
-            budget = 1500.0
             row = page.eval(
                 f"window.runRung({json.dumps({'nodes': args.nodes, 'chunks': args.chunks, 'chunkSteps': args.chunk_steps, 'reps': args.reps})})",
-                timeout_s=budget,
+                timeout_s=1500.0,
             )
-            print(
-                json.dumps(
-                    {
-                        "host": "browser-wasm-worker",
-                        "nodes": args.nodes,
-                        "edges": 2 * args.nodes,
-                        "chunk_steps": args.chunk_steps,
-                        "total_steps": 1 + args.chunks * args.chunk_steps,
-                        "reps": row["reps"],
-                        "worker_ready_ms": row["worker_ready_ms"],
-                        "peak_rss_mb": None,
-                        "js_heap_mb": row["js_heap_mb"],
-                    }
-                )
+        finally:
+            # Chromium may still be writing its profile; a temp-dir race on teardown
+            # must not discard a completed measurement.
+            with contextlib.suppress(OSError):
+                browser.close()
+        print(
+            json.dumps(
+                {
+                    "host": "browser-wasm-worker",
+                    "nodes": args.nodes,
+                    "edges": 2 * args.nodes,
+                    "chunk_steps": args.chunk_steps,
+                    "total_steps": 1 + args.chunks * args.chunk_steps,
+                    "reps": row["reps"],
+                    "worker_ready_ms": row["worker_ready_ms"],
+                    "peak_rss_mb": None,
+                    "js_heap_mb": row["js_heap_mb"],
+                }
             )
+        )
     finally:
         server.shutdown()
 

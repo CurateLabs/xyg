@@ -52,6 +52,7 @@
     2.939879900749732
    ],
    "start": "authored",
+   "libm": [],
    "expected": {
     "checkpoints": [
      {
@@ -121,6 +122,9 @@
    ],
    "seed": 7,
    "start": "seeded",
+   "libm": [
+    "seeded-circle"
+   ],
    "expected": {
     "checkpoints": [
      {
@@ -247,6 +251,7 @@
     -3.2984673199804275
    ],
    "start": "authored",
+   "libm": [],
    "expected": {
     "checkpoints": [
      {
@@ -353,6 +358,9 @@
    },
    "seed": 11,
    "start": "seeded",
+   "libm": [
+    "seeded-circle"
+   ],
    "expected": {
     "checkpoints": [
      {
@@ -467,6 +475,9 @@
     2.748558815910499
    ],
    "start": "authored",
+   "libm": [
+    "component-gravity-anchor"
+   ],
    "expected": {
     "checkpoints": [
      {
@@ -553,6 +564,10 @@
    },
    "seed": 23,
    "start": "seeded",
+   "libm": [
+    "seeded-circle",
+    "component-gravity-anchor"
+   ],
    "expected": {
     "checkpoints": [
      {
@@ -663,6 +678,7 @@
    },
    "seed": 5,
    "start": "authored",
+   "libm": [],
    "expected": {
     "checkpoints": [
      {
@@ -1918,6 +1934,7 @@
     -2.4561959610542834
    ],
    "start": "authored",
+   "libm": [],
    "expected": {
     "checkpoints": [
      {
@@ -3157,6 +3174,9 @@
    ],
    "seed": 101,
    "start": "seeded",
+   "libm": [
+    "seeded-circle"
+   ],
    "expected": {
     "checkpoints": [
      {
@@ -8500,6 +8520,7 @@
     1.2130317318580994
    ],
    "start": "authored",
+   "libm": [],
    "expected": {
     "checkpoints": [
      {
@@ -13439,6 +13460,9 @@
    ],
    "seed": 4242,
    "start": "seeded",
+   "libm": [
+    "seeded-circle"
+   ],
    "expected": {
     "checkpoints": [
      {

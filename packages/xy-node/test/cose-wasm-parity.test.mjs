@@ -9,12 +9,14 @@
 //    exactly as the browser Worker drives it.
 //
 // Tolerance policy (spec/design/graph-mark.md, "CoSE cross-host parity"):
-//  - authored start positions: bitwise at every checkpoint (the force kernel
-//    uses only + - * / sqrt, all correctly rounded on every host);
-//  - Rust-seeded start: the seeded circle calls the platform libm sin/cos, so
-//    wasm32 may differ from native by a few ulps at placement. The first
-//    checkpoint must agree within SEEDED_FIRST_CHECKPOINT_EPS; the bitwise
-//    seeded assertion is `todo` until the seed uses portable_sin_cos.
+//  - fixtures whose Rust path uses only + - * / sqrt (authored start, connected
+//    graph; every golden entry with an empty `libm` list): bitwise at every
+//    checkpoint;
+//  - fixtures that reach a platform libm sin/cos (`libm` lists "seeded-circle"
+//    and/or "component-gravity-anchor"): wasm32 may differ from native by ulps,
+//    which the chaotic force iteration amplifies. The first checkpoint must
+//    agree within LIBM_FIRST_CHECKPOINT_EPS; the bitwise assertion is `todo`
+//    until those sites use portable_sin_cos (#35).
 //
 // Build the WASM artifact first: node js/build.mjs && npm run build:wasm.
 import assert from "node:assert/strict";
@@ -34,10 +36,10 @@ const wasmSkip = fs.existsSync(WASM) && fs.existsSync(BUNDLE)
   ? false
   : "build the WASM artifact first: node js/build.mjs && npm run build:wasm";
 
-// Measured seeded-start first-checkpoint deltas are <= 2.3e-13 on coordinates of
+// Measured libm-dependent first-checkpoint deltas are <= 2.3e-13 on coordinates of
 // magnitude ~10 (a few ulps); the bound keeps >4 orders of margin and still
 // rejects any algorithmic divergence.
-const SEEDED_FIRST_CHECKPOINT_EPS = 1e-9;
+const LIBM_FIRST_CHECKPOINT_EPS = 1e-9;
 const STATUS_OK = 0;
 const STATUS_PENDING = 8;
 
@@ -170,6 +172,12 @@ test("the golden covers compound, disconnected, and both repulsion tiers", () =>
   for (const required of ["compound", "disconnected", "random-200-exact-tier"]) assert.ok(names.includes(required), required);
   assert.ok(names.some((n) => n.startsWith("random-700-grid-tier")));
   assert.ok(GOLDEN.cases.some((c) => c.parents) && GOLDEN.cases.some((c) => c.pinned && c.cose?.bounds));
+  // The bitwise-portable subset must still cover compound, disconnected-free
+  // connected graphs on both repulsion tiers.
+  const portable = GOLDEN.cases.filter((c) => c.libm.length === 0).map((c) => c.name);
+  for (const required of ["compound", "random-200-exact-tier", "random-700-grid-tier-compound", "pinned-bounds-initial"]) {
+    assert.ok(portable.includes(required), `${required} is bitwise-portable`);
+  }
 });
 
 for (const fixture of GOLDEN.cases) {
@@ -180,18 +188,18 @@ for (const fixture of GOLDEN.cases) {
 }
 
 for (const fixture of GOLDEN.cases) {
-  const authored = fixture.start === "authored";
+  const portable = fixture.libm.length === 0;
   test(`direct-WASM CoSE matches native bitwise: ${fixture.name}`, {
     skip: wasmSkip,
-    todo: authored ? false : "seeded start uses platform libm sin/cos; bitwise needs portable_sin_cos in ForceState::new (#35)",
+    todo: portable ? false : `platform libm sin/cos in ${fixture.libm.join(", ")}; bitwise needs portable_sin_cos (#35)`,
   }, async () => {
     const client = await import(pathToFileURL(BUNDLE).href);
     const wasm = await loadWasm();
     const { checkpoints, final } = runWasm(wasm, client, fixture);
     assertCheckpoints(fixture.name, "WASM", checkpoints, final, fixture.expected);
   });
-  if (!authored) {
-    test(`direct-WASM seeded start stays within the first-checkpoint tolerance: ${fixture.name}`, { skip: wasmSkip }, async () => {
+  if (!portable) {
+    test(`direct-WASM libm-dependent fixture stays within the first-checkpoint tolerance (${fixture.libm.join(", ")}): ${fixture.name}`, { skip: wasmSkip }, async () => {
       const client = await import(pathToFileURL(BUNDLE).href);
       const wasm = await loadWasm();
       const { first } = runWasm(wasm, client, fixture);
@@ -200,7 +208,7 @@ for (const fixture of GOLDEN.cases) {
       for (let i = 0; i < fixture.nNodes; i += 1) {
         worst = Math.max(worst, Math.abs(first.x[i] - native.x[i]), Math.abs(first.y[i] - native.y[i]));
       }
-      assert.ok(worst <= SEEDED_FIRST_CHECKPOINT_EPS, `${fixture.name}: first-checkpoint max |delta| ${worst}`);
+      assert.ok(worst <= LIBM_FIRST_CHECKPOINT_EPS, `${fixture.name}: first-checkpoint max |delta| ${worst}`);
     });
   }
 }
