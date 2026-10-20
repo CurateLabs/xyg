@@ -164,7 +164,6 @@ def test_subplot_mosaic_constrained_layout_reserves_subplot_tick_chrome() -> Non
     assert (second[0] - first[0] - first[2]) * 800 >= 57
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_constrained_layout_remeasures_final_rotated_category_labels() -> None:
     fig, ax = plt.subplots(figsize=(6.4, 4.8), layout="constrained")
     empty_rect = fig._effective_rects()[0]

@@ -443,7 +443,9 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
             input.color_css
         });
     }
-    if input.kind == "triangle_mesh" {
+    // Per-segment colormapped strokes: Rust interns each segment's color from
+    // the packed XYHP plane (#1006); the trace-level paint is only the base.
+    if matches!(input.kind, "triangle_mesh" | "segments" | "contour") {
         return Ok(if input.color_css.is_empty() {
             DEFAULT_MARK_COLOR
         } else {

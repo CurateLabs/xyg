@@ -23,7 +23,8 @@ export function composeSegments(x0, y0, x1, y1, opts = {}) {
   }
   const color = resolveColorChannel(opts.color ?? opts.style?.color ?? DEFAULT_MARK_COLOR, n);
   const style = {
-    color: color.mode === "constant" ? color.constant : opts.color ?? DEFAULT_MARK_COLOR,
+    // A non-constant color rides `color_ch`; the style color stays absent (as in Python).
+    color: color.mode === "constant" ? color.constant : null,
     width: opts.width ?? 1.2,
     opacity: opts.opacity ?? 1.0,
     role: "segments",

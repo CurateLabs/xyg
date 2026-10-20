@@ -2819,3 +2819,109 @@ def test_public_mark_figures_encode_jpeg_and_webp_through_rust(monkeypatch) -> N
             _sd.export_figure(figure, "webp", width=int(figure.width), height=int(figure.height))
             == webp
         ), label
+
+
+@pytest.mark.parametrize("axis_id,side", [("x", "top"), ("y", "right")])
+def test_public_heatmap_admits_alternate_side_cartesian_axes(axis_id: str, side: str) -> None:
+    """matshow/spy-style heatmaps keep top/right axes on the public Scene (#1006)."""
+    figure = _public_heatmap()
+    figure.axis_options[axis_id]["side"] = side
+    assert scene_export_support_reason(figure) is None
+    assert b"XYGS" in figure_scene(figure)
+
+
+def _contour_figure(*, with_heatmap: bool) -> Figure:
+    figure = _public_heatmap() if with_heatmap else Figure(width=320, height=240)
+    if not with_heatmap:
+        figure.axis_options["x"]["domain"] = (0.0, 4.0)
+        figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
+    return figure
+
+
+@pytest.mark.parametrize("with_heatmap", [False, True])
+@pytest.mark.parametrize("axis_id,side", [("x", "top"), ("y", "right")])
+def test_alternate_side_axes_stay_rejected_when_a_contour_is_present(
+    axis_id: str, side: str, with_heatmap: bool
+) -> None:
+    """Only heatmap-only geometry may move an axis (negative controls, #1006)."""
+    figure = _contour_figure(with_heatmap=with_heatmap)
+    figure.axis_options[axis_id]["side"] = side
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    figure.axis_options[axis_id]["side"] = "bottom" if axis_id == "x" else "left"
+    assert scene_export_support_reason(figure) is None
+
+
+def _numeric_color_segments() -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 3.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.segments([0, 1, 2], [0, 1, 2], [1, 2, 3], [1, 0, 3], color=[0.0, 0.5, 1.0])
+    return figure
+
+
+def _colormapped_contour() -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 3.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.contour([[0, 1, 0], [1, 2, 1], [0, 1, 0]], levels=[0.5, 1.5], corner_mask=False)
+    return figure
+
+
+@pytest.mark.parametrize("build", [_numeric_color_segments, _colormapped_contour])
+def test_hidden_colormapped_segment_traces_stay_fail_closed(build: Callable[[], Figure]) -> None:
+    """Per-item segment paint must not exempt a hidden trace from rejection (#1006)."""
+    figure = build()
+    assert scene_export_support_reason(figure) is None
+    figure.traces[0].hidden = True
+    assert scene_export_support_reason(figure) is not None
+    assert "hidden or per-item" in scene_export_support_reason(figure)
+
+
+def test_constant_color_scatter_keeps_its_color_in_the_legend_with_per_item_strokes() -> None:
+    """A named ``color="red"`` scatter with per-item strokes: red points, red legend (#1006).
+
+    The per-item paint plane is final paint, so the trace-level style keeps its
+    constant color for the legend swatch instead of falling back to the default.
+    """
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter(
+        [0.3, 0.7],
+        [0.5, 0.5],
+        color="red",
+        size=30,
+        stroke=["#000000", "#0000ff"],
+        stroke_width=2,
+        name="pts",
+    )
+    assert scene_export_support_reason(figure) is None
+    svg = _public_svg(figure)
+    legend = svg[svg.index('data-xy-chrome="legend"') :]
+    assert 'fill="rgb(255,0,0)"' in legend.split("<text", 1)[0]
+    assert "rgb(57,135,229)" not in svg  # the default blue never appears
+    assert 'fill="rgb(255,0,0)"' in svg.split('data-xy-chrome="legend"')[0]
+
+
+def test_constant_stroke_opacity_is_folded_into_the_per_item_stroke_plane() -> None:
+    """A constant ``stroke_opacity`` applies to per-item strokes (kept from main, #1006)."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter(
+        [0.3, 0.7],
+        [0.5, 0.5],
+        color="red",
+        size=30,
+        stroke=["#000000", "#0000ff"],
+        stroke_width=2,
+        opacity=1.0,
+    )
+    figure.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    svg = _public_svg(figure)
+    assert svg is not None
+    assert 'stroke="rgb(0,0,0)" stroke-opacity="0.5"' in svg
+    assert 'stroke="rgb(0,0,255)" stroke-opacity="0.5"' in svg
+    assert 'fill="rgb(255,0,0)" stroke=' in svg  # the fill keeps its full opacity

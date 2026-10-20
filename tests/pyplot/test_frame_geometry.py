@@ -169,7 +169,6 @@ def test_reported_and_rendered_frames_agree_for_a_single_axes(figsize):
         (8, 8, (6.0, 6.0), {}),
     ],
 )
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_reported_and_rendered_frames_agree_for_every_grid_panel(nrows, ncols, figsize, adjust):
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize, dpi=100)
     if adjust:
@@ -184,7 +183,6 @@ def test_reported_and_rendered_frames_agree_for_every_grid_panel(nrows, ncols, f
         assert got == pytest.approx(want, abs=1.0)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_grid_panel_reservations_keep_the_plot_rect_on_its_cell():
     """A top-side x axis (matshow) and a secondary y axis both take room the
     renderers reserve outside the padding; the panel must grow, not shift."""
@@ -312,7 +310,6 @@ def test_get_position_reports_one_distinct_box_per_grid_panel():
     del fig
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_get_position_keeps_subplot_cells_stable_after_an_axes_is_removed():
     fig, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), dpi=100)
     flat = list(np.asarray(axes).ravel())
@@ -363,7 +360,6 @@ def test_get_position_follows_subplots_adjust_and_ratios():
     assert right.width == pytest.approx(3.0 * left.width)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_explicit_rects_and_set_position_still_win():
     fig = plt.figure(figsize=(6.4, 4.8), dpi=100)
     ax = fig.add_axes((0.2, 0.25, 0.6, 0.5))
@@ -377,11 +373,6 @@ def test_explicit_rects_and_set_position_still_win():
     assert ax.get_position().bounds == pytest.approx((0.1, 0.1, 0.5, 0.5))
 
 
-@pytest.mark.xfail(
-    reason="XYST multi-panel composition drops some overlapping wide panels "
-    "(blank cells in an 8x8 imshow grid); tracked in #889.",
-    strict=False,
-)
 def test_dense_grid_composite_draws_every_panel():
     """Panels are wider than their gridspec cell, so the compositor must
     alpha-blend them; an opaque paste left only the last column visible."""

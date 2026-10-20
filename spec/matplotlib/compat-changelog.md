@@ -4,6 +4,56 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## Reference corpus restore on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+Repairs for the pinned 3.11 reference lane after the static-export cutover.
+Each is regression-tested in `tests/pyplot/test_corpus_regressions_1006.py`,
+`tests/test_static_export_noop_paint_cross_host.py`, and
+`tests/test_scene_export_support.py`.
+
+- `tight_layout()` measured *intrinsic* chrome from a probe chart that carried
+  frame padding derived from the axes' current figure rectangle, and echoed it
+  back, so every panel reserved its whole allocation as margin and collapsed to
+  a sliver. The full left/top/right/bottom chrome is measured with
+  `_svg.layout()` after stripping that padding (Scene rooms still size only the
+  left gutter), which also keeps the overhang of a terminal tick label.
+- An empty line/scatter trace (a boxplot without fliers, a legend proxy
+  `plot([], [], label=...)`) is a validated no-op in the shared Rust pack path:
+  it emits no marks and keeps its legend entry. Python and Node export the same
+  bytes (`scatter_empty_linear` is now an accepted registry edge case).
+- A scalar `alpha=` replaces the intrinsic paint alpha, as in Matplotlib 3.11
+  (`c="#ff000080", alpha=0.5` draws alpha 0.5; an explicit `#ff000000` takes
+  it too). Constant paints carry it as the literal CSS alpha of fill and
+  stroke. The `none` keyword is an absent paint on both paths: a constant
+  channel authored as `transparent`/`none` is never replaced (decided in Rust
+  for per-item paint). Per-item paints get a constant `artist_alpha` style
+  channel that Rust composes (replace, then multiply); the resulting plane is
+  final paint (trace opacity folded in), so the trace-level color stays intact
+  for the legend swatch.
+- Polar axes no longer author the Cartesian `tick_label_strategy="preserve"`
+  for explicit `set_thetagrids`/`set_rticks`; rim labels are never culled, so
+  the setting is inert there and the polar axis components refuse it.
+- Pyplot axes show a legend only when `legend()` asks for one. Labels (including
+  pie wedge labels) name artists for a later legend instead of creating an
+  automatic one.
+- The public Scene admits `side="top"` (x) / `side="right"` (y) only when every
+  literal- or extent-geometry trace is a heatmap (`matshow`, `spy`); contour and
+  other literal geometry keep the default-side contract. `spy` places row 0 at
+  the top through its extent (`(-0.5, cols-0.5, rows-0.5, -0.5)`, as
+  Matplotlib does) instead of flipping the image twice.
+- Per-segment colormapped strokes (`contour`, `tricontour`, `segments` with a
+  numeric color array) are interned in Rust from the per-item paint plane: one
+  literal stroke per distinct mapped color, identical in Python and Node. A
+  dashed or per-item-width segment trace keeps failing closed.
+- `clabel` marks the native contour trace it supersedes with generic segment
+  replacements (`_superseded_by_segments`); that trace is not emitted into the
+  chart, so no opacity heuristic is needed downstream.
+
+Still open on this lane (named gaps, all fail closed with stable diagnostics):
+per-item scatter sizes (`s=array`), secondary y axes (`twinx`), heterogeneous
+annotation styles and annotation `bbox=`, line+marker legend swatches, more
+than 1,024 hexbin cells (#887), and a panel legend in a multi-panel document.
+
 ## Patch bodies and geometry — 2026-07-30 (Matplotlib 3.11.1 reference)
 
 - `xyg.pyplot.Axes.add_patch` now fills a patch instead of drawing only its

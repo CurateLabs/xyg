@@ -7269,6 +7269,8 @@ class Axes(PlotTypeMixin):
     ) -> list[Any]:
         children: list[Any] = []
         for e in self._entries:
+            if e.get("_superseded_by_segments"):
+                continue
             kind = e["kind"]
             axis_kw = {"y_axis": e["y_axis"]} if e["y_axis"] != "y" else {}
             kw = e.get("kwargs", {})
@@ -8430,9 +8432,12 @@ class Axes(PlotTypeMixin):
             component_legend_options.pop("handlelength", None)
             component_legend_options.pop("handletextpad", None)
             children.append(xyg.legend(**component_legend_options))
-        elif not any(entry.get("kwargs", {}).get("name") for entry in self._entries):
-            # Core XYG can auto-create a continuous-color "value" legend.
-            # An unlabeled Matplotlib collection must not acquire one.
+        else:
+            # Core XYG auto-creates a legend for named traces and a
+            # continuous-color "value" legend. Matplotlib draws a legend only
+            # when `legend()` asks for one: labels (including pie wedge labels)
+            # name artists for a later legend, and an unlabeled collection must
+            # not acquire one.
             children.append(xyg.legend(show=False))
         if not self.figure._show_toolbar():
             children.append(_cached_modebar(False))
@@ -8500,7 +8505,9 @@ class Axes(PlotTypeMixin):
         # first-seen category, and FixedLocator/set_*ticks draw every authored
         # location even when labels collide. The core chart API deliberately
         # auto-thins ordinary category axes; author the stronger policy only at
-        # this compatibility boundary.
+        # this compatibility boundary. Polar axes have no edge-relative
+        # collision pass (rim labels are never culled), so "preserve" is inert
+        # there and the polar axis components refuse it.
         for axis_id in ("x", "y"):
             options = core_figure.axis_options.get(axis_id, {})
             categories = core_figure._axis_categories.get(axis_id)
@@ -8510,9 +8517,11 @@ class Axes(PlotTypeMixin):
             if categories and options.get("tick_values") is None:
                 options["tick_values"] = [float(index) for index in range(len(categories))]
                 options["tick_count"] = max(1, len(categories))
-            if (categories or isinstance(locator, FixedLocator) or explicit_ticks) and options.get(
-                "tick_label_strategy"
-            ) not in {"off", "none"}:
+            if (
+                (categories or isinstance(locator, FixedLocator) or explicit_ticks)
+                and self._projection != "polar"
+                and options.get("tick_label_strategy") not in {"off", "none"}
+            ):
                 options["tick_label_strategy"] = "preserve"
         claimed_legend_traces = self._apply_legend_handle_styles(core_figure)
         if self._twin is not None:

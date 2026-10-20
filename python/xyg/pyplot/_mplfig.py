@@ -358,18 +358,15 @@ def _measured_axis_chrome(ax: Axes, width: int, height: int) -> tuple[float, flo
     """Intrinsic ``(left, top, right, bottom)`` chrome for final axes content.
 
     Tight/constrained layout needs the labels after plotting and styling have
-    finished. Pyplot static export still composes `_svg.layout()`, so chrome
-    that sizes `get_position()` uses that compositor. Default-font cartesian
-    specs can still ask `scene_layout_rooms` for Scene gutters (#297) without
-    substituting DejaVu for custom fonts.
+    finished. The full left/top/right/bottom chrome (including the overhang of
+    a terminal tick label) comes from `_svg.layout()`; Scene rooms size only the
+    left gutter (`_measured_left_gutter`).
     """
-    spec = _probe_axis_spec(ax, width, height)
-    rooms = _native_scene_layout_rooms(spec)
-    if rooms is not None:
-        return rooms
     from .. import _svg
 
-    intrinsic = dict(spec)
+    # The probe spec carries the frame padding derived from the axes' current
+    # figure rectangle; measuring intrinsic chrome must not echo it back.
+    intrinsic = dict(_probe_axis_spec(ax, width, height))
     intrinsic.pop("padding", None)
     measured_width, measured_height, _compact, plot = _svg.layout(intrinsic)
     return (

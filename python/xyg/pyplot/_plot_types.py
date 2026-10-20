@@ -4113,6 +4113,9 @@ class PlotTypeMixin:
                 # replacements. Keep those replacements adjacent to the
                 # original artist so later marks retain their creation order.
                 source["kwargs"]["opacity"] = 0.0
+                # Exact marker for the static projection: this native trace is
+                # superseded by the generic segments below and is not emitted.
+                source["_superseded_by_segments"] = True
                 source_index = next(
                     index for index, entry in enumerate(self._entries) if entry is source
                 )
@@ -5267,9 +5270,10 @@ class PlotTypeMixin:
             image = np.full(present.shape + (3,), 255, dtype=np.uint8)
             image[present] = color
         kwargs["origin"] = origin
-        kwargs["extent"] = (-0.5, present.shape[1] - 0.5, -0.5, present.shape[0] - 0.5)
+        # Matplotlib's spy places the first row at y = -0.5 and inverts the axis
+        # through the extent itself, so the image is never flipped twice.
+        kwargs["extent"] = (-0.5, present.shape[1] - 0.5, present.shape[0] - 0.5, -0.5)
         result = self.imshow(image, **kwargs)
-        self._axis_props("y")["reverse"] = True
         self._axis_props("x")["side"] = "top"
         self._invalidate()
         return result

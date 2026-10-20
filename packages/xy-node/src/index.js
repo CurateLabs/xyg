@@ -292,6 +292,7 @@ export { composeRibbon, attachRibbon } from "./marks/ribbon.js";
 export {
   parseCssColor,
   cssColorRgba8,
+  sceneArtistAlphaCss,
   cssColorsToRgba8,
   cssIsFunctional,
   clipQuantizeU8,

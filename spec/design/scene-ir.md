@@ -52,6 +52,33 @@ The IR is an in-process typed contract, not a JSON data path. Numeric arrays
 cross the C ABI as bounded typed buffers and remain subject to the dossier's
 §29 prohibition on JSON numbers on the browser wire.
 
+### Hidden traces and final per-item paint (#1006)
+
+XYFS trace flag bit 12 (`XYFS_TRACE_HIDDEN`, widened mask `(1 << 13) - 1`) marks
+a hidden trace. The figure-support probe rejects it with the stable
+`Scene v12 does not yet encode hidden or per-item styled marks` reason before
+any per-item-paint exemption (hexbin, ribbon, mesh, scatter, segments/contour)
+is considered, so a hidden trace is never exported as painted marks. A scatter
+per-item paint plane is final paint: the XYTA materializer folds the trace's
+`opacity`/`fill_opacity` (fill) and `opacity`/`stroke_opacity` (stroke; XYTA
+header fields added at ABI 384) into it and Scene interns it as authored, never
+multiplying it by the trace-level paint, which keeps its own constant color for
+chrome such as the legend swatch. A constant color channel
+authored as the keyword `transparent`/`none` is an absent paint that an artist
+alpha does not replace; explicit RGBA paints (including `#rrggbb00`) take the
+artist alpha like any other.
+
+### Segment paint and empty traces (#1006)
+
+No ABI signature changed. `scene_mesh_paint_plane_admit` also admits exact
+`segments`/`contour` traces whose per-item channels are color (plus opacity/
+artist alpha) with no dash: the XYHP kind-6 per-item triple plane then rides
+`SegmentPair` rows, whose stable id is `trace << 32 | segment`. Scene expansion
+interns one literal stroke per distinct mapped color (alpha taken from the
+trace style, width from the trace style). An empty `scatter`/`line` trace packs
+zero rows, so it is a no-op that still names its legend entry; empty `hexbin`
+and rect-like traces keep their packing diagnostics.
+
 ## Version 1: built-in scatter scene and common numeric ticks
 
 Version 1 contains a screen-space scatter scene with one record per mark:

@@ -345,6 +345,7 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
         && pack_kind != PACK_HEXBIN
         && pack_kind != PACK_RIBBON
         && pack_kind != PACK_TRIANGLE
+        && pack_kind != PACK_SEGMENT
         && pack_kind != PACK_SCATTER
     {
         return Err(PackError::Length);
@@ -374,7 +375,16 @@ pub fn pack_product(input: ProductPackInput<'_>) -> Result<Vec<PackedSceneRow>, 
         })
     };
     match pack_kind {
-        PACK_SCATTER | PACK_LINE | PACK_HEXBIN => {
+        PACK_SCATTER | PACK_LINE => {
+            // An empty point/line trace draws nothing (a boxplot without
+            // fliers, a legend proxy): a validated no-op, not a malformed pack.
+            let columns = [input.x, input.y];
+            if require_cols(&columns, 2)?[0].is_empty() {
+                return Ok(Vec::new());
+            }
+            pack(&[input.x, input.y])
+        }
+        PACK_HEXBIN => {
             require_used(&[input.x, input.y])?;
             pack(&[input.x, input.y])
         }

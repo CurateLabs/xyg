@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 384;
+pub const ABI_VERSION: u32 = 385;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5514,6 +5514,47 @@ pub unsafe extern "C" fn xyg_css_color_rgba(
             return -1;
         };
         let rgba = css::color_rgba8(value, opacity);
+        std::slice::from_raw_parts_mut(out_rgba, 4).copy_from_slice(&rgba);
+        0
+    })
+}
+
+/// Apply an artist alpha to one authored CSS paint (ABI 385).
+///
+/// Writes the paint's RGBA8 with its alpha replaced by `artist` into
+/// `out_rgba` (4 bytes). A negative artist keeps the paint's alpha; the
+/// absent-paint keywords (`none`, `transparent`) stay absent. Returns `0`, or
+/// `-1` for a null output, a missing non-empty pointer, non-UTF-8 text, or a
+/// `len` above `MAX_ARTIST_ALPHA_CSS_BYTES` (4,096 bytes, the Scene text bound;
+/// a paint of exactly that length is accepted, one byte more is rejected before
+/// the input is read).
+///
+/// # Safety
+/// `css` must address `len` readable bytes when `len` is non-zero.
+/// `out_rgba` must address 4 writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_artist_alpha_css(
+    css: *const u8,
+    len: usize,
+    artist: f64,
+    out_rgba: *mut u8,
+) -> i32 {
+    if out_rgba.is_null()
+        || (len > 0 && css.is_null())
+        || len > kernels::MAX_ARTIST_ALPHA_CSS_BYTES
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(css, len)
+        };
+        let Ok(value) = std::str::from_utf8(bytes) else {
+            return -1;
+        };
+        let rgba = kernels::scene_artist_alpha_css_rgba8(value, artist);
         std::slice::from_raw_parts_mut(out_rgba, 4).copy_from_slice(&rgba);
         0
     })
@@ -28036,6 +28077,34 @@ mod tests {
             usize::MAX
         );
         assert!(out.iter().all(|byte| *byte == 0xa5));
+    }
+
+    #[test]
+    fn artist_alpha_css_abi_bounds_its_input() {
+        let limit = kernels::MAX_ARTIST_ALPHA_CSS_BYTES;
+        let call = |css: &[u8]| {
+            let mut out = [0u8; 4];
+            let code = unsafe {
+                xyg_scene_artist_alpha_css(css.as_ptr(), css.len(), 0.5, out.as_mut_ptr())
+            };
+            (code, out)
+        };
+        // A valid paint of exactly the limit (trailing whitespace) is accepted.
+        let mut at_limit = b"#ff0000".to_vec();
+        at_limit.resize(limit, b' ');
+        assert_eq!(call(&at_limit), (0, [255, 0, 0, 128]));
+        // One byte more is rejected before the input is read.
+        let mut over = at_limit.clone();
+        over.push(b' ');
+        assert_eq!(call(&over).0, -1);
+        // Existing contract: non-UTF-8 and null pointers keep the same code.
+        assert_eq!(call(&[0xff, 0xfe]).0, -1);
+        let mut out = [0u8; 4];
+        assert_eq!(
+            unsafe { xyg_scene_artist_alpha_css(std::ptr::null(), 1, 0.5, out.as_mut_ptr()) },
+            -1
+        );
+        assert_eq!(call(b"none"), (0, [0, 0, 0, 0]));
     }
 
     #[test]

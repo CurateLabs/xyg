@@ -277,12 +277,26 @@ def _mesh_joined_fill(trace: Any) -> bool:
     return bool((getattr(trace, "style", None) or {}).get("joined_fill"))
 
 
+#: Per-item channels a segment trace's paint plane honors (width and dash stay
+#: authored on the trace style, so any other channel keeps failing closed).
+_SEGMENT_PAINT_CHANNELS = frozenset({"color", "opacity", "artist_alpha"})
+
+
 def _mesh_packs_paint_plane(trace: Any) -> bool:
-    """Return whether hosts should pack per-face mesh paint as XYTA."""
+    """Return whether hosts should pack per-face/segment paint as XYTA."""
+    kind = str(getattr(trace, "kind", "") or "")
+    has_per_item = bool(getattr(trace, "has_per_item_channels", lambda: False)())
+    if kind in {"segments", "contour"}:
+        names = set(getattr(trace, "per_item_channel_names", lambda: ())())
+        has_per_item = (
+            "color" in names
+            and names <= _SEGMENT_PAINT_CHANNELS
+            and not (getattr(trace, "style", None) or {}).get("dash")
+        )
     return _native.scene_mesh_paint_plane_admit(
-        str(getattr(trace, "kind", "") or ""),
+        kind,
         1 if _mesh_joined_fill(trace) else 0,
-        1 if bool(getattr(trace, "has_per_item_channels", lambda: False)()) else 0,
+        1 if has_per_item else 0,
     )
 
 

@@ -6170,6 +6170,21 @@ def css_color_rgba(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
     return (int(out[0]), int(out[1]), int(out[2]), int(out[3]))
 
 
+def scene_artist_alpha_css(css: str, artist: float) -> tuple[int, int, int, int]:
+    """Apply an artist alpha to one authored CSS paint, keywords included (ABI 385).
+
+    Returns the paint's RGBA8 with its alpha replaced by ``artist``; ``none`` /
+    ``transparent`` stay absent and a negative artist keeps the paint's alpha.
+    """
+    encoded = str(css).encode("utf-8")
+    out = (ctypes.c_uint8 * 4)()
+    pointer = encoded if encoded else None
+    code = int(_lib.xyg_scene_artist_alpha_css(pointer, len(encoded), float(artist), out))
+    if code != 0:
+        raise ValueError("native scene_artist_alpha_css rejected the paint")
+    return (int(out[0]), int(out[1]), int(out[2]), int(out[3]))
+
+
 def css_is_functional(css: str) -> bool:
     """Unambiguous `#` / `rgb()` / `hsl()` paint syntax (ABI 213)."""
     encoded = str(css).encode("utf-8")

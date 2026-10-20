@@ -177,6 +177,7 @@ import {
   ribbonPolygon,
   roundedRectPoly,
   stepArrays,
+  sceneArtistAlphaCss,
 } from "../src/index.js";
 import { packArrowStyle } from "../src/encode.js";
 
@@ -1983,6 +1984,9 @@ test("sceneItemApplyOpacity matches host table", () => {
   assert.deepEqual([...artist.slice(4)], [1, 2, 3, 128]);
   const bad = sceneItemApplyOpacity(packed, 2, [0.5], null);
   assert.equal(bad, null);
+  // An explicitly transparent RGBA paint takes the artist alpha like any other.
+  const transparent = sceneItemApplyOpacity(Uint8Array.from([9, 8, 7, 0, 1, 2, 3, 80]), 2, [0.5, 0.5], null);
+  assert.deepEqual([...transparent], [9, 8, 7, 128, 1, 2, 3, 128]);
 });
 
 test("sceneItemWidthsAdmit matches host table", () => {
@@ -2260,4 +2264,18 @@ test("roundedRectPoly zero radii is four corners", () => {
   const { x, y } = roundedRectPoly(0, 0, 4, 3, 0, 0, true);
   assert.deepEqual([...x], [0, 4, 4, 0]);
   assert.deepEqual([...y], [0, 0, 3, 3]);
+});
+
+test("sceneArtistAlphaCss is the Rust-owned keyword and paint rule", () => {
+  assert.deepEqual([...sceneArtistAlphaCss("none", 0.5)], [0, 0, 0, 0]);
+  assert.deepEqual([...sceneArtistAlphaCss("transparent", 0.5)], [0, 0, 0, 0]);
+  assert.deepEqual([...sceneArtistAlphaCss("#ff0000", 0.5)], [255, 0, 0, 128]);
+  assert.deepEqual([...sceneArtistAlphaCss("#ff000080", 0.5)], [255, 0, 0, 128]);
+  assert.deepEqual([...sceneArtistAlphaCss("#ff000000", 0.5)], [255, 0, 0, 128]);
+});
+
+test("sceneArtistAlphaCss bounds its input at the Scene text limit", () => {
+  const atLimit = "#ff0000".padEnd(4096, " ");
+  assert.deepEqual([...sceneArtistAlphaCss(atLimit, 0.5)], [255, 0, 0, 128]);
+  assert.throws(() => sceneArtistAlphaCss(`${atLimit} `, 0.5), RangeError);
 });

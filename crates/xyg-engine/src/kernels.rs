@@ -3056,18 +3056,58 @@ pub fn scene_hexbin_rgba_plane_admit(mode: &str) -> i32 {
 /// Admit Scene mesh paint-plane packing (ABI 244).
 ///
 /// Exact `triangle_mesh` plus `joined_fill == 0` plus a nonzero
-/// `has_per_item` flag return `1`. Unknown kinds, including empty text,
-/// joined fill, or a zero flag return `0`. No lowercasing. `joined_fill`
-/// field picking and `has_per_item` gathering stay host.
+/// `has_per_item` flag return `1`. Exact `segments` and `contour` (per-segment
+/// colormapped strokes, #1006) return `1` for a nonzero `has_per_item` flag
+/// and no joined fill. Unknown kinds, including empty text, joined fill, or a
+/// zero flag return `0`. No lowercasing. `joined_fill` field picking and
+/// `has_per_item` gathering stay host.
 pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: i32) -> i32 {
-    i32::from(kind == "triangle_mesh" && joined_fill == 0 && has_per_item != 0)
+    i32::from(
+        matches!(kind, "triangle_mesh" | "segments" | "contour")
+            && joined_fill == 0
+            && has_per_item != 0,
+    )
+}
+
+/// Longest authored CSS paint (UTF-8 bytes) `scene_artist_alpha_css_rgba8` is
+/// asked to parse; it reuses the Scene text bound so every host shares one limit.
+pub const MAX_ARTIST_ALPHA_CSS_BYTES: usize = crate::scene::MAX_SCENE_TEXT_BYTES;
+
+/// Whether an authored CSS paint is the absent-paint keyword (`none`, or the
+/// CSS `transparent`): no fill or stroke at all, rather than a color whose
+/// alpha happens to be 0. An artist alpha never replaces an absent paint;
+/// explicit RGBA paints (including `#rrggbb00`) are ordinary paints (#1006).
+pub fn scene_paint_is_absent_keyword(css: &str) -> bool {
+    let css = css.trim();
+    css.eq_ignore_ascii_case("none") || css.eq_ignore_ascii_case("transparent")
+}
+
+/// Apply an artist alpha to one authored CSS paint (ABI 385).
+///
+/// Returns the paint's RGBA8 with its alpha replaced by `artist` (clipped to
+/// `[0, 1]`, ties-to-even, like [`scene_item_apply_opacity`]); a negative
+/// artist keeps the paint's own alpha. An absent-paint keyword stays absent
+/// (`[0, 0, 0, 0]`), keywords included, so hosts make no keyword decision.
+pub fn scene_artist_alpha_css_rgba8(css: &str, artist: f64) -> [u8; 4] {
+    let rgba = crate::css::color_rgba8(css, 1.0);
+    if scene_paint_is_absent_keyword(css) {
+        return rgba;
+    }
+    let mut out = [0u8; 4];
+    if scene_item_apply_opacity(&rgba, 1, Some(&[artist]), None, &mut out) {
+        out
+    } else {
+        rgba
+    }
 }
 
 /// Apply optional per-item artist-alpha replace then opacity multiply onto
 /// packed RGBA8 (ABI 245).
 ///
 /// A present channel whose length is not `n` returns `false`. Artist values
-/// `>= 0` replace the packed alpha in 0–255 units after clipping to `[0, 1]`;
+/// `>= 0` replace the packed alpha in 0–255 units after clipping to `[0, 1]`
+/// (an explicitly transparent RGBA paint is replaced like any other; absent
+/// `none` paint is decided before packing, in the XYTA materializer);
 /// negative artist keeps the packed alpha. Opacity clips to `[0, 1]` and
 /// multiplies. The result quantizes with ties-to-even. Field picking stays
 /// host.
@@ -12761,8 +12801,24 @@ mod fuzz {
         assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 0), 0);
         assert_eq!(scene_mesh_paint_plane_admit("", 0, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit("TRIANGLE_MESH", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("segments", 0, 1), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("contour", 0, 1), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("segments", 0, 0), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("segments", 1, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit("scatter", 0, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit(" triangle_mesh", 0, 1), 0);
+    }
+
+    #[test]
+    fn scene_artist_alpha_css_follows_the_paint_contract() {
+        assert_eq!(scene_artist_alpha_css_rgba8("none", 0.5), [0, 0, 0, 0]);
+        assert_eq!(scene_artist_alpha_css_rgba8(" Transparent ", 0.5), [0, 0, 0, 0]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff0000", 0.5), [255, 0, 0, 128]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff000080", 0.5), [255, 0, 0, 128]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff000000", 0.5), [255, 0, 0, 128]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff000080", -1.0), [255, 0, 0, 128]);
+        assert!(scene_paint_is_absent_keyword("none"));
+        assert!(!scene_paint_is_absent_keyword("#00000000"));
     }
 
     #[test]
@@ -12771,6 +12827,19 @@ mod fuzz {
         let mut out = [0u8; 8];
         assert!(scene_item_apply_opacity(&packed, 2, None, None, &mut out));
         assert_eq!(out, packed);
+
+        // An explicitly transparent RGBA paint takes the artist alpha too.
+        let transparent = [9u8, 8, 7, 0, 1, 2, 3, 80];
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(
+            &transparent,
+            2,
+            Some(&[0.5, 0.5]),
+            None,
+            &mut out,
+        ));
+        assert_eq!(&out[..4], &[9, 8, 7, 128]);
+        assert_eq!(&out[4..], &[1, 2, 3, 128]);
 
         let mut out = [0u8; 8];
         assert!(scene_item_apply_opacity(

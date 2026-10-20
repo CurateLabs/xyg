@@ -140,6 +140,19 @@ call raises the listed stable `XYG_*` reason.
   separately versioned Rust admission and resource proof needed for a future
   static-only larger group budget.
 
+  Rust owns these validated Scene behaviors for every host (#1006): an empty
+  line/scatter trace is a no-op that emits no marks; per-segment colormapped
+  strokes (`contour`, `tricontour`, `segments` with a numeric color array)
+  intern one literal stroke per distinct mapped color from the per-item paint
+  plane; and `side="top"`/`"right"` axes are admitted for heatmap-only
+  geometry (`matshow`, `spy`) while contour and other literal geometry keep
+  the default-side contract. The pyplot static adapter only translates author
+  arguments: a scalar `alpha=` becomes the literal CSS alpha of constant
+  fill/stroke paint (never filling `"none"`) or a constant `artist_alpha`
+  channel for per-item paint.
+  Hidden traces always fail closed (`XYFS_TRACE_HIDDEN`, scene-ir.md); a
+  per-item scatter paint plane is final paint with trace opacity folded in.
+
 ## 3. Stable failure rules
 
 Host validation errors keep their public `ValueError`/`TypeError` wording.

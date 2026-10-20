@@ -1254,13 +1254,28 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 && !extra_key(&pair[1].style_keys, &["color", "opacity", "size", "symbol"])
         });
     let ordinary_autorange_shape = ordinary_autorange_shape || graph_autorange_shape;
+    // Heatmap lattices are the only geometry whose placement is independent of
+    // the axis side; contour and every literal-geometry kind keep the default.
+    let heatmap_only_geometry = traces.iter().any(|trace| trace.kind == KIND_HEATMAP)
+        && traces
+            .iter()
+            .filter(|trace| kind_literal_geometry(trace.kind) || kind_extent_geometry(trace.kind))
+            .all(|trace| trace.kind == KIND_HEATMAP);
     if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             };
             let default_side = if wanted == 0 { 1 } else { 2 };
-            if axis.side != 0 && axis.side != default_side {
+            // A heatmap lattice is anchored to data coordinates, so the Scene
+            // chrome (which owns top/right axes) places its cells exactly as
+            // for the default sides (`matshow`, `spy`). Other literal
+            // geometry keeps the default-side contract.
+            let alternate_side = if wanted == 0 { 3 } else { 4 };
+            if axis.side != 0
+                && axis.side != default_side
+                && !(heatmap_only_geometry && axis.side == alternate_side)
+            {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             }
             if needs_authored_domain && !axis.domain_present && !ordinary_autorange_shape {
@@ -1502,7 +1517,8 @@ const XYFS_TRACE_JOINED_FILL: u16 = 1 << 8;
 const XYFS_TRACE_CUSTOM_HEX_REDUCE: u16 = 1 << 9;
 const XYFS_TRACE_HEATMAP_COLORMAP: u16 = 1 << 10;
 const XYFS_TRACE_NON_CSS_FILL: u16 = 1 << 11;
-const XYFS_TRACE_FLAG_MASK: u16 = (1 << 12) - 1;
+const XYFS_TRACE_HIDDEN: u16 = 1 << 12;
+const XYFS_TRACE_FLAG_MASK: u16 = (1 << 13) - 1;
 
 /// Return Rust's figure-compile support diagnostic for a packed `XYFS`
 /// envelope. Hosts pack literal observations, axis ids/keys, and (v2)
@@ -1704,12 +1720,17 @@ pub fn scene_figure_support_reason_with_attach(
             kind == "heatmap" && tess != crate::scene_trace_attach::CellFillTessellation::None;
         let ribbon_ends =
             kind == "ribbon" && tess == crate::scene_trace_attach::CellFillTessellation::Ribbon;
-        let mesh_faces = kind == "triangle_mesh"
+        let mesh_faces = matches!(kind, "triangle_mesh" | "segments" | "contour")
             && tess == crate::scene_trace_attach::CellFillTessellation::TriangleMesh;
         let scatter_paints = kind == "scatter"
             && tess == crate::scene_trace_attach::CellFillTessellation::ScatterPaint;
         if trace_flags & XYFS_TRACE_NON_PRIMARY_AXIS != 0 {
             return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
+        }
+        // Hidden traces stay rejected independently of the per-item paint
+        // exemptions below, which only cover paint that Scene now encodes.
+        if trace_flags & XYFS_TRACE_HIDDEN != 0 {
+            return Ok(FIGURE_HIDDEN_REASON.to_string());
         }
         if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0
             && !hexbin_cells
