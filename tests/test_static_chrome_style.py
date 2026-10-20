@@ -287,3 +287,49 @@ def test_projection_is_called_once_per_export_with_marshaled_facts(monkeypatch: 
     assert frame[:4] == b"XYCS"
     for fact in (b"#102030", b"italic", b"--chart-text", b"tick_label_size", b"10px"):
         assert fact in frame
+
+
+def _legacy_v1_document(document: bytes) -> bytes:
+    """Re-lay a current document out as XYST v1 (108-byte panels, version 1)."""
+    count = struct.unpack_from("<I", document, 20)[0]
+    legacy = bytearray(document[:64])
+    struct.pack_into("<I", legacy, 4, 1)
+    tail = 64 + count * 128
+    for index in range(count):
+        record = bytearray(document[64 + index * 128 : 64 + (index + 1) * 128])
+        struct.pack_into("<I", record, 24, struct.unpack_from("<I", record, 24)[0] & ~(1 << 15))
+        legacy += record[:108]
+    return bytes(legacy + document[tail:])
+
+
+def test_xyst_version_bumped_and_legacy_layout_rejected_actionably() -> None:
+    document = sd.figure_document(_chart(TYPOGRAPHY).figure(), width=320, height=240)
+    assert struct.unpack_from("<I", document, 4)[0] == 2
+    assert _native.static_document_export(document, "svg")
+    legacy = _legacy_v1_document(document)
+    assert struct.unpack_from("<I", legacy, 4)[0] == 1
+    for fmt in ("svg", "png", "pdf", "jpeg", "webp"):
+        with pytest.raises(_native.StaticDocumentRejected) as rejected:
+            _native.static_document_export(legacy, fmt)
+        assert rejected.value.code == "XYG_STATIC_DOCUMENT_VERSION"
+        assert "re-encode" in str(rejected.value)
+
+
+def test_title_style_paint_accepts_css_strings_and_rgba_only() -> None:
+    def panel(paint: Any) -> bytes:
+        figure = _chart().figure()
+        base, _legend = sd.project_figure(figure, width=320, height=240)
+        scene = base.scene
+        return sd.encode(
+            [sd.Panel(scene, 0, 0, 320, 240, title_style=(18.0, paint))],
+            width=320,
+            height=240,
+        )
+
+    expected = panel((0x65, 0x43, 0x21, 255))
+    assert panel("#654321") == expected
+    assert panel([0x65, 0x43, 0x21, 255]) == expected
+    assert panel("#fff") == panel((255, 255, 255, 255))
+    for bad in ((1, 2, 3), (1, 2, 3, 256), (1, 2, 3, True), 7, None, {"r": 1}, (1, 2, "3", 4)):
+        with pytest.raises(ValueError, match="paint"):
+            panel(bad)

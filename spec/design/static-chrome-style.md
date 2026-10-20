@@ -77,7 +77,9 @@ title, x title, y title, x ticks, y ticks (bits 0..10) and four paint-present bi
 
 ## XYST consumption
 
-The panel record grows to 128 bytes (`<2i6I12fII2f4B2II16B>`): panel flag bit 15
+The XYST version is bumped to 2 because the panel record grows to 128 bytes
+(`<2i6I12fII2f4B2II16B>`; version 1 documents are rejected, see
+[static-document.md](static-document.md)). Panel flag bit 15
 announces the trailing `chrome_text` word and four RGBA8 paints, all canonical
 zero when inactive. `SceneDocument::apply_static_chrome_text` validates them
 (unknown bits, paints without their presence bit, title flags without a title

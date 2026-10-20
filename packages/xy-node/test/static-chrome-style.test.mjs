@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { inflateSync } from "node:zlib";
 
-import { Figure, staticChromeStyle } from "../src/index.js";
+import { Figure, staticChromeStyle, staticDocumentEncode, staticDocumentExport } from "../src/index.js";
 
 function chart({ styles = {}, root = {}, xStyle = {}, yStyle = {} } = {}) {
   const fig = new Figure({
@@ -164,5 +164,52 @@ test("the Node host carries no chrome-style policy tables", async () => {
   const source = readFileSync(new URL("../src/scene.js", import.meta.url), "utf8");
   for (const banned of ["STATIC_CHROME_SLOTS", "STATIC_ROOT_STYLE_KEYS", "STATIC_CHROME_FAMILIES", "XYG_STATIC_UNSUPPORTED_CHROME_STYLE", "XYG_STATIC_UNSUPPORTED_TITLE_STYLE"]) {
     assert.ok(!source.includes(banned), banned);
+  }
+});
+
+// -- XYST version 2 and the exported encoder's paint input contract.
+
+function legacyV1(document) {
+  const count = document.readUInt32LE(20);
+  const parts = [Buffer.from(document.subarray(0, 64))];
+  parts[0].writeUInt32LE(1, 4);
+  for (let i = 0; i < count; i += 1) {
+    const record = Buffer.from(document.subarray(64 + i * 128, 64 + (i + 1) * 128));
+    record.writeUInt32LE(record.readUInt32LE(24) & ~(1 << 15), 24);
+    parts.push(record.subarray(0, 108));
+  }
+  parts.push(document.subarray(64 + count * 128));
+  return Buffer.concat(parts);
+}
+
+test("XYST is version 2 and a v1 (108-byte panel) document is rejected actionably", () => {
+  const document = Buffer.from(chart({ styles: TYPOGRAPHY }).toStaticDocument());
+  assert.equal(document.readUInt32LE(4), 2);
+  assert.ok(staticDocumentExport(document, "svg").length > 0);
+  const legacy = legacyV1(document);
+  assert.equal(legacy.readUInt32LE(4), 1);
+  for (const format of ["svg", "png", "pdf", "jpeg", "webp"]) {
+    assert.throws(
+      () => staticDocumentExport(legacy, format),
+      (e) => e.code === "XYG_STATIC_DOCUMENT_VERSION" && e.message.includes("re-encode"),
+      format,
+    );
+  }
+});
+
+test("staticDocumentEncode accepts CSS-string and RGBA paints, rejects the rest", () => {
+  const scene = chart().toScene();
+  const encode = (paint) => Buffer.from(staticDocumentEncode({
+    panels: [{ scene, x: 0, y: 0, width: 320, height: 240, titleStyle: [18, paint] }],
+    width: 320, height: 240,
+  }));
+  const expected = encode([0x65, 0x43, 0x21, 255]);
+  assert.ok(encode("#654321").equals(expected));
+  assert.ok(encode(new Uint8Array([0x65, 0x43, 0x21, 255])).equals(expected));
+  // A 4-character CSS string is a color, never four numeric bytes.
+  assert.ok(encode("#fff").equals(encode([255, 255, 255, 255])));
+  assert.ok(!encode("#fff").equals(encode([35, 102, 102, 102])));
+  for (const bad of [[1, 2, 3], [1, 2, 3, 256], [1, 2, 3, 1.5], [1, 2, "3", 4], 7, null, {}, new DataView(new ArrayBuffer(4))]) {
+    assert.throws(() => encode(bad), /paint must be a CSS color string or four 0..255 integers/, String(bad));
   }
 });

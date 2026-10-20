@@ -30,7 +30,7 @@ const options = {
   document_tight_crop: [{}, { tightCrop: true, cropPadding: 3 }],
   document_panel_chrome: [{ chromeMetrics: [14, 16, 6, 13, 15, 5], axisSides: [3, 3] }, {}],
   document_annotation_style: [{ annotationFontSize: 15, annotationTextFlags: 3, annotationPadding: 5, annotationVerticalAlign: 3, arrowMetrics: [9, 2, 2] }, {}],
-  document_panel_title: [{ titleStyle: [18, [0x65, 0x43, 0x21, 255]] }, {}],
+  document_panel_title: [{ titleStyle: [18, "#654321"] }, {}],
   document_title_start: [{}, { titleAnchor: 0, titleFlags: 0 }],
   document_title_middle: [{}, { titleAnchor: 1, titleFlags: 1 }],
   document_title_end: [{}, { titleAnchor: 2, titleFlags: 2 }],
@@ -106,7 +106,7 @@ function build(name) {
     quality: name === "document_jpeg_quality_low" ? 1 : name === "document_jpeg_quality_high" ? 100 : 90 };
 }
 
-const rejectionNames = ["header_truncated", "version_unknown", "header_flags_unknown", "header_reserved_nonzero", "panels_empty", "dimensions_zero", "panel_flags_unknown", "panel_inactive_nonzero", "panel_ranges_overlap", "panel_scene_corrupt", "title_invalid_utf8", "title_nul", "title_anchor_unknown", "text_flags_unknown", "label_alignment_unknown", "label_opacity_invalid", "legend_kind_unknown", "legend_reserved_nonzero", "decoration_trailing_bytes", "document_trailing_bytes"];
+const rejectionNames = ["header_truncated", "version_unknown", "version_legacy_layout", "header_flags_unknown", "header_reserved_nonzero", "panels_empty", "dimensions_zero", "panel_flags_unknown", "panel_inactive_nonzero", "panel_ranges_overlap", "panel_scene_corrupt", "title_invalid_utf8", "title_nul", "title_anchor_unknown", "text_flags_unknown", "label_alignment_unknown", "label_opacity_invalid", "legend_kind_unknown", "legend_reserved_nonzero", "decoration_trailing_bytes", "document_trailing_bytes"];
 function rejectedDocument(name) {
   const seed = name === "panel_ranges_overlap" ? "document_signed_panels" : name.startsWith("title_") ? "document_title_start" : name.startsWith("label_") || name === "decoration_trailing_bytes" ? "document_labels_start_top" : name.startsWith("legend_") ? "document_legend" : "document_defaults";
   let data = Buffer.from(build(seed).document);
@@ -114,7 +114,7 @@ function rejectedDocument(name) {
   const decorations = 64 + count * 128 + titleLength;
   const sceneAt = decorations + data.readUInt32LE(52);
   if (name === "header_truncated") return data.subarray(0, 63);
-  const offsets = { version_unknown: [4, 99], header_flags_unknown: [16, 16], header_reserved_nonzero: [60, 1], panels_empty: [20, 0], dimensions_zero: [8, 0], panel_flags_unknown: [88, 1 << 16], panel_inactive_nonzero: [96, 1], panel_ranges_overlap: [64 + 128 + 16, 0] };
+  const offsets = { version_unknown: [4, 99], version_legacy_layout: [4, 1], header_flags_unknown: [16, 16], header_reserved_nonzero: [60, 1], panels_empty: [20, 0], dimensions_zero: [8, 0], panel_flags_unknown: [88, 1 << 16], panel_inactive_nonzero: [96, 1], panel_ranges_overlap: [64 + 128 + 16, 0] };
   if (name in offsets) data.writeUInt32LE(offsets[name][1], offsets[name][0]);
   else if (name === "centered_title_x_nonzero") {
     data.writeUInt32LE(data.readUInt32LE(16) | 8, 16);

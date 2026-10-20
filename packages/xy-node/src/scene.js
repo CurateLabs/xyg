@@ -3012,6 +3012,31 @@ function staticLabelBytes(labels, encoder) {
   return staticDocumentLabels(request);
 }
 
+/** XYST layout version; 2 widened the panel record to 128 bytes (#1004). */
+const XYST_VERSION = 2;
+
+/**
+ * A static paint: a CSS color string (converted by the native color
+ * conversion, not a JS parser) or resolved RGBA8 channels. Anything else is
+ * rejected explicitly.
+ */
+function staticPaint(value, label) {
+  if (typeof value === "string") return Array.from(cssColorRgba8(value));
+  if ((Array.isArray(value) || ArrayBuffer.isView(value)) && !(value instanceof DataView)
+    && value.length === 4
+    && Array.from(value).every((c) => Number.isInteger(c) && c >= 0 && c <= 255)) {
+    return Array.from(value);
+  }
+  throw new RangeError(`${label} paint must be a CSS color string or four 0..255 integers`);
+}
+
+function staticTitleStyle(value, index) {
+  if (!Array.isArray(value) || value.length !== 2) {
+    throw new RangeError(`StaticDocument panel ${index} title style needs size/color`);
+  }
+  return [Number(value[0]), staticPaint(value[1], `StaticDocument panel ${index} title`)];
+}
+
 export function staticDocumentEncode({
   panels,
   width,
@@ -3069,7 +3094,7 @@ export function staticDocumentEncode({
       axisSides: panel.axisSides == null ? null : Array.from(panel.axisSides, Number),
       annotationTextFlags: panel.annotationTextFlags == null ? null : Number(panel.annotationTextFlags),
       annotationPadding: panel.annotationPadding == null ? null : Number(panel.annotationPadding),
-      titleStyle: panel.titleStyle == null ? null : Array.from(panel.titleStyle),
+      titleStyle: panel.titleStyle == null ? null : staticTitleStyle(panel.titleStyle, index),
       annotationVerticalAlign: panel.annotationVerticalAlign == null
         ? null : Number(panel.annotationVerticalAlign),
       colorbarScale: panel.colorbarScale == null ? null : String(panel.colorbarScale),
@@ -3079,7 +3104,10 @@ export function staticDocumentEncode({
       gridDash: panel.gridDash == null ? null : Array.from(panel.gridDash, Number),
       chromeText: panel.chromeText == null ? null : {
         bits: Number(panel.chromeText[0]),
-        paints: Array.from(panel.chromeText[1], (paint) => Array.from(paint, Number)),
+        paints: Array.from(panel.chromeText[1], (paint) => {
+          if (typeof paint === "string") throw new RangeError(`StaticDocument panel ${index} chrome text paints are resolved RGBA8`);
+          return staticPaint(paint, `StaticDocument panel ${index} chrome text`);
+        }),
       },
     };
     if (record.chromeMetrics != null && record.chromeMetrics.length !== 6) {
@@ -3100,13 +3128,9 @@ export function staticDocumentEncode({
         || record.annotationTextFlags > 3)) {
       throw new RangeError(`StaticDocument panel ${index} annotation text flags use only italic/bold bits`);
     }
-    if (record.titleStyle != null && (record.titleStyle.length !== 2 || record.titleStyle[1].length !== 4)) {
-      throw new RangeError(`StaticDocument panel ${index} title style needs size/RGBA`);
-    }
     if (record.chromeText != null
       && (!Number.isInteger(record.chromeText.bits) || record.chromeText.bits < 0
-        || record.chromeText.paints.length !== 4
-        || record.chromeText.paints.some((paint) => paint.length !== 4))) {
+        || record.chromeText.paints.length !== 4)) {
       throw new RangeError(`StaticDocument panel ${index} chrome text needs a word and four RGBA paints`);
     }
     if (record.annotationVerticalAlign != null
@@ -3160,7 +3184,7 @@ export function staticDocumentEncode({
   const out = new Uint8Array(64 + panels.length * 128 + titleBytes.length + decorations.length + sceneBytes);
   const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
   out.set([88, 89, 83, 84], 0);
-  view.setUint32(4, 1, true);
+  view.setUint32(4, XYST_VERSION, true);
   view.setUint32(8, documentWidth, true);
   view.setUint32(12, documentHeight, true);
   view.setUint32(16, (background != null ? 1 : 0) | (optimizePng ? 2 : 0)
@@ -3788,7 +3812,7 @@ export function staticDocumentExport(encoded, format, { scale = DEFAULT_PNG_EXPO
   }
   const q = Number(quality);
   if (!Number.isInteger(q) || q < 1 || q > 100) throw new RangeError("quality must be an int in 1..100");
-  return sceneOutput(encoded, xyStaticDocumentExport, "StaticDocument export", [code, factor, q]);
+  return sceneOutput(encoded, xyStaticDocumentExport, "StaticDocument export", [code, factor, q], true);
 }
 
 export function staticDocumentLayout(encoded) {

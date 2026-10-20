@@ -204,7 +204,7 @@ milestone has no open issues (406 closed). Post-M2 admission work continues in
 **#875 registry complete.** The same Rust registry now carries the full XYST
 document vocabulary: 41 runtime cases (panel flags 0–15 including grid dash and chrome text,
 document flags, annotation/label/legend/colorbar families, scale and quality
-variants), 21 byte-exact rejection mutations verified at both host boundaries,
+variants), 22 byte-exact rejection mutations verified at both host boundaries,
 and six independent public-authoring witnesses compared across Scene, XYST,
 and all five formats. `scene_cases_requiring_recheck` (`title_options`,
 `extra_legend`, `colorbar_option`) were resolved against the integrated

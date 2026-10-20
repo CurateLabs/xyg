@@ -8793,6 +8793,19 @@ def scene_batch_encode(
         capacity = written
 
 
+class StaticDocumentRejected(ValueError):
+    """A StaticDocument the Rust consumer rejected, with its stable ``code``.
+
+    ``code`` is the ``XYG_STATIC_DOCUMENT_*`` reason (for example
+    ``XYG_STATIC_DOCUMENT_VERSION`` for a document encoded with another XYST
+    layout version); the message carries Rust's guidance after the code.
+    """
+
+    def __init__(self, diagnostic: str) -> None:
+        self.code = diagnostic.split(":", 1)[0]
+        super().__init__(f"invalid canonical scene for StaticDocument export: {diagnostic}")
+
+
 class ScenePainterError(ValueError):
     """Stable Rust diagnostic for a rejected Scene → browser painter lowering.
 
@@ -9015,6 +9028,7 @@ def static_document_export(
         int(code),
         factor,
         int(quality),
+        rust_diagnostic=StaticDocumentRejected,
     )
 
 

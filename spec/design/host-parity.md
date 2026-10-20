@@ -196,7 +196,7 @@ complete vocabulary coverage, unique rows, all-format case coverage, valid
 witness references, and masks matching their registered bits. The integrated
 decoder validates every registered mask, the runtime Python/Node builders match
 every case/mutation name exactly, and each output is compared through the
-actual native consumer — 41 cases, 21 rejection mutations, and all five formats
+actual native consumer — 41 cases, 22 rejection mutations, and all five formats
 run green under `tests/test_static_document_registry_cross_host.py`.
 
 Chrome style (#1004, ABI 384): `xyg_static_chrome_style` is the one Rust

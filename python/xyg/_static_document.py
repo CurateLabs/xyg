@@ -7,7 +7,7 @@ import struct
 from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Real
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import numpy as np
 
@@ -34,6 +34,8 @@ _ANNOTATION_STYLE_OUTPUT = struct.Struct("<4s3I2f2I")
 _CHROME_STYLE_HEADER = struct.Struct("<4s3I")
 _CHROME_STYLE_OUTPUT = struct.Struct("<4s2II16Bd4B6d")
 _MAX_U32 = (1 << 32) - 1
+#: XYST layout version; 2 widened the panel record to 128 bytes (#1004).
+XYST_VERSION = 2
 _MAX_PANELS = 256
 _MAX_TITLE_BYTES = 4096
 _FLAG_BACKGROUND = 1
@@ -92,8 +94,9 @@ class Panel:
     # uniform deterministic italic/bold bits and label-box padding.
     annotation_text_flags: Optional[int] = None
     annotation_padding: Optional[float] = None
-    # resolved panel title size/RGBA and uniform annotation vertical align.
-    title_style: Optional[tuple[float, tuple[int, int, int, int]]] = None
+    # panel title size and paint (CSS color string or resolved RGBA8) and
+    # uniform annotation vertical align.
+    title_style: Optional[tuple[float, Union[str, tuple[int, int, int, int]]]] = None
     annotation_vertical_align: Optional[int] = None
     # XYST-only pyplot colorbar compatibility flags. Scene keeps the canonical
     # color scale while Rust owns log projection, endpoint extends, and label
@@ -550,6 +553,19 @@ def _i32(value: object, label: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or not -(1 << 31) <= value < (1 << 31):
         raise ValueError(f"{label} must be a signed i32 integer")
     return value
+
+
+def _paint(value: Any, label: str) -> tuple[int, int, int, int]:
+    """A CSS color string (converted by Rust) or resolved RGBA8 channels."""
+    if isinstance(value, str):
+        return _rgba(value)
+    if (
+        isinstance(value, (tuple, list))
+        and len(value) == 4
+        and all(isinstance(c, int) and not isinstance(c, bool) and 0 <= c <= 255 for c in value)
+    ):
+        return (value[0], value[1], value[2], value[3])
+    raise ValueError(f"{label} paint must be a CSS color string or four 0..255 integers")
 
 
 def _rgba(value: Optional[str]) -> tuple[int, int, int, int]:
@@ -1052,7 +1068,7 @@ def encode(
             if len(panel.title_style) != 2:
                 raise ValueError(f"StaticDocument panel {index} title style needs size/color")
             panel_title_size = float(panel.title_style[0])
-            panel_title_rgba = tuple(panel.title_style[1])
+            panel_title_rgba = _paint(panel.title_style[1], f"StaticDocument panel {index} title")
             metric_flags |= 256
         annotation_vertical_align = 0
         if panel.annotation_vertical_align is not None:
@@ -1100,9 +1116,13 @@ def encode(
                 panel.chrome_text[0], f"StaticDocument panel {index} chrome text"
             )
             paints = tuple(panel.chrome_text[1])
-            if len(paints) != 4 or any(len(paint) != 4 for paint in paints):
+            if len(paints) != 4 or any(isinstance(paint, str) for paint in paints):
                 raise ValueError(f"StaticDocument panel {index} chrome text needs four RGBA paints")
-            chrome_text_rgba = tuple(channel for paint in paints for channel in paint)
+            chrome_text_rgba = tuple(
+                channel
+                for paint in paints
+                for channel in _paint(paint, f"StaticDocument panel {index} chrome text")
+            )
             metric_flags |= 1 << 15
         if panel.colorbar_fill_plot:
             metric_flags |= 1 << 24
@@ -1133,7 +1153,7 @@ def encode(
     x = 0.0 if title_x is None else float(title_x)
     header = _HEADER.pack(
         b"XYST",
-        1,
+        XYST_VERSION,
         document_width,
         document_height,
         flags,

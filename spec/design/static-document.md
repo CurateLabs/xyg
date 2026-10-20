@@ -31,9 +31,19 @@ The companion Rust-owned marshal contracts are
 [chrome-style projection](static-chrome-style.md). Hosts may carry their
 literal facts but do not repeat those contracts' defaults or policy.
 
-### 1.1 XYST v1 framing
+### 1.1 XYST v2 framing
 
-The header is 64 bytes. It begins with `XYST`, version `1`, width, height,
+Version 2 (#1004) widened the panel record from 108 to 128 bytes. The version
+is the only layout discriminator: a version `1` document (108-byte panels) is
+rejected with `XYG_STATIC_DOCUMENT_VERSION` and guidance to re-encode, never
+decoded with the new table boundaries. Rejections carry a stable
+`XYG_STATIC_DOCUMENT_*` code through the C ABI (`HEADER`, `VERSION`, `FLAGS`,
+`LIMIT`, `PANEL`, `TITLE`, `SCENE`, `RASTER`, `ENCODE`), surfaced as
+`StaticDocumentRejected.code` in Python and a `RangeError` with `.code` in Node.
+Encoders accept panel title paints as a CSS color string (converted by the
+native color conversion) or resolved RGBA8 bytes; anything else is rejected.
+
+The header is 64 bytes. It begins with `XYST`, version `2`, width, height,
 document flags, panel count, and title byte count as little-endian `u32`.
 Header flags are `BACKGROUND=1`, `OPTIMIZE_PNG=2`, `TIGHT_CROP=4`, and
 `TITLE_X_CENTER=8`; every other bit is rejected. The center flag requires

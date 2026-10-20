@@ -982,6 +982,7 @@ pub const STATIC_DOCUMENT_REJECTIONS: &[&str] = &[
     "centered_title_x_nonzero",
     "header_truncated",
     "version_unknown",
+    "version_legacy_layout",
     "header_flags_unknown",
     "header_reserved_nonzero",
     "panels_empty",

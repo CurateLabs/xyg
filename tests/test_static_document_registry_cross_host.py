@@ -94,7 +94,7 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         },
         {},
     ),
-    "document_panel_title": ({"title_style": (18, (0x65, 0x43, 0x21, 255))}, {}),
+    "document_panel_title": ({"title_style": (18, "#654321")}, {}),
     "document_title_start": ({}, {"title_anchor": 0, "title_flags": 0}),
     "document_title_middle": ({}, {"title_anchor": 1, "title_flags": 1}),
     "document_title_end": ({}, {"title_anchor": 2, "title_flags": 2}),
@@ -238,6 +238,7 @@ def _build(name: str) -> tuple[bytes, list[bytes], float, int]:
 REJECTIONS = {
     "header_truncated",
     "version_unknown",
+    "version_legacy_layout",
     "header_flags_unknown",
     "header_reserved_nonzero",
     "panels_empty",
@@ -280,6 +281,7 @@ def _reject(name: str) -> bytes:
         return bytes(data[:63])
     offsets = {
         "version_unknown": (4, 99),
+        "version_legacy_layout": (4, 1),
         "header_flags_unknown": (16, 16),
         "header_reserved_nonzero": (60, 1),
         "panels_empty": (20, 0),

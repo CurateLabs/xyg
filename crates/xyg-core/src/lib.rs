@@ -4040,7 +4040,9 @@ pub unsafe extern "C" fn xyg_scene_static_export(
 /// SVG/PNG/PDF/JPEG/WebP kernel. `format` uses the Scene static format codes;
 /// raster formats honor positive finite `scale`, and JPEG honors `quality`.
 /// Returns required bytes or `usize::MAX` on malformed documents or consumer
-/// failure. A short output buffer is never written.
+/// failure; a rejected document also leaves its stable ASCII diagnostic
+/// (`XYG_STATIC_DOCUMENT_*`, e.g. an unsupported XYST version) in `out` when it
+/// fits. A short output buffer is otherwise never written.
 ///
 /// # Safety
 /// Pointer contracts match `xyg_scene_svg`.
@@ -4060,16 +4062,29 @@ pub unsafe extern "C" fn xyg_static_document_export(
     let Some(kind) = SceneStaticFormat::from_code(format) else {
         return usize::MAX;
     };
-    let Some(bytes) = ffi_guard(None, || {
-        static_document_export(
+    let Some(result) = ffi_guard(None, || {
+        Some(static_document_export(
             std::slice::from_raw_parts(encoded, encoded_len),
             kind,
             scale,
             quality,
-        )
-        .ok()
+        ))
     }) else {
         return usize::MAX;
+    };
+    let bytes = match result {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            // Rejection: `usize::MAX` plus a stable ASCII diagnostic in `out`
+            // when it fits (hosts that ignore it still see a plain failure).
+            let reason = error.reason().as_bytes();
+            if !out.is_null() && out_cap > reason.len() {
+                let slot = std::slice::from_raw_parts_mut(out, out_cap);
+                slot[..reason.len()].copy_from_slice(reason);
+                slot[reason.len()] = 0;
+            }
+            return usize::MAX;
+        }
     };
     let required = bytes.len();
     if out_cap < required {

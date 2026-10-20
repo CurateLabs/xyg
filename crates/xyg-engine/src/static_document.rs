@@ -17,7 +17,9 @@ use crate::textblock;
 use crate::webp;
 
 const MAGIC: &[u8; 4] = b"XYST";
-const VERSION: u32 = 1;
+/// XYST layout version. Version 2 widened the panel record to 128 bytes
+/// (chrome-text fact, #1004); version 1 documents are rejected, never decoded.
+const VERSION: u32 = 2;
 const HEADER_BYTES: usize = 64;
 const PANEL_BYTES: usize = 128;
 const FLAG_BACKGROUND: u32 = 1 << 0;
@@ -79,6 +81,27 @@ pub enum StaticDocumentError {
     Scene,
     Raster,
     Encode,
+}
+
+impl StaticDocumentError {
+    /// Stable ASCII diagnostic reported through the C ABI; text after the
+    /// colon is guidance, the code before it is the contract.
+    pub fn reason(&self) -> &'static str {
+        match self {
+            Self::Header => "XYG_STATIC_DOCUMENT_HEADER",
+            Self::Version => {
+                "XYG_STATIC_DOCUMENT_VERSION: unsupported XYST version (this build reads \
+                 version 2); re-encode the document with the current encoder"
+            }
+            Self::Flags => "XYG_STATIC_DOCUMENT_FLAGS",
+            Self::Limit => "XYG_STATIC_DOCUMENT_LIMIT",
+            Self::Panel => "XYG_STATIC_DOCUMENT_PANEL",
+            Self::Title => "XYG_STATIC_DOCUMENT_TITLE",
+            Self::Scene => "XYG_STATIC_DOCUMENT_SCENE",
+            Self::Raster => "XYG_STATIC_DOCUMENT_RASTER",
+            Self::Encode => "XYG_STATIC_DOCUMENT_ENCODE",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1553,11 +1576,13 @@ mod tests {
     fn rejects_unknown_version_and_empty_panels() {
         let mut bytes = vec![0u8; HEADER_BYTES];
         bytes[..4].copy_from_slice(MAGIC);
-        bytes[4..8].copy_from_slice(&2u32.to_le_bytes());
-        assert!(matches!(
-            StaticDocument::decode(&bytes),
-            Err(StaticDocumentError::Version)
-        ));
+        for unsupported in [0u32, 1, 3] {
+            bytes[4..8].copy_from_slice(&unsupported.to_le_bytes());
+            assert!(matches!(
+                StaticDocument::decode(&bytes),
+                Err(StaticDocumentError::Version)
+            ));
+        }
         bytes[4..8].copy_from_slice(&VERSION.to_le_bytes());
         bytes[8..12].copy_from_slice(&10u32.to_le_bytes());
         bytes[12..16].copy_from_slice(&10u32.to_le_bytes());
