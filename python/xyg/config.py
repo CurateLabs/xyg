@@ -45,7 +45,7 @@ from typing import overload
 # v13 ships semantic hover rows as typed `tooltip_columns` (graph-mark.md §2)
 # and drops host-only identity planes from `spec.graph`. A v12 client would
 # silently show no node/edge rows on hover, so it must fail the handshake.
-PROTOCOL_VERSION = 13
+PROTOCOL_VERSION = 14
 
 # Mark kinds the polar transform renders correctly today. Everything else is
 # refused by Figure._validate_coords rather than approximated: the rect, area,

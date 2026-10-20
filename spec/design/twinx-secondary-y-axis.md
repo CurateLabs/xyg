@@ -397,7 +397,48 @@ surface Rust's reasons; no host adds admission or layout policy.
   `scene_export.rs`) refuses a y2-bound annotation that reads y data with
   `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION`; axes-fraction and `xaxis_transform` rows
   never read the y scale and are admitted. Projecting annotations onto y2 is not
-  implemented (known gap, `compat.md`).
+  implemented **in the static Scene path** (known gap, `compat.md`); the live
+  client path is the mirror decision recorded below (round 4).
+- **Live payload parity and live annotation projection (review round 4).** Both
+  hosts now marshal the live wire identically for a chart that admits y2
+  (decision recorded per dossier §28 — emit faithfully, fail closed only where
+  the binding is unresolvable):
+  - Node `buildPayload` computes one range per declared axis (like Python
+    `_payload_spec`'s `axis_range` cache), passes each trace its own bound
+    ranges, emits an axis spec for every axis in `axis_options`, and derives
+    `view.ranges` from those specs. Previously it collapsed every trace onto the
+    primary x/y ranges and omitted `axes.y2`/`ranges.y2`, so `toHtml()` drew y2
+    data on the primary scale with no right axis while Python emitted x/y/y2.
+    A range-sensitive proof rides the tier-2 density grid, which is binned
+    against the trace's own y2 domain (a direct line column is data-relative
+    offset-f32 and cannot distinguish the two).
+  - Node `setAxis("y2")` defaults `side: "right"` and syncs the authored x/y
+    `label` into `x_label`/`y_label`, both exactly like Python `set_axis`, so the
+    same authored chart produces the same live spec in both hosts.
+  - A y2-bound annotation keeps `y_axis: "y2"` on the live wire (Python
+    `_annotation_common`, Node `annotationCommon`); the key is emitted only when
+    bound, so unbound payloads stay byte-identical. Both hosts refuse the
+    binding when the chart never declared a y2 axis
+    (`annotation y_axis 'y2' has no matching xyg.y_axis(id='y2')`), mirroring
+    the mark `y_axis` admission rule — the client's `_axis` fallback must never
+    silently re-project a bound annotation through the primary scale. Y
+    coordinates (including category lookups) resolve against the bound ladder.
+  - The client (`js/src/51_annotations.ts`) projects a bound annotation through
+    its y2 axis in exactly the coordinate spaces that read the y data scale
+    (default/`data` and `yaxis_transform`), matching Rust's
+    `coordinate_space_uses_y_scale` admission rule; axes/figure/xaxis fraction
+    spaces ignore the binding, as in static admission.
+  - The wire grows `annotations[].y_axis` and Node's `axes.y2`/`ranges.y2`, so
+    the renderer protocol moves 13 → 14 (`spec/design/wire-protocol.md` §7): a
+    cached v13 client ignores the binding and silently misplaces the
+    annotation, which is exactly what a bump exists to prevent.
+  - Pinned by `tests/test_live_dual_axis_cross_host.py` (axes/ranges/annotations
+    and packed-blob identity across hosts, density grid byte identity,
+    identical fail-closed messages), `packages/xy-node/test/live-dual-axis.test.mjs`
+    (Node-local), and `tests/test_dual_axis_live_client.py` (headless Chromium:
+    the y2 ladder renders on the right and the bound annotation lands at the y2
+    projection, far from the primary one). Each fails when its change is
+    reverted.
 - **Invalid-input tests.** `tests/test_static_dual_axis_cross_host.py` sends a zero
   and a negative constant, an infinite domain and ±infinite
   `tick_label_angle`; Python and Node get the same rejection message,

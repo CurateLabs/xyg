@@ -346,7 +346,11 @@ geometry (theming stays on the `--chart-*` token path).
    dropped in favor of axis ids. A right-hand `y2` is no longer interactive-only:
    the Rust Scene/XYST path measures, lays out and draws it in static output
    (SVG/PNG/PDF) and the Python and Node hosts export it byte-identically
-   (`spec/design/twinx-secondary-y-axis.md`). One right-hand `y2` per panel; left-side
+   (`spec/design/twinx-secondary-y-axis.md`); the live payload carries the same
+   axis, per-trace view ranges and y2-bound annotation bindings from both hosts
+   (protocol 14; a y2-bound annotation renders on the y2 scale in the
+   interactive client, and a binding with no declared y2 axis is the same
+   no-matching-axis build error in both hosts). One right-hand `y2` per panel; left-side
    y2, `x2`, y2 + colorbar and y2 + polar return stable Rust reasons.
 5. ★ Done, with a different shape than planned: `xyg.facet_chart(by=…)`
    (§5.2), not `facet(col=…)`, and it composes N independent figures in a

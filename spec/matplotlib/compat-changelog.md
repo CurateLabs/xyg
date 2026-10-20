@@ -110,6 +110,9 @@ Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus i
   primary y scale (e.g. `y="-18052.8"`); pyplot now binds them to y2 and Rust
   refuses them with `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION`. Axes-fraction text on a
   twin (`transform=twin.transAxes`) never reads the y scale and still exports.
+  The static-only scope is explicit: the live client projects a y2-bound
+  annotation onto the y2 scale (both hosts marshal `y_axis: "y2"` on the live
+  wire, protocol 14, and refuse the binding when no y2 axis is declared).
 - The browser's default y-title rotation (-90°) now applies to every right-placed
   y title, not only y2.
 - Invalid authored y2 values (zero or negative scale constant, non-finite domain or

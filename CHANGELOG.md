@@ -36,15 +36,28 @@ in the README).
   `label_angle` still wins. An authored empty y2 `tick_values` means
   automatic ticks, as for x and y. Annotations bound to y2 (`y_axis="y2"` on
   `xyg.text`/`label`/`marker`/`arrow`/`callout`/`hline`/`y_band`; every pyplot
-  twin annotation) that read the y data scale are refused by Rust with
+  twin annotation) that read the y data scale are refused by *static export* with
   `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION` instead of being silently projected
-  through the primary scale (a known gap; axes-fraction text is unaffected). Hosts
+  through the primary scale (a known static gap; axes-fraction text is
+  unaffected), while the *live* path honors the binding: both hosts marshal
+  `y_axis: "y2"` on the wire and the interactive client projects the annotation
+  through the y2 scale in the coordinate spaces that read the y data scale; a
+  binding with no declared y2 axis is the same no-matching-axis build error in
+  both hosts. The live payload is now host-symmetric for dual-axis charts
+  (protocol 13 → 14): `buildPayload` in `@curatelabs/xyg-node` computes one
+  range per declared axis, passes each trace its own bound ranges, emits an
+  axis spec for every declared axis and derives `view.ranges` from them, so
+  `toHtml()` no longer draws y2 data on the primary scale with the right axis
+  missing (Python already emitted x/y/y2); Node `setAxis("y2")` defaults
+  `side: "right"` and syncs authored x/y labels exactly like Python
+  `set_axis`. Hosts
   translate axis ids (`y2` = 2, `x2` = 3) into the `XYFS` observation, and set the
   new `XYCL` column flag bit 1 (`XYCL_Y2`) so Rust stamps the record y selector on
   every row of a y2 trace. Rust alone admits or rejects and returns the same
   stable reasons to both hosts. pyplot `twinx()` seeds the twin's rc tick styling
   from `ytick.*`. Corpus case 26 passes; Python and Node export byte-identical
-  XYST/SVG/PNG/PDF for the same public dual-axis chart.
+  XYST/SVG/PNG/PDF for the same public dual-axis chart, and byte-identical live
+  payload blobs (including a y2 density grid binned against its own domain).
 - ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
   (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
   `XYY2` block (scale, axis chrome record, resolved typography and paints, tick

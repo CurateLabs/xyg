@@ -956,7 +956,19 @@ function annotationValue(fig, value, axis, label) {
   return finiteScalar(value, label);
 }
 
-function annotationCommon(annotation) {
+// The axis a y coordinate resolves against: the bound secondary axis when the
+// annotation names one, else the primary. Used for category lookups so a
+// y2-bound annotation resolves categories on the y2 ladder like Python
+// `_annotation_specs` does.
+function yValueAxis(annotation) {
+  return annotation.y_axis === "y2" ? "y2" : "y";
+}
+
+function ruleValueAxis(annotation, axis) {
+  return axis === "y" ? yValueAxis(annotation) : axis;
+}
+
+function annotationCommon(fig, annotation, label) {
   const out = {};
   const text = optionalText(annotation.text, "annotation text");
   if (text != null) {
@@ -965,6 +977,22 @@ function annotationCommon(annotation) {
   const className = optionalText(annotation.class_name, "annotation class_name");
   if (className != null) {
     out.class_name = className;
+  }
+  // A y2 binding is honored on the live wire (the client projects the
+  // annotation through its bound axis), so it must be marshalled — and must
+  // fail closed when the chart never declared the axis, mirroring Python
+  // `_annotation_common` and the mark `y_axis` admission rule.
+  const yAxis = annotation.y_axis;
+  if (yAxis != null) {
+    if (yAxis !== "y" && yAxis !== "y2") {
+      throw new RangeError(`${label} y_axis must be 'y' or 'y2', got ${JSON.stringify(yAxis)}`);
+    }
+    if (yAxis === "y2" && fig.axis_options?.y2 == null) {
+      throw new RangeError(`${label} y_axis 'y2' has no matching xyg.y_axis(id='y2')`);
+    }
+    if (yAxis === "y2") {
+      out.y_axis = "y2";
+    }
   }
   const rawStyle = annotation.style ?? {};
   if (rawStyle == null || typeof rawStyle !== "object" || Array.isArray(rawStyle)) {
@@ -992,20 +1020,21 @@ function annotationSpecs(fig) {
     if (kind === "rule") {
       const axis = annotationAxis(annotation.axis, `${label}.axis`);
       specs.push({
-        ...annotationCommon(annotation),
+        ...annotationCommon(fig, annotation, label),
         kind: "rule",
         axis,
-        value: annotationValue(fig, annotation.value, axis, `${label}.value`),
+        value: annotationValue(fig, annotation.value, ruleValueAxis(annotation, axis), `${label}.value`),
       });
     } else if (kind === "band") {
       const axis = annotationAxis(annotation.axis, `${label}.axis`);
-      const start = annotationValue(fig, annotation.start, axis, `${label}.start`);
-      const end = annotationValue(fig, annotation.end, axis, `${label}.end`);
+      const bandAxis = ruleValueAxis(annotation, axis);
+      const start = annotationValue(fig, annotation.start, bandAxis, `${label}.start`);
+      const end = annotationValue(fig, annotation.end, bandAxis, `${label}.end`);
       if (end <= start) {
         throw new RangeError(`${label} end must be greater than start`);
       }
       specs.push({
-        ...annotationCommon(annotation),
+        ...annotationCommon(fig, annotation, label),
         kind: "band",
         axis,
         start,
@@ -1013,10 +1042,10 @@ function annotationSpecs(fig) {
       });
     } else if (kind === "text") {
       specs.push({
-        ...annotationCommon(annotation),
+        ...annotationCommon(fig, annotation, label),
         kind: "text",
         x: annotationValue(fig, annotation.x, "x", `${label}.x`),
-        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        y: annotationValue(fig, annotation.y, yValueAxis(annotation), `${label}.y`),
         text: requiredText(annotation.text, `${label}.text`),
         dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
         dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
@@ -1024,10 +1053,10 @@ function annotationSpecs(fig) {
       });
     } else if (kind === "marker") {
       specs.push({
-        ...annotationCommon(annotation),
+        ...annotationCommon(fig, annotation, label),
         kind: "marker",
         x: annotationValue(fig, annotation.x, "x", `${label}.x`),
-        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        y: annotationValue(fig, annotation.y, yValueAxis(annotation), `${label}.y`),
         size: positiveScalar(annotation.size ?? 8.0, `${label}.size`),
         symbol: annotationSymbol(annotation.symbol ?? "circle", `${label}.symbol`),
         dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
@@ -1036,19 +1065,19 @@ function annotationSpecs(fig) {
       });
     } else if (kind === "arrow") {
       specs.push({
-        ...annotationCommon(annotation),
+        ...annotationCommon(fig, annotation, label),
         kind: "arrow",
         x0: annotationValue(fig, annotation.x0, "x", `${label}.x0`),
-        y0: annotationValue(fig, annotation.y0, "y", `${label}.y0`),
+        y0: annotationValue(fig, annotation.y0, yValueAxis(annotation), `${label}.y0`),
         x1: annotationValue(fig, annotation.x1, "x", `${label}.x1`),
-        y1: annotationValue(fig, annotation.y1, "y", `${label}.y1`),
+        y1: annotationValue(fig, annotation.y1, yValueAxis(annotation), `${label}.y1`),
       });
     } else if (kind === "callout") {
       specs.push({
-        ...annotationCommon(annotation),
+        ...annotationCommon(fig, annotation, label),
         kind: "callout",
         x: annotationValue(fig, annotation.x, "x", `${label}.x`),
-        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        y: annotationValue(fig, annotation.y, yValueAxis(annotation), `${label}.y`),
         text: requiredText(annotation.text, `${label}.text`),
         dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
         dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
@@ -1511,7 +1540,19 @@ export class Figure {
     options = copySceneOptions(options, `Scene ${axisId} axis options`);
     this.axis_options = this.axis_options ?? { x: {}, y: {} };
     this.axis_options[axisId] = { ...(this.axis_options[axisId] ?? {}), ...options };
+    // The secondary y axis defaults to the right side, exactly like Python
+    // `Figure.set_axis` (an authored `side` always wins). Without this the
+    // Node live payload would report a left-hand y2 while Python reports the
+    // same chart with a right-hand one.
+    if (axisId === "y2" && this.axis_options.y2.side == null) {
+      this.axis_options.y2.side = "right";
+    }
     this[`${axisId}Axis`] = this.axis_options[axisId];
+    // x/y labels live on the figure in Python `set_axis` too, so `_axisSpec`
+    // (which reads `x_label`/`y_label` like Python `_axis_spec`) reports the
+    // authored label on the live wire in both hosts.
+    if (axisId === "x") this.x_label = this.axis_options.x.label ?? null;
+    if (axisId === "y") this.y_label = this.axis_options.y.label ?? null;
     if (options.domain != null) this.setAxisDomain(axisId, options.domain);
     return this;
   }
@@ -3742,17 +3783,34 @@ export class Figure {
    */
   buildPayload({ split = false, wasmSource = false, pxWidth = null } = {}) {
     const pw = new PayloadWriter({ split, wasmSource });
-    const xr = this._range("x");
-    const yr = this._range("y");
     const widthPx = pxWidth ?? Math.max(16, Math.floor(this.width));
+    // Every trace encodes against its own bound axes, and every declared axis
+    // ships a spec and a view range — a y2 trace drawn on the primary scale is
+    // the silent-wrong-picture failure this mirrors Python `_payload_spec` to
+    // avoid. Ranges are computed once per axis id, exactly like Python's
+    // `axis_range` cache.
+    const ranges = new Map();
+    const axisRange = (axisId) => {
+      let range = ranges.get(axisId);
+      if (range == null) {
+        range = this._range(axisId);
+        ranges.set(axisId, range);
+      }
+      return range;
+    };
     const specTraces = [];
     for (const t of this.traces) {
-      specTraces.push(this._emitTrace(t, pw, xr, yr, widthPx));
+      const xr = axisRange(String(t.x_axis ?? "x"));
+      const yr = axisRange(String(t.y_axis ?? "y"));
+      specTraces.push(
+        this._emitTrace(t, pw, [Math.min(xr[0], xr[1]), Math.max(xr[0], xr[1])], [Math.min(yr[0], yr[1]), Math.max(yr[0], yr[1])], widthPx),
+      );
     }
-    const axisSpecs = {
-      x: this._axisSpec("x", xr),
-      y: this._axisSpec("y", yr),
-    };
+    const axisSpecs = {};
+    for (const axisId of Object.keys(this.axis_options)) {
+      const r = axisRange(axisId);
+      axisSpecs[axisId] = this._axisSpec(axisId, [Math.min(r[0], r[1]), Math.max(r[0], r[1])]);
+    }
     const dom = domSpec(this);
     const wasmSources = specTraces
       .map((entry) => entry.density?.wasm_source)
@@ -3780,7 +3838,7 @@ export class Figure {
       columns: pw.columns,
       backend: "native",
       show_legend: this.show_legend,
-      view: { ranges: { x: [...xr], y: [...yr] } },
+      view: { ranges: Object.fromEntries(Object.entries(axisSpecs).map(([id, axis]) => [id, [...axis.range]])) },
     };
     if (buildPlan.attachWasmDensity) {
       if (buildPlan.wasmDensityKind === DENSITY_WASM_DENSITY_AUTOMATIC) {

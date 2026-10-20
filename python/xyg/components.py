@@ -2266,7 +2266,9 @@ def hline(
         width: Rule width in pixels.
         opacity: Rule opacity from zero to one.
         y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
-            secondary axis); static export rejects annotations bound to y2.
+            secondary axis); the interactive client projects
+            the annotation onto the y2 scale, while static export rejects the
+            binding.
         class_name: DOM class applied to the optional text label. The rule is
             canvas-painted and is styled through ``color``, ``width``, and
             ``opacity``.
@@ -2338,7 +2340,9 @@ def y_band(
         color: Band color.
         opacity: Band opacity from zero to one.
         y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
-            secondary axis); static export rejects annotations bound to y2.
+            secondary axis); the interactive client projects
+            the annotation onto the y2 scale, while static export rejects the
+            binding.
         class_name: DOM class applied to the optional text label. The band is
             canvas-painted and is styled through ``color`` and ``opacity``.
         style: Annotation style overrides.
@@ -2382,7 +2386,9 @@ def text(
         anchor: Text alignment relative to the anchor point.
         rotation: Label rotation in degrees.
         y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
-            secondary axis); static export rejects annotations bound to y2.
+            secondary axis); the interactive client projects
+            the annotation onto the y2 scale, while static export rejects the
+            binding.
         class_name: DOM class applied to the text label.
         style: Annotation style overrides.
     """
@@ -2432,7 +2438,9 @@ def label(
         anchor: Text alignment relative to the anchor point.
         rotation: Label rotation in degrees.
         y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
-            secondary axis); static export rejects annotations bound to y2.
+            secondary axis); the interactive client projects
+            the annotation onto the y2 scale, while static export rejects the
+            binding.
         class_name: DOM class applied to the text label.
         style: Annotation style overrides.
     """
@@ -2487,7 +2495,9 @@ def marker(
         anchor: Label alignment relative to the marker.
         rotation: Label rotation in degrees.
         y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
-            secondary axis); static export rejects annotations bound to y2.
+            secondary axis); the interactive client projects
+            the annotation onto the y2 scale, while static export rejects the
+            binding.
         class_name: DOM class applied to the optional text label. The marker is
             canvas-painted and is styled through its marker arguments.
         style: Annotation style overrides.
@@ -2541,7 +2551,9 @@ def arrow(
         width: Arrow width in pixels.
         opacity: Arrow opacity from zero to one.
         y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
-            secondary axis); static export rejects annotations bound to y2.
+            secondary axis); the interactive client projects
+            the annotation onto the y2 scale, while static export rejects the
+            binding.
         class_name: DOM class applied to the optional text label. The arrow is
             canvas-painted and is styled through ``color``, ``width``, and
             ``opacity``.
@@ -2683,7 +2695,9 @@ def callout(
         opacity: Callout opacity from zero to one.
         anchor: Text alignment relative to the callout point.
         y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
-            secondary axis); static export rejects annotations bound to y2.
+            secondary axis); the interactive client projects
+            the annotation onto the y2 scale, while static export rejects the
+            binding.
         class_name: DOM class applied to the callout text. The pointer is
             canvas-painted.
         style: Annotation style overrides.
