@@ -97,18 +97,8 @@ export function composeHexbin(x, y, opts = {}) {
  * @param {object} [opts]
  */
 export function attachHexbin(fig, x, y, opts = {}) {
-  const { traces } = composeHexbin(x, y, opts);
-  const t = traces[0];
-  fig.hexbin(t.x, t.y, {
-    metric: t.metric,
-    counts: t.counts,
-    color_ch: t.color_ch,
-    size_ch: t.size_ch,
-    name: t.name,
-    style: t.style,
-    xAxis: t.x_axis,
-    yAxis: t.y_axis,
-    id: t.id,
-  });
+  // Figure.hexbin bins the raw points itself; handing it pre-binned centres
+  // would bin them a second time at the default gridsize (#887).
+  fig.hexbin(x, y, opts);
   return fig;
 }

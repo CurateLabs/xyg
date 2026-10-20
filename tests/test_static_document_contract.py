@@ -26,9 +26,9 @@ def test_static_document_contract_is_complete_and_bounded() -> None:
             assert row["reason"]
         else:
             assert row["reason"] is None
-    assert {(row["surface"], row["route"]): (row["status"], row["reason"]) for row in journeys}[
-        ("pyplot", "native_hexbin_group_budget")
-    ] == (
+    by_route = {(row["surface"], row["route"]): (row["status"], row["reason"]) for row in journeys}
+    assert by_route[("pyplot", "native_hexbin_beyond_1024_groups")] == ("RETAIN", None)
+    assert by_route[("pyplot", "native_hexbin_cell_ceiling")] == (
         "FAIL_CLOSED",
         "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
     )

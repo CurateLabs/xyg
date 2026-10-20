@@ -97,6 +97,9 @@ import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sc
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
 const MAX_SCENE_STYLES = 65_536;
+// Capacity retries (x2 each) must cover the largest admitted static document,
+// e.g. a hexbin at its 50,000-cell ceiling (~300 B per cell).
+const ENCODE_PRODUCT_CAPACITY_DOUBLINGS = 6;
 const MAX_SCENE_TEXT_BYTES = 4_096;
 const SYMBOL_CODES = new Map([
   "circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star",
@@ -6064,7 +6067,7 @@ function encodeProduct(
       + 512 * 384 * 5
       + 4096,
   );
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  for (let attempt = 0; attempt < ENCODE_PRODUCT_CAPACITY_DOUBLINGS; attempt += 1) {
     const out = new Uint8Array(capacity);
     const code = xySceneEncodeProduct(
       compileBytes.length ? u8Ptr(compileBytes) : 0,

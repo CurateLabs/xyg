@@ -87,6 +87,10 @@ const MAX_XYEP_TRACES: usize = 4_096;
 const MAX_XYEP_ANNOTATIONS: usize = 128;
 const MAX_XYEP_AXES: usize = 16;
 const MAX_PUBLIC_TRIANGLE_MESHES: usize = 1_024;
+/// Aggregate hexbin cell budget (one PolyFill group per cell). Independent of
+/// the triangle-mesh budget: the native static consumers bound groups only by
+/// `MAX_SCENE_MARKS`, and a default-gridsize `hexbin` lattice is ~11.6k cells.
+const MAX_PUBLIC_HEXBIN_CELLS: usize = 50_000;
 const MAX_PUBLIC_HEATMAP_CELLS: usize = 10_000;
 const MAX_PUBLIC_POINTS: usize = 10_000;
 const MAX_PUBLIC_STEP_POINTS: usize = 10_001;
@@ -1287,6 +1291,7 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     }
 
     let mut public_triangle_mesh_count = 0usize;
+    let mut public_hexbin_cell_count = 0usize;
     for trace in &traces {
         let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {
             MAX_PUBLIC_STEP_POINTS
@@ -1296,6 +1301,8 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         if trace.flags & TRACE_HAS_X != 0
             && trace.n_x as usize > point_limit
             && (trace.kind != KIND_SCATTER || trace.flags & TRACE_DENSITY_BLIT == 0)
+            // Hexbin cells are budgeted by `MAX_PUBLIC_HEXBIN_CELLS` below.
+            && trace.kind != KIND_HEXBIN
         {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
         }
@@ -1361,11 +1368,10 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             if trace.flags & TRACE_HEX_XY_OK == 0 {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_MARK");
             }
-            public_triangle_mesh_count = public_triangle_mesh_count
+            public_hexbin_cell_count = public_hexbin_cell_count
                 .checked_add(trace.n_x as usize)
                 .ok_or(SceneError::Limit)?;
-            if trace.n_x as usize > MAX_PUBLIC_TRIANGLE_MESHES
-                || public_triangle_mesh_count > MAX_PUBLIC_TRIANGLE_MESHES
+            if public_hexbin_cell_count > MAX_PUBLIC_HEXBIN_CELLS
                 || trace.flags & TRACE_HEX_FINITE == 0
             {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
@@ -2565,6 +2571,48 @@ mod tests {
         assert_eq!(
             scene_public_export_reason(&mixed_envelope),
             Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH")
+        );
+    }
+
+    fn xyef_hexbin_trace(cells: u32) -> Vec<u8> {
+        let obs = OBS_HAS_X | OBS_HAS_Y | OBS_X_FINITE | OBS_Y_FINITE;
+        let mut trace = xyef_trace("hexbin", obs, cells, 0, 0, 0, "hexbin");
+        trace[50..52].copy_from_slice(&(5u16).to_le_bytes());
+        trace[64..72].copy_from_slice(&1.0f64.to_le_bytes());
+        trace[72..80].copy_from_slice(&1.0f64.to_le_bytes());
+        trace.extend_from_slice(b"count");
+        trace
+    }
+
+    fn public_hexbin_reason(lattices: &[u32]) -> &'static str {
+        let mut facts = xyef_header(0, 0, 0, 0, 2, 0, lattices.len() as u32);
+        facts.extend_from_slice(&xyef_axis(0, true));
+        facts.extend_from_slice(&xyef_axis(1, true));
+        for cells in lattices {
+            facts.extend_from_slice(&xyef_hexbin_trace(*cells));
+        }
+        let envelope = pack_public_export(&facts).unwrap();
+        scene_public_export_reason(&envelope).unwrap()
+    }
+
+    #[test]
+    fn public_export_hexbin_cells_have_their_own_documented_ceiling() {
+        // The former shared 1,024 group ceiling (1,024 / 1,025), the
+        // default-gridsize lattice from corpus case 47 (11,558), and the
+        // ceiling itself all admit; one cell more fails closed (#887).
+        for cells in [1_024, 1_025, 11_558, MAX_PUBLIC_HEXBIN_CELLS as u32] {
+            assert_eq!(public_hexbin_reason(&[cells]), "", "{cells} cells");
+        }
+        assert_eq!(
+            public_hexbin_reason(&[MAX_PUBLIC_HEXBIN_CELLS as u32 + 1]),
+            "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+        );
+        // The budget is aggregate across hexbin traces, never per trace.
+        let half = MAX_PUBLIC_HEXBIN_CELLS as u32 / 2;
+        assert_eq!(public_hexbin_reason(&[half, half]), "");
+        assert_eq!(
+            public_hexbin_reason(&[half, half + 1]),
+            "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
         );
     }
 }

@@ -5874,6 +5874,11 @@ def _product_stage(code: int) -> tuple[int, int] | None:
     return magnitude // 100, -(magnitude % 100)
 
 
+# Capacity retries (x2 each) must cover the largest admitted static document,
+# e.g. a hexbin at its 50,000-cell ceiling (~300 B per cell).
+_ENCODE_PRODUCT_CAPACITY_DOUBLINGS = 6
+
+
 def scene_encode_product(
     *,
     compile_facts: bytes,
@@ -5987,7 +5992,7 @@ def scene_encode_product(
         if support_payload
         else np.empty(0, dtype=np.uint8)
     )
-    for _ in range(4):
+    for _ in range(_ENCODE_PRODUCT_CAPACITY_DOUBLINGS):
         out = np.zeros(capacity, dtype=np.uint8)
         code = int(
             _lib.xyg_scene_encode_product(
