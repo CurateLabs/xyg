@@ -97,9 +97,10 @@ const WASM_SIZE_BUDGET_BYTES = 1504 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
-// 624 KiB gzip (raw unchanged): the static LOD tiers, layered/polar autorange
-// admission, and the XYWA exact polar wedge-arc encode/validate/SVG path
-// (#1006) are a recorded +10,387 raw / +3,976 gzip bytes over main's
+// 624 KiB gzip (raw unchanged): the static LOD tiers and their budget checks,
+// layered/polar/mesh autorange admission, the XYWA exact polar wedge-arc
+// encode/validate/SVG path, and the smooth XYIM plane (#1006) are a recorded
+// +10,942 raw / +4,193 gzip bytes (1,531,515 / 632,105) over main's
 // 1,520,573 / 627,912, which left only 2,872 bytes of gzip headroom.
 const WASM_GZIP_BUDGET_BYTES = 624 * 1024;
 const gzipBytes = gzipSync(bytes).length;
