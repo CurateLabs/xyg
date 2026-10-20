@@ -56,6 +56,28 @@ function dualReversed() {
 }
 const reversedPayload = dualReversed();
 
+// An omitted y2 side stays unobserved (Rust decides right on the static
+// path); the live/HTML wire mirrors that resolution identically.
+function dualOmittedSide() {
+  const f = new Figure({ width: 480, height: 320 });
+  f.setAxis("x", { domain: [0, 4] });
+  f.setAxis("y", { domain: [0, 4], label: "L" });
+  f.setAxis("y2", { domain: [0, 400], label: "R" });
+  f.line([1, 2, 3], [1, 2, 3]);
+  f.line([1, 2, 3], [100, 200, 300], { yAxis: "y2" });
+  f.annotate({ kind: "text", x: 2, y: 200, text: "secondary", y_axis: "y2", dx: 6, dy: -6, anchor: "start" });
+  f.traces.forEach((trace, index) => { trace.id = index; });
+  return f;
+}
+const omittedPayload = dualOmittedSide().buildPayload();
+const htmlSpecOf = (figure) => {
+  const document = figure.toHtml();
+  const match = /;\n  const buf = xyDecodeB64\(/.exec(document);
+  const start = document.indexOf("const spec = ") + "const spec = ".length;
+  return JSON.parse(document.slice(start, match.index));
+};
+const omittedHtmlAxes = htmlSpecOf(dualOmittedSide()).axes;
+
 // A range-sensitive trace kind: the tier-2 density grid is binned against the
 // trace's own y2 domain, so host parity here proves per-trace ranges flow (a
 // direct line column is data-relative and would not distinguish them).
@@ -106,6 +128,12 @@ const out = {
     axes_y2_reverse: reversedPayload.spec.axes.y2.reverse ?? null,
     annotations: reversedPayload.spec.annotations,
     payload_blob_sha256: sha256(reversedPayload.buffers),
+  },
+  omitted_side: {
+    stored_side: dualOmittedSide().axis_options.y2.side ?? null,
+    axes_y2: omittedPayload.spec.axes.y2,
+    html_axes_y2_side: omittedHtmlAxes.y2.side,
+    payload_blob_sha256: sha256(omittedPayload.buffers),
   },
   plain_axes: Object.keys(plainPayload.spec.axes),
   plain_view_ranges: plainPayload.spec.view.ranges,

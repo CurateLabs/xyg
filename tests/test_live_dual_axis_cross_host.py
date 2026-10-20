@@ -132,6 +132,67 @@ def test_reversed_axes_keep_their_direction_on_the_live_wire_in_both_hosts(
     assert hashlib.sha256(blob).hexdigest() == node_payload["reversed"]["payload_blob_sha256"]
 
 
+def test_an_omitted_y2_side_flows_to_rust_and_the_live_wire_matches_static(
+    node_payload: dict[str, Any],
+) -> None:
+    """Rust owns the omitted-y2-side policy (right). The public setters keep
+    the authored absence — so `side_authored` is False and the static chrome
+    observation is unobserved, exactly like the raw deleted-key case — while
+    the live/HTML wire mirrors Rust's resolution identically in both hosts
+    (review round 6)."""
+
+    def build(*, annotated: bool):
+        children = [
+            c.line(x=[1, 2, 3], y=[1, 2, 3]),
+            c.line(x=[1, 2, 3], y=[100, 200, 300], y_axis="y2"),
+            c.x_axis(domain=(0, 4)),
+            c.y_axis(domain=(0, 4), label="L"),
+            c.y_axis(id="y2", domain=(0, 400), label="R"),
+        ]
+        if annotated:
+            children.append(c.text(2, 200, "secondary", y_axis="y2"))
+        figure = c.line_chart(*children, width=WIDTH, height=HEIGHT).figure()
+        for index, trace in enumerate(figure.traces):
+            trace.id = index
+        return figure
+
+    figure = build(annotated=True)
+    # The setter preserved the authored absence (no host default anywhere).
+    assert figure.axis_options["y2"]["side"] is None
+    assert node_payload["omitted_side"]["stored_side"] is None
+
+    spec, blob = figure.build_payload()
+    assert spec["axes"]["y2"]["side"] == "right"
+    assert spec["axes"]["y2"] == node_payload["omitted_side"]["axes_y2"]
+    assert hashlib.sha256(blob).hexdigest() == node_payload["omitted_side"]["payload_blob_sha256"]
+
+    # HTML inherits the same live spec in both hosts.
+    html = build(annotated=True).to_html()
+    start = html.index("const spec = ") + len("const spec = ")
+    end = html.index(";\n  const buf = ")
+    assert html[start:end].startswith("{")
+    embedded = json.loads(html[start:end])
+    assert embedded["axes"]["y2"]["side"] == "right"
+    assert node_payload["omitted_side"]["html_axes_y2_side"] == "right"
+
+    # And the static path (Rust's decision) equals the explicit-right chart.
+    # (No y2-bound annotation here: static export refuses those by design.)
+    from xyg._static_document import export_figure
+
+    explicit = c.line_chart(
+        c.line(x=[1, 2, 3], y=[1, 2, 3]),
+        c.line(x=[1, 2, 3], y=[100, 200, 300], y_axis="y2"),
+        c.x_axis(domain=(0, 4)),
+        c.y_axis(domain=(0, 4), label="L"),
+        c.y_axis(id="y2", side="right", domain=(0, 400), label="R"),
+        width=WIDTH,
+        height=HEIGHT,
+    ).figure()
+    assert export_figure(build(annotated=False), "svg", width=WIDTH, height=HEIGHT) == (
+        export_figure(explicit, "svg", width=WIDTH, height=HEIGHT)
+    )
+
+
 def test_a_y2_density_trace_bins_against_its_own_domain_in_both_hosts(
     node_payload: dict[str, Any],
 ) -> None:

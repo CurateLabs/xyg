@@ -15,6 +15,16 @@ if TYPE_CHECKING:
     from ._trace import Trace
     from .columns import Column
 
+# The side of a secondary y axis (y2) whose side is not authored. Rust owns
+# the decision — `Y2_DEFAULT_SIDE_CODE` (side code 1 = high/right) in
+# crates/xyg-engine/src/scene_chrome_pack.rs, applied when the chrome
+# observation carries no authored side — and the hosts pass the absence
+# through untouched (`set_axis` stores None). The live payload must render
+# the same orientation the static export resolves, so this mirror exists only
+# for the wire spec; the omitted-side cross-host cases pin it equal to the
+# static output (and to Node's `Y2_LIVE_SIDE`).
+_Y2_LIVE_SIDE = "right"
+
 
 def set_axis(
     self,
@@ -116,12 +126,17 @@ def set_axis(
             raise ValueError(
                 f"{axis_id} axis sector sweep must not exceed one full turn ({turn:g} {unit})"
             )
-    if side is None:
-        side = "bottom" if axis_dim == "x" else ("right" if axis_id != "y" else "left")
-    elif axis_dim == "x" and side not in {"top", "bottom"}:
-        raise ValueError("x axis side must be 'top' or 'bottom'")
-    elif axis_dim == "y" and side not in {"left", "right"}:
-        raise ValueError("y axis side must be 'left' or 'right'")
+    if side is not None:
+        if axis_dim == "x" and side not in {"top", "bottom"}:
+            raise ValueError("x axis side must be 'top' or 'bottom'")
+        if axis_dim == "y" and side not in {"left", "right"}:
+            raise ValueError("y axis side must be 'left' or 'right'")
+    elif axis_dim == "x" or axis_id == "y":
+        # Primary axes keep their public defaults. A secondary y axis (y2)
+        # keeps the authored absence: Rust alone resolves an unauthored y2
+        # side (right) on the static path, and the live marshal mirrors that
+        # decision (`_Y2_LIVE_SIDE`).
+        side = "bottom" if axis_dim == "x" else "left"
     if tick_sides is not None:
         if isinstance(tick_sides, (str, bytes)) or not isinstance(tick_sides, Sequence):
             raise ValueError(f"{axis_id} axis tick_sides must be a sequence")
@@ -337,7 +352,16 @@ def _axis_spec(self, axis_id: str, range_: tuple[float, float]) -> dict[str, Any
     if attach["attach_range"]:
         spec["range"] = list(range_)
     if attach["attach_side"]:
-        spec["side"] = opts.get("side", "bottom" if axis == "x" else "left")
+        # Primary axes keep their public defaults (bottom/left). A secondary y
+        # axis resolves to `_Y2_LIVE_SIDE`, mirroring Rust's decision for the
+        # static path — pinned equal to it by the omitted-side cross-host
+        # cases. An authored side always wins; the stored absence itself flows
+        # to Rust unobserved on the static path.
+        spec["side"] = (
+            opts.get("side")
+            if opts.get("side") is not None
+            else ("bottom" if axis == "x" else ("left" if axis_id == "y" else _Y2_LIVE_SIDE))
+        )
     if attach["attach_tick_sides"] and opts.get("tick_sides") is not None:
         spec["tick_sides"] = list(opts["tick_sides"])
     if attach["attach_tick_label_sides"] and opts.get("tick_label_sides") is not None:

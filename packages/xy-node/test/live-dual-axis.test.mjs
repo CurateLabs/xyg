@@ -33,15 +33,26 @@ test("the live payload carries the y2 axis and per-axis view ranges", () => {
   );
 });
 
-test("a y2 authoring without an explicit side defaults to the right, like Python set_axis", () => {
+test("an omitted y2 side stays unobserved and the live payload still reports right", () => {
+  // Rust owns the omitted-side policy (static chrome pack); the setter must
+  // not duplicate it, and the live wire mirrors Rust's resolution.
   const figure = new Figure({ width: 480, height: 320 });
   figure.setAxis("x", { domain: [0, 4] });
   figure.setAxis("y", { domain: [0, 4] });
   figure.setAxis("y2", { domain: [0, 400] });
+  assert.equal(figure.axis_options.y2.side, undefined);
   figure.line([1, 2, 3], [1, 2, 3]);
   figure.line([1, 2, 3], [100, 200, 300], { yAxis: "y2" });
   const { spec } = figure.buildPayload();
   assert.equal(spec.axes.y2.side, "right");
+  // The static path equals the explicit-right chart (decided by Rust).
+  const explicit = new Figure({ width: 480, height: 320 });
+  explicit.setAxis("x", { domain: [0, 4] });
+  explicit.setAxis("y", { domain: [0, 4] });
+  explicit.setAxis("y2", { side: "right", domain: [0, 400] });
+  explicit.line([1, 2, 3], [1, 2, 3]);
+  explicit.line([1, 2, 3], [100, 200, 300], { yAxis: "y2" });
+  assert.equal(Buffer.from(figure.toSvg()).toString(), Buffer.from(explicit.toSvg()).toString());
 });
 
 test("a y2 density trace bins against its own domain, not the primary y range", () => {
