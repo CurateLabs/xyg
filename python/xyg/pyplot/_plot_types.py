@@ -4113,6 +4113,9 @@ class PlotTypeMixin:
                 # replacements. Keep those replacements adjacent to the
                 # original artist so later marks retain their creation order.
                 source["kwargs"]["opacity"] = 0.0
+                # Exact marker for the static projection: this native trace is
+                # superseded by the generic segments below and is not emitted.
+                source["_superseded_by_segments"] = True
                 source_index = next(
                     index for index, entry in enumerate(self._entries) if entry is source
                 )

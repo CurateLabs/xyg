@@ -5328,7 +5328,9 @@ export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
   let pointCount = 0;
   if (kindName === "hexbin") pointCount = trace.x?.length ?? trace.count ?? 0;
   else if (kindName === "ribbon") pointCount = trace.count ?? trace.x0?.length ?? 0;
-  else if (kindName === "triangle_mesh") pointCount = trace.x0?.length ?? trace.count ?? 0;
+  else if (kindName === "triangle_mesh" || kindName === "segments" || kindName === "contour") {
+    pointCount = trace.x0?.length ?? trace.count ?? 0;
+  }
   else if (kindName === "scatter") pointCount = trace.x?.length ?? trace.count ?? 0;
   const colormap = style.colormap;
   let styleColormapMode = 0;
@@ -7346,12 +7348,19 @@ export function meshHasPerItem(trace) {
   return perItemChannelNames(trace).length > 0;
 }
 
+/** Per-item channels a segment trace's paint plane honors (mirrors Python). */
+const SEGMENT_PAINT_CHANNELS = new Set(["color", "opacity", "artist_alpha"]);
+
 function meshPacksPaintPlane(trace) {
-  return sceneMeshPaintPlaneAdmit(
-    String(trace.kind ?? ""),
-    meshJoinedFill(trace),
-    meshHasPerItem(trace),
-  );
+  const kind = String(trace.kind ?? "");
+  let hasPerItem = meshHasPerItem(trace);
+  if (kind === "segments" || kind === "contour") {
+    const names = perItemChannelNames(trace);
+    hasPerItem = names.includes("color")
+      && names.every((name) => SEGMENT_PAINT_CHANNELS.has(name))
+      && !(trace.style ?? {}).dash;
+  }
+  return sceneMeshPaintPlaneAdmit(kind, meshJoinedFill(trace), hasPerItem);
 }
 
 function meshFaceFillRgba8(trace) {

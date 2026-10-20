@@ -7269,6 +7269,8 @@ class Axes(PlotTypeMixin):
     ) -> list[Any]:
         children: list[Any] = []
         for e in self._entries:
+            if e.get("_superseded_by_segments"):
+                continue
             kind = e["kind"]
             axis_kw = {"y_axis": e["y_axis"]} if e["y_axis"] != "y" else {}
             kw = e.get("kwargs", {})

@@ -280,7 +280,7 @@ pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
         shape: "scatter",
         axis_mode: "linear-x-linear-y",
         concerns: &["empty", "linear-scale"],
-        reason_prefix: "invalid scene trace packing",
+        reason_prefix: "",
     },
     StaticExportEdgeCase {
         name: "area_nonfinite_linear",

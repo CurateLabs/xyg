@@ -1173,27 +1173,6 @@ def encode(
     return header + records + title_bytes + decorations + scenes
 
 
-def drop_undrawn_traces(figure: Any) -> None:
-    """Drop traces that paint nothing from a projected figure, in place.
-
-    Two kinds of trace draw nothing but would fail Scene compile. An empty
-    line/scatter has zero points (Matplotlib's empty-artist semantics, e.g. a
-    boxplot without fliers or a legend proxy). A fully transparent contour
-    trace is the browser's colormap carrier: the static product already draws
-    each level as its own literal-colored segment trace. Call after the legend
-    entries were lifted from the named traces; trace ids stay contiguous.
-    """
-
-    def undrawn(trace: Any) -> bool:
-        if trace.kind in {"line", "scatter"}:
-            return len(trace.x.values) == 0
-        return trace.kind == "contour" and float((trace.style or {}).get("opacity", 1.0)) == 0.0
-
-    figure.traces = [trace for trace in figure.traces if not undrawn(trace)]
-    for index, trace in enumerate(figure.traces):
-        trace.id = index
-
-
 def project_figure(
     figure: Any,
     *,
@@ -1301,7 +1280,6 @@ def project_figure(
     projected.show_legend = False
     projected.legend_options = {}
     projected.extra_legends = []
-    drop_undrawn_traces(projected)
     reason, scene = _scene_v3._public_scene_or_reason(projected, width=width, height=height)
     if reason is not None or scene is None:
         raise UnsupportedStaticExport(reason or "XYG_STATIC_UNSUPPORTED_PANEL")

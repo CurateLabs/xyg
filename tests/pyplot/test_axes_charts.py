@@ -723,7 +723,9 @@ def test_clabel_table_and_quiverkey_complete_annotation_families() -> None:
     assert len(table.get_celld()) == 8
     assert key is not None
     assert ax._entries[-1]["args"][2] == "1 m/s"
-    assert {trace.kind for trace in _traces(ax)} >= {"contour", "segments"}
+    # The native contour trace is superseded by the generic segments and is
+    # not emitted; the ContourSet stays live for colorbar()/clim().
+    assert {trace.kind for trace in _traces(ax)} == {"segments"}
     spec, _buffers = ax._build_chart(640, 480).figure().build_payload_split()
     assert (
         sum(

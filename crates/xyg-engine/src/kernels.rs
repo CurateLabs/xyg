@@ -3056,11 +3056,17 @@ pub fn scene_hexbin_rgba_plane_admit(mode: &str) -> i32 {
 /// Admit Scene mesh paint-plane packing (ABI 244).
 ///
 /// Exact `triangle_mesh` plus `joined_fill == 0` plus a nonzero
-/// `has_per_item` flag return `1`. Unknown kinds, including empty text,
-/// joined fill, or a zero flag return `0`. No lowercasing. `joined_fill`
-/// field picking and `has_per_item` gathering stay host.
+/// `has_per_item` flag return `1`. Exact `segments` and `contour` (per-segment
+/// colormapped strokes, #1006) return `1` for a nonzero `has_per_item` flag
+/// and no joined fill. Unknown kinds, including empty text, joined fill, or a
+/// zero flag return `0`. No lowercasing. `joined_fill` field picking and
+/// `has_per_item` gathering stay host.
 pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: i32) -> i32 {
-    i32::from(kind == "triangle_mesh" && joined_fill == 0 && has_per_item != 0)
+    i32::from(
+        matches!(kind, "triangle_mesh" | "segments" | "contour")
+            && joined_fill == 0
+            && has_per_item != 0,
+    )
 }
 
 /// Apply optional per-item artist-alpha replace then opacity multiply onto
@@ -12761,6 +12767,10 @@ mod fuzz {
         assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 0), 0);
         assert_eq!(scene_mesh_paint_plane_admit("", 0, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit("TRIANGLE_MESH", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("segments", 0, 1), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("contour", 0, 1), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("segments", 0, 0), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("segments", 1, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit("scatter", 0, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit(" triangle_mesh", 0, 1), 0);
     }

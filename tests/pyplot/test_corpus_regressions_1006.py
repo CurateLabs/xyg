@@ -154,3 +154,47 @@ def test_pie_labels_do_not_create_a_legend_in_multi_panel_figures() -> None:
         assert _blank_ratio(_png_rgb(fig)) < 0.95
     finally:
         plt.close("all")
+
+
+def test_scalar_alpha_replaces_translucent_paint_and_keeps_no_paint_absent() -> None:
+    """Matplotlib's alpha *replaces* a color's own alpha and never fills ``"none"``.
+
+    Pinned against 3.11: ``c="#ff000080", alpha=0.5`` draws face alpha 0.5 (a
+    multiply would give 0.25), and ``c="none"`` keeps the face absent.
+    """
+    try:
+        fig, ax = plt.subplots(figsize=(2, 2))
+        ax.scatter([0.5], [0.5], s=4000, c="#ff000080", alpha=0.5, edgecolors="none")
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        pixels = _png_rgb(fig)
+        centre = pixels[pixels.shape[0] // 2, pixels.shape[1] // 2]
+        assert 0.4 < centre[1] < 0.6  # replace: 0.5; multiply would be ~0.75
+
+        fig, ax = plt.subplots(figsize=(2, 2))
+        ax.scatter([0.5], [0.5], s=4000, c="none", alpha=0.5, edgecolors="red")
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        pixels = _png_rgb(fig)
+        centre = pixels[pixels.shape[0] // 2, pixels.shape[1] // 2]
+        assert centre.min() > 0.98  # no fill appears
+        assert np.any((pixels[..., 0] > 0.9) & (pixels[..., 1] < 0.8))  # the edge is drawn
+    finally:
+        plt.close("all")
+
+
+def test_clabel_supersedes_the_native_contour_trace_instead_of_exporting_it() -> None:
+    """clabel's hidden native contour is dropped at its source, not by opacity (corpus 54)."""
+    z = np.arange(16.0).reshape(4, 4)
+    try:
+        fig, ax = plt.subplots(figsize=(3, 3))
+        contours = ax.contour(z)
+        ax.clabel(contours)
+        assert _blank_ratio(_png_rgb(fig)) < 0.95
+        assert any(entry.get("_superseded_by_segments") for entry in ax._entries)
+        built = ax._build_chart(300, 300).figure()
+        assert not any(
+            trace.kind == "contour" and trace.style.get("opacity") == 0.0 for trace in built.traces
+        )
+    finally:
+        plt.close("all")

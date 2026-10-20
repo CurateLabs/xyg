@@ -478,7 +478,7 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
         point_count = 0 if xv_hex is None else int(len(xv_hex))
     elif kind_name == "ribbon":
         point_count = _ribbon_count(trace)
-    elif kind_name == "triangle_mesh":
+    elif kind_name in {"triangle_mesh", "segments", "contour"}:
         point_count = _mesh_count(trace)
     elif kind_name == "scatter":
         point_count = _scatter_count(trace)

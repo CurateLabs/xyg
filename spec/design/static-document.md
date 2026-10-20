@@ -140,15 +140,16 @@ call raises the listed stable `XYG_*` reason.
   separately versioned Rust admission and resource proof needed for a future
   static-only larger group budget.
 
-  The pyplot static adapter performs only these Scene-literal translations
-  before compile (#1006): zero-point line/scatter traces and fully transparent
-  `contour` colormap carriers are dropped (legend entries are lifted first);
-  a scalar `alpha=` becomes the literal CSS alpha of constant fill/stroke paint,
-  or a constant `artist_alpha` channel for per-item paint; and colormapped
-  contour strokes become one literal-colored trace per distinct level color via
-  Rust's native colormap tables. The public Scene admits `side="top"`/`"right"`
-  axes for heatmap-only geometry (`matshow`, `spy`); other literal geometry
-  keeps the default-side contract.
+  Rust owns these validated Scene behaviors for every host (#1006): an empty
+  line/scatter trace is a no-op that emits no marks; per-segment colormapped
+  strokes (`contour`, `tricontour`, `segments` with a numeric color array)
+  intern one literal stroke per distinct mapped color from the per-item paint
+  plane; and `side="top"`/`"right"` axes are admitted for heatmap-only
+  geometry (`matshow`, `spy`) while contour and other literal geometry keep
+  the default-side contract. The pyplot static adapter only translates author
+  arguments: a scalar `alpha=` becomes the literal CSS alpha of constant
+  fill/stroke paint (never filling `"none"`) or a constant `artist_alpha`
+  channel for per-item paint.
 
 ## 3. Stable failure rules
 

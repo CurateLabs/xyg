@@ -2828,3 +2828,25 @@ def test_public_heatmap_admits_alternate_side_cartesian_axes(axis_id: str, side:
     figure.axis_options[axis_id]["side"] = side
     assert scene_export_support_reason(figure) is None
     assert b"XYGS" in figure_scene(figure)
+
+
+def _contour_figure(*, with_heatmap: bool) -> Figure:
+    figure = _public_heatmap() if with_heatmap else Figure(width=320, height=240)
+    if not with_heatmap:
+        figure.axis_options["x"]["domain"] = (0.0, 4.0)
+        figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
+    return figure
+
+
+@pytest.mark.parametrize("with_heatmap", [False, True])
+@pytest.mark.parametrize("axis_id,side", [("x", "top"), ("y", "right")])
+def test_alternate_side_axes_stay_rejected_when_a_contour_is_present(
+    axis_id: str, side: str, with_heatmap: bool
+) -> None:
+    """Only heatmap-only geometry may move an axis (negative controls, #1006)."""
+    figure = _contour_figure(with_heatmap=with_heatmap)
+    figure.axis_options[axis_id]["side"] = side
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    figure.axis_options[axis_id]["side"] = "bottom" if axis_id == "x" else "left"
+    assert scene_export_support_reason(figure) is None

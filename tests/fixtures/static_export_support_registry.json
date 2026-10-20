@@ -222,7 +222,7 @@
         "empty",
         "linear-scale"
       ],
-      "reason_prefix": "invalid scene trace packing"
+      "reason_prefix": ""
     },
     {
       "name": "area_nonfinite_linear",

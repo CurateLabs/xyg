@@ -1254,10 +1254,13 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 && !extra_key(&pair[1].style_keys, &["color", "opacity", "size", "symbol"])
         });
     let ordinary_autorange_shape = ordinary_autorange_shape || graph_autorange_shape;
-    let heatmap_only_geometry = traces
-        .iter()
-        .filter(|trace| kind_literal_geometry(trace.kind))
-        .all(|trace| trace.kind == KIND_HEATMAP);
+    // Heatmap lattices are the only geometry whose placement is independent of
+    // the axis side; contour and every literal-geometry kind keep the default.
+    let heatmap_only_geometry = traces.iter().any(|trace| trace.kind == KIND_HEATMAP)
+        && traces
+            .iter()
+            .filter(|trace| kind_literal_geometry(trace.kind) || kind_extent_geometry(trace.kind))
+            .all(|trace| trace.kind == KIND_HEATMAP);
     if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
@@ -1716,7 +1719,7 @@ pub fn scene_figure_support_reason_with_attach(
             kind == "heatmap" && tess != crate::scene_trace_attach::CellFillTessellation::None;
         let ribbon_ends =
             kind == "ribbon" && tess == crate::scene_trace_attach::CellFillTessellation::Ribbon;
-        let mesh_faces = kind == "triangle_mesh"
+        let mesh_faces = matches!(kind, "triangle_mesh" | "segments" | "contour")
             && tess == crate::scene_trace_attach::CellFillTessellation::TriangleMesh;
         let scatter_paints = kind == "scatter"
             && tess == crate::scene_trace_attach::CellFillTessellation::ScatterPaint;

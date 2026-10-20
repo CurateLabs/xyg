@@ -419,6 +419,10 @@ def _lower_scalar_artist_alpha(trace: Any) -> None:
         return
 
     def with_alpha(css: Any) -> str:
+        # `c="none"` / `edgecolors="none"` resolve to "transparent": Matplotlib
+        # keeps an absent paint absent whatever the artist alpha.
+        if str(css).strip().lower() in {"none", "transparent"}:
+            return str(css)
         red, green, blue, _alpha = _native.css_color_rgba(str(css), 1.0)
         return f"rgba({red}, {green}, {blue}, {alpha!r})"
 
@@ -431,56 +435,6 @@ def _lower_scalar_artist_alpha(trace: Any) -> None:
             replaced = copy.copy(channel)
             replaced.constant = with_alpha(channel.constant)
             setattr(trace, name, replaced)
-
-
-def _lower_continuous_segment_paint(trace: Any, store: Any) -> list[Any]:
-    """Split a colormapped contour/segment trace into literal-colored groups.
-
-    Scene paints strokes with solid literal colors only. A contour's colormap
-    value is constant per level, so each distinct mapped color becomes one
-    ordinary trace; Rust's native colormap tables resolve the colors. Traces
-    with per-segment width channels or non-built-in colormaps are left
-    untouched and keep failing closed.
-    """
-    from xyg import _native
-
-    channel = trace.color_ch
-    if (
-        trace.kind not in {"contour", "segments"}
-        or channel is None
-        or channel.mode != "continuous"
-        or channel.values is None
-        or not isinstance(channel.colormap, str)
-        or trace.style_channels
-        or trace.x0 is None
-    ):
-        return [trace]
-    values = np.asarray(channel.values, dtype=np.float64).reshape(-1)
-    domain = channel.domain or (float(values.min()), float(values.max()))
-    rgba = _native.colormap_rgba_canonical(
-        values,
-        len(values),
-        1,
-        (float(domain[0]), float(domain[1])),
-        _native.colormap_stops(channel.colormap),
-        255,
-    ).reshape(-1, 4)
-    colors, group = np.unique(rgba, axis=0, return_inverse=True)
-    lowered = []
-    for index, color in enumerate(colors):
-        mask = group.reshape(-1) == index
-        part = copy.copy(trace)
-        part.x0, part.x1, part.y0, part.y1 = (
-            store.ingest(np.asarray(column.values, dtype=np.float64)[mask])
-            for column in (trace.x0, trace.x1, trace.y0, trace.y1)
-        )
-        part.x, part.y = part.x0, part.y0
-        part.color_ch = None
-        part.style = {**trace.style, "color": f"rgba({color[0]},{color[1]},{color[2]},1)"}
-        if index:
-            part.name = None
-        lowered.append(part)
-    return lowered
 
 
 def _pyplot_scene_figure(figure: Any) -> Any:
@@ -527,7 +481,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             cloned.rgba_grid = planes
             cloned.style.pop("colormap", None)
             cloned.style["truecolor"] = True
-        projected.traces.extend(_lower_continuous_segment_paint(cloned, projected.store))
+        projected.traces.append(cloned)
     projected.axis_options = copy.deepcopy(figure.axis_options)
     projected._axis_categories = copy.deepcopy(figure._axis_categories)
 
@@ -630,7 +584,6 @@ def _pyplot_scene_figure(figure: Any) -> Any:
     projected.show_legend = False
     projected.legend_options = {}
     projected.extra_legends = []
-    _static_document.drop_undrawn_traces(projected)
     colorbar = dict(getattr(figure, "colorbar_options", None) or {})
     projected._static_document_colorbar_layout = None
     projected._static_document_colorbar_scale = None

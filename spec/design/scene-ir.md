@@ -52,6 +52,17 @@ The IR is an in-process typed contract, not a JSON data path. Numeric arrays
 cross the C ABI as bounded typed buffers and remain subject to the dossier's
 §29 prohibition on JSON numbers on the browser wire.
 
+### Segment paint and empty traces (#1006)
+
+No ABI signature changed. `scene_mesh_paint_plane_admit` also admits exact
+`segments`/`contour` traces whose per-item channels are color (plus opacity/
+artist alpha) with no dash: the XYHP kind-6 per-item triple plane then rides
+`SegmentPair` rows, whose stable id is `trace << 32 | segment`. Scene expansion
+interns one literal stroke per distinct mapped color (alpha taken from the
+trace style, width from the trace style). An empty `scatter`/`line` trace packs
+zero rows, so it is a no-op that still names its legend entry; empty `hexbin`
+and rect-like traces keep their packing diagnostics.
+
 ## Version 1: built-in scatter scene and common numeric ticks
 
 Version 1 contains a screen-space scatter scene with one record per mark:

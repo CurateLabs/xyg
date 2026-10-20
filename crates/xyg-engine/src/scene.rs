@@ -6563,6 +6563,7 @@ pub fn expand_scene_records_painted(
     let mut has_hex = false;
     let mut has_ribbon = false;
     let mut has_triangle = false;
+    let mut has_segment = false;
     for mode in input.expansion_modes {
         match SceneExpansionMode::from_code(*mode)? {
             SceneExpansionMode::HeatmapPainted => has_painted = true,
@@ -6570,6 +6571,7 @@ pub fn expand_scene_records_painted(
             SceneExpansionMode::HexCell => has_hex = true,
             SceneExpansionMode::Ribbon => has_ribbon = true,
             SceneExpansionMode::TriangleFace => has_triangle = true,
+            SceneExpansionMode::SegmentPair => has_segment = true,
             _ => {}
         }
     }
@@ -6587,6 +6589,15 @@ pub fn expand_scene_records_painted(
             .iter()
             .flatten()
             .any(|plane| plane.kind == XYHP_PAINT_MESH);
+    // Per-segment colormapped strokes (contour/tricontour, #1006) ride the same
+    // per-item paint-triple plane as mesh faces, keyed by the trace's stable
+    // parent id; only the fill-slot color is read and the base style keeps the
+    // trace's stroke width.
+    let intern_segment = has_segment
+        && paint_planes
+            .iter()
+            .flatten()
+            .any(|plane| plane.kind == XYHP_PAINT_MESH);
     let intern_scatter = input
         .kinds
         .iter()
@@ -6595,7 +6606,13 @@ pub fn expand_scene_records_painted(
             .iter()
             .flatten()
             .any(|plane| plane.kind == XYHP_PAINT_SCATTER);
-    if has_painted || intern_density || intern_hex || intern_ribbon || intern_mesh || intern_scatter
+    if has_painted
+        || intern_density
+        || intern_hex
+        || intern_ribbon
+        || intern_mesh
+        || intern_segment
+        || intern_scatter
     {
         if fill_rgba.len() != stroke_width.len().saturating_mul(4)
             || stroke_rgba.len() != fill_rgba.len()
@@ -6614,6 +6631,7 @@ pub fn expand_scene_records_painted(
         || intern_hex
         || intern_ribbon
         || intern_mesh
+        || intern_segment
         || intern_scatter)
         .then(|| ExpandedSceneStyles {
             fill_rgba: fill_rgba.to_vec(),
@@ -6629,6 +6647,8 @@ pub fn expand_scene_records_painted(
     let mut ribbon_gradients: Vec<StyleGradient> = Vec::new();
     let mut mesh_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
     let mut mesh_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
+    let mut segment_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
+    let mut segment_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
     let mut scatter_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
     let mut scatter_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
     let mut scatter_cursors: HashMap<u64, usize> = HashMap::new();
@@ -7109,6 +7129,37 @@ pub fn expand_scene_records_painted(
             continue;
         }
         if mode == SceneExpansionMode::SegmentPair {
+            if intern_segment {
+                let parent = stable_id >> 32;
+                let segment_index = (stable_id & 0xffff_ffff) as usize;
+                if let Entry::Vacant(slot) = segment_paints.entry(parent) {
+                    if let Ok(plane) = take_paint_plane(&mut paint_planes, parent) {
+                        slot.insert(mesh_face_paints(plane)?);
+                    } else {
+                        slot.insert(Vec::new());
+                    }
+                }
+                if let Some(&(color, _, _)) = segment_paints
+                    .get(&parent)
+                    .and_then(|segments| segments.get(segment_index))
+                {
+                    let alpha = style_rgba4(stroke_rgba, style_ref)?[3];
+                    let width = *painted_styles
+                        .as_ref()
+                        .ok_or(SceneError::Length)?
+                        .stroke_width
+                        .get(style_ref as usize)
+                        .ok_or(SceneError::Length)?;
+                    let stroke = apply_fill_alpha(color, alpha);
+                    style_ref = intern_mesh_face(
+                        painted_styles.as_mut().ok_or(SceneError::Length)?,
+                        &mut segment_intern,
+                        stroke,
+                        stroke,
+                        width,
+                    )?;
+                }
+            }
             output.push_segment_vertex(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
             output.push_segment_vertex(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
             cursor = run_end;
