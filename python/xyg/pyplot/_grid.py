@@ -317,7 +317,12 @@ def _pyplot_static_document(
     panels = []
     for index, (figure, offset) in enumerate(zip(figures, offsets, strict=True)):
         width, height = int(figure.width), int(figure.height)
-        reason, scene = _scene_v3._public_scene_or_reason(figure, width=width, height=height)
+        reason, scene = _scene_v3._public_scene_or_reason(
+            figure,
+            width=width,
+            height=height,
+            y2_chrome=getattr(figure, "_static_document_y2_chrome", None),
+        )
         if reason is not None or scene is None:
             raise _static_document.UnsupportedStaticExport(
                 f"pyplot panel {index}: {reason or 'XYG_STATIC_UNSUPPORTED_PANEL'}"
@@ -564,6 +569,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
     projected.chrome_styles = {}
     projected._static_document_title_style = chrome.title_style
     projected._static_document_chrome_text = chrome.chrome_text
+    projected._static_document_y2_chrome = chrome.y2
     projected.title_options = []
     panel_legend = None
     if projected.show_legend:

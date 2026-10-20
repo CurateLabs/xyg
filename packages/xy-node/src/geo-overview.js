@@ -1,7 +1,7 @@
 // Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.
 /** Typed nonfinal data-domain counts. All temporal/geometry policy is Rust-owned. */
 import { encodeGeoScaleRequest,                          } from './geoscale.js';
-const XYG_WASM_SCENE_VERSION=33; // generated: scripts/geo_node_scene_version.mjs
+const XYG_WASM_SCENE_VERSION=34; // generated: scripts/geo_node_scene_version.mjs
 
 
 const MAX_PACKET=32*1024*1024, HEADER=256, TICKET=128;

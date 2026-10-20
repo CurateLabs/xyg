@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 389;
+pub const ABI_VERSION: u32 = 391;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1095,10 +1095,16 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// stages occupy `base + original` except shared `Output=4` retry. Support
 /// rejection (`-801`) writes a little-endian u32 reason length then UTF-8;
 /// other errors write the failing index as a little-endian u32 when
-/// `out_cap >= 4`. Encoded Scene v31 is unchanged. Since #1006 the row
-/// packer's static LOD failures (`TraceRowsCode::Lod`/`Limit`) and the
-/// assembled encode's `Lod` (expansion over `MAX_SCENE_MARKS`, triangle-mesh
-/// budgets) are relayed as `-801` with reason
+/// `out_cap >= 4`. A top-level `-4` (`Output`, buffer too small) instead
+/// writes the exact required byte count as a little-endian u32 when
+/// `out_cap >= 4` (nothing is written for `out_cap` 0–3), so hosts retry once
+/// with that size. An encoded product longer than `i32::MAX` bytes cannot be
+/// represented by the return value or the size slot: it returns `-3` (Limit)
+/// with `u32::MAX` in `out[0..4]` and is never copied. Encoded Scene v33 is
+/// unchanged. Since #1006 the row packer's static LOD failures
+/// (`TraceRowsCode::Lod`/`Limit`), trace-plus-annotation rows over
+/// `MAX_SCENE_MARKS`, and the assembled encode's `Lod` (expansion over
+/// `MAX_SCENE_MARKS`, triangle-mesh budgets) are relayed as `-801` with reason
 /// `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead of a stage code.
 ///
 /// # Safety
@@ -1200,25 +1206,52 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
             polar_bytes,
             xyfs_bytes,
         ) {
-            Ok(bytes) => {
-                if bytes.len() > out_cap {
-                    return -(EncodeSidecarsCode::Output as i32);
+            Ok(bytes) => match product_output_fit(bytes.len(), out_cap) {
+                ProductOutputFit::Unrepresentable => {
+                    // The positive-i32 return and u32 size slot cannot carry
+                    // this length: reject before reporting a size or copying.
+                    if out_cap >= 4 {
+                        let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                        dest[..4].copy_from_slice(&PRODUCT_OUTPUT_UNREPRESENTABLE.to_le_bytes());
+                    }
+                    -(EncodeSidecarsCode::Limit as i32)
                 }
-                if bytes.is_empty() {
-                    return 0;
+                ProductOutputFit::Required(required) => {
+                    // Insufficient buffer: report the exact required byte
+                    // count so hosts retry once instead of guessing (#887).
+                    if out_cap >= 4 {
+                        let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                        dest[..4].copy_from_slice(&required.to_le_bytes());
+                    }
+                    -(EncodeSidecarsCode::Output as i32)
                 }
-                let dest = std::slice::from_raw_parts_mut(out, out_cap);
-                dest[..bytes.len()].copy_from_slice(&bytes);
-                match i32::try_from(bytes.len()) {
-                    Ok(count) => count,
-                    Err(_) => -(EncodeSidecarsCode::Limit as i32),
+                ProductOutputFit::Fits => {
+                    if bytes.is_empty() {
+                        return 0;
+                    }
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..bytes.len()].copy_from_slice(&bytes);
+                    bytes.len() as i32
                 }
-            }
+            },
             Err(error) => {
                 if error.code == PRODUCT_SUPPORT_UNSUPPORTED {
                     let n = error.reason.len();
-                    let need = 4usize.saturating_add(n);
+                    let Some(required) = n.checked_add(4).and_then(|need| u32::try_from(need).ok())
+                    else {
+                        if out_cap >= 4 {
+                            let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                            dest[..4]
+                                .copy_from_slice(&PRODUCT_OUTPUT_UNREPRESENTABLE.to_le_bytes());
+                        }
+                        return -(EncodeSidecarsCode::Limit as i32);
+                    };
+                    let need = required as usize;
                     if need > out_cap {
+                        if out_cap >= 4 {
+                            let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                            dest[..4].copy_from_slice(&required.to_le_bytes());
+                        }
                         return -(EncodeSidecarsCode::Output as i32);
                     }
                     let dest = std::slice::from_raw_parts_mut(out, out_cap);
@@ -1234,6 +1267,31 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
             }
         }
     })
+}
+
+/// `out[0..4]` marker written with `-3` (Limit) when an encoded product is
+/// longer than the positive-`i32` return and `u32` size slot can represent.
+const PRODUCT_OUTPUT_UNREPRESENTABLE: u32 = u32::MAX;
+
+/// How an encoded product of `len` bytes fits a caller buffer of `out_cap`.
+#[derive(Debug, PartialEq, Eq)]
+enum ProductOutputFit {
+    Fits,
+    /// Exact byte count the caller must provide (always `<= i32::MAX`).
+    Required(u32),
+    /// Longer than the return/size contract can represent.
+    Unrepresentable,
+}
+
+fn product_output_fit(len: usize, out_cap: usize) -> ProductOutputFit {
+    let Ok(count) = i32::try_from(len) else {
+        return ProductOutputFit::Unrepresentable;
+    };
+    if len > out_cap {
+        ProductOutputFit::Required(count as u32)
+    } else {
+        ProductOutputFit::Fits
+    }
 }
 
 /// Query Rust's figure-compile support diagnostic for a packed `XYFS`
@@ -2305,7 +2363,7 @@ pub unsafe extern "C" fn xyg_scene_pack_annotations(
     })
 }
 
-/// Pack concatenated XYAF v1 annotation facts into an XYAO v1 envelope.
+/// Pack concatenated XYAF v2 annotation facts into an XYAO v1 envelope.
 ///
 /// Hosts pass authored kind/coords/style presence, literal RGBA, dash/linecap,
 /// and UTF-8. Rust owns wrap vs text vs arrow vs callout vs rule/band/marker
@@ -3216,7 +3274,7 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch
 /// cannot drift. ABI 148 does not change Scene records;
 /// `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
-/// rule/band/marker routing from packed XYAF v1. ABI 149 does not change
+/// rule/band/marker routing from packed XYAF v2. ABI 149 does not change
 /// Scene records; `xyg_scene_pack_heatmap_facts` owns XYHP kind routing from
 /// packed XYHF v1 so heatmap/density paint planes cannot drift.
 /// ABI 150 does not change Scene records;
@@ -21924,7 +21982,7 @@ pub struct XygSceneXyafPackIn {
     pub dash: [f32; 8],
 }
 
-/// Pack one XYAF v1 record (ABI 319).
+/// Pack one XYAF v2 record (ABI 319).
 #[no_mangle]
 pub unsafe extern "C" fn xyg_scene_xyaf_pack(
     input: *const XygSceneXyafPackIn,
@@ -21961,6 +22019,10 @@ pub unsafe extern "C" fn xyg_scene_xyaf_pack(
         label_fill: input.label_fill,
         label_border: input.label_border,
         dash: input.dash,
+        // This record ABI carries no arrow style: arrows keep the default
+        // filled-triangle head (the bulk packer carries the richer vocabulary).
+        arrow_ends: [u8::from(input.kind_code == 1), 0],
+        arrow_facts: [0.0; 8],
         text: text_bytes,
     };
     match scene_xyaf_pack::scene_xyaf_pack(&pack_input) {
@@ -28887,9 +28949,9 @@ mod tests {
         };
         assert_eq!(facts_code, 3);
         assert_eq!(line_out[2], 11);
-        let mut xyaf = vec![0u8; 232];
+        let mut xyaf = vec![0u8; 304];
         xyaf[..4].copy_from_slice(b"XYAF");
-        xyaf[4..8].copy_from_slice(&1u32.to_le_bytes());
+        xyaf[4..8].copy_from_slice(&2u32.to_le_bytes());
         xyaf[12] = 3;
         xyaf[13] = 1;
         xyaf[15] = 255;
@@ -29221,6 +29283,122 @@ mod tests {
             product_encoded[..product_code as usize],
             encoded_out[..encoded_code as usize]
         );
+        // A too-small buffer reports the exact required size (#887).
+        let mut small = vec![0u8; product_code as usize - 1];
+        let small_code = unsafe {
+            xyg_scene_encode_product(
+                xytc.as_ptr(),
+                xytc.len(),
+                xyta.as_ptr(),
+                xyta.len(),
+                xynm.as_ptr(),
+                xynm.len(),
+                xycl.as_ptr(),
+                xycl.len(),
+                std::ptr::null(),
+                0,
+                0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                xycf.as_ptr(),
+                xycf.len(),
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                small.as_mut_ptr(),
+                small.len(),
+            )
+        };
+        assert_eq!(small_code, -(EncodeSidecarsCode::Output as i32));
+        assert_eq!(
+            u32::from_le_bytes(small[..4].try_into().unwrap()),
+            product_code as u32
+        );
+    }
+
+    #[test]
+    fn product_support_diagnostic_reports_exact_required_buffer_size() {
+        let mut xyfs = Vec::from(*b"XYFS");
+        xyfs.extend_from_slice(&1u32.to_le_bytes()); // version
+        xyfs.extend_from_slice(&2u32.to_le_bytes()); // custom font
+        xyfs.extend_from_slice(&2u32.to_le_bytes()); // primary x/y axes
+        for axis in [0u8, 1] {
+            xyfs.extend_from_slice(&[axis, 0, 0, 0]);
+            xyfs.extend_from_slice(&0u32.to_le_bytes()); // no authored keys
+        }
+        let encode = |out: &mut [u8]| unsafe {
+            xyg_scene_encode_product(
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                xyfs.as_ptr(),
+                xyfs.len(),
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        let mut full = [0xa5; 256];
+        assert_eq!(encode(&mut full), -PRODUCT_SUPPORT_UNSUPPORTED);
+        let reason_len = u32::from_le_bytes(full[..4].try_into().unwrap()) as usize;
+        let required = 4 + reason_len;
+        assert!(std::str::from_utf8(&full[4..required])
+            .unwrap()
+            .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:"));
+        for capacity in [0, 1, 2, 3, 4, 8, required - 1] {
+            let mut out = [0xa5; 256];
+            assert_eq!(encode(&mut out[..capacity]), -4, "capacity {capacity}");
+            if capacity >= 4 {
+                assert_eq!(
+                    u32::from_le_bytes(out[..4].try_into().unwrap()),
+                    required as u32,
+                    "capacity {capacity}"
+                );
+                assert!(out[4..].iter().all(|&byte| byte == 0xa5));
+            } else {
+                assert!(out.iter().all(|&byte| byte == 0xa5));
+            }
+        }
+        let mut exact = vec![0xa5; required];
+        assert_eq!(encode(&mut exact), -PRODUCT_SUPPORT_UNSUPPORTED);
+        assert_eq!(exact, full[..required]);
+    }
+
+    #[test]
+    fn product_output_fit_decides_without_allocating_the_output() {
+        assert_eq!(product_output_fit(0, 0), ProductOutputFit::Fits);
+        assert_eq!(product_output_fit(10, 10), ProductOutputFit::Fits);
+        assert_eq!(product_output_fit(10, 9), ProductOutputFit::Required(10));
+        let max = i32::MAX as usize;
+        assert_eq!(product_output_fit(max, max), ProductOutputFit::Fits);
+        assert_eq!(
+            product_output_fit(max, 1),
+            ProductOutputFit::Required(i32::MAX as u32)
+        );
+        // 50,000 hexbin cells plus 537 unoutlined 2,000,000-px heatmaps
+        // exceed 4 GiB: never a wrapped or saturated "exact" size.
+        for len in [max + 1, 1usize << 32, (1usize << 32) + 7, usize::MAX] {
+            assert_eq!(product_output_fit(len, 64), ProductOutputFit::Unrepresentable);
+            assert_eq!(product_output_fit(len, usize::MAX), ProductOutputFit::Unrepresentable);
+        }
     }
 
     #[test]

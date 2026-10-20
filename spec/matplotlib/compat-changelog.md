@@ -39,9 +39,92 @@ which covers user-visible releases across the whole package.
 - `bbox=dict(boxstyle="round...")` still fails closed, now with the stable
   `XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE` instead of a Scene allowlist
   message; the Scene label box has no corner radius.
-- Reference-corpus cases 25 and 53 clear this gate. They still stop at separate,
-  unrelated Scene gaps (arrow head vocabulary, `axes_fraction` table cells,
-  zero-point `bxp` fliers) tracked in #1006.
+- Reference-corpus cases 25 and 53 clear this gate. Case 25's arrow head vocabulary
+  gap is closed by the entry below; case 53 passes with the annotation coordinate
+  spaces entry above (#1006).
+
+## Static `annotate(arrowprops=dict(arrowstyle=...))` on the Rust Scene — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+Corpus case 25 (`annotate(..., arrowprops=dict(arrowstyle="->"))`) stopped static
+export with `Scene arrow style does not encode ['head_style', 'label_clear',
+'start_offset']`: the Scene arrow was a fixed filled triangle drawn from the
+label anchor. The Rust-owned arrow now carries a bounded vocabulary (Scene v34,
+`XYAR` v2 / `XYAF` v2): head/tail ends (`triangle`, open `v`, `none`), start
+offset, label clearance and shrink in pixels. `->` is an open V (two strokes, no
+fill), `<-`/`<->` put the V at the start/both ends, `-` is a plain shaft, and the
+shaft starts at the label box edge plus the margin instead of its centre. The
+admitted bare `arrowstyle` set is `-`, `->`, `<-`, `<->`, `-|>`; bars, filled tails,
+tapered shafts and curved connections remain explicit rejections (see
+`compat.md`). Python and Node produce byte-identical Scenes for every admitted
+style (`tests/test_arrow_style_cross_host.py`); the pyplot regression is
+`tests/pyplot/test_annotate_arrowstyle_1006.py`. Unmapped names (`]->`, `-<`,
+`<-[`, unknown strings) and every comma-suffixed option string (including
+`head_length`/`head_width` and malformed options) retain their original source
+as an unencoded `arrowstyle` fact until static admission rejects it with
+`Scene arrow style does not encode [...]`. They cannot silently become a
+triangle or lose their authored options. The Node normal test gate also runs
+`arrow-painter-hydration.test.mjs`.
+
+`shrinkA`/`shrinkB` were previously dropped; they now map from points to the pixel
+shrink (2 pt default, so the tip stops 2 pt short of `xy` as in Matplotlib), and the
+Scene arrow honors every shrink/clearance fact exactly or fails closed. The
+straight-arrow run grammar bumps Scene to v34, and the browser painter hydrates the
+open-head runs.
+
+With the per-annotation label styles above, reference-corpus case 25 (arrow plus a
+differently styled `text`) passes on the Matplotlib 3.11.0 lane. With cases 47
+(hexbin groups, #1023) and 53 already passing on main, the corpus is 54/55; the only
+remaining case is 26 (`twinx`, PRs 2 and 3, #1037).
+
+## Secondary y axis (`twinx`) on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus is
+53/55 with case 53 from #1039; the two remaining cases (25, 47) are the named gaps in
+`compat.md` (unrelated Scene gaps tracked in #1006). Design: `spec/design/twinx-secondary-y-axis.md`.
+
+- `twinx()` exports through Scene v33's `XYY2` block. Python and Node marshal only
+  facts: the axis id/side, scale, ticks, title and format, the XYCO-resolved y2
+  chrome (tick/title size, padding, paints, italic/bold flags), the per-trace y
+  selector (`XYCL` column flag bit 1, ABI 391), and `has_colorbar` presence. They
+  add no admission or layout policy and no default for any y2-specific wire field
+  (Rust builds the `XYY2` block from the authored observation; the shared chrome-axis
+  marshalling still resolves side/mask defaults, as before); Rust returns the stable
+  `XYG_SCENE_UNSUPPORTED_Y2_*` / `_X2` / `_EXTRA_AXES` reasons identically to both.
+- pyplot seeds the twin's right axis the way it seeds the left y axis, onto the
+  public `y2` axis options: `ytick.major.size/pad/width`, `ytick.color`,
+  `ytick.labelcolor`, `ytick.labelsize`, `ytick.minor.size/width/pad`,
+  `axes.linewidth`, `axes.labelcolor`, `axes.labelsize`, `axes.labelweight`,
+  `grid.*` and `font.size`. `ytick.direction` is not seeded (pyplot does not
+  support it on the left axis either). Titles keep their authored colours while
+  tick labels keep the rc colour.
+- Static output of the y2 axis is byte-identical between Python and Node
+  (XYST/SVG/PNG/PDF) for the same public dual-axis chart
+  (`tests/test_static_dual_axis_cross_host.py`).
+- The right-hand title reads bottom to top like the left title and Matplotlib's
+  `twinx` label (rotation 90°) in SVG, PDF, PNG and the interactive browser
+  client; PR 1 had drawn it clockwise.
+- An omitted y2 `side` means right (Rust owns the default); `side="left"` is still
+  refused as `XYG_SCENE_UNSUPPORTED_Y2_SIDE`.
+- An authored empty `tick_values` on y2 means automatic ticks, as it already did
+  for x and y.
+- Known gap: annotations on a twin's y2 scale (`twin.text`, `twin.annotate`,
+  `twin.axhline`, ...) are not projected. They were silently drawn through the
+  primary y scale (e.g. `y="-18052.8"`); pyplot now binds them to y2 and Rust
+  refuses them with `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION`. Axes-fraction text on a
+  twin (`transform=twin.transAxes`) never reads the y scale and still exports.
+  The static-only scope is explicit: the live client projects a y2-bound
+  annotation onto the y2 scale (both hosts marshal `y_axis: "y2"` on the live
+  wire, protocol 14, and refuse the binding when no y2 axis is declared).
+- The browser's default y-title rotation (-90°) now applies to every right-placed
+  y title, not only y2.
+- Invalid authored y2 values (zero or negative scale constant, non-finite domain or
+  tick-label angle) are not defaulted by the y2 marshalling in either host: they
+  reach the Scene encoder, which refuses them, and both hosts surface the same
+  generic malformed-scene message (`invalid canonical scene batch`, not a stable
+  `XYG_SCENE_UNSUPPORTED_*` reason). A category y2 gets
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`.
+- `secondary_xaxis()`/`secondary_yaxis()` and `twiny` remain interactive-only or
+  fail closed (no x2).
 
 ## Reference corpus restore on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 
@@ -90,9 +173,23 @@ Each is regression-tested in `tests/pyplot/test_corpus_regressions_1006.py`,
 
 Still open on this lane (named gaps, all fail closed with stable diagnostics):
 secondary y axes (`twinx`), heterogeneous annotation styles and annotation
-`bbox=`, and more than 1,024 hexbin cells (#887). (Per-item scatter sizes,
-line+marker legend swatches and multi-panel legends, listed open when this
-entry was written, are closed by the entries below.)
+`bbox=`. (Per-item scatter sizes, line+marker legend swatches, multi-panel
+legends and more than 1,024 hexbin cells (#887), listed open when this entry
+was written, are closed by the entries below.)
+
+## Static hexbin beyond the painter-group limit — 2026-10-20 (Matplotlib 3.11.0 lane)
+
+- Native static `hexbin` exports (SVG, PNG, PDF) now keep every lattice cell up
+  to a documented 50,000-cell aggregate ceiling instead of failing closed at
+  the browser painter's 1,024-group budget. Matplotlib's default-gridsize
+  lattice (11,558 cells, reference-corpus case 47) and the 1,226-cell
+  `hexbin_demo` log-colorbar gallery journey now export without dropping or
+  merging cells. One cell over the ceiling still fails closed with
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in both hosts; browser budgets are
+  unchanged. See `spec/design/static-document.md` §2 and
+  [#887](https://github.com/CurateLabs/xyg/issues/887).
+- Node `hexbinChart` no longer bins pre-binned centres a second time, which had
+  silently replaced the requested `gridsize` with the default.
 
 ## Per-item scatter size — #1006
 

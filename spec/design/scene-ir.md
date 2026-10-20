@@ -4,7 +4,7 @@ Issue [#58](https://github.com/CurateLabs/xyg/issues/58) moves parity-affecting
 scene and static-export decisions into `xyg-engine` in bounded vertical slices.
 This document is the version contract for that migration.
 
-Scene v33 adds the secondary right-hand y axis (`y2`, Matplotlib `twinx`); see
+Scene v34 widens the straight-arrow run grammar (see *Straight-arrow vocabulary*). Scene v33 adds the secondary right-hand y axis (`y2`, Matplotlib `twinx`); see
 [Secondary right-hand y axis](#secondary-right-hand-y-axis-scene-v33-xypb-v16)
 and the authoritative design in `twinx-secondary-y-axis.md`. A Scene without y2
 is byte-identical to its v32 form except for the version word.
@@ -34,11 +34,11 @@ polygon's vertex count. See `browser-wasm.md` for XYPB derived planes (v16 adds 
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 33 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 34 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v33, so additive emission of new
+bitmap or schema negotiation in Scene v34, so additive emission of new
 records or new record semantics is not safe. One narrow class is exempt: an
 optional sidecar that only restates records already in the Scene and is
 validated against them (the `XYGR`/`XYDS`/`XYMG` style sidecars, the #1006
@@ -50,7 +50,7 @@ negotiation lands later, only explicitly negotiated additions may avoid a
 version bump. Consumers must reject an unsupported scene version and, once
 decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v33 batch layout,
+WASM lifecycle foundation; it validates the current Scene v34 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
@@ -187,7 +187,7 @@ ABI 147 does not change Scene records; `xyg_scene_pack_product_facts` owns
 flags, `step_mode`, and extra0/extra1 from packed XYPK v1 so cartesian-vs-polar
 smooth and painted heatmap dispatch cannot drift. ABI 148 does not change
 Scene records; `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow
-vs callout vs rule/band/marker routing from packed XYAF v1. ABI 149 does not
+vs callout vs rule/band/marker routing from packed XYAF v2 (v1 until the straight-arrow vocabulary, #1006). ABI 149 does not
 change Scene records; `xyg_scene_pack_heatmap_facts` owns heatmap/density
 XYHP kind routing from packed XYHF v1. ABI 150 does not
 change Scene records; `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR/XYMG
@@ -538,6 +538,11 @@ exports this plain Scene first; `xyg_graph_composed_scene` then decodes it
 chrome, and text, and re-emits the records, labels, and explicit legend from the
 graph's resolved per-item planes (graph-mark.md §8). The flag is a new bit in the
 unchanged XYEP v1 envelope (no C-signature change).
+Secondary y (#1006, ABI 391): hosts set XYCL prefix byte 3 bit 1 (`XYCL_Y2`) on
+every trace bound to the `y2` axis; Rust stamps the record y selector (byte 3 bit
+`0x40`, see *Secondary right-hand y axis*) on every row packed from it. Other bits
+of that byte stay rejected, and the flag is meaningless without an `XYY2` block
+(`EncodeAssembledCode::Payload`).
 Graph edge ends (#33): hosts set XYCL prefix byte 3 bit 0
 (`XYCL_EDGE_ENDS`) on a cartesian `segments` trace and ship its `base`
 column as `edge_route::EDGE_ENDS_STRIDE` (7) values per segment (node
@@ -719,7 +724,7 @@ encoded Scene v32 keeps XYGR). ABI 147 does not change Scene records;
 packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch cannot
 drift. ABI 148 does not change Scene records;
 `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
-rule/band/marker routing from packed XYAF v1. ABI 149 does not change Scene
+rule/band/marker routing from packed XYAF v2 (v1 until the straight-arrow vocabulary, #1006). ABI 149 does not change Scene
 records; `xyg_scene_pack_heatmap_facts` owns heatmap/density XYHP kind routing
 from packed XYHF v1.
 ABI 150 does not change Scene records;
@@ -1411,7 +1416,7 @@ SVG elliptical arcs, the compatibility contract of the retired Python writer
 (polar-axes.md §5): a printed or zoomed wind rose keeps circular edges, and the
 PDF converted from that SVG draws the arcs as cubic Béziers.
 
-`SCENE_VERSION` stays 33 and `ABI_VERSION` is unchanged (no C signature or
+`SCENE_VERSION` needs no bump for `XYWA` (it is 34 for the unrelated #1034 arrow vocabulary) and `ABI_VERSION` is unchanged (no C signature or
 by-pointer struct changes). Like the optional `XYGR`/`XYDS`/`XYMG` style
 sidecars, `XYWA` adds no record kind and changes no record's meaning, units,
 bounds, or order; it is a validated restatement of records already in the
@@ -1550,13 +1555,14 @@ endpoints, literal RGBA8 paint, opacity in `[0, 1]`, and a positive finite
 stroke width. The payload is exact-length (60 bytes per row); duplicate ids,
 nonfinite values, zero/too-short projected arrows, malformed frames, and ids
 that collide with canonical records fail closed. Python and Node only frame
-these bounded author values.
+these bounded author values (`XYAR` v1 = 60-byte rows; see v2 below).
 
 Rust projects both endpoints, derives the fixed screen-space arrowhead after
 projection, applies literal alpha and clipping/paint order, and lowers the
 shaft plus head into the same canonical records consumed byte-identically by
 SVG, raster, and painter output. The slice has no text, label attachment,
-callout placement, offsets, curved/orthogonal routes, host-resolved pixels or
+callout placement, curved/orthogonal routes (the end/shrink vocabulary is
+`XYAR` v2 below), host-resolved pixels or
 head geometry, dash patterns, custom caps/joins, gradients, CSS, custom fonts,
 markup, collision, rotation, wrapping, or boxes. Those forms remain loud
 unsupported boundaries.
@@ -1567,7 +1573,7 @@ Unwrapped `text` annotations may carry `style.coordinate_space`, one of `data`
 (default), `axes_fraction`, `xaxis_transform` (x data, y axes fraction) or
 `yaxis_transform` (x axes fraction, y data). Hosts marshal that string only
 (`XygXyafBulkStyleIn.coordinate_space`); `scene_xyaf_bulk_pack` maps it to a
-code (0..=3) in XYAF v1 byte 26 (formerly reserved zero, so zero stays `data`)
+code (0..=3) in XYAF byte 26 (formerly reserved zero, so zero stays `data`; unchanged by XYAF v2)
 and routes any non-data text to the laid-out `XYAW` path. `figure_fraction`,
 unknown values and any non-text kind (callout, arrow, marker, rule, band) fail
 closed with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE` /
@@ -1586,6 +1592,95 @@ magnitude limit still reject. The browser painter label table is unchanged
 label anchored outside the canvas rather than emit geometry the TS client
 (`48_wasm_scene.ts`) rejects. `figure_fraction` is a known gap: a pyplot panel
 Scene does not own the figure rectangle.
+
+### Straight-arrow vocabulary: Scene v34, `XYAR` v2, `XYAF` v2 (#1006)
+
+The fixed filled triangle is the *default* arrow, not the only one. A bounded,
+Rust-owned vocabulary (`crates/xyg-engine/src/scene_arrow.rs`) describes the
+end decorations, shrink and label clearance of an arrow. Hosts marshal facts
+only (style keys `head_style`, `tail_style`, `start_offset`, `label_clear`,
+`gap_start`, `gap_end` on an `arrow` annotation); Rust validates, positions and
+draws, so SVG, raster and PDF come from one implementation and Python and Node
+produce identical Scene bytes.
+
+| `head_style` | `tail_style` | Matplotlib arrowstyle | Drawn as |
+|--------------|--------------|-----------------------|----------|
+| `triangle` (default) | `none` (default) | `-\|>` | filled triangle head |
+| `v` | `none` | `->` | open V head (two wing strokes) |
+| `none` | `v` | `<-` | open V at the start |
+| `v` | `v` | `<->` | open V at both ends |
+| `none` | `none` | `-` | plain shaft |
+
+`triangle` also combines with `tail_style=v`. Everything else is a stable,
+fail-closed rejection and never falls back to a different arrow:
+
+- a value outside `none|triangle|v`, a `triangle` tail (so `<|-`, `<|-|>`), bars
+  (`|-|`, `]-[`), malformed pixel facts, negative `label_clear` / `gap_*`, or
+  a magnitude over 4,096 px → bulk-pack code `-15`, reason
+  `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`;
+- keys outside the admit table (`curve`, `angle_a`, `angle_b`, `elbow`,
+  `shaft_width_*` with unequal ends, `dash`, …) → `Scene arrow style does not
+  encode [...]`; tapered pyplot arrows (`fancy`, `simple`, `wedge`) →
+  `XYG_STATIC_UNSUPPORTED_TAPERED_ANNOTATION_ARROW`; curved connectionstyles
+  are keys of that kind.
+
+`start_offset` components are finite signed pixels in `[-4096, 4096]`;
+`label_clear` extents and `gap_*` are finite nonnegative pixels in `[0, 4096]`.
+The pyplot shim lowers bare recognized `arrowstyle` names to endpoint facts.
+Unmapped names (including `]->`, `-<`, `<-[` and unknown strings) and **all**
+comma-suffixed option strings retain their full original text as the unencoded
+`arrowstyle` style key. Scene admission on both hosts rejects that key with
+`Scene arrow style does not encode [...]`; it never substitutes a triangle or
+drops options, including malformed options that the browser parser skips.
+Pyplot's existing tapered-shaft diagnostic may reject tapered forms earlier.
+No parameterized arrowstyle is currently encoded (`head_length`, `head_width`,
+tail/bar dimensions and angles/scales included). The browser's approximations
+remain separate from this static rejection contract.
+
+Screen-space geometry (pixels, y down) is `arrow_geom::arrow_geometry`: the
+projected start moves by `start_offset` (anchor → label-box centre), then both
+ends trim along the shaft by `gap_start` / `gap_end`, the start by at least the
+distance at which the shaft leaves the `label_clear` box (`[left, right, up,
+down]` extents around that centre). The facts are honored exactly or the arrow
+is rejected (`SceneError::Length`, which hosts surface as the shared `invalid canonical scene batch` rejection): when the start clearance plus `gap_end`
+reaches the shaft length (no 90 % "restore the untrimmed arrow" rule as in the
+interactive path), or the remaining shaft is too short for its heads, the Scene
+fails closed instead of silently ignoring a fact. Heads are `head_length` (default 8 px, or
+the XYST arrow-metric head size) long with half-width `head_length / 2`; the V
+uses the triangle's corners, so open and filled heads share one footprint.
+
+Run grammar (tag 5, shaft vertices then an optional 3-vertex fill):
+
+| polyline | fill | contents |
+|----------|------|----------|
+| 2 | 0 | `[p0, p1]` |
+| 2 | 3 | `[p0, base]`, `[tip, base+side, base-side]` (the pre-#1006 run, byte-identical) |
+| 5 | 0 | `[p0, p1, wing, p1, wing]` (V at `p1`; `<-` is the reversed arrow) |
+| 5 | 3 | `[wing, p0, wing, p0, base]`, head fill |
+| 8 | 0 | `[wing, p0, wing, p0, p1, wing, p1, wing]` |
+
+Arrow runs are screen-space and primary-plane: Scene v33's record byte-3 y2 selector (`0x40`) is masked when grouping a run by its annotation tag (as for every annotation run) but a run whose records carry it is rejected by both the byte validator (`validate_scene_batch`) and the document decoder, and the encoder always writes it clear.
+
+Batch validation rebuilds each run from its recovered ends and head length and
+rejects any drift; `apply_static_arrow_metrics` re-derives every head through
+the same function. Callouts (tag 6) keep the exact 5-record triangle run.
+
+Versioning is use-gated, like `XYAL`/`XYAC`: `XYAR` stays **v1** (60-byte rows)
+while every arrow has the default shape and becomes **v2** (132-byte rows: the
+v1 row, head/tail codes, six zero padding bytes, then `start_offset` x/y,
+`gap_start`, `gap_end`, `label_clear` l/r/u/d as f64) when any arrow does;
+unknown `XYAR` versions are `SceneError::Version`. `XYAF` becomes **v2**: the
+232-byte v1 header gains a 72-byte arrow extension (head code, tail code, six
+zero bytes, eight f64 facts), zero for non-arrow kinds; v1 `XYAF` records are
+rejected with the annotation `Version` error. `xyg_scene_xyaf_pack` (single
+record) carries no arrow style and writes the default; the bulk packer
+(`xyg_scene_xyaf_bulk_pack`, whose style input gains the six arrow facts) is
+the vocabulary's only authoring seam. The widened run grammar changes what a
+tag-5 run may contain, so **`SCENE_VERSION` is 34** (v33 is the secondary y axis): every consumer of the batch
+(Rust, Python, Node, the WASM painter and the browser hydrator) rejects a scene
+whose version differs, and the painter hydrator accepts the 2/5/8-vertex shaft
+runs and draws the Rust-provided vertices as traces (the browser has no second
+arrow renderer for Scene-sourced arrows).
 
 ## Version 18 bounded Cartesian callouts
 
@@ -1756,9 +1851,13 @@ never decimates.
 
 **Mesh tiers and dense-fill rule (#1006).** The browser painter's
 1,024-group budget (`PUBLIC_POLYFILL_GROUP_BUDGET`) does not bound static
-export of a non-joined triangle mesh, matching PR #1023's treatment of hexbin
-(`MAX_PUBLIC_HEXBIN_CELLS` = 50,000; unify the two named ceilings when it
-lands). The Scene always keeps every face as three `Triangle` records:
+export of a non-joined triangle mesh, matching #1023's treatment of hexbin.
+Both use the one shared static vector-group ceiling
+`MAX_PUBLIC_VECTOR_POLYGON_GROUPS` = 50,000 (`MAX_PUBLIC_HEXBIN_CELLS` and
+`MAX_PUBLIC_TRIANGLE_MESH_FACES` are aliases of it); above it a hexbin fails
+closed (#1023: an image would lose hexagon geometry and per-cell
+attribution) while a mesh switches SVG/PDF to the dense-fill image below.
+The Scene always keeps every face as three `Triangle` records:
 
 - admission (`scene_export.rs`, counts only): any face count, with 3 expanded
   records per face summed over the figure's meshes within `MAX_SCENE_MARKS`
@@ -1860,12 +1959,13 @@ paint planes, the predicate also fails closed with
   draws such a scatter direct up to 2,000,000 points; static export does not
   yet source per-item paint from canonical columns, so it refuses instead.
 
-**Secondary y.** Product rows do not yet record which y axis they belong to
-(Scene v33 rows select `y2` only through the stepwise encoder). A Scene whose
-XYCF carries an `XYY2` sidecar therefore never decimates: a line above the
-threshold fails closed as `TraceRowsCode::Lod` (`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`)
-until twin-axis hosts (#1037) mark rows by axis, so the log prefilter can
-read the right scale. A decimated line also refuses any non-empty column
+**Secondary y.** Since #1037 product rows record their y axis (`XYCL_Y2`,
+`PackedSceneRow.y2`). A line on `y2` above the threshold decimates with the
+same M4 rows as the browser payload and applies the log prefilter of the
+secondary scale, read from the XYCF `XYY2` block's scale code
+(`LineLodFrame::with_y2`). A `y2` line in a Scene with no `XYY2` block
+cannot be filtered and fails closed as `TraceRowsCode::Lod`
+(`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`). A decimated line also refuses any non-empty column
 that is not row-aligned and any attached per-row plane, rather than gather
 only some columns.
 
@@ -2028,8 +2128,9 @@ packs `XYFS` on that same product call so figure-compile support cannot drift
 either; empty `XYFS` skips the probe. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics. Rust owns the public PolyFill group budget, including companion
-traces that share the browser painter's 1,024-group ceiling; hosts do not
-count meshes or probe the painter. Python
+traces that share the browser painter's 1,024-group ceiling (hexbin cells carry
+a separate 50,000-cell aggregate ceiling, `MAX_PUBLIC_HEXBIN_CELLS`, #887);
+hosts do not count meshes or probe the painter. Python
 `public_static_export`, `FacetGrid.to_svg`, and `FacetGrid._compose_rgba`
 reuse that compiled batch rather than encoding twice. ABI 164 owns the
 SVG/PNG/PDF/JPEG/WebP consumers from that batch. ABI 106 does not
@@ -2242,8 +2343,10 @@ before every annotation-tag comparison. A selector without a y2 block is
 `EncodeAssembledCode::Payload`. One trace never straddles both y scales.
 
 **Layout and drawing.** The `XYCF` header's reserved word (284..288) is the byte
-length of a trailing `XYY2` sidecar (0 = none; `xyg_scene_xycf_pack` and
-`xyg_scene_chrome_pack` gain `y2` pointer/length arguments). Gutter widening in
+length of a trailing `XYY2` sidecar (0 = none). `xyg_scene_xycf_pack` takes the
+payload as bytes; `xyg_scene_chrome_pack` takes the authored y2 observation
+(`XygChromeY2In` plus `y2_major`/`y2_minor`/`y2_tick_labels`) and Rust builds the
+payload, owning every default and the axis chrome record. Gutter widening in
 `encode_assembled` measures the y2 labels — styled automatic ticks via the same
 `resolved_axis_ticks` ladder as y (no copy), authored/explicit labels, outward
 ticks, padding, and the rotated title — and takes `margin_right = max(chrome
@@ -2251,7 +2354,11 @@ margin, 8 + tick_out + padding + widest label + title room)`; the chrome margin
 already carries the `compat_layout::right_y_room()` floor for `RIGHT_SECONDARY`.
 SVG, raster, PDF and the browser painter draw the axis through the one axis
 loop shared with x and y (spine and ticks at the right edge, labels anchored
-start, title quarter-turned clockwise in the right gutter). There is no y2 grid
+start, title rotated 90° counter-clockwise in the right gutter, reading bottom to
+top like the left title). The browser client's default title rotation is a
+TypeScript default (XYPB carries no title-angle fact) and is −90° for both the y
+and y2 titles, so every surface agrees; `tests/browser/wasm_foundation_page.mjs`
+asserts the rendered y2 title transform. There is no y2 grid
 (Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
 
 **XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are
@@ -2271,7 +2378,10 @@ header byte is the authored side (the `XYEP` codes: 1 bottom, 2 left, 3 top, 4
 right, 255 other). Trace flag bit 13 marks a trace plotted against y2. Rust
 admits y2 only when `side == right`, and returns the stable reasons
 `XYG_SCENE_UNSUPPORTED_Y2_SIDE`, `_X2`, `_EXTRA_AXES`, `_Y2_TICK_ONLY` (no trace
-on the axis), `_Y2_POLAR`, and `_Y2_COLORBAR`. XYFS observation bit 10 reports that the
+on the axis), `_Y2_POLAR`, and `_Y2_COLORBAR`. XYFS observation bit 11 flags an annotation bound to y2 (`y_axis == "y2"`) whose coordinate
+space reads the y data scale (`data`, `yaxis_transform`; the space vocabulary stays
+owned by `coordinate_space_code`), refused as `_Y2_ANNOTATION`; annotation rows
+may carry `y_axis`. XYFS observation bit 10 reports that the
 figure carries any colorbar (supported or not; `xyg_scene_figure_support_materialize`
 takes a separate `has_colorbar`), so a valid colorbar cannot hide from the y2
 prohibition; `SceneBatch::with_y2` also refuses a colorbar, and the gutter

@@ -29,14 +29,19 @@ class AnnotationsSpecMixin(_Host):
                         "kind": "rule",
                         "axis": axis,
                         "value": self._annotation_value(
-                            annotation.get("value"), axis, f"{label}.value"
+                            annotation.get("value"),
+                            self._annotation_value_axis(annotation, axis),
+                            f"{label}.value",
                         ),
                     }
                 )
             elif kind == "band":
                 axis = self._annotation_axis(annotation.get("axis"), f"{label}.axis")
-                start = self._annotation_value(annotation.get("start"), axis, f"{label}.start")
-                end = self._annotation_value(annotation.get("end"), axis, f"{label}.end")
+                value_axis = self._annotation_value_axis(annotation, axis)
+                start = self._annotation_value(
+                    annotation.get("start"), value_axis, f"{label}.start"
+                )
+                end = self._annotation_value(annotation.get("end"), value_axis, f"{label}.end")
                 if end <= start:
                     raise ValueError(f"{label} end must be greater than start")
                 specs.append(
@@ -49,7 +54,11 @@ class AnnotationsSpecMixin(_Host):
                     | {
                         "kind": "text",
                         "x": self._annotation_value(annotation.get("x"), "x", f"{label}.x"),
-                        "y": self._annotation_value(annotation.get("y"), "y", f"{label}.y"),
+                        "y": self._annotation_value(
+                            annotation.get("y"),
+                            self._annotation_value_axis(annotation, "y"),
+                            f"{label}.y",
+                        ),
                         "text": self._required_text(annotation.get("text"), f"{label}.text"),
                         "dx": self._finite_scalar(annotation.get("dx", 0.0), f"{label}.dx"),
                         "dy": self._finite_scalar(annotation.get("dy", 0.0), f"{label}.dy"),
@@ -64,7 +73,11 @@ class AnnotationsSpecMixin(_Host):
                     | {
                         "kind": "marker",
                         "x": self._annotation_value(annotation.get("x"), "x", f"{label}.x"),
-                        "y": self._annotation_value(annotation.get("y"), "y", f"{label}.y"),
+                        "y": self._annotation_value(
+                            annotation.get("y"),
+                            self._annotation_value_axis(annotation, "y"),
+                            f"{label}.y",
+                        ),
                         "size": self._positive_scalar(annotation.get("size", 8.0), f"{label}.size"),
                         "symbol": self._annotation_symbol(
                             annotation.get("symbol", "circle"), f"{label}.symbol"
@@ -82,9 +95,17 @@ class AnnotationsSpecMixin(_Host):
                     | {
                         "kind": "arrow",
                         "x0": self._annotation_value(annotation.get("x0"), "x", f"{label}.x0"),
-                        "y0": self._annotation_value(annotation.get("y0"), "y", f"{label}.y0"),
+                        "y0": self._annotation_value(
+                            annotation.get("y0"),
+                            self._annotation_value_axis(annotation, "y"),
+                            f"{label}.y0",
+                        ),
                         "x1": self._annotation_value(annotation.get("x1"), "x", f"{label}.x1"),
-                        "y1": self._annotation_value(annotation.get("y1"), "y", f"{label}.y1"),
+                        "y1": self._annotation_value(
+                            annotation.get("y1"),
+                            self._annotation_value_axis(annotation, "y"),
+                            f"{label}.y1",
+                        ),
                     }
                 )
             elif kind == "callout":
@@ -93,7 +114,11 @@ class AnnotationsSpecMixin(_Host):
                     | {
                         "kind": "callout",
                         "x": self._annotation_value(annotation.get("x"), "x", f"{label}.x"),
-                        "y": self._annotation_value(annotation.get("y"), "y", f"{label}.y"),
+                        "y": self._annotation_value(
+                            annotation.get("y"),
+                            self._annotation_value_axis(annotation, "y"),
+                            f"{label}.y",
+                        ),
                         "text": self._required_text(annotation.get("text"), f"{label}.text"),
                         "dx": self._finite_scalar(annotation.get("dx", 0.0), f"{label}.dx"),
                         "dy": self._finite_scalar(annotation.get("dy", 0.0), f"{label}.dy"),
@@ -116,6 +141,18 @@ class AnnotationsSpecMixin(_Host):
         class_name = self._optional_text(annotation.get("class_name"), "annotation class_name")
         if class_name is not None:
             out["class_name"] = class_name
+        # A y2 binding is honored on the live wire (the client projects the
+        # annotation through its bound axis), so it must be marshalled — and
+        # must fail closed when the chart never declared the axis, mirroring
+        # the mark ``y_axis`` admission rule and Node ``annotationCommon``.
+        y_axis = annotation.get("y_axis")
+        if y_axis is not None:
+            if y_axis not in ("y", "y2"):
+                raise ValueError(f"annotation y_axis must be 'y' or 'y2', got {y_axis!r}")
+            if y_axis == "y2":
+                if "y2" not in self.axis_options:
+                    raise ValueError("annotation y_axis 'y2' has no matching xyg.y_axis(id='y2')")
+                out["y_axis"] = "y2"
         raw_style = annotation.get("style", {})
         if not isinstance(raw_style, dict):
             raise ValueError("annotation style must be a dict[str, str | int | float]")
@@ -133,6 +170,14 @@ class AnnotationsSpecMixin(_Host):
     def _annotation_axis(axis: Any, label: str) -> str:
         if axis not in {"x", "y"}:
             raise ValueError(f"{label} must be 'x' or 'y'")
+        return axis
+
+    @staticmethod
+    def _annotation_value_axis(annotation: dict[str, Any], axis: str) -> str:
+        """The ladder a data coordinate resolves against: a y coordinate on a
+        y2-bound annotation reads the y2 axis (categories, scales)."""
+        if axis == "y" and annotation.get("y_axis") == "y2":
+            return "y2"
         return axis
 
     @staticmethod

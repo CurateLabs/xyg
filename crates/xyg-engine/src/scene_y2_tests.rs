@@ -389,7 +389,6 @@ fn y2_paints_right_gutter_labels_with_equal_domain_tick_parity() {
     }
     assert!(svg.contains("data-xy-chrome=\"y2-label\""));
     assert!(svg.contains("fill=\"rgba(255,0,0,1.000000)\""));
-    assert!(svg.contains("rotate(90 "));
     // Raster/PDF consume the same document.
     let commands = document.to_raster_commands(1.0).unwrap();
     assert!(commands.windows(4).any(|w| w == b"Righ"));
@@ -497,6 +496,8 @@ fn only_a_right_side_secondary_y_with_a_trace_is_admitted_with_stable_reasons() 
         reason(&[(0, 0), (1, 0), (2, AXIS_SIDE_RIGHT)], &[0, y2_trace]),
         ""
     );
+    // An unauthored (unobserved, code 0) y2 side is the default right side.
+    assert_eq!(reason(&[(0, 0), (1, 0), (2, 0)], &[0, y2_trace]), "");
     assert!(
         reason(&[(0, 0), (1, 0), (2, AXIS_SIDE_LEFT)], &[0, y2_trace])
             .starts_with("XYG_SCENE_UNSUPPORTED_Y2_SIDE")
@@ -535,6 +536,68 @@ fn y2_with_polar_is_rejected_by_the_encoder() {
         &[],
     )
     .is_err());
+}
+
+/// Rotation of the styled raster text command (17) that draws `text`.
+fn raster_title_angle(commands: &[u8], text: &[u8]) -> f32 {
+    let at = commands
+        .windows(text.len())
+        .position(|window| window == text)
+        .expect("title text in the raster display list");
+    // ... angle f32 | flags u8 | reserved u32 | rgba [4] | len u32 | text
+    f32::from_le_bytes(commands[at - 17..at - 13].try_into().unwrap())
+}
+
+#[test]
+fn y2_title_reads_bottom_to_top_like_the_y_title_in_svg_and_raster() {
+    let mut axis = y2_axis(0.0, 100.0);
+    axis.title = "Right".to_owned();
+    axis.axis.static_text.title_flags = 2;
+    let scene = encode(
+        &[scatter(1, 0.5, false), scatter(2, 50.0, true)],
+        &chrome_facts(auto_flags(), Some(&axis)),
+    );
+    let document = SceneDocument::decode(&scene).unwrap();
+    let svg = document.to_svg();
+    let title = svg
+        .split("data-xy-chrome=\"y2-label\"")
+        .nth(1)
+        .expect("y2 title group");
+    assert!(title.contains("transform=\"rotate(-90 "), "{title}");
+    assert!(!svg.contains("rotate(90 "));
+    let angle = raster_title_angle(&document.to_raster_commands(1.0).unwrap(), b"Right");
+    assert_eq!(angle, -90.0);
+    // The rotated ink stays inside the canvas: [x - ascent, x + depth].
+    let x: f64 = title
+        .split("x=\"")
+        .nth(1)
+        .unwrap()
+        .split('"')
+        .next()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!(x > f64_at(&scene, 64) && x < WIDTH);
+}
+
+#[test]
+fn non_finite_tick_angle_is_rejected_and_only_nan_means_absent() {
+    let decode = |bytes: &[u8]| SceneY2Axis::decode(bytes, SceneY2Domain::Data, HEIGHT, 0.0);
+    let mut axis = y2_axis(0.0, 100.0);
+    let none = axis.encode(SceneY2Domain::Data);
+    assert_eq!(decode(&none).unwrap().tick_angle, None);
+    axis.tick_angle = Some(30.0);
+    assert_eq!(
+        decode(&axis.encode(SceneY2Domain::Data)).unwrap().tick_angle,
+        Some(30.0)
+    );
+    for bad in [f64::INFINITY, f64::NEG_INFINITY] {
+        axis.tick_angle = Some(bad);
+        assert!(matches!(
+            decode(&axis.encode(SceneY2Domain::Data)),
+            Err(SceneError::NonFinite)
+        ));
+    }
 }
 
 #[test]
@@ -639,4 +702,50 @@ fn a_supported_colorbar_cannot_hide_from_the_y2_prohibition() {
     };
     assert_eq!(reason(0), "");
     assert!(reason(1).starts_with("XYG_SCENE_UNSUPPORTED_Y2_COLORBAR"));
+}
+
+/// A twin-axis Scene with one default straight-arrow run (annotation tag 5) in
+/// its trailing annotation records, returned with the arrow's first record
+/// offset. The arrow is pixel-space on the primary plane.
+fn twin_scene_with_arrow() -> (Vec<u8>, usize) {
+    let mut scene = twin_scene(&y2_axis(0.0, 100.0));
+    let records = u64::from_le_bytes(scene[16..24].try_into().unwrap()) as usize;
+    let at = record_at(records);
+    let mut run = Vec::new();
+    for (kind, point) in [
+        (1u8, [60.0f64, 100.0]),
+        (1, [192.0, 100.0]),
+        (4, [200.0, 100.0]),
+        (4, [192.0, 104.0]),
+        (4, [192.0, 96.0]),
+    ] {
+        run.extend_from_slice(&[kind, 1, 0, 5]);
+        run.extend_from_slice(&0u32.to_le_bytes());
+        run.extend_from_slice(&0x5859_0500_0000_0001u64.to_le_bytes());
+        for value in [point[0], point[1], 0.0, 0.0, 0.0] {
+            run.extend_from_slice(&value.to_le_bytes());
+        }
+    }
+    scene.splice(at..at, run);
+    scene[16..24].copy_from_slice(&((records + 5) as u64).to_le_bytes());
+    (scene, at)
+}
+
+#[test]
+fn arrow_run_on_the_secondary_plane_is_rejected_by_both_validators_on_the_same_bytes() {
+    let (scene, at) = twin_scene_with_arrow();
+    // The unmodified arrow is accepted by both readers.
+    validate_scene_batch(&scene).unwrap();
+    SceneDocument::decode(&scene).unwrap();
+    // Arrows are screen-space and primary-plane: a y2 selector on any record of
+    // the run is rejected by the byte validator and the document decoder alike
+    // (the byte validator once masked the bit and let the run through).
+    for row in 0..5 {
+        let mut tampered = scene.clone();
+        tampered[at + row * SCENE_BATCH_RECORD_BYTES + 3] |= SCENE_RECORD_Y2_BIT;
+        let validator = validate_scene_batch(&tampered);
+        let decoder = SceneDocument::decode(&tampered);
+        assert_eq!(validator.err(), Some(SceneError::Length), "row {row}");
+        assert_eq!(decoder.err(), Some(SceneError::Length), "row {row}");
+    }
 }

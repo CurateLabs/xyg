@@ -1,8 +1,8 @@
 {
   "schema": "xyg.force-emit-cross-host/v1",
   "authority": "packages/xy-node/src/figure.js _emitScatter tier decisions",
-  "protocol": 13,
-  "abi_version": 389,
+  "protocol": 14,
+  "abi_version": 391,
   "scatter_density_threshold": 200000,
   "cases": [
     {

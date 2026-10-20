@@ -374,3 +374,37 @@ def test_annotation_records_share_the_scene_mark_ceiling() -> None:
     # Backstop: compiling directly (no predicate) still yields the LOD reason.
     with pytest.raises(UnsupportedSceneV3, match=_LOD):
         figure_scene(figure, width=WIDTH, height=HEIGHT)
+
+
+@pytest.mark.parametrize(("scale", "domain"), [("linear", (-200.0, 200.0)), ("log", (1.0, 200.0))])
+def test_y2_line_above_the_threshold_exports_the_browser_m4_rows(scale, domain) -> None:
+    """A line on the secondary y axis decimates like the browser (#1006/#1037).
+
+    Rows record their y axis, so the static M4 tier applies the y2 scale's log
+    prefilter (not the primary's) and keeps exactly the rows the browser's
+    first-paint payload ships for that trace, through public ``to_svg``.
+    """
+    x, y = _line(100_000)
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 3.0]),
+        xyg.line(x=x, y=y, y_axis="y2"),
+        xyg.x_axis(domain=(0.0, float(x[-1]))),
+        xyg.y_axis(domain=(0.0, 4.0)),
+        xyg.y_axis(id="y2", side="right", type_=scale, domain=domain),
+        width=WIDTH,
+        height=HEIGHT,
+    )
+    figure = chart.figure()
+    assert scene_export_support_reason(figure, width=WIDTH, height=HEIGHT) is None
+    primary, secondary = _POLYLINE.findall(chart.to_svg(width=WIDTH, height=HEIGHT))
+    assert len(primary.split()) == 3
+
+    spec, blob = figure.build_payload(WIDTH)
+    trace = spec["traces"][1]
+    assert (trace["tier"], trace["y_axis"]) == ("decimated", "y2")
+    column = spec["columns"][trace["x"]]
+    values = np.frombuffer(blob, dtype="<f4", count=column["len"], offset=column["byte_offset"])
+    rows = np.rint((values.astype(np.float64) * column["scale"] + column["offset"]) / 0.25)
+    assert len(secondary.split()) == len(rows) == trace["n_marks"] <= 4 * WIDTH
+    if scale == "log":
+        assert (y[rows.astype(np.int64)] > 0).all() and len(rows) < len(_browser_m4(figure, x, y))

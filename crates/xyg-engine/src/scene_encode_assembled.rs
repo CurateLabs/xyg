@@ -1040,7 +1040,11 @@ pub const PUBLIC_LOD_REASON: &str = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
 /// envelope error later.
 fn line_lod_frame(xycf: &[u8]) -> Option<LineLodFrame> {
     let (viewport_width, _, x_axis, y_axis) = axes_from_chrome_facts(xycf).ok()?;
-    let y2_present = xycf_y2_sidecar(xycf).ok()?.is_some();
+    // The secondary axis's scale code is the XYY2 block's first field.
+    let y2_kind = match xycf_y2_sidecar(xycf).ok()? {
+        Some(y2) => Some(u32::from_le_bytes(y2.get(4..8)?.try_into().ok()?)),
+        None => None,
+    };
     Some(
         LineLodFrame::new(
             viewport_width,
@@ -1050,7 +1054,7 @@ fn line_lod_frame(xycf: &[u8]) -> Option<LineLodFrame> {
             x_axis.constant,
             y_axis.kind,
         )
-        .with_y2(y2_present),
+        .with_y2(y2_kind),
     )
 }
 

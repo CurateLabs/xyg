@@ -97,11 +97,14 @@ const WASM_SIZE_BUDGET_BYTES = 1504 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
+// Scene v34 straight-arrow vocabulary (#1006): +5.0 KB raw / +2.4 KB gzip; the gzip
+// gate rose 616 -> 620 KiB (raw stays 1,504 KiB).
 // 624 KiB gzip (raw unchanged): the static LOD tiers and their budget checks,
 // layered/polar/mesh autorange admission, the XYWA exact polar wedge-arc
 // encode/validate/SVG path, and the mesh overdraw bound (#1006) are a recorded
-// +11,815 raw / +4,298 gzip bytes (1,532,388 / 632,210) over main's
-// 1,520,573 / 627,912, which left only 2,872 bytes of gzip headroom.
+// +10,255 raw / +4,096 gzip bytes (1,538,122 / 635,039) over main's
+// 1,527,867 / 630,943 after #1023/#1034/#1037, 159 bytes over the 620 KiB gate;
+// 3,937 bytes of gzip and 1,974 bytes of raw headroom remain (local build).
 const WASM_GZIP_BUDGET_BYTES = 624 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);

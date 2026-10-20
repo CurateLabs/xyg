@@ -3260,7 +3260,7 @@ def scene_xyaf_pack(
     dash: Sequence[float],
     text: bytes,
 ) -> bytes:
-    """Pack one XYAF v1 record via ``xyg_scene_xyaf_pack`` (ABI 319)."""
+    """Pack one XYAF v2 record via ``xyg_scene_xyaf_pack`` (ABI 319)."""
     pack_in = _SceneXyafPackIn(
         int(index) & 0xFFFFFFFF,
         int(kind_code) & 0xFF,
@@ -5874,6 +5874,11 @@ def _product_stage(code: int) -> tuple[int, int] | None:
     return magnitude // 100, -(magnitude % 100)
 
 
+_PRODUCT_OUTPUT_LIMIT_REASON = (
+    "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD: encoded Scene exceeds the 2 GiB native output limit"
+)
+
+
 def scene_encode_product(
     *,
     compile_facts: bytes,
@@ -5987,7 +5992,7 @@ def scene_encode_product(
         if support_payload
         else np.empty(0, dtype=np.uint8)
     )
-    for _ in range(4):
+    for _ in range(2):
         out = np.zeros(capacity, dtype=np.uint8)
         code = int(
             _lib.xyg_scene_encode_product(
@@ -6017,8 +6022,16 @@ def scene_encode_product(
             )
         )
         if code == -4:
-            capacity *= 2
+            # Rust reports the exact required size; the second attempt is final.
+            required = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0])
+            if required <= capacity:
+                break
+            capacity = required
             continue
+        if code == -3 and int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) == 0xFFFFFFFF:
+            # Rust marks an encoded product too long for the i32 return / u32
+            # size slot; it is rejected before any size report or copy.
+            raise SceneFigureSupportError(_PRODUCT_OUTPUT_LIMIT_REASON)
         if code == -801:
             n = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
             reason = bytes(out[4 : 4 + n]).decode("utf-8")
@@ -6093,7 +6106,7 @@ def scene_encode_product(
         if code < 0:
             raise ValueError("invalid scene chrome packing")
         return bytes(out[:code])
-    raise SceneEncodeAssembledError(-4, 0)
+    raise ValueError("scene product encode output buffer too small for the reported size")
 
 
 def scene_figure_support_reason(payload: bytes) -> str:
@@ -6544,7 +6557,7 @@ def scene_pack_annotation_facts(
     x_domain: tuple[float, float],
     y_domain: tuple[float, float],
 ) -> bytes:
-    """Pack XYAF v1 annotation facts into an XYAO envelope (M2 #271)."""
+    """Pack XYAF v2 annotation facts into an XYAO envelope (M2 #271)."""
     payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
     extra = 32 + 512 * 56
     out = np.zeros(MAX_SCENE_ANNOTATION_INPUT_BYTES + extra, dtype=np.uint8)

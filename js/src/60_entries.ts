@@ -1,7 +1,7 @@
 import { renderGeoHost } from "./65_geo_host";
 export { XygGeoHostView } from "./65_geo_host";
 export type { XygGeoHostComm } from "./65_geo_host";
-import { bytesToSpan, decodeFrame, payloadBuffers, payloadCoherent } from "./00_header";
+import { bytesToSpan, decodeFrame, payloadBuffers, payloadCoherent, PROTOCOL } from "./00_header";
 import { ChartView } from "./50_chartview";
 import { MARK_KINDS, markOf } from "./55_marks";
 import { createXygWasmWorker, XygWasmError, XygWasmWorker } from "./47_wasm";
@@ -300,6 +300,7 @@ export function renderStandalone(el, spec, arrayBuffer) {
 // namespace as `window.xy`.
 export {
   decodeFrame,
+  PROTOCOL,
   ChartView,
   MARK_KINDS,
   markOf,

@@ -13,6 +13,10 @@ use crate::kernels::{
 };
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::scene_y2::{SceneY2Axis, SceneY2Domain};
+use crate::scene_arrow::{
+    arrow_paint, arrow_run_ends, arrow_run_head_length, default_arrow_paint, ArrowEnd, ArrowPaint,
+    ArrowShape,
+};
 use crate::svg::push_num;
 use crate::textblock;
 use crate::tick_layout;
@@ -25,7 +29,7 @@ mod wedge_arcs;
 use wedge_arcs::{SceneWedgeArc, SceneWedgeArcs, WedgeRecordView};
 pub use wedge_arcs::{XYWA_ENTRY_BYTES, XYWA_HEADER_BYTES, XYWA_MAGIC, XYWA_VERSION};
 
-pub const SCENE_VERSION: u32 = 33;
+pub const SCENE_VERSION: u32 = 34;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -69,6 +73,10 @@ pub const MAX_SCENE_LABEL_TEXT_BYTES: usize = 8_192;
 pub const MAX_AUTHORED_TEXT_ANNOTATIONS: usize = 128;
 /// The bounded straight-arrow ingress shares the annotation resource ceiling.
 pub const MAX_AUTHORED_STRAIGHT_ARROWS: usize = 128;
+/// `XYAR` v1 row: id, endpoints, paint. v2 appends the arrow shape facts
+/// (head/tail codes, start offset, shrink, label clearance; #1006).
+pub const XYAR_V1_ROW_BYTES: usize = 60;
+pub const XYAR_V2_ROW_BYTES: usize = XYAR_V1_ROW_BYTES + 72;
 /// Worst-case XYAD envelope the ABI 112 packer may emit (v3 header plus five
 /// section headers, maximum row tables, and the shared text budgets).
 pub const MAX_SCENE_ANNOTATION_INPUT_BYTES: usize = 28
@@ -79,7 +87,7 @@ pub const MAX_SCENE_ANNOTATION_INPUT_BYTES: usize = 28
     + MAX_AUTHORED_TEXT_ANNOTATIONS * 32
     + MAX_SCENE_TEXT_BYTES
     + 12
-    + MAX_AUTHORED_STRAIGHT_ARROWS * 60
+    + MAX_AUTHORED_STRAIGHT_ARROWS * XYAR_V2_ROW_BYTES
     + 12
     + MAX_AUTHORED_TEXT_ANNOTATIONS * 76
     + MAX_SCENE_LABEL_TEXT_BYTES
@@ -153,7 +161,9 @@ const SCENE_ANNOTATION_ID_MASK: u64 = 0xffff_0000_0000_0000;
 const SCENE_ANNOTATION_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
 const SCENE_ANNOTATION_TAG_STRAIGHT_ARROW: u8 = 5;
 const SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT: u8 = 6;
-const STRAIGHT_ARROW_HEAD_LENGTH: f64 = 8.0;
+pub(crate) const STRAIGHT_ARROW_HEAD_LENGTH: f64 = 8.0;
+/// Longest straight-arrow run: V tail, shaft and V head (see `scene_arrow`).
+const STRAIGHT_ARROW_MAX_RECORDS: usize = 8;
 const STRAIGHT_ARROW_HEAD_HALF_WIDTH: f64 = 4.0;
 
 /// The ids annotation decoration assigns to labels (text 4, attached 5,
@@ -2526,6 +2536,21 @@ pub fn decode_tick_labels(bytes: &[u8]) -> Result<Option<Vec<String>>, SceneErro
     Ok(Some(labels))
 }
 
+/// Write the `XYTL` v1 label table without validating its entries; callers
+/// that need bounds go through [`encode_tick_labels`], hosts' authored facts are
+/// validated when the Scene decodes them.
+pub(crate) fn tick_label_table<'a>(labels: impl ExactSizeIterator<Item = &'a str>) -> Vec<u8> {
+    let mut out = Vec::with_capacity(12 + labels.len() * 4);
+    out.extend_from_slice(b"XYTL");
+    out.extend_from_slice(&1u32.to_le_bytes());
+    out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
+    for label in labels {
+        out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+        out.extend_from_slice(label.as_bytes());
+    }
+    out
+}
+
 pub fn encode_tick_labels(labels: Option<&[String]>) -> Result<Vec<u8>, SceneError> {
     let Some(labels) = labels else {
         return Ok(Vec::new());
@@ -2543,15 +2568,7 @@ pub fn encode_tick_labels(labels: Option<&[String]>) -> Result<Vec<u8>, SceneErr
     {
         return Err(SceneError::Limit);
     }
-    let mut out = Vec::with_capacity(12 + labels.len() * 4 + total);
-    out.extend_from_slice(b"XYTL");
-    out.extend_from_slice(&1u32.to_le_bytes());
-    out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
-    for label in labels {
-        out.extend_from_slice(&(label.len() as u32).to_le_bytes());
-        out.extend_from_slice(label.as_bytes());
-    }
-    Ok(out)
+    Ok(tick_label_table(labels.iter().map(String::as_str)))
 }
 
 /// Decode bounded host-framed Cartesian text annotations and project them in
@@ -4607,7 +4624,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     return Err(SceneError::Length);
                 }
             }
-            5 | 6 if run_end - annotation_cursor == 5 => {
+            5 | 6 if (2..=STRAIGHT_ARROW_MAX_RECORDS).contains(&(run_end - annotation_cursor)) => {
                 let mut arrow = [EncodedRecord {
                     kind: SceneRecordKind::Scatter,
                     visible: false,
@@ -4618,13 +4635,14 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     diameter: 0.0,
                     annotation_tag: 0,
                     y2: false,
-                }; 5];
-                for (row, record) in arrow.iter_mut().enumerate() {
+                }; STRAIGHT_ARROW_MAX_RECORDS];
+                for (row, record) in arrow[..run_end - annotation_cursor].iter_mut().enumerate() {
                     let at = records_offset + (annotation_cursor + row) * SCENE_BATCH_RECORD_BYTES;
                     record.kind = SceneRecordKind::from_code(bytes[at])?;
                     record.visible = bytes[at + 1] != 0;
                     record.symbol = bytes[at + 2];
                     record.annotation_tag = bytes[at + 3] & !SCENE_RECORD_Y2_BIT;
+                    record.y2 = bytes[at + 3] & SCENE_RECORD_Y2_BIT != 0;
                     record.style_ref = batch_u32(bytes, at + 4)? as usize;
                     record.stable_id = batch_u64(bytes, at + 8)?;
                     record.coordinates = [
@@ -4635,7 +4653,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     ];
                     record.diameter = batch_f64(bytes, at + 48)?;
                 }
-                if !valid_straight_arrow_run(&arrow) {
+                if !valid_straight_arrow_run(&arrow[..run_end - annotation_cursor]) {
                     return Err(SceneError::Length);
                 }
             }
@@ -4954,13 +4972,19 @@ pub const MAX_SCENE_IMAGE_PIXELS: usize = 2_000_000;
 /// triangle meshes at or below it byte-identical to before #1006 and applies
 /// the mesh overdraw bound only above it.
 pub const PUBLIC_POLYFILL_GROUP_BUDGET: usize = 1_024;
+/// The one recorded static vector polygon-group ceiling (#887, #1006): at
+/// most this many polygon groups of one family, aggregate across the figure,
+/// are written as one vector shape each in SVG/PDF. Hexbin cells
+/// (`scene_export::MAX_PUBLIC_HEXBIN_CELLS`, #1023) fail closed above it;
+/// triangle-mesh faces (`MAX_PUBLIC_TRIANGLE_MESH_FACES`) switch SVG/PDF to
+/// one embedded raster image per mesh above it.
+pub const MAX_PUBLIC_VECTOR_POLYGON_GROUPS: usize = 50_000;
 /// Static triangle-mesh vector ceiling (#1006): at most this many faces,
 /// aggregate across the figure's meshes, are written as one vector path per
 /// face in SVG/PDF. Above it each mesh trace is written as one embedded
 /// raster image of its own faces (the dense-fill tier); raster formats paint
-/// every face directly either way. Matches PR #1023's
-/// `MAX_PUBLIC_HEXBIN_CELLS`; unify the two named ceilings when it lands.
-pub const MAX_PUBLIC_TRIANGLE_MESH_FACES: usize = 50_000;
+/// every face directly either way.
+pub const MAX_PUBLIC_TRIANGLE_MESH_FACES: usize = MAX_PUBLIC_VECTOR_POLYGON_GROUPS;
 /// Mesh overdraw bound (#1006): above `PUBLIC_POLYFILL_GROUP_BUDGET` faces,
 /// the faces' plot-clipped bounding boxes, each charged
 /// `height × (width + 1)` CSS px², may total at most this many plot
@@ -8472,22 +8496,12 @@ impl<'a> SceneBatch<'a> {
             || self
                 .kinds
                 .len()
-                .checked_add(arrows.len().checked_mul(5).ok_or(SceneError::Limit)?)
+                .checked_add(straight_arrow_record_count(&arrows))
                 .ok_or(SceneError::Limit)?
                 > MAX_SCENE_MARKS
             || arrows.iter().any(|arrow| {
                 self.stable_ids.contains(&arrow.stable_id)
-                    || !self.x_scale.pixel(arrow.x0).is_finite()
-                    || !self.y_scale.pixel(arrow.y0).is_finite()
-                    || !self.x_scale.pixel(arrow.x1).is_finite()
-                    || !self.y_scale.pixel(arrow.y1).is_finite()
-                    || straight_arrow_points(
-                        self.x_scale.pixel(arrow.x0),
-                        self.y_scale.pixel(arrow.y0),
-                        self.x_scale.pixel(arrow.x1),
-                        self.y_scale.pixel(arrow.y1),
-                    )
-                    .is_err()
+                    || straight_arrow_paint(self.x_scale, self.y_scale, arrow).is_err()
             })
         {
             return Err(SceneError::Length);
@@ -8509,7 +8523,7 @@ impl<'a> SceneBatch<'a> {
         let total_records = self
             .kinds
             .len()
-            .checked_add(self.arrows.len().checked_mul(5).ok_or(SceneError::Limit)?)
+            .checked_add(straight_arrow_record_count(&self.arrows))
             .and_then(|value| value.checked_add(callout_records))
             .ok_or(SceneError::Limit)?;
         if total_styles > MAX_SCENE_STYLES
@@ -9879,7 +9893,9 @@ impl<'a> SceneBatch<'a> {
             SCENE_BATCH_HEADER_BYTES
                 + (self.stroke_width.len() + self.arrows.len() + self.callouts.len())
                     * SCENE_STYLE_RECORD_BYTES
-                + (marks.len() + (self.arrows.len() + self.callouts.len()) * 5)
+                + (marks.len()
+                    + straight_arrow_record_count(&self.arrows)
+                    + self.callouts.len() * 5)
                     * SCENE_BATCH_RECORD_BYTES
                 + self.text.encoded_bytes()
                 + encode_tick_labels(self.chrome.x_tick_labels.as_deref())
@@ -9903,7 +9919,9 @@ impl<'a> SceneBatch<'a> {
         out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
         out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
         out.extend_from_slice(
-            &((marks.len() + (self.arrows.len() + self.callouts.len()) * 5) as u64).to_le_bytes(),
+            &((marks.len() + straight_arrow_record_count(&self.arrows) + self.callouts.len() * 5)
+                as u64)
+                .to_le_bytes(),
         );
         out.extend_from_slice(
             &((self.stroke_width.len()
@@ -9993,12 +10011,10 @@ impl<'a> SceneBatch<'a> {
             out.extend_from_slice(&mark.diameter.to_le_bytes());
         }
         for (arrow_index, arrow) in self.arrows.iter().enumerate() {
-            let start_x = self.x_scale.pixel(arrow.x0);
-            let start_y = self.y_scale.pixel(arrow.y0);
-            let tip_x = self.x_scale.pixel(arrow.x1);
-            let tip_y = self.y_scale.pixel(arrow.y1);
-            let (base, head) =
-                straight_arrow_points(start_x, start_y, tip_x, tip_y).expect("validated arrow");
+            // Intake already admitted every arrow, so projection cannot fail here.
+            let Ok(paint) = straight_arrow_paint(self.x_scale, self.y_scale, arrow) else {
+                continue;
+            };
             let style_ref = (self.stroke_width.len() + arrow_index) as u32;
             let write = |out: &mut Vec<u8>, kind: SceneRecordKind, point: [f64; 2]| {
                 out.push(kind as u8);
@@ -10013,10 +10029,13 @@ impl<'a> SceneBatch<'a> {
                 out.extend_from_slice(&0.0f64.to_le_bytes());
                 out.extend_from_slice(&0.0f64.to_le_bytes());
             };
-            write(&mut out, SceneRecordKind::Polyline, [start_x, start_y]);
-            write(&mut out, SceneRecordKind::Polyline, base);
-            for point in head {
-                write(&mut out, SceneRecordKind::PolyFill, point);
+            for (fill, point) in paint.records() {
+                let kind = if fill {
+                    SceneRecordKind::PolyFill
+                } else {
+                    SceneRecordKind::Polyline
+                };
+                write(&mut out, kind, point);
             }
         }
         for (callout_index, callout) in self.callouts.iter().enumerate() {
@@ -10384,7 +10403,8 @@ fn validate_primitive_records(records: &[EncodedRecord]) -> Result<(), SceneErro
 /// Bounded authoring input for one canonical straight-arrow annotation.
 ///
 /// Coordinates are Cartesian data values. Rust projects them and derives the
-/// fixed screen-space head; callers never provide pixels or head geometry.
+/// screen-space ends from the bounded [`ArrowShape`] vocabulary; callers never
+/// provide pixel geometry of the shaft or head.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StraightArrow {
     pub stable_id: u64,
@@ -10395,6 +10415,28 @@ pub struct StraightArrow {
     pub rgba: [u8; 4],
     pub opacity: f64,
     pub width: f64,
+    pub shape: ArrowShape,
+}
+
+/// The one projection of an authored arrow onto screen-space paint, shared by
+/// batch intake, batch encode and document lowering.
+#[inline(never)]
+fn straight_arrow_paint(
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    arrow: &StraightArrow,
+) -> Result<ArrowPaint, SceneError> {
+    let start = [x_scale.pixel(arrow.x0), y_scale.pixel(arrow.y0)];
+    let tip = [x_scale.pixel(arrow.x1), y_scale.pixel(arrow.y1)];
+    if !(start[0].is_finite() && start[1].is_finite() && tip[0].is_finite() && tip[1].is_finite())
+    {
+        return Err(SceneError::NonFinite);
+    }
+    default_arrow_paint(start, tip, &arrow.shape)
+}
+
+fn straight_arrow_record_count(arrows: &[StraightArrow]) -> usize {
+    arrows.iter().map(|arrow| arrow.shape.record_count()).sum()
 }
 
 fn straight_arrow_points(
@@ -10437,18 +10479,24 @@ fn decode_xyar(bytes: &[u8]) -> Result<Vec<StraightArrow>, SceneError> {
     if bytes.is_empty() {
         return Ok(Vec::new());
     }
-    if bytes.len() < 12 || &bytes[..4] != b"XYAR" || batch_u32(bytes, 4)? != 1 {
+    if bytes.len() < 12 || &bytes[..4] != b"XYAR" {
         return Err(SceneError::Length);
     }
+    // v1 rows carry the default shape; v2 rows append the arrow vocabulary.
+    let row_bytes = match batch_u32(bytes, 4)? {
+        1 => XYAR_V1_ROW_BYTES,
+        2 => XYAR_V2_ROW_BYTES,
+        _ => return Err(SceneError::Version),
+    };
     let count = batch_u32(bytes, 8)? as usize;
-    if count > MAX_AUTHORED_STRAIGHT_ARROWS || bytes.len() != 12 + count * 60 {
+    if count > MAX_AUTHORED_STRAIGHT_ARROWS || bytes.len() != 12 + count * row_bytes {
         return Err(SceneError::Limit);
     }
     let mut arrows = Vec::with_capacity(count);
     let mut ids = std::collections::BTreeSet::new();
     for index in 0..count {
-        let at = 12 + index * 60;
-        let arrow = StraightArrow {
+        let at = 12 + index * row_bytes;
+        let mut arrow = StraightArrow {
             stable_id: batch_u64(bytes, at)?,
             x0: batch_f64(bytes, at + 8)?,
             y0: batch_f64(bytes, at + 16)?,
@@ -10457,7 +10505,30 @@ fn decode_xyar(bytes: &[u8]) -> Result<Vec<StraightArrow>, SceneError> {
             rgba: bytes[at + 40..at + 44].try_into().unwrap(),
             opacity: batch_f64(bytes, at + 44)?,
             width: batch_f64(bytes, at + 52)?,
+            shape: ArrowShape::DEFAULT,
         };
+        if row_bytes == XYAR_V2_ROW_BYTES {
+            let head = ArrowEnd::from_code(bytes[at + 60]).ok_or(SceneError::Length)?;
+            let tail = ArrowEnd::from_code(bytes[at + 61]).ok_or(SceneError::Length)?;
+            if bytes[at + 62..at + 68] != [0; 6] {
+                return Err(SceneError::Length);
+            }
+            let mut facts = [0.0; 8];
+            for (slot, value) in facts.iter_mut().enumerate() {
+                *value = batch_f64(bytes, at + 68 + slot * 8)?;
+            }
+            arrow.shape = ArrowShape {
+                head,
+                tail,
+                start_offset: [facts[0], facts[1]],
+                gap_start: facts[2],
+                gap_end: facts[3],
+                label_clear: [facts[4], facts[5], facts[6], facts[7]],
+            };
+            if !arrow.shape.is_admitted() {
+                return Err(SceneError::Length);
+            }
+        }
         if !ids.insert(arrow.stable_id)
             || ![
                 arrow.x0,
@@ -10688,51 +10759,63 @@ fn decode_xyac(
     Ok(out)
 }
 
+#[inline(never)]
 fn valid_straight_arrow_run(records: &[EncodedRecord]) -> bool {
-    if records.len() != 5
-        || records[0].kind != SceneRecordKind::Polyline
-        || records[1].kind != SceneRecordKind::Polyline
-        || records[2..]
-            .iter()
-            .any(|record| record.kind != SceneRecordKind::PolyFill)
+    let Some(first) = records.first().copied() else {
+        return false;
+    };
+    let lines = records
+        .iter()
+        .take_while(|record| record.kind == SceneRecordKind::Polyline)
+        .count();
+    if records[lines..]
+        .iter()
+        .any(|record| record.kind != SceneRecordKind::PolyFill)
+        || (first.annotation_tag == SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT
+            && (lines, records.len() - lines) != (2, 3))
     {
         return false;
     }
-    let first = records[0];
     if records.iter().any(|record| {
         !matches!(
             record.annotation_tag,
             SCENE_ANNOTATION_TAG_STRAIGHT_ARROW | SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT
-        ) || record.stable_id != first.stable_id
+        ) || record.annotation_tag != first.annotation_tag
+            || record.stable_id != first.stable_id
             || record.style_ref != first.style_ref
             || record.visible != first.visible
             || record.symbol != 0
             || record.diameter != 0.0
+            // Arrow runs are screen-space pixels on the primary plane: the y2
+            // selector bit (twinx) never applies to them.
+            || record.y2
+            || record.coordinates[2] != 0.0
+            || record.coordinates[3] != 0.0
     }) {
         return false;
     }
+    let mut points = [[0.0; 2]; STRAIGHT_ARROW_MAX_RECORDS];
+    for (point, record) in points.iter_mut().zip(records) {
+        *point = [record.coordinates[0], record.coordinates[1]];
+    }
+    let (line, fill) = points[..records.len()].split_at(lines);
+    let Some((p0, p1, head, tail)) = arrow_run_ends(line, fill) else {
+        return false;
+    };
     if !first.visible {
         return records.iter().all(|record| record.coordinates == [0.0; 4]);
     }
-    let start = [records[0].coordinates[0], records[0].coordinates[1]];
-    let base = [records[1].coordinates[0], records[1].coordinates[1]];
-    let tip = [records[2].coordinates[0], records[2].coordinates[1]];
-    let Ok((expected_base, expected_head)) =
-        straight_arrow_points(start[0], start[1], tip[0], tip[1])
-    else {
+    let head_length = arrow_run_head_length(line, fill).unwrap_or(STRAIGHT_ARROW_HEAD_LENGTH);
+    let Ok(expected) = arrow_paint(p0, p1, head, tail, head_length) else {
         return false;
     };
-    scene_edge_eq(base[0], expected_base[0])
-        && scene_edge_eq(base[1], expected_base[1])
-        && records[2..]
-            .iter()
-            .zip(expected_head.iter())
-            .all(|(record, expected)| {
-                scene_edge_eq(record.coordinates[0], expected[0])
-                    && scene_edge_eq(record.coordinates[1], expected[1])
-                    && record.coordinates[2] == 0.0
-                    && record.coordinates[3] == 0.0
-            })
+    head_length > 0.0
+        && expected.line().len() == line.len()
+        && expected.fill().len() == fill.len()
+        && expected
+            .records()
+            .zip(line.iter().chain(fill))
+            .all(|((_, want), got)| scene_edge_eq(got[0], want[0]) && scene_edge_eq(got[1], want[1]))
 }
 
 // Scene v12 tag 0x80 marks literal per-row identity, so it is intentionally
@@ -11698,7 +11781,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         push_num(out, label_size);
         out.push('"');
         push_svg_text_flags(out, y2.axis.static_text.title_flags);
-        out.push_str(" text-anchor=\"middle\" transform=\"rotate(90 ");
+        out.push_str(" text-anchor=\"middle\" transform=\"rotate(-90 ");
         push_num(out, x);
         out.push(' ');
         push_num(out, y);
@@ -12307,9 +12390,10 @@ impl SceneDocument {
         }
     }
 
-    /// Right-gutter counterpart of [`Self::y_title_baseline`]: the quarter-turned
-    /// y2 title sits outside the widest y2 tick label with the same 0.4 em gap,
-    /// and its ink is kept inside the canvas.
+    /// Right-gutter counterpart of [`Self::y_title_baseline`]: the y2 title is
+    /// rotated like the y title (reads bottom to top), so its ink spans
+    /// `[x - ascent, x + depth]`; it sits outside the widest y2 tick label with
+    /// the same 0.4 em gap and its ink is kept inside the canvas.
     fn y2_title_baseline(&self) -> f64 {
         let y2 = self
             .y2
@@ -12346,10 +12430,10 @@ impl SceneDocument {
             .map(|block| block.ascent)
             .unwrap_or(label_size * 0.8);
         let x = match tick_right {
-            Some(tick_right) => tick_right + gap + depth,
+            Some(tick_right) => tick_right + gap + ascent,
             None => self.layout.right + (self.layout.viewport_width - self.layout.right) * 0.65,
         };
-        x.min(self.layout.viewport_width - ascent)
+        x.min(self.layout.viewport_width - depth)
     }
 
     /// Apply bounded static-document text metrics to one decoded Scene.
@@ -12683,40 +12767,47 @@ impl SceneDocument {
         {
             return Err(SceneError::NonFinite);
         }
-        let indices = self
-            .records
-            .iter()
-            .enumerate()
-            .filter_map(|(index, record)| {
-                (record.annotation_tag == SCENE_ANNOTATION_TAG_STRAIGHT_ARROW).then_some(index)
-            })
-            .collect::<Vec<_>>();
-        if indices.is_empty() || indices.len() % 5 != 0 {
-            return Err(SceneError::Length);
-        }
-        for group in indices.chunks_exact(5) {
-            if group.windows(2).any(|pair| pair[1] != pair[0] + 1) {
+        let mut index = 0;
+        let mut found = false;
+        while index < self.records.len() {
+            let first = self.records[index];
+            if first.annotation_tag != SCENE_ANNOTATION_TAG_STRAIGHT_ARROW {
+                index += 1;
+                continue;
+            }
+            let start = index;
+            while index < self.records.len()
+                && self.records[index].annotation_tag == SCENE_ANNOTATION_TAG_STRAIGHT_ARROW
+                && self.records[index].stable_id == first.stable_id
+            {
+                index += 1;
+            }
+            found = true;
+            let lines = self.records[start..index]
+                .iter()
+                .take_while(|record| record.kind == SceneRecordKind::Polyline)
+                .count();
+            let mut points = [[0.0; 2]; STRAIGHT_ARROW_MAX_RECORDS];
+            if index - start > points.len() {
                 return Err(SceneError::Length);
             }
-            let start = self.records[group[0]].coordinates;
-            let tip = self.records[group[2]].coordinates;
-            let dx = tip[0] - start[0];
-            let dy = tip[1] - start[1];
-            let length = dx.hypot(dy);
-            if !length.is_finite() || length <= head_size {
-                return Err(SceneError::Length);
+            for (point, record) in points.iter_mut().zip(&self.records[start..index]) {
+                *point = [record.coordinates[0], record.coordinates[1]];
             }
-            let ux = dx / length;
-            let uy = dy / length;
-            let base = [tip[0] - ux * head_size, tip[1] - uy * head_size, 0.0, 0.0];
-            let side_x = -uy * head_size * 0.5;
-            let side_y = ux * head_size * 0.5;
-            self.records[group[1]].coordinates = base;
-            self.records[group[3]].coordinates = [base[0] + side_x, base[1] + side_y, 0.0, 0.0];
-            self.records[group[4]].coordinates = [base[0] - side_x, base[1] - side_y, 0.0, 0.0];
-            let style_ref = self.records[group[0]].style_ref;
-            let style = self.styles.get_mut(style_ref).ok_or(SceneError::Length)?;
+            let (line, fill) = points[..index - start].split_at(lines);
+            let (p0, p1, head, tail) = arrow_run_ends(line, fill).ok_or(SceneError::Length)?;
+            let paint = arrow_paint(p0, p1, head, tail, head_size)?;
+            for (record, (_, vertex)) in self.records[start..index].iter_mut().zip(paint.records()) {
+                record.coordinates = [vertex[0], vertex[1], 0.0, 0.0];
+            }
+            let style = self
+                .styles
+                .get_mut(first.style_ref)
+                .ok_or(SceneError::Length)?;
             style.stroke_width = shaft_start;
+        }
+        if !found {
+            return Err(SceneError::Length);
         }
         Ok(())
     }
@@ -12818,7 +12909,7 @@ impl SceneDocument {
             || self
                 .records
                 .len()
-                .checked_add(arrows.len().checked_mul(5).ok_or(SceneError::Limit)?)
+                .checked_add(straight_arrow_record_count(arrows))
                 .ok_or(SceneError::Limit)?
                 > MAX_SCENE_MARKS
         {
@@ -12840,18 +12931,7 @@ impl SceneDocument {
             {
                 return Err(SceneError::Length);
             }
-            let start_x = self.x_scale.pixel(arrow.x0);
-            let start_y = self.y_scale.pixel(arrow.y0);
-            let tip_x = self.x_scale.pixel(arrow.x1);
-            let tip_y = self.y_scale.pixel(arrow.y1);
-            if !start_x.is_finite()
-                || !start_y.is_finite()
-                || !tip_x.is_finite()
-                || !tip_y.is_finite()
-            {
-                return Err(SceneError::NonFinite);
-            }
-            let (base, head) = straight_arrow_points(start_x, start_y, tip_x, tip_y)?;
+            let paint = straight_arrow_paint(self.x_scale, self.y_scale, arrow)?;
             let rgba = straight_arrow_alpha(arrow.rgba, arrow.opacity)?;
             let style_ref = self.styles.len();
             if style_ref >= MAX_SCENE_STYLES {
@@ -12870,19 +12950,13 @@ impl SceneDocument {
                 annotation_tag: SCENE_ANNOTATION_TAG_STRAIGHT_ARROW,
                 y2: false,
             };
-            self.records.push(record(
-                SceneRecordKind::Polyline,
-                [start_x, start_y, 0.0, 0.0],
-            ));
-            self.records.push(record(
-                SceneRecordKind::Polyline,
-                [base[0], base[1], 0.0, 0.0],
-            ));
-            for point in head {
-                self.records.push(record(
-                    SceneRecordKind::PolyFill,
-                    [point[0], point[1], 0.0, 0.0],
-                ));
+            for (fill, point) in paint.records() {
+                let kind = if fill {
+                    SceneRecordKind::PolyFill
+                } else {
+                    SceneRecordKind::Polyline
+                };
+                self.records.push(record(kind, [point[0], point[1], 0.0, 0.0]));
             }
         }
         Ok(self)
@@ -13438,7 +13512,7 @@ impl SceneDocument {
                         return Err(SceneError::Length);
                     }
                 }
-                5 | 6 if run_end - annotation_cursor == 5 => {
+                5 | 6 if (2..=STRAIGHT_ARROW_MAX_RECORDS).contains(&(run_end - annotation_cursor)) => {
                     if !valid_straight_arrow_run(&records[annotation_cursor..run_end]) {
                         return Err(SceneError::Length);
                     }
@@ -15747,14 +15821,15 @@ impl SceneDocument {
             -90.0,
         )?;
         if let Some(y2) = self.y2.as_ref().filter(|y2| !y2.title.is_empty()) {
-            // The right-gutter title is quarter-turned clockwise, which only the
-            // styled text command (explicit angle) can express.
+            // The right-gutter title reads bottom to top like the left title and
+            // Matplotlib's twinx label (90° counter-clockwise); the styled text
+            // command carries the explicit angle.
             out.push(17);
             push_raster_f32(out, self.y2_title_baseline(), scale)?;
             push_raster_f32(out, 0.5 * (self.layout.top + self.layout.bottom), scale)?;
             out.push(1);
             push_raster_f32(out, y2.axis.label_size(self.chrome.label_font_size), scale)?;
-            out.extend_from_slice(&90.0f32.to_le_bytes());
+            out.extend_from_slice(&(-90.0f32).to_le_bytes());
             out.push(y2.axis.static_text.title_flags);
             out.extend_from_slice(&0u32.to_le_bytes());
             out.extend_from_slice(&y2.axis.title_paint());
@@ -20473,7 +20548,7 @@ pub(crate) mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 33);
+        assert_eq!(SCENE_VERSION, 34);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -20517,6 +20592,7 @@ pub(crate) mod tests {
                 rgba: [10, 20, 30, 200],
                 opacity: 0.5,
                 width: 2.0,
+                shape: ArrowShape::DEFAULT,
             }])
             .unwrap();
         let arrow = &document.records[1..];
@@ -20546,6 +20622,7 @@ pub(crate) mod tests {
                 rgba: [0, 0, 0, 255],
                 opacity: 1.0,
                 width: 1.0,
+                shape: ArrowShape::DEFAULT,
             }])
             .is_err());
         assert!(SceneDocument::decode(&scene)
@@ -20559,8 +20636,169 @@ pub(crate) mod tests {
                 rgba: [0, 0, 0, 255],
                 opacity: 1.1,
                 width: 1.0,
+                shape: ArrowShape::DEFAULT,
             }])
             .is_err());
+    }
+
+    fn arrow_scene_bytes() -> Vec<u8> {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Scatter as u8],
+            &[7],
+            &[0],
+            &[1, 2, 3, 255],
+            &[1, 2, 3, 255],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .encode()
+    }
+
+    fn shaped_arrow(id: u64, head: ArrowEnd, tail: ArrowEnd) -> StraightArrow {
+        StraightArrow {
+            stable_id: 0x5859_0500_0000_0000 | id,
+            x0: 0.1,
+            y0: 0.1,
+            x1: 0.9,
+            y1: 0.9,
+            rgba: [10, 20, 30, 255],
+            opacity: 1.0,
+            width: 2.0,
+            shape: ArrowShape {
+                head,
+                tail,
+                ..ArrowShape::DEFAULT
+            },
+        }
+    }
+
+    #[test]
+    fn arrow_vocabulary_lowers_to_valid_runs_and_survives_metric_resizing() {
+        let scene = arrow_scene_bytes();
+        for (id, (head, tail)) in [
+            (ArrowEnd::None, ArrowEnd::None),
+            (ArrowEnd::Triangle, ArrowEnd::None),
+            (ArrowEnd::Open, ArrowEnd::None),
+            (ArrowEnd::None, ArrowEnd::Open),
+            (ArrowEnd::Open, ArrowEnd::Open),
+            (ArrowEnd::Triangle, ArrowEnd::Open),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let arrow = shaped_arrow(id as u64 + 1, head, tail);
+            let mut document = SceneDocument::decode(&scene)
+                .unwrap()
+                .with_straight_arrows(&[arrow])
+                .unwrap();
+            let run = document.records[1..].to_vec();
+            assert_eq!(run.len(), arrow.shape.record_count(), "{head:?}/{tail:?}");
+            assert!(valid_straight_arrow_run(&run), "{head:?}/{tail:?}");
+            // SVG / raster / browser painter all consume the same records.
+            assert!(document.to_svg().contains("<polyline points="));
+            assert!(document.to_raster_commands(1.0).unwrap().len() > 100);
+            assert!(document.to_browser_painter(64 * 1024).is_ok());
+            // The XYST arrow-metric pass re-derives every head from its run.
+            document
+                .apply_static_arrow_metrics(Some([12.0, 3.0, 3.0]))
+                .unwrap();
+            let resized = document.records[1..].to_vec();
+            assert!(valid_straight_arrow_run(&resized), "{head:?}/{tail:?}");
+            let line: Vec<_> = resized
+                .iter()
+                .filter(|r| r.kind == SceneRecordKind::Polyline)
+                .map(|r| [r.coordinates[0], r.coordinates[1]])
+                .collect();
+            let fill: Vec<_> = resized
+                .iter()
+                .filter(|r| r.kind == SceneRecordKind::PolyFill)
+                .map(|r| [r.coordinates[0], r.coordinates[1]])
+                .collect();
+            let want = if head == ArrowEnd::None && tail == ArrowEnd::None {
+                None
+            } else {
+                Some(12.0)
+            };
+            assert_eq!(
+                arrow_run_head_length(&line, &fill).map(|h| (h * 1e9).round() / 1e9),
+                want,
+                "{head:?}/{tail:?}"
+            );
+        }
+        // A run whose head vertices were nudged is no longer a valid arrow.
+        let document = SceneDocument::decode(&scene)
+            .unwrap()
+            .with_straight_arrows(&[shaped_arrow(9, ArrowEnd::Open, ArrowEnd::None)])
+            .unwrap();
+        let mut nudged = document.records[1..].to_vec();
+        nudged[2].coordinates[0] += 1.0;
+        assert!(!valid_straight_arrow_run(&nudged));
+        // The twinx y2 selector bit (0x40) is masked from the run tag but an arrow
+        // run never lives on the secondary plane.
+        let mut secondary = document.records[1..].to_vec();
+        assert!(valid_straight_arrow_run(&secondary));
+        secondary[1].y2 = true;
+        assert!(!valid_straight_arrow_run(&secondary));
+    }
+
+    #[test]
+    fn xyar_v2_carries_the_arrow_shape_and_rejects_unknown_layouts() {
+        let row = |version: u32, head: u8, tail: u8, gap: f64| {
+            let mut out = Vec::new();
+            out.extend_from_slice(b"XYAR");
+            out.extend_from_slice(&version.to_le_bytes());
+            out.extend_from_slice(&1u32.to_le_bytes());
+            out.extend_from_slice(&0x5859_0500_0000_0001u64.to_le_bytes());
+            for value in [0.1f64, 0.1, 0.9, 0.9] {
+                out.extend_from_slice(&value.to_le_bytes());
+            }
+            out.extend_from_slice(&[10, 20, 30, 255]);
+            out.extend_from_slice(&1.0f64.to_le_bytes());
+            out.extend_from_slice(&2.0f64.to_le_bytes());
+            if version == 2 {
+                out.extend_from_slice(&[head, tail, 0, 0, 0, 0, 0, 0]);
+                for value in [1.0f64, 2.0, gap, 4.0, 5.0, 6.0, 7.0, 8.0] {
+                    out.extend_from_slice(&value.to_le_bytes());
+                }
+            }
+            out
+        };
+        let decoded = decode_xyar(&row(2, 2, 2, 3.0)).unwrap();
+        assert_eq!(
+            decoded[0].shape,
+            ArrowShape {
+                head: ArrowEnd::Open,
+                tail: ArrowEnd::Open,
+                start_offset: [1.0, 2.0],
+                gap_start: 3.0,
+                gap_end: 4.0,
+                label_clear: [5.0, 6.0, 7.0, 8.0],
+            }
+        );
+        assert_eq!(decode_xyar(&row(1, 0, 0, 0.0)).unwrap()[0].shape, ArrowShape::DEFAULT);
+        assert_eq!(decode_xyar(&row(3, 0, 0, 0.0)), Err(SceneError::Version));
+        assert!(decode_xyar(&row(2, 3, 0, 0.0)).is_err(), "unknown end code");
+        assert!(decode_xyar(&row(2, 1, 1, 0.0)).is_err(), "triangle tail");
+        assert!(decode_xyar(&row(2, 1, 0, -1.0)).is_err(), "negative gap");
+        assert!(decode_xyar(&row(2, 1, 0, f64::NAN)).is_err(), "non-finite gap");
+        let mut padded = row(2, 1, 0, 0.0);
+        padded[12 + 62] = 1;
+        assert!(decode_xyar(&padded).is_err(), "nonzero padding");
+        assert!(decode_xyar(&row(2, 1, 0, 0.0)[..100]).is_err(), "truncated row");
     }
 
     #[test]

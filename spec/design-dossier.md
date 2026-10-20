@@ -676,7 +676,9 @@ dense-fill rule").
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
-  the browser painter's 1,024-group ceiling. Explicit
+  the browser painter's 1,024-group ceiling; hexbin cells are the exception
+  and carry their own recorded 50,000-cell aggregate ceiling (§28: a hard
+  fail-closed `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`, never silent decimation). Explicit
   Scene APIs retain no second fallback predicate. Rust also owns
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;
@@ -1552,9 +1554,10 @@ cartesian `tick_label_strategy` / `collision` (#304). Collision rooms
 clamp only when compact/authored pads already fit `PlotLayout`;
 overflowing compact pads stay `XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim
 auto/hide/rotate/stagger/preserve stay refused (`polar-axes.md`).
-Secondary
-axes stay fail-closed (`Scene v12 figure compilation currently supports
-exactly x/y axes`). Hosts still choose tick families via
+Only one
+right-hand secondary y axis (`y2`, Scene v33) is admitted, by Rust; `x2`, left y2
+and extra axes stay fail-closed with stable `XYG_SCENE_UNSUPPORTED_*` reasons
+(`design/twinx-secondary-y-axis.md`). Hosts still choose tick families via
 `xyg_scene_axis_ticks` and map values to pixels on the compatibility
 `_svg` path (#276). Polar rim collision strategies stay refused
 (`polar-axes.md`).

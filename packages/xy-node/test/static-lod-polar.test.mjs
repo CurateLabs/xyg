@@ -3,7 +3,8 @@
 // Both hosts build the same figures and export native SVG/PNG through the one
 // Rust static route; the digests pinned in
 // tests/fixtures/static_lod_polar_cross_host.json prove byte identity for a
-// 1,000,000-point line on the browser's M4 tier, a 100,000-point scatter on the
+// 1,000,000-point line on the browser's M4 tier, a 100,000-point line on a log
+// y2 axis (#1037), a 100,000-point scatter on the
 // direct tier, and polar bar wedges written as exact SVG arcs.
 
 import assert from "node:assert/strict";
@@ -27,6 +28,20 @@ function lineFigure() {
   const figure = new Figure({ width: 720, height: 420 });
   figure.line(x, y, { color: "#ef4444", width: 1 });
   figure.traces[0].id = 0;
+  return figure;
+}
+
+function lineY2LogFigure() {
+  const n = 100_000;
+  const x = Float64Array.from({ length: n }, (_, i) => i * 0.25);
+  const y = Float64Array.from({ length: n }, (_, i) => ((i * 7919) % 1009) / 10 - (i % 97));
+  const figure = new Figure({ width: 720, height: 420 });
+  figure.setAxis("x", { domain: [0, 25_000] });
+  figure.setAxis("y", { domain: [0, 4] });
+  figure.setAxis("y2", { side: "right", type: "log", domain: [1, 200] });
+  figure.line([0, 1, 2], [1, 2, 3]);
+  figure.line(x, y, { yAxis: "y2" });
+  figure.traces.forEach((trace, index) => { trace.id = index; });
   return figure;
 }
 
@@ -63,6 +78,7 @@ function polarBarFigure() {
 
 const BUILDERS = {
   line_1m_m4: lineFigure,
+  line_y2_100k_log_m4: lineY2LogFigure,
   polar_bar_arcs: polarBarFigure,
   scatter_100k_direct: scatterFigure,
   scatter_150k_categorical: categoricalScatterFigure,

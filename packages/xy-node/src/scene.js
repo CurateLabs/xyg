@@ -97,6 +97,8 @@ import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sc
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
 const MAX_SCENE_STYLES = 65_536;
+const PRODUCT_OUTPUT_LIMIT_REASON =
+  "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD: encoded Scene exceeds the 2 GiB native output limit";
 const MAX_SCENE_TEXT_BYTES = 4_096;
 const SYMBOL_CODES = new Map([
   "circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star",
@@ -213,6 +215,12 @@ function packProductFacts({
   return decodePackedRows(out, code);
 }
 
+// Stable reason for an arrow style value outside the Rust-owned vocabulary
+// (`scene_arrow.rs`); Python raises the same text.
+const ARROW_STYLE_UNSUPPORTED =
+  "XYG_SCENE_UNSUPPORTED_ARROW_STYLE: Scene arrows encode head_style none|triangle|v, " +
+  "tail_style none|v, finite signed start_offset pixels in [-4096, 4096], " +
+  "and finite non-negative label_clear/gap_* pixels in [0, 4096]";
 const XYAF_KIND_CODES = { text: 0, arrow: 1, callout: 2, rule: 3, band: 4, marker: 5 };
 const XYAF_FACT_HAS_WRAP = 1 << 0;
 const XYAF_FACT_HAS_TEXT = 1 << 1;
@@ -446,6 +454,7 @@ function raiseXyafBulkError(error, annotations) {
       "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE: Scene text annotations support data, axes_fraction, xaxis_transform and yaxis_transform coordinates only; figure_fraction needs the figure rectangle a panel Scene does not own",
     );
   }
+  if (code === -15) throw new RangeError(ARROW_STYLE_UNSUPPORTED);
   if (code === -6) {
     if (Object.hasOwn(style, "label_opacity")) {
       throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);
@@ -3454,9 +3463,9 @@ export function figureStaticDocument(figure, {
   projected.show_legend = false;
   projected.legend_options = {};
   projected.extra_legends = Array.isArray(figure.extra_legends) ? [] : null;
-  const reason = sceneExportSupportReason(projected);
+  const reason = sceneExportSupportReason(projected, { y2Chrome: chrome.y2 });
   if (reason) throw new RangeError(reason);
-  let scene = figureSceneV3(projected);
+  let scene = figureSceneV3(projected, { y2Chrome: chrome.y2 });
   if (graphPlanes != null) {
     try {
       scene = graphComposedScene(scene, graphPlanes);
@@ -3718,11 +3727,18 @@ function styleFrame() {
   return { chunks, pushU32, pushText, pushValue, pushEntries };
 }
 
+/** XYCO `chrome_text` bits 0..13 are the XYST panel facts; bits 14..19 are the y2
+ * title/tick flags and tick/title paint-present bits, which feed the Scene `XYY2` block. */
+const XYST_CHROME_TEXT_MASK = 0x3fff;
+const Y2_TICK_PAINT = 1 << 18;
+const Y2_TITLE_PAINT = 1 << 19;
+
 /** Marshal authored chrome style facts; Rust owns admission and precedence. */
 function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptions }) {
+  const axisIds = axisOptions.y2 != null ? ["x", "y", "y2"] : ["x", "y"];
   const frame = styleFrame();
   frame.pushU32(1);
-  frame.pushU32(hasTitle ? 1 : 0);
+  frame.pushU32((hasTitle ? 1 : 0) | (axisIds.length === 3 ? 4 : 0));
   frame.pushU32(0);
   frame.pushEntries(rootStyle);
   const slots = Object.keys(chromeStyles).sort();
@@ -3731,7 +3747,7 @@ function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptio
     frame.pushText(slot);
     frame.pushEntries(chromeStyles[slot]);
   }
-  for (const axisId of ["x", "y"]) {
+  for (const axisId of axisIds) {
     frame.pushEntries(axisOptions[axisId]?.style);
     frame.pushEntries(axisOptions[axisId]?.minor_style);
   }
@@ -3739,7 +3755,8 @@ function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptio
   const view = new DataView(output.buffer, output.byteOffset, output.byteLength);
   const fixed = 4 + 12 + 16 + 8 + 4 + 48;
   if (output.length < fixed || String.fromCharCode(...output.subarray(0, 4)) !== "XYCO"
-    || view.getUint32(4, true) !== 1 || view.getUint32(8, true) & ~1) {
+    || view.getUint32(4, true) !== 1 || view.getUint32(8, true) & ~3
+    || ((view.getUint32(8, true) & 2) !== 0) !== (axisIds.length === 3)) {
     throw new Error("invalid XYCO output");
   }
   const hasTitleStyle = (view.getUint32(8, true) & 1) !== 0;
@@ -3761,12 +3778,29 @@ function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptio
     return keys;
   };
   const consumed = { x: [takeKeys(), takeKeys()], y: [takeKeys(), takeKeys()] };
+  let y2 = null;
+  if (view.getUint32(8, true) & 2) {
+    const tickPaint = Array.from(output.subarray(at, at + 4));
+    const titlePaint = Array.from(output.subarray(at + 4, at + 8));
+    y2 = {
+      tickSize: view.getFloat64(at + 8, true),
+      titleSize: view.getFloat64(at + 16, true),
+      padding: view.getFloat64(at + 24, true),
+      textFlags: ((chromeText >>> 16) & 3) | (((chromeText >>> 14) & 3) << 2),
+      tickRgba: chromeText & Y2_TICK_PAINT ? tickPaint : null,
+      titleRgba: chromeText & Y2_TITLE_PAINT ? titlePaint : null,
+    };
+    at += 32;
+    consumed.y2 = [takeKeys(), takeKeys()];
+  }
   if (at !== output.length) throw new Error("invalid XYCO output");
+  const xystChromeText = chromeText & XYST_CHROME_TEXT_MASK;
   return {
     titleStyle: hasTitleStyle ? [titleSize, titleRgba] : null,
     chromeMetrics,
-    chromeText: chromeText ? [chromeText, paints] : null,
+    chromeText: xystChromeText ? [xystChromeText, paints] : null,
     consumed,
+    y2,
   };
 }
 
@@ -3987,6 +4021,9 @@ export function sceneSupportReason(features, requestVersion = 1) {
   return new TextDecoder("utf-8", { fatal: true }).decode(output);
 }
 
+/** XYFS / XYEF axis ids: Rust decides which secondary axes it admits. */
+const AXIS_CODES = { x: 0, y: 1, y2: 2, x2: 3 };
+
 const SCENE_TICK_STRATEGY_NAMES = ["auto", "hide", "rotate", "stagger", "preserve", "none", "off"];
 
 function sceneTickStrategy(options) {
@@ -4124,11 +4161,13 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     has_class_name: annotation.class_name != null && annotation.class_name !== "",
     kind_is_supported_text: ["callout", "arrow", "text"].includes(annotation.kind),
     has_text: annotation.text != null && annotation.text !== "",
+    y2: annotation.y_axis === "y2",
+    coordinate_space: optionalStr(annotation.style?.coordinate_space),
   }));
   const axes = [];
   for (const [axisId, options] of Object.entries(figureAxisOptions(figure) ?? {})) {
     axes.push({
-      axis_code: axisId === "x" ? 0 : axisId === "y" ? 1 : 255,
+      axis_code: AXIS_CODES[axisId] ?? 255,
       side: options.side == null ? 0 : ({ bottom: 1, left: 2, top: 3, right: 4 })[options.side] ?? 255,
       keys: significantSceneAxisKeys(options, polar),
       tick_label_strategy: optionalStr(options.tick_label_strategy),
@@ -5705,7 +5744,7 @@ function packXyCl(figure) {
     const view = new DataView(prefix.buffer);
     view.setUint16(0, kind.length, true);
     prefix[2] = coords;
-    prefix[3] = edgeEnds ? 1 : 0;
+    prefix[3] = (edgeEnds ? 1 : 0) | (String(trace.y_axis ?? "y") === "y2" ? 2 : 0);
     view.setBigUint64(8, asU64(Number(trace.id), "stableIds value"), true);
     view.setUint32(16, cols[0].length / 8, true);
     view.setUint32(20, cols[1].length / 8, true);
@@ -6064,7 +6103,7 @@ function encodeProduct(
       + 512 * 384 * 5
       + 4096,
   );
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     const out = new Uint8Array(capacity);
     const code = xySceneEncodeProduct(
       compileBytes.length ? u8Ptr(compileBytes) : 0,
@@ -6092,8 +6131,16 @@ function encodeProduct(
       BigInt(out.length),
     );
     if (code === -4) {
-      capacity *= 2;
+      // Rust reports the exact required size; the second attempt is final.
+      const required = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      if (required <= capacity) break;
+      capacity = required;
       continue;
+    }
+    if (code === -3 && new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true) === 0xffffffff) {
+      // Rust marks an encoded product too long for the i32 return / u32 size
+      // slot; it is rejected before any size report or copy.
+      throw new RangeError(PRODUCT_OUTPUT_LIMIT_REASON);
     }
     if (code === -801) {
       const n = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
@@ -6132,10 +6179,7 @@ function encodeProduct(
     if (code < 0) throw new RangeError("invalid scene chrome packing");
     return out.subarray(0, code);
   }
-  const error = new RangeError("invalid canonical scene batch");
-  error.code = -4;
-  error.index = 0;
-  throw error;
+  throw new RangeError("scene product encode output buffer too small for the reported size");
 }
 
 function unpackXyAs(blob) {
@@ -6331,10 +6375,14 @@ function marshalChromeAxis(axisId, options) {
       throw new RangeError(`Scene v12 does not yet encode ${axisId} axis ${label} keys`);
     }
   }
-  const side = options.side ?? (axisId === "x" ? "bottom" : "left");
+  // An unauthored y2 side is passed through as absent (code 0 is ignored without
+  // `side_authored`): Rust defaults the secondary axis to the right.
+  const side = axisId === "y2" && options.side == null
+    ? null
+    : options.side ?? (axisId === "x" ? "bottom" : "left");
   const allowed = axisId === "x" ? ["bottom", "top"] : ["left", "right"];
-  if (!allowed.includes(side)) throw new RangeError(`Scene v12 ${axisId} axis side is invalid`);
-  const sideCode = side === allowed[0] ? 0 : 1;
+  if (side != null && !allowed.includes(side)) throw new RangeError(`Scene v12 ${axisId} axis side is invalid`);
+  const sideCode = side === "right" || side === "top" ? 1 : 0;
   const marshalStyle = (src) => {
     const out = {};
     for (const key of [
@@ -6357,7 +6405,7 @@ function marshalChromeAxis(axisId, options) {
   };
 }
 
-function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
+function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true, y2Chrome = null } = {}) {
   const axes = figureAxisOptions(figure) ?? {};
   const xa = axes.x ?? {};
   const ya = axes.y ?? {};
@@ -6414,7 +6462,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
       ticks: tickCount ? ticks : null,
     };
   }
-  return sceneChromePack({
+  const facts = {
     width: Number(width),
     height: Number(height),
     show_legend: figureShowLegend(figure) !== false,
@@ -6481,7 +6529,51 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
       background: optionalStr(legendStyle.background),
     },
     colorbar: colorbarPayload,
-  });
+  };
+  if (axes.y2 != null) facts.y2 = marshalY2(figure, y2Chrome);
+  return sceneChromePack(facts);
+}
+
+/** Marshal the authored secondary y axis: presence and authored values only. Rust owns
+ * every default (scale constant, tick strategy and anchor, minimum label gap), the axis
+ * chrome record, validation and the `XYY2` layout. */
+function marshalY2(figure, y2Chrome) {
+  const options = figureAxisOptions(figure).y2;
+  const [lo, hi] = figure._range("y2");
+  const major = axisTickValues(options);
+  const labels = axisTickLabels(options);
+  return {
+    scale_kind: { linear: 0, log: 1, symlog: 2 }[axisScaleName(options)] ?? 0,
+    lo: Number(lo),
+    hi: Number(hi),
+    constant: options.constant == null ? null : Number(options.constant),
+    nonpositive_mask: options.nonpositive === "mask" ? 1 : 0,
+    axis: marshalChromeAxis("y2", options),
+    side_authored: options.side != null,
+    tick_sides_authored: options.tick_sides != null,
+    label_sides_authored: options.tick_label_sides != null,
+    collision: {
+      strategy: optionalStr(options.tick_label_strategy),
+      collision: optionalStr(options.collision),
+      anchor: optionalStr(options.tick_label_anchor),
+      min_gap: options.tick_label_min_gap == null ? null : Number(options.tick_label_min_gap),
+      angle: options.tick_label_angle == null ? null : Number(options.tick_label_angle),
+      tick_kind_category: figure._axisKind("y2") === "category",
+    },
+    major: major == null ? null : Array.from(major, Number),
+    minor: Array.from(axisMinorTickValues(options) ?? [], Number),
+    tick_labels: labels == null ? null : Array.from(labels, String),
+    title: optionalStr(options.label),
+    format: optionalStr(options.format),
+    metrics: y2Chrome == null ? null : {
+      tick_size: y2Chrome.tickSize,
+      title_size: y2Chrome.titleSize,
+      padding: y2Chrome.padding,
+      text_flags: y2Chrome.textFlags,
+      tick_rgba: y2Chrome.tickRgba,
+      title_rgba: y2Chrome.titleRgba,
+    },
+  };
 }
 
 /** XYEF resolved axis kind. Python `_pack_public_export_support` uses `figure._axis_kind(axis_id)`. */
@@ -6595,7 +6687,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   for (const key of colorbarKeys) parts.push(encodeExportKey(key));
 
   for (const [axisId, options] of axisEntries) {
-    const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
+    const axisCode = AXIS_CODES[axisId] ?? 255;
     const authored = options.type;
     const authoredCode = authored == null ? 0 : authored === "linear" ? 1 : authored === "log" ? 2 : authored === "symlog" ? 3 : 255;
     const resolvedCode = xyEfResolvedKind(figure, axisId);
@@ -6761,7 +6853,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
 }
 
 /** Return Rust's public-export diagnostic, or null when the Scene route applies. */
-export function sceneExportSupportReason(figure, { width = null, height = null } = {}) {
+export function sceneExportSupportReason(figure, { width = null, height = null, y2Chrome = null } = {}) {
   const envelope = packPublicExportSupport(figure, { width, height });
   const requiredRaw = xyScenePublicExportReason(u8Ptr(envelope), BigInt(envelope.length), 0, 0n);
   if (requiredRaw === USIZE_MAX_64) throw new RangeError("invalid scene public export support envelope");
@@ -6775,7 +6867,7 @@ export function sceneExportSupportReason(figure, { width = null, height = null }
   }
   if (reason) return reason;
   try {
-    figureSceneV3(figure);
+    figureSceneV3(figure, { y2Chrome });
   } catch (err) {
     if (err instanceof RangeError) {
       if (err.message === "invalid canonical scene plot layout") return "XYG_SCENE_UNSUPPORTED_VIEWPORT";
@@ -7479,7 +7571,7 @@ export function packFigureXyTc(figure) {
   return packXyTc(figure);
 }
 
-export function figureSceneV3(figure, { margins = null } = {}) {
+export function figureSceneV3(figure, { margins = null, y2Chrome = null } = {}) {
   let colorbarUnsupported = false;
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figureColorbarOptions(figure)); }
   const attachPlan = sceneEncodeProductAttachPlan({ polar: figure.coords === "polar" });
@@ -7497,7 +7589,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       xDomain,
       yDomain,
       packChromeFacts(figure, {
-        width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
+        width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported, y2Chrome,
       }),
       attachPlan.attachXypl ? packPolarSceneInput(figure) : new Uint8Array(),
       packFigureSupport(figure, { colorbarUnsupported }),

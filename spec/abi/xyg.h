@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 389
-#define XYG_ABI_SIGNATURE_SHA256 "82f7c1ecd100c1e7d454c058ab2ab3efbeba444a2a78063e526440e02faa1a96"
+#define XYG_ABI_VERSION 391
+#define XYG_ABI_SIGNATURE_SHA256 "52890d626bf8d1062c222559fda5d1a8b23a0f796f1844420f94381cdb4c3510"
 
 #ifdef __cplusplus
 extern "C" {
@@ -332,12 +332,13 @@ size_t xyg_scene_axis_ticks(uint32_t kind, double lo, double hi, size_t target, 
 size_t xyg_scene_batch_encode(double viewport_width, double viewport_height, double margin_left, double margin_right, double margin_top, double margin_bottom, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * chrome_style, size_t chrome_style_len, const double * x_major_ticks, size_t x_major_count, int32_t x_major_auto, const double * x_minor_ticks, size_t x_minor_count, const double * y_major_ticks, size_t y_major_count, int32_t y_major_auto, const double * y_minor_ticks, size_t y_minor_count, const uint8_t * x_tick_labels, size_t x_tick_labels_len, const uint8_t * y_tick_labels, size_t y_tick_labels_len, const uint8_t * authored_text_annotations, size_t authored_text_annotations_len, const uint8_t * kinds, const uint64_t * stable_ids, const uint32_t * style_refs, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, size_t style_count, const double * diameter, const uint8_t * symbols, const uint8_t * expansion_modes, const double * x0, const double * y0, const double * x1, const double * y1, size_t len, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * legend_input, size_t legend_input_len, const uint8_t * colorbar_input, size_t colorbar_input_len, const uint8_t * polar_input, uint8_t * out, size_t out_cap);
 size_t xyg_scene_browser_painter(const uint8_t * encoded, size_t encoded_len, size_t max_bytes, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_channel_constant_css(const uint8_t * mode, size_t mode_len, int32_t has_constant, const uint8_t * constant, size_t constant_len, uint8_t * out, size_t out_cap);
-int32_t xyg_scene_chrome_pack(const void * input, const double * x_major, const double * y_major, const double * x_minor, const double * y_minor, const void * x_tick_labels, const void * y_tick_labels, const uint8_t * colorbar_stops, const double * colorbar_ticks, const uint8_t * y2, size_t y2_len, uint8_t * out, size_t out_cap, size_t * out_len);
+int32_t xyg_scene_chrome_pack(const void * input, const double * x_major, const double * y_major, const double * x_minor, const double * y_minor, const void * x_tick_labels, const void * y_tick_labels, const uint8_t * colorbar_stops, const double * colorbar_ticks, const double * y2_major, const double * y2_minor, const void * y2_tick_labels, uint8_t * out, size_t out_cap, size_t * out_len);
 int32_t xyg_scene_constant_color_admit(int32_t has_channel, int32_t constant_ok, int32_t scatter_density, int32_t packs_paint_plane);
 int32_t xyg_scene_curve_classify(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_dash_admit(const uint8_t * text, size_t text_len, const double * lengths, size_t n, int32_t use_lengths, double * out, size_t out_cap, size_t * out_n);
 int32_t xyg_scene_encode_assembled(const uint8_t * xyas, size_t xyas_len, const uint8_t * chrome, size_t chrome_len, const uint8_t * extras, size_t extras_len, double viewport_width, double viewport_height, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_encode_assembled_from_sidecars(const uint8_t * xyas, size_t xyas_len, const uint8_t * chrome_facts, size_t chrome_facts_len, const uint8_t * xysd, size_t xysd_len, const uint8_t * polar, size_t polar_len, const uint8_t * extras_facts, size_t extras_facts_len, uint8_t * out, size_t out_cap);
+/* Buffer contract: out: out_cap bytes; short capacity returns -4 and, when capacity >= 4, writes the exact required byte count as little-endian u32 into out[0..4] (capacity 0-3 gets no size); hosts retry once with that size; an encoded product longer than i32::MAX bytes returns -3 with 0xFFFFFFFF in out[0..4], never copied; success returns the encoded byte count. */
 int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_encode_product_attach_plan(int32_t polar, void * out);
 int32_t xyg_scene_figure_support_figure_plan(int32_t polar, void * out);

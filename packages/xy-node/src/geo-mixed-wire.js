@@ -1,6 +1,6 @@
 // Mechanical type stripping of js/src/66_geo_mixed.ts; no host policy.
 /** Thin XYMX/XYMY/XYMF framing. Rust owns every composition/admission decision. */
-const XYG_WASM_SCENE_VERSION=33; // generated: scripts/geo_node_scene_version.mjs
+const XYG_WASM_SCENE_VERSION=34; // generated: scripts/geo_node_scene_version.mjs
 const MAX_MIXED_BYTES=32*1024*1024, MIXED_PHASE_BYTES=128*1024*1024;
                                    
                                                                        

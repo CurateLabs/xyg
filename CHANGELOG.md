@@ -28,9 +28,12 @@ in the README).
   optional `XYWA` sidecar (raster and the browser painter unchanged). Static
   bounds stricter than the browser fail closed with the LOD reason: per-item
   scatter paint planes must fit one 4 MiB XYTA record (≤ 174,586 points; XYEF
-  observation bit 25), all traces' packed rows share 2,000,000 marks, and a
-  Scene with a `y2` axis does not decimate yet. No C signature, `ABI_VERSION`,
-  or `SCENE_VERSION` change; the WASM gzip budget is 624 KiB. Node also fixes
+  observation bit 25), and all traces' packed rows share 2,000,000 marks. A
+  line on the secondary `y2` axis (#1037) decimates with the browser's M4 rows
+  and the y2 scale's log prefilter. The one shared static vector-group ceiling
+  (50,000) bounds hexbin cells (#1023, fail closed) and vector mesh faces
+  (dense-fill image above it). No C signature, `ABI_VERSION`, or
+  `SCENE_VERSION` change; the WASM gzip budget is 624 KiB. Node also fixes
   categorical-color static export (palette pointers) and large label
   factorization (call-stack overflow).
 - Changed C ABI return codes (#1006, no signature change):
@@ -42,6 +45,52 @@ in the README).
   `xyg_scene_xyta_trace_observations_materialize` returns `-3` (was `-2`/`-1`)
   for a record over its 4 MiB budget, which Python and Node relay as
   `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
+- ABI 390 / Scene v34: bounded static straight-arrow vocabulary (#1006). Rust
+  (`scene_arrow.rs`) owns open `v`, filled-triangle and absent heads and tails
+  (`->`, `<-`, `<->`, `-`, `-|>`), start offset, label clearance and pixel shrink,
+  drawn identically in SVG, raster and PDF; `XYAR` v2 / `XYAF` v2 carry the facts
+  (v1 `XYAF` is rejected), and unsupported styles fail closed with
+  `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`. `annotate(arrowprops=)` maps `arrowstyle`,
+  `shrinkA` and `shrinkB` onto it, and the browser painter hydrates the new runs.
+- ABI 391: Python and Node marshal the native secondary right-hand y axis
+  (`twinx`, #1006 PRs 2+3 of 3). Hosts pass the authored y2 observation to
+  `xyg_scene_chrome_pack` (presence plus authored values; its `y2`/`y2_len` bytes
+  are replaced by an `XygChromeY2In` struct and `y2_major`/`y2_minor`/
+  `y2_tick_labels`) and Rust builds the `XYY2` block, owning every default
+  (scale constant, tick strategy/anchor, minimum label gap) and rejecting invalid
+  authored values (zero/negative constant, non-finite domain or angle) identically
+  for both hosts. The y2 title now reads bottom to top like the left title in SVG,
+  PDF, PNG and the interactive browser client. Behaviour change in the browser:
+  the default y-title rotation is now -90° for every y title, so any
+  right-placed title (a primary or extra y axis with `side="right"`, as well as
+  y2) also flips from reading top to bottom to bottom to top; an authored
+  `label_angle` still wins. An authored empty y2 `tick_values` means
+  automatic ticks, as for x and y. An omitted y2 `side` means right, decided by
+  Rust (`Figure.setAxis("y2", {...})` without a side now exports like
+  `side: "right"` instead of being refused as `_Y2_SIDE`). Annotations bound to y2 (`y_axis="y2"` on
+  `xyg.text`/`label`/`marker`/`arrow`/`callout`/`hline`/`y_band`; every pyplot
+  twin annotation) that read the y data scale are refused by *static export* with
+  `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION` instead of being silently projected
+  through the primary scale (a known static gap; axes-fraction text is
+  unaffected), while the *live* path honors the binding: both hosts marshal
+  `y_axis: "y2"` on the wire and the interactive client projects the annotation
+  through the y2 scale in the coordinate spaces that read the y data scale; a
+  binding with no declared y2 axis is the same no-matching-axis build error in
+  both hosts. The live payload is now host-symmetric for dual-axis charts
+  (protocol 13 → 14): `buildPayload` in `@curatelabs/xyg-node` computes one
+  range per declared axis, passes each trace its own bound ranges, emits an
+  axis spec for every declared axis and derives `view.ranges` from them, so
+  `toHtml()` no longer draws y2 data on the primary scale with the right axis
+  missing (Python already emitted x/y/y2); Node `setAxis("y2")` defaults
+  `side: "right"` and syncs authored x/y labels exactly like Python
+  `set_axis`. Hosts
+  translate axis ids (`y2` = 2, `x2` = 3) into the `XYFS` observation, and set the
+  new `XYCL` column flag bit 1 (`XYCL_Y2`) so Rust stamps the record y selector on
+  every row of a y2 trace. Rust alone admits or rejects and returns the same
+  stable reasons to both hosts. pyplot `twinx()` seeds the twin's rc tick styling
+  from `ytick.*`. Corpus case 26 passes; Python and Node export byte-identical
+  XYST/SVG/PNG/PDF for the same public dual-axis chart, and byte-identical live
+  payload blobs (including a y2 density grid binned against its own domain).
 - ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
   (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
   `XYY2` block (scale, axis chrome record, resolved typography and paints, tick

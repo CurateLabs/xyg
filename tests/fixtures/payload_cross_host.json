@@ -1,8 +1,8 @@
 {
   "schema": "xyg.payload-cross-host/v1",
   "authority": "python/xyg/_figure.py build_payload",
-  "protocol": 13,
-  "abi_version": 389,
+  "protocol": 14,
+  "abi_version": 391,
   "cases": [
     {
       "name": "scatter_direct",

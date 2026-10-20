@@ -308,10 +308,11 @@ test("pack_annotation_marks rejects bad kind and nonfinite domain", () => {
 });
 
 test("xyScenePackAnnotationFacts routes text into XYAO/XYAD", () => {
-  const facts = new Uint8Array(232 + 2);
+  // XYAF v2: 232-byte v1 header + 72-byte arrow extension (zero for text).
+  const facts = new Uint8Array(304 + 2);
   const view = new DataView(facts.buffer);
   facts.set(new TextEncoder().encode("XYAF"), 0);
-  view.setUint32(4, 1, true);
+  view.setUint32(4, 2, true);
   facts[15] = 255;
   view.setUint32(16, (1 << 1) | (1 << 5) | (1 << 6), true);
   view.setUint32(20, 1, true);
@@ -320,7 +321,7 @@ test("xyScenePackAnnotationFacts routes text into XYAO/XYAD", () => {
   view.setFloat64(32, 0.5, true);
   view.setFloat64(40, 0.25, true);
   facts.set([102, 112, 133, 255], 176);
-  facts.set(new TextEncoder().encode("hi"), 232);
+  facts.set(new TextEncoder().encode("hi"), 304);
   const out = new Uint8Array(4096);
   const code = xyScenePackAnnotationFacts(
     u8Ptr(facts), BigInt(facts.length), 0,

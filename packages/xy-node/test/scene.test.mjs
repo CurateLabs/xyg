@@ -757,8 +757,9 @@ test("Node Scene materializes time strftime and polar numeric tick formats", () 
   assert.equal(fallbackSvg.includes(".2e"), false);
 });
 
-test("Node Scene secondary axes stay fail-closed", () => {
-  assert.throws(() => new Figure().setAxis("x2", { domain: [0, 1] }), /axisId must be x or y/);
+test("Node Scene authors only the right-hand secondary y axis", () => {
+  assert.throws(() => new Figure().setAxis("x2", { domain: [0, 1] }), /axisId must be x, y or y2/);
+  assert.doesNotThrow(() => new Figure().setAxis("y2", { side: "right", domain: [0, 1] }));
 });
 
 test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
@@ -2291,7 +2292,7 @@ test("Node symlog ticks fail closed at invalid arguments and honor the 200 targe
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 33);
+  assert.equal(sceneVersion(), 34);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],

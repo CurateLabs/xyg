@@ -396,10 +396,10 @@ def test_python_scene_secondary_axis_stays_fail_closed() -> None:
     figure = Figure()
     figure.scatter([0.0, 1.0], [0.0, 1.0])
     figure.set_axis("x2", side="top", domain=(0.0, 1.0), tick_values=[0.25])
-    with pytest.raises(UnsupportedSceneV3, match="exactly x/y axes"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_X2"):
         figure.to_scene()
     assert _scene_v3.scene_export_support_reason(figure) == (
-        "Scene v12 figure compilation currently supports exactly x/y axes"
+        "XYG_SCENE_UNSUPPORTED_X2: Scene does not encode a secondary x axis"
     )
 
 

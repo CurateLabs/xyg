@@ -75,7 +75,8 @@ identity metadata). Public scatter admits interned per-item fill/stroke/width/
 opacity (ABI 196) and, from ABI 386, Rust-mapped per-item size (#1006); per-item symbol stays fail-closed. Python and Node pack six authored
 vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
 plot clipping, legend swatch, SVG/raster/browser lowering, and the public
-PolyFill group budget (companion traces share the 1,024-group ceiling).
+PolyFill group budget (companion traces share the 1,024-group ceiling; hexbin
+cells use a separate 50,000-cell aggregate ceiling, #887).
 A non-joined mesh above that budget keeps every face in static export; Rust
 bounds its overdraw and writes one raster image per mesh in SVG/PDF above
 50,000 faces (#1006; scene-ir.md "Mesh tiers and dense-fill rule").
@@ -795,6 +796,7 @@ Forbidden:
 | `crates/xyg-engine/src/scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_annotation_splice.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 159 XYAS annotation splice packing | — |
 | `crates/xyg-engine/src/scene_annotations.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene_arrow.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_colorbar.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_chrome.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 153 XYCF figure-chrome packing; ABI 161 XYSD legend-paint splice | — |
 | `crates/xyg-engine/src/scene_density.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 151 Scene density grid packing | — |

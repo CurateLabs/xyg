@@ -234,6 +234,7 @@ pub use scene_legend::pack_legend;
 pub mod scene_colorbar;
 pub use scene_colorbar::pack_colorbar;
 pub mod scene_annotations;
+pub mod scene_arrow;
 pub use scene_annotations::pack_annotations;
 pub mod scene_heatmap;
 pub use scene_heatmap::pack_heatmap_facts;

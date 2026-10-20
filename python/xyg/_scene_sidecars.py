@@ -25,6 +25,7 @@ _XYCL_HEADER = struct.Struct("<4sIII")
 _XYCL_PREFIX = struct.Struct("<HBBIQ7I4x")
 # XYCL prefix byte 3: `segments` `base` carries graph edge-end triples (#33).
 _XYCL_EDGE_ENDS = 1 << 0
+_XYCL_Y2 = 1 << 1
 _XYNM_HEADER = struct.Struct("<4sIII")
 _XYNM_PREFIX = struct.Struct("<H")
 _XYFS_TRACE_RECT_GRADIENT = 1 << 5
@@ -57,6 +58,8 @@ def pack_xycl(figure: Any) -> bytes:
             column_flags = _XYCL_EDGE_ENDS
         else:
             columns["base"] = _trace_column(trace, "base")
+        if str(getattr(trace, "y_axis", "y") or "y") == "y2":
+            column_flags |= _XYCL_Y2
         packed = [
             pack_xycl_column(columns[name]) for name in ("x", "y", "x0", "y0", "x1", "y1", "base")
         ]

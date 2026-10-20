@@ -1,4 +1,4 @@
-//! Bulk XYAF v1 annotation pack (M2 Push 3A completion, ABI 324).
+//! Bulk XYAF v2 annotation pack (M2 Push 3A completion, ABI 324).
 //!
 //! Hosts marshal annotation observations (kind, text, geometry/style keys).
 //! Rust owns kind dispatch, style allowlists, text/geometry validation, CSS
@@ -9,6 +9,7 @@ use crate::kernels::{
     scene_annotation_style_admit, scene_dash_admit, scene_linecap_admit, scene_linecap_code,
     SceneDash, SceneLinecap,
 };
+use crate::scene_arrow::{parse_pixel_csv, ArrowEnd, ArrowShape};
 use crate::scene_pack_orchestrate::scene_xyaf_annotation_dispatch_plan;
 use crate::scene_xyaf_pack::{scene_xyaf_pack, XyafPackInput};
 
@@ -104,6 +105,8 @@ pub enum XyafBulkError {
     LabelBorder = 12,
     Axis = 13,
     CoordinateSpace = 14,
+    /// An arrow style fact is outside the admitted `scene_arrow` vocabulary.
+    ArrowStyle = 15,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -142,7 +145,42 @@ pub struct XyafBulkStyleObs<'a> {
     pub label_border_width: Option<f64>,
     pub rotation: Option<f64>,
     pub coordinate_space: Option<&'a str>,
+    /// Arrow-only facts (#1006): `none`/`triangle`/`v` end names, pixel CSVs.
+    pub head_style: Option<&'a str>,
+    pub tail_style: Option<&'a str>,
+    pub start_offset: Option<&'a str>,
+    pub label_clear: Option<&'a str>,
+    pub gap_start: Option<f64>,
+    pub gap_end: Option<f64>,
     pub extra_keys: &'a [String],
+}
+
+impl XyafBulkStyleObs<'_> {
+    fn has_arrow_facts(&self) -> bool {
+        self.head_style.is_some()
+            || self.tail_style.is_some()
+            || self.start_offset.is_some()
+            || self.label_clear.is_some()
+            || self.gap_start.is_some()
+            || self.gap_end.is_some()
+    }
+
+    /// The arrow shape these facts select; absent facts keep the default.
+    fn arrow_shape(&self) -> Option<ArrowShape> {
+        let end = |name: Option<&str>, default| match name {
+            None => Some(default),
+            Some(name) => ArrowEnd::from_name(name),
+        };
+        let shape = ArrowShape {
+            head: end(self.head_style, ArrowEnd::Triangle)?,
+            tail: end(self.tail_style, ArrowEnd::None)?,
+            start_offset: self.start_offset.map_or(Some([0.0; 2]), parse_pixel_csv::<2>)?,
+            gap_start: self.gap_start.unwrap_or(0.0),
+            gap_end: self.gap_end.unwrap_or(0.0),
+            label_clear: self.label_clear.map_or(Some([0.0; 4]), parse_pixel_csv::<4>)?,
+        };
+        shape.is_admitted().then_some(shape)
+    }
 }
 
 /// One annotation observation row for bulk XYAF pack.
@@ -235,6 +273,13 @@ fn coordinate_space_code(name: Option<&str>, kind: &str, index: usize) -> Result
     Ok(code)
 }
 
+/// Whether a text row's coordinate space reads the Scene's y data scale (so a
+/// row bound to a secondary y axis would need that axis's scale). The space
+/// vocabulary is owned by [`coordinate_space_code`]; unknown spaces fail there.
+pub(crate) fn coordinate_space_uses_y_scale(name: Option<&str>) -> bool {
+    matches!(name, None | Some("data") | Some("yaxis_transform"))
+}
+
 fn parse_dash_text(text: &str) -> Result<Option<Vec<f32>>, XyafBulkPackError> {
     match scene_dash_admit(text, &[], false) {
         Some(SceneDash::Solid) => Ok(None),
@@ -316,6 +361,27 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
         if scene_annotation_style_admit(kind, wrapped, labelled, key) {
             continue;
         }
+        return Err(XyafBulkPackError::new(XyafBulkError::UnsupportedStyle, index));
+    }
+    let mut arrow_ends = [0u8; 2];
+    let mut arrow_facts = [0.0f64; 8];
+    if kind == "arrow" {
+        let shape = obs
+            .style
+            .arrow_shape()
+            .ok_or_else(|| XyafBulkPackError::new(XyafBulkError::ArrowStyle, index))?;
+        arrow_ends = [shape.head as u8, shape.tail as u8];
+        arrow_facts = [
+            shape.start_offset[0],
+            shape.start_offset[1],
+            shape.gap_start,
+            shape.gap_end,
+            shape.label_clear[0],
+            shape.label_clear[1],
+            shape.label_clear[2],
+            shape.label_clear[3],
+        ];
+    } else if obs.style.has_arrow_facts() {
         return Err(XyafBulkPackError::new(XyafBulkError::UnsupportedStyle, index));
     }
     let mut nums = [f64::NAN; 18];
@@ -536,12 +602,14 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
         label_fill,
         label_border,
         dash,
+        arrow_ends,
+        arrow_facts,
         text: text_bytes,
     })
     .map_err(|_| XyafBulkPackError::new(XyafBulkError::Invalid, index))
 }
 
-/// Pack all annotation observations into concatenated XYAF v1 records.
+/// Pack all annotation observations into concatenated XYAF v2 records.
 pub fn scene_xyaf_bulk_pack(annotations: &[XyafBulkAnnotationObs<'_>]) -> Result<Vec<u8>, XyafBulkPackError> {
     if annotations.len() > MAX_ANNOTATIONS {
         return Err(XyafBulkPackError::new(XyafBulkError::Invalid, 0));
@@ -594,7 +662,81 @@ mod tests {
     fn packs_text_annotation() {
         let packed = scene_xyaf_bulk_pack(&[text_obs("hello", 0.5, 0.25, "#667085")]).unwrap();
         assert_eq!(&packed[..4], b"XYAF");
-        assert_eq!(&packed[232..], b"hello");
+        assert_eq!(&packed[304..], b"hello");
+    }
+
+    fn arrow_obs<'a>(style: XyafBulkStyleObs<'a>) -> XyafBulkAnnotationObs<'a> {
+        XyafBulkAnnotationObs {
+            kind: "arrow",
+            x0: Some(0.0),
+            y0: Some(0.0),
+            x1: Some(1.0),
+            y1: Some(1.0),
+            style,
+            ..text_obs("", 0.0, 0.0, "#000")
+        }
+    }
+
+    #[test]
+    fn arrow_style_facts_pack_into_the_xyaf_extension() {
+        let ext = |obs| {
+            let packed = scene_xyaf_bulk_pack(&[obs]).unwrap();
+            let f = |slot: usize| {
+                f64::from_le_bytes(packed[240 + slot * 8..248 + slot * 8].try_into().unwrap())
+            };
+            (packed[232], packed[233], (0..8).map(f).collect::<Vec<_>>())
+        };
+        // No style: the pre-vocabulary filled triangle, nothing else.
+        assert_eq!(
+            ext(arrow_obs(XyafBulkStyleObs::default())),
+            (1, 0, vec![0.0; 8])
+        );
+        // `->` with a label-attach model (start_offset + label_clear) and a gap.
+        let open = XyafBulkStyleObs {
+            head_style: Some("v"),
+            start_offset: Some("12.5,-3"),
+            label_clear: Some("1,2,3,4"),
+            gap_end: Some(2.0),
+            ..Default::default()
+        };
+        assert_eq!(
+            ext(arrow_obs(open)),
+            (2, 0, vec![12.5, -3.0, 0.0, 2.0, 1.0, 2.0, 3.0, 4.0])
+        );
+        let reversed = XyafBulkStyleObs {
+            head_style: Some("none"),
+            tail_style: Some("v"),
+            ..Default::default()
+        };
+        assert_eq!(ext(arrow_obs(reversed)), (0, 2, vec![0.0; 8]));
+    }
+
+    #[test]
+    fn unadmitted_arrow_styles_fail_closed_with_a_stable_code() {
+        let reject = |style: XyafBulkStyleObs<'_>| {
+            scene_xyaf_bulk_pack(&[arrow_obs(style)]).unwrap_err().code
+        };
+        for style in [
+            XyafBulkStyleObs { head_style: Some("bar"), ..Default::default() },
+            XyafBulkStyleObs { head_style: Some("fancy"), ..Default::default() },
+            XyafBulkStyleObs { tail_style: Some("triangle"), ..Default::default() },
+            XyafBulkStyleObs { start_offset: Some("1"), ..Default::default() },
+            XyafBulkStyleObs { start_offset: Some("1,x"), ..Default::default() },
+            XyafBulkStyleObs { label_clear: Some("1,2,3"), ..Default::default() },
+            XyafBulkStyleObs { label_clear: Some("1,2,3,-4"), ..Default::default() },
+            XyafBulkStyleObs { gap_start: Some(-1.0), ..Default::default() },
+            XyafBulkStyleObs { gap_end: Some(f64::NAN), ..Default::default() },
+        ] {
+            assert_eq!(reject(style), XyafBulkError::ArrowStyle);
+        }
+        assert_eq!(XyafBulkPackError::new(XyafBulkError::ArrowStyle, 0).abi_code(), -15);
+        // Arrow facts on any other kind are an unsupported style, not ignored.
+        let mut text = text_obs("hi", 0.0, 0.0, "#000");
+        text.style.head_style = Some("v");
+        assert_eq!(
+            scene_xyaf_bulk_pack(&[text]).unwrap_err().code,
+            XyafBulkError::UnsupportedStyle
+        );
     }
 
     #[test]

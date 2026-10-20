@@ -77,7 +77,7 @@ def test_scene_xyaf_pack_roundtrip_bytes() -> None:
         text=b"hi",
     )
     assert packed[:4] == b"XYAF"
-    assert packed[232:] == b"hi"
+    assert packed[304:] == b"hi"
 
 
 def test_scene_figure_support_pack_minimal() -> None:
@@ -126,7 +126,7 @@ def test_scene_xyaf_bulk_pack_text_annotation() -> None:
     }
     packed = scene_xyaf_bulk_pack([annotation])
     assert packed[:4] == b"XYAF"
-    assert packed[232:] == b"hello"
+    assert packed[304:] == b"hello"
 
 
 def test_scene_xyaf_bulk_pack_matches_low_level_pack() -> None:
@@ -177,7 +177,7 @@ def test_scene_xyaf_bulk_pack_via_scene_v3_helper() -> None:
 
     packed = _pack_xyaf_bulk(_text_annotation_figure().annotations)
     assert packed[:4] == b"XYAF"
-    assert packed[232:] == b"hello"
+    assert packed[304:] == b"hello"
 
 
 @pytest.mark.skipif(
@@ -318,3 +318,36 @@ def test_scene_bulk_pack_cross_host_node() -> None:
         ]
     )
     assert _sha256(py_xyaf) == payload["xyaf_sha256"]
+
+
+def _twin_chrome_facts(*, y2_ticks=None, y_ticks=None) -> bytes:
+    from xyg._scene_marshal import pack_chrome_facts
+
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y2"] = {"side": "right", "domain": (0.0, 400.0), "tick_values": y2_ticks}
+    figure.axis_options["y"]["tick_values"] = y_ticks
+    return pack_chrome_facts(figure, width=320, height=240, margins=None, colorbar_ok=True)
+
+
+def _y2_major_count(xycf: bytes) -> int:
+    length = int.from_bytes(xycf[284:288], "little")
+    sidecar = xycf[len(xycf) - length :]
+    assert sidecar[:4] == b"XYY2"
+    return int.from_bytes(sidecar[184:188], "little")
+
+
+def test_empty_y2_tick_values_mean_automatic_ticks_like_the_primary_axis() -> None:
+    """`xyg_scene_chrome_pack` treats an empty major list as automatic for y and y2."""
+    auto = 0xFFFFFFFF
+    assert _y2_major_count(_twin_chrome_facts(y2_ticks=None)) == auto
+    assert _y2_major_count(_twin_chrome_facts(y2_ticks=[])) == auto
+    assert _y2_major_count(_twin_chrome_facts(y2_ticks=[0.0, 200.0, 400.0])) == 3
+    # The primary y axis: an empty list sets the same XYCF "major auto" flag as None.
+    y_major_auto = 1 << 3
+    for ticks in (None, []):
+        flags = int.from_bytes(_twin_chrome_facts(y_ticks=ticks)[8:12], "little")
+        assert flags & y_major_auto
+    flags = int.from_bytes(_twin_chrome_facts(y_ticks=[1.0, 2.0])[8:12], "little")
+    assert not flags & y_major_auto

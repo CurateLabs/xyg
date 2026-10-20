@@ -31,6 +31,11 @@ pub const XYCL_PREFIX_BYTES: usize = 48;
 /// edge ends (`edge_route::EDGE_ENDS_STRIDE` values per segment) (#33). Rust
 /// routes them into `PACK_EDGE_SEGMENT`.
 pub const XYCL_EDGE_ENDS: u8 = 1 << 0;
+/// XYCL prefix byte 3 bit: the trace is plotted against the secondary right
+/// y axis, so every row packed from it carries the record y2 selector. Rust
+/// admission (`XYG_SCENE_UNSUPPORTED_Y2_*`) decides whether the figure may
+/// carry y2 at all; the selector alone does nothing without an `XYY2` block.
+pub const XYCL_Y2: u8 = 1 << 1;
 
 const MAX_TRACES: usize = 4_096;
 const MAX_KIND: usize = 32;
@@ -88,6 +93,7 @@ struct ColumnInput {
     kind: String,
     coords: u8,
     edge_ends: bool,
+    y2: bool,
     trace_id: u64,
     x: Vec<f64>,
     y: Vec<f64>,
@@ -253,7 +259,7 @@ fn parse_column(bytes: &[u8], at: &mut usize, index: usize) -> Result<ColumnInpu
         return Err(TraceRowsError::new(TraceRowsCode::Coords, index));
     }
     let column_flags = prefix[3];
-    if column_flags & !XYCL_EDGE_ENDS != 0 {
+    if column_flags & !(XYCL_EDGE_ENDS | XYCL_Y2) != 0 {
         return Err(TraceRowsError::new(TraceRowsCode::Length, index));
     }
     let trace_id = u64::from_le_bytes(prefix[8..16].try_into().unwrap());
@@ -289,6 +295,7 @@ fn parse_column(bytes: &[u8], at: &mut usize, index: usize) -> Result<ColumnInpu
         kind,
         coords,
         edge_ends: column_flags & XYCL_EDGE_ENDS != 0,
+        y2: column_flags & XYCL_Y2 != 0,
         trace_id,
         x: decode_f64s(x, index)?,
         y: decode_f64s(y, index)?,
@@ -318,11 +325,11 @@ pub struct LineLodFrame {
     pub x_hi: f64,
     pub x_constant: f64,
     pub y_log: bool,
-    /// The Scene carries a right-hand secondary y axis (`XYY2` in XYCF).
-    /// Product rows do not yet record which y axis they belong to, so the
-    /// log prefilter could read the wrong scale; a decimated line fails
-    /// closed as `Lod` until rows carry that axis (#1006, #1037).
-    pub y2_present: bool,
+    /// The secondary right-hand y axis's log flag when the Scene's XYCF
+    /// carries an `XYY2` sidecar (#1037), else `None`. A line on `y2`
+    /// (XYCL `XYCL_Y2`) applies the browser's decimated log prefilter with
+    /// this scale; without a sidecar it fails closed as `Lod` (#1006).
+    pub y2_log: Option<bool>,
 }
 
 impl LineLodFrame {
@@ -349,13 +356,14 @@ impl LineLodFrame {
             x_hi: x_lo.max(x_hi),
             x_constant,
             y_log: y_kind == SCALE_LOG,
-            y2_present: false,
+            y2_log: None,
         }
     }
 
-    /// [`LineLodFrame::new`] for a Scene whose XYCF carries a `y2` sidecar.
-    pub fn with_y2(mut self, present: bool) -> Self {
-        self.y2_present = present;
+    /// [`LineLodFrame::new`] for a Scene whose XYCF carries a `y2` sidecar
+    /// with scale code `y2_kind` (`0` linear, `1` log, `2` symlog).
+    pub fn with_y2(mut self, y2_kind: Option<u32>) -> Self {
+        self.y2_log = y2_kind.map(|kind| kind == SCALE_LOG);
         self
     }
 
@@ -466,13 +474,14 @@ fn line_m4_rows(
     if tier != PAYLOAD_TIER_DECIMATED {
         return Ok(None);
     }
-    if lod.y2_present {
-        return Err(lod_error);
-    }
     let x_log = lod.x_kind == SCALE_LOG;
-    // Product rows are all on the primary y axis today (Scene v33 y2 rows
-    // are not yet selected by the product encoder, #1032).
-    let y_log = lod.y_log;
+    // A `y2` line (#1037) is filtered against the secondary scale, exactly
+    // like the browser payload for that trace; the x window is shared.
+    let y_log = if input.y2 {
+        lod.y2_log.ok_or(lod_error)?
+    } else {
+        lod.y_log
+    };
     if x_log || y_log {
         let xg: Vec<f64> = keep.iter().map(|&i| input.x[i as usize]).collect();
         let yg: Vec<f64> = keep.iter().map(|&i| input.y[i as usize]).collect();
@@ -638,7 +647,10 @@ pub fn pack_trace_rows_with_lod(
             &facts, &x, &y, &input.x0, &input.y0, &input.x1, &input.y1, &base,
         )
         .map_err(|error| pack_error(error, index))?;
-        rows.extend(packed);
+        rows.extend(packed.into_iter().map(|row| PackedSceneRow {
+            y2: input.y2,
+            ..row
+        }));
     }
     if at != columns.len() {
         return Err(TraceRowsError::new(TraceRowsCode::Length, 0));
@@ -893,22 +905,30 @@ mod tests {
     }
 
     #[test]
-    fn static_line_lod_fails_closed_on_a_secondary_y_scene() {
-        // #1006: rows do not yet record their y axis, so a Scene with a y2
-        // sidecar must not decimate with the primary y scale's prefilter.
+    fn static_line_lod_filters_a_y2_line_against_the_secondary_scale() {
+        // #1006/#1037: a line on y2 decimates with the browser's M4 rows and
+        // applies the log prefilter of the y2 scale, not the primary one.
         let attached = empty_attach(&compile_kind("line"), 1);
         let n = 20_000usize;
         let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
-        let lod = LineLodFrame::new(320.0, 0, 0.0, n as f64, 1.0, 0).with_y2(true);
-        let error = pack_trace_rows_with_lod(&attached, &line_columns(0, &x, &x), Some(&lod))
-            .unwrap_err();
+        let y: Vec<f64> = (0..n).map(|i| if i % 3 == 0 { -1.0 } else { 1.0 + i as f64 }).collect();
+        let y2_columns = |y: &[f64]| {
+            let mut columns = line_columns(0, &x, y);
+            columns[XYCL_HEADER_BYTES + 3] = XYCL_Y2;
+            columns
+        };
+        let primary = LineLodFrame::new(320.0, 0, 0.0, n as f64, 1.0, 0);
+        let y2_log = primary.with_y2(Some(SCALE_LOG));
+        let rows = pack_trace_rows_with_lod(&attached, &y2_columns(&y), Some(&y2_log)).unwrap();
+        assert!(rows.iter().all(|row| row.y2 && row.y0 > 0.0));
+        // A linear y2 keeps the non-positive M4 rows.
+        let y2_linear = primary.with_y2(Some(0));
+        let linear = pack_trace_rows_with_lod(&attached, &y2_columns(&y), Some(&y2_linear)).unwrap();
+        assert!(linear.iter().any(|row| row.y0 < 0.0) && linear.len() > rows.len());
+        // A y2 line without a y2 axis cannot be filtered: it fails closed.
+        let error =
+            pack_trace_rows_with_lod(&attached, &y2_columns(&y), Some(&primary)).unwrap_err();
         assert_eq!(error.code, TraceRowsCode::Lod);
-        // At or below the threshold nothing is decimated, so nothing traps.
-        let small = line_columns(0, &x[..10_000], &x[..10_000]);
-        assert_eq!(
-            pack_trace_rows_with_lod(&attached, &small, Some(&lod)).unwrap(),
-            pack_trace_rows(&attached, &small).unwrap()
-        );
     }
 
     #[test]
@@ -984,6 +1004,23 @@ mod tests {
         assert_eq!(rows[0].y0, 2.0);
         assert_eq!(rows[1].x0, 1.0);
         assert_eq!(rows[1].y0, 3.0);
+    }
+
+    #[test]
+    fn y2_flag_selects_the_secondary_scale_for_that_trace_only() {
+        let attached = empty_attach(&compile_kind("scatter"), 1);
+        let pack = |flags: u8| {
+            let mut columns = xycl_header(1);
+            let mut trace = xycl_trace("scatter", 0, 7, &[0.0], &[1.0], &[], &[], &[], &[], &[]);
+            trace[3] = flags;
+            columns.extend_from_slice(&trace);
+            pack_trace_rows(&attached, &columns)
+        };
+        assert!(pack(0).unwrap().iter().all(|row| !row.y2));
+        let rows = pack(XYCL_Y2).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert!(rows.iter().all(|row| row.y2 && row.stable_id == 7));
+        assert!(pack(1 << 2).is_err());
     }
 
     #[test]

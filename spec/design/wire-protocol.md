@@ -474,9 +474,9 @@ The reassembled bytes are identical to the source blob, which is what keeps
 
 Two independent version constants:
 
-- **Renderer/spec protocol.** `PROTOCOL_VERSION = 13` (`python/xyg/config.py`)
+- **Renderer/spec protocol.** `PROTOCOL_VERSION = 14` (`python/xyg/config.py`)
   rides every first-paint spec as `spec["protocol"]`; the client's
-  `PROTOCOL = 13` (`js/src/00_header.ts`) is checked in the `ChartView`
+  `PROTOCOL = 14` (`js/src/00_header.ts`) is checked in the `ChartView`
   constructor. A mismatch replaces the chart element with "update the xy
   package and restart the kernel" and throws. Requests and replies carry no
   version of their own — the handshake happens once, at first paint, before
@@ -530,7 +530,19 @@ Two independent version constants:
   key. It also stops serializing host-only graph identity planes into
   `spec.graph` and ships its integer planes (CSR, label acceptance, visual
   states, compound flags) as typed `{column}` references. A cached v12 client would accept the payload and silently
-  show no node, edge, or band rows on hover, so v13 rejects it.
+  show no node, edge, or band rows on hover, so v13 rejects it. v14 ships the
+  secondary right-hand y axis on the live wire: a dual-axis chart's `axes`
+  and `view.ranges` carry the admitted `y2` axis and per-trace ranges in both
+  hosts (`xyg-node`'s `buildPayload` previously collapsed every trace onto the
+  primary range and omitted the axis), and annotations may bind their y
+  coordinates to it with `annotations[].y_axis: "y2"`. A cached v13 client
+  ignores the binding and projects the annotation through the primary scale —
+  silently misplaced, the wrong picture the handshake exists to prevent — so
+  v14 rejects that stale bundle before rendering. The binding follows Rust's
+  `coordinate_space_uses_y_scale` rule (only default/`data` and
+  `yaxis_transform` spaces read it) and both hosts refuse it when the chart
+  never declared a y2 axis
+  (`spec/design/twinx-secondary-y-axis.md`, round 4).
 - **Transport frame.** `FRAME_MAGIC` `"XYBF"` with `FRAME_VERSION = 1`
   versions the binary envelope separately, so the transport and the renderer
   can evolve without coupling.

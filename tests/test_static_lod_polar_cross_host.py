@@ -3,7 +3,8 @@
 Both hosts build the same figures, export native SVG and PNG through the one
 Rust static route, and must produce the digests pinned in
 ``tests/fixtures/static_lod_polar_cross_host.json``: a 1,000,000-point line on
-the browser's M4 tier, a 100,000-point scatter on the direct tier, and polar
+the browser's M4 tier, a 100,000-point line on a log ``y2`` axis (#1037), a
+100,000-point scatter on the direct tier, and polar
 bar wedges written as exact SVG arcs.
 """
 
@@ -24,6 +25,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "static_lod_polar_cross_host.json
 LINE_N = 1_000_000
 SCATTER_N = 100_000
 CATEGORICAL_N = 150_000
+Y2_LINE_N = 100_000
 TAU = 6.283185307179586
 
 
@@ -79,8 +81,29 @@ def _polar_bar() -> Figure:
     return figure
 
 
+def _line_y2_log() -> Figure:
+    """A 100k line on a log secondary axis: M4 rows with the y2 log prefilter."""
+    import xyg.components as c
+
+    index = np.arange(Y2_LINE_N, dtype=np.float64)
+    return c.line_chart(
+        c.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 3.0]),
+        c.line(
+            x=index * 0.25,
+            y=((index * 7919.0) % 1009.0) / 10.0 - (index % 97.0),
+            y_axis="y2",
+        ),
+        c.x_axis(domain=(0.0, 25_000.0)),
+        c.y_axis(domain=(0.0, 4.0)),
+        c.y_axis(id="y2", side="right", type_="log", domain=(1.0, 200.0)),
+        width=720,
+        height=420,
+    ).figure()
+
+
 BUILDERS = {
     "line_1m_m4": _line,
+    "line_y2_100k_log_m4": _line_y2_log,
     "scatter_100k_direct": _scatter,
     "scatter_150k_categorical": _categorical_scatter,
     "polar_bar_arcs": _polar_bar,
@@ -109,6 +132,8 @@ def test_cross_host_cases_exercise_the_tiers_they_name() -> None:
     line = _line().to_svg()
     (points,) = re.findall(r'<polyline points="([^"]*)"', line)
     assert 720 < len(points.split()) <= 4 * 720
+    _, secondary = re.findall(r'<polyline points="([^"]*)"', _line_y2_log().to_svg())
+    assert 720 < len(secondary.split()) <= 4 * 720
     assert _scatter().to_svg().count("<circle") == SCATTER_N
     paths = re.findall(r'<path d="([^"]*)"', _polar_bar().to_svg())
     wedges = [d for d in paths if " A " in d]
