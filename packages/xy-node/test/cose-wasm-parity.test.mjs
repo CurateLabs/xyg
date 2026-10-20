@@ -9,14 +9,10 @@
 //    exactly as the browser Worker drives it.
 //
 // Tolerance policy (spec/design/graph-mark.md, "CoSE cross-host parity"):
-//  - fixtures whose Rust path uses only + - * / sqrt (authored start, connected
-//    graph; every golden entry with an empty `libm` list): bitwise at every
-//    checkpoint;
-//  - fixtures that reach a platform libm sin/cos (`libm` lists "seeded-circle"
-//    and/or "component-gravity-anchor"): wasm32 may differ from native by ulps,
-//    which the chaotic force iteration amplifies. The first checkpoint must
-//    agree within LIBM_FIRST_CHECKPOINT_EPS; the bitwise assertion is `todo`
-//    until those sites use portable_sin_cos (#35).
+// bitwise at every checkpoint, for every fixture and start mode. The CoSE path
+// uses only + - * / sqrt and portable_sin_cos (never the platform libm), so
+// there is no epsilon. A digest mismatch fails and the message reports the max
+// absolute position delta for diagnosis.
 //
 // Build the WASM artifact first: node js/build.mjs && npm run build:wasm.
 import assert from "node:assert/strict";
@@ -36,10 +32,6 @@ const wasmSkip = fs.existsSync(WASM) && fs.existsSync(BUNDLE)
   ? false
   : "build the WASM artifact first: node js/build.mjs && npm run build:wasm";
 
-// Measured libm-dependent first-checkpoint deltas are <= 2.3e-13 on coordinates of
-// magnitude ~10 (a few ulps); the bound keeps >4 orders of margin and still
-// rejects any algorithmic divergence.
-const LIBM_FIRST_CHECKPOINT_EPS = 1e-9;
 const STATUS_OK = 0;
 const STATUS_PENDING = 8;
 
@@ -80,16 +72,6 @@ function assertCheckpoints(name, host, got, final, expected) {
   });
   assert.deepEqual(Array.from(final.x), expected.x, `${name}: ${host} final x`);
   assert.deepEqual(Array.from(final.y), expected.y, `${name}: ${host} final y`);
-}
-
-function firstNativeCheckpoint(fixture) {
-  const handle = graphForceCreate(fixture.nNodes, u64(fixture.sources), u64(fixture.targets), nativeOptions(fixture));
-  try {
-    const { x, y } = graphForceTick(handle, fixture.nNodes, GOLDEN.schedule[0]);
-    return { x, y };
-  } finally {
-    graphForceDestroy(handle);
-  }
 }
 
 function nativeOptions(fixture) {
@@ -148,7 +130,6 @@ function runWasm(wasm, client, fixture) {
     const revision = 1;
     assert.equal(wasm.xyg_wasm_graph_begin(handle, sequence, revision, 0, request.byteLength), STATUS_OK);
     const checkpoints = [];
-    let first;
     let final;
     GOLDEN.schedule.forEach((take, i) => {
       const status = wasm.xyg_wasm_graph_step(handle, sequence, revision, take);
@@ -158,26 +139,20 @@ function runWasm(wasm, client, fixture) {
       const buffer = new Uint8Array(wasm.memory.buffer, out, len).slice().buffer;
       const checkpoint = client.decodeWasmGraphCheckpoint(buffer);
       checkpoints.push({ step: checkpoint.step, alpha: checkpoint.alpha, sha256: digest(checkpoint.x, checkpoint.y, checkpoint.alpha) });
-      first ??= checkpoint;
       final = checkpoint;
     });
-    return { checkpoints, final, first };
+    return { checkpoints, final };
   } finally {
     wasm.xyg_wasm_instance_dispose(handle);
   }
 }
 
-test("the golden covers compound, disconnected, and both repulsion tiers", () => {
+test("the golden covers compound, disconnected, coincident, and both repulsion tiers, seeded and authored", () => {
   const names = GOLDEN.cases.map((c) => c.name);
-  for (const required of ["compound", "disconnected", "random-200-exact-tier"]) assert.ok(names.includes(required), required);
+  for (const required of ["compound", "disconnected", "coincident-start", "random-200-exact-tier"]) assert.ok(names.includes(required), required);
   assert.ok(names.some((n) => n.startsWith("random-700-grid-tier")));
   assert.ok(GOLDEN.cases.some((c) => c.parents) && GOLDEN.cases.some((c) => c.pinned && c.cose?.bounds));
-  // The bitwise-portable subset must still cover compound, disconnected-free
-  // connected graphs on both repulsion tiers.
-  const portable = GOLDEN.cases.filter((c) => c.libm.length === 0).map((c) => c.name);
-  for (const required of ["compound", "random-200-exact-tier", "random-700-grid-tier-compound", "pinned-bounds-initial"]) {
-    assert.ok(portable.includes(required), `${required} is bitwise-portable`);
-  }
+  assert.ok(GOLDEN.cases.some((c) => c.start === "seeded") && GOLDEN.cases.some((c) => c.start === "authored"));
 });
 
 for (const fixture of GOLDEN.cases) {
@@ -188,27 +163,10 @@ for (const fixture of GOLDEN.cases) {
 }
 
 for (const fixture of GOLDEN.cases) {
-  const portable = fixture.libm.length === 0;
-  test(`direct-WASM CoSE matches native bitwise: ${fixture.name}`, {
-    skip: wasmSkip,
-    todo: portable ? false : `platform libm sin/cos in ${fixture.libm.join(", ")}; bitwise needs portable_sin_cos (#35)`,
-  }, async () => {
+  test(`direct-WASM CoSE matches native bitwise: ${fixture.name}`, { skip: wasmSkip }, async () => {
     const client = await import(pathToFileURL(BUNDLE).href);
     const wasm = await loadWasm();
     const { checkpoints, final } = runWasm(wasm, client, fixture);
     assertCheckpoints(fixture.name, "WASM", checkpoints, final, fixture.expected);
   });
-  if (!portable) {
-    test(`direct-WASM libm-dependent fixture stays within the first-checkpoint tolerance (${fixture.libm.join(", ")}): ${fixture.name}`, { skip: wasmSkip }, async () => {
-      const client = await import(pathToFileURL(BUNDLE).href);
-      const wasm = await loadWasm();
-      const { first } = runWasm(wasm, client, fixture);
-      const native = firstNativeCheckpoint(fixture);
-      let worst = 0;
-      for (let i = 0; i < fixture.nNodes; i += 1) {
-        worst = Math.max(worst, Math.abs(first.x[i] - native.x[i]), Math.abs(first.y[i] - native.y[i]));
-      }
-      assert.ok(worst <= LIBM_FIRST_CHECKPOINT_EPS, `${fixture.name}: first-checkpoint max |delta| ${worst}`);
-    });
-  }
 }

@@ -130,6 +130,18 @@ def base_fixtures() -> list[dict]:
             "seed": 5,
         }
     )
+    out.append(
+        {
+            "name": "coincident-start",
+            "note": "all nodes authored at the origin: exercises the coincident-overlap seeding",
+            "nNodes": 24,
+            "sources": list(range(23)) + [23],
+            "targets": list(range(1, 24)) + [0],
+            "x": [0.0] * 24,
+            "y": [0.0] * 24,
+            "seed": 31,
+        }
+    )
     s, t = _lcg_edges(200, 1, 0x9E3779B97F4A7C15)
     out.append(
         {
@@ -160,55 +172,22 @@ def base_fixtures() -> list[dict]:
     return out
 
 
-def _component_count(n: int, sources: list[int], targets: list[int]) -> int:
-    parent = list(range(n))
-
-    def find(i: int) -> int:
-        while parent[i] != i:
-            parent[i] = parent[parent[i]]
-            i = parent[i]
-        return i
-
-    for s, t in zip(sources, targets, strict=True):
-        parent[find(s)] = find(t)
-    return len({find(i) for i in range(n)})
-
-
-def _libm_dependencies(fx: dict) -> list[str]:
-    """Rust paths on this fixture that still call the platform ``sin``/``cos``."""
-    out = []
-    if "x" not in fx:
-        out.append("seeded-circle")
-    if _component_count(fx["nNodes"], fx["sources"], fx["targets"]) > 1:
-        out.append("component-gravity-anchor")
-    return out
-
-
 def fixtures() -> list[dict]:
     """Every graph twice: authored start positions, and the Rust seeded start.
 
     ``start`` is ``authored`` (explicit x/y) or ``seeded`` (Rust's seeded
-    circle). ``libm`` lists the Rust paths exercised by the fixture that call the
-    platform ``sin``/``cos`` (seeded circle; per-component gravity anchors), where
-    wasm32 may differ from native by ulps; everything else uses only
-    ``+ - * / sqrt`` and must agree bitwise.
+    circle). Every fixture must agree bitwise on every host: the CoSE path uses
+    only ``+ - * / sqrt`` and ``portable_sin_cos`` (never the platform libm).
     """
     out: list[dict] = []
     for fx in base_fixtures():
         if "x" in fx:
-            out.append({**fx, "start": "authored", "libm": _libm_dependencies(fx)})
+            out.append({**fx, "start": "authored"})
             continue
         xs, ys = _authored_positions(fx["nNodes"], fx["seed"] * 7919 + 1)
         authored = {**fx, "x": xs, "y": ys}
-        out.append({**authored, "start": "authored", "libm": _libm_dependencies(authored)})
-        out.append(
-            {
-                **fx,
-                "name": fx["name"] + "-seeded",
-                "start": "seeded",
-                "libm": _libm_dependencies(fx),
-            }
-        )
+        out.append({**authored, "start": "authored"})
+        out.append({**fx, "name": fx["name"] + "-seeded", "start": "seeded"})
     return out
 
 

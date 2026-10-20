@@ -248,8 +248,9 @@ pub fn layout_circle(n: usize, out_x: &mut [f64], out_y: &mut [f64]) {
     let r = (n as f64).max(1.0);
     for i in 0..n {
         let a = std::f64::consts::TAU * (i as f64) / (n as f64);
-        out_x[i] = r * a.cos();
-        out_y[i] = r * a.sin();
+        let (sn, cs) = portable_sin_cos(a);
+        out_x[i] = r * cs;
+        out_y[i] = r * sn;
     }
 }
 
@@ -635,8 +636,9 @@ fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], pinned: &[u8], seed: u64, sc
                 ^ occurrence.wrapping_mul(0xBF58_476D_1CE4_E5B9);
             let angle = std::f64::consts::TAU * rand01(&mut state);
             let radius = scale * 1e-6 * (*occurrence as f64).sqrt();
-            *px += radius * angle.cos();
-            *py += radius * angle.sin();
+            let (sin, cos) = portable_sin_cos(angle);
+            *px += radius * cos;
+            *py += radius * sin;
         }
         *occurrence += 1;
     }
@@ -1134,8 +1136,9 @@ impl ForceState {
                             let angle = std::f64::consts::TAU
                                 * (((i as u64).wrapping_mul(0x9E37) ^ j as u64) % 65_521) as f64
                                 / 65_521.0;
-                            dx = angle.cos() * 1e-8;
-                            dy = angle.sin() * 1e-8;
+                            let (sin, cos) = portable_sin_cos(angle);
+                            dx = cos * 1e-8;
+                            dy = sin * 1e-8;
                             distance = 1e-8;
                         }
                         if distance < minimum_separation {
@@ -1160,7 +1163,8 @@ impl ForceState {
                 } else {
                     ideal * self.cose.component_spacing * self.component_count as f64
                 };
-                let (anchor_x, anchor_y) = (radius * angle.cos(), radius * angle.sin());
+                let (asn, acs) = portable_sin_cos(angle);
+                let (anchor_x, anchor_y) = (radius * acs, radius * asn);
                 fx[i] += self.cose.gravity_strength * (anchor_x - self.x[i]);
                 fy[i] += self.cose.gravity_strength * (anchor_y - self.y[i]);
             }
