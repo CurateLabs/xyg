@@ -292,15 +292,28 @@ def _log_autorange_rows(n: int, reps: int) -> list[dict[str, Any]]:
     ]
 
 
+# The Rust static-export admission refuses lines above 10,000 points as
+# XYG_SCENE_UNSUPPORTED_PUBLIC_LOD (MAX_PUBLIC_POINTS; spec/design/static-document.md),
+# so the SVG and native-PNG rows measure the largest admitted line while HTML and the
+# Chromium PNG keep the full-size decimated path.
+STATIC_EXPORT_MAX_POINTS = 10_000
+
+
 def _export_rows(n: int, reps: int, chromium: str | None) -> list[dict[str, Any]]:
-    x = np.arange(n, dtype=np.float64)
-    y = np.sin(x * 0.002) + np.cos(x * 0.0003)
+    def figure_of(count: int) -> Callable[[], Figure]:
+        x = np.arange(count, dtype=np.float64)
+        y = np.sin(x * 0.002) + np.cos(x * 0.0003)
 
-    def figure() -> Figure:
-        return xyg.chart(xyg.line(x=x, y=y), width=900, height=420).figure()
+        def figure() -> Figure:
+            return xyg.chart(xyg.line(x=x, y=y), width=900, height=420).figure()
 
+        return figure
+
+    figure = figure_of(n)
+    static_n = min(n, STATIC_EXPORT_MAX_POINTS)
+    static_figure = figure_of(static_n)
     rows = []
-    for scenario, operation, oracle in (
+    for scenario, operation, oracle, row_n, setup in (
         (
             "export_html_decimated_line",
             lambda fig: fig.to_html(),
@@ -308,6 +321,8 @@ def _export_rows(n: int, reps: int, chromium: str | None) -> list[dict[str, Any]
                 isinstance(value, str) and "xy.renderStandalone" in value,
                 "invalid standalone HTML export",
             ),
+            n,
+            figure,
         ),
         (
             "export_svg_decimated_line",
@@ -316,19 +331,23 @@ def _export_rows(n: int, reps: int, chromium: str | None) -> list[dict[str, Any]
                 isinstance(value, str) and "<svg" in value,
                 "invalid SVG export",
             ),
+            static_n,
+            static_figure,
         ),
         (
             "export_png_native_decimated_line",
             lambda fig: fig.to_png(engine=xyg.Engine.default),
             _png_oracle,
+            static_n,
+            static_figure,
         ),
     ):
         rows.append(
             _measure(
                 scenario=scenario,
                 family="export",
-                n=n,
-                setup=figure,
+                n=row_n,
+                setup=setup,
                 operation=operation,
                 reps=reps,
                 category_ids=("static_export", "payload_export_size"),

@@ -164,6 +164,15 @@ reported).
    site-packages, transitive distribution count, install time, and cold import.
 9. `public_workflows`: `benchmarks/bench_workflows.py` tracks ingestion shapes,
    streaming refresh/incremental pyramid update, and HTML/SVG/native-PNG/Chromium-PNG export independently.
+   The static SVG and native-PNG rows run at the largest line the Rust static-export admission
+   accepts (10,000 points; larger lines fail closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`,
+   `spec/design/static-document.md`), and each row records its own `n`; the HTML and Chromium-PNG
+   rows keep the profile's full-size decimated line.
+The SVG and native-PNG export rows in `benchmarks/test_codspeed_kernels.py` and
+`benchmarks/test_codspeed_pyplot.py` run at that same 10,000-point (1,024-triangle for
+meshes, authored axis domains for multi-mark scenes) ceiling, because larger static exports
+fail closed. The polar SVG/PNG-wedge rows are `xfail` with the #889 reason, exactly like the
+polar static-export tests, until #889 admits rich polar configs; the HTML row keeps 100k.
 
 ## 6. Remaining implementation plan
 
@@ -695,7 +704,7 @@ screen-bounded large-data path) rather than to one arbitrary N. Seventeen rows
 are `first_payload_*`, one per chart kind, which makes this the per-kind guard
 that §7's scatter-only gate does not provide. Its module docstring carries the same backend rule the workflow
 asserts: fallback timings are correctness smoke data, not production
-performance data. The 100k `test_svg_export_scatter` row tracks the first
+performance data. The 10k `test_svg_export_scatter` row (the static-export point ceiling, `spec/design/static-document.md`) tracks the first
 versioned canonical-scene slice (#58), including host paint resolution, the
 typed Rust scene call, built-in marker geometry, and SVG fragment assembly.
 The 100k `test_scene_scale_map_100k` row isolates the vectorized Rust-owned
