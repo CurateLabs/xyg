@@ -680,7 +680,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
 
             def cap(key: str, extended: bool) -> Optional[tuple[int, int, int, int]]:
                 rgb = colorbar.get(key) if extended else None
-                return None if rgb is None else (*(int(channel) for channel in rgb[:3]), 255)
+                return None if rgb is None else (int(rgb[0]), int(rgb[1]), int(rgb[2]), 255)
 
             projected._static_document_colorbar_discrete = (
                 colorbar.get("spacing", "uniform") == "uniform",
