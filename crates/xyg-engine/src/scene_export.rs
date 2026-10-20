@@ -71,9 +71,13 @@
 //! summed per figure, and density-blit scatters (`public_lod_tier_admits`).
 
 use crate::lod_plan::{
-    payload_tier, DIRECT_SOFT_CEILING, PAYLOAD_KIND_LINE, PAYLOAD_TIER_DECIMATED,
+    payload_tier, DECIMATION_THRESHOLD, DIRECT_SOFT_CEILING, MAX_SCREEN_DIM, PAYLOAD_KIND_LINE,
+    PAYLOAD_TIER_DECIMATED,
 };
 use crate::scene::{SceneError, MAX_SCENE_IMAGE_PIXELS, MAX_SCENE_MARKS};
+use crate::scene_xyta_trace_observations_materialize::{
+    xyta_paint_plane_fits, XYTA_MESH_PAINT_ITEM_BYTES, XYTA_SCATTER_PAINT_ITEM_BYTES,
+};
 use crate::static_export_registry::PUBLIC_EXPORT_KINDS;
 
 // #1006: the browser's per-item direct scatter ceiling is the Scene's mark
@@ -143,6 +147,8 @@ const TRACE_COMPANION_AXES_MATCH: u32 = 1 << 19;
 const TRACE_BOX_OUTLIER_FINITE: u32 = 1 << 20;
 const TRACE_SYMBOL_NON_STRING: u32 = 1 << 21;
 const TRACE_DENSITY_BLIT: u32 = 1 << 22;
+/// The trace packs a per-item scatter paint or mesh-face paint plane in XYTA.
+const TRACE_ITEM_PAINT_PLANE: u32 = 1 << 23;
 
 const OBS_HAS_X: u32 = 1 << 0;
 const OBS_HAS_Y: u32 = 1 << 1;
@@ -167,6 +173,11 @@ const OBS_COMPANION_XY_MATCH: u32 = 1 << 21;
 const OBS_COMPANION_AXES_MATCH: u32 = 1 << 22;
 const OBS_SYMBOL_NON_STRING: u32 = 1 << 23;
 const OBS_DENSITY_BLIT: u32 = 1 << 24;
+/// Host observation (#1006): the trace's XYTA record carries a per-item
+/// scatter paint plane (`scatter_paint_plane`) or mesh-face paint plane
+/// (`mesh_paint_plane`), the same facts the hosts pass to
+/// `xyg_scene_xyta_trace_dispatch_plan`.
+const OBS_ITEM_PAINT_PLANE: u32 = 1 << 25;
 
 /// Why an XYEF packing request was rejected. Discriminants are the C-ABI
 /// error codes (returned negated by `xyg_scene_pack_public_export`).
@@ -447,6 +458,31 @@ fn public_lod_tier_admits(
         }
         _ => false,
     }
+}
+
+/// Upper bound on the Scene rows `scene_trace_rows` packs for one trace,
+/// before step/curve expansion (#1006). A Cartesian line above
+/// `DECIMATION_THRESHOLD` keeps at most four M4 rows per bucket and the
+/// predicate does not know the viewport, so it assumes the widest
+/// `MAX_SCREEN_DIM` buckets; a density blit packs its two domain rows.
+fn public_packed_rows(
+    kind: u8,
+    n_x: u32,
+    n_x0: u32,
+    trace_flags: u32,
+    figure_flags: u32,
+) -> usize {
+    let n = (n_x as usize).max(n_x0 as usize);
+    if kind == KIND_SCATTER && trace_flags & TRACE_DENSITY_BLIT != 0 {
+        return 2;
+    }
+    if kind == KIND_LINE
+        && figure_flags & FLAG_POLAR == 0
+        && u64::from(n_x) > DECIMATION_THRESHOLD
+    {
+        return n.min(4 * MAX_SCREEN_DIM as usize);
+    }
+    n
 }
 
 fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
@@ -835,6 +871,9 @@ fn derive_trace_flags(
     }
     if obs & OBS_DENSITY_BLIT != 0 {
         flags |= TRACE_DENSITY_BLIT;
+    }
+    if obs & OBS_ITEM_PAINT_PLANE != 0 {
+        flags |= TRACE_ITEM_PAINT_PLANE;
     }
     flags
 }
@@ -1357,7 +1396,9 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     }
 
     let mut public_triangle_mesh_count = 0usize;
-    let mut direct_scatter_points = 0usize;
+    // #1006: Scene rows the row packer emits across the figure, bounded by
+    // `MAX_SCENE_MARKS` before any host materializes columns or planes.
+    let mut packed_rows = 0usize;
     for trace in &traces {
         let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {
             MAX_PUBLIC_STEP_POINTS
@@ -1370,13 +1411,29 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
         }
-        // #1006: every direct scatter record is one Scene mark, so the
-        // figure's direct scatters share the Scene's mark ceiling.
-        if trace.kind == KIND_SCATTER && trace.flags & TRACE_DENSITY_BLIT == 0 {
-            direct_scatter_points = direct_scatter_points
-                .checked_add(trace.n_x as usize)
-                .ok_or(SceneError::Limit)?;
-            if direct_scatter_points > MAX_SCENE_MARKS {
+        // #1006: every trace's packed rows share the Scene's mark ceiling
+        // (a direct scatter is one row per point; a decimated line at most
+        // four rows per bucket; a density blit two).
+        packed_rows = packed_rows
+            .checked_add(public_packed_rows(
+                trace.kind,
+                trace.n_x,
+                trace.n_x0,
+                trace.flags,
+                flags,
+            ))
+            .ok_or(SceneError::Limit)?;
+        if packed_rows > MAX_SCENE_MARKS {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        }
+        // #1006: a per-item paint plane must fit one XYTA record; above that
+        // the trace fails closed here instead of in host materialization.
+        if trace.flags & TRACE_ITEM_PAINT_PLANE != 0 {
+            let item_bytes = match trace.kind {
+                KIND_SCATTER => XYTA_SCATTER_PAINT_ITEM_BYTES,
+                _ => XYTA_MESH_PAINT_ITEM_BYTES,
+            };
+            if !xyta_paint_plane_fits(trace.n_x as usize, item_bytes) {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
             }
         }
@@ -2162,6 +2219,51 @@ mod tests {
                 &[(KIND_SCATTER, 0, 0, threshold + 1, "box-outlier")]
             )),
             lod
+        );
+
+        // #1006: every trace's packed rows share the Scene mark ceiling; a
+        // decimated line counts at most 4 x MAX_SCREEN_DIM rows.
+        let m4_rows = 4 * MAX_SCREEN_DIM as u32;
+        for (scatter, line, expected) in [
+            (1_999_000, 9_000, lod),
+            (ceiling - m4_rows + 1, 50_000, lod),
+            (ceiling - m4_rows, 50_000, Ok("")),
+            (ceiling - 9_000, 9_000, Ok("")),
+        ] {
+            assert_eq!(
+                scene_public_export_reason(&figure(
+                    0,
+                    &[
+                        (KIND_SCATTER, 0, 0, scatter, ""),
+                        (KIND_LINE, 0, 0, line, ""),
+                    ]
+                )),
+                expected,
+                "scatter {scatter} + line {line}"
+            );
+        }
+
+        // #1006: a per-item paint plane must fit one 4 MiB XYTA record.
+        let fits = |n: u32, kind: u8| {
+            scene_public_export_reason(&figure(0, &[(kind, 0, TRACE_ITEM_PAINT_PLANE, n, "")]))
+        };
+        let scatter_max = ((crate::scene_xyta_trace_observations_materialize::SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES
+            - crate::scene_trace_attach::XYTA_PREFIX_BYTES
+            - 4 * 1024)
+            / XYTA_SCATTER_PAINT_ITEM_BYTES) as u32;
+        assert_eq!(fits(scatter_max, KIND_SCATTER), Ok(""));
+        assert_eq!(fits(scatter_max + 1, KIND_SCATTER), lod);
+        assert_eq!(fits(300_000, KIND_SCATTER), lod);
+        assert!(xyta_paint_plane_fits(1, XYTA_MESH_PAINT_ITEM_BYTES));
+        assert!(!xyta_paint_plane_fits(usize::MAX, XYTA_MESH_PAINT_ITEM_BYTES));
+        // Without the plane observation a 300k direct scatter is admitted.
+        assert_eq!(
+            scene_public_export_reason(&figure(0, &[(KIND_SCATTER, 0, 0, 300_000, "")])),
+            Ok("")
+        );
+        assert_ne!(
+            derive_trace_flags(OBS_ITEM_PAINT_PLANE, 0, 0, 0, 0, 0, 0) & TRACE_ITEM_PAINT_PLANE,
+            0
         );
     }
 

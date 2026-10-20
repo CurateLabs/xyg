@@ -81,6 +81,9 @@ pub enum EncodeAssembledCode {
     Output = 4,
     Payload = 5,
     Encode = 6,
+    /// #1006: Scene record expansion (or a static image tier) exceeds the
+    /// Scene mark/image budget; product encode relays `PUBLIC_LOD_REASON`.
+    Lod = 7,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,6 +128,8 @@ pub enum EncodeSidecarsCode {
     ExtrasLimit = 19,
     ExtrasShape = 20,
     ExtrasPayload = 21,
+    /// `EncodeAssembledCode::Lod` (#1006).
+    Lod = 22,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -180,6 +185,7 @@ fn map_encode(error: EncodeAssembledError) -> EncodeSidecarsError {
     EncodeSidecarsError::new(
         match error.code {
             EncodeAssembledCode::Output => EncodeSidecarsCode::Output,
+            EncodeAssembledCode::Lod => EncodeSidecarsCode::Lod,
             _ => EncodeSidecarsCode::Encode,
         },
         error.index,
@@ -278,6 +284,16 @@ fn map_scene(error: SceneError) -> EncodeAssembledError {
         },
         0,
     )
+}
+
+/// Expansion budget overruns (`SceneError::Limit`: more than
+/// `MAX_SCENE_MARKS` expanded records) are the public LOD fail-close (#1006);
+/// every other expansion error keeps its `map_scene` code.
+fn map_expansion(error: SceneError) -> EncodeAssembledError {
+    match error {
+        SceneError::Limit => EncodeAssembledError::new(EncodeAssembledCode::Lod, 0),
+        other => map_scene(other),
+    }
 }
 
 fn scale_kind(value: u32) -> Result<ScaleKind, EncodeAssembledError> {
@@ -805,7 +821,7 @@ fn encode_assembled_with_radii(
         paint_bytes,
         !polar_bytes.is_empty(),
     )
-    .map_err(map_scene)?;
+    .map_err(map_expansion)?;
     let (fill_rgba, stroke_rgba, stroke_width) = match &painted_styles {
         Some(styles) => (
             styles.fill_rgba.as_slice(),
@@ -1015,19 +1031,24 @@ fn corner_radii_from_xysd(
 pub const PUBLIC_LOD_REASON: &str = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
 
 /// The browser payload's line M4 inputs, read from the Scene's own XYCF
-/// (viewport width, primary x axis, primary y scale kind) (#1006). Malformed
+/// (viewport width, primary x axis, primary y scale kind, and whether a `y2`
+/// sidecar is present) (#1006). Malformed
 /// chrome facts skip decimation; the encoder rejects them with its own
 /// envelope error later.
 fn line_lod_frame(xycf: &[u8]) -> Option<LineLodFrame> {
     let (viewport_width, _, x_axis, y_axis) = axes_from_chrome_facts(xycf).ok()?;
-    Some(LineLodFrame::new(
-        viewport_width,
-        x_axis.kind,
-        x_axis.lo,
-        x_axis.hi,
-        x_axis.constant,
-        y_axis.kind,
-    ))
+    let y2_present = xycf_y2_sidecar(xycf).ok()?.is_some();
+    Some(
+        LineLodFrame::new(
+            viewport_width,
+            x_axis.kind,
+            x_axis.lo,
+            x_axis.hi,
+            x_axis.constant,
+            y_axis.kind,
+        )
+        .with_y2(y2_present),
+    )
 }
 
 /// Encode a product Scene from packed authored blobs.
@@ -1080,7 +1101,9 @@ pub fn encode_product(
     let line_lod = line_lod_frame(xycf);
     let packed_rows =
         pack_trace_rows_with_lod(&attached, xycl, line_lod.as_ref()).map_err(|error| {
-            if error.code == TraceRowsCode::Lod {
+            // `Limit` is the row packer's `MAX_SCENE_MARKS` backstop for a
+            // figure the predicate's row bound did not already refuse.
+            if matches!(error.code, TraceRowsCode::Lod | TraceRowsCode::Limit) {
                 ProductEncodeError {
                     code: PRODUCT_SUPPORT_UNSUPPORTED,
                     index: error.index,
@@ -1106,10 +1129,18 @@ pub fn encode_product(
         reason: Vec::new(),
     })?;
     encode_assembled_from_sidecars(&xyas, &xycf, &sidecars, polar, &extras_facts).map_err(|error| {
-        ProductEncodeError {
-            code: error.code as i32,
-            index: error.index,
-            reason: Vec::new(),
+        if error.code == EncodeSidecarsCode::Lod {
+            ProductEncodeError {
+                code: PRODUCT_SUPPORT_UNSUPPORTED,
+                index: error.index,
+                reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+            }
+        } else {
+            ProductEncodeError {
+                code: error.code as i32,
+                index: error.index,
+                reason: Vec::new(),
+            }
         }
     })
 }

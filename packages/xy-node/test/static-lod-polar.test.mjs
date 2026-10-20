@@ -41,6 +41,18 @@ function scatterFigure() {
   return figure;
 }
 
+function categoricalScatterFigure() {
+  const n = 150_000;
+  const x = Float64Array.from({ length: n }, (_, i) => ((i * 7919) % 1009) / 1009);
+  const y = Float64Array.from({ length: n }, (_, i) => ((i * 104729) % 997) / 997);
+  const figure = new Figure({ width: 720, height: 420 });
+  figure.setAxisDomain("x", [0, 1]);
+  figure.setAxisDomain("y", [0, 1]);
+  figure.scatter(x, y, { color: Array.from({ length: n }, (_, i) => `g${i % 8}`) });
+  figure.traces[0].id = 0;
+  return figure;
+}
+
 function polarBarFigure() {
   const figure = new Figure({ width: 320, height: 240, coords: "polar" });
   figure.setAxisDomain("x", [0, TAU]);
@@ -53,6 +65,7 @@ const BUILDERS = {
   line_1m_m4: lineFigure,
   polar_bar_arcs: polarBarFigure,
   scatter_100k_direct: scatterFigure,
+  scatter_150k_categorical: categoricalScatterFigure,
 };
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -82,4 +95,45 @@ test("Node cross-host cases exercise the tiers they name", () => {
     .map((match) => match[1])
     .filter((d) => d.includes(" A "));
   assert.equal(wedges.length, 3);
+});
+
+const LOD = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
+
+function perItemScatter(channel, n) {
+  const x = Float64Array.from({ length: n }, (_, i) => ((i * 7919) % 1009) / 1009);
+  const y = Float64Array.from({ length: n }, (_, i) => ((i * 104729) % 997) / 997);
+  const figure = new Figure({ width: 720, height: 420 });
+  if (channel === "numeric color") {
+    figure.scatter(x, y, { color: Float64Array.from(x, (value, i) => value * y[i]) });
+  } else if (channel === "categorical color") {
+    figure.scatter(x, y, { color: Array.from({ length: n }, (_, i) => `g${i % 8}`) });
+  } else {
+    figure.scatter(x, y, { size: Float64Array.from(x, (value) => 1 + 4 * value) });
+  }
+  return figure;
+}
+
+test("Node per-item scatters above the XYTA plane budget fail closed with the LOD reason", () => {
+  for (const channel of ["numeric color", "categorical color", "size"]) {
+    const figure = perItemScatter(channel, 300_000);
+    assert.equal(sceneExportSupportReason(figure), LOD, channel);
+    assert.throws(() => figure.toSvg(), new RegExp(LOD), channel);
+    assert.throws(() => figure.toPng({ scale: 1 }), new RegExp(LOD), channel);
+    const within = perItemScatter(channel, 150_000);
+    assert.equal(sceneExportSupportReason(within), null, `${channel} 150k`);
+    const svg = new TextDecoder().decode(within.toSvg());
+    assert.equal((svg.match(/<circle/g) || []).length, 150_000, `${channel} 150k circles`);
+  }
+});
+
+test("Node counts every trace's packed rows against the Scene mark ceiling", () => {
+  for (const [scatterN, lineN] of [[1_999_000, 9_000], [1_990_000, 50_000]]) {
+    const figure = new Figure({ width: 720, height: 420 });
+    const x = Float64Array.from({ length: scatterN }, (_, i) => ((i * 7919) % 1009) / 1009);
+    figure.scatter(x, x, { density: false });
+    const lx = Float64Array.from({ length: lineN }, (_, i) => i);
+    figure.line(lx, Float64Array.from(lx, Math.sin));
+    assert.equal(sceneExportSupportReason(figure), LOD, `${scatterN} + ${lineN}`);
+    assert.throws(() => figure.toPng({ scale: 1 }), new RegExp(LOD));
+  }
 });

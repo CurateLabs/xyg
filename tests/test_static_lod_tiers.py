@@ -18,6 +18,7 @@ import pytest
 import xyg
 from xyg import _native
 from xyg._scene_v3 import scene_export_support_reason
+from xyg._static_document import UnsupportedStaticExport
 
 WIDTH = 720
 HEIGHT = 420
@@ -238,3 +239,64 @@ def test_pyplot_large_line_savefig_uses_the_m4_tier() -> None:
     svg = buffer.getvalue().decode()
     plt.close("all")
     assert 0 < len(_polyline_points(svg)) <= 4 * 4096
+
+
+_LOD = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+
+
+def _per_item_scatters(n: int) -> dict[str, xyg.Chart]:
+    i = np.arange(n, dtype=np.float64)
+    x = ((i * 7919.0) % 1009.0) / 1009.0
+    y = ((i * 104729.0) % 997.0) / 997.0
+    groups = np.asarray([f"g{k}" for k in range(8)])[(i % 8).astype(np.int64)]
+    return {
+        "numeric color": xyg.chart(xyg.scatter(x=x, y=y, color=x * y)),
+        "categorical color": xyg.chart(xyg.scatter(x=x, y=y, color=groups)),
+        "size": xyg.chart(xyg.scatter(x=x, y=y, size=1.0 + 4.0 * x)),
+    }
+
+
+@pytest.mark.parametrize("channel", ["numeric color", "categorical color", "size"])
+def test_per_item_scatter_above_the_xyta_plane_budget_fails_closed(channel: str) -> None:
+    """A 300k per-item scatter's paint plane exceeds one 4 MiB XYTA record.
+
+    Rust refuses it in the public predicate with the stable LOD reason before
+    any host materializes the plane (#1006); it used to escape as a host
+    ``ValueError: ... output buffer too small``.
+    """
+    chart = _per_item_scatters(300_000)[channel]
+    figure = chart.figure()
+    assert figure.traces[0].has_per_item_channels() and not figure.traces[0].use_density()
+    assert scene_export_support_reason(figure, width=WIDTH, height=HEIGHT) == _LOD
+    for export in (
+        lambda: chart.to_svg(width=WIDTH, height=HEIGHT),
+        lambda: chart.to_png(width=WIDTH, height=HEIGHT, scale=1),
+    ):
+        with pytest.raises(UnsupportedStaticExport, match=_LOD):
+            export()
+
+
+@pytest.mark.parametrize("channel", ["numeric color", "categorical color", "size"])
+def test_per_item_scatter_within_the_xyta_plane_budget_exports_every_point(channel: str) -> None:
+    chart = _per_item_scatters(150_000)[channel]
+    svg = chart.to_svg(width=WIDTH, height=HEIGHT)
+    assert svg.count("<circle") == 150_000
+
+
+def test_scene_mark_ceiling_counts_every_trace_before_packing() -> None:
+    """Packed rows of all traces share MAX_SCENE_MARKS (#1006).
+
+    A decimated line counts at most 4 x 4,096 rows, so the figure fails closed
+    with the LOD reason instead of escaping as a row-packing ValueError.
+    """
+    rng = np.random.default_rng(1006)
+    for scatter_n, line in ((1_999_000, 9_000), (1_990_000, 50_000)):
+        lx = np.arange(line, dtype=np.float64)
+        chart = xyg.chart(
+            xyg.scatter(x=rng.normal(size=scatter_n), y=rng.normal(size=scatter_n), density=False),
+            xyg.line(x=lx, y=np.sin(lx)),
+        )
+        figure = chart.figure()
+        assert scene_export_support_reason(figure, width=WIDTH, height=HEIGHT) == _LOD
+        with pytest.raises(UnsupportedStaticExport, match=_LOD):
+            chart.to_png(width=WIDTH, height=HEIGHT, scale=1)

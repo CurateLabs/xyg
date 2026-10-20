@@ -529,7 +529,10 @@ function packUnicodeLabels(labels) {
     return { n: 0, width: 4, view: new Uint32Array(0), u1: true, labels };
   }
   const codePoints = labels.map((label) => [...label].map((ch) => ch.codePointAt(0)));
-  const maxLen = Math.max(...codePoints.map((cps) => cps.length));
+  // A loop, not `Math.max(...lengths)`: spreading hundreds of thousands of
+  // labels into one call overflows the engine's argument stack.
+  let maxLen = 0;
+  for (const cps of codePoints) if (cps.length > maxLen) maxLen = cps.length;
   if (maxLen === 1) {
     const view = new Uint32Array(n);
     for (let i = 0; i < n; i += 1) view[i] = codePoints[i][0] ?? 0;

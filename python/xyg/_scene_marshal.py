@@ -873,6 +873,7 @@ _XYEF_OBS_COMPANION_XY_MATCH = 1 << 21
 _XYEF_OBS_COMPANION_AXES_MATCH = 1 << 22
 _XYEF_OBS_SYMBOL_NON_STRING = 1 << 23
 _XYEF_OBS_DENSITY_BLIT = 1 << 24
+_XYEF_OBS_ITEM_PAINT_PLANE = 1 << 25
 
 
 def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:
@@ -929,6 +930,8 @@ def pack_public_export_support(
         _heatmap_grid_values,
         _heatmap_shape,
         _hexbin_pitch,
+        _mesh_packs_paint_plane,
+        _scatter_packs_paint_plane,
     )
 
     export_plan = _native.scene_public_export_figure_plan(
@@ -1084,6 +1087,9 @@ def pack_public_export_support(
             symbol = ""
         if export_dispatch["pack_density_blit"]:
             obs |= _XYEF_OBS_DENSITY_BLIT
+        # Same facts the XYTA dispatch plan receives; Rust bounds the plane (#1006).
+        if _scatter_packs_paint_plane(trace) or _mesh_packs_paint_plane(trace):
+            obs |= _XYEF_OBS_ITEM_PAINT_PLANE
         role = style.get("role")
         role_s = "" if role is None else str(role)
         reduce = style.get("reduce")

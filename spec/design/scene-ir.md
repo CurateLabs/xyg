@@ -1679,15 +1679,20 @@ The public static predicate (`scene_export.rs`) keeps a 10,000-record
 authored-column budget per trace (10,001 for compact step lines). A trace above
 it is admitted only when it rides a browser payload tier (`lod_plan.rs`
 `payload_tier`, dossier §28) that the Scene reproduces exactly; anything else
-keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. Charts at or below the budget are
-byte-identical to before.
+keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. Charts whose traces are all at or
+below 10,000 points are byte-identical to before; the one change at the
+budget edge is the 10,001-point compact step line (an ECDF of 10,000 samples
+plus its anchor), which the predicate used to admit direct and which is now
+above `DECIMATION_THRESHOLD`, so it takes the browser's M4 tier exactly like
+the browser does.
 
 | Trace above the budget | Browser first-paint tier | Static Scene |
 |---|---|---|
 | Cartesian `line` (step, stairs, ECDF, smooth included), n > `DECIMATION_THRESHOLD` (10,000) | M4 decimated | the same M4 rows, decimated in Rust (below) |
 | Polar `line` | direct | `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
 | Scatter the host's `payload_tier` call marks density (n > `SCATTER_DENSITY_THRESHOLD` 200,000, or > `DIRECT_SOFT_CEILING` with per-item channels, or `density=True`) | density | one `DensityBlit` Image record (`MAX_SCENE_IMAGE_PIXELS`) |
-| Scatter `payload_tier` leaves direct (≤ 200,000 plain, ≤ 2,000,000 with per-item channels, or `density=False`) | direct | one Scatter record per point while the figure's direct scatters total ≤ `DIRECT_SOFT_CEILING` = `MAX_SCENE_MARKS` = 2,000,000; above, `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
+| Plain scatter `payload_tier` leaves direct (≤ 200,000, or `density=False` up to 2,000,000) | direct | one Scatter record per point, within the figure-wide packed-row bound below |
+| Scatter with a per-item paint or size plane (`color=` array/categories, `size=` array, per-item stroke/width/opacity), ≤ 2,000,000 | direct | one Scatter record per point only while its XYTA paint plane fits one 4 MiB record: at most 24 bytes per point (fill, stroke, f64 width, f64 diameter), so ≤ 174,586 points (`xyta_paint_plane_fits`); above, `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
 | Graph node scatter (`FLAG_GRAPH_MARKS`), `box-outlier` / `stem-marker` companions, `area` / `error_band`, segments, every other kind | own budgets | unchanged record budgets (graph-mark.md §8) |
 
 **Line M4 rule.** `encode_product` reads a `LineLodFrame` from the Scene's own
@@ -1728,6 +1733,38 @@ always satisfy the ascending precondition. `TraceRowsCode::Lod = 10` is
 internal to the product encoder; the stepwise `xyg_scene_pack_trace_rows`
 never decimates.
 
+**Figure-wide bounds (#1006).** Before any host materializes columns or
+paint planes, the predicate also fails closed with
+`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` when:
+
+- the rows `scene_trace_rows` will pack for all traces exceed
+  `MAX_SCENE_MARKS` (2,000,000): a Cartesian line above the threshold counts
+  `4 × MAX_SCREEN_DIM` = 16,384 rows (the predicate does not know the
+  viewport, so it assumes the widest bucket count), a density blit two, and
+  every other trace `max(n_x, n_x0)`. The product encoder maps a row-pack
+  `TraceRowsCode::Limit` and an expansion `SceneError::Limit` (more than
+  `MAX_SCENE_MARKS` expanded records, e.g. step corners) to the same reason
+  (`EncodeAssembledCode::Lod = 7`, `EncodeSidecarsCode::Lod = 22`) as a
+  backstop, so a figure over the mark ceiling never surfaces as a host
+  `ValueError`;
+- a trace's per-item paint plane (hosts observe `scatter_paint_plane` /
+  `mesh_paint_plane`, the same facts they pass to
+  `xyg_scene_xyta_trace_dispatch_plan`, as XYEF observation bit 25
+  `OBS_ITEM_PAINT_PLANE`) would not fit one XYTA record: 24 bytes per scatter
+  point or 16 per mesh face plus the 128-byte prefix and 4 KiB for constant
+  CSS sidecars within `SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES`. The browser
+  draws such a scatter direct up to 2,000,000 points; static export does not
+  yet source per-item paint from canonical columns, so it refuses instead.
+
+**Secondary y.** Product rows do not yet record which y axis they belong to
+(Scene v33 rows select `y2` only through the stepwise encoder). A Scene whose
+XYCF carries an `XYY2` sidecar therefore never decimates: a line above the
+threshold fails closed as `TraceRowsCode::Lod` (`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`)
+until twin-axis hosts (#1037) mark rows by axis, so the log prefilter can
+read the right scale. A decimated line also refuses any non-empty column
+that is not row-aligned and any attached per-row plane, rather than gather
+only some columns.
+
 **Density source.** An XYTA record carries a density scatter's x/y only while
 the record fits the 4 MiB `SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES` budget
 (about 262,000 points). Above that, `pack_trace_attach_with_columns` bins the
@@ -1737,7 +1774,9 @@ packed one Scatter record per point.
 **Bytes.** A direct Scatter record is one 56-byte packed row (≤ 112 MB at the
 2,000,000 ceiling) and about 80 bytes of SVG per circle; a density scatter is
 one bounded Image; a decimated line is ≤ 16,384 rows. No extern signature,
-XYEP/XYEF/XYCL/XYTA layout, or Scene version changed.
+XYEP/XYCL/XYTA layout, or Scene version changed; XYEF gains observation bit
+25 (`OBS_ITEM_PAINT_PLANE`), which older hosts leave clear (their per-item
+scatters above the plane budget keep failing in materialization as before).
 
 ## Version 12 bounded semantic graph labels
 

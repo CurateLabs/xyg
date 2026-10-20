@@ -27,10 +27,18 @@ write code against the behavior and recorded `tier`, not a hard-coded count.
 
 Native SVG, PNG, and PDF export make the same first-paint choice the browser
 does: a line above the decimation threshold exports the same M4 rows at the
-figure's width, a scatter on the direct tier exports every point (up to
-2,000,000 markers per figure), and a density-tier scatter exports its density
-surface. Anything outside those tiers raises
-`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead of drawing a reduced chart.
+export width, a plain scatter on the direct tier exports every point, and a
+density-tier scatter exports its density surface. Two static limits are
+stricter than the browser:
+
+- a scatter with per-point color, size, or stroke channels exports directly
+  only up to about 174,000 points (its per-point paint must fit one 4 MiB
+  attach record); the browser draws it directly up to 2,000,000;
+- the whole figure may pack at most 2,000,000 marks, counting every point of
+  every direct trace and up to 16,384 rows per decimated line.
+
+Anything outside those tiers raises `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead
+of drawing a reduced chart.
 
 Polar traces are an explicit exception to this ladder. They always use the
 direct tier because Cartesian M4 and density reductions do not preserve cyclic

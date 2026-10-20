@@ -23,6 +23,7 @@ from xyg._scene_v3 import scene_export_support_reason
 FIXTURE = Path(__file__).parent / "fixtures" / "static_lod_polar_cross_host.json"
 LINE_N = 1_000_000
 SCATTER_N = 100_000
+CATEGORICAL_N = 150_000
 TAU = 6.283185307179586
 
 
@@ -54,6 +55,21 @@ def _scatter() -> Figure:
     return figure
 
 
+def _categorical_scatter() -> Figure:
+    """150k per-item categorical scatter: direct tier with a per-point paint plane."""
+    index = np.arange(CATEGORICAL_N, dtype=np.float64)
+    figure = Figure(width=720, height=420)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter(
+        ((index * 7919.0) % 1009.0) / 1009.0,
+        ((index * 104729.0) % 997.0) / 997.0,
+        color=np.asarray([f"g{k}" for k in range(8)])[(index % 8).astype(np.int64)],
+    )
+    figure.traces[0].id = 0
+    return figure
+
+
 def _polar_bar() -> Figure:
     figure = Figure(width=320, height=240, coords="polar")
     figure.axis_options["x"]["domain"] = (0.0, TAU)
@@ -63,7 +79,12 @@ def _polar_bar() -> Figure:
     return figure
 
 
-BUILDERS = {"line_1m_m4": _line, "scatter_100k_direct": _scatter, "polar_bar_arcs": _polar_bar}
+BUILDERS = {
+    "line_1m_m4": _line,
+    "scatter_100k_direct": _scatter,
+    "scatter_150k_categorical": _categorical_scatter,
+    "polar_bar_arcs": _polar_bar,
+}
 
 
 def _digests(figure: Figure) -> dict[str, str]:

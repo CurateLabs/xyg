@@ -17,6 +17,28 @@ use crate::scene_trace_attach::XYTA_PREFIX_BYTES;
 
 pub const SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES: usize = 1 << 22;
 
+/// Widest per-point scatter paint plane (#1006): RGBA8 fill + RGBA8 stroke +
+/// f64 width + f64 diameter (the diameter column is present only with a
+/// size channel; the bound assumes it).
+pub const XYTA_SCATTER_PAINT_ITEM_BYTES: usize = 4 + 4 + 8 + 8;
+/// Per-face triangle-mesh paint plane: RGBA8 fill + RGBA8 stroke + f64 width.
+pub const XYTA_MESH_PAINT_ITEM_BYTES: usize = 4 + 4 + 8;
+/// Room left in one XYTA record for its bounded non-plane sidecars (constant
+/// CSS colors) when admitting a per-item paint plane.
+const XYTA_PAINT_PLANE_SLACK_BYTES: usize = 4 * 1024;
+
+/// Whether a per-item paint plane of `items` entries of `item_bytes` each
+/// always fits one XYTA record (`SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES`).
+/// The public static predicate fails closed with
+/// `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` before materialization otherwise, so a
+/// host never meets an undersized ABI 323 buffer (#1006).
+pub fn xyta_paint_plane_fits(items: usize, item_bytes: usize) -> bool {
+    items
+        .checked_mul(item_bytes)
+        .and_then(|bytes| bytes.checked_add(XYTA_PREFIX_BYTES + XYTA_PAINT_PLANE_SLACK_BYTES))
+        .is_some_and(|total| total <= SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES)
+}
+
 
 /// Authored colormap: named string or explicit RGB stop bytes (len % 3 == 0).
 #[derive(Clone, Debug)]

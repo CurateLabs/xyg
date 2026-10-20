@@ -318,6 +318,11 @@ pub struct LineLodFrame {
     pub x_hi: f64,
     pub x_constant: f64,
     pub y_log: bool,
+    /// The Scene carries a right-hand secondary y axis (`XYY2` in XYCF).
+    /// Product rows do not yet record which y axis they belong to, so the
+    /// log prefilter could read the wrong scale; a decimated line fails
+    /// closed as `Lod` until rows carry that axis (#1006, #1037).
+    pub y2_present: bool,
 }
 
 impl LineLodFrame {
@@ -344,7 +349,14 @@ impl LineLodFrame {
             x_hi: x_lo.max(x_hi),
             x_constant,
             y_log: y_kind == SCALE_LOG,
+            y2_present: false,
         }
+    }
+
+    /// [`LineLodFrame::new`] for a Scene whose XYCF carries a `y2` sidecar.
+    pub fn with_y2(mut self, present: bool) -> Self {
+        self.y2_present = present;
+        self
     }
 
     /// The browser's `_axis_coord` for the x axis (`binning_coords`).
@@ -384,6 +396,7 @@ impl LineLodFrame {
 /// coordinates that are not ascending fail as `Lod`.
 fn line_m4_rows(
     input: &ColumnInput,
+    attached_planes: bool,
     lod: &LineLodFrame,
     index: usize,
 ) -> Result<Option<Vec<u32>>, TraceRowsError> {
@@ -397,6 +410,16 @@ fn line_m4_rows(
     }
     if input.y.len() != n {
         return Err(TraceRowsError::new(TraceRowsCode::Length, index));
+    }
+    // Decimation gathers exactly the row-aligned columns below; any other
+    // per-row column or attached per-row plane would lose its alignment, so
+    // such a line fails closed instead of drawing misaligned rows.
+    if [&input.x0, &input.y0, &input.x1, &input.y1, &input.base]
+        .iter()
+        .any(|column| !column.is_empty() && column.len() != n)
+        || attached_planes
+    {
+        return Err(TraceRowsError::new(TraceRowsCode::Lod, index));
     }
     if !input
         .x
@@ -443,6 +466,9 @@ fn line_m4_rows(
     if tier != PAYLOAD_TIER_DECIMATED {
         return Ok(None);
     }
+    if lod.y2_present {
+        return Err(lod_error);
+    }
     let x_log = lod.x_kind == SCALE_LOG;
     // Product rows are all on the primary y axis today (Scene v33 y2 rows
     // are not yet selected by the product encoder, #1032).
@@ -464,7 +490,10 @@ fn line_m4_rows(
     Ok(Some(keep))
 }
 
+/// Gather one row-aligned column (`line_m4_rows` already refused any
+/// non-empty column whose length is not the row count).
 fn gather_rows(column: &mut Vec<f64>, n: usize, keep: &[u32]) {
+    debug_assert!(column.is_empty() || column.len() == n);
     if column.len() == n {
         *column = keep.iter().map(|&i| column[i as usize]).collect();
     }
@@ -540,7 +569,10 @@ pub fn pack_trace_rows_with_lod(
     for (index, attached) in traces.iter().enumerate() {
         let mut input = parse_column(columns, &mut at, index)?;
         if let Some(keep) = lod
-            .map(|lod| line_m4_rows(&input, lod, index))
+            .map(|lod| {
+                let planes = attached.density_len > 0 || attached.grid_rows > 0 || attached.grid_cols > 0;
+                line_m4_rows(&input, planes, lod, index)
+            })
             .transpose()?
             .flatten()
         {
@@ -858,6 +890,65 @@ mod tests {
         let error =
             pack_trace_rows_with_lod(&attached, &line_columns(0, &x, &x), Some(&log)).unwrap_err();
         assert_eq!(error.code, TraceRowsCode::Lod);
+    }
+
+    #[test]
+    fn static_line_lod_fails_closed_on_a_secondary_y_scene() {
+        // #1006: rows do not yet record their y axis, so a Scene with a y2
+        // sidecar must not decimate with the primary y scale's prefilter.
+        let attached = empty_attach(&compile_kind("line"), 1);
+        let n = 20_000usize;
+        let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
+        let lod = LineLodFrame::new(320.0, 0, 0.0, n as f64, 1.0, 0).with_y2(true);
+        let error = pack_trace_rows_with_lod(&attached, &line_columns(0, &x, &x), Some(&lod))
+            .unwrap_err();
+        assert_eq!(error.code, TraceRowsCode::Lod);
+        // At or below the threshold nothing is decimated, so nothing traps.
+        let small = line_columns(0, &x[..10_000], &x[..10_000]);
+        assert_eq!(
+            pack_trace_rows_with_lod(&attached, &small, Some(&lod)).unwrap(),
+            pack_trace_rows(&attached, &small).unwrap()
+        );
+    }
+
+    #[test]
+    fn static_line_lod_refuses_columns_it_cannot_reindex() {
+        // #1006: a decimated line gathers only row-aligned columns; a column
+        // of another length would lose its alignment, so it fails closed.
+        let attached = empty_attach(&compile_kind("line"), 1);
+        let n = 20_000usize;
+        let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
+        let lod = LineLodFrame::new(320.0, 0, 0.0, n as f64, 1.0, 0);
+        let mut columns = xycl_header(1);
+        columns.extend_from_slice(&xycl_trace(
+            "line",
+            0,
+            5,
+            &x,
+            &x,
+            &[],
+            &[],
+            &[],
+            &[],
+            &[0.5],
+        ));
+        let error = pack_trace_rows_with_lod(&attached, &columns, Some(&lod)).unwrap_err();
+        assert_eq!(error.code, TraceRowsCode::Lod);
+        // A row-aligned base column is gathered with the kept rows.
+        let mut aligned = xycl_header(1);
+        aligned.extend_from_slice(&xycl_trace(
+            "line",
+            0,
+            5,
+            &x,
+            &x,
+            &[],
+            &[],
+            &[],
+            &[],
+            &x,
+        ));
+        assert!(pack_trace_rows_with_lod(&attached, &aligned, Some(&lod)).is_ok());
     }
 
     #[test]
