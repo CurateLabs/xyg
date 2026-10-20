@@ -16,6 +16,7 @@ import {
   hydrateWasmPainter,
   layoutWasmCose,
   planWasmDashboardResources,
+  PROTOCOL,
   watchWasmDashboardResourceBudget,
   renderWasmChart,
   renderWasmColumns,
@@ -41,7 +42,7 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
   const grid = new Float32Array(width * height);
   grid[0] = 1;
   const spec = {
-    protocol: 13, width: 320, height: 240, title: null,
+    protocol: PROTOCOL, width: 320, height: 240, title: null,
     x_axis: { id: "x", kind: "linear", label: null, range: [0, 1], side: "bottom" },
     y_axis: { id: "y", kind: "linear", label: null, range: [0, 1], side: "left" },
     axes: {
