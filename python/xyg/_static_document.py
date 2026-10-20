@@ -15,7 +15,7 @@ from . import _native
 from ._scene_marshal import Y2Chrome
 
 _HEADER = struct.Struct("<4s6I4B4BfffBB2xIII")
-_PANEL = struct.Struct("<2i6I12fII2f4B2II16B")
+_PANEL = struct.Struct("<2i6I12fIIIf4B2II16B")
 _DECORATION_HEADER = struct.Struct("<4s7I")
 _DOCUMENT_LABELS_HEADER = struct.Struct("<4s3I")
 _DOCUMENT_LABEL = struct.Struct("<2I5d")
@@ -43,7 +43,7 @@ _Y2_TICK_PAINT = 1 << 18
 _Y2_TITLE_PAINT = 1 << 19
 _MAX_U32 = (1 << 32) - 1
 #: XYST layout version; 2 widened the panel record to 128 bytes (#1004).
-XYST_VERSION = 3
+XYST_VERSION = 4
 _MAX_PANELS = 256
 _MAX_TITLE_BYTES = 4096
 _FLAG_BACKGROUND = 1
@@ -111,6 +111,20 @@ class Panel:
     colorbar_pyplot_label: bool = False
     # Explicit pyplot cax consumes the Scene plot rectangle itself.
     colorbar_fill_plot: bool = False
+    # XYST v4 discrete colorbar (BoundaryNorm / banded contour): ``(uniform,
+    # tick_labels, under, over)``. The Scene colorbar carries the literal band
+    # edges and colors; Rust owns the spacing layout, draws ``tick_labels``
+    # verbatim (empty keeps Rust's labels) and paints each extension cap with
+    # its own ``under``/``over`` RGBA8 (required exactly when that end extends).
+    # Requires ``colorbar_pyplot_label``.
+    colorbar_discrete: Optional[
+        tuple[
+            bool,
+            tuple[str, ...],
+            Optional[tuple[int, int, int, int]],
+            Optional[tuple[int, int, int, int]],
+        ]
+    ] = None
     # XYST-only pyplot grid dash codes (0=solid, 1=dashed, 2=dotted,
     # 3=dashdot) for (x major, y major, x minor, y minor). Rust owns the
     # pattern table; the canonical Scene wire keeps its solid contract.
@@ -1067,6 +1081,7 @@ def encode(
     records = bytearray()
     scenes = bytearray()
     label_tables = bytearray()
+    discrete_blobs = bytearray()
     for index, panel in enumerate(panels):
         scene = bytes(panel.scene)
         if not scene:
@@ -1175,6 +1190,36 @@ def encode(
             metric_flags |= 1 << 15
         if panel.colorbar_fill_plot:
             metric_flags |= 1 << 24
+        discrete_offset = 0
+        discrete_blob = b""
+        if panel.colorbar_discrete is not None:
+            if not panel.colorbar_pyplot_label:
+                raise ValueError(
+                    f"StaticDocument panel {index} discrete colorbar needs the pyplot label bit"
+                )
+            uniform, tick_labels, under, over = panel.colorbar_discrete
+            caps = [
+                _paint(cap, f"StaticDocument panel {index} colorbar cap")
+                for cap in (under, over)
+                if cap is not None
+            ]
+            parts = [
+                struct.pack(
+                    "<2I",
+                    int(bool(uniform))
+                    | (2 if under is not None else 0)
+                    | (4 if over is not None else 0),
+                    len(tick_labels),
+                ),
+                bytes(channel for cap in caps for channel in cap),
+            ]
+            for label in tick_labels:
+                encoded = str(label).encode("utf-8")
+                parts.append(struct.pack("<I", len(encoded)) + encoded)
+            discrete_blob = b"".join(parts)
+            discrete_offset = len(discrete_blobs)
+            discrete_blobs.extend(discrete_blob)
+            metric_flags |= 1 << 25
         values = (
             _i32(panel.x, f"StaticDocument panel {index} x"),
             _i32(panel.y, f"StaticDocument panel {index} y"),
@@ -1189,10 +1234,10 @@ def encode(
             *arrow_metrics,
             axis_sides,
             len(label_table),
-            0.0,
+            discrete_offset,
             panel_title_size,
             *panel_title_rgba,
-            0,
+            len(discrete_blob),
             grid_dash,
             chrome_text_bits,
             *chrome_text_rgba,
@@ -1220,7 +1265,15 @@ def encode(
         len(label_tables),
     )
     assert len(header) == 64
-    return header + records + title_bytes + decorations + bytes(label_tables) + scenes
+    return (
+        header
+        + records
+        + title_bytes
+        + decorations
+        + bytes(label_tables)
+        + bytes(discrete_blobs)
+        + scenes
+    )
 
 
 def project_figure(

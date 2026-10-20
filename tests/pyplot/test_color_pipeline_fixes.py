@@ -238,6 +238,195 @@ def test_boundary_norm_is_shared_by_imshow_pcolormesh_and_colorbar():
     assert all(f">{value}<" in svg for value in options["tick_labels"])
 
 
+def _colorbar_bands(svg: str) -> list[tuple[float, str]]:
+    """``(height, fill)`` of each Rust-drawn colorbar band, bottom to top."""
+    import re
+
+    return [
+        (float(height), fill)
+        for height, fill in re.findall(
+            r'data-xy-slot="colorbar_band"[^>]*height="([\d.]+)" fill="([^"]+)"', svg
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ("spacing", "expected_ratio"),
+    [("uniform", [1, 1, 1]), ("proportional", [2, 1, 4])],
+)
+def test_boundary_norm_colorbar_spacing_is_drawn_by_rust(spacing, expected_ratio):
+    """Uniform bands are equal; proportional bands follow the boundary values."""
+    pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    boundaries = [-3.0, -1.0, 0.0, 4.0]
+    fig, ax = plt.subplots()
+    image = ax.imshow(
+        np.asarray([[-2.0, -0.5, 2.0]]), norm=BoundaryNorm(boundaries, 256), cmap="RdYlBu"
+    )
+    fig.colorbar(image, spacing=spacing, ticks=boundaries)
+    bands = _colorbar_bands(_svg())
+    assert len(bands) == 3
+    heights = [height for height, _ in bands]
+    assert heights == pytest.approx(
+        [ratio * heights[0] / expected_ratio[0] for ratio in expected_ratio], abs=0.02
+    )
+    # Bands are literal solid colors, bottom (lowest) first: no interpolation.
+    assert len({fill for _, fill in bands}) == 3
+    assert [fill for _, fill in bands] == [
+        f"rgba({r},{g},{b},1.000000)" for r, g, b in image._entry["discrete_colors"]
+    ]
+
+
+def _cap_fills(svg: str) -> dict[str, tuple[int, int, int]]:
+    import re
+
+    return {
+        side: tuple(int(channel) for channel in re.findall(r"\d+", fill)[:3])
+        for side, fill in re.findall(
+            r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', svg
+        )
+    }
+
+
+def _matplotlib_cap_fills(artist, norm, cmap, extend):
+    """Facecolors of the real Matplotlib colorbar's extension patches."""
+    import matplotlib
+    import matplotlib.pyplot as mpl_plt
+
+    previous = matplotlib.get_backend()
+    mpl_plt.switch_backend("Agg")
+    try:
+        fig, ax = mpl_plt.subplots()
+        values = np.asarray([[0.5, 1.5, 2.5]])
+        mappable = getattr(ax, artist)(values, norm=norm, cmap=cmap)
+        colorbar = fig.colorbar(mappable, extend=extend)
+        sides = [side for side in ("min", "max") if extend in ("both", side)]
+        fills = {
+            side: tuple(round(255 * channel) for channel in patch.get_facecolor()[:3])
+            for side, patch in zip(sides, colorbar._extend_patches, strict=True)
+        }
+        mpl_plt.close(fig)
+        return fills
+    finally:
+        mpl_plt.switch_backend(previous)
+
+
+def _boundary_norm_cases():
+    import matplotlib
+    from matplotlib.colors import BoundaryNorm
+
+    viridis = matplotlib.colormaps["viridis"]
+    extremes = viridis.with_extremes(under="#ff0000", over="#00ff00")
+    edges = [0.0, 1.0, 2.0, 3.0]
+    return {
+        # ncolors == cmap.N: cap indices are the LUT ends.
+        "ncolors_eq_N": (lambda: BoundaryNorm(edges, 256), viridis),
+        # ncolors < cmap.N: the over cap is the last of a resampled range.
+        "ncolors_lt_N": (lambda: BoundaryNorm(edges, 4), viridis),
+        # clip=True bypasses explicit extremes: caps are the endpoint LUT colors.
+        "clip_with_extremes": (lambda: BoundaryNorm(edges, 256, clip=True), extremes),
+        # clip=False with extremes and extend="neither": the extremes are drawn.
+        "extremes_neither": (lambda: BoundaryNorm(edges, 256), extremes),
+        # The norm's own extend resamples the LUT before the cap lookup.
+        "norm_extend_both": (lambda: BoundaryNorm(edges, 256, extend="both"), extremes),
+    }
+
+
+@pytest.mark.parametrize("artist", ["imshow", "pcolormesh"])
+@pytest.mark.parametrize("extend", ["both", "min", "max"])
+@pytest.mark.parametrize(
+    "case",
+    ["ncolors_eq_N", "ncolors_lt_N", "clip_with_extremes", "extremes_neither", "norm_extend_both"],
+)
+def test_boundary_norm_colorbar_caps_match_matplotlib_extension_patches(case, extend, artist):
+    """Caps are ``cmap(norm(value just beyond the edge))``, read off a real colorbar."""
+    pytest.importorskip("matplotlib")
+    make_norm, cmap = _boundary_norm_cases()[case]
+    expected = _matplotlib_cap_fills(artist, make_norm(), cmap, extend)
+    fig, ax = plt.subplots()
+    mappable = getattr(ax, artist)(np.asarray([[0.5, 1.5, 2.5]]), norm=make_norm(), cmap=cmap)
+    fig.colorbar(mappable, extend=extend)
+    svg = _svg()
+    assert _cap_fills(svg) == expected
+    band_fills = {fill for _, fill in _colorbar_bands(svg)}
+    assert len(band_fills) == 3
+
+
+@pytest.mark.parametrize(
+    ("new_ticks", "expected"),
+    [
+        ([0.0, 0.5, 2.5, 3.0], ["0.0 u", "0.5 u", "2.5 u", "3.0 u"]),
+        ([0.0, 1.0, 3.0], ["0.0 u", "1.0 u", "3.0 u"]),
+        ([0.0, 0.25, 1.5, 2.0, 2.75, 3.0], ["0.0 u", "0.2 u", "1.5 u", "2.0 u", "2.8 u", "3.0 u"]),
+    ],
+)
+def test_boundary_norm_colorbar_labels_follow_set_ticks(new_ticks, expected):
+    """A formatter is re-applied to the live ticks (equal, fewer and more ticks)."""
+    import re
+
+    pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    fig, ax = plt.subplots()
+    image = ax.imshow(
+        np.asarray([[0.5, 1.5, 2.5]]), norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256), cmap="viridis"
+    )
+    colorbar = fig.colorbar(image, ticks=[0, 1, 2, 3], format="%.1f u")
+    colorbar.set_ticks(new_ticks)
+    assert re.findall(r">([\d.]+ u)<", _svg()) == expected
+
+
+def _contourf_with_explicit_levels():
+    grid = np.linspace(0, 1, 12)
+    fig, ax = plt.subplots()
+    return fig, ax.contourf(np.add.outer(grid, grid * 3) * 3, levels=[0, 1, 3, 10], cmap="viridis")
+
+
+def test_contourf_colorbar_without_band_colors_rejects_spacing_and_keeps_main_output():
+    """Spacing belongs to the discrete path; a boundary-only ramp must not gain it.
+
+    A contourf colorbar with explicit levels has boundaries but no band colors, so
+    it is drawn as a continuous ramp. Admitting ``spacing="proportional"`` there
+    would export a smooth gradient where Matplotlib draws solid bands; it keeps
+    the pre-#1035 ``XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE`` rejection.
+    Default and explicit-uniform spacing export byte-identically to main
+    (golden SHA-256 of the SVG captured from main ``be0270f8``).
+    """
+    import hashlib
+
+    fig, contour = _contourf_with_explicit_levels()
+    fig.colorbar(contour, spacing="proportional")
+    with pytest.raises(RuntimeError, match="XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE"):
+        _svg()
+    plt.close("all")
+    for options in ({}, {"spacing": "uniform"}):
+        fig, contour = _contourf_with_explicit_levels()
+        fig.colorbar(contour, **options)
+        digest = hashlib.sha256(_svg().encode()).hexdigest()
+        assert digest == "6a216c5347041c0bfd1d75318b909c76a796f3e493fcfcddb7374ccba0d944bf"
+        plt.close("all")
+
+
+def test_continuous_colorbar_with_formatted_ticks_is_rejected_with_a_stable_reason():
+    """Authored tick labels need literal bands; a ramp has none, so it fails closed."""
+    plt.imshow(np.arange(6.0).reshape(2, 3))
+    plt.colorbar(ticks=[0, 2, 4], format=plt.FuncFormatter(lambda value, _: f"{value:g}u"))
+    with pytest.raises(RuntimeError, match="XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS"):
+        _svg()
+
+
+def test_boundary_norm_colorbar_beyond_the_bounded_stop_budget_is_rejected():
+    """Scene colorbars carry at most 16 literal stops (15 bands); more fails closed."""
+    pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    plt.imshow(np.arange(6.0).reshape(2, 3), norm=BoundaryNorm(np.linspace(0, 10, 18), 256))
+    plt.colorbar()
+    with pytest.raises(RuntimeError, match="XYG_SCENE_UNSUPPORTED_COLORBAR"):
+        _svg()
+
+
 # -- defect 7: contour conventions --------------------------------------------
 
 

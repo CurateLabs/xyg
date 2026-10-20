@@ -1487,6 +1487,8 @@ class Figure:
             options["tick_labels"] = _colorbar_tick_labels(
                 formatter, cast(list[float], options["ticks"])
             )
+            # Kept so every chart build re-derives labels from the live ticks.
+            options["_tick_format"] = formatter
         extend = kwargs.pop("extend", None)
         if extend is None:
             # A contour set owns its extend state. Matplotlib colorbars inherit
@@ -1531,6 +1533,17 @@ class Figure:
             options["under_color"] = rgb255(entry["cmap_under"])
         if extend in ("max", "both") and entry.get("cmap_over") is not None:
             options["over_color"] = rgb255(entry["cmap_over"])
+        discrete_caps = entry.get("discrete_caps")
+        if "band_colors" in options and discrete_caps is not None:
+            # Matplotlib paints an extension with the colormap's under/over
+            # color (``get_under()``/``get_over()``, by default its first/last
+            # LUT entry). A discrete bar never borrows an interior band.
+            for key, row, wanted in (
+                ("under_color", 0, extend in ("min", "both")),
+                ("over_color", 1, extend in ("max", "both")),
+            ):
+                if wanted and key not in options:
+                    options[key] = [int(channel) for channel in discrete_caps[row]]
 
         check_unsupported(kwargs, "colorbar()")
         if (

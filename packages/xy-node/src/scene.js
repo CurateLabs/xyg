@@ -3052,9 +3052,10 @@ function staticLabelBytes(labels, encoder) {
 
 /**
  * XYST layout version; 2 widened the panel record to 128 bytes (#1004), 3
- * replaced the uniform annotation facts with a per-label table region (#1006).
+ * replaced the uniform annotation facts with a per-label table region (#1006),
+ * 4 added the per-panel discrete-colorbar region (#1035).
  */
-const XYST_VERSION = 3;
+const XYST_VERSION = 4;
 /** Bytes of one per-label annotation-table entry (XYAO label entry). */
 const STATIC_LABEL_ENTRY_BYTES = 20;
 
@@ -3117,6 +3118,7 @@ export function staticDocumentEncode({
   const normalized = [];
   let sceneBytes = 0;
   let labelTableBytes = 0;
+  let discreteBytes = 0;
   for (let index = 0; index < panels.length; index += 1) {
     const panel = panels[index];
     const scene = panel?.scene instanceof Uint8Array ? panel.scene : new Uint8Array(panel?.scene ?? []);
@@ -3142,6 +3144,12 @@ export function staticDocumentEncode({
       colorbarExtend: panel.colorbarExtend == null ? null : String(panel.colorbarExtend),
       colorbarPyplotLabel: Boolean(panel.colorbarPyplotLabel),
       colorbarFillPlot: Boolean(panel.colorbarFillPlot),
+      colorbarDiscrete: panel.colorbarDiscrete == null ? null : {
+        uniform: Boolean(panel.colorbarDiscrete[0]),
+        tickLabels: Array.from(panel.colorbarDiscrete[1] ?? [], String),
+        under: panel.colorbarDiscrete[2] == null ? null : staticPaint(panel.colorbarDiscrete[2], `StaticDocument panel ${index} colorbar cap`),
+        over: panel.colorbarDiscrete[3] == null ? null : staticPaint(panel.colorbarDiscrete[3], `StaticDocument panel ${index} colorbar cap`),
+      },
       gridDash: panel.gridDash == null ? null : Array.from(panel.gridDash, Number),
       chromeText: panel.chromeText == null ? null : {
         bits: Number(panel.chromeText[0]),
@@ -3186,6 +3194,33 @@ export function staticDocumentEncode({
       && !["neither", "min", "max", "both"].includes(record.colorbarExtend)) {
       throw new RangeError(`StaticDocument panel ${index} colorbar extend must be neither/min/max/both`);
     }
+    record.discreteBlob = new Uint8Array(0);
+    if (record.colorbarDiscrete != null) {
+      if (!record.colorbarPyplotLabel) {
+        throw new RangeError(`StaticDocument panel ${index} discrete colorbar needs the pyplot label bit`);
+      }
+      const { under, over } = record.colorbarDiscrete;
+      const parts = [new Uint8Array(8)];
+      const head = new DataView(parts[0].buffer);
+      head.setUint32(0, (record.colorbarDiscrete.uniform ? 1 : 0) | (under ? 2 : 0) | (over ? 4 : 0), true);
+      head.setUint32(4, record.colorbarDiscrete.tickLabels.length, true);
+      parts.push(Uint8Array.from([...(under ?? []), ...(over ?? [])]));
+      for (const label of record.colorbarDiscrete.tickLabels) {
+        const encoded = encoder.encode(label);
+        const part = new Uint8Array(4 + encoded.length);
+        new DataView(part.buffer).setUint32(0, encoded.length, true);
+        part.set(encoded, 4);
+        parts.push(part);
+      }
+      record.discreteBlob = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
+      let blobAt = 0;
+      for (const part of parts) {
+        record.discreteBlob.set(part, blobAt);
+        blobAt += part.length;
+      }
+    }
+    record.discreteOffset = record.discreteBlob.length ? discreteBytes : 0;
+    discreteBytes += record.discreteBlob.length;
     staticU32(scene.length, `StaticDocument panel ${index} Scene length`, true);
     sceneBytes += scene.length;
     normalized.push(record);
@@ -3237,7 +3272,7 @@ export function staticDocumentEncode({
     decorationAt += colorbarBytes.length;
     decorations.set(panelLegendBytes, decorationAt);
   }
-  const out = new Uint8Array(64 + panels.length * 128 + titleBytes.length + decorations.length + labelTableBytes + sceneBytes);
+  const out = new Uint8Array(64 + panels.length * 128 + titleBytes.length + decorations.length + labelTableBytes + discreteBytes + sceneBytes);
   const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
   out.set([88, 89, 83, 84], 0);
   view.setUint32(4, XYST_VERSION, true);
@@ -3278,7 +3313,8 @@ export function staticDocumentEncode({
       | (panel.colorbarPyplotLabel ? 1 << 13 : 0)
       | (panel.gridDash == null ? 0 : 1 << 14)
       | (panel.chromeText == null ? 0 : 1 << 15)
-      | (panel.colorbarFillPlot ? 1 << 24 : 0), true);
+      | (panel.colorbarFillPlot ? 1 << 24 : 0)
+      | (panel.colorbarDiscrete == null ? 0 : 1 << 25), true);
     view.setUint32(at + 4, panel.annotationLabels.length ? panel.labelOffset : 0, true);
     at += 8;
     for (const value of panel.chromeMetrics ?? [0, 0, 0, 0, 0, 0]) {
@@ -3297,13 +3333,13 @@ export function staticDocumentEncode({
     at += 4;
     view.setUint32(at, panel.annotationLabels.length, true);
     at += 4;
-    view.setFloat32(at, 0, true);
+    view.setUint32(at, panel.discreteOffset, true);
     at += 4;
     view.setFloat32(at, Number(panel.titleStyle?.[0] ?? 0), true);
     at += 4;
     out.set(panel.titleStyle == null ? [0, 0, 0, 0] : panel.titleStyle[1], at);
     at += 4;
-    view.setUint32(at, 0, true);
+    view.setUint32(at, panel.discreteBlob.length, true);
     at += 4;
     const gridDash = panel.gridDash ?? null;
     view.setUint32(
@@ -3326,6 +3362,10 @@ export function staticDocumentEncode({
   for (const panel of normalized) {
     out.set(panel.annotationLabels, at);
     at += panel.annotationLabels.length;
+  }
+  for (const panel of normalized) {
+    out.set(panel.discreteBlob, at);
+    at += panel.discreteBlob.length;
   }
   for (const panel of normalized) {
     out.set(panel.scene, at);

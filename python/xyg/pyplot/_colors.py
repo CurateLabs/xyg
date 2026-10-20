@@ -469,6 +469,10 @@ class BoundaryNormGrid(NamedTuple):
     domain: tuple[float, float]
     boundaries: np.ndarray
     band_colors: np.ndarray
+    #: ``(under, over)`` RGB8 a colorbar extension cap is painted with:
+    #: ``cmap(norm(value))`` just outside the first/last boundary (Matplotlib's
+    #: ``Colorbar._do_extends``).
+    caps: np.ndarray
 
 
 def prepare_boundary_norm(
@@ -536,11 +540,25 @@ def prepare_boundary_norm(
     ):
         raise ValueError("BoundaryNorm colormap must return one RGB(A) row per interval")
     band_colors = np.rint(np.clip(band_rgba[:, :3], 0.0, 1.0) * 255.0).astype(np.uint8)
+    # Matplotlib 3.11 ``Colorbar._process_values``/``_do_extends`` paints each
+    # extension with ``cmap(norm(value))``: the boundaries gain one extra edge
+    # (``b[0] - 1`` / ``b[-1] + 1``) and the cap's value is the midpoint of that
+    # outermost interval, i.e. half a unit beyond the first/last boundary. The
+    # norm decides the LUT index (``clip``, ``extend`` and ``ncolors`` included),
+    # so a cap is the colormap's under/over color only when the norm says so.
+    cap_values = np.array([boundaries[0] - 0.5, boundaries[-1] + 0.5])
+    cap_rgba = np.asarray(
+        cmap_callable(np.ma.asarray(norm_callable(cap_values)).filled(0)), dtype=np.float64
+    )
+    if cap_rgba.shape not in {(2, 3), (2, 4)}:
+        raise ValueError("BoundaryNorm colormap must return one RGB(A) row per cap")
+    caps = np.rint(np.clip(cap_rgba[:, :3], 0.0, 1.0) * 255.0).astype(np.uint8)
     return BoundaryNormGrid(
         np.ascontiguousarray(rgba),
         (float(boundaries[0]), float(boundaries[-1])),
         boundaries,
         band_colors,
+        caps,
     )
 
 

@@ -92,6 +92,21 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_grid_dash": ({"grid_dash": (1, 0, 0, 2)}, {}),
     "document_chrome_text": ({"chrome_text": CHROME_TEXT}, {}),
     "document_colorbar_fill_plot": ({"colorbar_fill_plot": True}, {}),
+    "document_colorbar_discrete": (
+        {
+            "colorbar_pyplot_label": True,
+            "colorbar_discrete": (True, ("one", "ten", "hundred"), None, None),
+        },
+        {},
+    ),
+    "document_colorbar_discrete_extend": (
+        {
+            "colorbar_pyplot_label": True,
+            "colorbar_extend": "both",
+            "colorbar_discrete": (False, (), (68, 1, 84, 255), (253, 231, 37, 255)),
+        },
+        {},
+    ),
     "document_defaults": ({}, {}),
     "document_background": ({}, {"background": "#ddeeff80"}),
     "document_optimized_png": ({}, {"optimize_png": True}),
@@ -480,16 +495,17 @@ def test_registered_document_rejections(name, node_results):
 
 
 def test_registered_panel_flag_masks_cover_every_admitted_bit(node_results):
-    """Bit 24 (explicit ``cax``) is admitted and witnessed; retired bits are not."""
+    """Bits 24 (explicit ``cax``) and 25 (discrete colorbar) are admitted and witnessed."""
     registry = DOCUMENT
     flags = {
         row["name"]: row["code"] for row in registry["vocabulary"] if row["family"] == "panel-flag"
     }
     assert flags["panel.colorbar-fill-plot"] == 1 << 24
+    assert flags["panel.colorbar-discrete"] == 1 << 25
     mask = 0
     for code in flags.values():
         mask |= code
-    assert mask == 0x0100FD3F
+    assert mask == 0x0300FD3F
     for retired in (1 << 6, 1 << 7, 1 << 9):
         assert not mask & retired
     for source in (
@@ -497,3 +513,8 @@ def test_registered_panel_flag_masks_cover_every_admitted_bit(node_results):
         base64.b64decode(node_results["cases"]["document_colorbar_fill_plot"]["document"]),
     ):
         assert struct.unpack_from("<I", source, 64 + 24)[0] & (1 << 24)
+    for source in (
+        _build("document_colorbar_discrete")[0],
+        base64.b64decode(node_results["cases"]["document_colorbar_discrete"]["document"]),
+    ):
+        assert struct.unpack_from("<I", source, 64 + 24)[0] & (1 << 25)

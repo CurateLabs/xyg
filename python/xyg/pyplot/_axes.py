@@ -3198,6 +3198,7 @@ class Axes(PlotTypeMixin):
         resolved_norm_domain: tuple[float, float] | None = None
         boundary_boundaries: np.ndarray | None = None
         boundary_colors: np.ndarray | None = None
+        boundary_caps: np.ndarray | None = None
         prepared_boundary = (
             None
             if truecolor
@@ -3214,6 +3215,7 @@ class Axes(PlotTypeMixin):
             resolved_norm_domain = prepared_boundary.domain
             boundary_boundaries = prepared_boundary.boundaries
             boundary_colors = prepared_boundary.band_colors
+            boundary_caps = prepared_boundary.caps
             vmin, vmax = resolved_norm_domain
             truecolor = True
         bounded_norm = isinstance(norm, str) or type(norm).__name__ in {"Normalize", "LogNorm"}
@@ -3474,6 +3476,7 @@ class Axes(PlotTypeMixin):
             entry["discrete_levels"] = len(boundary_boundaries) - 1
             entry["discrete_boundaries"] = boundary_boundaries
             entry["discrete_colors"] = boundary_colors
+            entry["discrete_caps"] = boundary_caps
         image = AxesImage(self, entry)
         if clip_path is not None:
             image.set_clip_path(clip_path)
@@ -8573,6 +8576,13 @@ class Axes(PlotTypeMixin):
         if self._colorbar is not None:
             figure = core_figure
             options = dict(self._colorbar)
+            tick_format = options.pop("_tick_format", None)
+            if tick_format is not None:
+                from ._mplfig import _colorbar_tick_labels
+
+                # Labels follow the live ticks (``set_ticks`` may have moved or
+                # resized them since ``colorbar(format=...)``).
+                options["tick_labels"] = _colorbar_tick_labels(tick_format, options["ticks"])
             if options.pop("_autoscale", False):
                 derived = _colorbar_figure_domain(figure)
                 if derived is not None:
