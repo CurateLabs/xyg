@@ -14,10 +14,14 @@ which covers user-visible releases across the whole package.
   (panel flag 25): Rust renders the literal bands, resolves `uniform` (default)
   and `proportional` spacing and draws the `format=` tick labels; pyplot only
   marshals the facts. No C ABI signature changed (the ABI stays at main's number, 391).
-- Extension caps of a banded bar are painted with the colormap's under/over
-  colors (Matplotlib `get_under()`/`get_over()`, an explicit `with_extremes`
-  included), carried as explicit facts in the discrete region; a cap is never
-  painted with an interior band color. `format=` tick labels are re-derived from
+- Extension caps of a banded bar are painted the way Matplotlib 3.11's colorbar
+  does: `cmap(norm(value))` with the value half a unit beyond the first/last
+  boundary (`Colorbar._process_values` + `_do_extends`). The norm decides the
+  LUT index, so a cap is the colormap's under/over color only when the norm
+  returns the under/over index (`clip=True` yields the endpoint LUT colors even
+  with explicit extremes; `ncolors < cmap.N` yields a resampled color). The
+  pyplot shim resolves the two paints and carries them as explicit facts in the
+  discrete region; a cap is never painted with an interior band color. `format=` tick labels are re-derived from
   the live ticks at every chart build, so `Colorbar.set_ticks()` after
   `colorbar(format=...)` relabels the new positions.
 - `format=` on a continuous ramp now fails closed with the stable

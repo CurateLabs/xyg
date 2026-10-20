@@ -69,8 +69,12 @@ label count, the present cap paints (under, then over), then each label as
 invalid UTF-8 are rejected. It adds three facts:
 
 - **Cap paints.** Each extended end (XYST extend bits min/max) carries exactly
-  its own paint, matplotlib's colormap under/over color; the extension triangle
-  uses it instead of the first/last stop. A paint without its extension, or an
+  its own paint; the extension triangle uses it instead of the first/last stop.
+  The paint is a host fact resolved with matplotlib's colormap semantics (pyplot
+  evaluates `cmap(norm(v))` for a value half a unit beyond the first/last
+  boundary, as `Colorbar._do_extends` does, which is the colormap's under/over
+  color only when the norm returns that index); Rust paints what it is given. A
+  paint without its extension, or an
   extension without its paint, fails closed in
   `apply_static_colorbar_discrete`, so a discrete bar can never paint a cap with
   an interior band color.
@@ -100,7 +104,9 @@ pre-existing behavior this change does not widen.
 
 ## Extensions and labels
 
-Endpoint extension triangles use the first/last stop's literal RGBA paint.
+Endpoint extension triangles use the first/last stop's literal RGBA paint,
+except on a discrete bar, where each extended end uses its own authored cap
+paint (see [Discrete bands](#discrete-bands)).
 Their depth is nine logical pixels. For a vertical colorbar, max extends above
 the bar and min below; for a horizontal colorbar, max extends right and min
 left. The same resolved three-point polygons feed SVG and raster commands.

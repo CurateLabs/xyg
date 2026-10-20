@@ -885,7 +885,8 @@ pub(crate) struct StaticDiscreteColorbar {
     /// `"proportional"`: bands span their literal value interval.
     pub(crate) uniform: bool,
     /// Authored paints of the minimum/maximum endpoint extension triangles
-    /// (matplotlib's colormap under/over colors). A discrete bar never reuses
+    /// (resolved by the host with matplotlib's `cmap(norm(v))` semantics, not
+    /// necessarily the colormap's under/over colors). A discrete bar never reuses
     /// an interior band color for a cap: each extended end needs its paint.
     pub(crate) under: Option<[u8; 4]>,
     pub(crate) over: Option<[u8; 4]>,

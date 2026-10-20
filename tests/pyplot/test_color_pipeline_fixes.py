@@ -278,67 +278,79 @@ def test_boundary_norm_colorbar_spacing_is_drawn_by_rust(spacing, expected_ratio
     ]
 
 
+def _cap_fills(svg: str) -> dict[str, tuple[int, int, int]]:
+    import re
+
+    return {
+        side: tuple(int(channel) for channel in re.findall(r"\d+", fill)[:3])
+        for side, fill in re.findall(
+            r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', svg
+        )
+    }
+
+
+def _matplotlib_cap_fills(artist, norm, cmap, extend):
+    """Facecolors of the real Matplotlib colorbar's extension patches."""
+    import matplotlib
+    import matplotlib.pyplot as mpl_plt
+
+    previous = matplotlib.get_backend()
+    mpl_plt.switch_backend("Agg")
+    try:
+        fig, ax = mpl_plt.subplots()
+        values = np.asarray([[0.5, 1.5, 2.5]])
+        mappable = getattr(ax, artist)(values, norm=norm, cmap=cmap)
+        colorbar = fig.colorbar(mappable, extend=extend)
+        sides = [side for side in ("min", "max") if extend in ("both", side)]
+        fills = {
+            side: tuple(round(255 * channel) for channel in patch.get_facecolor()[:3])
+            for side, patch in zip(sides, colorbar._extend_patches, strict=True)
+        }
+        mpl_plt.close(fig)
+        return fills
+    finally:
+        mpl_plt.switch_backend(previous)
+
+
+def _boundary_norm_cases():
+    import matplotlib
+    from matplotlib.colors import BoundaryNorm
+
+    viridis = matplotlib.colormaps["viridis"]
+    extremes = viridis.with_extremes(under="#ff0000", over="#00ff00")
+    edges = [0.0, 1.0, 2.0, 3.0]
+    return {
+        # ncolors == cmap.N: cap indices are the LUT ends.
+        "ncolors_eq_N": (lambda: BoundaryNorm(edges, 256), viridis),
+        # ncolors < cmap.N: the over cap is the last of a resampled range.
+        "ncolors_lt_N": (lambda: BoundaryNorm(edges, 4), viridis),
+        # clip=True bypasses explicit extremes: caps are the endpoint LUT colors.
+        "clip_with_extremes": (lambda: BoundaryNorm(edges, 256, clip=True), extremes),
+        # clip=False with extremes and extend="neither": the extremes are drawn.
+        "extremes_neither": (lambda: BoundaryNorm(edges, 256), extremes),
+        # The norm's own extend resamples the LUT before the cap lookup.
+        "norm_extend_both": (lambda: BoundaryNorm(edges, 256, extend="both"), extremes),
+    }
+
+
+@pytest.mark.parametrize("artist", ["imshow", "pcolormesh"])
 @pytest.mark.parametrize("extend", ["both", "min", "max"])
-def test_boundary_norm_colorbar_caps_use_the_colormap_under_and_over_colors(extend):
-    """Extension triangles carry matplotlib's cmap under/over paints, not band colors."""
-    import re
-
-    matplotlib = pytest.importorskip("matplotlib")
-    from matplotlib.colors import BoundaryNorm
-
-    cmap = matplotlib.colormaps["viridis"]
+@pytest.mark.parametrize(
+    "case",
+    ["ncolors_eq_N", "ncolors_lt_N", "clip_with_extremes", "extremes_neither", "norm_extend_both"],
+)
+def test_boundary_norm_colorbar_caps_match_matplotlib_extension_patches(case, extend, artist):
+    """Caps are ``cmap(norm(value just beyond the edge))``, read off a real colorbar."""
+    pytest.importorskip("matplotlib")
+    make_norm, cmap = _boundary_norm_cases()[case]
+    expected = _matplotlib_cap_fills(artist, make_norm(), cmap, extend)
     fig, ax = plt.subplots()
-    image = ax.imshow(
-        np.asarray([[0.5, 1.5, 2.5]]),
-        norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256, extend=extend),
-        cmap="viridis",
-    )
-    fig.colorbar(image, extend=extend)
-    caps = dict(re.findall(r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', _svg()))
-
-    def rgba(color):
-        return "rgba({},{},{},1.000000)".format(*(round(255 * channel) for channel in color[:3]))
-
-    expected = {}
-    if extend in ("min", "both"):
-        expected["min"] = rgba(cmap.get_under())
-    if extend in ("max", "both"):
-        expected["max"] = rgba(cmap.get_over())
-    assert caps == expected
-    band_fills = {fill for _, fill in _colorbar_bands(_svg())}
-    assert not band_fills & set(caps.values())
-
-
-def test_boundary_norm_colorbar_caps_follow_an_explicit_under_over_color():
-    import re
-
-    matplotlib = pytest.importorskip("matplotlib")
-    from matplotlib.colors import BoundaryNorm
-
-    cmap = matplotlib.colormaps["viridis"].with_extremes(under="#ff0000", over="#00ff00")
-    fig, ax = plt.subplots()
-    image = ax.imshow(
-        np.asarray([[0.5, 1.5, 2.5]]), norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256), cmap=cmap
-    )
-    fig.colorbar(image, extend="both")
-    caps = dict(re.findall(r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', _svg()))
-    assert caps == {"min": "rgba(255,0,0,1.000000)", "max": "rgba(0,255,0,1.000000)"}
-
-
-def test_boundary_norm_pcolormesh_colorbar_caps_use_the_cmap_extremes():
-    import re
-
-    matplotlib = pytest.importorskip("matplotlib")
-    from matplotlib.colors import BoundaryNorm
-
-    cmap = matplotlib.colormaps["plasma"].with_extremes(under="#102030", over="#fedcba")
-    fig, ax = plt.subplots()
-    mesh = ax.pcolormesh(
-        np.asarray([[0.5, 1.5, 2.5]]), norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256), cmap=cmap
-    )
-    fig.colorbar(mesh, extend="both")
-    caps = dict(re.findall(r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', _svg()))
-    assert caps == {"min": "rgba(16,32,48,1.000000)", "max": "rgba(254,220,186,1.000000)"}
+    mappable = getattr(ax, artist)(np.asarray([[0.5, 1.5, 2.5]]), norm=make_norm(), cmap=cmap)
+    fig.colorbar(mappable, extend=extend)
+    svg = _svg()
+    assert _cap_fills(svg) == expected
+    band_fills = {fill for _, fill in _colorbar_bands(svg)}
+    assert len(band_fills) == 3
 
 
 @pytest.mark.parametrize(
