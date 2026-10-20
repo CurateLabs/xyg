@@ -99,7 +99,17 @@ pub fn render_graph(document: &[u8], render: &Render<'_>) -> GfResult<RenderedSc
     let (node_metric, edge_metric) = (f64s("node.metric")?, f64s("edge.metric")?);
     let (node_flags, edge_flags) = (u32s("node.flags")?, u32s("edge.flags")?);
     let node_labels = texts("node.label")?;
-    let edge_labels = texts("edge.label")?;
+    // No result layer: the property-graph default view (spec §4.4a). It marks
+    // direction on every relationship and leaves relationship types to hover and
+    // selection (`edge.type`): a static picture cannot zoom-gate them, and edge
+    // labels would outrank node captions.
+    let default_view = doc.indices("layer.schema").is_empty();
+    let directed = get("graph.directed")?.as_u8("graph.directed")?.first() == Some(&1);
+    let edge_labels = if default_view {
+        vec![""; e]
+    } else {
+        texts("edge.label")?
+    };
     let legend_text = texts("legend.text")?;
     let legend_shape = u8s("legend.shape")?;
     let palette = u8s(if render.theme == THEME_DARK {
@@ -144,7 +154,7 @@ pub fn render_graph(document: &[u8], render: &Render<'_>) -> GfResult<RenderedSc
         edge_flags: &edge_flags,
         edge_labels: &edge_labels,
     };
-    let scene = encode_semantic_graph_scene_with_legend(input, SemanticLegendOverride { title, rows: &rows })
+    let scene = encode_semantic_graph_scene_with_legend(input, SemanticLegendOverride { title, rows: &rows, arrowheads: default_view && directed })
         .map_err(|error| match error {
             SceneError::Limit | SceneError::PainterTraceLimit => GfError::new(
                 "GF_COMPOSE_SCENE_TOO_LARGE",

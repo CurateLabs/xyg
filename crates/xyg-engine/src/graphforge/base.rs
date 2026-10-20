@@ -20,13 +20,16 @@ use crate::arrow_ipc::{Column, DataType, Table};
 /// Hard bounds on the canonical base graph.
 pub const MAX_BASE_NODES: usize = 20_000_000;
 pub const MAX_BASE_EDGES: usize = 50_000_000;
+/// Name-like node properties, in caption order.
+pub const CAPTION_PROPERTIES: [&str; 3] = ["name", "title", "label"];
 /// Per-label text bound (display labels are truncated far earlier).
 pub const MAX_LABEL_BYTES: usize = 1024;
 
 #[derive(Debug, Default)]
 pub struct BaseGraph {
     pub node_uuid: Vec<Uuid>,
-    /// Display name (`name` property / column), bounded.
+    /// Display name: the first non-empty of `name`, `title`, `label`
+    /// ([`CAPTION_PROPERTIES`]), bounded.
     pub node_name: Vec<Option<String>>,
     /// First GraphForge label (`labels[0]`).
     pub node_type: Vec<Option<String>>,
@@ -147,6 +150,21 @@ impl Collector {
         }
     }
 
+    /// Per row, the first non-empty text among [`CAPTION_PROPERTIES`].
+    fn captions<'c, 'a: 'c>(
+        column: impl Fn(&str) -> Option<Column<'c, 'a>>,
+        len: usize,
+    ) -> Vec<Option<&'a str>> {
+        let candidates = CAPTION_PROPERTIES.map(|name| Self::optional_text(column(name), len));
+        (0..len)
+            .map(|row| {
+                candidates
+                    .iter()
+                    .find_map(|texts| texts[row].filter(|text| !text.is_empty()))
+            })
+            .collect()
+    }
+
     /// First item of an optional `labels: list<utf8>` child.
     fn first_labels<'a>(column: Option<Column<'_, 'a>>, len: usize) -> Vec<Option<&'a str>> {
         let Some(column) = column else {
@@ -175,7 +193,7 @@ impl Collector {
 
     fn node_struct(&mut self, column: &Column<'_, '_>) -> GfResult<()> {
         let ids = uuids(&column.child("node_uuid").unwrap(), true)?;
-        let names = Self::optional_text(column.child("name"), ids.len());
+        let names = Self::captions(|name| column.child(name), ids.len());
         let kinds = Self::first_labels(column.child("labels"), ids.len());
         for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
             self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
@@ -275,10 +293,7 @@ impl Collector {
         if names.contains(&"node_uuid") {
             // Flat node table.
             let ids = uuids(&table.column("node_uuid").unwrap(), true)?;
-            let names = Self::optional_text(
-                table.column("label").or_else(|| table.column("name")),
-                ids.len(),
-            );
+            let names = Self::captions(|name| table.column(name), ids.len());
             let kinds = Self::first_labels(table.column("labels"), ids.len());
             for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
                 self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;

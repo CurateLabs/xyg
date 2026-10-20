@@ -50,7 +50,7 @@ export interface XygGraphForgeLayerInput {
 }
 export interface XygGraphForgeInput {
   base?: { tables?: Bytes[]; generation?: string; directed?: boolean };
-  layers: XygGraphForgeLayerInput[];
+  layers?: XygGraphForgeLayerInput[];
   /** Node or relationship UUIDs painted in the selected state. */
   select?: string[];
   /** Lower a graph composition to the direct-tier canonical Scene. */
@@ -178,12 +178,13 @@ export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<stri
 
 /** Frame a composition request. Only representation is checked here. */
 export function encodeWasmGraphForgeRequest(input: XygGraphForgeInput): ArrayBuffer {
-  if (!input || !Array.isArray(input.layers) || input.layers.length === 0) throw new TypeError("layers must be a non-empty array");
+  const layers = input?.layers ?? [];
+  if (!input || !Array.isArray(layers)) throw new TypeError("layers must be an array");
   const sections: Array<{ name: string; index?: number; dtype: number; values: any }> = [];
   (input.base?.tables ?? []).forEach((table, index) => sections.push({ name: "base.table", index, dtype: DT.bytes, values: bytesOf(table, "base.tables[]") }));
   if (input.base?.generation != null) sections.push({ name: "base.generation", dtype: DT.uuid, values: uuidToBytes(input.base.generation, "base.generation") });
   if (input.base?.directed != null) sections.push({ name: "base.directed", dtype: DT.u8, values: [input.base.directed ? 1 : 0] });
-  input.layers.forEach((layer, index) => {
+  layers.forEach((layer, index) => {
     sections.push({ name: "layer.result", index, dtype: DT.bytes, values: bytesOf(layer.result, `layers[${index}].result`) });
     if (layer.intent != null) sections.push({ name: "layer.intent", index, dtype: DT.utf8, values: layer.intent });
     if (layer.resultId != null) sections.push({ name: "layer.result_id", index, dtype: DT.utf8, values: layer.resultId });

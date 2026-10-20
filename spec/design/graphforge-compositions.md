@@ -87,6 +87,7 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 <!-- graphforge-ledger:begin -->
 | Schema | Disposition | Composition | Intents | Algorithms |
 |---|---|---|---|---|
+| `entity_graph` | entity-graph | entity-graph | graph | (base graph) |
 | `node-score` | node-layer | node-score | graph | pagerank, betweenness, closeness, harmonic_closeness, degree, eigenvector, article_rank, hits_hub, hits_authority, celf, clustering_coefficient, local_clustering_coefficient, triangles, k_core, preferential_attachment, adamic_adar, common_neighbors, resource_allocation, total_neighbors |
 | `node-community` | node-layer | node-group | graph | louvain, leiden, label_propagation, speaker_listener, girvan_newman, modularity_optimization, fastgreedy, infomap, leading_eigenvector, walktrap, spinglass, hdbscan, k_means, approximate_max_k_cut, components, strongly_connected, biconnected, k_core_decomposition |
 | `similarity` | derived-edges | derived-edges | graph | node_similarity, knn, filtered_knn, filtered_node_similarity, cosine |
@@ -129,6 +130,12 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 | `search` | node-layer | node-search | graph | (find) |
 <!-- graphforge-ledger:end -->
 
+`entity_graph` is the ledger's row for the base property graph itself (the
+extension's `entity-graph` disposition): it has no result fields and no
+algorithms, and a request that names it (a base and no result layer) composes
+the default view of §4.4a. Adding the row changes no other entry, so
+`LEDGER_VERSION` and every existing document stay byte-identical.
+
 **Delivery status.** Every schema composes: graph intents (node and edge
 layers, derived edges, ordered overlays; §4.4–4.5), tables and bar charts for
 scalar and category results, and embedding views (§4.6), on the native C ABI
@@ -155,7 +162,8 @@ The same entity may appear in many rows (`RETURN a, r, b`); identical UUIDs
 merge (counted as `GF_BASE_MERGED_ENTITIES`), and a relationship seen twice
 must name the same endpoints (`GF_BASE_EDGE_CONFLICT`). Relationships whose
 endpoints are not base nodes fail (`GF_BASE_ENDPOINT_MISSING`). Node display
-names come from a `name` property/column (`label` first for flat tables), the
+names come from the first non-empty of the `name`, `title`, and `label`
+properties/columns, in that order (flat tables included), the
 node type from `labels[0]`, and the relationship type from `rel_type`. Bounds:
 20M nodes, 50M relationships (`GF_COMPOSE_TOO_LARGE`). No layer ever mutates
 the base graph: the composed node/edge order is the base order.
@@ -228,6 +236,47 @@ field and code, text such as `community 3`, `other communities (4)`,
 shape, and the light and dark palette colors. Hosts render them as the
 chart legend (marker swatches, like the semantic legend) instead of the
 generic `Class n` rows.
+
+### 4.4a Property-graph default view (no result layer)
+
+A request with a base graph and **no result layer** composes the base
+property graph with XYG's default view; no analytical layer or configuration
+is needed. The base is the graph layer, whether it arrives as Cypher entity
+results or as flat tables (§4.1), and the ledger row is `entity_graph` (§3).
+Rust alone owns these defaults, so the Python, Node, and direct-browser WASM
+hosts draw the same graph from the same bytes. Layered compositions keep the
+encodings of §4.4 and are unchanged; the defaults below apply only when
+there is no result layer. (Only `layers: []` is new: a request that carries
+no base still fails with `GF_COMPOSE_BASE_REQUIRED`, and layers still check
+`GF_COMPOSE_GENERATION_STALE` against the base generation.)
+
+| Default | Rule |
+|---|---|
+| Node class | `labels[0]` ranked like any group (§4.4 node-group): the six largest labels (ties by ascending label text) get codes 1–6; with more than seven labels the rest share 7 (`GF_COMPOSE_GROUPS_BUCKETED`, no layer). Unlabeled nodes stay class 0. The palette is the shared categorical palette |
+| Legend | one node row per label class present, labeled with the label text, `other labels (n)` for the shared bucket, and `no label` for class 0 when labeled nodes also exist |
+| Node caption | the first non-empty of `name`, `title`, `label` (§4.1), else the last eight hex digits of the node UUID (the random tail of a UUIDv7); nodes that fell back are counted in `GF_COMPOSE_CAPTION_IDENTITY` |
+| Relationship type | `edge.type` carries it for hover and selection; `edge.label` repeats it with `edge.label_priority` −1, below every node caption (0), so the graph mark's zoom-monotone label plan (`graph_label_plan`) ranks types after captions and shows them as zoom frees room |
+| Direction | the direct-tier Scene draws a target-end arrowhead on every relationship when `graph.directed` is 1 (layered compositions keep their per-layer status arrowheads) |
+| Layout | the graph mark's seeded force layout (§6.3: seed 0, 300 ticks over every composed edge) |
+| Identity | every node and relationship keeps its UUID; parallel relationships stay separate edges and self-loops stay one edge with equal endpoints, both painted by the Scene under their own stable IDs |
+
+Composing the same graph and Version twice yields identical bytes, document
+and Scene alike (the layout is seeded and `libm`-free; §6.3).
+
+**Level of detail (recorded, never silent).** The direct-tier Scene is bounded
+to 1,024 nodes plus edges (`GF_COMPOSE_SCENE_TOO_LARGE`); larger graphs paint
+through the native graph mark, whose Rust level-of-detail tiers apply
+unchanged and are recorded by that mark (§28): Direct, Edge sample (edges over
+budget), and Cluster/aggregate (nodes over `node_budget`), with caption
+acceptance by label priority (`xyg_graph_label_accept`; graph-mark.md §6, §7.1).
+Inside the direct tier the Scene's label planner is the caption culler: node
+captions are placed in stable-ID order, truncated to the label bound, and
+dropped when they collide or leave the plot; the default view puts no
+relationship-type labels in the static Scene, because a still picture cannot
+zoom-gate them and edge labels would outrank node captions in that order.
+Static PNG/SVG export of the default view follows the Scene, and its parity
+with the interactive view is tracked by #935. Accessible selection and
+keyboard navigation of the graph are owned by #36, not by this composition.
 
 ### 4.5 Derived edges
 
@@ -638,13 +687,20 @@ another result or generation never matches (generation checks, §4.2).
   required/missing/extra coordinate failures. Coordinate and 2D-embedding
   inputs are derived from the real `node2vec` output
   (`scripts/gen_graphforge_derived_fixtures.py --check`).
-- Python/Node: `tests/fixtures/graphforge/cross_host.json` (99 cases: every
-  contract fixture with its intent, multi-layer render/select, rows and
-  policies, coordinates, and failures) pins request and document digests that
+- Rust (property graph, #934): a zero-layer request composes end to end
+  (`tests/fixtures/graphforge/results/base-property-*.arrow`: labels, captions
+  from `name`/`title`/`label`/identity, a parallel pair, a self-loop, an
+  unlabeled node): UUID identity and order, label classes and legend,
+  captions, relationship-type labels below node captions, arrowheads only when
+  directed, label ranking and bucketing, byte-identical recomposition, and the
+  `entity_graph` ledger row.
+- Python/Node: `tests/fixtures/graphforge/cross_host.json` (101 cases: every
+  contract fixture with its intent, multi-layer render/select, the property
+  graph with and without render, rows and policies, coordinates, and failures) pins request and document digests that
   both hosts reproduce, so Python, Node, and WASM agree byte for byte.
 - Native/WASM: `packages/xy-node/test/graphforge-wasm-parity.test.mjs` runs
   every GraphForge contract fixture (plus multi-layer render/select,
-  coordinates, and four failure cases) through the native C ABI and the real
+  coordinates, the property graph, and four failure cases) through the native C ABI and the real
   wasm32 artifact and requires byte-identical documents and Scenes; the
   browser bundle's request framing must equal Node's and decode the same
   identities. `cargo test -p xyg-wasm` checks the adapter against the C ABI.

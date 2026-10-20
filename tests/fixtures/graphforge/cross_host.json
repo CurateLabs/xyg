@@ -1353,6 +1353,26 @@
       "document_sha256": "8503dac5a53e72d346ccdf4866a53bee59555752e333519e814cbc1f08dc7c97"
     },
     {
+      "name": "property graph",
+      "base": "property",
+      "layers": [],
+      "request_sha256": "1c97749c36db0098c6324602f253f53dddc4dc0b8f10e5bb1f4769f66671f27b",
+      "document_sha256": "1d207ca2a3c871b5d54f4345a7782cbc89dab7d200e6b15fb5942cf2e1ac270b"
+    },
+    {
+      "name": "property graph + render",
+      "base": "property",
+      "layers": [],
+      "render": {
+        "width": 640,
+        "height": 420,
+        "theme": "light",
+        "title": "Property graph"
+      },
+      "request_sha256": "f2e3e5f5788655cab8cc2bc97264abef1c7cc9d01a798128e52919d54dcbae12",
+      "document_sha256": "5256efe872e4da287f18cdbe7ab9c9dd52622d72d2d26364036a7eeab444eccf"
+    },
+    {
       "name": "rows and policies",
       "base": "cyclic",
       "layers": [

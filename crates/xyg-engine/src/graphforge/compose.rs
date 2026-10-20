@@ -140,6 +140,43 @@ struct Planes<'b> {
     layers: Vec<LayerOut>,
 }
 
+/// Default relationship-type label priority: below every node caption (0.0),
+/// so the interactive mark shows types only once captions fit.
+const DEFAULT_EDGE_LABEL_PRIORITY: f64 = -1.0;
+
+/// Caption of a node with no name-like property: the last eight hex digits of
+/// its UUID (the random tail of a UUIDv7; its leading digits are a timestamp).
+fn short_identity(id: &Uuid) -> String {
+    id[12..].iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Group sizes → class codes by rank: the six largest groups (ties by
+/// ascending key) get codes 1..=6 and the rest share code 7, unless at most
+/// seven groups exist. Returns the ranked `(key, code)` pairs and how many of
+/// them keep their own code.
+fn rank_codes<K: Ord>(sizes: BTreeMap<K, u64>) -> (Vec<(K, u8)>, usize) {
+    let mut ranked: Vec<(K, u64)> = sizes.into_iter().collect();
+    ranked.sort_by(|a, b| b.1.cmp(&a.1));
+    let named = if ranked.len() > GROUP_CODES {
+        GROUP_CODES - 1
+    } else {
+        ranked.len()
+    };
+    let coded = ranked
+        .into_iter()
+        .enumerate()
+        .map(|(rank, (key, _))| {
+            let code = if rank < named {
+                rank as u8 + 1
+            } else {
+                GROUP_CODES as u8
+            };
+            (key, code)
+        })
+        .collect();
+    (coded, named)
+}
+
 pub(super) fn layer_error(code: &'static str, layer: usize, message: String) -> GfError {
     GfError::new(code, message).in_layer(layer)
 }
@@ -206,6 +243,60 @@ impl<'b> Planes<'b> {
 
     fn legend(&mut self, side: u8, field: u8, value: u8, text: String) {
         self.legend.entry((side, field, value)).or_insert(text);
+    }
+
+    /// The property-graph default view of a composition with no result layer
+    /// (spec §4.4a): nodes classed by first label with a label legend,
+    /// captions that fall back to a short identity, and relationship types as
+    /// low-priority edge labels (the interactive mark zoom-gates them).
+    fn default_view(&mut self) {
+        let base = self.base;
+        let mut sizes: BTreeMap<&str, u64> = BTreeMap::new();
+        let mut unlabeled = 0u64;
+        for kind in &base.node_type {
+            match kind.as_deref().filter(|k| !k.is_empty()) {
+                Some(kind) => *sizes.entry(kind).or_default() += 1,
+                None => unlabeled += 1,
+            }
+        }
+        let labeled = !sizes.is_empty();
+        let (ranked, named) = rank_codes(sizes);
+        let codes: HashMap<&str, u8> = ranked.iter().copied().collect();
+        for (rank, &(kind, code)) in ranked.iter().enumerate() {
+            if rank < named {
+                self.legend(LEGEND_NODE, 0, code, kind.to_owned());
+            }
+        }
+        let others = (ranked.len() - named) as u64;
+        if others > 0 {
+            self.legend(
+                LEGEND_NODE,
+                0,
+                GROUP_CODES as u8,
+                format!("other labels ({others})"),
+            );
+        }
+        if labeled && unlabeled > 0 {
+            self.legend(LEGEND_NODE, 0, 0, "no label".into());
+        }
+        self.decide("GF_COMPOSE_GROUPS_BUCKETED", None, others);
+        let mut captioned = 0u64;
+        for (node, kind) in base.node_type.iter().enumerate() {
+            if let Some(&code) = kind.as_deref().and_then(|k| codes.get(k)) {
+                self.node_class[node] = code;
+            }
+            if self.node_label[node].is_none() {
+                self.node_label[node] = Some(short_identity(&base.node_uuid[node]));
+                captioned += 1;
+            }
+        }
+        self.decide("GF_COMPOSE_CAPTION_IDENTITY", None, captioned);
+        for (edge, kind) in base.edge_type.iter().enumerate() {
+            if kind.is_some() {
+                self.edge_label[edge] = kind.clone();
+                self.edge_label_priority[edge] = DEFAULT_EDGE_LABEL_PRIORITY;
+            }
+        }
     }
 
     // -- joins ---------------------------------------------------------------
@@ -368,21 +459,10 @@ impl<'b> Planes<'b> {
                 None => nulls += 1,
             }
         }
-        let mut ranked: Vec<(i64, u64)> = sizes.into_iter().collect();
-        ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-        let bucket = ranked.len() > GROUP_CODES;
-        let named = if bucket {
-            GROUP_CODES - 1
-        } else {
-            ranked.len()
-        };
+        let (ranked, named) = rank_codes(sizes);
+        let bucket = ranked.len() > named;
         let mut codes: HashMap<i64, u8> = HashMap::with_capacity(ranked.len());
-        for (rank, &(group, _)) in ranked.iter().enumerate() {
-            let code = if rank < named {
-                rank as u8 + 1
-            } else {
-                GROUP_CODES as u8
-            };
+        for (rank, &(group, code)) in ranked.iter().enumerate() {
             codes.insert(group, code);
             if rank < named {
                 self.legend(side, 0, code, format!("{noun} {group}"));
@@ -1446,6 +1526,9 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
                 ))
             }
         }
+    }
+    if layers.is_empty() {
+        planes.default_view();
     }
     planes.select(&request.selected);
     let document = encode_graph(&planes, request, &layers);

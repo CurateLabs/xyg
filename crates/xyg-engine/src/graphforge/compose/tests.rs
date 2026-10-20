@@ -1235,6 +1235,30 @@ fn with_render(mut bytes: Vec<u8>, theme: &str) -> Vec<u8> {
     bytes
 }
 
+/// Stable IDs of the edges a Scene paints (painter polyline instances).
+fn painted_edge_ids(document: &crate::scene::SceneDocument) -> std::collections::BTreeSet<u64> {
+    let painter = document.to_browser_painter(1 << 22).unwrap();
+    let traces = u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize;
+    let mut edge_ids = std::collections::BTreeSet::new();
+    for trace in 0..traces {
+        let at = crate::scene::BROWSER_PAINTER_HEADER_BYTES
+            + trace * crate::scene::BROWSER_PAINTER_TRACE_BYTES;
+        if painter[at] != crate::scene::SceneRecordKind::Polyline as u8 {
+            continue;
+        }
+        let count = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap()) as usize;
+        let low = u32::from_le_bytes(painter[at + 24..at + 28].try_into().unwrap()) as usize;
+        for row in 0..count {
+            edge_ids.insert(u32::from_le_bytes(
+                painter[low + row * 4..low + row * 4 + 4]
+                    .try_into()
+                    .unwrap(),
+            ) as u64);
+        }
+    }
+    edge_ids
+}
+
 #[test]
 fn render_sections_append_a_canonical_semantic_scene() {
     let (base, generation) = base_of("pagerank");
@@ -1277,25 +1301,7 @@ fn render_sections_append_a_canonical_semantic_scene() {
         );
     }
     // Every composed edge paints under its own stable ID (painter polylines).
-    let painter = document.to_browser_painter(1 << 22).unwrap();
-    let traces = u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize;
-    let mut edge_ids = std::collections::BTreeSet::new();
-    for trace in 0..traces {
-        let at = crate::scene::BROWSER_PAINTER_HEADER_BYTES
-            + trace * crate::scene::BROWSER_PAINTER_TRACE_BYTES;
-        if painter[at] != crate::scene::SceneRecordKind::Polyline as u8 {
-            continue;
-        }
-        let count = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap()) as usize;
-        let low = u32::from_le_bytes(painter[at + 24..at + 28].try_into().unwrap()) as usize;
-        for row in 0..count {
-            edge_ids.insert(u32::from_le_bytes(
-                painter[low + row * 4..low + row * 4 + 4]
-                    .try_into()
-                    .unwrap(),
-            ) as u64);
-        }
-    }
+    let edge_ids = painted_edge_ids(&document);
     assert_eq!(edge_ids, (1..=e).collect(), "edge stable IDs are j + 1");
     // The composition's legend text, not generic class rows.
     for text in doc.texts("legend.text", 0) {
@@ -1434,4 +1440,148 @@ fn one_uuid_naming_a_node_and_a_relationship_selects_both() {
         .decisions()
         .iter()
         .any(|(code, _)| code == "GF_COMPOSE_SELECTION_UNMATCHED"));
+}
+
+// -- property-graph default view (no result layer, #934) --------------------------
+
+const PROPERTY_GENERATION: &str = "0190a000-0000-7000-8000-000000000006";
+
+fn property_request() -> Vec<u8> {
+    let generation = parse_uuid_text(PROPERTY_GENERATION).unwrap();
+    request(&["property"], Some(generation), &[])
+}
+
+fn property_document(request: Vec<u8>) -> Vec<u8> {
+    compose_bytes(&request).unwrap_or_else(|doc| panic!("{}", error_code(&doc)))
+}
+
+fn with_directed(bytes: &[u8], directed: bool) -> Vec<u8> {
+    let decoded = Container::decode(bytes, REQUEST_MAGIC).unwrap();
+    let mut builder = Builder::new(REQUEST_MAGIC);
+    builder.extend_from(&decoded);
+    builder.u8s("base.directed", 0, &[u8::from(directed)]);
+    builder.finish()
+}
+
+fn property_uuid(prefix: u8, n: u8) -> Uuid {
+    let mut id = [0; 16];
+    id[0] = prefix;
+    id[15] = n;
+    id
+}
+
+#[test]
+fn a_zero_layer_request_composes_the_base_graph_end_to_end() {
+    let rendered = property_document(with_render(property_request(), "light"));
+    let doc = Doc::new(&rendered);
+    // Every node and relationship keeps its UUID, in base order.
+    assert_eq!(
+        doc.uuids("node.uuid"),
+        (1..=5).map(|n| property_uuid(1, n)).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        doc.uuids("edge.uuid"),
+        (1..=5).map(|n| property_uuid(2, n)).collect::<Vec<_>>()
+    );
+    assert_eq!(doc.u64s("edge.base_row", 0), vec![0, 1, 2, 3, 4]);
+    // A parallel pair keeps two edges; the self-loop keeps its endpoint twice.
+    let (source, target) = (doc.u64s("edge.source", 0), doc.u64s("edge.target", 0));
+    assert_eq!((source[0], target[0]), (source[1], target[1]));
+    assert_eq!((source[2], target[2]), (1, 1));
+    // The Scene paints every node and every relationship, including the loop.
+    let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
+    let document = crate::scene::SceneDocument::decode(scene).unwrap();
+    assert_eq!(painted_edge_ids(&document), (1..=5).collect());
+    let svg = document.to_svg();
+    for node in 0..5u64 {
+        assert!(svg.contains(&format!("data-xy-stable-id=\"{}\"", (1u64 << 32) + node)));
+    }
+}
+
+#[test]
+fn zero_layer_graphs_need_a_base_and_report_it() {
+    let (code, _) = fail(request(&[], None, &[]));
+    assert_eq!(code, "GF_COMPOSE_BASE_REQUIRED");
+}
+
+#[test]
+fn the_default_view_classes_nodes_by_label_with_a_legend() {
+    let rendered = property_document(property_request());
+    let doc = Doc::new(&rendered);
+    // Equal-sized labels rank by name: Company 1, Person 2; unlabeled stays 0.
+    assert_eq!(doc.u8s("node.class"), &[2, 2, 1, 1, 0]);
+    assert_eq!(doc.texts("legend.text", 0), ["no label", "Company", "Person"]);
+    assert_eq!(doc.u8s("legend.value"), &[0, 1, 2]);
+    assert_eq!(doc.u8s("edge.class"), &[0; 5]);
+}
+
+#[test]
+fn default_captions_follow_name_title_label_then_a_short_identity() {
+    let rendered = property_document(property_request());
+    let doc = Doc::new(&rendered);
+    assert_eq!(
+        doc.texts("node.label", 0),
+        ["ada", "Prof", "Acme", "00000004", "00000005"]
+    );
+    assert!(doc
+        .decisions()
+        .contains(&("GF_COMPOSE_CAPTION_IDENTITY".into(), 2)));
+}
+
+#[test]
+fn default_relationship_types_label_below_every_node_caption() {
+    let rendered = property_document(with_render(property_request(), "light"));
+    let doc = Doc::new(&rendered);
+    let types = ["KNOWS", "KNOWS", "KNOWS", "WORKS_AT", "OWNS"];
+    assert_eq!(doc.texts("edge.type", 0), types);
+    assert_eq!(doc.texts("edge.label", 0), types);
+    assert_eq!(doc.f64s("edge.label_priority", 0), vec![-1.0; 5]);
+    assert!(doc.f64s("node.label_priority", 0).iter().all(|&p| p == 0.0));
+    // The static Scene prints node captions only; types wait for hover.
+    let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
+    let svg = crate::scene::SceneDocument::decode(scene).unwrap().to_svg();
+    assert!(svg.contains("ada") && svg.contains("Prof"));
+    assert!(!svg.contains("KNOWS") && !svg.contains("WORKS_AT"));
+}
+
+#[test]
+fn directed_default_views_draw_arrowheads_and_undirected_ones_do_not() {
+    let scene_of = |directed: bool| {
+        let bytes = with_directed(&with_render(property_request(), "light"), directed);
+        let rendered = property_document(bytes);
+        let scene = Doc::new(&rendered)
+            .0
+            .get("scene.canonical", 0)
+            .unwrap()
+            .as_bytes("s")
+            .unwrap()
+            .to_vec();
+        crate::scene::SceneDocument::decode(&scene).unwrap()
+    };
+    let (directed, undirected) = (scene_of(true), scene_of(false));
+    assert!(directed.record_count() > undirected.record_count());
+}
+
+#[test]
+fn composing_the_same_graph_twice_is_byte_identical() {
+    let first = property_document(with_render(property_request(), "light"));
+    let second = property_document(with_render(property_request(), "light"));
+    assert_eq!(first, second);
+    let doc = Doc::new(&first);
+    assert_eq!(doc.f64s("scene.x", 0).len(), 5);
+}
+
+#[test]
+fn label_classes_bucket_beyond_six_like_every_group() {
+    let sizes: BTreeMap<&str, u64> = ["a", "b", "c", "d", "e", "f", "g", "h"]
+        .into_iter()
+        .zip([3, 3, 2, 2, 2, 1, 1, 1])
+        .collect();
+    let (ranked, named) = rank_codes(sizes);
+    assert_eq!(named, 6);
+    let codes: Vec<(&str, u8)> = ranked;
+    assert_eq!(
+        codes,
+        [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5), ("f", 6), ("g", 7), ("h", 7)]
+    );
 }

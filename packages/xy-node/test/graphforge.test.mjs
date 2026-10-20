@@ -62,6 +62,19 @@ function assertJoins(composition, name, layerIndex = 0) {
   }
 }
 
+test("a request with no result layer composes the property-graph defaults", () => {
+  const input = { base: base("property"), render: { width: 480, height: 320, theme: "light" } };
+  const c = composeGraphForge(input);
+  assert.equal(c.layers.length, 0);
+  assert.deepEqual([...c.nodes.label], ["ada", "Prof", "Acme", "00000004", "00000005"]);
+  assert.deepEqual([...c.nodes.class], [2, 2, 1, 1, 0]);
+  assert.deepEqual(c.legend.rows.map((row) => row.text), ["no label", "Company", "Person"]);
+  assert.deepEqual([...c.edges.label], [...c.edges.type]);
+  assert.ok(c.scene.bytes.length > 0);
+  assert.deepEqual(composeGraphForge(input).scene.bytes, c.scene.bytes);
+  assert.ok(graphforgeLedger().some((row) => row.schema === "entity_graph" && row.disposition === "entity-graph"));
+});
+
 test("every node and edge layer joins by UUID, matching an independent decoder", () => {
   for (const name of Object.keys(EXPECT.layers)) {
     const composition = compose(name);

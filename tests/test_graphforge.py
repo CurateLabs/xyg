@@ -249,6 +249,23 @@ def test_ledger_and_render_scene() -> None:
     assert len(c.scene["x"]) == c.nodes.count
 
 
+def test_zero_layer_request_composes_the_property_graph_defaults() -> None:
+    render = {"width": 480, "height": 320, "theme": "light"}
+    c = xyg.compose_graphforge(base=_base("property"), render=render)
+    assert c.layers == []
+    assert (c.nodes.count, c.edges.count) == (5, 5)
+    # Captions: name, then title, then label, then a short identity.
+    assert list(c.nodes.label) == ["ada", "Prof", "Acme", "00000004", "00000005"]
+    assert list(c.nodes.class_) == [2, 2, 1, 1, 0]
+    assert [row["text"] for row in c.legend["rows"]] == ["no label", "Company", "Person"]
+    # Relationship types ride the label plane below every caption.
+    assert list(c.edges.label) == list(c.edges.type)
+    assert c.scene is not None and len(c.scene["x"]) == 5
+    # The same graph and Version compose to the same bytes.
+    request = xyg.encode_graphforge_request(base=_base("property"), render=render)
+    assert compose_graphforge_request(request) == compose_graphforge_request(request)
+
+
 def test_large_parallel_coordinates_keep_every_segment_identity() -> None:
     from types import SimpleNamespace
 

@@ -12,6 +12,7 @@ from pathlib import Path
 import pyarrow as pa
 
 ROOT = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "graphforge"
+RESULTS = ROOT / "results"
 
 
 def _write(name: str, table: pa.Table) -> None:
@@ -24,8 +25,87 @@ def _write(name: str, table: pa.Table) -> None:
     print(f"wrote {path} rows={table.num_rows}")
 
 
+def _uuid(prefix: int, n: int) -> bytes:
+    return bytes([prefix] + [0] * 14 + [n])
+
+
+def property_graph() -> None:
+    """The ``property`` base (#934): a Cypher entity result with no analytical
+    layer. It exercises the default view: two captions from ``name``, ``title``,
+    ``label`` (in that order), a short-identity caption, an unlabeled node, a
+    parallel pair, and a self-loop. Written beside the engine-produced bases
+    and listed in ``manifest.json``; ``scripts/gen_graphforge_cross_host.py``
+    pins its digests."""
+    uuid16 = pa.binary(16)
+    node_type = pa.struct(
+        [
+            ("node_uuid", uuid16),
+            ("labels", pa.list_(pa.string())),
+            ("name", pa.string()),
+            ("title", pa.string()),
+            ("label", pa.string()),
+        ]
+    )
+    rows = [
+        # (labels, name, title, label): caption is the first non-empty of the last three
+        (["Person"], "ada", "Dr", "L1"),
+        (["Person"], None, "Prof", "L2"),
+        (["Company"], None, None, "Acme"),
+        (["Company"], "", None, None),
+        (None, None, None, None),
+    ]
+    nodes = pa.table(
+        {
+            "n": pa.array(
+                [
+                    {
+                        "node_uuid": _uuid(1, i + 1),
+                        "labels": labels,
+                        "name": name,
+                        "title": title,
+                        "label": label,
+                    }
+                    for i, (labels, name, title, label) in enumerate(rows)
+                ],
+                type=node_type,
+            )
+        }
+    )
+    edge_type = pa.struct(
+        [
+            ("edge_uuid", uuid16),
+            ("src_uuid", uuid16),
+            ("dst_uuid", uuid16),
+            ("rel_type", pa.string()),
+        ]
+    )
+    links = [(1, 2, "KNOWS"), (1, 2, "KNOWS"), (2, 2, "KNOWS"), (1, 3, "WORKS_AT"), (3, 4, "OWNS")]
+    edges = pa.table(
+        {
+            "r": pa.array(
+                [
+                    {
+                        "edge_uuid": _uuid(2, i + 1),
+                        "src_uuid": _uuid(1, a),
+                        "dst_uuid": _uuid(1, b),
+                        "rel_type": kind,
+                    }
+                    for i, (a, b, kind) in enumerate(links)
+                ],
+                type=edge_type,
+            )
+        }
+    )
+    for name, table in (("base-property-nodes", nodes), ("base-property-edges", edges)):
+        path = RESULTS / f"{name}.arrow"
+        with pa.OSFile(str(path), "wb") as sink, pa.ipc.new_stream(sink, table.schema) as writer:
+            writer.write_table(table)
+        print(f"wrote {path} rows={table.num_rows}")
+
+
 def main() -> None:
     ROOT.mkdir(parents=True, exist_ok=True)
+    property_graph()
     nodes = pa.table(
         {
             "node_uuid": pa.array(

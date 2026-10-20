@@ -823,11 +823,14 @@ pub struct SemanticLegendRow<'a> {
 
 /// A composition-owned legend (e.g. GraphForge compositions, whose rows name
 /// communities, overlays, and derived relationships) replacing the generic
-/// `Class n` rows. Rows paint in the given order.
+/// `Class n` rows. Rows paint in the given order. `arrowheads` also draws a
+/// target-end arrowhead on every relationship, for directed compositions whose
+/// edge status does not already mark direction.
 #[derive(Clone, Copy, Debug)]
 pub struct SemanticLegendOverride<'a> {
     pub title: &'a str,
     pub rows: &'a [SemanticLegendRow<'a>],
+    pub arrowheads: bool,
 }
 
 /// [`encode_semantic_graph_scene`] with a caller-owned legend. Every other
@@ -1003,6 +1006,11 @@ fn encode_semantic_graph_scene_internal(
         &mut edges,
     )
     .ok_or(SceneError::Length)?;
+    if legend_override.is_some_and(|custom| custom.arrowheads) {
+        for style in &mut edges {
+            style.arrow = 1;
+        }
+    }
 
     let mut visible_x = Vec::with_capacity(n.saturating_mul(2));
     let mut visible_y = Vec::with_capacity(n.saturating_mul(2));
