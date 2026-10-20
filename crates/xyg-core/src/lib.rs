@@ -1222,8 +1222,21 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
             Err(error) => {
                 if error.code == PRODUCT_SUPPORT_UNSUPPORTED {
                     let n = error.reason.len();
-                    let need = 4usize.saturating_add(n);
+                    let Some(required) = n.checked_add(4).and_then(|need| u32::try_from(need).ok())
+                    else {
+                        if out_cap >= 4 {
+                            let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                            dest[..4]
+                                .copy_from_slice(&PRODUCT_OUTPUT_UNREPRESENTABLE.to_le_bytes());
+                        }
+                        return -(EncodeSidecarsCode::Limit as i32);
+                    };
+                    let need = required as usize;
                     if need > out_cap {
+                        if out_cap >= 4 {
+                            let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                            dest[..4].copy_from_slice(&required.to_le_bytes());
+                        }
                         return -(EncodeSidecarsCode::Output as i32);
                     }
                     let dest = std::slice::from_raw_parts_mut(out, out_cap);
@@ -29285,6 +29298,69 @@ mod tests {
             u32::from_le_bytes(small[..4].try_into().unwrap()),
             product_code as u32
         );
+    }
+
+    #[test]
+    fn product_support_diagnostic_reports_exact_required_buffer_size() {
+        let mut xyfs = Vec::from(*b"XYFS");
+        xyfs.extend_from_slice(&1u32.to_le_bytes()); // version
+        xyfs.extend_from_slice(&2u32.to_le_bytes()); // custom font
+        xyfs.extend_from_slice(&2u32.to_le_bytes()); // primary x/y axes
+        for axis in [0u8, 1] {
+            xyfs.extend_from_slice(&[axis, 0, 0, 0]);
+            xyfs.extend_from_slice(&0u32.to_le_bytes()); // no authored keys
+        }
+        let encode = |out: &mut [u8]| unsafe {
+            xyg_scene_encode_product(
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                xyfs.as_ptr(),
+                xyfs.len(),
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        let mut full = [0xa5; 256];
+        assert_eq!(encode(&mut full), -PRODUCT_SUPPORT_UNSUPPORTED);
+        let reason_len = u32::from_le_bytes(full[..4].try_into().unwrap()) as usize;
+        let required = 4 + reason_len;
+        assert!(std::str::from_utf8(&full[4..required])
+            .unwrap()
+            .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:"));
+        for capacity in [0, 1, 2, 3, 4, 8, required - 1] {
+            let mut out = [0xa5; 256];
+            assert_eq!(encode(&mut out[..capacity]), -4, "capacity {capacity}");
+            if capacity >= 4 {
+                assert_eq!(
+                    u32::from_le_bytes(out[..4].try_into().unwrap()),
+                    required as u32,
+                    "capacity {capacity}"
+                );
+                assert!(out[4..].iter().all(|&byte| byte == 0xa5));
+            } else {
+                assert!(out.iter().all(|&byte| byte == 0xa5));
+            }
+        }
+        let mut exact = vec![0xa5; required];
+        assert_eq!(encode(&mut exact), -PRODUCT_SUPPORT_UNSUPPORTED);
+        assert_eq!(exact, full[..required]);
     }
 
     #[test]

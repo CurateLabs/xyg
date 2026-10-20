@@ -187,7 +187,13 @@ call raises the listed stable `XYG_*` reason.
   both hosts, with no host-renderer retry. The ceiling is product policy, not
   a buffer limit: when a host's initial output buffer is too small,
   `xyg_scene_encode_product` returns `-4` and writes the exact required byte
-  count as a little-endian u32 into `out[0..4]`; hosts retry once with that
+  count as a little-endian u32 into `out[0..4]` when capacity is at least
+  four bytes (capacities 0–3 remain untouched). This includes short support
+  diagnostics: the required size includes the four-byte reason-length prefix
+  plus the UTF-8 reason; retrying with that size returns `-801` and the complete
+  diagnostic. Rust checks that this envelope size fits u32 before reporting it;
+  an unrepresentable envelope returns `-3` with the `u32::MAX` marker when the
+  size slot fits. Hosts retry once with the reported
   size and otherwise raise a specific "output buffer too small" diagnostic
   (never the generic scene-batch error). Constant-paint hexbin (tiny input, six
   56-byte Scene records per cell) and mixed documents are covered by the
