@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import shutil
@@ -35,7 +36,7 @@ def _make_root(tmp_path: Path) -> Path:
         "painter_version": abi["painter_version"],
     }
     inline = (
-        f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"AA==",'
+        f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"{base64.b64encode(WASM).decode()}",'
         f"classicWorkerSource:{json.dumps(CLASSIC_WORKER)}}};\n"
     )
     for location in gate.LOCATIONS:
@@ -103,6 +104,16 @@ def _rewrite_manifest(root: Path, location: str, **changes: object) -> None:
     path.write_text(json.dumps(meta), encoding="utf-8")
 
 
+def _corrupt_inline_base64(root: Path) -> None:
+    """Damage only the embedded payload in both copies, so the copies still agree."""
+    for location in gate.LOCATIONS:
+        inline = root / location / "xyg-wasm-inline.js"
+        inline.write_text(
+            inline.read_text(encoding="utf-8").replace(base64.b64encode(WASM).decode(), "AA=="),
+            encoding="utf-8",
+        )
+
+
 @pytest.mark.parametrize("location", gate.LOCATIONS)
 def test_stale_or_tampered_assets_are_rejected(tmp_path: Path, location: str) -> None:
     mutations = {
@@ -117,6 +128,7 @@ def test_stale_or_tampered_assets_are_rejected(tmp_path: Path, location: str) ->
             f"classicWorkerSource:{json.dumps(CLASSIC_WORKER)}}};\n",
             encoding="utf-8",
         ),
+        "inline base64 differs while its declared hash is intact": _corrupt_inline_base64,
         "not a wasm module": lambda r: (r / location / "xyg-wasm.wasm").write_bytes(b"<html>"),
     }
     for label, mutate in mutations.items():

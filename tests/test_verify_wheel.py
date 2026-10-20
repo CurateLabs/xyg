@@ -668,7 +668,7 @@ def _wasm_members(*, tamper: bool = False) -> dict[str, bytes]:
     return {
         "xyg/static/xyg-wasm.wasm": wasm,
         "xyg/static/xyg-wasm-inline.js": (
-            f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"AA==",'
+            f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"{base64.b64encode(wasm).decode()}",'
             'classicWorkerSource:"x"};\n'
         ).encode(),
         "xyg/static/xyg-wasm.manifest.json": meta.encode(),

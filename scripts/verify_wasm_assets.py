@@ -12,6 +12,8 @@ reach a consumer silently. Stdlib only, so it runs before any dev environment ex
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import hashlib
 import json
 import re
@@ -32,6 +34,7 @@ PRODUCER = (
     "downloaded as the `wasm-assets` artifact)"
 )
 _INLINE_SHA = re.compile(r'__xygInlineWasm=\{sha256:"([0-9a-f]{64})"')
+_INLINE_BASE64 = re.compile(r'base64:"([A-Za-z0-9+/=]*)"')
 _INLINE_WORKER = re.compile(r"classicWorkerSource:(\".*\")\};\s*$", re.DOTALL)
 
 
@@ -73,6 +76,17 @@ def verify_members(read: Callable[[str], bytes | None], locations: Sequence[str]
         if not found or found.group(1) != digest:
             errors.append(
                 f"{location}/xyg-wasm-inline.js embeds a different WASM than xyg-wasm.wasm"
+            )
+            continue
+        # The declared hash is not the payload: the browser compiles the base64 bytes.
+        payload = _INLINE_BASE64.search(inline)
+        try:
+            embedded = base64.b64decode(payload.group(1), validate=True) if payload else None
+        except binascii.Error:
+            embedded = None
+        if embedded != wasm:
+            errors.append(
+                f"{location}/xyg-wasm-inline.js base64 payload differs from xyg-wasm.wasm"
             )
     return errors
 

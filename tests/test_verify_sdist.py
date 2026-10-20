@@ -454,13 +454,14 @@ def test_hatch_sdist_include_is_root_anchored_paint_client_only() -> None:
 
 
 def _wasm_extra(*, tamper: bool = False) -> dict[str, bytes]:
+    import base64
     import hashlib
 
     wasm = b"\0asm\x01\0\0\0fixture"
     digest = hashlib.sha256(wasm).hexdigest()
     meta = f'{{"sha256": "{"0" * 64 if tamper else digest}", "bytes": {len(wasm)}}}'.encode()
     inline = (
-        f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"AA==",classicWorkerSource:"x"}};\n'
+        f'globalThis.__xygInlineWasm={{sha256:"{digest}",base64:"{base64.b64encode(wasm).decode()}",classicWorkerSource:"x"}};\n'
     ).encode()
     extra: dict[str, bytes] = {}
     for location in verify_sdist.WASM_LOCATIONS:
