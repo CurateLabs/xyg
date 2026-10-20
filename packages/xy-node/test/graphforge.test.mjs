@@ -62,6 +62,31 @@ function assertJoins(composition, name, layerIndex = 0) {
   }
 }
 
+test("a request with no result layer composes the property-graph defaults", () => {
+  const input = { base: base("property"), render: { width: 480, height: 320, theme: "light" } };
+  const c = composeGraphForge(input);
+  assert.equal(c.layers.length, 0);
+  assert.deepEqual([...c.nodes.label], ["ada", "Prof", "Acme", "00000004", "00000005"]);
+  assert.deepEqual([...c.nodes.class], [2, 2, 1, 1, 0]);
+  assert.deepEqual(c.legend.rows.map((row) => row.text), ["no label", "Company", "Person", "directed relationship"]);
+  assert.deepEqual([...c.edges.label], [...c.edges.type]);
+  assert.ok(c.scene.bytes.length > 0);
+  assert.deepEqual(composeGraphForge(input).scene.bytes, c.scene.bytes);
+  assert.ok(graphforgeLedger().some((row) => row.schema === "entity_graph" && row.disposition === "entity-graph"));
+});
+
+test("a directed property graph keeps its arrowheads in the interactive graph mark", () => {
+  const heads = (directed) => {
+    const c = composeGraphForge({ base: { ...base("property"), directed } });
+    const fig = graphforgeChart(c);
+    const edges = fig.traces[fig._graphMeta[0].edge_trace];
+    const flags = [...edges.style_channels.edge_ends.values].filter((_, i) => i % 7 === 6);
+    return new Set(flags.map((flag) => flag & 0x40));
+  };
+  assert.deepEqual([...heads(true)], [0x40]);
+  assert.deepEqual([...heads(false)], [0]);
+});
+
 test("every node and edge layer joins by UUID, matching an independent decoder", () => {
   for (const name of Object.keys(EXPECT.layers)) {
     const composition = compose(name);

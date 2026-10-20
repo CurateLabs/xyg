@@ -1033,6 +1033,11 @@
       "nodes": "base-points-nodes",
       "edges": "base-points-edges",
       "generation": "0190a000-0000-7000-8000-000000000005"
+    },
+    "property": {
+      "nodes": "base-property-nodes",
+      "edges": "base-property-edges",
+      "generation": "0190a000-0000-7000-8000-000000000006"
     }
   },
   "failures": {}

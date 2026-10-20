@@ -258,7 +258,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging enforces 1,472 KiB raw / 608 KiB gzip limits. The release compiler and pinned Binaryen 132 `-O3
+packaging enforces 1,472 KiB raw / 609 KiB gzip limits (the gzip limit was 608 KiB before #934). The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -1087,10 +1087,15 @@ alone, but their combined unchanged-profile artifact measures **1,454,428 raw /
 597,662 gzip bytes (level 6)**, SHA-256
 `ad68147eb89bbc8b4f1d6039642ee3068e3484243b48ccf6cb4d6359d9780b15`.
 It exceeds the historical gates by12,636 raw and7,838 gzip bytes. The current
-hard packaging limits are **1,507,328 raw bytes (1,472 KiB) and622,592 gzip bytes
-(608 KiB, level 6)**; runtime source, Data, handle, processor and transfer limits
+hard packaging limits are **1,507,328 raw bytes (1,472 KiB) and623,616 gzip bytes
+(609 KiB, level 6)**; runtime source, Data, handle, processor and transfer limits
 remain unchanged. Rust release O3/inline100 and pinned Binaryen132 O3 remain
-unchanged. An O3 shrink-level1 experiment produced identical bytes; Oz reduced
+unchanged. **#934 gzip decision:** the GraphForge property-graph default view
+(label classes, captions, direction, relationship-type labels) adds about 1.0 KB
+gzip (locally, level 6, without Binaryen: 618,983 on main to 619,984); the
+pinned-Binaryen CI artifact measured 622,651 bytes against the previous
+622,592-byte limit, so the gzip limit rises by 1 KiB to 623,616. This admits
+functionality, not a compiler change. An O3 shrink-level1 experiment produced identical bytes; Oz reduced
 raw size to1,434,576 but increased gzip to598,701, so neither solves the gates.
 No alternate compiler profile is adopted and no runtime speedup is claimed.
 

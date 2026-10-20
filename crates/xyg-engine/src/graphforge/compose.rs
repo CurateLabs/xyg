@@ -140,6 +140,45 @@ struct Planes<'b> {
     layers: Vec<LayerOut>,
 }
 
+/// Default relationship-type label priority: below every node caption (0.0),
+/// so the interactive mark shows types only once captions fit.
+const DEFAULT_EDGE_LABEL_PRIORITY: f64 = -1.0;
+
+/// Caption of a node with no name-like property: the last eight hex digits of
+/// its UUID (the random tail of a UUIDv7; its leading digits are a timestamp).
+fn short_identity(id: &Uuid) -> String {
+    id[12..]
+        .iter()
+        .flat_map(|b| [b >> 4, b & 15])
+        .map(|digit| char::from_digit(u32::from(digit), 16).unwrap())
+        .collect()
+}
+
+/// Group sizes → class codes by rank: the six largest groups get codes 1..=6
+/// and the rest share code 7, unless at most seven groups exist. Equal sizes
+/// rank by `earlier` (ascending key). Returns one code per group and whether
+/// the shared code is in use.
+fn rank_codes(sizes: &[u64], earlier: &dyn Fn(usize, usize) -> bool) -> (Vec<u8>, bool) {
+    let bucket = sizes.len() > GROUP_CODES;
+    let named = if bucket { GROUP_CODES - 1 } else { sizes.len() };
+    let mut codes = vec![GROUP_CODES as u8; sizes.len()];
+    let mut taken = vec![false; sizes.len()];
+    for rank in 0..named {
+        let mut best = usize::MAX;
+        for group in 0..sizes.len() {
+            let wins = best == usize::MAX
+                || sizes[group] > sizes[best]
+                || (sizes[group] == sizes[best] && earlier(group, best));
+            if !taken[group] && wins {
+                best = group;
+            }
+        }
+        taken[best] = true;
+        codes[best] = rank as u8 + 1;
+    }
+    (codes, bucket)
+}
+
 pub(super) fn layer_error(code: &'static str, layer: usize, message: String) -> GfError {
     GfError::new(code, message).in_layer(layer)
 }
@@ -206,6 +245,77 @@ impl<'b> Planes<'b> {
 
     fn legend(&mut self, side: u8, field: u8, value: u8, text: String) {
         self.legend.entry((side, field, value)).or_insert(text);
+    }
+
+    /// The property-graph default view of a composition with no result layer
+    /// (spec §4.4a): nodes classed by first label with a label legend,
+    /// captions that fall back to a short identity, arrowheads on directed
+    /// graphs (edge status 1), and relationship types as low-priority edge
+    /// labels (the interactive mark zoom-gates them).
+    fn default_view(&mut self) {
+        let base = self.base;
+        let mut index: HashMap<&str, usize> = HashMap::new();
+        let mut labels: Vec<&str> = Vec::new();
+        let mut counts: Vec<u64> = Vec::new();
+        let mut unlabeled = 0u64;
+        for kind in &base.node_type {
+            match kind.as_deref().filter(|kind| !kind.is_empty()) {
+                Some(kind) => {
+                    let group = *index.entry(kind).or_insert_with(|| {
+                        labels.push(kind);
+                        counts.push(0);
+                        labels.len() - 1
+                    });
+                    counts[group] += 1;
+                }
+                None => unlabeled += 1,
+            }
+        }
+        let labeled = !labels.is_empty();
+        let (codes, bucket) = rank_codes(&counts, &|a, b| labels[a] < labels[b]);
+        let mut others = 0u64;
+        for (&label, &code) in labels.iter().zip(&codes) {
+            if bucket && code == GROUP_CODES as u8 {
+                others += 1;
+            } else {
+                self.legend(LEGEND_NODE, 0, code, label.to_owned());
+            }
+        }
+        if others > 0 {
+            self.legend(
+                LEGEND_NODE,
+                0,
+                GROUP_CODES as u8,
+                format!("other labels ({others})"),
+            );
+        }
+        if labeled && unlabeled > 0 {
+            self.legend(LEGEND_NODE, 0, 0, "no label".into());
+        }
+        self.decide("GF_COMPOSE_GROUPS_BUCKETED", None, others);
+        let mut captioned = 0u64;
+        for (node, kind) in base.node_type.iter().enumerate() {
+            if let Some(&group) = kind.as_deref().and_then(|k| index.get(k)) {
+                self.node_class[node] = codes[group];
+            }
+            if self.node_label[node].is_none() {
+                self.node_label[node] = Some(short_identity(&base.node_uuid[node]));
+                captioned += 1;
+            }
+        }
+        self.decide("GF_COMPOSE_CAPTION_IDENTITY", None, captioned);
+        // Direction rides the edge status plane like every directional overlay
+        // (status 1 resolves to an arrowhead in the graph mark and the Scene).
+        if base.directed && !base.edge_uuid.is_empty() {
+            self.edge_status.fill(1);
+            self.legend(LEGEND_EDGE, 2, 1, "directed relationship".into());
+        }
+        for (edge, kind) in base.edge_type.iter().enumerate() {
+            if kind.is_some() {
+                self.edge_label[edge] = kind.clone();
+                self.edge_label_priority[edge] = DEFAULT_EDGE_LABEL_PRIORITY;
+            }
+        }
     }
 
     // -- joins ---------------------------------------------------------------
@@ -368,28 +478,20 @@ impl<'b> Planes<'b> {
                 None => nulls += 1,
             }
         }
-        let mut ranked: Vec<(i64, u64)> = sizes.into_iter().collect();
-        ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-        let bucket = ranked.len() > GROUP_CODES;
-        let named = if bucket {
-            GROUP_CODES - 1
-        } else {
-            ranked.len()
-        };
-        let mut codes: HashMap<i64, u8> = HashMap::with_capacity(ranked.len());
-        for (rank, &(group, _)) in ranked.iter().enumerate() {
-            let code = if rank < named {
-                rank as u8 + 1
-            } else {
-                GROUP_CODES as u8
-            };
+        let keys: Vec<i64> = sizes.keys().copied().collect();
+        let counts: Vec<u64> = sizes.values().copied().collect();
+        let (ranked, bucket) = rank_codes(&counts, &|a, b| a < b);
+        let mut codes: HashMap<i64, u8> = HashMap::with_capacity(keys.len());
+        let mut others = 0u64;
+        for (&group, &code) in keys.iter().zip(&ranked) {
             codes.insert(group, code);
-            if rank < named {
+            if bucket && code == GROUP_CODES as u8 {
+                others += 1;
+            } else {
                 self.legend(side, 0, code, format!("{noun} {group}"));
             }
         }
         if bucket {
-            let others = (ranked.len() - named) as u64;
             self.legend(
                 side,
                 0,
@@ -1446,6 +1548,9 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
                 ))
             }
         }
+    }
+    if layers.is_empty() {
+        planes.default_view();
     }
     planes.select(&request.selected);
     let document = encode_graph(&planes, request, &layers);
