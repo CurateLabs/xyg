@@ -1242,10 +1242,13 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     assert scene_export_support_reason(boundary) is None
     painter = _native.scene_browser_painter(figure_scene(boundary))
     assert int.from_bytes(painter[20:24], "little") == 1
-    assert (
-        scene_export_support_reason(_public_triangle_mesh(1025))
-        == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-    )
+    assert b"data-xy-dense-fill" not in _native.scene_svg(figure_scene(boundary)).encode()
+    # #1006: one face over the budget takes the static dense-fill Image tier.
+    dense = _public_triangle_mesh(1025)
+    assert scene_export_support_reason(dense) is None
+    dense_svg = _native.scene_svg(figure_scene(dense))
+    assert dense_svg.count('data-xy-dense-fill="true"') == 1
+    assert '<path d="M ' not in dense_svg
 
     aggregate = _public_triangle_mesh(513)
     trace = aggregate.traces[0]
@@ -1426,12 +1429,18 @@ def test_public_triangle_mesh_keeps_nonliteral_geometry_fail_closed(
     assert scene_export_support_reason(figure) is not None
 
 
-def test_public_triangle_mesh_keeps_autorange_on_compatibility() -> None:
+def test_public_triangle_mesh_consumes_the_shared_rust_autorange() -> None:
+    # Mesh paint never moves the domain, so an unauthored mesh takes the same
+    # Rust figure autorange (all three vertex columns) as the browser payload.
     figure = _public_triangle_mesh()
     figure.axis_options["x"]["domain"] = None
     figure.axis_options["y"]["domain"] = None
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-    assert public_static_export(figure, "svg") is None
+    assert scene_export_support_reason(figure) is None
+    spec, _ = figure.build_payload()
+    authored = _public_triangle_mesh()
+    authored.axis_options["x"]["domain"] = tuple(spec["axes"]["x"]["range"])
+    authored.axis_options["y"]["domain"] = tuple(spec["axes"]["y"]["range"])
+    assert public_static_export(figure, "svg") == public_static_export(authored, "svg")
 
 
 @pytest.mark.parametrize("reduce", ["count", "mean", "sum"])

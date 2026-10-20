@@ -1336,7 +1336,13 @@ coordinates on log/symlog x) before Scene packing and step/curve expansion,
 so every static format of a decimated line is M4 at the figure width and paints
 exactly like a direct line of the kept rows; a direct-tier scatter exports one
 marker per point up to `DIRECT_SOFT_CEILING` (= `MAX_SCENE_MARKS`, summed over
-the figure); a density-tier scatter exports one Rust-binned density Image.
+the figure, and only while a per-item paint plane fits one 4 MiB XYTA record);
+a density-tier scatter exports one Rust-binned density Image; a non-joined
+triangle mesh with more faces than the 1,024 PolyFill groups the browser
+painter accepts exports one dense-fill Image that Rust rasterizes from the
+trace's own faces on the plot's device grid at the default PNG scale (2,
+falling back to 1, then failing closed at `MAX_SCENE_IMAGE_PIXELS`). Every
+trace's packed rows share `MAX_SCENE_MARKS` before any host materializes them.
 Polar lines (the browser ships them direct), areas, and every other kind above
 the 10,000-record public budget, forced-direct scatters beyond the ceiling,
 and lines whose x is not ascending in its binning space fail closed as

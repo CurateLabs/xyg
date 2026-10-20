@@ -216,9 +216,32 @@ def _edge_figure(name: str) -> Figure:
             ((index * 104729.0) % 997.0) / 997.0 * 8.0 - 2.0,
             color="#3987e5",
         )
+    elif name == "triangle_mesh_dense_fill":
+        # #1006: 1,250 stroked, per-face colored triangles on Rust autorange.
+        x0, y0, x1, y1, x2, y2, value = _dense_mesh_columns()
+        figure.triangle_mesh(
+            x0, y0, x1, y1, x2, y2, color=value, stroke="#111827", stroke_width=0.5
+        )
     else:  # pragma: no cover - registry drift reports the missing builder
         raise AssertionError(f"missing Python static-export edge builder for {name}")
     return _normalize_ids(figure)
+
+
+def _dense_mesh_columns() -> tuple[np.ndarray, ...]:
+    """A 25x25 quad grid as 1,250 triangles (#1006)."""
+    cols = 25
+    index = np.arange(cols * cols, dtype=np.float64)
+    step = 8.0 / cols
+    gx = (index % cols) * step - 2.0
+    gy = np.floor(index / cols) * step - 2.0
+    value = ((index * 7919.0) % 101.0) / 100.0
+    x0 = np.concatenate([gx, gx + step])
+    y0 = np.concatenate([gy, gy])
+    x1 = np.concatenate([gx + step, gx + step])
+    y1 = np.concatenate([gy, gy + step])
+    x2 = np.concatenate([gx, gx])
+    y2 = np.concatenate([gy + step, gy + step])
+    return x0, y0, x1, y1, x2, y2, np.concatenate([value, 1.0 - value])
 
 
 def _fail_close_figure(name: str) -> Figure:
@@ -277,9 +300,12 @@ def _fail_close_figure(name: str) -> Figure:
         figure.segments([0, 1], [0, 1], [1, 2], [1, 2])
         figure.traces[0].x1 = figure.store.ingest([1])
     elif name == "triangle_mesh_limit":
-        values = [0.0] * 1025
+        # Each mesh is under the #1006 dense-fill threshold; together they
+        # exceed the shared 1,024 PolyFill-group budget.
+        values = [0.0] * 600
         _fixed_domains(figure)
         figure.traces.clear()
+        figure.triangle_mesh(values, values, values, values, values, values)
         figure.triangle_mesh(values, values, values, values, values, values)
     else:  # pragma: no cover - registry drift reports the missing builder
         raise AssertionError(f"missing Python fail-close builder for {name}")

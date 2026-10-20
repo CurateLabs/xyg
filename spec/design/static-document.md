@@ -156,7 +156,13 @@ call raises the listed stable `XYG_*` reason.
   WebP alike; a scatter the browser draws direct exports one marker per point
   up to `DIRECT_SOFT_CEILING` (2,000,000 summed over the figure's direct
   scatters); a density-tier scatter exports one density Image binned in Rust
-  from the canonical columns. Polar lines, areas, and other kinds above their
+  from the canonical columns; a non-joined triangle mesh above the 1,024
+  PolyFill-group budget exports one smooth dense-fill Image Rust rasterizes
+  from its faces (`<image data-xy-dense-fill="true">` in SVG, `/Interpolate
+  true` in PDF, a bilinear blit in raster formats). A scatter with per-point
+  color/size/stroke channels exports directly only while its paint plane fits
+  one 4 MiB XYTA record (about 174,000 points), and the figure's packed rows
+  share the 2,000,000-mark Scene ceiling. Polar lines, areas, and other kinds above their
   record budgets, forced-direct scatters beyond the ceiling, and lines whose
   x cannot be M4-binned fail closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`;
   non-finite large lines keep the shared non-finite row reason.

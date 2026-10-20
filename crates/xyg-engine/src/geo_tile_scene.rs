@@ -424,6 +424,7 @@ pub fn warp_raster_tiles(
         width: width as u32,
         height: height as u32,
         rgba,
+        smooth: false,
     })
 }
 

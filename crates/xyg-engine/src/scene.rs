@@ -4949,6 +4949,51 @@ pub const XYIM_VERSION: u32 = 1;
 pub const XYIM_V1_HEADER_BYTES: usize = 16;
 pub const XYIM_PLANE_HEADER_BYTES: usize = 24;
 pub const XYIM_FORMAT_RGBA8: u32 = 0;
+/// #1006 dense-fill plane: RGBA8 rasterized in Rust on a device-pixel grid
+/// (`dense_fill_grid`), resampled smoothly (raster bilinear, SVG default
+/// `image-rendering`, PDF `/Interpolate true`) instead of pixelated cells.
+pub const XYIM_FORMAT_RGBA8_SMOOTH: u32 = 1;
+/// Public PolyFill-group budget: the browser painter's 1,024-group ceiling,
+/// shared by the public static predicate. A triangle-mesh trace with more
+/// faces takes the dense-fill Image tier in static export (#1006).
+pub const PUBLIC_POLYFILL_GROUP_BUDGET: usize = 1_024;
+
+/// One dense-fill trace (#1006): the expanded record range `[start, end)` of
+/// a triangle-mesh (`TriangleFace`) trace whose faces exceed
+/// `PUBLIC_POLYFILL_GROUP_BUDGET`. `parent` is the trace's stable id (its
+/// records carry `parent << 32 | face`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SceneDenseFill {
+    pub parent: u64,
+    pub start: usize,
+    pub end: usize,
+}
+
+/// Device grid of a dense-fill Image: the plot rectangle snapped outward to
+/// whole device pixels at the native default PNG export scale (2), or at
+/// scale 1 when that grid exceeds `MAX_SCENE_IMAGE_PIXELS`. Returns the
+/// scale and `[x0, y0, x1, y1]` in integral device pixels; `None` (fail
+/// closed) when even the scale-1 grid is too large.
+pub fn dense_fill_grid(layout: PlotLayout) -> Option<(f64, [f64; 4])> {
+    for scale in [crate::kernels::DEFAULT_PNG_EXPORT_SCALE, 1.0] {
+        let grid = [
+            (layout.left * scale).floor(),
+            (layout.top * scale).floor(),
+            (layout.right * scale).ceil(),
+            (layout.bottom * scale).ceil(),
+        ];
+        let width = grid[2] - grid[0];
+        let height = grid[3] - grid[1];
+        if grid.iter().all(|value| value.is_finite())
+            && width >= 1.0
+            && height >= 1.0
+            && width * height <= MAX_SCENE_IMAGE_PIXELS as f64
+        {
+            return Some((scale, grid));
+        }
+    }
+    None
+}
 pub const MAX_SCENE_IMAGE_PIXELS: usize = 2_000_000;
 /// XYEX v1 wraps optional XYPL polar bytes plus optional XYHP paint so
 /// `xyg_scene_batch_encode` stays at Koffi's 64-parameter ceiling.
@@ -5039,12 +5084,15 @@ pub struct ExpandedSceneStyles {
 }
 
 /// One decoded density/image blit plane. RGBA8 is image-top-first, `width*height*4`.
+/// `smooth` marks a #1006 dense-fill raster (XYIM format 1): consumers
+/// resample it smoothly; every other plane keeps pixelated cells.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SceneImage {
     pub stable_id: u64,
     pub width: u32,
     pub height: u32,
     pub rgba: Vec<u8>,
+    pub smooth: bool,
 }
 
 fn scene_read_u32(bytes: &[u8], offset: usize) -> Result<u32, SceneError> {
@@ -5612,6 +5660,7 @@ fn heatmap_grid_image(
         width: cols as u32,
         height: rows as u32,
         rgba,
+        smooth: false,
     })
 }
 
@@ -5742,6 +5791,7 @@ fn density_colormap_image_from_plane(
         width: u32::try_from(plane.cols).map_err(|_| SceneError::Limit)?,
         height: u32::try_from(plane.rows).map_err(|_| SceneError::Limit)?,
         rgba,
+        smooth: false,
     })
 }
 
@@ -5792,6 +5842,7 @@ fn density_mean_color_image_from_plane(
         width: u32::try_from(plane.cols).map_err(|_| SceneError::Limit)?,
         height: u32::try_from(plane.rows).map_err(|_| SceneError::Limit)?,
         rgba,
+        smooth: false,
     })
 }
 
@@ -5815,7 +5866,12 @@ fn encode_xyim(images: &[SceneImage]) -> Result<Vec<u8>, SceneError> {
         out.extend_from_slice(&image.stable_id.to_le_bytes());
         out.extend_from_slice(&image.width.to_le_bytes());
         out.extend_from_slice(&image.height.to_le_bytes());
-        out.extend_from_slice(&XYIM_FORMAT_RGBA8.to_le_bytes());
+        let format = if image.smooth {
+            XYIM_FORMAT_RGBA8_SMOOTH
+        } else {
+            XYIM_FORMAT_RGBA8
+        };
+        out.extend_from_slice(&format.to_le_bytes());
         out.extend_from_slice(&(pixels as u32).to_le_bytes());
         out.extend_from_slice(&image.rgba);
     }
@@ -5850,7 +5906,10 @@ fn parse_xyim_envelope(bytes: &[u8]) -> Result<(Vec<SceneImage>, usize), SceneEr
         let height = scene_read_u32(bytes, cursor + 12)?;
         let format = scene_read_u32(bytes, cursor + 16)?;
         let byte_len = scene_read_u32(bytes, cursor + 20)? as usize;
-        if format != XYIM_FORMAT_RGBA8 || width == 0 || height == 0 {
+        if !matches!(format, XYIM_FORMAT_RGBA8 | XYIM_FORMAT_RGBA8_SMOOTH)
+            || width == 0
+            || height == 0
+        {
             return Err(SceneError::Length);
         }
         let pixels = (width as usize)
@@ -5876,6 +5935,7 @@ fn parse_xyim_envelope(bytes: &[u8]) -> Result<(Vec<SceneImage>, usize), SceneEr
             width,
             height,
             rgba,
+            smooth: format == XYIM_FORMAT_RGBA8_SMOOTH,
         });
         cursor = payload_end;
     }
@@ -6960,6 +7020,7 @@ pub fn expand_scene_records_painted(
 /// [`expand_scene_records_painted`] for a twin-axis figure: `y2` is the
 /// secondary y scale plus one selector per input row, and expansion groups
 /// (one trace each) evaluate scale-dependent geometry on their own y scale.
+#[allow(clippy::too_many_arguments)]
 pub fn expand_scene_records_with_y2(
     input: SceneExpansionInput<'_>,
     x_scale: AxisScale,
@@ -6975,6 +7036,45 @@ pub fn expand_scene_records_with_y2(
         ExpandedSceneRecords,
         Option<ExpandedSceneStyles>,
         Vec<SceneImage>,
+    ),
+    SceneError,
+> {
+    expand_scene_records_dense(
+        input,
+        x_scale,
+        y_scale,
+        y2,
+        fill_rgba,
+        stroke_rgba,
+        stroke_width,
+        paint,
+        polar,
+    )
+    .map(|(records, styles, images, _dense)| (records, styles, images))
+}
+
+/// [`expand_scene_records_with_y2`] plus the dense-fill ranges (#1006): every
+/// triangle-mesh (`TriangleFace`) trace whose faces exceed
+/// `PUBLIC_POLYFILL_GROUP_BUDGET` reports its contiguous expanded record
+/// range, for `SceneBatch::with_dense_fill`. At or below the budget no range
+/// is reported and expansion is unchanged.
+#[allow(clippy::too_many_arguments)]
+pub fn expand_scene_records_dense(
+    input: SceneExpansionInput<'_>,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    y2: Option<(AxisScale, &[bool])>,
+    fill_rgba: &[u8],
+    stroke_rgba: &[u8],
+    stroke_width: &[f64],
+    paint: &[u8],
+    polar: bool,
+) -> Result<
+    (
+        ExpandedSceneRecords,
+        Option<ExpandedSceneStyles>,
+        Vec<SceneImage>,
+        Vec<SceneDenseFill>,
     ),
     SceneError,
 > {
@@ -7121,6 +7221,8 @@ pub fn expand_scene_records_with_y2(
     }
 
     let mut expanded_len = 0usize;
+    // #1006: faces per triangle-mesh trace, for the dense-fill tier.
+    let mut mesh_faces: HashMap<u64, usize> = HashMap::new();
     let mut cursor = 0usize;
     while cursor < len {
         let y_scale = row_y_scale(cursor);
@@ -7129,6 +7231,9 @@ pub fn expand_scene_records_with_y2(
             expanded_len = expanded_len.checked_add(1).ok_or(SceneError::Limit)?;
             cursor += 1;
             continue;
+        }
+        if mode == SceneExpansionMode::TriangleFace {
+            *mesh_faces.entry(input.stable_ids[cursor] >> 32).or_insert(0) += 1;
         }
         let style_ref = input.style_refs[cursor];
         let run_end =
@@ -7305,6 +7410,29 @@ pub fn expand_scene_records_with_y2(
     if expanded_len > MAX_SCENE_MARKS {
         return Err(SceneError::Limit);
     }
+    let dense_parents: Vec<u64> = mesh_faces
+        .into_iter()
+        .filter(|(_, faces)| *faces > PUBLIC_POLYFILL_GROUP_BUDGET)
+        .map(|(parent, _)| parent)
+        .collect();
+    let mut dense: Vec<SceneDenseFill> = Vec::new();
+    // Each dense trace's expanded records must form one contiguous range.
+    let mut note_dense = |parent: u64, start: usize, end: usize| -> Result<(), SceneError> {
+        if !dense_parents.contains(&parent) {
+            return Ok(());
+        }
+        match dense.iter_mut().find(|fill| fill.parent == parent) {
+            Some(fill) if fill.end == start => {
+                fill.end = end;
+                Ok(())
+            }
+            Some(_) => Err(SceneError::Length),
+            None => {
+                dense.push(SceneDenseFill { parent, start, end });
+                Ok(())
+            }
+        }
+    };
 
     let mut output = ExpandedSceneRecords::with_capacity(expanded_len);
     cursor = 0;
@@ -7655,6 +7783,7 @@ pub fn expand_scene_records_with_y2(
                     }
                 }
             }
+            let start = output.kinds.len();
             output.push_triangle_vertex(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
             output.push_triangle_vertex(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
             output.push_triangle_vertex(
@@ -7663,6 +7792,7 @@ pub fn expand_scene_records_with_y2(
                 input.x0[cursor + 1],
                 input.y0[cursor + 1],
             );
+            note_dense(stable_id >> 32, start, output.kinds.len())?;
             cursor = run_end;
             continue;
         }
@@ -7899,7 +8029,7 @@ pub fn expand_scene_records_with_y2(
         styles.extra_xygr = encode_xygr(&ribbon_gradients)?;
     }
     debug_assert_eq!(output.kinds.len(), expanded_len);
-    Ok((output, painted_styles, images))
+    Ok((output, painted_styles, images, dense))
 }
 
 /// Cartesian bar/column/histogram/heatmap/violin/box corner radii and polar `wedge_gap` /
@@ -8008,6 +8138,9 @@ pub struct SceneBatch<'a> {
     y2: Option<SceneY2Axis>,
     /// Sorted stable ids of the rows plotted against `y2`.
     y2_ids: Vec<u64>,
+    /// Dense-fill traces (#1006) lowered to one Image record each, with the
+    /// image's pixel-space extent.
+    dense_fill: Vec<(SceneDenseFill, [f64; 4])>,
 }
 
 #[derive(Clone, Debug)]
@@ -9105,7 +9238,147 @@ impl<'a> SceneBatch<'a> {
             corner_radii: Vec::new(),
             y2: None,
             y2_ids: Vec::new(),
+            dense_fill: Vec::new(),
         })
+    }
+
+    /// Dense-fill tier (#1006). Each listed trace — a triangle mesh whose
+    /// faces exceed `PUBLIC_POLYFILL_GROUP_BUDGET` (the browser painter's
+    /// group ceiling) — lowers to one smooth RGBA Image over the plot
+    /// rectangle. Rust rasterizes the trace's own pixel-mapped Triangle
+    /// records through the Scene raster consumer's fill-run lowering
+    /// (`append_raster_fill_run`) on the `dense_fill_grid` device grid, so the
+    /// image is those faces painted at that scale with their fills and closed
+    /// outlines. Cartesian primary-axis meshes only: a polar Scene, a `y2`
+    /// row, a gradient-filled face, or a grid above `MAX_SCENE_IMAGE_PIXELS`
+    /// fails closed. Builds without the `raster` feature (the direct-browser
+    /// WASM adapter) fail closed with `SceneError::Limit`.
+    #[cfg_attr(not(feature = "raster"), allow(unused_mut))]
+    pub fn with_dense_fill(mut self, fills: &[SceneDenseFill]) -> Result<Self, SceneError> {
+        if fills.is_empty() {
+            return Ok(self);
+        }
+        #[cfg(not(feature = "raster"))]
+        {
+            Err(SceneError::Limit)
+        }
+        #[cfg(feature = "raster")]
+        {
+            if self.polar.is_some() {
+                return Err(SceneError::Length);
+            }
+            let (scale, grid) = dense_fill_grid(self.layout).ok_or(SceneError::Limit)?;
+            let width = (grid[2] - grid[0]) as usize;
+            let height = (grid[3] - grid[1]) as usize;
+            let origin = (grid[0] / scale, grid[1] / scale);
+            let extent = [origin.0, origin.1, grid[2] / scale, grid[3] / scale];
+            let (_, _, _, grads, _) = split_style_sidecars(&self.dashes)?;
+            let gradient_refs: Vec<u32> = parse_xygr(grads)?
+                .iter()
+                .map(|entry| entry.style_ref)
+                .collect();
+            let styles: Vec<EncodedStyle> = (0..self.stroke_width.len())
+                .map(|index| {
+                    EncodedStyle::solid(
+                        self.fill_rgba[index * 4..index * 4 + 4]
+                            .try_into()
+                            .expect("validated style table"),
+                        self.stroke_rgba[index * 4..index * 4 + 4]
+                            .try_into()
+                            .expect("validated style table"),
+                        self.stroke_width[index],
+                    )
+                })
+                .collect();
+            let mut placed: Vec<(SceneDenseFill, [f64; 4])> = Vec::with_capacity(fills.len());
+            for fill in fills {
+                if fill.start >= fill.end
+                    || fill.end > self.kinds.len()
+                    || (fill.end - fill.start) % 3 != 0
+                    || self
+                        .images
+                        .iter()
+                        .any(|image| image.stable_id == fill.parent)
+                    || placed.iter().chain(self.dense_fill.iter()).any(|(other, _)| {
+                        other.parent == fill.parent
+                            || (other.start < fill.end && fill.start < other.end)
+                    })
+                {
+                    return Err(SceneError::Length);
+                }
+                let mut records = Vec::with_capacity(fill.end - fill.start);
+                for index in fill.start..fill.end {
+                    let kind = SceneRecordKind::from_code(self.kinds[index])
+                        .map_err(|_| SceneError::Length)?;
+                    let (y2_row, y_scale) = self.row_y_scale(index);
+                    if kind != SceneRecordKind::Triangle
+                        || y2_row
+                        || self.stable_ids[index] >> 32 != fill.parent
+                        || gradient_refs.contains(&self.style_refs[index])
+                    {
+                        return Err(SceneError::Length);
+                    }
+                    // The image's top-left device pixel is the origin.
+                    let x = self.x_scale.pixel(self.x0[index]) - origin.0;
+                    let y = y_scale.pixel(self.y0[index]) - origin.1;
+                    let visible = x.is_finite() && y.is_finite();
+                    records.push(EncodedRecord {
+                        kind,
+                        visible,
+                        symbol: self.symbols[index],
+                        style_ref: self.style_refs[index] as usize,
+                        stable_id: self.stable_ids[index],
+                        coordinates: if visible { [x, y, 0.0, 0.0] } else { [0.0; 4] },
+                        diameter: self.diameter[index],
+                        annotation_tag: 0,
+                        y2: false,
+                    });
+                }
+                // A face with an unmappable vertex paints nothing, as in
+                // `prepared_mark_records`.
+                for face in records.chunks_mut(3) {
+                    if face.iter().any(|record| !record.visible) {
+                        for record in face {
+                            record.visible = false;
+                            record.coordinates = [0.0; 4];
+                        }
+                    }
+                }
+                let mut commands = Vec::new();
+                let mut index = 0;
+                while index < records.len() {
+                    if !records[index].visible {
+                        index += 1;
+                        continue;
+                    }
+                    index = append_raster_fill_run(
+                        &mut commands,
+                        &records,
+                        &styles,
+                        index,
+                        scale,
+                        &|_| false,
+                        &mut |out, points, style, _| {
+                            push_raster_solid_poly(out, points, style.fill, scale)
+                        },
+                    )?;
+                }
+                let mut rgba = vec![0u8; width * height * 4];
+                if !crate::raster::rasterize_into(&commands, width, height, &mut rgba) {
+                    return Err(SceneError::Length);
+                }
+                placed.push((*fill, extent));
+                self.images.push(SceneImage {
+                    stable_id: fill.parent,
+                    width: width as u32,
+                    height: height as u32,
+                    rgba,
+                    smooth: true,
+                });
+            }
+            self.dense_fill.extend(placed);
+            Ok(self)
+        }
     }
 
     /// Whether row `index` is plotted against `y2`, and its y scale.
@@ -9343,6 +9616,27 @@ impl<'a> SceneBatch<'a> {
         let mut wedges: Vec<SceneWedgeArc> = Vec::new();
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
+            // #1006: a dense-fill trace is one Image record at its first row.
+            if let Some((fill, extent)) = self
+                .dense_fill
+                .iter()
+                .find(|(fill, _)| fill.start <= index && index < fill.end)
+            {
+                if index == fill.start {
+                    out.push(PreparedMarkRecord {
+                        kind: SceneRecordKind::Image,
+                        visible: true,
+                        symbol: 0,
+                        annotation_tag: if self.annotations_from_ids { 0 } else { 0x80 },
+                        y2: false,
+                        style_ref: self.style_refs[index],
+                        stable_id: fill.parent,
+                        coordinates: *extent,
+                        diameter: 0.0,
+                    });
+                }
+                continue;
+            }
             let (y2_row, y_scale) = self.row_y_scale(index);
             if let Some(polar) = &self.polar {
                 if kind == SceneRecordKind::Rect {
@@ -10574,6 +10868,135 @@ fn valid_straight_arrow_run(records: &[EncodedRecord]) -> bool {
 // Scene v12 tag 0x80 marks literal per-row identity, so it is intentionally
 // excluded from grouping: callers use kind/style for those run boundaries,
 // while legacy and annotation records additionally require stable-ID equality.
+/// `OP_FILL_POLY`: one solid-filled polygon.
+fn push_raster_solid_poly(
+    out: &mut Vec<u8>,
+    points: &[(f64, f64)],
+    fill: [u8; 4],
+    scale: f64,
+) -> Result<(), SceneError> {
+    out.push(1); // OP_FILL_POLY
+    out.extend_from_slice(&(points.len() as u32).to_le_bytes());
+    for &(x, y) in points {
+        push_raster_f32(out, x, scale)?;
+        push_raster_f32(out, y, scale)?;
+    }
+    out.extend_from_slice(&fill);
+    Ok(())
+}
+
+/// End of the Triangle fill run at `start`: one face, or consecutive
+/// unstroked, ungraded faces of one feature and style that blend as one
+/// coverage union. An invisible boundary, source identity/style change, or
+/// any other primitive ends the union.
+fn triangle_fill_run_end(
+    records: &[EncodedRecord],
+    styles: &[EncodedStyle],
+    start: usize,
+    gradient: &dyn Fn(usize) -> bool,
+) -> usize {
+    let first = records[start];
+    let mut end = start + 3;
+    if styles[first.style_ref].stroke_width != 0.0 || gradient(first.style_ref) {
+        return end;
+    }
+    while end < records.len() {
+        let next = records[end];
+        if next.kind != SceneRecordKind::Triangle
+            || !next.visible
+            || next.stable_id != first.stable_id
+            || next.style_ref != first.style_ref
+            || next.annotation_tag != first.annotation_tag
+        {
+            break;
+        }
+        end += 3;
+    }
+    end
+}
+
+/// Raster lowering of the visible PolyFill or Triangle run at `start`;
+/// returns the index after it. This one body is shared by the Scene raster
+/// consumer (`SceneDocument::append_raster_marks`) and the dense-fill Image
+/// tier (`SceneBatch::with_dense_fill`, #1006), so a dense image paints the
+/// same faces with the same fill, triangle-union, and closed-outline
+/// semantics as the per-record Scene. `fill` lowers one filled polygon
+/// (solid or gradient); `gradient(style_ref)` reports a gradient fill.
+#[allow(clippy::type_complexity)]
+fn append_raster_fill_run(
+    out: &mut Vec<u8>,
+    records: &[EncodedRecord],
+    styles: &[EncodedStyle],
+    start: usize,
+    scale: f64,
+    gradient: &dyn Fn(usize) -> bool,
+    fill: &mut dyn FnMut(&mut Vec<u8>, &[(f64, f64)], EncodedStyle, usize) -> Result<(), SceneError>,
+) -> Result<usize, SceneError> {
+    let record = records[start];
+    let style = styles[record.style_ref];
+    let push_outline = |out: &mut Vec<u8>, run: &[EncodedRecord]| -> Result<(), SceneError> {
+        out.push(3); // OP_STROKE
+        out.extend_from_slice(&(run.len() as u32).to_le_bytes());
+        for point in run {
+            push_raster_f32(out, point.coordinates[0], scale)?;
+            push_raster_f32(out, point.coordinates[1], scale)?;
+        }
+        push_raster_f32(out, style.stroke_width, scale)?;
+        out.extend_from_slice(&style.stroke);
+        out.push(1); // closed
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.push(1);
+        Ok(())
+    };
+    if record.kind == SceneRecordKind::Triangle {
+        let end = triangle_fill_run_end(records, styles, start, gradient);
+        if style.stroke_width == 0.0 && !gradient(record.style_ref) {
+            out.push(19); // OP_UNION_TRIANGLES: blend the complete source fill once.
+            out.extend_from_slice(&(((end - start) / 3) as u32).to_le_bytes());
+            out.extend_from_slice(&style.fill);
+            for point in &records[start..end] {
+                push_raster_f32(out, point.coordinates[0], scale)?;
+                push_raster_f32(out, point.coordinates[1], scale)?;
+            }
+        } else {
+            let run = &records[start..end];
+            let points: Vec<_> = run
+                .iter()
+                .map(|point| (point.coordinates[0], point.coordinates[1]))
+                .collect();
+            fill(out, &points, style, record.style_ref)?;
+            if style.stroke_width > 0.0 {
+                push_outline(out, run)?;
+            }
+        }
+        return Ok(end);
+    }
+    let mut index = start;
+    while index < records.len() {
+        let point = records[index];
+        if point.kind != record.kind
+            || !same_record_run(record, point)
+            || point.style_ref != record.style_ref
+            || !point.visible
+        {
+            break;
+        }
+        index += 1;
+    }
+    let run = &records[start..index];
+    if run.len() >= 3 {
+        let points: Vec<(f64, f64)> = run
+            .iter()
+            .map(|point| (point.coordinates[0], point.coordinates[1]))
+            .collect();
+        fill(out, &points, style, record.style_ref)?;
+        if style.stroke_width > 0.0 {
+            push_outline(out, run)?;
+        }
+    }
+    Ok(index)
+}
+
 fn same_record_run(left: EncodedRecord, right: EncodedRecord) -> bool {
     left.annotation_tag == right.annotation_tag
         && left.y2 == right.y2
@@ -11779,26 +12202,9 @@ impl SceneDocument {
     // Group only subtriangles of the same source fill. An invisible boundary,
     // source identity/style change, or any other primitive ends the union.
     fn triangle_fill_run_end(&self, start: usize) -> usize {
-        let first = self.records[start];
-        let mut end = start + 3;
-        if self.styles[first.style_ref].stroke_width != 0.0
-            || self.style_gradient(first.style_ref).is_some()
-        {
-            return end;
-        }
-        while end < self.records.len() {
-            let next = self.records[end];
-            if next.kind != SceneRecordKind::Triangle
-                || !next.visible
-                || next.stable_id != first.stable_id
-                || next.style_ref != first.style_ref
-                || next.annotation_tag != first.annotation_tag
-            {
-                break;
-            }
-            end += 3;
-        }
-        end
+        triangle_fill_run_end(&self.records, &self.styles, start, &|style_ref| {
+            self.style_gradient(style_ref).is_some()
+        })
     }
 
     /// Parts a graph rebuild keeps. Polar, image, colorbar, gradient, and
@@ -13920,14 +14326,7 @@ impl SceneDocument {
             }
             return Ok(());
         }
-        out.push(1); // OP_FILL_POLY
-        out.extend_from_slice(&(points.len() as u32).to_le_bytes());
-        for &(x, y) in points {
-            push_raster_f32(out, x, scale)?;
-            push_raster_f32(out, y, scale)?;
-        }
-        out.extend_from_slice(&style.fill);
-        Ok(())
+        push_raster_solid_poly(out, points, style.fill, scale)
     }
 
     fn append_svg_polar_grid(&self, out: &mut String, x_ticks: &AxisTicks, y_ticks: &AxisTicks) {
@@ -14409,7 +14808,9 @@ impl SceneDocument {
                             let width = record.coordinates[2] - record.coordinates[0];
                             let height = record.coordinates[3] - record.coordinates[1];
                             out.push_str("<image");
-                            if self.polar.is_some() {
+                            if image.smooth {
+                                out.push_str(" data-xy-dense-fill=\"true\"");
+                            } else if self.polar.is_some() {
                                 out.push_str(" data-xy-polar-heatmap=\"true\"");
                             }
                             out.push_str(" x=\"");
@@ -14420,9 +14821,13 @@ impl SceneDocument {
                             push_num(&mut out, width);
                             out.push_str("\" height=\"");
                             push_num(&mut out, height);
-                            out.push_str(
-                                "\" preserveAspectRatio=\"none\" style=\"image-rendering:pixelated\" href=\"data:image/png;base64,",
-                            );
+                            // A dense-fill raster is anti-aliased device
+                            // pixels: resample smoothly, never as cells.
+                            out.push_str(if image.smooth {
+                                "\" preserveAspectRatio=\"none\" href=\"data:image/png;base64,"
+                            } else {
+                                "\" preserveAspectRatio=\"none\" style=\"image-rendering:pixelated\" href=\"data:image/png;base64,"
+                            });
                             out.push_str(&encode_base64(&png));
                             out.push_str("\"/>");
                         }
@@ -15849,7 +16254,10 @@ impl SceneDocument {
                         push_raster_f32(out, record.coordinates[3] - record.coordinates[1], scale)?;
                         out.extend_from_slice(&image.width.to_le_bytes());
                         out.extend_from_slice(&image.height.to_le_bytes());
-                        out.push(1); // nearest / pixelated
+                        // Cells sample nearest; a dense-fill raster samples
+                        // bilinearly, an exact copy at its own device scale
+                        // and a 2x2 box filter at half of it.
+                        out.push(u8::from(!image.smooth));
                         out.extend_from_slice(&image.rgba);
                     }
                     index += 1;
@@ -15902,77 +16310,18 @@ impl SceneDocument {
                         }
                     }
                 }
-                SceneRecordKind::Triangle => {
-                    let end = self.triangle_fill_run_end(index);
-                    if style.stroke_width == 0.0 && self.style_gradient(record.style_ref).is_none()
-                    {
-                        out.push(19); // OP_UNION_TRIANGLES: blend the complete source fill once.
-                        out.extend_from_slice(&(((end - index) / 3) as u32).to_le_bytes());
-                        out.extend_from_slice(&style.fill);
-                        for point in &self.records[index..end] {
-                            push_raster_f32(out, point.coordinates[0], scale)?;
-                            push_raster_f32(out, point.coordinates[1], scale)?;
-                        }
-                    } else {
-                        let run = &self.records[index..end];
-                        let points: Vec<_> = run
-                            .iter()
-                            .map(|point| (point.coordinates[0], point.coordinates[1]))
-                            .collect();
-                        self.push_raster_poly_fill(out, &points, style, record.style_ref, scale)?;
-                        if style.stroke_width > 0.0 {
-                            out.push(3);
-                            out.extend_from_slice(&3u32.to_le_bytes());
-                            for point in run {
-                                push_raster_f32(out, point.coordinates[0], scale)?;
-                                push_raster_f32(out, point.coordinates[1], scale)?;
-                            }
-                            push_raster_f32(out, style.stroke_width, scale)?;
-                            out.extend_from_slice(&style.stroke);
-                            out.push(1);
-                            out.extend_from_slice(&0u32.to_le_bytes());
-                            out.push(1);
-                        }
-                    }
-                    index = end;
-                }
-                SceneRecordKind::PolyFill => {
-                    let start = index;
-                    let style_ref = record.style_ref;
-                    while index < self.records.len() {
-                        let point = self.records[index];
-                        if point.kind != record.kind
-                            || (record.kind == SceneRecordKind::Triangle && index - start == 3)
-                            || !same_record_run(record, point)
-                            || point.style_ref != style_ref
-                            || !point.visible
-                        {
-                            break;
-                        }
-                        index += 1;
-                    }
-                    let run = &self.records[start..index];
-                    if run.len() >= 3 {
-                        let count = run.len() as u32;
-                        let points: Vec<(f64, f64)> = run
-                            .iter()
-                            .map(|point| (point.coordinates[0], point.coordinates[1]))
-                            .collect();
-                        self.push_raster_poly_fill(out, &points, style, style_ref, scale)?;
-                        if style.stroke_width > 0.0 {
-                            out.push(3); // OP_STROKE
-                            out.extend_from_slice(&count.to_le_bytes());
-                            for point in run {
-                                push_raster_f32(out, point.coordinates[0], scale)?;
-                                push_raster_f32(out, point.coordinates[1], scale)?;
-                            }
-                            push_raster_f32(out, style.stroke_width, scale)?;
-                            out.extend_from_slice(&style.stroke);
-                            out.push(1); // closed
-                            out.extend_from_slice(&0u32.to_le_bytes());
-                            out.push(1);
-                        }
-                    }
+                SceneRecordKind::Triangle | SceneRecordKind::PolyFill => {
+                    index = append_raster_fill_run(
+                        out,
+                        &self.records,
+                        &self.styles,
+                        index,
+                        scale,
+                        &|style_ref| self.style_gradient(style_ref).is_some(),
+                        &mut |out, points, style, style_ref| {
+                            self.push_raster_poly_fill(out, points, style, style_ref, scale)
+                        },
+                    )?;
                 }
                 SceneRecordKind::Polyline | SceneRecordKind::Segment => {
                     let start = index;
@@ -17721,6 +18070,7 @@ pub(crate) mod tests {
             rgba: vec![
                 255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 128, 255, 255, 0, 255,
             ],
+            smooth: false,
         });
         let painter = document.to_browser_painter(65536).unwrap();
         assert_eq!(&painter[20..24], &2u32.to_le_bytes());
@@ -17788,6 +18138,7 @@ pub(crate) mod tests {
                 rgba: vec![
                     255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 128, 255, 255, 0, 255,
                 ],
+                smooth: false,
             });
             fixture.styles.push(EncodedStyle::solid(
                 [0, 0, 255, 128],
@@ -24594,5 +24945,243 @@ pub(crate) mod tests {
         assert!(roundtrip[0].annotation);
         assert_eq!(roundtrip[0].rotation, 30.0);
         assert_eq!(roundtrip[0].text, "rotated");
+    }
+
+    /// #1006 fixture: `faces` TriangleFace pairs of trace 8 over a 0..10 data
+    /// square, cycling three styles (stroked, stroked, unstroked).
+    struct DenseMeshFixture {
+        kinds: Vec<u8>,
+        ids: Vec<u64>,
+        refs: Vec<u32>,
+        diameter: Vec<f64>,
+        symbols: Vec<u8>,
+        x0: Vec<f64>,
+        y0: Vec<f64>,
+        x1: Vec<f64>,
+        y1: Vec<f64>,
+        modes: Vec<u8>,
+    }
+
+    const DENSE_FILL_RGBA: [u8; 12] = [30, 120, 200, 230, 200, 60, 40, 255, 20, 160, 90, 128];
+    const DENSE_STROKE_RGBA: [u8; 12] = [30, 120, 200, 230, 17, 24, 39, 255, 0, 0, 0, 0];
+    const DENSE_STROKE_WIDTH: [f64; 3] = [0.5, 0.75, 0.0];
+
+    impl DenseMeshFixture {
+        fn new(faces: usize) -> Self {
+            let mut f = Self {
+                kinds: Vec::new(),
+                ids: Vec::new(),
+                refs: Vec::new(),
+                diameter: Vec::new(),
+                symbols: Vec::new(),
+                x0: Vec::new(),
+                y0: Vec::new(),
+                x1: Vec::new(),
+                y1: Vec::new(),
+                modes: Vec::new(),
+            };
+            let side = 30usize;
+            let step = 10.0 / side as f64;
+            for face in 0..faces {
+                let quad = face / 2;
+                let (gx, gy) = ((quad % side) as f64 * step, (quad / side) as f64 * step);
+                let [a, b, c] = if face % 2 == 0 {
+                    [[gx, gy], [gx + step, gy], [gx, gy + step]]
+                } else {
+                    [[gx + step, gy], [gx + step, gy + step], [gx, gy + step]]
+                };
+                let id = (8 << 32) | face as u64;
+                let style = ((face / 7) % 3) as u32;
+                for row in [[a[0], a[1], b[0], b[1]], [c[0], c[1], 0.0, 0.0]] {
+                    f.kinds.push(SceneRecordKind::PolyFill as u8);
+                    f.ids.push(id);
+                    f.refs.push(style);
+                    f.diameter.push(0.0);
+                    f.symbols.push(0);
+                    f.x0.push(row[0]);
+                    f.y0.push(row[1]);
+                    f.x1.push(row[2]);
+                    f.y1.push(row[3]);
+                    f.modes.push(SceneExpansionMode::TriangleFace as u8);
+                }
+            }
+            f
+        }
+
+        fn input(&self) -> SceneExpansionInput<'_> {
+            SceneExpansionInput {
+                kinds: &self.kinds,
+                stable_ids: &self.ids,
+                style_refs: &self.refs,
+                diameter: &self.diameter,
+                symbols: &self.symbols,
+                x0: &self.x0,
+                y0: &self.y0,
+                x1: &self.x1,
+                y1: &self.y1,
+                expansion_modes: &self.modes,
+            }
+        }
+    }
+
+    fn dense_mesh_scales(layout: PlotLayout) -> (AxisScale, AxisScale) {
+        (
+            AxisScale::new(ScaleKind::Linear, 0.0, 10.0, layout.left, layout.right, 1.0, false)
+                .unwrap(),
+            AxisScale::new(ScaleKind::Linear, 0.0, 10.0, layout.bottom, layout.top, 1.0, false)
+                .unwrap(),
+        )
+    }
+
+    fn dense_mesh_expand(
+        fixture: &DenseMeshFixture,
+        layout: PlotLayout,
+    ) -> (ExpandedSceneRecords, Vec<SceneDenseFill>) {
+        let (x, y) = dense_mesh_scales(layout);
+        let (records, styles, images, dense) = expand_scene_records_dense(
+            fixture.input(),
+            x,
+            y,
+            None,
+            &DENSE_FILL_RGBA,
+            &DENSE_STROKE_RGBA,
+            &DENSE_STROKE_WIDTH,
+            &[],
+            false,
+        )
+        .unwrap();
+        assert!(styles.is_none() && images.is_empty());
+        (records, dense)
+    }
+
+    fn dense_mesh_scene(
+        records: &ExpandedSceneRecords,
+        layout: PlotLayout,
+        dense: &[SceneDenseFill],
+    ) -> Result<Vec<u8>, SceneError> {
+        let (x, y) = dense_mesh_scales(layout);
+        Ok(SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &records.kinds,
+            &records.stable_ids,
+            &records.style_refs,
+            &DENSE_FILL_RGBA,
+            &DENSE_STROKE_RGBA,
+            &DENSE_STROKE_WIDTH,
+            &records.diameter,
+            &records.symbols,
+            &records.x0,
+            &records.y0,
+            &records.x1,
+            &records.y1,
+        )?
+        .with_dense_fill(dense)?
+        .encode())
+    }
+
+    fn dense_mesh_pixels(scene: &[u8], scale: f64) -> Vec<u8> {
+        let document = SceneDocument::decode(scene).unwrap();
+        let commands = document.to_raster_commands(scale).unwrap();
+        let (w, h) = (
+            (document.layout.viewport_width * scale) as usize,
+            (document.layout.viewport_height * scale) as usize,
+        );
+        let mut pixels = vec![0; w * h * 4];
+        assert!(crate::raster::rasterize_into(&commands, w, h, &mut pixels));
+        pixels
+    }
+
+    #[test]
+    fn dense_mesh_ranges_are_reported_only_above_the_polyfill_group_budget() {
+        let layout = PlotLayout::new(240.0, 180.0, 30.0, 10.0, 12.0, 26.0).unwrap();
+        let budget = PUBLIC_POLYFILL_GROUP_BUDGET;
+        let (at_budget, dense) = dense_mesh_expand(&DenseMeshFixture::new(budget), layout);
+        assert!(dense.is_empty());
+        let plain = dense_mesh_scene(&at_budget, layout, &[]).unwrap();
+        assert_eq!(dense_mesh_scene(&at_budget, layout, &dense).unwrap(), plain);
+        let (_, dense) = dense_mesh_expand(&DenseMeshFixture::new(budget + 1), layout);
+        assert_eq!(
+            dense,
+            [SceneDenseFill {
+                parent: 8,
+                start: 0,
+                end: (budget + 1) * 3,
+            }]
+        );
+    }
+
+    #[test]
+    fn dense_mesh_image_paints_the_scene_raster_of_the_same_faces() {
+        // Fractional margins: the image grid snaps outward to device pixels.
+        let layout = PlotLayout::new(240.0, 180.0, 30.3, 10.7, 12.4, 25.9).unwrap();
+        let (records, dense) = dense_mesh_expand(&DenseMeshFixture::new(1_700), layout);
+        assert_eq!(dense.len(), 1);
+        let direct = dense_mesh_scene(&records, layout, &[]).unwrap();
+        let tiered = dense_mesh_scene(&records, layout, &dense).unwrap();
+        let document = SceneDocument::decode(&tiered).unwrap();
+        let kinds: Vec<_> = document.records.iter().map(|record| record.kind).collect();
+        assert_eq!(kinds, [SceneRecordKind::Image]);
+        assert_eq!(document.images.len(), 1);
+        let (scale, grid) = dense_fill_grid(layout).unwrap();
+        assert_eq!((scale, grid), (2.0, [60.0, 24.0, 459.0, 309.0]));
+        assert!(document.images[0].smooth);
+        assert_eq!((document.images[0].width, document.images[0].height), (399, 285));
+        assert_eq!(document.records[0].coordinates, [30.0, 12.0, 229.5, 154.5]);
+        // The tiered image is exactly the faces the raster consumer paints at
+        // its own scale (2): equal up to straight-alpha rounding.
+        let (a, b) = (dense_mesh_pixels(&direct, 2.0), dense_mesh_pixels(&tiered, 2.0));
+        let max = a.iter().zip(&b).map(|(p, q)| p.abs_diff(*q)).max().unwrap();
+        assert!(max <= 3, "scale-2 max channel delta {max}");
+        // At scale 1 the bilinear 2x2 box filter matches 1x coverage closely.
+        let (a, b) = (dense_mesh_pixels(&direct, 1.0), dense_mesh_pixels(&tiered, 1.0));
+        let mean = a
+            .iter()
+            .zip(&b)
+            .map(|(p, q)| f64::from(p.abs_diff(*q)))
+            .sum::<f64>()
+            / a.len() as f64;
+        assert!(mean < 2.0, "scale-1 mean channel delta {mean}");
+    }
+
+    #[test]
+    fn dense_mesh_image_rides_smooth_xyim_planes_in_svg_and_raster() {
+        let layout = PlotLayout::new(240.0, 180.0, 30.0, 10.0, 12.0, 26.0).unwrap();
+        let (records, dense) = dense_mesh_expand(&DenseMeshFixture::new(1_100), layout);
+        let scene = dense_mesh_scene(&records, layout, &dense).unwrap();
+        validate_scene_batch(&scene).unwrap();
+        let document = SceneDocument::decode(&scene).unwrap();
+        let svg = document.to_svg();
+        assert_eq!(svg.matches("<image").count(), 1);
+        assert!(svg.contains("data-xy-dense-fill=\"true\""));
+        assert!(!svg.contains("image-rendering:pixelated"));
+        assert!(!svg.contains("<path"));
+        let commands = document.to_raster_commands(1.0).unwrap();
+        let at = commands.iter().position(|op| *op == 5).unwrap();
+        assert_eq!(commands[at + 25], 0, "dense fill samples bilinearly");
+        // XYIM format 1 round-trips; format 2 is rejected.
+        let images = parse_xyim(&encode_xyim(&document.images).unwrap()).unwrap();
+        assert!(images[0].smooth);
+        let mut bad = encode_xyim(&document.images).unwrap();
+        bad[XYIM_V1_HEADER_BYTES + 16] = 2;
+        assert!(parse_xyim(&bad).is_err());
+    }
+
+    #[test]
+    fn dense_mesh_grid_falls_back_to_scale_one_then_fails_closed() {
+        let small = PlotLayout::new(640.0, 480.0, 40.0, 10.0, 10.0, 30.0).unwrap();
+        assert_eq!(dense_fill_grid(small).unwrap().0, 2.0);
+        // 900 x 700 plot: 2x is 2.52M pixels, so the grid drops to scale 1.
+        let large = PlotLayout::new(950.0, 740.0, 40.0, 10.0, 10.0, 30.0).unwrap();
+        let (scale, grid) = dense_fill_grid(large).unwrap();
+        assert_eq!((scale, grid), (1.0, [40.0, 10.0, 940.0, 710.0]));
+        // A 1,500 x 1,400 plot exceeds MAX_SCENE_IMAGE_PIXELS even at scale 1.
+        let huge = PlotLayout::new(1_550.0, 1_440.0, 40.0, 10.0, 10.0, 30.0).unwrap();
+        assert!(dense_fill_grid(huge).is_none());
+        let (records, dense) = dense_mesh_expand(&DenseMeshFixture::new(1_100), huge);
+        assert_eq!(dense_mesh_scene(&records, huge, &dense), Err(SceneError::Limit));
     }
 }

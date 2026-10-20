@@ -104,9 +104,35 @@ function edgeFigure(name) {
       fixedDomains(f).scatter(x, y, { style: { color: "#3987e5" } });
       break;
     }
+    case "triangle_mesh_dense_fill": {
+      // #1006: 1,250 stroked, per-face colored triangles on Rust autorange.
+      const [x0, y0, x1, y1, x2, y2, value] = denseMeshColumns();
+      f.triangleMesh(x0, y0, x1, y1, x2, y2, { color: value, stroke: "#111827", strokeWidth: 0.5 });
+      break;
+    }
     default: throw new Error(`missing Node static-export edge builder for Rust registry case ${name}`);
   }
   return normalizeIds(f);
+}
+
+// A 25x25 quad grid as 1,250 triangles (#1006).
+function denseMeshColumns() {
+  const cols = 25;
+  const step = 8 / cols;
+  const n = cols * cols;
+  const out = Array.from({ length: 7 }, () => new Float64Array(2 * n));
+  for (let i = 0; i < n; i += 1) {
+    const gx = (i % cols) * step - 2;
+    const gy = Math.floor(i / cols) * step - 2;
+    const value = ((i * 7919) % 101) / 100;
+    for (const [face, x0, y0, x1, y1, x2, y2, v] of [
+      [i, gx, gy, gx + step, gy, gx, gy + step, value],
+      [n + i, gx + step, gy, gx + step, gy + step, gx, gy + step, 1 - value],
+    ]) {
+      [out[0][face], out[1][face], out[2][face], out[3][face], out[4][face], out[5][face], out[6][face]] = [x0, y0, x1, y1, x2, y2, v];
+    }
+  }
+  return out;
 }
 
 function failCloseFigure(name) {
@@ -135,7 +161,14 @@ function failCloseFigure(name) {
     }
     case "band_shape": f.traces = []; f.area([0], [1]); break;
     case "segment_shape": fixedDomains(f); f.traces = []; f.segments([0, 1], [0, 1], [1, 2], [1, 2]); f.traces[0].x1 = Float64Array.of(1); break;
-    case "triangle_mesh_limit": { const values = new Float64Array(1025); fixedDomains(f); f.traces = []; f.triangleMesh(values, values, values, values, values, values); break; }
+    case "triangle_mesh_limit": {
+      // Each mesh is under the #1006 dense-fill threshold; together they
+      // exceed the shared 1,024 PolyFill-group budget.
+      const values = new Float64Array(600); fixedDomains(f); f.traces = [];
+      f.triangleMesh(values, values, values, values, values, values);
+      f.triangleMesh(values, values, values, values, values, values);
+      break;
+    }
     default: throw new Error(`missing Node fail-close builder for Rust registry case ${name}`);
   }
   return f;

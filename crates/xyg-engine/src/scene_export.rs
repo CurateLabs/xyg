@@ -74,7 +74,9 @@ use crate::lod_plan::{
     payload_tier, DECIMATION_THRESHOLD, DIRECT_SOFT_CEILING, MAX_SCREEN_DIM, PAYLOAD_KIND_LINE,
     PAYLOAD_TIER_DECIMATED,
 };
-use crate::scene::{SceneError, MAX_SCENE_IMAGE_PIXELS, MAX_SCENE_MARKS};
+use crate::scene::{
+    SceneError, MAX_SCENE_IMAGE_PIXELS, MAX_SCENE_MARKS, PUBLIC_POLYFILL_GROUP_BUDGET,
+};
 use crate::scene_xyta_trace_observations_materialize::{
     xyta_paint_plane_fits, XYTA_MESH_PAINT_ITEM_BYTES, XYTA_SCATTER_PAINT_ITEM_BYTES,
 };
@@ -101,7 +103,7 @@ const MAX_XYEP_KEY_BYTES: usize = 256;
 const MAX_XYEP_TRACES: usize = 4_096;
 const MAX_XYEP_ANNOTATIONS: usize = 128;
 const MAX_XYEP_AXES: usize = 16;
-const MAX_PUBLIC_TRIANGLE_MESHES: usize = 1_024;
+const MAX_PUBLIC_TRIANGLE_MESHES: usize = PUBLIC_POLYFILL_GROUP_BUDGET;
 const MAX_PUBLIC_HEATMAP_CELLS: usize = 10_000;
 const MAX_PUBLIC_POINTS: usize = 10_000;
 const MAX_PUBLIC_STEP_POINTS: usize = 10_001;
@@ -430,6 +432,9 @@ fn kind_band(kind: u8) -> bool {
 ///   channels, or forced direct) draws one record per point up to
 ///   `DIRECT_SOFT_CEILING`, which is also `MAX_SCENE_MARKS`. Graph node and
 ///   companion-role scatters keep their own budgets.
+/// - A triangle mesh (not a joined fill) above the PolyFill-group budget
+///   takes the #1006 dense-fill Image tier; its expanded records stay bounded
+///   by `MAX_SCENE_MARKS` in the per-kind checks.
 ///
 /// Every other kind keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
 fn public_lod_tier_admits(
@@ -451,6 +456,11 @@ fn public_lod_tier_admits(
             ) == Some(PAYLOAD_TIER_DECIMATED)
         }
         KIND_SCATTER if trace_flags & TRACE_DENSITY_BLIT != 0 => true,
+        // #1006 dense-fill tier: a mesh above the PolyFill-group budget is
+        // one Rust-rasterized Image record (bounded again below).
+        KIND_TRIANGLE_MESH => {
+            n_x as usize > MAX_PUBLIC_TRIANGLE_MESHES && trace_flags & TRACE_JOINED_FILL == 0
+        }
         KIND_SCATTER => {
             figure_flags & FLAG_GRAPH_MARKS == 0
                 && role.is_empty()
@@ -1317,6 +1327,18 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             ],
             KIND_VIOLIN => &["color", "opacity", "role"],
             KIND_HEXBIN => &["color", "opacity", "hex_dx", "hex_dy", "role", "reduce"],
+            // Rust's figure autorange spans all three vertex columns; mesh
+            // paint and the joined-fill ring never move that domain (#1006).
+            KIND_TRIANGLE_MESH => &[
+                "opacity",
+                "role",
+                "color",
+                "fill_opacity",
+                "stroke",
+                "stroke_width",
+                "stroke_opacity",
+                "joined_fill",
+            ],
             _ => &[],
         };
         !allowed.is_empty() && !extra_key(&trace.style_keys, allowed)
@@ -1399,6 +1421,7 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // #1006: Scene rows the row packer emits across the figure, bounded by
     // `MAX_SCENE_MARKS` before any host materializes columns or planes.
     let mut packed_rows = 0usize;
+    let mut dense_fill_records = 0usize;
     for trace in &traces {
         let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {
             MAX_PUBLIC_STEP_POINTS
@@ -1485,9 +1508,24 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             if trace.flags & TRACE_MESH_PRESENT == 0 {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
             }
-            public_triangle_mesh_count = public_triangle_mesh_count
-                .checked_add(trace.n_x as usize)
-                .ok_or(SceneError::Limit)?;
+            if trace.n_x as usize > MAX_PUBLIC_TRIANGLE_MESHES
+                && trace.flags & TRACE_JOINED_FILL == 0
+            {
+                // #1006 dense-fill tier: one Image record, not n PolyFill
+                // groups; its 3 expanded records per face share the Scene
+                // mark ceiling until Rust rasterizes them.
+                dense_fill_records = (trace.n_x as usize)
+                    .checked_mul(3)
+                    .and_then(|records| dense_fill_records.checked_add(records))
+                    .ok_or(SceneError::Limit)?;
+                if dense_fill_records > MAX_SCENE_MARKS {
+                    return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+                }
+            } else {
+                public_triangle_mesh_count = public_triangle_mesh_count
+                    .checked_add(trace.n_x as usize)
+                    .ok_or(SceneError::Limit)?;
+            }
             if trace.flags & TRACE_MESH_LEN_EQUAL == 0
                 || public_triangle_mesh_count > MAX_PUBLIC_TRIANGLE_MESHES
                 || trace.flags & TRACE_MESH_FINITE == 0

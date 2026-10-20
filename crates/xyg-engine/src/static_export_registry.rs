@@ -247,6 +247,9 @@ pub const REQUIRED_EDGE_CONCERNS: &[&str] = &[
     // payload's LOD tiers (line M4, scatter density) in static export.
     "browser-lod-tier",
     "large-source",
+    // #1006: data rasterized in Rust to one Image record (density blit,
+    // dense triangle mesh above the 1,024 PolyFill-group budget).
+    "image-tier",
 ];
 
 pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
@@ -327,7 +330,16 @@ pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
         name: "scatter_density_large",
         shape: "scatter",
         axis_mode: "authored-linear-xy",
-        concerns: &["browser-lod-tier", "large-source"],
+        concerns: &["browser-lod-tier", "image-tier"],
+        reason_prefix: "",
+    },
+    StaticExportEdgeCase {
+        // #1006: a stroked 1,250-face mesh on the shared Rust autorange is one
+        // dense-fill Image painted with the faces' fills and closed outlines.
+        name: "triangle_mesh_dense_fill",
+        shape: "triangle_mesh",
+        axis_mode: "autorange-linear-xy",
+        concerns: &["image-tier", "large-source"],
         reason_prefix: "",
     },
 ];
@@ -412,6 +424,8 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS",
     },
     StaticExportFailClose {
+        // Two meshes of 600 faces each: neither takes the #1006 dense-fill
+        // tier, but together they exceed the shared PolyFill-group budget.
         name: "triangle_mesh_limit",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH",
     },

@@ -76,8 +76,10 @@ opacity (ABI 196) and, from ABI 386, Rust-mapped per-item size (#1006); per-item
 vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
 plot clipping, legend swatch, SVG/raster/browser lowering, and the public
 PolyFill group budget (companion traces share the 1,024-group ceiling).
-`joined_fill` plus per-face paint, alternate axes, polar meshes, and
-larger meshes remain compatibility behavior.
+A non-joined mesh above that budget is rasterized by Rust into one static
+dense-fill Image (#1006; scene-ir.md "Public static LOD tiers").
+`joined_fill` plus per-face paint, alternate axes, and polar meshes remain
+compatibility behavior.
 
 ABI 98 removes composition-violin geometry policy from both hosts. They retain
 coercion, group/category factorization, rollback, and literal style authoring,

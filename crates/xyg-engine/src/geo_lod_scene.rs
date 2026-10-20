@@ -186,6 +186,7 @@ pub fn compile(
                         width: columns as u32,
                         height: rows as u32,
                         rgba,
+                        smooth: false,
                     });
                 }
             }

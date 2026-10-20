@@ -135,8 +135,9 @@ Cartesian heatmap Rects (one regular cell per Rect, sharing the 10,000-bin
 histogram ceiling), and finite
 literal solid ribbons. Each accepted mesh face
 is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
-`joined_fill` plus per-face paint, polar meshes, alternate axes, and
-larger meshes remain compatibility behavior. For ribbons,
+`joined_fill` plus per-face paint, polar meshes, and alternate axes remain
+compatibility behavior; a non-joined mesh above the 1,024-group budget is one
+Rust-rasterized static dense-fill Image (#1006) in both hosts. For ribbons,
 Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the
 axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
 Band samples. Two-ended gradients, polar projection, LOD/density, and

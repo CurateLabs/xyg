@@ -177,10 +177,13 @@ line SVG/native PNG) likewise run at full size on those tiers: a 100k scatter
 is a direct tier (one marker per point up to `DIRECT_SOFT_CEILING`), and a
 100k line is M4-decimated in Rust before Scene packing. Layered warm-ups
 (scatter + line) and polar figures consume the shared Rust autorange, so they
-need no authored domains. Rows whose kind still has a hard static budget keep
-it and say so: the stroked triangle-mesh row must stay within the
-1,024-triangle public mesh budget with authored domains (hexbin and mesh
-density tiers are tracked separately). The polar rose rows in
+need no authored domains. The stroked triangle-mesh row
+(`test_native_png_export_stroked_triangle_mesh`, 163,840 per-face colored,
+stroked faces at main's full size) consumes the same autorange and exports on
+the static dense-fill tier: Rust rasterizes the faces into one smooth Image
+record instead of 163,840 PolyFill groups (scene-ir.md "Dense-fill rule"), so
+the row measures that rasterization at full size. Hexbin keeps its own static
+budget (#1023). The polar rose rows in
 `benchmarks/test_codspeed_polar.py` run unmarked: native SVG writes exact `A`
 arcs from the Scene's `XYWA` sidecar (scene-ir.md "Polar wedge SVG arcs") and
 is the control for the flattening native-PNG row.

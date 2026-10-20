@@ -44,7 +44,7 @@
 //! unchanged.
 
 use crate::scene::{
-    decode_tick_labels, expand_scene_records_with_y2, merge_dash_gradients,
+    decode_tick_labels, dense_fill_grid, expand_scene_records_dense, merge_dash_gradients,
     resolve_numeric_tick_formats, resolve_y2_tick_format, scene_text_advance, split_scene_extras,
     AxisScale, PlotLayout,
     ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius,
@@ -799,7 +799,7 @@ fn encode_assembled_with_radii(
         })
         .transpose()
         .map_err(map_scene)?;
-    let (records, painted_styles, images) = expand_scene_records_with_y2(
+    let (records, painted_styles, images, dense_fill) = expand_scene_records_dense(
         SceneExpansionInput {
             kinds: &parsed.kinds,
             stable_ids: &parsed.stable_ids,
@@ -822,6 +822,11 @@ fn encode_assembled_with_radii(
         !polar_bytes.is_empty(),
     )
     .map_err(map_expansion)?;
+    // #1006: the dense-fill Image is bounded like every Scene image; a plot
+    // too large for it even at scale 1 fails closed with the LOD reason.
+    if !dense_fill.is_empty() && dense_fill_grid(layout).is_none() {
+        return Err(EncodeAssembledError::new(EncodeAssembledCode::Lod, 0));
+    }
     let (fill_rgba, stroke_rgba, stroke_width) = match &painted_styles {
         Some(styles) => (
             styles.fill_rgba.as_slice(),
@@ -936,6 +941,8 @@ fn encode_assembled_with_radii(
         .map_err(map_scene)?
         .with_corner_radii(corner_radii)
         .map_err(map_scene)?
+        .with_dense_fill(&dense_fill)
+        .map_err(map_expansion)?
         .encode())
 }
 

@@ -11,7 +11,8 @@
     "empty",
     "linear-scale",
     "browser-lod-tier",
-    "large-source"
+    "large-source",
+    "image-tier"
   ],
   "shapes": [
     {
@@ -280,6 +281,16 @@
       "axis_mode": "authored-linear-xy",
       "concerns": [
         "browser-lod-tier",
+        "image-tier"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "triangle_mesh_dense_fill",
+      "shape": "triangle_mesh",
+      "axis_mode": "autorange-linear-xy",
+      "concerns": [
+        "image-tier",
         "large-source"
       ],
       "reason_prefix": ""

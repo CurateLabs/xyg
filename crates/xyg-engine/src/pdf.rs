@@ -1307,13 +1307,20 @@ impl Converter {
         name
     }
 
-    fn image_xobject(&mut self, w: u32, h: u32, rgb: &[u8], alpha: Option<&[u8]>) -> String {
+    fn image_xobject(
+        &mut self,
+        w: u32,
+        h: u32,
+        rgb: &[u8],
+        alpha: Option<&[u8]>,
+        interpolate: bool,
+    ) -> String {
         let smask_ref = if let Some(alpha) = alpha {
             let smask_num = self.pdf.reserve();
             self.pdf.put_stream(
                 smask_num,
                 &format!(
-                    "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceGray /BitsPerComponent 8 /Interpolate false "
+                    "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceGray /BitsPerComponent 8 /Interpolate {interpolate} "
                 ),
                 alpha,
             );
@@ -1325,7 +1332,7 @@ impl Converter {
         self.pdf.put_stream(
             num,
             &format!(
-                "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Interpolate false {smask_ref}"
+                "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Interpolate {interpolate} {smask_ref}"
             ),
             rgb,
         );
@@ -1783,7 +1790,10 @@ impl Converter {
         }
         let href = el.attr("href").unwrap_or("");
         let (w_px, h_px, rgb, alpha) = decode_data_url_png(href)?;
-        let name = self.image_xobject(w_px, h_px, &rgb, alpha.as_deref());
+        // Scene emits `pixelated` for cell images; the unstyled #1006
+        // dense-fill raster is anti-aliased device pixels and interpolates.
+        let interpolate = style.is_empty();
+        let name = self.image_xobject(w_px, h_px, &rgb, alpha.as_deref(), interpolate);
         let x = parse_float(el.attr("x"), 0.0, "x")?;
         let y = parse_float(el.attr("y"), 0.0, "y")?;
         let w = parse_float(el.attr("width"), 0.0, "width")?;
