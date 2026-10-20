@@ -258,7 +258,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging enforces 1,504 KiB raw / 616 KiB gzip limits (raised from 1,472 / 608 KiB by the Scene v33 secondary-y axis, #1006: measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The release compiler and pinned Binaryen 132 `-O3
+packaging enforces 1,504 KiB raw / 624 KiB gzip limits. The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The static-export LOD tiers, layered/polar autorange admission, and the `XYWA` exact polar wedge-arc encode/validate/SVG path (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs") then raised only the gzip limit to 624 KiB: 1,530,960 raw / 631,888 gzip6 bytes against main's 1,520,573 / 627,912 measured with the same local toolchain (+10,387 raw / +3,976 gzip), which exceeded the 616 KiB gzip limit by 1,104 bytes; the raw limit keeps 9,136 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
