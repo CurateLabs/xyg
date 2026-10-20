@@ -24,8 +24,39 @@ def _write(name: str, table: pa.Table) -> None:
     print(f"wrote {path} rows={table.num_rows}")
 
 
+def _hierarchy_fixtures() -> None:
+    """Flat node tables over the `dag` result-fixture base with a `parent_uuid` column.
+
+    Valid forest: n1 -> n0, n2 -> n1, n3 root (n0 root). The invalid variants
+    break exactly one rule each so the Rust composition proves every stable
+    failure code (unknown parent, self-parent, cycle).
+    """
+    source = ROOT / "results" / "base-dag-nodes.arrow"
+    with pa.OSFile(str(source), "rb") as handle:
+        rows = pa.ipc.open_stream(handle).read_all().to_pylist()
+    ids = [row["n"]["node_uuid"] for row in rows]
+    unknown = bytes([0xEE]) * 16
+
+    def table(parents: list[bytes | None]) -> pa.Table:
+        return pa.table(
+            {
+                "node_uuid": pa.array(ids, type=pa.binary(16)),
+                "parent_uuid": pa.array(parents, type=pa.binary(16)),
+            }
+        )
+
+    _write("hierarchy_dag_nodes.arrow", table([None, ids[0], ids[1], None]))
+    _write("hierarchy_dag_nodes_unknown_parent.arrow", table([None, unknown, None, None]))
+    _write("hierarchy_dag_nodes_self_parent.arrow", table([None, ids[1], None, None]))
+    _write("hierarchy_dag_nodes_cycle.arrow", table([None, ids[2], ids[1], None]))
+    # Every node an explicit root (null parent): conflicts with the forest above
+    # when a node is declared both ways across tables, in either order.
+    _write("hierarchy_dag_roots.arrow", table([None, None, None, None]))
+
+
 def main() -> None:
     ROOT.mkdir(parents=True, exist_ok=True)
+    _hierarchy_fixtures()
     nodes = pa.table(
         {
             "node_uuid": pa.array(

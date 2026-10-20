@@ -107,6 +107,7 @@ pub enum TemporalError {
     Disposed = -13,
     StaleRevision = -14,
     SelfEcho = -15,
+    SelectionTooLarge = -16,
 }
 
 /// Canonical temporal column: UTC micros + validity + timezone + precision.

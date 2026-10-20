@@ -13840,7 +13840,7 @@ mod graphforge_ffi_tests {
             assert!(tsv.starts_with("schema\tversion\tdisposition"));
             assert!(tsv.contains("\nnode-score\t1\tnode-layer\t"));
         }
-        assert_eq!(xyg_graphforge_composition_version(), 1);
+        assert_eq!(xyg_graphforge_composition_version(), 2);
     }
 }
 

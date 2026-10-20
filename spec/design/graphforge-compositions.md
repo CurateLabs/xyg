@@ -145,7 +145,8 @@ any mix of, in order:
   `edge_uuid` + `src_uuid`/`dst_uuid` (relationships), or `nodes` +
   `relationships` lists (paths), including lists of those structs — e.g.
   `MATCH (n) RETURN n` and `MATCH ()-[r]->() RETURN r`;
-- flat node tables (`node_uuid`) and flat edge tables (`edge_uuid` plus
+- flat node tables (`node_uuid`, optionally `parent_uuid`: the compound
+  hierarchy, see below) and flat edge tables (`edge_uuid` plus
   `src_uuid`/`dst_uuid` or `source_uuid`/`target_uuid`), UUIDs as
   `FixedSizeBinary(16)` or canonical text;
 - raw packed UUID planes (`base.node_uuid`, `base.edge_uuid`,
@@ -159,6 +160,20 @@ names come from a `name` property/column (`label` first for flat tables), the
 node type from `labels[0]`, and the relationship type from `rel_type`. Bounds:
 20M nodes, 50M relationships (`GF_COMPOSE_TOO_LARGE`). No layer ever mutates
 the base graph: the composed node/edge order is the base order.
+
+**Hierarchy (`parent_uuid`).** A flat node table may carry a nullable
+`parent_uuid` column (same name as the Python `GraphData` mapping default). A
+null parent is a root. Parents resolve to dense base indices through the same
+resolver as `xyg_graph_projection_create` (`projection::resolve_parents`) and
+must form a forest, validated before anything is composed: an unknown parent is
+`GF_BASE_PARENT_UNKNOWN`, a node naming itself `GF_BASE_PARENT_SELF`, a cycle
+`GF_BASE_PARENT_CYCLE`, a nil parent `GF_BASE_NULL_IDENTITY`, and a node seen in
+two rows with different parents `GF_BASE_PARENT_CONFLICT`. Failure is atomic: no
+document is produced. The hierarchy is part of the document (§5.3
+`node.parent`), so native, direct-browser, Python, and Node hosts see one forest
+and no host lowers parents itself. When a layer hides a parent, its children
+attach to the nearest visible ancestor (recorded as
+`GF_COMPOSE_PARENT_REPARENTED`, count of re-attached children).
 
 ### 4.2 Generation identity
 
@@ -301,7 +316,7 @@ count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIE
 `GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_COMPOSE_EMPTY_PATHS`,
 `GF_COMPOSE_PATH_LABELS_OMITTED`, `GF_COMPOSE_PATHS_HIDDEN`,
 `GF_COMPOSE_EMBEDDING_2D`, `GF_COMPOSE_SCENE_EMPTY`,
-`GF_BASE_MERGED_ENTITIES`.
+`GF_COMPOSE_PARENT_REPARENTED`, `GF_BASE_MERGED_ENTITIES`.
 
 ## 5. Wire contract
 
@@ -329,8 +344,9 @@ bytes each), 8 UTF-8, 9 text list (`count + 1` u64 offsets, then UTF-8).
 All little-endian. Sections are keyed by `(name, index)`; `index` is the layer
 for `layer.*` sections. Hosts decode sections generically and ignore unknown
 document sections, so sections can be added without a version bump;
-`composition.version` (currently 1) bumps when an existing section's meaning
-changes. Requests are strict: unknown request sections fail.
+`composition.version` (currently 2) bumps when an existing section's meaning
+changes. Version 2 makes the document the single carrier of the compound
+hierarchy (`node.parent`); sessions refuse any other version. Requests are strict: unknown request sections fail.
 
 ### 5.2 Request (`XYGQ`)
 
@@ -363,6 +379,7 @@ optionally `error.field`. A graph composition holds:
 | `graph.directed`, `base.generation`, `base.counts` | base facts |
 | `node.uuid`, `node.base_row`, `node.name`, `node.type` | identity (hidden nodes removed; `base_row` maps back) |
 | `node.class`, `node.epistemic`, `node.status`, `node.metric`, `node.flags`, `node.label`, `node.label_priority` | semantic planes |
+| `node.parent` (u32), `node.parent.valid` (u8) | compound hierarchy in composed node indices (`u32::MAX` / `0` for roots); present only when a base node table carried `parent_uuid` (§4.1); absent means no hierarchy |
 | `edge.uuid`, `edge.base_row`, `edge.source`, `edge.target`, `edge.type`, `edge.derived`, `edge.layer` | identity and dense endpoints (`edge.derived` 1 marks derived edges; persisted edges keep their UUID) |
 | `edge.order` (i64, −1 none), `edge.path` (u64) | step index and overlay index of ordered steps and Euler trail edges |
 | `edge.class`, `edge.epistemic`, `edge.status`, `edge.metric`, `edge.flags`, `edge.label`, `edge.label_priority` | semantic planes and edge labels (Euler step indices) |
