@@ -3260,7 +3260,7 @@ def scene_xyaf_pack(
     dash: Sequence[float],
     text: bytes,
 ) -> bytes:
-    """Pack one XYAF v1 record via ``xyg_scene_xyaf_pack`` (ABI 319)."""
+    """Pack one XYAF v2 record via ``xyg_scene_xyaf_pack`` (ABI 319)."""
     pack_in = _SceneXyafPackIn(
         int(index) & 0xFFFFFFFF,
         int(kind_code) & 0xFF,
@@ -6557,7 +6557,7 @@ def scene_pack_annotation_facts(
     x_domain: tuple[float, float],
     y_domain: tuple[float, float],
 ) -> bytes:
-    """Pack XYAF v1 annotation facts into an XYAO envelope (M2 #271)."""
+    """Pack XYAF v2 annotation facts into an XYAO envelope (M2 #271)."""
     payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
     extra = 32 + 512 * 56
     out = np.zeros(MAX_SCENE_ANNOTATION_INPUT_BYTES + extra, dtype=np.uint8)

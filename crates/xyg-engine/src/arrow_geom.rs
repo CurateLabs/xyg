@@ -119,7 +119,7 @@ fn toward(px: f64, py: f64, qx: f64, qy: f64) -> (f64, f64) {
     ((qx - px) / d, (qy - py) / d)
 }
 
-fn label_clear_exit(style: &[f64], tangent: (f64, f64)) -> f64 {
+pub(crate) fn label_clear_exit(style: &[f64], tangent: (f64, f64)) -> f64 {
     let extents = [style[7], style[8], style[9], style[10]];
     if extents.iter().any(|part| !part.is_finite() || *part < 0.0) {
         return 0.0;

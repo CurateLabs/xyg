@@ -832,6 +832,15 @@ pub struct XygXyafBulkStyleIn {
     pub label_border_width: f64,
     pub rotation_present: i32,
     pub rotation: f64,
+    /// Arrow-only facts (#1006); absent strings/numbers keep the default arrow.
+    pub head_style: XygStringRef,
+    pub tail_style: XygStringRef,
+    pub start_offset: XygStringRef,
+    pub label_clear: XygStringRef,
+    pub gap_start_present: i32,
+    pub gap_start: f64,
+    pub gap_end_present: i32,
+    pub gap_end: f64,
     pub extra_style_key_count: u32,
 }
 
@@ -939,6 +948,12 @@ struct XyafBulkAnnotationOwned {
     style_label_opacity: Option<f64>,
     style_label_border_width: Option<f64>,
     style_rotation: Option<f64>,
+    style_head_style: Option<String>,
+    style_tail_style: Option<String>,
+    style_start_offset: Option<String>,
+    style_label_clear: Option<String>,
+    style_gap_start: Option<f64>,
+    style_gap_end: Option<f64>,
     record_index: Option<u32>,
 }
 
@@ -980,6 +995,12 @@ impl XyafBulkAnnotationOwned {
                 label_opacity: self.style_label_opacity,
                 label_border_width: self.style_label_border_width,
                 rotation: self.style_rotation,
+                head_style: self.style_head_style.as_deref(),
+                tail_style: self.style_tail_style.as_deref(),
+                start_offset: self.style_start_offset.as_deref(),
+                label_clear: self.style_label_clear.as_deref(),
+                gap_start: self.style_gap_start,
+                gap_end: self.style_gap_end,
                 extra_keys: &self.style_extra_keys,
             },
         }
@@ -1061,6 +1082,20 @@ unsafe fn xyaf_annotation_owned_from_c(
             } else {
                 None
             },
+            style_head_style: opt_str(&style.head_style)?.map(str::to_string),
+            style_tail_style: opt_str(&style.tail_style)?.map(str::to_string),
+            style_start_offset: opt_str(&style.start_offset)?.map(str::to_string),
+            style_label_clear: opt_str(&style.label_clear)?.map(str::to_string),
+            style_gap_start: if style.gap_start_present != 0 {
+                Some(style.gap_start)
+            } else {
+                None
+            },
+            style_gap_end: if style.gap_end_present != 0 {
+                Some(style.gap_end)
+            } else {
+                None
+            },
             record_index: if row.index_override_present != 0 {
                 Some(row.index_override)
             } else {
@@ -1071,7 +1106,7 @@ unsafe fn xyaf_annotation_owned_from_c(
     ))
 }
 
-/// Bulk-pack authored annotations into concatenated XYAF v1 records (ABI 324).
+/// Bulk-pack authored annotations into concatenated XYAF v2 records (ABI 324).
 #[no_mangle]
 pub unsafe extern "C" fn xyg_scene_xyaf_bulk_pack(
     annotations: *const XygXyafBulkAnnotationIn,

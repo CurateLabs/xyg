@@ -39,9 +39,42 @@ which covers user-visible releases across the whole package.
 - `bbox=dict(boxstyle="round...")` still fails closed, now with the stable
   `XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE` instead of a Scene allowlist
   message; the Scene label box has no corner radius.
-- Reference-corpus cases 25 and 53 clear this gate. They still stop at separate,
-  unrelated Scene gaps (arrow head vocabulary, `axes_fraction` table cells,
-  zero-point `bxp` fliers) tracked in #1006.
+- Reference-corpus cases 25 and 53 clear this gate. Case 25's arrow head vocabulary
+  gap is closed by the entry below; case 53 passes with the annotation coordinate
+  spaces entry above (#1006).
+
+## Static `annotate(arrowprops=dict(arrowstyle=...))` on the Rust Scene — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+Corpus case 25 (`annotate(..., arrowprops=dict(arrowstyle="->"))`) stopped static
+export with `Scene arrow style does not encode ['head_style', 'label_clear',
+'start_offset']`: the Scene arrow was a fixed filled triangle drawn from the
+label anchor. The Rust-owned arrow now carries a bounded vocabulary (Scene v34,
+`XYAR` v2 / `XYAF` v2): head/tail ends (`triangle`, open `v`, `none`), start
+offset, label clearance and shrink in pixels. `->` is an open V (two strokes, no
+fill), `<-`/`<->` put the V at the start/both ends, `-` is a plain shaft, and the
+shaft starts at the label box edge plus the margin instead of its centre. The
+admitted bare `arrowstyle` set is `-`, `->`, `<-`, `<->`, `-|>`; bars, filled tails,
+tapered shafts and curved connections remain explicit rejections (see
+`compat.md`). Python and Node produce byte-identical Scenes for every admitted
+style (`tests/test_arrow_style_cross_host.py`); the pyplot regression is
+`tests/pyplot/test_annotate_arrowstyle_1006.py`. Unmapped names (`]->`, `-<`,
+`<-[`, unknown strings) and every comma-suffixed option string (including
+`head_length`/`head_width` and malformed options) retain their original source
+as an unencoded `arrowstyle` fact until static admission rejects it with
+`Scene arrow style does not encode [...]`. They cannot silently become a
+triangle or lose their authored options. The Node normal test gate also runs
+`arrow-painter-hydration.test.mjs`.
+
+`shrinkA`/`shrinkB` were previously dropped; they now map from points to the pixel
+shrink (2 pt default, so the tip stops 2 pt short of `xy` as in Matplotlib), and the
+Scene arrow honors every shrink/clearance fact exactly or fails closed. The
+straight-arrow run grammar bumps Scene to v34, and the browser painter hydrates the
+open-head runs.
+
+With the per-annotation label styles above, reference-corpus case 25 (arrow plus a
+differently styled `text`) passes on the Matplotlib 3.11.0 lane. With cases 47
+(hexbin groups, #1023) and 53 already passing on main, the corpus is 54/55; the only
+remaining case is 26 (`twinx`, PRs 2 and 3, #1037).
 
 ## Reference corpus restore on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 

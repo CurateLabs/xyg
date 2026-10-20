@@ -1651,6 +1651,12 @@ _ADMITTED_XYAF_STYLE_KEYS = frozenset(
         "label_opacity",
         "label_border_width",
         "rotation",
+        "head_style",
+        "tail_style",
+        "start_offset",
+        "label_clear",
+        "gap_start",
+        "gap_end",
     }
 )
 
@@ -1677,6 +1683,14 @@ class _XygXyafBulkStyleIn(ctypes.Structure):
         ("label_border_width", ctypes.c_double),
         ("rotation_present", ctypes.c_int32),
         ("rotation", ctypes.c_double),
+        ("head_style", _XygStringRef),
+        ("tail_style", _XygStringRef),
+        ("start_offset", _XygStringRef),
+        ("label_clear", _XygStringRef),
+        ("gap_start_present", ctypes.c_int32),
+        ("gap_start", ctypes.c_double),
+        ("gap_end_present", ctypes.c_int32),
+        ("gap_end", ctypes.c_double),
         ("extra_style_key_count", ctypes.c_uint32),
     ]
 
@@ -1772,6 +1786,8 @@ def _marshal_xyaf_style(
     label_opacity_present, label_opacity = opt_num("label_opacity")
     label_border_width_present, label_border_width = opt_num("label_border_width")
     rotation_present, rotation = opt_num("rotation")
+    gap_start_present, gap_start = opt_num("gap_start")
+    gap_end_present, gap_end = opt_num("gap_end")
     return (
         _XygXyafBulkStyleIn(
             opt_css("color"),
@@ -1794,6 +1810,14 @@ def _marshal_xyaf_style(
             label_border_width,
             rotation_present if not skip_rotation else 0,
             rotation,
+            opt_css("head_style"),
+            opt_css("tail_style"),
+            opt_css("start_offset"),
+            opt_css("label_clear"),
+            gap_start_present,
+            gap_start,
+            gap_end_present,
+            gap_end,
             len(extra_keys),
         ),
         bytes(extra_blob),

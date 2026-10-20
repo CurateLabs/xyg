@@ -6408,7 +6408,7 @@ const PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES = 1 << 28;
 const SCENE_XYAF_PACK_IN_BYTES = 232;
 const SCENE_XYCF_PACK_IN_BYTES = 344;
 
-/** Pack one XYAF v1 record via `xyg_scene_xyaf_pack` (ABI 319). */
+/** Pack one XYAF v2 record via `xyg_scene_xyaf_pack` (ABI 319). */
 export function sceneXyafPack({
   index = 0,
   kindCode = 0,

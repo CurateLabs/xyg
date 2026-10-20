@@ -215,6 +215,12 @@ function packProductFacts({
   return decodePackedRows(out, code);
 }
 
+// Stable reason for an arrow style value outside the Rust-owned vocabulary
+// (`scene_arrow.rs`); Python raises the same text.
+const ARROW_STYLE_UNSUPPORTED =
+  "XYG_SCENE_UNSUPPORTED_ARROW_STYLE: Scene arrows encode head_style none|triangle|v, " +
+  "tail_style none|v, finite signed start_offset pixels in [-4096, 4096], " +
+  "and finite non-negative label_clear/gap_* pixels in [0, 4096]";
 const XYAF_KIND_CODES = { text: 0, arrow: 1, callout: 2, rule: 3, band: 4, marker: 5 };
 const XYAF_FACT_HAS_WRAP = 1 << 0;
 const XYAF_FACT_HAS_TEXT = 1 << 1;
@@ -448,6 +454,7 @@ function raiseXyafBulkError(error, annotations) {
       "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE: Scene text annotations support data, axes_fraction, xaxis_transform and yaxis_transform coordinates only; figure_fraction needs the figure rectangle a panel Scene does not own",
     );
   }
+  if (code === -15) throw new RangeError(ARROW_STYLE_UNSUPPORTED);
   if (code === -6) {
     if (Object.hasOwn(style, "label_opacity")) {
       throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);

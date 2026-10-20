@@ -14,6 +14,13 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- ABI 390 / Scene v34: bounded static straight-arrow vocabulary (#1006). Rust
+  (`scene_arrow.rs`) owns open `v`, filled-triangle and absent heads and tails
+  (`->`, `<-`, `<->`, `-`, `-|>`), start offset, label clearance and pixel shrink,
+  drawn identically in SVG, raster and PDF; `XYAR` v2 / `XYAF` v2 carry the facts
+  (v1 `XYAF` is rejected), and unsupported styles fail closed with
+  `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`. `annotate(arrowprops=)` maps `arrowstyle`,
+  `shrinkA` and `shrinkB` onto it, and the browser painter hydrates the new runs.
 - ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
   (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
   `XYY2` block (scale, axis chrome record, resolved typography and paints, tick

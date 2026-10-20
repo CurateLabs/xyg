@@ -16,7 +16,8 @@ function cssRgba(bytes: Uint8Array): string {
   return `rgba(${bytes[0]} ${bytes[1]} ${bytes[2]} / ${bytes[3] / 255})`;
 }
 
-function compilePainter(painter: ArrayBuffer, detachedColors = false) {
+// Exported for the Node painter-hydration regression only; not a public entry.
+export function compilePainter(painter: ArrayBuffer, detachedColors = false) {
   // Rust has already resolved these bytes. Detached borrowed surfaces need
   // hex input to avoid computed CSS; ordinary hydration keeps its DOM format.
   const rgba = (bytes: Uint8Array) => detachedColors
@@ -159,10 +160,12 @@ function compilePainter(painter: ArrayBuffer, detachedColors = false) {
           : { kind: "band", axis: "y", start: y0, end: y1, style: { color: fill, opacity: 1 }, aria_label: "Horizontal reference band" });
       } else if (annotationKind === 3 && kind === 0 && count === 1) {
         annotations.push({ kind: "marker", x: px(x), y: px(y), size: diameter, symbol: SYMBOLS[symbol], style: { color: fill, stroke_color: stroke, stroke_width: strokeWidth, opacity: 1 }, aria_label: "Reference marker" });
-      } else if (annotationKind === 5 && kind === 1 && count === 2) {
-        // A straight arrow is emitted as its canonical shaft followed by its
-        // triangular head. Keep both primitives as painter traces so the
-        // Rust-authored geometry remains exact, and expose one semantic note.
+      } else if (annotationKind === 5 && kind === 1 && (count === 2 || count === 5 || count === 8)) {
+        // A straight arrow is one Rust-authored shaft polyline (2, 5 or 8
+        // vertices: plain, one open V, or two open V ends; see `scene_arrow.rs`)
+        // optionally followed by a filled triangular head. Keep every primitive
+        // as a painter trace so the Rust-authored geometry remains exact, and
+        // expose one semantic note.
         annotations.push({ kind: "straight_arrow", aria_label: "Straight arrow annotation" });
       } else if (annotationKind === 5 && kind === 4 && count === 3) {
         // The matching arrow shaft owns the semantic note above; this is its

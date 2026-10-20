@@ -3846,7 +3846,7 @@ class Axes(PlotTypeMixin):
                 * self._point_scale()
             )
             arrow_color, arrow_width, arrow_style = _arrow_visuals(
-                arrowprops, mutation_scale=font_px
+                arrowprops, mutation_scale=font_px, point_scale=self._point_scale()
             )
             # matplotlib draws the arrow from the text patch center, clipped
             # at the patch edge (+2pt shrink); start_offset + label_clear are
@@ -3857,6 +3857,7 @@ class Axes(PlotTypeMixin):
                 akw.get("anchor", "start"),
                 style.get("vertical_align"),
                 bbox=bbox is not None,
+                shrink_a=arrow_style.get("gap_start", 2.8),
             )
             if attach is not None and not shrink:
                 arrow_style = {**arrow_style, **attach}
@@ -8771,6 +8772,7 @@ def _label_attach_styles(
     vertical: Any,
     *,
     bbox: bool = False,
+    shrink_a: float = 2.8,
 ) -> Optional[dict[str, str]]:
     """The render seam's arrow-attach styles for a label: ``start_offset``
     (anchor → text-box center, px) and ``label_clear`` (box extents around
@@ -8782,7 +8784,9 @@ def _label_attach_styles(
     arrow start at (+111.6, -5.5), NOT at the baseline anchor. The estimates
     here (~0.58 em/char width, 1.2em line height, 0.35em descent below the
     baseline anchor, 2pt + ~0.35em clearance margin, + the bbox patch
-    padding when one is drawn) land within a few px of that; the reference
+    padding when one is drawn) land within a few px of that; ``shrink_a`` is
+    matplotlib's ``shrinkA`` in px (2 pt by default), added beyond the patch
+    edge, as ``FancyArrowPatch`` shrinks after clipping at ``patchA``. The reference
     relations are pinned in tests/pyplot/test_annotation_label_clearance.py.
     """
     if not text:
@@ -8790,7 +8794,7 @@ def _label_attach_styles(
     lines = text.split("\n")
     width = 0.58 * font_px * max(len(line) for line in lines)
     height = 1.2 * font_px * len(lines)
-    margin = 2.8 + 0.35 * font_px + (0.4 * font_px if bbox else 0.0)
+    margin = shrink_a + 0.35 * font_px + (0.4 * font_px if bbox else 0.0)
     if anchor == "middle":
         offset_x = 0.0
     elif anchor == "end":
@@ -8812,15 +8816,31 @@ def _label_attach_styles(
     }
 
 
+def _arrow_shrinks(arrowprops: dict[str, Any], point_scale: float) -> tuple[float, float]:
+    """matplotlib ``shrinkA``/``shrinkB`` (points, default 2) as ``(start, end)``
+    pixels. They only apply to an ``arrowstyle`` arrow: the legacy
+    ``arrowstyle``-less arrow shrinks by the ``shrink`` fraction instead."""
+    values = []
+    for key in ("shrinkA", "shrinkB"):
+        value = arrowprops.get(key, 2.0)
+        if isinstance(value, bool) or not isinstance(value, (int, float, np.integer, np.floating)):
+            raise TypeError(f"annotate arrowprops {key} must be a number of points")
+        if not np.isfinite(value) or value < 0:
+            raise ValueError(f"annotate arrowprops {key} must be finite and non-negative")
+        values.append(float(value) * point_scale)
+    return values[0], values[1]
+
+
 def _arrow_visuals(
-    arrowprops: dict[str, Any], mutation_scale: float = 14.0
+    arrowprops: dict[str, Any], mutation_scale: float = 14.0, point_scale: float = 1.0
 ) -> tuple[Optional[str], float, dict[str, Any]]:
     """Color, shaft width, and shape style keys for matplotlib ``arrowprops``.
 
     Head/tail shapes, filled tapered shafts (fancy/simple/wedge), and
     connectionstyle curves map onto the engine's arrow style vocabulary;
     ``mutation_scale`` mirrors matplotlib's (the annotation text size, px).
-    What has no equivalent (corner rounding) is approximated, never dropped."""
+    The browser approximates corner rounding. Names/options without a faithful
+    Scene encoding remain authored facts so static admission fails closed."""
     arrowstyle = arrowprops.get("arrowstyle")
     fancy = arrowstyle is None  # matplotlib's YAArrow-style thick default
     color = resolve_color(
@@ -8859,7 +8879,17 @@ def _arrow_visuals(
         style["shaft_width_start"] = head_size / 3.0
         style["shaft_width_end"] = head_size / 3.0
     else:
+        shrink_a, shrink_b = _arrow_shrinks(arrowprops, point_scale)
+        style["gap_start"] = shrink_a
+        style["gap_end"] = shrink_b
         name = str(arrowstyle).split(",")[0].strip()
+        if name not in _ARROWSTYLE_ENDS or "," in str(arrowstyle):
+            # Preserve the entire authored grammar, including malformed options
+            # that _parse_style_options skips. Scene does not encode this key
+            # and rejects it through its shared unsupported-style-key path;
+            # the browser may still use the approximation below (scene-ir.md,
+            # Straight-arrow vocabulary; dossier §24). No options are encoded.
+            style["arrowstyle"] = str(arrowstyle)
         tail, head = _ARROWSTYLE_ENDS.get(name, ("none", "triangle"))
         options = _parse_style_options(str(arrowstyle))
         scale = float(mutation_scale)

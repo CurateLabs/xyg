@@ -4,7 +4,7 @@
 //! and pass typed row meta plus concatenated UTF-8. Rust owns XYAT/XYAL/XYAR/
 //! XYAC/XYAW table layout, version selection, the XYAD envelope, and
 //! bounded-text rejection so Python and Node cannot drift on the decoration
-//! envelope. ABI 148 owns family routing from packed XYAF v1 facts: wrap vs
+//! envelope. ABI 148 owns family routing from packed XYAF v2 facts: wrap vs
 //! text vs arrow vs callout vs rule/band/marker, stable-id tags, mark-style
 //! defaults, domain expansion, and XYAD framing so those decisions cannot
 //! drift across hosts. ABI 184 routes cartesian unwrapped text `dx`/`dy`/
@@ -26,6 +26,7 @@ use crate::scene::{
     MAX_AUTHORED_STRAIGHT_ARROWS, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_SCENE_ANNOTATION_INPUT_BYTES,
     MAX_SCENE_LABEL_TEXT_BYTES, MAX_SCENE_TEXT_BYTES,
 };
+use crate::scene_arrow::{ArrowEnd, ArrowShape};
 use crate::scene_pack::{
     pack_annotation_marks, AnnotationMarkInput, PackError, ANN_KIND_BAND, ANN_KIND_MARKER,
     ANN_KIND_RULE, PACKED_SCENE_ROW_BYTES,
@@ -91,6 +92,7 @@ pub struct ArrowRow {
     pub rgba: [u8; 4],
     pub opacity: f64,
     pub width: f64,
+    pub shape: ArrowShape,
 }
 
 /// One XYAC Cartesian callout row before framing.
@@ -299,6 +301,7 @@ pub fn arrow_rows_from_meta(meta: &[u8]) -> Result<Vec<ArrowRow>, AnnotationErro
             rgba: rgba_at(chunk, 40),
             opacity: f64_at(chunk, 44),
             width: f64_at(chunk, 52),
+            shape: ArrowShape::DEFAULT,
         })
         .collect())
 }
@@ -464,9 +467,16 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
 
     let mut xyar = Vec::new();
     let mut arrow_ids = std::collections::BTreeSet::new();
+    // v1 rows carry the default shape; any richer arrow lifts the whole table
+    // to v2 (the same use-gated versioning as XYAL / XYAC).
+    let xyar_version = if input.arrows.iter().all(|row| row.shape == ArrowShape::DEFAULT) {
+        1
+    } else {
+        2
+    };
     for row in input.arrows {
         require_finite(&[row.x0, row.y0, row.x1, row.y1, row.opacity, row.width])?;
-        if !(0.0..=1.0).contains(&row.opacity) || row.width <= 0.0 {
+        if !(0.0..=1.0).contains(&row.opacity) || row.width <= 0.0 || !row.shape.is_admitted() {
             return Err(AnnotationError::NonFinite);
         }
         if !arrow_ids.insert(row.stable_id) {
@@ -480,6 +490,18 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         xyar.extend_from_slice(&row.rgba);
         xyar.extend_from_slice(&row.opacity.to_le_bytes());
         xyar.extend_from_slice(&row.width.to_le_bytes());
+        if xyar_version >= 2 {
+            let shape = &row.shape;
+            xyar.extend_from_slice(&[shape.head as u8, shape.tail as u8, 0, 0, 0, 0, 0, 0]);
+            for value in shape
+                .start_offset
+                .iter()
+                .chain([&shape.gap_start, &shape.gap_end])
+                .chain(&shape.label_clear)
+            {
+                xyar.extend_from_slice(&value.to_le_bytes());
+            }
+        }
     }
 
     let mut callout_budget = 0usize;
@@ -587,7 +609,7 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
     push_section(
         &mut xyar_section,
         b"XYAR",
-        1,
+        xyar_version,
         input.arrows.len() as u32,
         &xyar,
     );
@@ -646,8 +668,10 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
 }
 
 pub const XYAF_MAGIC: &[u8; 4] = b"XYAF";
-pub const XYAF_VERSION: u32 = 1;
+pub const XYAF_VERSION: u32 = 2;
 pub const XYAF_V1_HEADER_BYTES: usize = 232;
+/// XYAF v2 appends the 72-byte arrow extension to the v1 header (#1006).
+pub const XYAF_HEADER_BYTES: usize = XYAF_V1_HEADER_BYTES + 72;
 pub const XYAO_MAGIC: &[u8; 4] = b"XYAO";
 pub const XYAO_VERSION: u32 = 1;
 pub const XYAO_V1_HEADER_BYTES: usize = 32;
@@ -722,6 +746,7 @@ struct AnnotationFacts<'a> {
     label_fill: [u8; 4],
     label_border: [u8; 4],
     dash: [f32; 8],
+    arrow: ArrowShape,
     text: &'a [u8],
 }
 
@@ -953,12 +978,14 @@ fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, Anno
     let mut out = Vec::new();
     let mut at = 0usize;
     while at < bytes.len() {
-        if bytes.len() - at < XYAF_V1_HEADER_BYTES || bytes.get(at..at + 4) != Some(&XYAF_MAGIC[..])
-        {
+        if bytes.len() - at < 8 || bytes.get(at..at + 4) != Some(&XYAF_MAGIC[..]) {
             return Err(AnnotationError::Length);
         }
         if read_u32(bytes, at + 4)? != XYAF_VERSION {
             return Err(AnnotationError::Version);
+        }
+        if bytes.len() - at < XYAF_HEADER_BYTES {
+            return Err(AnnotationError::Length);
         }
         let index = read_u32(bytes, at + 8)?;
         let kind = bytes[at + 12];
@@ -1002,7 +1029,31 @@ fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, Anno
         for (i, slot) in dash.iter_mut().enumerate() {
             *slot = read_f32(bytes, at + 200 + i * 4)?;
         }
-        let text_at = at + XYAF_V1_HEADER_BYTES;
+        let ext = at + XYAF_V1_HEADER_BYTES;
+        let mut arrow_facts = [0.0f64; 8];
+        for (i, slot) in arrow_facts.iter_mut().enumerate() {
+            *slot = read_f64(bytes, ext + 8 + i * 8)?;
+        }
+        let arrow = if kind == XYAF_KIND_ARROW {
+            ArrowShape {
+                head: ArrowEnd::from_code(bytes[ext]).ok_or(AnnotationError::Length)?,
+                tail: ArrowEnd::from_code(bytes[ext + 1]).ok_or(AnnotationError::Length)?,
+                start_offset: [arrow_facts[0], arrow_facts[1]],
+                gap_start: arrow_facts[2],
+                gap_end: arrow_facts[3],
+                label_clear: [arrow_facts[4], arrow_facts[5], arrow_facts[6], arrow_facts[7]],
+            }
+        } else {
+            ArrowShape::DEFAULT
+        };
+        if bytes[ext + 2..ext + 8] != [0; 6]
+            || (kind != XYAF_KIND_ARROW
+                && (bytes[ext] != 0 || bytes[ext + 1] != 0 || arrow_facts != [0.0; 8]))
+            || !arrow.is_admitted()
+        {
+            return Err(AnnotationError::Length);
+        }
+        let text_at = at + XYAF_HEADER_BYTES;
         let text_end = text_at
             .checked_add(text_len)
             .ok_or(AnnotationError::Limit)?;
@@ -1027,6 +1078,7 @@ fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, Anno
             label_fill,
             label_border,
             dash,
+            arrow,
             text: &bytes[text_at..text_end],
         });
         at = text_end;
@@ -1048,7 +1100,7 @@ fn encode_style(style: &StyleOut) -> [u8; XYAO_STYLE_BYTES] {
     out
 }
 
-/// Pack concatenated XYAF v1 facts into an XYAO v1 envelope.
+/// Pack concatenated XYAF v2 facts into an XYAO v1 envelope.
 ///
 /// Hosts coerce authoring (numbers, CSS, dash/linecap names). Rust owns wrap
 /// vs text vs arrow vs callout vs rule/band/marker routing, stable-id tags,
@@ -1172,6 +1224,7 @@ pub fn pack_annotation_facts(
                     rgba: paint(row, STYLE_COLOR, row.color, COLOR_RULE, 1.0),
                     opacity,
                     width,
+                    shape: row.arrow,
                 });
             }
             XYAF_KIND_CALLOUT => {
@@ -1608,7 +1661,12 @@ mod tests {
         color: [u8; 4],
         text: &[u8],
     ) -> Vec<u8> {
-        let mut out = vec![0u8; XYAF_V1_HEADER_BYTES + text.len()];
+        let mut out = vec![0u8; XYAF_HEADER_BYTES + text.len()];
+        out[XYAF_V1_HEADER_BYTES] = if kind == XYAF_KIND_ARROW {
+            ArrowEnd::Triangle as u8
+        } else {
+            0
+        };
         out[..4].copy_from_slice(XYAF_MAGIC);
         out[4..8].copy_from_slice(&XYAF_VERSION.to_le_bytes());
         out[8..12].copy_from_slice(&index.to_le_bytes());
@@ -1624,7 +1682,7 @@ mod tests {
             out[at..at + 8].copy_from_slice(&value.to_le_bytes());
         }
         out[176..180].copy_from_slice(&color);
-        out[XYAF_V1_HEADER_BYTES..].copy_from_slice(text);
+        out[XYAF_HEADER_BYTES..].copy_from_slice(text);
         out
     }
 
@@ -1670,6 +1728,101 @@ mod tests {
         assert!(xyad.windows(4).any(|window| window == b"XYAT"));
         assert!(xyad.windows(4).any(|window| window == b"XYAR"));
         assert!(xyad.windows(2).any(|window| window == b"hi"));
+    }
+
+    fn xyar_section(packed: &[u8]) -> &[u8] {
+        let xyad_len = u32::from_le_bytes(packed[16..20].try_into().unwrap()) as usize;
+        let xyad = &packed[XYAO_V1_HEADER_BYTES..XYAO_V1_HEADER_BYTES + xyad_len];
+        let lens: Vec<usize> = (0..4)
+            .map(|i| u32::from_le_bytes(xyad[8 + i * 4..12 + i * 4].try_into().unwrap()) as usize)
+            .collect();
+        let start = 24 + lens[0] + lens[1];
+        &xyad[start..start + lens[2]]
+    }
+
+    #[test]
+    fn arrow_shape_facts_lift_the_xyar_table_to_v2_only_when_used() {
+        let mut nums = [f64::NAN; 18];
+        nums[2] = 0.0;
+        nums[3] = 0.0;
+        nums[4] = 1.0;
+        nums[5] = 1.0;
+        let arrow = |tweak: &dyn Fn(&mut Vec<u8>)| {
+            let mut bytes = pack_xyaf(
+                XYAF_KIND_ARROW,
+                1,
+                FACT_HAS_X0 | FACT_HAS_Y0 | FACT_HAS_X1 | FACT_HAS_Y1,
+                STYLE_COLOR,
+                0,
+                nums,
+                [102, 112, 133, 255],
+                b"",
+            );
+            tweak(&mut bytes);
+            bytes
+        };
+        let plain = pack_annotation_facts(&arrow(&|_| {}), 3, 0.0, 10.0, -1.0, 1.0).unwrap();
+        let section = xyar_section(&plain);
+        assert_eq!(u32::from_le_bytes(section[4..8].try_into().unwrap()), 1);
+        assert_eq!(section.len(), 12 + 60);
+
+        // Open head, open tail, 6 px gap_start, label clearance 1,2,3,4.
+        let shaped = pack_annotation_facts(
+            &arrow(&|bytes| {
+                let ext = XYAF_V1_HEADER_BYTES;
+                bytes[ext] = ArrowEnd::Open as u8;
+                bytes[ext + 1] = ArrowEnd::Open as u8;
+                for (slot, value) in [0.0f64, 0.0, 6.0, 0.0, 1.0, 2.0, 3.0, 4.0]
+                    .into_iter()
+                    .enumerate()
+                {
+                    bytes[ext + 8 + slot * 8..ext + 16 + slot * 8]
+                        .copy_from_slice(&value.to_le_bytes());
+                }
+            }),
+            3,
+            0.0,
+            10.0,
+            -1.0,
+            1.0,
+        )
+        .unwrap();
+        let section = xyar_section(&shaped);
+        assert_eq!(u32::from_le_bytes(section[4..8].try_into().unwrap()), 2);
+        assert_eq!(section.len(), 12 + 132);
+        assert_eq!(&section[12 + 60..12 + 62], &[2, 2]);
+        assert_eq!(
+            f64::from_le_bytes(section[12 + 68 + 16..12 + 68 + 24].try_into().unwrap()),
+            6.0
+        );
+
+        // Unadmitted ends / non-arrow arrow facts / v1 XYAF are rejected.
+        let triangle_tail = arrow(&|bytes| bytes[XYAF_V1_HEADER_BYTES + 1] = 1);
+        assert!(pack_annotation_facts(&triangle_tail, 3, 0.0, 10.0, -1.0, 1.0).is_err());
+        let negative_gap = arrow(&|bytes| {
+            let at = XYAF_V1_HEADER_BYTES + 8 + 16;
+            bytes[at..at + 8].copy_from_slice(&(-1.0f64).to_le_bytes());
+        });
+        assert!(pack_annotation_facts(&negative_gap, 3, 0.0, 10.0, -1.0, 1.0).is_err());
+        let mut v1 = arrow(&|_| {});
+        v1[4..8].copy_from_slice(&1u32.to_le_bytes());
+        assert_eq!(
+            pack_annotation_facts(&v1, 3, 0.0, 10.0, -1.0, 1.0),
+            Err(AnnotationError::Version)
+        );
+        let text_with_ends = pack_xyaf(
+            XYAF_KIND_TEXT,
+            0,
+            FACT_HAS_X | FACT_HAS_Y | FACT_HAS_TEXT,
+            STYLE_COLOR,
+            0,
+            [0.0; 18],
+            [1, 2, 3, 255],
+            b"hi",
+        );
+        let mut leaked = text_with_ends.clone();
+        leaked[XYAF_V1_HEADER_BYTES] = 1;
+        assert!(pack_annotation_facts(&leaked, 3, 0.0, 10.0, -1.0, 1.0).is_err());
     }
 
     #[test]

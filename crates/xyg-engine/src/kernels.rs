@@ -1548,7 +1548,20 @@ pub fn scene_annotation_style_admit(
         );
     }
     match kind {
-        "arrow" => return matches!(key, "color" | "opacity" | "width"),
+        "arrow" => {
+            return matches!(
+                key,
+                "color"
+                    | "opacity"
+                    | "width"
+                    | "head_style"
+                    | "tail_style"
+                    | "start_offset"
+                    | "label_clear"
+                    | "gap_start"
+                    | "gap_end"
+            );
+        }
         "callout" => {
             return matches!(
                 key,
@@ -12259,6 +12272,21 @@ mod fuzz {
     fn scene_annotation_style_admit_matches_host_table() {
         assert!(scene_annotation_style_admit("arrow", false, false, "width"));
         assert!(!scene_annotation_style_admit("arrow", false, false, "dash"));
+        for key in [
+            "head_style",
+            "tail_style",
+            "start_offset",
+            "label_clear",
+            "gap_start",
+            "gap_end",
+        ] {
+            assert!(scene_annotation_style_admit("arrow", false, false, key), "{key}");
+            assert!(!scene_annotation_style_admit("callout", false, false, key), "{key}");
+            assert!(!scene_annotation_style_admit("rule", false, false, key), "{key}");
+        }
+        for key in ["curve", "angle_a", "elbow", "shaft_width_start", "head_size"] {
+            assert!(!scene_annotation_style_admit("arrow", false, false, key), "{key}");
+        }
         assert!(!scene_annotation_style_admit(
             "arrow", false, true, "label_color"
         ));

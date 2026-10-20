@@ -1007,7 +1007,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 33
+    assert _native.scene_version() == 34
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
