@@ -3808,8 +3808,11 @@ export class Figure {
     }
     const axisSpecs = {};
     for (const axisId of Object.keys(this.axis_options)) {
-      const r = axisRange(axisId);
-      axisSpecs[axisId] = this._axisSpec(axisId, [Math.min(r[0], r[1]), Math.max(r[0], r[1])]);
+      // The directed range passes through untouched: Rust autorange already
+      // applied `reverse`, so a reversed axis ships [hi, lo] exactly like
+      // Python `_axis_spec` (min/max normalization happens only at the
+      // trace-emitter boundary above, matching Python `_payload_spec`).
+      axisSpecs[axisId] = this._axisSpec(axisId, [...axisRange(axisId)]);
     }
     const dom = domSpec(this);
     const wasmSources = specTraces

@@ -41,6 +41,21 @@ const ANNOTATIONS = [
 const figure = dual({ annotations: ANNOTATIONS });
 const { spec, buffers } = figure.buildPayload();
 
+// Directed ranges: Rust autorange already applied `reverse`, so reversed
+// axes ship [hi, lo] exactly like Python `_axis_spec` (never re-sorted).
+function dualReversed() {
+  const f = new Figure({ width: 480, height: 320 });
+  f.setAxis("x", { domain: [0, 4] });
+  f.setAxis("y", { domain: [0, 4], reverse: true });
+  f.setAxis("y2", { side: "right", domain: [0, 400], reverse: true });
+  f.line([1, 2, 3], [1, 2, 3]);
+  f.line([1, 2, 3], [100, 200, 300], { yAxis: "y2" });
+  f.annotate({ kind: "text", x: 2, y: 100, text: "secondary", y_axis: "y2", dx: 6, dy: -6, anchor: "start" });
+  f.traces.forEach((trace, index) => { trace.id = index; });
+  return f.buildPayload();
+}
+const reversedPayload = dualReversed();
+
 // A range-sensitive trace kind: the tier-2 density grid is binned against the
 // trace's own y2 domain, so host parity here proves per-trace ranges flow (a
 // direct line column is data-relative and would not distinguish them).
@@ -85,6 +100,12 @@ const out = {
     buffer_sha256s: densityPayload.buffers.map((buffer) => sha256(
       Buffer.from(buffer.buffer ?? buffer, buffer.byteOffset ?? 0, buffer.byteLength),
     )),
+  },
+  reversed: {
+    view_ranges: reversedPayload.spec.view.ranges,
+    axes_y2_reverse: reversedPayload.spec.axes.y2.reverse ?? null,
+    annotations: reversedPayload.spec.annotations,
+    payload_blob_sha256: sha256(reversedPayload.buffers),
   },
   plain_axes: Object.keys(plainPayload.spec.axes),
   plain_view_ranges: plainPayload.spec.view.ranges,

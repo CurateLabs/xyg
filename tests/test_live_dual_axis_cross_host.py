@@ -105,6 +105,33 @@ def test_live_payload_marshals_y2_axes_ranges_and_annotation_bindings(
     assert len(blob) == node_payload["payload_blob_len"]
 
 
+def test_reversed_axes_keep_their_direction_on_the_live_wire_in_both_hosts(
+    node_payload: dict[str, Any],
+) -> None:
+    """Rust autorange applies `reverse`; the directed range ([hi, lo]) must
+    reach `axes`/`view.ranges` untouched — sorting it flips the rendered
+    orientation versus Python (review round 5)."""
+    figure = c.line_chart(
+        c.line(x=[1, 2, 3], y=[1, 2, 3]),
+        c.line(x=[1, 2, 3], y=[100, 200, 300], y_axis="y2"),
+        c.x_axis(domain=(0, 4)),
+        c.y_axis(domain=(0, 4), reverse=True),
+        c.y_axis(id="y2", side="right", domain=(0, 400), reverse=True),
+        c.text(2, 100, "secondary", y_axis="y2"),
+        width=WIDTH,
+        height=HEIGHT,
+    ).figure()
+    for index, trace in enumerate(figure.traces):
+        trace.id = index
+    spec, blob = figure.build_payload()
+    assert spec["view"]["ranges"] == {"x": [0.0, 4.0], "y": [4.0, 0.0], "y2": [400.0, 0.0]}
+    assert spec["axes"]["y2"]["reverse"] is True
+    assert spec["view"]["ranges"] == node_payload["reversed"]["view_ranges"]
+    assert spec["axes"]["y2"]["reverse"] == node_payload["reversed"]["axes_y2_reverse"]
+    assert spec["annotations"] == node_payload["reversed"]["annotations"]
+    assert hashlib.sha256(blob).hexdigest() == node_payload["reversed"]["payload_blob_sha256"]
+
+
 def test_a_y2_density_trace_bins_against_its_own_domain_in_both_hosts(
     node_payload: dict[str, Any],
 ) -> None:
