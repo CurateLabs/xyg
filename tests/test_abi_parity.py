@@ -512,3 +512,18 @@ def test_low_level_signatures_exist_only_in_generated_modules() -> None:
     assert ".argtypes" in generated_python and ".restype" in generated_python
     assert "lib.func(" in generated_node
     assert node_host.index("bindAbiVersion(lib)") < node_host.index("bindGeneratedAbi(lib)")
+
+
+def test_rejection_diagnostic_contract_is_carried_from_the_rust_doc_comment() -> None:
+    manifest = gen_abi_manifest.load_manifest()
+    carried = {
+        symbol["name"]: symbol["rejection_diagnostic"]
+        for symbol in manifest["symbols"]
+        if "rejection_diagnostic" in symbol
+    }
+    assert set(carried) == {"xyg_static_document_export"}
+    text = carried["xyg_static_document_export"]
+    for fact in ("usize::MAX", "NUL", "non-null", "strictly greater", "never reported", "panic"):
+        assert fact in text
+    header = (ROOT / "spec" / "abi" / "xyg.h").read_text(encoding="utf-8")
+    assert f"/* {text} */\nsize_t xyg_static_document_export(" in header

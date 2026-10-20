@@ -15,7 +15,7 @@ marshal the envelope, invoke the generated ABI, and translate stable errors.
 They must not retry a host renderer after the Rust support predicate or
 consumer has been selected.
 
-The v1 envelope is `XYST`: a fixed header, fixed-size panel table, optional
+The v2 envelope is `XYST` (see §1.1 for the layout version): a fixed header, fixed-size panel table, optional
 bounded UTF-8 document title, and concatenated canonical Scene bytes. Numeric
 facts are little-endian integers; no JSON numeric array crosses the boundary.
 The decoder rejects unknown versions/flags, empty or oversized panels,

@@ -34,7 +34,7 @@ CASES = (
     "facet_panels",
 )
 FORMATS = ("svg", "png", "pdf", "jpeg", "webp")
-# Decode only: v1 XYST header/panel geometry, independently checked against output.
+# Decode only: v2 XYST header/panel geometry, independently checked against output.
 PANEL = struct.Struct("<2i6I12fII2f4B2II16B")
 
 

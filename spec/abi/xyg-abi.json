@@ -61450,7 +61450,8 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "size_t xyg_static_document_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, int32_t quality, uint8_t * out, size_t out_cap)"
+      "c_signature": "size_t xyg_static_document_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, int32_t quality, uint8_t * out, size_t out_cap)",
+      "rejection_diagnostic": "Rejection diagnostic: when a decoded document is rejected the return value is the unchanged `usize::MAX` sentinel and, only if `out` is non-null and `out_cap` is strictly greater than the diagnostic length, `out` receives the stable ASCII diagnostic (`XYG_STATIC_DOCUMENT_<CODE>`, optionally followed by `: guidance`, e.g. an unsupported XYST version) plus one NUL terminator. The diagnostic length is never reported, so a caller that needs it must supply a buffer larger than the diagnostic (hosts use at least 256 bytes); with a null `out`, `out_cap` of at most the diagnostic length, or no room for the NUL, `out` is left untouched. No diagnostic is produced for a null or empty `encoded`, an unknown `format` code, or an internal panic: those return `usize::MAX` with `out` untouched."
     },
     {
       "name": "xyg_static_document_labels",
