@@ -12990,12 +12990,6 @@ impl SceneDocument {
             return Err(SceneError::Limit);
         }
         let mut labels = self.labels.clone();
-        // Provenance is a Scene-wire fact (XYLB v7); the browser painter's
-        // label table stays at the versions its client reads, so it carries
-        // only the id-implied flag.
-        for label in &mut labels {
-            label.annotation = annotation_looking_id(label.stable_id);
-        }
         let mut backgrounds = self.label_backgrounds.clone();
         for record in &self.records {
             if !record.visible || record.kind != SceneRecordKind::Scatter {
@@ -13022,6 +13016,13 @@ impl SceneDocument {
                 annotation: false,
             });
             backgrounds.push(None);
+        }
+        // Provenance is a Scene-wire fact (XYLB v7); the browser painter's
+        // label table stays at the versions its client reads, so every painter
+        // label (existing and glyph alike) carries only the id-implied flag.
+        // Normalizing once after the last append keeps the table below v7.
+        for label in &mut labels {
+            label.annotation = annotation_looking_id(label.stable_id);
         }
         Ok((labels, backgrounds))
     }
@@ -20847,6 +20848,26 @@ pub(crate) mod tests {
                 );
             }
         }
+    }
+
+    /// The browser painter's label table must never reach XYLB v7, whose
+    /// provenance record the TS decoder (`48_wasm_scene.ts`) rejects: a glyph
+    /// marker whose literal id looks like an annotation id gets the id-implied
+    /// flag like every other painter label.
+    #[test]
+    fn painter_label_table_stays_below_v7_for_glyphs_with_annotation_looking_ids() {
+        let mut document = admission_document(1, false);
+        document.records[0].stable_id = 0x5859_0400_0000_0001;
+        document.marker_glyphs = vec![Some("A".into())];
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let at = painter.windows(4).position(|window| window == b"XYLB").unwrap();
+        let version = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap());
+        // The TS decoder reads versions 1..=5; this unrotated glyph table must
+        // stay in that range (and in particular never reach v7).
+        assert!(version <= 5, "painter label table is XYLB v{version}");
+        let count = u32::from_le_bytes(painter[at + 8..at + 12].try_into().unwrap());
+        assert_eq!(count, 1);
+        assert!(painter.windows(1).any(|window| window == b"A"));
     }
 
     #[test]
