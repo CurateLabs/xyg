@@ -18,7 +18,6 @@ def _gaussian_difference() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return X, Y, z
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_clabel_joins_paths_rotates_and_uses_contour_colors() -> None:
     X, Y, z = _gaussian_difference()
     fig, ax = plt.subplots()

@@ -100,7 +100,6 @@ def test_maxn_locator_grid_renders_matplotlib_ticks():
     assert set(re.findall(r"<text[^>]*>([^<]+)</text>", _svg())) == {"0.0", "0.4", "0.8"}
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_auto_locator_density_adapts_to_panel_size():
     # matplotlib's AutoLocator budgets ticks by axes size: tiny panels get
     # two intervals, so an explicit AutoLocator must match the default axes.
@@ -216,7 +215,6 @@ def test_cycler_routes_into_prop_cycle():
 # -- colormaps ----------------------------------------------------------------
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_rdgy_and_jet_resolve_and_render():
     assert plt.get_cmap("RdGy").name == "rdgy"
     assert plt.get_cmap("RdGy_r").name == "rdgy_r"
