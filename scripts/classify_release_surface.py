@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Classify whether changed paths require the complete release-surface matrix."""
+"""Classify whether changed paths require the complete release-surface matrix.
+
+Fail-closed: a path is a release surface unless it is explicitly recognized prose
+(root Markdown, LICENSE, ``docs/``, ``spec/`` outside ``spec/abi/`` and ``spec/wasm/``).
+Unknown paths therefore require the full matrix; they never skip it.
+"""
 
 from __future__ import annotations
 

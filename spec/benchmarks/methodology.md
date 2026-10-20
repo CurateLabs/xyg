@@ -776,9 +776,14 @@ evidence column names exactly the job's two halves,
 `python scripts/sync_matplotlib_compat.py --check` and `pytest tests/pyplot`.
 What the job adds beyond that row's wording is the pin and the environment — it
 installs `matplotlib==3.11.0` into a fresh uv venv and asserts the resolved
-version before checking the reviewed snapshot, then runs
-`test_launch_compat.py`, `test_reference_corpus.py`, and
-`test_reference_semantics.py` under `MPLBACKEND=Agg`.
+version before checking the reviewed snapshot, then runs the **entire**
+`tests/pyplot` suite (`pytest -q -rs tests/pyplot`, `MPLBACKEND=Agg`) rather than a file
+list (#1035). The `Test (Rust + Python + JS)` job installs no matplotlib and skips every
+matplotlib-dependent pyplot test, so this lane is the only gate for them: a failing or
+newly added matplotlib-dependent pyplot test blocks the merge through `Release surfaces`.
+Measured runtime is about 3.5 minutes serial (1,240 passed, `-rs` lists the skips), so the job has
+a 30-minute ceiling and no parallelization. Skips are optional-dependency skips (pandas) and
+browser probes when no Chromium is present.
 
 The real coverage gap is narrower and is on the speed side: no workflow invokes
 `bench_pyplot_vs_matplotlib.py`. The per-family 10x PNG target is therefore

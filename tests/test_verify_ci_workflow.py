@@ -885,7 +885,7 @@ def test_job_scalar_cannot_replace_the_real_named_step(tmp_path: Path) -> None:
 
 def test_reference_gate_commands_must_be_in_the_named_step(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    command = "          .venv/bin/pytest -q tests/pyplot/test_reference_semantics.py\n"
+    command = "        run: .venv/bin/pytest -q -rs tests/pyplot\n"
     # Leaving the old verifier's needle elsewhere in the job must not satisfy
     # the structural step-local check.
     path = tmp_path / "ci.yml"
@@ -914,15 +914,8 @@ def test_generated_abi_check_must_execute_in_its_named_step(tmp_path: Path) -> N
 
 def test_reference_gate_commands_cannot_hide_in_inline_comments(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    commands = (
-        ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
-        ".venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py",
-        ".venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
-    )
-    for command in commands:
-        workflow = workflow.replace(f"          {command}", f"          echo ignored # {command}")
+    command = ".venv/bin/pytest -q -rs tests/pyplot"
+    workflow = workflow.replace(f"run: {command}", f"run: echo ignored # {command}")
     path = tmp_path / "ci.yml"
     path.write_text(workflow, encoding="utf-8")
 
@@ -933,16 +926,12 @@ def test_reference_gate_commands_cannot_hide_in_inline_comments(tmp_path: Path) 
 
 def test_reference_gate_commands_cannot_be_heredoc_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    first = ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py"
-    last = ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py"
+    command = ".venv/bin/pytest -q -rs tests/pyplot"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
-            f"          {first}",
-            "          cat <<'EOF'",
-        ).replace(
-            f"          {last}",
-            f"          {last}\n          EOF",
+            f"        run: {command}\n",
+            f"        run: |\n          cat <<'EOF'\n          {command}\n          EOF\n",
         ),
         encoding="utf-8",
     )
@@ -952,27 +941,42 @@ def test_reference_gate_commands_cannot_be_heredoc_data(tmp_path: Path) -> None:
     assert any("reference test commands" in error for error in errors)
 
 
+def test_reference_job_runs_the_whole_pyplot_suite_not_a_file_list(tmp_path: Path) -> None:
+    """#1035: matplotlib-dependent pyplot tests outside the corpus must gate merges."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "matplotlib_reference")
+    assert "timeout-minutes: 30" in workflow[start:end]
+    narrowed = workflow.replace(
+        "run: .venv/bin/pytest -q -rs tests/pyplot\n",
+        "run: .venv/bin/pytest -q -rs tests/pyplot/test_reference_corpus.py\n",
+        1,
+    )
+    assert narrowed != workflow
+    errors = _wasm_errors(tmp_path, narrowed)
+    assert any("reference test commands" in error for error in errors), errors
+
+
 def test_reference_job_and_steps_must_be_hard_gates(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     mutations = (
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        if: false\n",
         ),
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        continue-on-error: true\n",
         ),
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        shell: echo {0}\n",
         ),
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        working-directory: decoy\n",
         ),
         ("  matplotlib_reference:\n", "  matplotlib_reference:\n    if: false\n"),
@@ -995,7 +999,7 @@ def test_reference_job_and_steps_must_be_hard_gates(tmp_path: Path) -> None:
         if index == 4:
             assert any("matplotlib_reference" in error for error in errors)
         else:
-            assert any("Run optional-interoperability" in error for error in errors)
+            assert any("Run the full tests/pyplot suite" in error for error in errors)
 
 
 def test_codspeed_workflow_accepts_current_gates() -> None:

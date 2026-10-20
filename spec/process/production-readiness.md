@@ -102,7 +102,9 @@ Changes from run 38640943006, where `Release surfaces` passed while three jobs f
 `matplotlib_reference` moved from a main-only job outside the aggregate to a classifier-gated
 release-surface job; the benchmark jobs lost `continue-on-error` and became aggregate inputs
 on `push`/`workflow_dispatch`, so main's own evidence failures turn the aggregate red;
-`wasm_assets` joined the baseline. Duplicate required statuses and repeated-green-run
+`wasm_assets` joined the baseline. The `matplotlib_reference` job runs the full `tests/pyplot`
+suite against `matplotlib==3.11.0` (#1035), because the `test` job installs no matplotlib and skips
+those tests; a deliberately failing pyplot test therefore turns that job and the aggregate red. Duplicate required statuses and repeated-green-run
 ceremony remain out of scope: the aggregate stays one job, and prose-only changes still
 execute only baseline jobs.
 

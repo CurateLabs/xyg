@@ -1966,9 +1966,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "matplotlib==3.11.0",
         "matplotlib.__version__ == '3.11.0'",
         "scripts/sync_matplotlib_compat.py --check",
-        "tests/pyplot/test_launch_compat.py",
-        "tests/pyplot/test_reference_corpus.py",
-        "tests/pyplot/test_reference_semantics.py",
         "MPLBACKEND: Agg",
     )
     reference = jobs.get("matplotlib_reference", "")
@@ -1994,13 +1991,9 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         reference,
-        "Run optional-interoperability and dual-engine corpus tests",
+        "Run the full tests/pyplot suite against matplotlib 3.11.0",
         "reference test commands",
-        ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py",
-        ".venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py",
-        ".venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
+        ".venv/bin/pytest -q -rs tests/pyplot",
         allow_job_gate=True,
     )
 
