@@ -99,8 +99,8 @@ const WASM_SIZE_BUDGET_BYTES = 1504 * 1024;
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
 // 624 KiB gzip (raw unchanged): the static LOD tiers and their budget checks,
 // layered/polar/mesh autorange admission, the XYWA exact polar wedge-arc
-// encode/validate/SVG path, and the smooth XYIM plane (#1006) are a recorded
-// +10,942 raw / +4,193 gzip bytes (1,531,515 / 632,105) over main's
+// encode/validate/SVG path, and the mesh overdraw bound (#1006) are a recorded
+// +11,815 raw / +4,298 gzip bytes (1,532,388 / 632,210) over main's
 // 1,520,573 / 627,912, which left only 2,872 bytes of gzip headroom.
 const WASM_GZIP_BUDGET_BYTES = 624 * 1024;
 const gzipBytes = gzipSync(bytes).length;
