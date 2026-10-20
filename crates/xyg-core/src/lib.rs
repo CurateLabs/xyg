@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 384;
+pub const ABI_VERSION: u32 = 385;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5514,6 +5514,41 @@ pub unsafe extern "C" fn xyg_css_color_rgba(
             return -1;
         };
         let rgba = css::color_rgba8(value, opacity);
+        std::slice::from_raw_parts_mut(out_rgba, 4).copy_from_slice(&rgba);
+        0
+    })
+}
+
+/// Apply an artist alpha to one authored CSS paint (ABI 385).
+///
+/// Writes the paint's RGBA8 with its alpha replaced by `artist` into
+/// `out_rgba` (4 bytes). A negative artist keeps the paint's alpha; the
+/// absent-paint keywords (`none`, `transparent`) stay absent. Returns `0`, or
+/// `-1` for a null output, a missing non-empty pointer, or non-UTF-8 text.
+///
+/// # Safety
+/// `css` must address `len` readable bytes when `len` is non-zero.
+/// `out_rgba` must address 4 writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_artist_alpha_css(
+    css: *const u8,
+    len: usize,
+    artist: f64,
+    out_rgba: *mut u8,
+) -> i32 {
+    if out_rgba.is_null() || (len > 0 && css.is_null()) {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(css, len)
+        };
+        let Ok(value) = std::str::from_utf8(bytes) else {
+            return -1;
+        };
+        let rgba = kernels::scene_artist_alpha_css_rgba8(value, artist);
         std::slice::from_raw_parts_mut(out_rgba, 4).copy_from_slice(&rgba);
         0
     })

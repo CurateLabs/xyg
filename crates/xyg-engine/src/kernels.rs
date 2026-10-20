@@ -3069,6 +3069,34 @@ pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: 
     )
 }
 
+/// Whether an authored CSS paint is the absent-paint keyword (`none`, or the
+/// CSS `transparent`): no fill or stroke at all, rather than a color whose
+/// alpha happens to be 0. An artist alpha never replaces an absent paint;
+/// explicit RGBA paints (including `#rrggbb00`) are ordinary paints (#1006).
+pub fn scene_paint_is_absent_keyword(css: &str) -> bool {
+    let css = css.trim();
+    css.eq_ignore_ascii_case("none") || css.eq_ignore_ascii_case("transparent")
+}
+
+/// Apply an artist alpha to one authored CSS paint (ABI 385).
+///
+/// Returns the paint's RGBA8 with its alpha replaced by `artist` (clipped to
+/// `[0, 1]`, ties-to-even, like [`scene_item_apply_opacity`]); a negative
+/// artist keeps the paint's own alpha. An absent-paint keyword stays absent
+/// (`[0, 0, 0, 0]`), keywords included, so hosts make no keyword decision.
+pub fn scene_artist_alpha_css_rgba8(css: &str, artist: f64) -> [u8; 4] {
+    let rgba = crate::css::color_rgba8(css, 1.0);
+    if scene_paint_is_absent_keyword(css) {
+        return rgba;
+    }
+    let mut out = [0u8; 4];
+    if scene_item_apply_opacity(&rgba, 1, Some(&[artist]), None, &mut out) {
+        out
+    } else {
+        rgba
+    }
+}
+
 /// Apply optional per-item artist-alpha replace then opacity multiply onto
 /// packed RGBA8 (ABI 245).
 ///
@@ -12775,6 +12803,18 @@ mod fuzz {
         assert_eq!(scene_mesh_paint_plane_admit("segments", 1, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit("scatter", 0, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit(" triangle_mesh", 0, 1), 0);
+    }
+
+    #[test]
+    fn scene_artist_alpha_css_follows_the_paint_contract() {
+        assert_eq!(scene_artist_alpha_css_rgba8("none", 0.5), [0, 0, 0, 0]);
+        assert_eq!(scene_artist_alpha_css_rgba8(" Transparent ", 0.5), [0, 0, 0, 0]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff0000", 0.5), [255, 0, 0, 128]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff000080", 0.5), [255, 0, 0, 128]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff000000", 0.5), [255, 0, 0, 128]);
+        assert_eq!(scene_artist_alpha_css_rgba8("#ff000080", -1.0), [255, 0, 0, 128]);
+        assert!(scene_paint_is_absent_keyword("none"));
+        assert!(!scene_paint_is_absent_keyword("#00000000"));
     }
 
     #[test]

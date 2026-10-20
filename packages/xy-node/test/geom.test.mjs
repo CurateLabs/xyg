@@ -177,6 +177,7 @@ import {
   ribbonPolygon,
   roundedRectPoly,
   stepArrays,
+  sceneArtistAlphaCss,
 } from "../src/index.js";
 import { packArrowStyle } from "../src/encode.js";
 
@@ -2263,4 +2264,12 @@ test("roundedRectPoly zero radii is four corners", () => {
   const { x, y } = roundedRectPoly(0, 0, 4, 3, 0, 0, true);
   assert.deepEqual([...x], [0, 4, 4, 0]);
   assert.deepEqual([...y], [0, 0, 3, 3]);
+});
+
+test("sceneArtistAlphaCss is the Rust-owned keyword and paint rule", () => {
+  assert.deepEqual([...sceneArtistAlphaCss("none", 0.5)], [0, 0, 0, 0]);
+  assert.deepEqual([...sceneArtistAlphaCss("transparent", 0.5)], [0, 0, 0, 0]);
+  assert.deepEqual([...sceneArtistAlphaCss("#ff0000", 0.5)], [255, 0, 0, 128]);
+  assert.deepEqual([...sceneArtistAlphaCss("#ff000080", 0.5)], [255, 0, 0, 128]);
+  assert.deepEqual([...sceneArtistAlphaCss("#ff000000", 0.5)], [255, 0, 0, 128]);
 });

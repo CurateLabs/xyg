@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit, xyArrayIsCategorical, xyRealNumericDtypeAdmit } from "./native.js";
+import { pointer, xyCssColorRgba, xySceneArtistAlphaCss, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit, xyArrayIsCategorical, xyRealNumericDtypeAdmit } from "./native.js";
 import { DEFAULT_MARK_COLOR, DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -33,6 +33,28 @@ export function cssColorRgba8(css, opacity = 1) {
     u8Ptr(out),
   );
   if (code !== 0) throw new RangeError("native css color resolver rejected the color");
+  return out;
+}
+
+/**
+ * Apply an artist alpha to one authored CSS paint via
+ * `xyg_scene_artist_alpha_css` (ABI 385): the paint's RGBA8 with its alpha
+ * replaced by `artist`; `none` / `transparent` stay absent.
+ *
+ * @param {string} css
+ * @param {number} artist
+ * @returns {Uint8Array}
+ */
+export function sceneArtistAlphaCss(css, artist) {
+  const encoded = new TextEncoder().encode(String(css ?? ""));
+  const out = new Uint8Array(4);
+  const code = xySceneArtistAlphaCss(
+    encoded.length ? u8Ptr(encoded) : null,
+    BigInt(encoded.length),
+    Number(artist),
+    u8Ptr(out),
+  );
+  if (code !== 0) throw new RangeError("native artist-alpha resolver rejected the paint");
   return out;
 }
 

@@ -244,18 +244,19 @@ fn channel_end_rgba8(channel: &SceneXytaColorChannelIn<'_>, n: usize, fallback: 
     }
 }
 
-/// A constant channel authored as the CSS `transparent` / Matplotlib `none`
-/// keyword is an absent paint (no fill, no stroke) rather than a color with
-/// alpha 0, so an artist alpha has nothing to replace (#1006). Explicit RGBA
-/// paints, including `#rrggbb00`, are ordinary paints and take the artist
-/// alpha.
-fn is_absent_paint(channel: &SceneXytaColorChannelIn<'_>) -> bool {
-    channel.present != 0
-        && channel.mode == "constant"
-        && channel.constant.is_some_and(|css| {
-            let css = css.trim();
-            css.eq_ignore_ascii_case("transparent") || css.eq_ignore_ascii_case("none")
-        })
+/// Whether a role's EFFECTIVE paint is the absent-paint keyword (`none` /
+/// `transparent`): the per-item channel decides when present (an array has no
+/// keyword form), else a constant channel's authored color, else the scalar
+/// style paint (`fallback`). Artist alpha never replaces an absent paint
+/// (#1006); explicit RGBA paints, including `#rrggbb00`, are ordinary paints.
+fn is_absent_paint(channel: &SceneXytaColorChannelIn<'_>, fallback: &str) -> bool {
+    if channel.present == 0 {
+        return crate::kernels::scene_paint_is_absent_keyword(fallback);
+    }
+    channel.mode == "constant"
+        && channel
+            .constant
+            .is_some_and(crate::kernels::scene_paint_is_absent_keyword)
 }
 
 /// Scale every item's alpha by a constant factor in `[0, 1]`.
@@ -325,7 +326,7 @@ fn item_fill_rgba8(
     }
     let packed = packed?;
     let no_artist = SceneXytaStyleChannelIn::default();
-    let artist_ch = if is_absent_paint(channel) { &no_artist } else { artist_ch };
+    let artist_ch = if is_absent_paint(channel, fallback) { &no_artist } else { artist_ch };
     item_apply_opacity(&packed, n, opacity_ch, artist_ch)
 }
 
@@ -455,7 +456,7 @@ fn scatter_point_stroke_rgba8(
         return Some(packed);
     }
     let no_artist = SceneXytaStyleChannelIn::default();
-    let artist_ch = if is_absent_paint(stroke) { &no_artist } else { artist_ch };
+    let artist_ch = if is_absent_paint(stroke, fallback) { &no_artist } else { artist_ch };
     item_apply_opacity(&packed, n, opacity_ch, artist_ch)
 }
 

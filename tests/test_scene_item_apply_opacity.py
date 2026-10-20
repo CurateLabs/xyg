@@ -26,3 +26,15 @@ def test_artist_alpha_replaces_an_explicitly_transparent_rgba_paint() -> None:
     packed = bytes([9, 8, 7, 0, 1, 2, 3, 80])
     out = kernels.scene_item_apply_opacity(packed, 2, [0.5, 0.5], None)
     assert out == bytes([9, 8, 7, 128, 1, 2, 3, 128])
+
+
+def test_scene_artist_alpha_css_is_rust_owned_keyword_and_paint_rule() -> None:
+    """One native operation applies an artist alpha to an authored CSS paint (ABI 385)."""
+    from xyg import _native
+
+    assert _native.scene_artist_alpha_css("none", 0.5) == (0, 0, 0, 0)
+    assert _native.scene_artist_alpha_css("transparent", 0.5) == (0, 0, 0, 0)
+    assert _native.scene_artist_alpha_css("#ff0000", 0.5) == (255, 0, 0, 128)
+    assert _native.scene_artist_alpha_css("#ff000080", 0.5) == (255, 0, 0, 128)
+    assert _native.scene_artist_alpha_css("#ff000000", 0.5) == (255, 0, 0, 128)
+    assert _native.scene_artist_alpha_css("#ff000080", -1.0) == (255, 0, 0, 128)

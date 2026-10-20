@@ -9,6 +9,7 @@ from __future__ import annotations
 from io import BytesIO
 
 import numpy as np
+import pytest
 
 import xyg.pyplot as plt
 
@@ -255,3 +256,92 @@ def test_translucent_constant_color_is_not_applied_twice_with_per_item_strokes()
         assert 0.4 < centre[1] < 0.6
     finally:
         plt.close("all")
+
+
+_ALPHA_PAINTS = {
+    "keyword": "none",
+    "explicit_transparent": "#00000000",
+    "opaque": "#ff0000",
+    "translucent": "#ff000080",
+}
+
+
+def _ink_green(pixels: np.ndarray) -> float | None:
+    """Green channel of the most-saturated non-white pixel near the marker centre."""
+    height, width = pixels.shape[:2]
+    inner = pixels[int(height * 0.3) : int(height * 0.7), int(width * 0.25) : int(width * 0.75)]
+    ink = inner[(inner < 0.98).any(axis=-1)]
+    return None if not len(ink) else float(ink[ink[:, 1].argmin()][1])
+
+
+@pytest.mark.parametrize("paint", list(_ALPHA_PAINTS))
+@pytest.mark.parametrize("source", ["scalar", "per_item"])
+@pytest.mark.parametrize("role", ["fill", "stroke"])
+def test_scalar_alpha_paint_matrix(role: str, source: str, paint: str) -> None:
+    """role x source x paint under ``alpha=0.5``, pinned to Matplotlib 3.11 semantics.
+
+    The ``none`` keyword stays absent as a scalar paint; explicit RGBA paints and
+    per-item lists (Matplotlib lets a *list* of ``"none"`` take the alpha too) have
+    their alpha replaced exactly once, whether opaque, translucent or transparent.
+    """
+    css = _ALPHA_PAINTS[paint]
+    value: object = css if source == "scalar" else [css, css]
+    xs = [0.5] if source == "scalar" else [0.35, 0.65]
+    try:
+        fig, ax = plt.subplots(figsize=(2, 2))
+        if role == "fill":
+            ax.scatter(xs, [0.5] * len(xs), s=900, c=value, edgecolors="none", alpha=0.5)
+        else:
+            ax.scatter(
+                xs, [0.5] * len(xs), s=900, c="none", edgecolors=value, linewidths=8, alpha=0.5
+            )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        green = _ink_green(_png_rgb(fig))
+    finally:
+        plt.close("all")
+    if paint == "keyword" and source == "scalar":
+        assert green is None
+    else:
+        assert green is not None
+        assert 0.4 < green < 0.6  # alpha 0.5 over white, replaced exactly once
+
+
+def test_absent_scalar_stroke_stays_absent_beside_per_item_fill() -> None:
+    """``edgecolors="none"`` with a wide stroke stays invisible next to per-item fills.
+
+    The per-item fill makes the trace pack a paint plane, so the scalar stroke
+    keyword must be decided from the effective paint (not only a stroke channel).
+    """
+    try:
+        fig, ax = plt.subplots(figsize=(2, 2))
+        ax.scatter(
+            [0.35, 0.65],
+            [0.5, 0.5],
+            s=900,
+            c=["#0000ff", "#00ff00"],
+            edgecolors="none",
+            linewidths=8,
+            alpha=0.5,
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        pixels = _png_rgb(fig)
+        height, width = pixels.shape[:2]
+        pixels = pixels[int(height * 0.3) : int(height * 0.7), int(width * 0.2) : int(width * 0.8)]
+        gray = (np.ptp(pixels, axis=-1) < 0.05) & (np.abs(pixels[..., 0] - 0.5) < 0.1)
+        assert not np.any(gray)  # a black stroke at alpha 0.5 would be (0.5, 0.5, 0.5)
+    finally:
+        plt.close("all")
+
+
+def test_pyplot_alpha_lowering_makes_no_keyword_decision() -> None:
+    """The ``none`` keyword rule is Rust-owned; the pyplot lowering only formats its result."""
+    import inspect
+
+    from xyg.pyplot import _grid
+
+    source = inspect.getsource(_grid._lower_scalar_artist_alpha)
+    assert "scene_artist_alpha_css" in source
+    assert '"none"' not in source
+    assert '"transparent"' not in source
