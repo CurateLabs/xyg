@@ -234,8 +234,8 @@ fn slot(entries: &Entries<'_>) -> Result<Slot> {
             "bold" | "700" => 2,
             _ => return Err(ChromeStyleError::FontWeight),
         },
-        Some(Value::Number(n)) if n == 400.0 => 0,
-        Some(Value::Number(n)) if n == 700.0 => 2,
+        Some(Value::Number(400.0)) => 0,
+        Some(Value::Number(700.0)) => 2,
         Some(_) => return Err(ChromeStyleError::FontWeight),
     };
     let italic = match authored(entries, "font-style") {
