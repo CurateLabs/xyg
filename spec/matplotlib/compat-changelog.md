@@ -86,8 +86,9 @@ Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus i
   facts: the axis id/side, scale, ticks, title and format, the XYCO-resolved y2
   chrome (tick/title size, padding, paints, italic/bold flags), the per-trace y
   selector (`XYCL` column flag bit 1, ABI 390), and `has_colorbar` presence. They
-  add no admission, default or layout policy (Rust builds the `XYY2` block from the
-  authored observation); Rust returns the stable
+  add no admission or layout policy and no default for any y2-specific wire field
+  (Rust builds the `XYY2` block from the authored observation; the shared chrome-axis
+  marshalling still resolves side/mask defaults, as before); Rust returns the stable
   `XYG_SCENE_UNSUPPORTED_Y2_*` / `_X2` / `_EXTRA_AXES` reasons identically to both.
 - pyplot seeds the twin's right axis the way it seeds the left y axis, onto the
   public `y2` axis options: `ytick.major.size/pad/width`, `ytick.color`,
@@ -104,6 +105,13 @@ Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus i
   client; PR 1 had drawn it clockwise.
 - An authored empty `tick_values` on y2 means automatic ticks, as it already did
   for x and y.
+- Known gap: annotations on a twin's y2 scale (`twin.text`, `twin.annotate`,
+  `twin.axhline`, ...) are not projected. They were silently drawn through the
+  primary y scale (e.g. `y="-18052.8"`); pyplot now binds them to y2 and Rust
+  refuses them with `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION`. Axes-fraction text on a
+  twin (`transform=twin.transAxes`) never reads the y scale and still exports.
+- The browser's default y-title rotation (-90°) now applies to every right-placed
+  y title, not only y2.
 - Invalid authored y2 values (zero or negative scale constant, non-finite domain or
   tick-label angle) are not defaulted by the y2 marshalling in either host: they
   reach the Scene encoder, which refuses them, and both hosts surface the same

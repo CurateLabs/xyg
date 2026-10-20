@@ -850,6 +850,10 @@ def pack_figure_support(
                 "has_class_name": annotation.get("class_name") not in (None, ""),
                 "kind_is_supported_text": kind in {"callout", "arrow", "text"},
                 "has_text": annotation.get("text") not in (None, ""),
+                "y2": annotation.get("y_axis") == "y2",
+                "coordinate_space": _optional_str(
+                    (annotation.get("style") or {}).get("coordinate_space")
+                ),
             }
         )
     axes = []

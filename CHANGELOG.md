@@ -29,9 +29,16 @@ in the README).
   (scale constant, tick strategy/anchor, minimum label gap) and rejecting invalid
   authored values (zero/negative constant, non-finite domain or angle) identically
   for both hosts. The y2 title now reads bottom to top like the left title in SVG,
-  PDF, PNG and the interactive browser client (a behaviour change: the live y2
-  title previously read top to bottom). An authored empty y2 `tick_values` means
-  automatic ticks, as for x and y. Hosts
+  PDF, PNG and the interactive browser client. Behaviour change in the browser:
+  the default y-title rotation is now -90° for every y title, so any
+  right-placed title (a primary or extra y axis with `side="right"`, as well as
+  y2) also flips from reading top to bottom to bottom to top; an authored
+  `label_angle` still wins. An authored empty y2 `tick_values` means
+  automatic ticks, as for x and y. Annotations bound to y2 (`y_axis="y2"` on
+  `xyg.text`/`label`/`marker`/`arrow`/`callout`/`hline`/`y_band`; every pyplot
+  twin annotation) that read the y data scale are refused by Rust with
+  `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION` instead of being silently projected
+  through the primary scale (a known gap; axes-fraction text is unaffected). Hosts
   translate axis ids (`y2` = 2, `x2` = 3) into the `XYFS` observation, and set the
   new `XYCL` column flag bit 1 (`XYCL_Y2`) so Rust stamps the record y selector on
   every row of a y2 trace. Rust alone admits or rejects and returns the same

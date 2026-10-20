@@ -255,3 +255,33 @@ def test_charts_without_y2_carry_no_y2_block() -> None:
     ).figure()
     assert b"XYY2" not in figure_scene(figure)
     assert b"XYY2" in figure_scene(dual_chart().figure())
+
+
+def test_annotation_bound_to_y2_is_refused_by_rust() -> None:
+    """`xyg.text(..., y_axis="y2")` used to project through the primary scale."""
+
+    def annotated(annotation: Any):
+        chart = c.line_chart(
+            c.line(x=[1, 2, 3], y=[1, 2, 3]),
+            c.line(x=[1, 2, 3], y=[100, 200, 300], y_axis="y2"),
+            c.x_axis(domain=(0, 4)),
+            c.y_axis(domain=(0, 4)),
+            c.y_axis(id="y2", side="right", domain=(0, 400)),
+            annotation,
+        )
+        return chart.figure()
+
+    refused = "XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION:"
+    for annotation in (
+        c.text(2, 200, "secondary", y_axis="y2"),
+        c.text(2, 200, "s", y_axis="y2", style={"coordinate_space": "yaxis_transform"}),
+        c.callout(2, 200, "s", y_axis="y2"),
+        c.marker(2, 200, y_axis="y2"),
+        c.hline(200, y_axis="y2"),
+    ):
+        assert (_reason(annotated(annotation)) or "").startswith(refused), annotation.kind
+    admitted = c.text(2, 0.5, "s", y_axis="y2", style={"coordinate_space": "axes_fraction"})
+    assert _reason(annotated(admitted)) is None
+    assert _reason(annotated(c.text(2, 2, "primary"))) is None
+    with pytest.raises(ValueError, match="annotation y_axis"):
+        c.text(2, 2, "s", y_axis="y3")

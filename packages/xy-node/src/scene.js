@@ -4161,6 +4161,8 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     has_class_name: annotation.class_name != null && annotation.class_name !== "",
     kind_is_supported_text: ["callout", "arrow", "text"].includes(annotation.kind),
     has_text: annotation.text != null && annotation.text !== "",
+    y2: annotation.y_axis === "y2",
+    coordinate_space: optionalStr(annotation.style?.coordinate_space),
   }));
   const axes = [];
   for (const [axisId, options] of Object.entries(figureAxisOptions(figure) ?? {})) {

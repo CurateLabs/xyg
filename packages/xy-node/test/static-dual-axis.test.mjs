@@ -153,3 +153,19 @@ test("an authored empty tick list is automatic ticks, for y2 as for y", () => {
   assert.equal(svgOf(dual({ y: { tick_values: [] } })), auto);
   assert.notEqual(svgOf(dual({ y2: { tick_values: [0, 400] } })), auto);
 });
+
+test("an annotation bound to y2 is refused with Rust's reason, not projected on the primary scale", () => {
+  const annotated = (annotation) => {
+    const figure = dual();
+    figure.annotate(annotation);
+    return figure;
+  };
+  const refused = /^XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION:/;
+  const text = { kind: "text", x: 2, y: 200, text: "secondary", y_axis: "y2" };
+  assert.match(sceneExportSupportReason(annotated(text)), refused);
+  assert.match(sceneExportSupportReason(annotated({ ...text, style: { coordinate_space: "yaxis_transform" } })), refused);
+  assert.match(sceneExportSupportReason(annotated({ kind: "rule", axis: "y", value: 200, y_axis: "y2" })), refused);
+  // Not reading the y scale: admitted. Unbound: unchanged.
+  assert.equal(sceneExportSupportReason(annotated({ ...text, y: 0.5, style: { coordinate_space: "axes_fraction" } })), null);
+  assert.equal(sceneExportSupportReason(annotated({ ...text, y: 2, y_axis: undefined })), null);
+});

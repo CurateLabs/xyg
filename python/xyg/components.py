@@ -52,6 +52,14 @@ from .dom import CHART_DOM_SLOTS, validate_dom_slots
 # Shared validators (single source of truth in `_validate`); these aliases keep
 # the module-private names their call sites already use.
 _optional_string = _validate.optional_text
+
+
+def _annotation_y_axis(value: Optional[str]) -> Optional[str]:
+    if value is None or value in ("y", "y2"):
+        return value
+    raise ValueError(f"annotation y_axis must be 'y' or 'y2', got {value!r}")
+
+
 _finite_number = _validate.finite_scalar
 _axis_id = _validate.axis_id
 _optional_positive_int = _validate.optional_positive_int
@@ -214,6 +222,8 @@ class Annotation(Component):
     x: Optional[CoordinateLike] = None
     y: Optional[CoordinateLike] = None
     text: Optional[str] = None
+    # Id of the y axis the annotation's y coordinate is read on (None = primary).
+    y_axis: Optional[str] = None
     class_name: Optional[str] = None
     style: dict[str, StyleValue] = field(default_factory=dict)
     props: dict[str, Any] = field(default_factory=dict)
@@ -2243,6 +2253,7 @@ def hline(
     color: Optional[str] = "#667085",
     width: float = 1.5,
     opacity: float = 1.0,
+    y_axis: Optional[str] = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2254,6 +2265,8 @@ def hline(
         color: Rule color.
         width: Rule width in pixels.
         opacity: Rule opacity from zero to one.
+        y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
+            secondary axis); static export rejects annotations bound to y2.
         class_name: DOM class applied to the optional text label. The rule is
             canvas-painted and is styled through ``color``, ``width``, and
             ``opacity``.
@@ -2264,6 +2277,7 @@ def hline(
         axis="y",
         y=y,
         text=_optional_string(text, "hline text"),
+        y_axis=_annotation_y_axis(y_axis),
         class_name=_optional_string(class_name, "hline class_name"),
         style=_style_dict(style, "hline style"),
         props={"color": color, "width": width, "opacity": opacity},
@@ -2311,6 +2325,7 @@ def y_band(
     text: Optional[str] = None,
     color: Optional[str] = "#64748b",
     opacity: float = 0.14,
+    y_axis: Optional[str] = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2322,6 +2337,8 @@ def y_band(
         text: Optional label displayed in the band.
         color: Band color.
         opacity: Band opacity from zero to one.
+        y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
+            secondary axis); static export rejects annotations bound to y2.
         class_name: DOM class applied to the optional text label. The band is
             canvas-painted and is styled through ``color`` and ``opacity``.
         style: Annotation style overrides.
@@ -2332,6 +2349,7 @@ def y_band(
         x=y0,
         y=y1,
         text=_optional_string(text, "y_band text"),
+        y_axis=_annotation_y_axis(y_axis),
         class_name=_optional_string(class_name, "y_band class_name"),
         style=_style_dict(style, "y_band style"),
         props={"color": color, "opacity": opacity},
@@ -2348,6 +2366,7 @@ def text(
     color: Optional[str] = None,
     anchor: str = "start",
     rotation: float | None = None,
+    y_axis: Optional[str] = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2362,6 +2381,8 @@ def text(
         color: Text color.
         anchor: Text alignment relative to the anchor point.
         rotation: Label rotation in degrees.
+        y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
+            secondary axis); static export rejects annotations bound to y2.
         class_name: DOM class applied to the text label.
         style: Annotation style overrides.
     """
@@ -2372,6 +2393,7 @@ def text(
         x=x,
         y=y,
         text=value,
+        y_axis=_annotation_y_axis(y_axis),
         class_name=_optional_string(class_name, "text class_name"),
         style=_style_dict(style, "text style"),
         props={
@@ -2394,6 +2416,7 @@ def label(
     color: Optional[str] = None,
     anchor: str = "start",
     rotation: float | None = None,
+    y_axis: Optional[str] = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2408,6 +2431,8 @@ def label(
         color: Text color.
         anchor: Text alignment relative to the anchor point.
         rotation: Label rotation in degrees.
+        y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
+            secondary axis); static export rejects annotations bound to y2.
         class_name: DOM class applied to the text label.
         style: Annotation style overrides.
     """
@@ -2420,6 +2445,7 @@ def label(
         color=color,
         anchor=anchor,
         rotation=rotation,
+        y_axis=y_axis,
         class_name=class_name,
         style=style,
     )
@@ -2440,6 +2466,7 @@ def marker(
     dy: float = -8.0,
     anchor: str = "start",
     rotation: float | None = None,
+    y_axis: Optional[str] = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2459,6 +2486,8 @@ def marker(
         dy: Vertical label offset in pixels.
         anchor: Label alignment relative to the marker.
         rotation: Label rotation in degrees.
+        y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
+            secondary axis); static export rejects annotations bound to y2.
         class_name: DOM class applied to the optional text label. The marker is
             canvas-painted and is styled through its marker arguments.
         style: Annotation style overrides.
@@ -2468,6 +2497,7 @@ def marker(
         x=x,
         y=y,
         text=_optional_string(text, "marker text"),
+        y_axis=_annotation_y_axis(y_axis),
         class_name=_optional_string(class_name, "marker class_name"),
         style=_style_dict(style, "marker style"),
         props={
@@ -2495,6 +2525,7 @@ def arrow(
     color: Optional[str] = "#667085",
     width: float = 1.5,
     opacity: float = 1.0,
+    y_axis: Optional[str] = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2509,6 +2540,8 @@ def arrow(
         color: Arrow color.
         width: Arrow width in pixels.
         opacity: Arrow opacity from zero to one.
+        y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
+            secondary axis); static export rejects annotations bound to y2.
         class_name: DOM class applied to the optional text label. The arrow is
             canvas-painted and is styled through ``color``, ``width``, and
             ``opacity``.
@@ -2519,6 +2552,7 @@ def arrow(
         x=x0,
         y=y0,
         text=_optional_string(text, "arrow text"),
+        y_axis=_annotation_y_axis(y_axis),
         class_name=_optional_string(class_name, "arrow class_name"),
         style=_style_dict(style, "arrow style"),
         props={"x1": x1, "y1": y1, "color": color, "width": width, "opacity": opacity},
@@ -2632,6 +2666,7 @@ def callout(
     width: float = 1.5,
     opacity: float = 1.0,
     anchor: str = "start",
+    y_axis: Optional[str] = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2647,6 +2682,8 @@ def callout(
         width: Pointer width in pixels.
         opacity: Callout opacity from zero to one.
         anchor: Text alignment relative to the callout point.
+        y_axis: Id of the y axis the y coordinate is read on (``"y2"`` for a
+            secondary axis); static export rejects annotations bound to y2.
         class_name: DOM class applied to the callout text. The pointer is
             canvas-painted.
         style: Annotation style overrides.
@@ -2658,6 +2695,7 @@ def callout(
         x=x,
         y=y,
         text=value,
+        y_axis=_annotation_y_axis(y_axis),
         class_name=_optional_string(class_name, "callout class_name"),
         style=_style_dict(style, "callout style"),
         props={
@@ -4087,6 +4125,8 @@ class Chart(Component):
             if applier is None:
                 raise TypeError(f"no applier registered for annotation kind {annotation.kind!r}")
             applier(fig, annotation)
+            if annotation.y_axis is not None:
+                fig.annotations[-1]["y_axis"] = annotation.y_axis
         fig._annotation_specs()
 
         if legends:

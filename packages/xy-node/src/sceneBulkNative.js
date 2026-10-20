@@ -174,6 +174,8 @@ const FigureSupportAnnotationObs = koffi.struct("XygFigureSupportAnnotationObs",
   has_class_name: "int32_t",
   kind_is_supported_text: "int32_t",
   has_text: "int32_t",
+  y2: "int32_t",
+  coordinate_space: StringRef,
 });
 
 const FigureSupportAxisObsIn = koffi.struct("XygFigureSupportAxisObsIn", {
@@ -565,6 +567,8 @@ export function sceneFigureSupportMaterialize({
     has_class_name: row.has_class_name ? 1 : 0,
     kind_is_supported_text: row.kind_is_supported_text ? 1 : 0,
     has_text: row.has_text ? 1 : 0,
+    y2: row.y2 ? 1 : 0,
+    coordinate_space: optionalStringRef(row.coordinate_space, keep),
   }));
   const axisKeysBlob = [];
   const axisRows = axes.map((row) => {

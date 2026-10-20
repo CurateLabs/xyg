@@ -2054,7 +2054,10 @@ header byte is the authored side (the `XYEP` codes: 1 bottom, 2 left, 3 top, 4
 right, 255 other). Trace flag bit 13 marks a trace plotted against y2. Rust
 admits y2 only when `side == right`, and returns the stable reasons
 `XYG_SCENE_UNSUPPORTED_Y2_SIDE`, `_X2`, `_EXTRA_AXES`, `_Y2_TICK_ONLY` (no trace
-on the axis), `_Y2_POLAR`, and `_Y2_COLORBAR`. XYFS observation bit 10 reports that the
+on the axis), `_Y2_POLAR`, and `_Y2_COLORBAR`. XYFS observation bit 11 flags an annotation bound to y2 (`y_axis == "y2"`) whose coordinate
+space reads the y data scale (`data`, `yaxis_transform`; the space vocabulary stays
+owned by `coordinate_space_code`), refused as `_Y2_ANNOTATION`; annotation rows
+may carry `y_axis`. XYFS observation bit 10 reports that the
 figure carries any colorbar (supported or not; `xyg_scene_figure_support_materialize`
 takes a separate `has_colorbar`), so a valid colorbar cannot hide from the y2
 prohibition; `SceneBatch::with_y2` also refuses a colorbar, and the gutter

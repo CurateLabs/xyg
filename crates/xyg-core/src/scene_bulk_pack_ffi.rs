@@ -578,6 +578,8 @@ pub struct XygFigureSupportAnnotationObs {
     pub has_class_name: i32,
     pub kind_is_supported_text: i32,
     pub has_text: i32,
+    pub y2: i32,
+    pub coordinate_space: XygStringRef,
 }
 
 /// Axis observation for ``xyg_scene_figure_support_materialize`` (ABI 322).
@@ -677,6 +679,8 @@ pub unsafe extern "C" fn xyg_scene_figure_support_materialize(
                 has_class_name: row.has_class_name,
                 kind_is_supported_text: row.kind_is_supported_text,
                 has_text: row.has_text,
+                y2: row.y2,
+                coordinate_space: abi!(opt_str(&row.coordinate_space)),
             });
         }
     }

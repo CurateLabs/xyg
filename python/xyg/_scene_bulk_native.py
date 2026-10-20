@@ -217,6 +217,8 @@ class _XygFigureSupportAnnotationObs(ctypes.Structure):
         ("has_class_name", ctypes.c_int32),
         ("kind_is_supported_text", ctypes.c_int32),
         ("has_text", ctypes.c_int32),
+        ("y2", ctypes.c_int32),
+        ("coordinate_space", _XygStringRef),
     ]
 
 
@@ -296,6 +298,12 @@ def _string_ref(value: str | None) -> tuple[_XygStringRef, bytes]:
     encoded = value.encode("utf-8")
     arr = np.frombuffer(encoded, dtype=np.uint8)
     return _XygStringRef(_ptr_u8(arr), len(encoded)), encoded
+
+
+def _keep_string_ref(value: str | None, keepers: list[bytes]) -> tuple[_XygStringRef]:
+    ref, encoded = _string_ref(value)
+    keepers.append(encoded)
+    return (ref,)
 
 
 def _chrome_axis_style(style: Mapping[str, Any], keepers: list[bytes]) -> _XygChromeAxisStyleIn:
@@ -612,6 +620,8 @@ def scene_figure_support_materialize(
             1 if row.get("has_class_name") else 0,
             1 if row.get("kind_is_supported_text") else 0,
             1 if row.get("has_text") else 0,
+            1 if row.get("y2") else 0,
+            *_keep_string_ref(row.get("coordinate_space"), keepers),
         )
     axis_keys_blob = bytearray()
     axis_rows = (_XygFigureSupportAxisObsIn * len(axes))()

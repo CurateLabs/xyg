@@ -49,7 +49,16 @@ def node_exports() -> dict[str, Any]:
     return json.loads(proc.stdout)
 
 
-def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right", raw_y2=None, raw_y=None):
+def _dual(
+    *,
+    y=None,
+    y2=None,
+    y2_values=(100, 200, 300),
+    y2_side="right",
+    raw_y2=None,
+    raw_y=None,
+    annotations=(),
+):
     """The public dual-axis chart; `raw_y2` sets axis options the component validators
     would refuse (or do not expose), so the host-to-Rust path sees them untouched."""
     figure = c.line_chart(
@@ -58,12 +67,22 @@ def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right", raw_y2
         c.x_axis(domain=(0, 4)),
         c.y_axis(domain=(0, 4), label="L", **(y or {})),
         c.y_axis(id="y2", side=y2_side, **{"label": "R", "domain": (0, 400), **(y2 or {})}),
+        *annotations,
         width=WIDTH,
         height=HEIGHT,
     ).figure()
     figure.axis_options["y2"].update(raw_y2 or {})
     figure.axis_options["y"].update(raw_y or {})
     return figure
+
+
+def _y2_annotation(*, style=None, y_axis="y2", y=200):
+    """A public `xyg.text` bound to y2 (or the primary axis when `y_axis` is None)."""
+    return _dual(annotations=[c.text(2, y, "secondary", y_axis=y_axis, style=style)])
+
+
+def _y2_annotation_hline():
+    return _dual(annotations=[c.hline(200, y_axis="y2")])
 
 
 CASES: dict[str, dict[str, Any]] = {
@@ -143,9 +162,30 @@ def test_python_and_node_report_the_same_rust_reasons(node_exports: dict[str, An
         "y2_colorbar": scene_export_support_reason(colorbar),
         "y2_polar": scene_export_support_reason(polar),
         "y2_category": scene_export_support_reason(_dual(raw_y2={"type": "category"})),
+        "y2_annotation_data": scene_export_support_reason(_y2_annotation()),
+        "y2_annotation_yaxis_transform": scene_export_support_reason(
+            _y2_annotation(style={"coordinate_space": "yaxis_transform"})
+        ),
+        "y2_annotation_hline": scene_export_support_reason(_y2_annotation_hline()),
+        "y2_annotation_axes_fraction": scene_export_support_reason(
+            _y2_annotation(y=0.5, style={"coordinate_space": "axes_fraction"})
+        ),
+        "y2_annotation_primary": scene_export_support_reason(_y2_annotation(y=2, y_axis=None)),
     }
     assert python == node_exports["reasons"]
-    assert all(reason and reason.startswith("XYG_SCENE_UNSUPPORTED_") for reason in python.values())
+    admitted = {"y2_annotation_axes_fraction", "y2_annotation_primary"}
+    assert all(python[name] is None for name in admitted)
+    assert all(
+        reason and reason.startswith("XYG_SCENE_UNSUPPORTED_")
+        for name, reason in python.items()
+        if name not in admitted
+    )
+    for name in (
+        "y2_annotation_data",
+        "y2_annotation_yaxis_transform",
+        "y2_annotation_hline",
+    ):
+        assert python[name].startswith("XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION:"), name
 
 
 def test_empty_tick_values_are_automatic_on_both_axes_in_both_hosts(

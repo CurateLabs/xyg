@@ -79,7 +79,25 @@ const REJECTIONS = {
     return figure;
   },
   y2_category: () => dualFigure({ y2: { type: "category" } }),
+  // Annotations read on the secondary y scale are refused, never projected
+  // through the primary scale.
+  y2_annotation_data: () => y2Annotation({}),
+  y2_annotation_yaxis_transform: () => y2Annotation({ style: { coordinate_space: "yaxis_transform" } }),
+  y2_annotation_hline: () => {
+    const figure = dualFigure();
+    figure.annotate({ kind: "rule", axis: "y", value: 200, y_axis: "y2" });
+    return figure;
+  },
+  // Spaces that never read the y scale project identically on y2: admitted.
+  y2_annotation_axes_fraction: () => y2Annotation({ y: 0.5, style: { coordinate_space: "axes_fraction" } }),
+  y2_annotation_primary: () => y2Annotation({ y: 2, y_axis: undefined }),
 };
+
+function y2Annotation(extra) {
+  const figure = dualFigure();
+  figure.annotate({ kind: "text", x: 2, y: 200, text: "secondary", y_axis: "y2", ...extra });
+  return figure;
+}
 
 const b64 = (bytes) => Buffer.from(bytes).toString("base64");
 const out = { cases: {}, reasons: {}, invalid: {} };

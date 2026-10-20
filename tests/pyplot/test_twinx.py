@@ -133,3 +133,45 @@ def test_clearing_the_host_drops_the_twin_and_a_new_twin_is_seeded() -> None:
     ax1.plot([0, 1], [0, 1])
     ax2.plot([0, 1], [0, 1])
     assert ax1._axis["y2"]["style"]["tick_length"] == pytest.approx(8.0 * 100 / 72)
+
+
+def _twin_with(draw):
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [0, 4])
+    ax.set_ylim(0, 4)
+    twin = ax.twinx()
+    twin.plot([0, 1], [0, 400])
+    twin.set_ylim(0, 400)
+    draw(ax, twin)
+    return fig
+
+
+TWIN_ANNOTATIONS = {
+    "annotate_yaxis_transform": lambda ax, twin: twin.annotate(
+        "secondary", xy=(0.5, 200), xycoords="yaxis transform"
+    ),
+    "annotate_data": lambda ax, twin: twin.annotate("secondary", xy=(0.5, 200), xycoords="data"),
+    "text_yaxis_transform": lambda ax, twin: twin.text(
+        0.5, 200, "secondary", transform=twin.get_yaxis_transform()
+    ),
+    "text_data": lambda ax, twin: twin.text(0.5, 200, "secondary"),
+    "axhline": lambda ax, twin: twin.axhline(200),
+}
+
+
+@pytest.mark.parametrize("name", list(TWIN_ANNOTATIONS))
+def test_twin_annotations_on_the_secondary_scale_fail_closed(name: str) -> None:
+    """They used to export at y=-18052.8, projected through the primary scale."""
+    from xyg._static_document import UnsupportedStaticExport
+
+    fig = _twin_with(TWIN_ANNOTATIONS[name])
+    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION"):
+        _svg(fig)
+
+
+def test_twin_annotations_that_do_not_read_the_y_scale_still_export() -> None:
+    fig = _twin_with(lambda ax, twin: twin.text(0.5, 0.5, "secondary", transform=twin.transAxes))
+    assert "secondary" in _svg(fig)
+    # An annotation on the primary axes of a twin figure is unchanged.
+    fig = _twin_with(lambda ax, twin: ax.text(0.5, 2, "primary"))
+    assert "primary" in _svg(fig)

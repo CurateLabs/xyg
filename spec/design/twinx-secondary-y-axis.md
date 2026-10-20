@@ -384,6 +384,20 @@ surface Rust's reasons; no host adds admission or layout policy.
   `test_empty_y2_tick_values_mean_automatic_ticks_like_the_primary_axis` and
   across hosts by the `empty_y2_ticks` / `empty_y_ticks` cross-host cases and the
   Node `an authored empty tick list is automatic ticks` test.
+- **Annotations on y2 (known gap, review round 3).** Scene projects annotations
+  through the primary y scale only. pyplot twin annotations (entries live on the
+  host with `y_axis == "y2"`) and public `y_axis="y2"` annotations were silently
+  projected through it (SVG `y="-18052.8"` for a twin `text(0.5, 200)` on a 0..4
+  primary axis). The binding is now preserved end to end: pyplot tags twin
+  annotations, `xyg.text`/`label`/`marker`/`arrow`/`callout`/`hline`/`y_band` take
+  `y_axis`, the figure annotation dict carries `y_axis`, and both hosts marshal
+  `y2` plus the authored `coordinate_space` into the `XYFS` annotation observation
+  (`XygFigureSupportAnnotationObs`, ABI 390). Rust
+  (`scene_figure_support_materialize.rs`, observation bit 11; reason in
+  `scene_export.rs`) refuses a y2-bound annotation that reads y data with
+  `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION`; axes-fraction and `xaxis_transform` rows
+  never read the y scale and are admitted. Projecting annotations onto y2 is not
+  implemented (known gap, `compat.md`).
 - **Invalid-input tests.** `tests/test_static_dual_axis_cross_host.py` sends a zero
   and a negative constant, an infinite domain and ±infinite
   `tick_label_angle`; Python and Node get the same rejection message,
