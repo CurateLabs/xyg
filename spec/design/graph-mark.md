@@ -360,10 +360,10 @@ platform `sin`/`cos`), which is why no tolerance is offered instead.
 `layoutWasmCose` in a headless-Chromium Worker) on 1k/10k/100k/1M nodes, 2
 edges/node (1M = the admission ceiling, `MAX_NODES`). Measured on a loaded
 shared host (details and raw rows in
-`spec/performance/cose-progressive-ladder-2026-10-20/`): first paint p50 ≤ 0.5 s
-through 100k (Node's 0.2–0.5 s is Worker spawn + library load) and 1.3–1.5 s at
-1M; cadence p50 per 10-tick checkpoint ≈ 11–24 ms (1k), 100–155 ms (10k),
-350–530 ms (100k), 1.6 s native / 3.6 s WASM (1M); host-thread p95 stall ≤ 4 ms
+`spec/performance/cose-progressive-ladder-2026-10-20/`): first paint p50 ≤ 0.13 s
+through 100k (Node's ~0.12–0.14 s is Worker spawn + library load) and 0.8–1.3 s
+at 1M; cadence p50 per 10-tick checkpoint ≈ 11–13 ms (1k), 32–112 ms (10k),
+136–315 ms (100k), 1.4 s native / 2.9 s WASM (1M); host-thread p95 stall ≤ 3.6 ms
 on every rung and host, i.e. layout never blocks the host. Not a CI gate.
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid
 approximation: at most 32 members per neighboring cell are evaluated exactly;

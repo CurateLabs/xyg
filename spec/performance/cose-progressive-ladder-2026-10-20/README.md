@@ -33,44 +33,50 @@ before quoting absolute numbers.
 
 ## Result (this host, see caveats)
 
-Median first paint / cadence p50 / cadence p95, milliseconds (`max` lag = worst
-host-thread stall during the job):
+Milliseconds. First paint is the median (max); cadence is the gap between
+delivered 10-tick checkpoints; lag is the host-thread p95 / max stall while the
+job ran.
 
 | Rung | Host | first paint p50 (max) | cadence p50 | cadence p95 | lag p95 / max | peak RSS |
 |---|---|---:|---:|---:|---:|---:|
-| 1k | Python native | 4 (6) | 13 | 27 | 2.8 / 6 | 44 MB |
-| 1k | Node worker_threads | 210 (376) | 11 | 24 | 3.0 / 16 | 102 MB |
-| 1k | Browser WASM Worker | 4 (49) | 24 | 39 | 2.9 / 18 | n/a |
-| 10k | Python native | 9 (13) | 103 | 166 | 3.1 / 35 | 46 MB |
-| 10k | Node worker_threads | 251 (445) | 100 | 155 | 3.3 / 32 | 129 MB |
-| 10k | Browser WASM Worker | 15 (56) | 155 | 264 | 2.7 / 591 | n/a |
-| 100k | Python native | 208 (233) | 348 | 455 | 3.0 / 42 | 69 MB |
-| 100k | Node worker_threads | 508 (661) | 356 | 485 | 3.8 / 31 | 227 MB |
-| 100k | Browser WASM Worker | 123 (241) | 526 | 929 | 2.2 / 598 | n/a |
-| 1M | Python native | 1267 | 1604 | 2039 | 2.7 / 12 | 281 MB |
-| 1M | Node worker_threads | 1325 | 1621 | 1891 | 2.5 / 34 | 422 MB |
-| 1M | Browser WASM Worker | 1512 | 3593 | 3824 | 1.6 / 28 | n/a |
+| 1k | python-native | 2 (4) | 11 | 13 | 3.2 / 8 | 44 MB |
+| 1k | node-worker-threads | 143 (160) | 11 | 14 | 2.1 / 10 | 102 MB |
+| 1k | browser-wasm-worker | 2 (9) | 13 | 18 | 2.6 / 4 | n/a |
+| 10k | python-native | 5 (6) | 32 | 39 | 1.5 / 5 | 46 MB |
+| 10k | node-worker-threads | 119 (145) | 35 | 45 | 1.8 / 8 | 173 MB |
+| 10k | browser-wasm-worker | 8 (25) | 112 | 125 | 0.6 / 40 | n/a |
+| 100k | python-native | 53 (81) | 140 | 186 | 3.6 / 7 | 70 MB |
+| 100k | node-worker-threads | 128 (179) | 136 | 152 | 1.5 / 5 | 198 MB |
+| 100k | browser-wasm-worker | 50 (106) | 315 | 533 | 0.3 / 4 | n/a |
+| 1M | python-native | 806 (806) | 1362 | 1383 | 1.8 / 12 | 281 MB |
+| 1M | node-worker-threads | 965 (965) | 1376 | 1395 | 1.8 / 25 | 423 MB |
+| 1M | browser-wasm-worker | 1281 (1281) | 2852 | 3214 | 0.1 / 19 | n/a |
 
 Reading: no host runs layout on its interactive thread — the host-thread p95
-stall stays ≤ 4 ms on every rung of every host. First paint up to 100k is
-≤ 0.7 s and at 1M ≈ 1.3–1.5 s; progress then arrives every ~0.1 s (10k) to
-~0.35–0.5 s (100k) and ~1.6 s native / ~3.6 s WASM at 1M. The browser
-host-thread max stalls (591/598 ms at 10k/100k) are single events in headless
-software-GL Chromium (main-thread `structuredClone`/GC of checkpoint buffers
-under host load) and are recorded as an open observation, not a pass/fail claim.
-The Node Worker's first paint is dominated by Worker spawn + native-library load
-(≈ 200 ms) because `runForceTicks` creates a fresh Worker per job.
+stall is ≤ 3.6 ms on every rung of every host. First paint is ≤ 0.13 s through
+100k nodes (Python/WASM ≤ 0.05 s) and 0.8–1.3 s at 1M; progress then arrives
+every ~11–13 ms (1k), 32–112 ms (10k), 136–315 ms (100k) and ~1.4 s native /
+~2.9 s WASM (1M). The Node first paint (~120–140 ms through 100k) is Worker
+spawn + native-library load, because `runForceTicks` creates a fresh Worker per
+job. The WASM kernel's cadence is ~2–3× the native one at 10k and above.
+
+**Browser main-thread stalls — not reproduced.** The first (more heavily
+loaded, load average 35–45) run measured single browser host-thread stalls of
+591 ms at 10k and 598 ms at 100k. In this run the browser rung's max stalls were
+4 ms (1k), 40 ms (10k), 4 ms (100k) and 19 ms (1M), so the large stalls did not
+persist at lower host load (load average 12–23). They are not diagnosed here;
+if they are reported again they should be tracked as a separate issue.
 
 ## Caveats
 
-- **Shared, heavily loaded host**: load average 35–45 on 16 cores
-  (`loadavg_1m` per row in `results.json`), Ryzen 7 3800X, Linux 7.0, Node
-  22.22.1, CPython 3.13.12, rustc 1.96.0. Absolute times are inflated and noisy;
-  relative ordering and orders of magnitude are the claim.
-- The `environment.git.dirty` flag is true: the harness files themselves were
-  uncommitted when the run started (commit `894027f8` + the harness edits in the
-  PR that adds this directory). Chromium: Chrome for Testing 149.0.7827.55
-  (Playwright cache), software GL.
+- **Shared host**: load average 15.2/18.4/23.8 at start and 12.3/16.6/22.5 at
+  end (`environment.loadavg`, 1-minute value per row in `loadavg_1m`), Ryzen 7
+  3800X (16 threads), Linux 7.0, Node 22.22.1, CPython 3.13.12, rustc 1.96.0,
+  Chrome for Testing 149.0.7827.55 with software GL. Treat absolute times as
+  upper-ish bounds and re-run on a quiet host before quoting.
+- `environment.git`: commit `cb78c1f4`, `dirty: false`. The run uses the build
+  that includes the `portable_sin_cos` change (seeded layouts differ by ulps
+  from earlier runs).
 - Python's `GraphLayoutController` reuses one thread across repetitions; Node
   spawns a Worker per job (as shipped); the WASM Worker is created once per
   rung and its start-up is not part of first paint.
@@ -88,12 +94,3 @@ uv run python scripts/bench_cose_progressive.py --out results.json
 `results.json` holds the raw per-repetition `first_paint_ms` / `cadence_ms`
 arrays, the per-rung summary, the protocol, and `benchmarks/environment.py`
 metadata. Output contract: `schema = "cose-progressive-ladder/1"`.
-
-## Parity finding (native vs WASM)
-
-`portable-sincos-experiment.patch` is the two-site Rust patch (`layout_circle`
-and the CoSE per-component gravity anchor use `portable_sin_cos`) that makes all
-11 golden fixtures — seeded and disconnected included — bitwise identical
-between native and wasm32 (23/23 Node parity tests, no `todo`). It is evidence
-only; it is **not applied** because it shifts every seeded layout by ulps on
-all hosts and needs its own golden/ABI-fixture refresh.
