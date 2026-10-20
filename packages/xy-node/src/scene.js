@@ -439,6 +439,7 @@ function raiseXyafBulkError(error, annotations) {
   if (code === -11) throw new RangeError("Scene callout anchor must be start, middle, or end");
   if (code === -12) throw new RangeError("Scene v23 label border requires color and width");
   if (code === -13) throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
+  if (code === -14) throw new RangeError("Scene text annotations support coordinate_space 'data' or 'axes_fraction' only");
   if (code === -6) {
     if (Object.hasOwn(style, "label_opacity")) {
       throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);
@@ -3036,11 +3037,14 @@ function staticLabelBytes(labels, encoder) {
 
 /**
  * XYST layout version; 2 widened the panel record to 128 bytes (#1004), 3
- * replaced the uniform annotation facts with a per-label table region (#1006).
+ * replaced the uniform annotation facts with a per-label table region, 4
+ * widened its entries for the explicit label box (#1006).
  */
-const XYST_VERSION = 3;
+const XYST_VERSION = 4;
 /** Bytes of one per-label annotation-table entry (XYAO label entry). */
-const STATIC_LABEL_ENTRY_BYTES = 20;
+const STATIC_LABEL_ENTRY_BYTES = 28;
+/** XYAO output version (v3 appends the #1006 explicit label box). */
+const STATIC_ANNOTATION_STYLE_VERSION = 3;
 
 /**
  * A static paint: a CSS color string (converted by the native color
@@ -3149,7 +3153,7 @@ export function staticDocumentEncode({
       throw new RangeError(`StaticDocument panel ${index} axis sides must contain two low/high masks`);
     }
     if (record.annotationLabels.length % STATIC_LABEL_ENTRY_BYTES !== 0) {
-      throw new RangeError(`StaticDocument panel ${index} annotation labels must be 20-byte entries`);
+      throw new RangeError(`StaticDocument panel ${index} annotation labels must be ${STATIC_LABEL_ENTRY_BYTES}-byte entries`);
     }
     record.labelOffset = labelTableBytes;
     labelTableBytes += record.annotationLabels.length;
@@ -3796,7 +3800,7 @@ function staticAnnotationStyleFacts(sources) {
   const version = view.getUint32(4, true);
   const count = view.getUint32(8, true);
   const labelCount = view.getUint32(12, true);
-  if (magic !== "XYAO" || version !== 2 || count !== sources.length) {
+  if (magic !== "XYAO" || version !== STATIC_ANNOTATION_STYLE_VERSION || count !== sources.length) {
     throw new Error("invalid XYAO output");
   }
   let at = 16;

@@ -727,12 +727,10 @@ def test_clabel_table_and_quiverkey_complete_annotation_families() -> None:
     # not emitted; the ContourSet stays live for colorbar()/clim().
     assert {trace.kind for trace in _traces(ax)} == {"segments"}
     spec, _buffers = ax._build_chart(640, 480).figure().build_payload_split()
+    # One boxed axes-fraction text annotation per table cell (#1006).
     assert (
-        sum(
-            annotation.get("class_name") == "xy-mpl-table-cell"
-            for annotation in spec["annotations"]
-        )
-        == 16
+        sum("box_width" in (annotation.get("style") or {}) for annotation in spec["annotations"])
+        == 8
     )
 
 

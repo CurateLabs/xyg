@@ -7,15 +7,18 @@ import { Figure, staticDocumentEncode, staticDocumentExport } from "../src/index
 const registryPath = process.env.XYG_STATIC_EXPORT_REGISTRY ?? fileURLToPath(new URL("../../../tests/fixtures/static_export_support_registry.json", import.meta.url));
 const registry = JSON.parse(readFileSync(registryPath, "utf8")).document;
 const formats = ["svg", "png", "pdf", "jpeg", "webp"];
-/** One per-label annotation entry (the XYAO label-table layout). */
-function labelEntry({ size = 12, flags = 0, padding = null, align = 0 } = {}) {
-  const entry = Buffer.alloc(20);
-  entry.writeUInt32LE(1 | (padding ? 2 : 0), 0);
+/** One per-label annotation entry (the XYAO v3 label-table layout). */
+function labelEntry({ size = 12, flags = 0, padding = null, align = 0, box = null, units = 0 } = {}) {
+  const entry = Buffer.alloc(28);
+  entry.writeUInt32LE(1 | (padding ? 2 : 0) | (box ? 4 : 0), 0);
   entry.writeFloatLE(size, 4);
   entry.writeFloatLE(padding ? padding[0] : 0, 8);
   entry.writeFloatLE(padding ? padding[1] : 0, 12);
   entry[16] = flags;
   entry[17] = align;
+  entry[18] = units;
+  entry.writeFloatLE(box ? box[0] : 0, 20);
+  entry.writeFloatLE(box ? box[1] : 0, 24);
   return entry;
 }
 
@@ -42,6 +45,12 @@ const options = {
   document_optimized_png: [{}, { optimizePng: true }],
   document_tight_crop: [{}, { tightCrop: true, cropPadding: 3 }],
   document_panel_chrome: [{ chromeMetrics: [14, 16, 6, 13, 15, 5], axisSides: [3, 3] }, {}],
+  // #1006 table cell: half the plot width (unit bit 1), 18px tall, with a
+  // 5%-of-plot-width inset (unit bit 4), on an axes-fraction anchor.
+  document_annotation_label_box: [{ annotationLabels: Buffer.concat([
+    labelEntry(),
+    labelEntry({ padding: [0.05, 0], align: 3, box: [0.5, 18], units: 1 | 4 }),
+  ]) }, {}],
   document_annotation_style: [{ annotationLabels: labelEntry({ size: 15, flags: 3, padding: [5, 5], align: 3 }), arrowMetrics: [9, 2, 2] }, {}],
   document_panel_title: [{ titleStyle: [18, "#654321"] }, {}],
   document_title_start: [{}, { titleAnchor: 0, titleFlags: 0 }],
@@ -75,6 +84,10 @@ function figure(name) {
   if (name.includes("annotation")) {
     fig.annotate({ kind: "text", x: 1, y: 3, text: "note < & >", dx: 0, dy: -6, anchor: "start", style: { color: "#654321", label_background: "#ffffff" } });
     fig.annotate({ kind: "arrow", x0: 0.5, y0: 1, x1: 1.5, y1: 2, style: { color: "#667085", width: 1.5, opacity: 1 } });
+  }
+  if (name === "document_annotation_label_box") {
+    fig.annotate({ kind: "text", x: 0.5, y: 0, text: "cell < & >", dx: 0, dy: 10, anchor: "middle",
+      style: { coordinate_space: "axes_fraction", label_background: "#dbeafe" } });
   }
   return fig;
 }
@@ -119,9 +132,9 @@ function build(name) {
     quality: name === "document_jpeg_quality_low" ? 1 : name === "document_jpeg_quality_high" ? 100 : 90 };
 }
 
-const rejectionNames = ["header_truncated", "version_unknown", "version_legacy_layout", "header_flags_unknown", "header_label_table_len_invalid", "panels_empty", "dimensions_zero", "panel_flags_unknown", "panel_retired_annotation_text_flags", "panel_retired_annotation_padding", "panel_retired_annotation_vertical_align", "panel_label_table_empty_present", "panel_inactive_nonzero", "panel_ranges_overlap", "panel_scene_corrupt", "title_invalid_utf8", "title_nul", "title_anchor_unknown", "text_flags_unknown", "label_alignment_unknown", "label_opacity_invalid", "legend_kind_unknown", "legend_reserved_nonzero", "decoration_trailing_bytes", "document_trailing_bytes"];
+const rejectionNames = ["header_truncated", "version_unknown", "version_legacy_layout", "header_flags_unknown", "header_label_table_len_invalid", "panels_empty", "dimensions_zero", "panel_flags_unknown", "panel_retired_annotation_text_flags", "panel_retired_annotation_padding", "panel_retired_annotation_vertical_align", "panel_label_table_empty_present", "panel_label_box_uncentered", "panel_inactive_nonzero", "panel_ranges_overlap", "panel_scene_corrupt", "title_invalid_utf8", "title_nul", "title_anchor_unknown", "text_flags_unknown", "label_alignment_unknown", "label_opacity_invalid", "legend_kind_unknown", "legend_reserved_nonzero", "decoration_trailing_bytes", "document_trailing_bytes"];
 function rejectedDocument(name) {
-  const seed = name === "panel_ranges_overlap" ? "document_signed_panels" : name.startsWith("title_") ? "document_title_start" : name.startsWith("label_") || name === "decoration_trailing_bytes" ? "document_labels_start_top" : name.startsWith("legend_") ? "document_legend" : name === "panel_label_table_empty_present" ? "document_annotation_baseline" : "document_defaults";
+  const seed = name === "panel_ranges_overlap" ? "document_signed_panels" : name.startsWith("title_") ? "document_title_start" : name.startsWith("label_") || name === "decoration_trailing_bytes" ? "document_labels_start_top" : name.startsWith("legend_") ? "document_legend" : name === "panel_label_table_empty_present" ? "document_annotation_baseline" : name === "panel_label_box_uncentered" ? "document_annotation_label_box" : "document_defaults";
   let data = Buffer.from(build(seed).document);
   const count = data.readUInt32LE(20), titleLength = data.readUInt32LE(24);
   const decorations = 64 + count * 128 + titleLength;
@@ -137,11 +150,17 @@ function rejectedDocument(name) {
     // Panel flag 3 with an explicitly empty table over a Scene that has an
     // annotation label: the flag demands exact label coverage.
     const tableLength = data.readUInt32LE(60);
-    assert.equal(tableLength, 20);
+    assert.equal(tableLength, 28);
     data = Buffer.concat([data.subarray(0, sceneAt), data.subarray(sceneAt + tableLength)]);
     data.writeUInt32LE(0, 60);
     data.writeUInt32LE(0, 64 + 28);
     data.writeUInt32LE(0, 64 + 84);
+  }
+  else if (name === "panel_label_box_uncentered") {
+    // An explicit cell box requires center alignment (entry byte 17).
+    assert.equal(data.readUInt32LE(60), 56);
+    assert.equal(data[sceneAt + 28 + 17], 3);
+    data[sceneAt + 28 + 17] = 0;
   }
   else if (name === "panel_scene_corrupt") data[sceneAt] = 0;
   else if (["title_invalid_utf8", "title_nul"].includes(name)) data[64 + count * 128] = name.endsWith("utf8") ? 255 : 0;

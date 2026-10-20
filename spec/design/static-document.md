@@ -56,11 +56,14 @@ leaves the document canvas; nothing is clipped or silently dropped. (Legend
 boxes are otherwise clamped into their anchor box by `legend_box_layout`, so the
 guard only fires for authored anchors or boxes that cannot fit.)
 
-### 1.1 XYST v3 framing
+### 1.1 XYST v4 framing
+
+Version 4 (#1006, Matplotlib table cells) widened each label-table entry from 20
+to 28 bytes for the explicit label box (XYAO v3); version `3` documents are
+rejected with `XYG_STATIC_DOCUMENT_VERSION` like versions `1` and `2`.
 
 Version 3 (#1006) replaced the four uniform annotation facts (panel flags 3, 6,
-7, 9) with a per-label table region (below); version `2` documents are rejected
-with `XYG_STATIC_DOCUMENT_VERSION` like version `1`.
+7, 9) with a per-label table region (below).
 
 Version 2 (#1004) widened the panel record from 108 to 128 bytes. The version
 is the only layout discriminator: a version `1` document (108-byte panels) is
@@ -72,7 +75,7 @@ decoded with the new table boundaries. Rejections carry a stable
 Encoders accept panel title paints as a CSS color string (converted by the
 native color conversion) or resolved RGBA8 bytes; anything else is rejected.
 
-The header is 64 bytes. It begins with `XYST`, version `3`, width, height,
+The header is 64 bytes. It begins with `XYST`, version `4`, width, height,
 document flags, panel count, and title byte count as little-endian `u32`.
 Header flags are `BACKGROUND=1`, `OPTIMIZE_PNG=2`, `TIGHT_CROP=4`, and
 `TITLE_X_CENTER=8`; every other bit is rejected. The center flag requires
@@ -80,7 +83,7 @@ canonical zero title-x bytes and makes Rust resolve `width / 2`; without it,
 title x is an explicit authored fact. Bytes 28–35 are background/title RGBA8,
 bytes 36–47 are title size/x/y `f32`, bytes 48–49 are title anchor and
 italic/bold flags, bytes 52–59 are decoration byte count and crop padding, bytes 60–63 are the
-byte length of the per-label annotation table region (a multiple of 20; zero when
+byte length of the per-label annotation table region (a multiple of 28; zero when
 no panel has the flag below), and all reserved bytes must be zero. The region sits
 between the decorations and the Scene bytes.
 
@@ -109,17 +112,29 @@ inactive. The admitted flags are:
 | 24 | explicit pyplot `cax` fills the panel Scene plot rectangle |
 
 Bit 3's table is the annotation-style projection's per-label output
-([static-annotation-style.md](static-annotation-style.md)): 20-byte entries in
-the order of the panel Scene's annotation labels (`<I3f2B2x>`: present bits, font size, horizontal
-and vertical box padding, italic/bold bits, vertical alignment). Panels consume
+([static-annotation-style.md](static-annotation-style.md)): 28-byte entries in
+the order of the panel Scene's annotation labels (`<I3f3Bx2f>`: present bits —
+1 typography, 2 padding, 4 explicit box — font size, horizontal and vertical
+box padding, italic/bold bits, vertical alignment, box unit bits, box width and
+height). Panels consume
 the region sequentially, the entry count must equal the panel Scene's
 annotation-label count (labels with the Scene-wire annotation provenance flag, XYLB v7, never an id pattern;
 other labels such as a composed graph's own are untouched; an empty table with
 the flag set over a Scene with annotation labels is rejected), absent facts and reserved bytes must be canonical zero, and the region
 must be consumed exactly; Rust applies size, flags, alignment shift and the
 per-axis box inset to each label (`SceneDocument::apply_static_annotation_labels`).
-A label that requests padding but has no box, or a count mismatch, rejects the
-document (`XYG_STATIC_DOCUMENT_PANEL`).
+An explicit box (present bit 4) requires typography with center alignment and
+padding; its sides are positive px (at most 16384) or, per unit bit (1 width,
+2 height), positive fractions (at most 16) of the panel plot rectangle, and unit
+bit 4 makes the horizontal padding a plot-width fraction. Rust resolves the
+fractions against the decoded Scene's final plot rectangle, replaces the label's
+measured box with the cell (text inset from its anchored edge, centered on the
+anchor), and requires the cell inside the panel viewport. Unknown unit bits,
+unit bits or box sides without bit 4, an uncentered box, a label that requests
+padding but has no box, a placed cell off the canvas, or a count mismatch reject
+the document (`XYG_STATIC_DOCUMENT_PANEL`); nothing is clipped. The registry case
+`document_annotation_label_box` and rejection `panel_label_box_uncentered`
+witness both hosts.
 
 Bit 14 packs four nibble codes (`0=solid, 1=dashed, 2=dotted, 3=dashdot`)
 into the panel's trailing fact `u32`; the pattern table is Rust-owned and
@@ -195,6 +210,35 @@ call raises the listed stable `XYG_*` reason.
   channel for per-item paint.
   Hidden traces always fail closed (`XYFS_TRACE_HIDDEN`, scene-ir.md); a
   per-item scatter paint plane is final paint with trace opacity folded in.
+
+- Matplotlib tables (#1006, corpus `53_matplotlib_311_plotting`): pyplot
+  `ax.table(...)` authors one public text annotation per cell — the anchor in
+  `coordinate_space="axes_fraction"` at Matplotlib's `Cell.PAD` text position,
+  the face color as `background`, closed edges as a black `patch.linewidth`
+  `border`, and the cell rectangle as `box_width`/`box_height`. Every
+  plot-relative length (column widths, `bbox=` row heights, the 10% `Cell.PAD`
+  inset of a column) is a `"<n>%"` of the plot rectangle that Rust resolves
+  against the panel's final plot rectangle, so cells tile the axes exactly even
+  after `tight_layout` (the shim never knows the post-layout plot size). Fixed
+  parts stay px: natural `loc="bottom"` rows hang below the axes in 12 pt rows
+  (`Table.FONTSIZE` × 1.2) through `dy`, and the auto-width row-label column
+  hangs left of the axes edge through `dx`. There is no browser-only class and
+  no transparent placeholder box; an empty cell keeps a one-space label so its
+  rectangle still paints. Rust projects the anchor (Scene XYAW byte 62,
+  [scene-ir.md](scene-ir.md) ABI 390) and applies the box as a label-table entry
+  (§1.1), so SVG, PNG and PDF paint the same unclipped cells and text. pyplot
+  reserves the table height below and the row-label width left of the axes
+  (panel padding and tight-layout chrome), so the table stays on the canvas.
+  Limits: at most 128 annotations per panel (`XYG_STATIC_ANNOTATION_STYLE_LIMIT`),
+  a cell placed off the canvas rejects the panel (`XYG_STATIC_DOCUMENT_PANEL`,
+  or the canonical Scene label bound when its text is off the canvas), and
+  `loc` values other than `"bottom"` raise `NotImplementedError`
+  ("does not implement table(loc=...)"). After `tight_layout`, Matplotlib
+  rescales its axes-fraction rows with the final axes height while pyplot keeps
+  the 12 pt row, so row heights differ by a few px there (exact for the default
+  layout). Evidence: `tests/pyplot/test_table_static_export.py` (Matplotlib
+  3.11 cell rectangles to 0.05 px for the default and `bbox=` layouts, live
+  reference re-check in the Matplotlib job).
 
 ## 3. Stable failure rules
 

@@ -304,12 +304,15 @@ def _legacy_v1_document(document: bytes) -> bytes:
 
 def test_xyst_version_bumped_and_legacy_layout_rejected_actionably() -> None:
     document = sd.figure_document(_chart(TYPOGRAPHY).figure(), width=320, height=240)
-    assert struct.unpack_from("<I", document, 4)[0] == 3
+    assert struct.unpack_from("<I", document, 4)[0] == 4
     assert _native.static_document_export(document, "svg")
-    # v1 (108-byte panels) and v2 (uniform annotation facts) are both rejected.
+    # v1 (108-byte panels), v2 (uniform annotation facts) and v3 (20-byte
+    # label-table entries) are all rejected.
     v2 = bytearray(document)
     struct.pack_into("<I", v2, 4, 2)
-    for legacy, version in ((_legacy_v1_document(document), 1), (bytes(v2), 2)):
+    v3 = bytearray(document)
+    struct.pack_into("<I", v3, 4, 3)
+    for legacy, version in ((_legacy_v1_document(document), 1), (bytes(v2), 2), (bytes(v3), 3)):
         assert struct.unpack_from("<I", legacy, 4)[0] == version
         for fmt in ("svg", "png", "pdf", "jpeg", "webp"):
             with pytest.raises(_native.StaticDocumentRejected) as rejected:

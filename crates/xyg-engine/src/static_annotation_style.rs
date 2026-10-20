@@ -201,11 +201,62 @@ fn put_text(out: &mut Vec<u8>, text: &str) {
 struct LabelEntry {
     typography: Option<(f32, u8, u8)>,
     padding: Option<(f32, f32)>,
+    /// Explicit label box `(width, height)` (`box_width`/`box_height`): px,
+    /// or plot-rectangle fractions per the `units` bits.
+    cell: Option<(f32, f32)>,
+    /// `UNIT_*` bits: which cell sizes / horizontal padding are fractions of
+    /// the panel plot rectangle Rust resolves at application time.
+    units: u8,
 }
 const ENTRY_TYPOGRAPHY: u32 = 1;
 const ENTRY_PADDING: u32 = 2;
-/// Bytes of one XYAO / XYST label-table entry.
-pub const LABEL_ENTRY_BYTES: usize = 20;
+const ENTRY_BOX: u32 = 4;
+/// Entry byte 18: the box width is a fraction of the plot width.
+pub const UNIT_BOX_WIDTH_PLOT: u8 = 1;
+/// Entry byte 18: the box height is a fraction of the plot height.
+pub const UNIT_BOX_HEIGHT_PLOT: u8 = 2;
+/// Entry byte 18: the horizontal padding is a fraction of the plot width.
+pub const UNIT_PAD_X_PLOT: u8 = 4;
+pub const UNIT_BITS: u8 = UNIT_BOX_WIDTH_PLOT | UNIT_BOX_HEIGHT_PLOT | UNIT_PAD_X_PLOT;
+/// Bytes of one XYAO / XYST label-table entry: `<I3f3Bx2f>` (XYAO v3).
+pub const LABEL_ENTRY_BYTES: usize = 28;
+/// The XYAO output version this module emits (v3 appends the explicit box).
+pub const XYAO_VERSION: u32 = 3;
+/// Largest explicit label-box side in px. A canvas-scale bound: the placed
+/// box must additionally lie inside the panel viewport.
+pub const MAX_STATIC_LABEL_BOX: f64 = 16_384.0;
+/// Largest plot-rectangle fraction a cell size or padding may name (1600%).
+pub const MAX_STATIC_LABEL_FRACTION: f64 = 16.0;
+
+/// One explicit label-box side or cell padding: a finite px number, or (only
+/// on axes-fraction text, whose containing block is the plot rectangle) a
+/// CSS-style `"<n>%"` of the plot side, returned as a fraction with `true`.
+/// Sides must be positive; both survive f32 narrowing.
+fn cell_length(value: Value<'_>, percent: bool, positive: bool) -> Result<(f32, bool)> {
+    let (n, fraction) = match value {
+        Value::Number(n) => (n, false),
+        Value::Text(text) if percent => {
+            let digits = text.strip_suffix('%').ok_or(AnnotationStyleError::Bbox)?;
+            (
+                number(Value::Text(digits), AnnotationStyleError::Bbox)? / 100.0,
+                true,
+            )
+        }
+        _ => return Err(AnnotationStyleError::Bbox),
+    };
+    let hi = if fraction {
+        MAX_STATIC_LABEL_FRACTION
+    } else if positive {
+        MAX_STATIC_LABEL_BOX
+    } else {
+        MAX_SCENE_CHROME_LENGTH
+    };
+    let n = bounded(n, 0.0, hi, AnnotationStyleError::Bbox)? as f32;
+    if positive && n <= 0.0 {
+        return Err(AnnotationStyleError::Bbox);
+    }
+    Ok((n, fraction))
+}
 
 /// CSS `padding` shorthand (`<v>px` or `<v>px <h>px`) as `(horizontal, vertical)`.
 fn padding_pair(value: Value<'_>) -> Result<(f64, f64)> {
@@ -224,7 +275,7 @@ fn padding_pair(value: Value<'_>) -> Result<(f64, f64)> {
     Ok((horizontal, vertical))
 }
 
-/// Resolve a complete bounded batch atomically into XYAO v2.
+/// Resolve a complete bounded batch atomically into XYAO v3.
 pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     if bytes.len() > MAX_BYTES {
         return Err(AnnotationStyleError::Limit);
@@ -340,12 +391,12 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
             .get("rotation")
             .copied()
             .filter(|value| *value != Value::Null);
+        let mut turned = false;
         if let Some(value) = rotation {
             let n = number(value, AnnotationStyleError::Style)?.rem_euclid(360.0);
-            patches.push(Patch::Number(
-                "rotation",
-                if n == 0.0 || n == 360.0 { 0.0 } else { n },
-            ));
+            let n = if n == 0.0 || n == 360.0 { 0.0 } else { n };
+            turned = n != 0.0;
+            patches.push(Patch::Number("rotation", n));
         }
         // CSS-like box keys. `border_radius` is the Matplotlib `round` boxstyle;
         // the Scene label box is a rectangle, so it fails closed.
@@ -380,7 +431,62 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
             ));
         }
         let boxed = !absent(background) || !absent(style.get("label_background").copied());
-        if !absent(raw_padding) {
+        let kind_name = kind.unwrap_or("");
+        // Axes-fraction text rides XYAW like layout keys: the bulk XYAF pack
+        // routes it there so Rust can project it against the plot rectangle.
+        let axes_fraction = kind_name == "text"
+            && style.get("coordinate_space") == Some(&Value::Text("axes_fraction"));
+        // #1006 explicit label box (a Matplotlib table cell): both sides, on
+        // a boxed, upright, vertically centered text label. Rust places it
+        // against the anchor; the horizontal padding is the text inset from
+        // the anchored edge. Sizes are px numbers, or `"<n>%"` of the plot
+        // rectangle on axes-fraction text (resolved by Rust against the final
+        // plot rectangle). Static-only facts: always stripped.
+        let box_width = strip(&style, "box_width", &mut patches);
+        let box_height = strip(&style, "box_height", &mut patches);
+        match (
+            box_width.filter(|value| *value != Value::Null),
+            box_height.filter(|value| *value != Value::Null),
+        ) {
+            (None, None) => {}
+            (Some(width), Some(height))
+                if kind == Some("text")
+                    && boxed
+                    && !turned
+                    && entry.typography.is_some_and(|(_, _, align)| align == 3) =>
+            {
+                let (width, width_plot) = cell_length(width, axes_fraction, true)?;
+                let (height, height_plot) = cell_length(height, axes_fraction, true)?;
+                entry.cell = Some((width, height));
+                entry.units = (u8::from(width_plot) * UNIT_BOX_WIDTH_PLOT)
+                    | (u8::from(height_plot) * UNIT_BOX_HEIGHT_PLOT);
+            }
+            _ => return Err(AnnotationStyleError::Bbox),
+        }
+        let cell_padding = match raw_padding {
+            // A cell's two-value padding `<v>px <h>` may give the horizontal
+            // text inset as a plot-width percentage; it is never vertical.
+            Some(Value::Text(text)) if entry.cell.is_some() && text.ends_with('%') => {
+                let (vertical, horizontal) =
+                    text.split_once(' ').ok_or(AnnotationStyleError::Bbox)?;
+                let vertical = pixels(Value::Text(vertical))?;
+                let (horizontal, _) = cell_length(Value::Text(horizontal), axes_fraction, false)?;
+                entry.units |= UNIT_PAD_X_PLOT;
+                Some((f64::from(horizontal), vertical))
+            }
+            _ => None,
+        };
+        if let Some((horizontal, vertical)) = cell_padding {
+            entry.padding = Some((
+                horizontal as f32,
+                bounded(
+                    vertical,
+                    0.0,
+                    MAX_SCENE_CHROME_LENGTH,
+                    AnnotationStyleError::Bbox,
+                )? as f32,
+            ));
+        } else if !absent(raw_padding) {
             let (horizontal, vertical) = padding_pair(raw_padding.unwrap())?;
             entry.padding = Some((
                 bounded(
@@ -399,12 +505,13 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         } else if boxed {
             entry.padding = Some((3.0, 3.0));
         }
-        let kind_name = kind.unwrap_or("");
         let layout_key = row_flags & ROW_LAYOUT != 0;
         slot_rows.push(LabelSlotRow {
             kind: kind_name,
             authored_wrap: row_flags & ROW_WRAP != 0,
-            layout: layout_key || (matches!(kind_name, "text" | "marker") && rotation.is_some()),
+            layout: layout_key
+                || axes_fraction
+                || (matches!(kind_name, "text" | "marker") && rotation.is_some()),
             labelled: text.is_some_and(|text| !text.is_empty()),
         });
         pending.push(entry);
@@ -421,7 +528,7 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         }
     }
     let mut out = b"XYAO".to_vec();
-    for value in [2, count as u32, label_count] {
+    for value in [XYAO_VERSION, count as u32, label_count] {
         out.extend_from_slice(&value.to_le_bytes());
     }
     for (drop, patches) in rows {
@@ -448,14 +555,19 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     }
     for entry in table {
         let present = (u32::from(entry.typography.is_some()) * ENTRY_TYPOGRAPHY)
-            | (u32::from(entry.padding.is_some()) * ENTRY_PADDING);
+            | (u32::from(entry.padding.is_some()) * ENTRY_PADDING)
+            | (u32::from(entry.cell.is_some()) * ENTRY_BOX);
         let (size, flags, align) = entry.typography.unwrap_or((0.0, 0, 0));
         let (pad_x, pad_y) = entry.padding.unwrap_or((0.0, 0.0));
+        let (box_w, box_h) = entry.cell.unwrap_or((0.0, 0.0));
         out.extend_from_slice(&present.to_le_bytes());
         for value in [size, pad_x, pad_y] {
             out.extend_from_slice(&value.to_le_bytes());
         }
-        out.extend_from_slice(&[flags, align, 0, 0]);
+        out.extend_from_slice(&[flags, align, entry.units, 0]);
+        for value in [box_w, box_h] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
     }
     Ok(out)
 }
@@ -515,10 +627,10 @@ mod tests {
         f32::from_le_bytes(bytes[at..at + 4].try_into().unwrap())
     }
     type Patches<'a> = Vec<(String, Value<'a>)>;
-    /// Decode XYAO v2 into per-row `(drop, patches)` and the label table.
+    /// Decode XYAO v3 into per-row `(drop, patches)` and the label table.
     fn parse(bytes: &[u8]) -> (Vec<(u32, Patches<'_>)>, Vec<[u8; LABEL_ENTRY_BYTES]>) {
         assert_eq!(&bytes[..4], b"XYAO");
-        assert_eq!(u32_at(bytes, 4), 2);
+        assert_eq!(u32_at(bytes, 4), XYAO_VERSION);
         let (count, labels) = (u32_at(bytes, 8), u32_at(bytes, 12));
         let mut reader = Reader { bytes, at: 16 };
         let mut rows = Vec::new();
@@ -562,7 +674,7 @@ mod tests {
     #[test]
     fn empty_and_default_golden() {
         let mut expected = b"XYAO".to_vec();
-        for n in [2_u32, 0, 0] {
+        for n in [3_u32, 0, 0] {
             expected.extend(n.to_le_bytes());
         }
         assert_eq!(resolve_packed(&frame(&[])).unwrap(), expected);
@@ -571,7 +683,7 @@ mod tests {
         expected.extend([0; 8]);
         expected.extend(1_u32.to_le_bytes());
         expected.extend(12_f32.to_le_bytes());
-        expected.extend([0; 12]);
+        expected.extend([0; 20]);
         assert_eq!(bytes, expected);
     }
     #[test]
@@ -695,6 +807,210 @@ mod tests {
                 "{padding}"
             );
         }
+    }
+    /// `(present, box width, box height)` of one raw label entry.
+    fn cell(raw: &[u8; LABEL_ENTRY_BYTES]) -> (u32, f32, f32) {
+        (u32_at(raw, 0), f32_at(raw, 20), f32_at(raw, 24))
+    }
+    fn boxed_cell<'a>() -> Vec<(&'a str, Value<'a>)> {
+        vec![
+            ("background", Value::Text("#dbeafe")),
+            ("border", Value::Text("1.39px solid #000000")),
+            ("box_height", Value::Number(16.6667)),
+            ("box_width", Value::Number(248.0)),
+            ("coordinate_space", Value::Text("axes_fraction")),
+            ("padding", Value::Text("24.8px")),
+            ("vertical_align", Value::Text("center")),
+        ]
+    }
+    #[test]
+    fn explicit_label_box_is_a_per_label_fact() {
+        let bytes = resolve_packed(&frame(&[text_row(boxed_cell()), text_row(vec![])])).unwrap();
+        let (rows, table) = parse(&bytes);
+        // The boxed axes-fraction cell takes an XYAW slot (after XYAT text).
+        assert_eq!(table.len(), 2);
+        assert_eq!(entry(&table[0]), (1, 12.0, 0.0, 0.0, 0, 0));
+        assert_eq!(
+            entry(&table[1]),
+            (7, 12.0, 24.8, 24.8, 0, 3),
+            "typography + padding + box"
+        );
+        assert_eq!(cell(&table[1]), (7, 248.0, 16.6667_f32));
+        assert_eq!(&table[1][18..20], &[0, 0]);
+        assert_eq!(cell(&table[0]), (1, 0.0, 0.0));
+        // Box keys are static-only (stripped); coordinate_space is canonical
+        // Scene vocabulary and is left for the bulk XYAF pack.
+        let keys: Vec<_> = rows[0].1.iter().map(|(key, _)| key.as_str()).collect();
+        assert!(keys.contains(&"box_width") && keys.contains(&"box_height"));
+        assert!(!keys.contains(&"coordinate_space"));
+        // A null pair is "no box".
+        let bytes = resolve_packed(&frame(&[text_row(vec![
+            ("background", Value::Text("white")),
+            ("box_height", Value::Null),
+            ("box_width", Value::Null),
+        ])]))
+        .unwrap();
+        assert_eq!(cell(&parse(&bytes).1[0]), (3, 0.0, 0.0));
+    }
+    #[test]
+    fn axes_fraction_cells_carry_plot_relative_units() {
+        let with = |entries: Vec<(&'static str, Value<'static>)>| {
+            let mut style = boxed_cell();
+            for (key, value) in entries {
+                style.retain(|(name, _)| *name != key);
+                style.push((key, value));
+            }
+            style
+        };
+        let bytes = resolve_packed(&frame(&[text_row(with(vec![
+            ("box_width", Value::Text("50%")),
+            ("box_height", Value::Text("12.5%")),
+            ("padding", Value::Text("0px 5%")),
+        ]))]))
+        .unwrap();
+        let raw = parse(&bytes).1[0];
+        // Fractions of the plot rectangle; Rust resolves them at application.
+        assert_eq!(cell(&raw), (7, 0.5, 0.125));
+        assert_eq!((f32_at(&raw, 8), f32_at(&raw, 12)), (0.05, 0.0));
+        assert_eq!(
+            raw[18],
+            UNIT_BOX_WIDTH_PLOT | UNIT_BOX_HEIGHT_PLOT | UNIT_PAD_X_PLOT
+        );
+        // Mixed: a px height (a fixed Matplotlib row) with a percent width.
+        let bytes = resolve_packed(&frame(&[text_row(with(vec![(
+            "box_width",
+            Value::Text("25%"),
+        )]))]))
+        .unwrap();
+        let raw = parse(&bytes).1[0];
+        assert_eq!(
+            (cell(&raw), raw[18]),
+            ((7, 0.25, 16.6667), UNIT_BOX_WIDTH_PLOT)
+        );
+        // Percentages need axes-fraction text (the plot rect is the
+        // containing block), a cell for padding, the two-value padding form,
+        // and in-range finite values.
+        let data = |entries| {
+            let mut style = with(entries);
+            style.retain(|(name, _)| *name != "coordinate_space");
+            style
+        };
+        for entries in [
+            data(vec![("box_width", Value::Text("50%"))]),
+            data(vec![("padding", Value::Text("0px 5%"))]),
+            with(vec![("padding", Value::Text("5%"))]),
+            with(vec![("padding", Value::Text("5% 0px"))]),
+            with(vec![("padding", Value::Text("0px 1601%"))]),
+            with(vec![("box_width", Value::Text("0%"))]),
+            with(vec![("box_width", Value::Text("-5%"))]),
+            with(vec![("box_width", Value::Text("1601%"))]),
+            with(vec![("box_width", Value::Text("NaN%"))]),
+            with(vec![("box_width", Value::Text("50pt"))]),
+        ] {
+            assert_eq!(
+                resolve_packed(&frame(&[text_row(entries.clone())])),
+                Err(AnnotationStyleError::Bbox),
+                "{entries:?}"
+            );
+        }
+        let plain_box = vec![
+            ("background", Value::Text("white")),
+            ("padding", Value::Text("0px 5%")),
+        ];
+        assert_eq!(
+            resolve_packed(&frame(&[text_row(plain_box)])),
+            Err(AnnotationStyleError::Bbox)
+        );
+    }
+    #[test]
+    fn explicit_label_box_eligibility_fails_closed() {
+        let without = |key: &str| -> Vec<(&'static str, Value<'static>)> {
+            boxed_cell()
+                .into_iter()
+                .filter(|(name, _)| *name != key)
+                .collect()
+        };
+        let with = |key: &'static str, value: Value<'static>| {
+            let mut entries = without(key);
+            entries.push((key, value));
+            entries
+        };
+        for entries in [
+            without("box_height"),
+            without("box_width"),
+            without("background"),
+            without("vertical_align"),
+            with("vertical_align", Value::Text("top")),
+            with("vertical_align", Value::Text("baseline")),
+            with("rotation", Value::Number(90.0)),
+            with("box_width", Value::Number(0.0)),
+            with("box_width", Value::Number(-4.0)),
+            with("box_width", Value::Number(1e-50)),
+            with("box_height", Value::Number(16_384.5)),
+            with("box_width", Value::Number(f64::NAN)),
+            with("box_width", Value::Number(f64::INFINITY)),
+            with("box_width", Value::Text("40px")),
+            with("box_height", Value::Bool(true)),
+        ] {
+            assert_eq!(
+                resolve_packed(&frame(&[text_row(entries.clone())])),
+                Err(AnnotationStyleError::Bbox),
+                "{entries:?}"
+            );
+        }
+        // A rotation that normalizes to upright stays eligible, and the
+        // largest admitted side is accepted.
+        assert!(
+            resolve_packed(&frame(&[text_row(with("rotation", Value::Number(360.0)))])).is_ok()
+        );
+        assert!(resolve_packed(&frame(&[text_row(with(
+            "box_width",
+            Value::Number(MAX_STATIC_LABEL_BOX)
+        ))]))
+        .is_ok());
+        for kind in ["callout", "rule", "band", "marker"] {
+            assert_eq!(
+                resolve_packed(&frame(&[(Some("x"), Some(kind), boxed_cell())])),
+                Err(AnnotationStyleError::Bbox),
+                "{kind}"
+            );
+        }
+    }
+    #[test]
+    fn axes_fraction_text_takes_an_xyaw_slot() {
+        let sized = |size: f64, space: Option<&'static str>| {
+            let mut style = vec![("font_size", Value::Number(size))];
+            if let Some(space) = space {
+                style.push(("coordinate_space", Value::Text(space)));
+            }
+            style
+        };
+        let rows = [
+            (
+                0,
+                (
+                    Some("fraction"),
+                    Some("text"),
+                    sized(31.0, Some("axes_fraction")),
+                ),
+            ),
+            (0, (Some("plain"), Some("text"), sized(21.0, None))),
+            (0, (Some("data"), Some("text"), sized(22.0, Some("data")))),
+            // A non-text kind never reroutes on the key (the bulk pack and
+            // Scene style admission reject it there).
+            (
+                0,
+                (
+                    Some("marker"),
+                    Some("marker"),
+                    sized(41.0, Some("axes_fraction")),
+                ),
+            ),
+        ];
+        let table = parse(&resolve_packed(&frame_flags(&rows)).unwrap()).1;
+        let sizes: Vec<_> = table.iter().map(|raw| entry(raw).1).collect();
+        // XYAT text (rows 1, 2), XYAL marker (row 3), then XYAW (row 0).
+        assert_eq!(sizes, vec![21.0, 22.0, 41.0, 31.0]);
     }
     #[test]
     fn label_table_follows_scene_label_order() {

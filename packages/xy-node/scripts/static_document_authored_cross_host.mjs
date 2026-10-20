@@ -65,8 +65,8 @@ function single(name) {
       kind: "text", x: 1, y: 3, text: "peak < & >", dx: 0, dy: -6,
       anchor: "start", style: { color: "#654321" },
     });
-    // One label: size 12, upright, baseline (the XYAO label-table layout).
-    const entry = Buffer.alloc(20);
+    // One label: size 12, upright, baseline (the XYAO v3 label-table layout).
+    const entry = Buffer.alloc(28);
     entry.writeUInt32LE(1, 0);
     entry.writeFloatLE(12, 4);
     Object.assign(facts, { annotationLabels: entry });

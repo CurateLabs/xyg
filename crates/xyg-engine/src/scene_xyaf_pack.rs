@@ -17,6 +17,8 @@ pub struct XyafPackInput<'a> {
     pub axis_code: u8,
     pub symbol: u8,
     pub anchor: u8,
+    /// Byte 26: text coordinate space (0 data, 1 axes fraction; #1006).
+    pub coordinates: u8,
     pub facts: u32,
     pub style_bits: u32,
     pub linecap: u8,
@@ -38,6 +40,8 @@ pub fn scene_xyaf_pack(input: &XyafPackInput<'_>) -> Result<Vec<u8>, i32> {
         || input.dash_count > 8
         || (input.linecap != 255 && input.linecap != 0 && input.linecap != 2)
         || (input.anchor != 255 && input.anchor > 2)
+        || input.coordinates > 1
+        || (input.coordinates != 0 && input.kind_code != 0)
         || input.text.len() > 4096
         || input.text.contains(&0)
     {
@@ -61,7 +65,7 @@ pub fn scene_xyaf_pack(input: &XyafPackInput<'_>) -> Result<Vec<u8>, i32> {
     out[20..24].copy_from_slice(&input.style_bits.to_le_bytes());
     out[24] = input.linecap;
     out[25] = input.dash_count;
-    out[26] = 0;
+    out[26] = input.coordinates;
     out[27] = 0;
     out[28..32].copy_from_slice(&(input.text.len() as u32).to_le_bytes());
     for (i, value) in input.nums.iter().enumerate() {
@@ -97,6 +101,7 @@ mod tests {
             axis_code: 0,
             symbol: 0,
             anchor: 255,
+            coordinates: 0,
             facts: (1 << 5) | (1 << 6) | (1 << 1),
             style_bits: 1,
             linecap: 255,

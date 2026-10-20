@@ -189,10 +189,12 @@ odd-width positive witness and rejection of a nonzero inactive title-x slot. The
 panel vocabulary includes the #873 colorbar log-scale, minimum/maximum extend,
 pyplot label-placement bits (10 through 13), the grid-dash fact (bit 14),
 the Rust-resolved chrome-text fact (bit 15, #1004), and the per-label
-annotation table (bit 3, #1006, with typography/padding entry facts and the
-vertical-alignment codes) and the explicit-`cax` fill-plot fact (bit 24, with
-the `document_colorbar_fill_plot` positive witness in both hosts). XYST v3
-retires the v2 uniform annotation bits 6, 7 and 9, so the full panel mask is
+annotation table (bit 3, #1006, with typography/padding/explicit-box entry
+facts — the box witnessed by `document_annotation_label_box` and the
+`panel_label_box_uncentered` rejection — and the vertical-alignment codes) and
+the explicit-`cax` fill-plot fact (bit 24, with the `document_colorbar_fill_plot`
+positive witness in both hosts). XYST v3 (and v4, which widens the label entry
+to 28 bytes) retires the v2 uniform annotation bits 6, 7 and 9, so the full panel mask is
 `0x0100fd3f` (a Rust test pins the registry masks to the decoder's admitted
 `PANEL_FLAGS`/`FLAGS`) and rejection mutations pin the retired bits (`panel_retired_annotation_*`) together with the explicitly empty present
 table (`panel_label_table_empty_present`); minimum, maximum, and combined extension

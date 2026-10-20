@@ -369,6 +369,10 @@ def _raise_xyaf_bulk_error(error: _native.SceneXyafBulkPackError, annotations: l
         raise UnsupportedSceneV3("Scene v23 label border requires color and width")
     if code == -13:
         raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
+    if code == -14:
+        raise UnsupportedSceneV3(
+            "Scene text annotations support coordinate_space 'data' or 'axes_fraction' only"
+        )
     if code == -6:
         style = dict(annotation.get("style") or {})
         if "label_opacity" in style:

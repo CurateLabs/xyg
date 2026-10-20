@@ -1154,6 +1154,37 @@ line count. Text contains Rust-selected LF separators. SVG emits those lines as
 `XYAD` v1/v2 remain valid. Public Python and Node host packing now emit this
 bounded v3 section; host entry points retain no wrapping or placement policy.
 
+## ABI 390 axes-fraction text anchors (Scene records unchanged, #1006)
+
+A `text` annotation may author `style.coordinate_space`: absent, empty, or
+`"data"` keeps data coordinates; `"axes_fraction"` makes `x`/`y` fractions of
+the plot rectangle (`0,0` lower left, `1,1` upper right — Matplotlib's
+`transAxes` and the browser's axes-fraction placement). Any other value
+(`figure_fraction`, `xaxis_transform`, `yaxis_transform`, ...) fails closed
+with `xyg_scene_xyaf_bulk_pack` code `-14` and the host message "Scene text
+annotations support coordinate_space 'data' or 'axes_fraction' only"; the key on
+a non-text kind is an unsupported style. `xyg_scene_annotation_style_admit`
+admits the key for `text` only, wrapped or not.
+
+ABI 390 appends `coordinate_space: XygStringRef` to `XygXyafBulkStyleIn`; both
+hosts marshal the literal string and never interpret it (a zero-length string
+is absent). The bulk pack writes the code into the previously reserved XYAF v1
+byte 26 (`0` data, `1` axes fraction; nonzero only on text records) and routes
+every axes-fraction text row through `XYAW` with `wrap=0`, exactly as layout
+keys do, so the label takes an XYAW stable-ID ordinal (the static annotation
+label table follows the same routing). XYAW v1/v2 byte 62 — previously reserved
+zero — carries the same code; byte 63 stays zero and a callout row must keep
+`0`. Decoding resolves `px = left + x·(right − left)` and
+`py = bottom − y·(bottom − top)` against the finalized `PlotLayout` in Rust
+before `dx`/`dy`; hosts never send pixels. The anchor may lie outside the plot
+(a Matplotlib `loc="bottom"` table row) and the label is not clipped; the usual
+label-coordinate bound and the label box's viewport containment still apply.
+Scene records, `XYLB`, `XYAD` framing and `SCENE_VERSION` are unchanged (data
+rows keep their bytes; an older reader rejects byte 62 = 1 as a reserved-byte
+violation). The per-record ABI 319 `xyg_scene_xyaf_pack` seam always packs data
+coordinates. Explicit cell boxes for table cells are static-export label facts
+([static-annotation-style.md](static-annotation-style.md)), not Scene wire.
+
 ## ABI 96 primary numeric tick formats (Scene v25 unchanged)
 
 ABI 96 moves the bounded primary Cartesian numeric `format` decision into

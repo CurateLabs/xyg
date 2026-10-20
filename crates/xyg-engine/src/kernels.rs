@@ -1537,6 +1537,11 @@ pub fn scene_annotation_style_admit(
     labelled: bool,
     key: &str,
 ) -> bool {
+    // #1006: text anchors may be authored in axes-fraction coordinates; the
+    // bulk XYAF pack validates the value and Scene projects it in Rust.
+    if kind == "text" && key == "coordinate_space" {
+        return true;
+    }
     if wrapped {
         return matches!(
             key,

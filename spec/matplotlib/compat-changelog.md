@@ -4,6 +4,23 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## Native `ax.table()` and axes-fraction text — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+- `ax.table()` exports natively (SVG/PNG/PDF, Python and Node byte-identical):
+  each cell is one boxed axes-fraction text annotation whose rectangle is an
+  explicit label box (XYAO v3 / XYST v4 label-table entry). Column widths,
+  `bbox=` row heights and the `Cell.PAD` inset are plot-rectangle percentages
+  Rust resolves against the final plot rectangle; the browser-only
+  `xy-mpl-table-cell` placeholder boxes are gone and the browser draws the same
+  cells. Reference-corpus case `53_matplotlib_311_plotting` passes.
+- Text and `annotate` labels in axes-fraction coordinates (`transAxes`,
+  `"axes fraction"`) export natively instead of failing with `Scene wrapped
+  annotations do not encode ['coordinate_space']`; figure-fraction and blended
+  transforms keep failing closed, now with "Scene text annotations support
+  coordinate_space 'data' or 'axes_fraction' only".
+- Known difference: after `tight_layout`, Matplotlib rescales table rows with
+  the final axes height; xyg keeps the 12 pt row (exact for the default layout).
+
 ## Per-annotation static style and boxes — 2026-10-20 (Matplotlib 3.11.0 reference)
 
 - Static export (SVG/PNG/PDF/JPEG/WebP, Python and Node) no longer carries one

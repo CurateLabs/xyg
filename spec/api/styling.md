@@ -1360,6 +1360,24 @@ placement used by low, axes-relative statistics boxes such as Anscombe's
 quartet. The browser compensates for computed padding and border widths; SVG
 and native PNG derive their box from the same final-line baseline.
 
+**Axes-fraction anchors and explicit cell boxes (#1006).** A `text`
+annotation may set `coordinate_space="axes_fraction"`: `x`/`y` are then
+fractions of the plot rectangle (`0,0` lower left), resolved against the final
+plot rectangle in every renderer (Rust for SVG/PNG/PDF), and the label may sit
+outside the plot without being culled or clipped. `box_width`/`box_height`
+(both together, on a boxed, upright, `vertical_align="center"` label) replace
+the text-sized box with an exact rectangle centered vertically on the anchor;
+the text keeps the horizontal `padding` inset from the edge its `anchor` names
+(`start`/`end`) or is centered (`middle`). Sides are px numbers, or on
+axes-fraction text `"<n>%"` of the plot width/height (CSS percentages with the
+plot rectangle as containing block); such a cell's two-value padding may give
+its horizontal inset as `"<v>px <n>%"`. The browser renders a fixed-size
+border-box label with the same rectangle; static export applies the geometry
+from a Rust label fact. `xyg.pyplot`'s `ax.table` uses exactly this vocabulary
+for every cell. Other coordinate spaces, one-sided or ineligible boxes,
+percentages elsewhere, and a cell placed off the canvas fail closed in static
+export (see [static-annotation-style.md](../design/static-annotation-style.md)).
+
 **Label color** resolves as `label_color` → `color` → the renderer's own
 default, and the three defaults are *not* the same value: the browser uses
 `--chart-annotation-text` (falling back to `--chart-text`), the SVG exporter

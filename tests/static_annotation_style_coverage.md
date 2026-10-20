@@ -2,9 +2,11 @@
 
 `uv run pytest tests/test_static_annotation_style_cross_host.py -q` sends
 explicitly framed XYAS v2 bytes through the Python and Node bindings, compares
-exact XYAO v2 bytes, and asserts independent expected patches, drop decisions,
+exact XYAO v3 bytes, and asserts independent expected patches, drop decisions,
 per-label table entries (size, flags, vertical alignment, one- and two-value
-padding), the Scene label order across annotation kinds, and errors. Empty byte
+padding, #1006 explicit cell boxes in px and plot-rectangle percentages with
+their unit bits), the Scene label order across annotation kinds, and errors
+(one-sided, uncentered, and data-space percentage boxes). Empty byte
 buffers are rejected by the generic transport in both hosts; nonempty malformed
 frames exercise native XYAS errors.
 
@@ -21,9 +23,14 @@ fields.
 box-padding and mixed-kind (text, rule, callout) charts through the public
 Python composition API and the public Node `Figure` with independent literals and
 requires byte-identical SVG/PNG/PDF/JPEG/WebP plus identical stable rejection
-reasons for round box styles, three-value padding and custom fonts.
+reasons for round box styles, three-value padding and custom fonts. Its
+`table_cells` and `axes_fraction_text` cases are the #1006 table vocabulary
+(Rust-projected axes-fraction anchors and Rust-laid-out cells), with
+`one_sided_box`, `uncentered_box`, `percent_box_in_data_space`,
+`figure_fraction_text` and `cell_off_canvas` failing identically in both hosts.
 
 This focused corpus does not prove every pyplot journey or the retired renderer's
-deletion. The Matplotlib 3.11 reference cases 25 and 53 clear the annotation-style
-gate but still stop at separate Scene gaps (arrow head vocabulary, `axes_fraction`
-table cells, zero-point `bxp` fliers); see `spec/matplotlib/compat-changelog.md`.
+deletion. The Matplotlib 3.11 reference case 53 exports natively
+(`tests/pyplot/test_table_static_export.py` pins its `ax.table` geometry); case
+25 still stops at the arrow-head vocabulary gap; see
+`spec/matplotlib/compat-changelog.md`.

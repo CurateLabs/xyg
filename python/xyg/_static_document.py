@@ -31,12 +31,15 @@ _LEGEND_FIT_ENTRY = struct.Struct("<6I")
 _LEGEND_FIT_OUTPUT = struct.Struct("<4s3I21d")
 _ANNOTATION_STYLE_HEADER = struct.Struct("<4s3I")
 _ANNOTATION_STYLE_OUTPUT = struct.Struct("<4s3I")
-_ANNOTATION_STYLE_LABEL_ENTRY = 20
+#: XYAO v3 label-table entry bytes (the #1006 explicit label box appended).
+_ANNOTATION_STYLE_LABEL_ENTRY = 28
+_ANNOTATION_STYLE_VERSION = 3
 _CHROME_STYLE_HEADER = struct.Struct("<4s3I")
 _CHROME_STYLE_OUTPUT = struct.Struct("<4s2II16Bd4B6d")
 _MAX_U32 = (1 << 32) - 1
-#: XYST layout version; 2 widened the panel record to 128 bytes (#1004).
-XYST_VERSION = 3
+#: XYST layout version; 2 widened the panel record to 128 bytes (#1004), 3
+#: added the per-label annotation table, 4 widened its entries (#1006).
+XYST_VERSION = 4
 _MAX_PANELS = 256
 _MAX_TITLE_BYTES = 4096
 _FLAG_BACKGROUND = 1
@@ -87,7 +90,7 @@ class Panel:
     # shrink, anchor-x, anchor-y for a canonical Scene colorbar.
     colorbar_layout: Optional[tuple[float, float, float]] = None
     # Rust-resolved per-label annotation table (the XYAO label entries): one
-    # 20-byte entry per annotation label, in annotation-label order. Empty keeps
+    # 28-byte (XYAO v3) entry per annotation label, in annotation-label order. Empty keeps
     # the canonical label typography.
     annotation_labels: bytes = b""
     # uniform pyplot arrow head size and start/end shaft widths.
@@ -726,7 +729,7 @@ def resolve_annotation_styles(
     if len(output) < _ANNOTATION_STYLE_OUTPUT.size:
         raise RuntimeError("invalid XYAO output")
     magic, version, count, label_count = _ANNOTATION_STYLE_OUTPUT.unpack_from(output)
-    if magic != b"XYAO" or version != 2 or count != len(annotations):
+    if magic != b"XYAO" or version != _ANNOTATION_STYLE_VERSION or count != len(annotations):
         raise RuntimeError("invalid XYAO output")
     at = _ANNOTATION_STYLE_OUTPUT.size
 
@@ -1063,7 +1066,8 @@ def encode(
         if label_table:
             if len(label_table) % _ANNOTATION_STYLE_LABEL_ENTRY:
                 raise ValueError(
-                    f"StaticDocument panel {index} annotation labels must be 20-byte entries"
+                    f"StaticDocument panel {index} annotation labels must be "
+                    f"{_ANNOTATION_STYLE_LABEL_ENTRY}-byte entries"
                 )
             metric_flags |= 8
         label_tables.extend(label_table)

@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 388;
+pub const ABI_VERSION: u32 = 390;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5903,7 +5903,7 @@ pub unsafe extern "C" fn xyg_scene_marker_path_admit(
     })
 }
 
-/// Scene annotation style-key admit (ABI 222).
+/// Scene annotation style-key admit (ABI 222; ABI 390 admits text `coordinate_space`).
 ///
 /// `kind` and `key` are UTF-8. `wrapped`/`labelled` are nonzero-true.
 /// Returns `1` allowed, `0` reject, `-2` FFI. Empty native pointers are
@@ -21934,6 +21934,9 @@ pub unsafe extern "C" fn xyg_scene_xyaf_pack(
         axis_code: input.axis_code,
         symbol: input.symbol,
         anchor: input.anchor,
+        // The ABI 319 per-record seam predates #1006 coordinate spaces and
+        // always packs data coordinates; bulk pack owns axes fractions.
+        coordinates: 0,
         facts: input.facts,
         style_bits: input.style_bits,
         linecap: input.linecap,

@@ -832,6 +832,8 @@ pub struct XygXyafBulkStyleIn {
     pub rotation_present: i32,
     pub rotation: f64,
     pub extra_style_key_count: u32,
+    /// ABI 390 (#1006): text `coordinate_space` literal (null = absent).
+    pub coordinate_space: XygStringRef,
 }
 
 /// One annotation observation for ``xyg_scene_xyaf_bulk_pack`` (ABI 324).
@@ -937,6 +939,7 @@ struct XyafBulkAnnotationOwned {
     style_label_opacity: Option<f64>,
     style_label_border_width: Option<f64>,
     style_rotation: Option<f64>,
+    style_coordinate_space: Option<String>,
     record_index: Option<u32>,
 }
 
@@ -977,6 +980,7 @@ impl XyafBulkAnnotationOwned {
                 label_opacity: self.style_label_opacity,
                 label_border_width: self.style_label_border_width,
                 rotation: self.style_rotation,
+                coordinate_space: self.style_coordinate_space.as_deref(),
                 extra_keys: &self.style_extra_keys,
             },
         }
@@ -1057,6 +1061,7 @@ unsafe fn xyaf_annotation_owned_from_c(
             } else {
                 None
             },
+            style_coordinate_space: opt_str(&style.coordinate_space)?.map(str::to_string),
             record_index: if row.index_override_present != 0 {
                 Some(row.index_override)
             } else {
@@ -1068,6 +1073,9 @@ unsafe fn xyaf_annotation_owned_from_c(
 }
 
 /// Bulk-pack authored annotations into concatenated XYAF v1 records (ABI 324).
+///
+/// ABI 390 (#1006) appends `XygXyafBulkStyleIn::coordinate_space`: text rows
+/// admit `data`/`axes_fraction` (XYAF byte 26); other values return `-14`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_scene_xyaf_bulk_pack(
     annotations: *const XygXyafBulkAnnotationIn,

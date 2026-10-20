@@ -1479,6 +1479,7 @@ export function scenePolarInputPack(kwargs) {
 const ADMITTED_XYAF_STYLE_KEYS = new Set([
   "color", "stroke_color", "label_color", "label_background", "label_border_color",
   "dash", "linecap", "opacity", "width", "stroke_width", "label_opacity", "label_border_width", "rotation",
+  "coordinate_space",
 ]);
 
 const XyafBulkStyleIn = koffi.struct("XygXyafBulkStyleIn", {
@@ -1502,6 +1503,8 @@ const XyafBulkStyleIn = koffi.struct("XygXyafBulkStyleIn", {
   rotation_present: "int32_t",
   rotation: "double",
   extra_style_key_count: "uint32_t",
+  // ABI 390 (#1006): text anchor coordinate space literal (Rust validates).
+  coordinate_space: StringRef,
 });
 
 const XyafBulkAnnotationIn = koffi.struct("XygXyafBulkAnnotationIn", {
@@ -1591,6 +1594,7 @@ function marshalXyafStyle(style, keep, { skipRotation = false } = {}) {
       rotation_present: skipRotation ? 0 : rotationPresent,
       rotation,
       extra_style_key_count: extraKeys.length,
+      coordinate_space: stringRef(style.coordinate_space != null ? String(style.coordinate_space) : null, keep),
     },
     extraBlob: new Uint8Array(extraBlob),
   };

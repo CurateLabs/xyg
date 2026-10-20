@@ -642,6 +642,7 @@ F3, still pending (above).
   ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
   ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`joined_fill` plus per-face paint stays fail-closed).
   ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7; ABI 386 adds the Rust-mapped per-point size diameter to that plane (per-item symbol stays fail-closed).
+  ABI 390 admits text `coordinate_space="axes_fraction"` anchors (XYAF byte 26 / XYAW byte 62, `XygXyafBulkStyleIn::coordinate_space`): Rust projects them against the final plot rectangle; pyplot `table` cells add XYAO v3 / XYST v4 explicit label boxes whose plot-percentage sizes Rust resolves (#1006).
   ABI 359 makes every caller-owned 2-D RGB/RGBA output explicitly
   capacity-aware: the four display-list framebuffer consumers; mean-color
   binning; normalized/canonical colormap, heatmap, and log/linear density image

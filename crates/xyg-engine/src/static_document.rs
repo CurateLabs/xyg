@@ -12,7 +12,8 @@ use crate::pdf;
 use crate::png_encode;
 use crate::raster;
 use crate::scene::{
-    legend_marker_geometry, push_legend_marker_svg, SceneDocument, StaticLabelStyle,
+    legend_marker_geometry, push_legend_marker_svg, SceneDocument, StaticLabelCell,
+    StaticLabelStyle,
 };
 use crate::scene_static::{flatten_rgba_over_white, scene_static_export, SceneStaticFormat};
 use crate::textblock;
@@ -22,8 +23,10 @@ const MAGIC: &[u8; 4] = b"XYST";
 /// XYST layout version. Version 2 widened the panel record to 128 bytes
 /// (chrome-text fact, #1004). Version 3 replaces the uniform annotation
 /// font-size/flags/padding/alignment facts with a per-label table region
-/// (#1006); older documents are rejected, never decoded.
-const VERSION: u32 = 3;
+/// (#1006). Version 4 widens each label-table entry to 28 bytes for the
+/// explicit label box (#1006 Matplotlib table cells, XYAO v3); older
+/// documents are rejected, never decoded.
+const VERSION: u32 = 4;
 const HEADER_BYTES: usize = 64;
 const PANEL_BYTES: usize = 128;
 const FLAG_BACKGROUND: u32 = 1 << 0;
@@ -67,9 +70,12 @@ const MAX_PANELS: usize = 256;
 const MAX_TITLE_BYTES: usize = 4096;
 const MAX_DECORATION_BYTES: usize = 1 << 20;
 const MAX_DOCUMENT_LABELS: usize = 64;
-/// Bytes of one per-label annotation entry (the static annotation-style
-/// projection's label table).
-const LABEL_ENTRY_BYTES: usize = 20;
+// The per-label annotation entry layout (`LABEL_ENTRY_BYTES`, unit bits and
+// bounds) is owned by the static annotation-style projection (XYAO v3).
+use crate::static_annotation_style::{
+    LABEL_ENTRY_BYTES, MAX_STATIC_LABEL_BOX, MAX_STATIC_LABEL_FRACTION, UNIT_BITS,
+    UNIT_BOX_HEIGHT_PLOT, UNIT_BOX_WIDTH_PLOT, UNIT_PAD_X_PLOT,
+};
 const MAX_LABEL_TABLE_BYTES: usize = 1 << 20;
 const MAX_DOCUMENT_BYTES: usize = 256 * 1024 * 1024;
 const MAX_DIMENSION: usize = 65_535;
@@ -98,7 +104,7 @@ impl StaticDocumentError {
             Self::Header => "XYG_STATIC_DOCUMENT_HEADER",
             Self::Version => {
                 "XYG_STATIC_DOCUMENT_VERSION: unsupported XYST version (this build reads \
-                 version 3); re-encode the document with the current encoder"
+                 version 4); re-encode the document with the current encoder"
             }
             Self::Flags => "XYG_STATIC_DOCUMENT_FLAGS",
             Self::Limit => "XYG_STATIC_DOCUMENT_LIMIT",
@@ -519,21 +525,49 @@ fn decode_label_table(
             let present = u32_at(entry, 0)?;
             let (size, pad_x, pad_y) =
                 (f32_at(entry, 4)?, f32_at(entry, 8)?, f32_at(entry, 12)?);
-            let (flags, align) = (entry[16], entry[17]);
+            let (flags, align, units) = (entry[16], entry[17], entry[18]);
+            let (box_w, box_h) = (f32_at(entry, 20)?, f32_at(entry, 24)?);
             let typography = present & 1 != 0;
             let padding = present & 2 != 0;
-            if present & !3 != 0
-                || entry[18..20] != [0; 2]
+            let cell = present & 4 != 0;
+            // A px side or a plot-rectangle fraction side (`UNIT_*` bit).
+            let side = |value: f32, bit: u8| {
+                let max = if units & bit != 0 {
+                    MAX_STATIC_LABEL_FRACTION
+                } else {
+                    MAX_STATIC_LABEL_BOX
+                };
+                value.is_finite() && value > 0.0 && f64::from(value) <= max
+            };
+            if present & !7 != 0
+                || entry[19] != 0
+                || units & !UNIT_BITS != 0
                 || (!typography && (size != 0.0 || flags != 0 || align != 0))
                 || (!padding && (pad_x != 0.0 || pad_y != 0.0))
                 || flags & !0b11 != 0
                 || align > 3
+                // An explicit box needs its inset (padding) and center
+                // alignment, and positive bounded sides; inactive sides and
+                // unit bits are 0, and a fraction inset is at most 1600%.
+                || (cell
+                    && !(typography
+                        && padding
+                        && align == 3
+                        && side(box_w, UNIT_BOX_WIDTH_PLOT)
+                        && side(box_h, UNIT_BOX_HEIGHT_PLOT)))
+                || (units & UNIT_PAD_X_PLOT != 0
+                    && f64::from(pad_x) > MAX_STATIC_LABEL_FRACTION)
+                || (!cell && (box_w != 0.0 || box_h != 0.0 || units != 0))
             {
                 return Err(StaticDocumentError::Panel);
             }
             Ok(StaticLabelStyle {
                 typography: typography.then_some((f64::from(size), flags, align)),
                 padding: padding.then_some((f64::from(pad_x), f64::from(pad_y))),
+                cell: cell.then_some(StaticLabelCell {
+                    size: (f64::from(box_w), f64::from(box_h)),
+                    units,
+                }),
             })
         })
         .collect()
@@ -1775,7 +1809,7 @@ mod tests {
     fn rejects_unknown_version_and_empty_panels() {
         let mut bytes = vec![0u8; HEADER_BYTES];
         bytes[..4].copy_from_slice(MAGIC);
-        for unsupported in [0u32, 1, 2, 4] {
+        for unsupported in [0u32, 1, 2, 3, 5] {
             bytes[4..8].copy_from_slice(&unsupported.to_le_bytes());
             assert!(matches!(
                 StaticDocument::decode(&bytes),
@@ -1799,11 +1833,29 @@ mod tests {
         flags: u8,
         align: u8,
     ) -> Vec<u8> {
+        boxed_label_entry(present, size, pad_x, pad_y, flags, align, (0.0, 0.0), 0)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn boxed_label_entry(
+        present: u32,
+        size: f32,
+        pad_x: f32,
+        pad_y: f32,
+        flags: u8,
+        align: u8,
+        (box_w, box_h): (f32, f32),
+        units: u8,
+    ) -> Vec<u8> {
         let mut entry = present.to_le_bytes().to_vec();
         for value in [size, pad_x, pad_y] {
             entry.extend(value.to_le_bytes());
         }
-        entry.extend([flags, align, 0, 0]);
+        entry.extend([flags, align, units, 0]);
+        for value in [box_w, box_h] {
+            entry.extend(value.to_le_bytes());
+        }
+        assert_eq!(entry.len(), LABEL_ENTRY_BYTES);
         entry
     }
 
@@ -1821,20 +1873,69 @@ mod tests {
                 StaticLabelStyle {
                     typography: Some((13.0, 3, 2)),
                     padding: Some((6.5, 2.0)),
+                    cell: None,
                 },
                 StaticLabelStyle::default(),
                 StaticLabelStyle {
                     typography: None,
                     padding: Some((4.0, 4.0)),
+                    cell: None,
                 },
             ]
         );
         // The next panel must start exactly where this one ended.
-        assert!(decode_label_table(&region, (0, 20), &mut next).is_err());
+        assert!(decode_label_table(&region, (0, 28), &mut next).is_err());
         let mut next = 0;
         assert!(decode_label_table(&region, (0, 30), &mut next).is_err());
+        // An explicit #1006 cell box: typography (center) + padding + box.
+        let mut cell = boxed_label_entry(7, 13.9, 24.8, 24.8, 0, 3, (248.0, 16.67), 0);
+        // ... and a cell whose width and inset are plot-width fractions.
+        cell.extend(boxed_label_entry(7, 13.9, 0.05, 0.0, 0, 3, (0.5, 16.67), 5));
+        let mut next = 0;
+        assert_eq!(
+            decode_label_table(&cell, (0, cell.len()), &mut next).unwrap(),
+            [
+                StaticLabelStyle {
+                    typography: Some((f64::from(13.9_f32), 0, 3)),
+                    padding: Some((f64::from(24.8_f32), f64::from(24.8_f32))),
+                    cell: Some(StaticLabelCell {
+                        size: (248.0, f64::from(16.67_f32)),
+                        units: 0,
+                    }),
+                },
+                StaticLabelStyle {
+                    typography: Some((f64::from(13.9_f32), 0, 3)),
+                    padding: Some((f64::from(0.05_f32), 0.0)),
+                    cell: Some(StaticLabelCell {
+                        size: (0.5, f64::from(16.67_f32)),
+                        units: 5,
+                    }),
+                },
+            ]
+        );
         for bad in [
-            label_entry(4, 0.0, 0.0, 0.0, 0, 0),
+            label_entry(8, 0.0, 0.0, 0.0, 0, 0),
+            // A box without padding, typography, or center alignment.
+            boxed_label_entry(5, 12.0, 0.0, 0.0, 0, 3, (40.0, 12.0), 0),
+            boxed_label_entry(6, 0.0, 3.0, 3.0, 0, 0, (40.0, 12.0), 0),
+            boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 1, (40.0, 12.0), 0),
+            // Nonpositive, nonfinite, or oversized sides; inactive nonzero.
+            boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 3, (0.0, 12.0), 0),
+            boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 3, (40.0, -1.0), 0),
+            boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 3, (f32::NAN, 12.0), 0),
+            boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 3, (40.0, 16_385.0), 0),
+            boxed_label_entry(3, 12.0, 3.0, 3.0, 0, 3, (40.0, 0.0), 0),
+            boxed_label_entry(3, 12.0, 3.0, 3.0, 0, 3, (0.0, 12.0), 0),
+            // Unit bits: unknown, without a box, or a fraction over 1600%.
+            boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 3, (0.5, 12.0), 8),
+            boxed_label_entry(3, 12.0, 3.0, 3.0, 0, 3, (0.0, 0.0), 1),
+            boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 3, (16.5, 12.0), 1),
+            boxed_label_entry(7, 12.0, 16.5, 3.0, 0, 3, (0.5, 12.0), 4),
+            {
+                let mut entry = boxed_label_entry(7, 12.0, 3.0, 3.0, 0, 3, (40.0, 12.0), 0);
+                entry[19] = 1;
+                entry
+            },
             label_entry(0, 12.0, 0.0, 0.0, 0, 0),
             label_entry(0, 0.0, 3.0, 0.0, 0, 0),
             label_entry(1, 12.0, 0.0, 0.0, 4, 0),
@@ -1846,11 +1947,11 @@ mod tests {
             },
         ] {
             let mut next = 0;
-            assert!(decode_label_table(&bad, (0, 20), &mut next).is_err());
+            assert!(decode_label_table(&bad, (0, LABEL_ENTRY_BYTES), &mut next).is_err());
         }
     }
 
-    /// A one-panel XYST v3 document around the 200x120 three-annotation-label
+    /// A one-panel XYST v4 document around the 200x120 three-annotation-label
     /// Scene, with panel flag 3 (`labels`) and the given label-table region.
     fn labelled_document(table: Option<&[u8]>) -> Vec<u8> {
         let scene = crate::scene::tests::per_label_style_scene_bytes();
@@ -1887,6 +1988,7 @@ mod tests {
             entry.extend(size.to_le_bytes());
             entry.extend([0; 8]);
             entry.extend([0, 0, 0, 0]);
+            entry.extend([0; 8]);
             entry
         };
         let three: Vec<u8> = [12.0, 14.0, 16.0].into_iter().flat_map(entry).collect();
@@ -1895,7 +1997,7 @@ mod tests {
         // Panel flag 3 with an explicitly present but empty table, or a short
         // or long one, is rejected: the flag requires one entry per annotation
         // label, whatever the Scene's label count is.
-        for bad in [&three[..0], &three[..40], &[three.clone(), entry(9.0)].concat()[..]] {
+        for bad in [&three[..0], &three[..56], &[three.clone(), entry(9.0)].concat()[..]] {
             assert_eq!(
                 StaticDocument::decode(&labelled_document(Some(bad))).err(),
                 Some(StaticDocumentError::Panel),

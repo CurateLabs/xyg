@@ -36,6 +36,8 @@ const XY_ANNOTATION_SHAPE_STYLE_KEYS = new Set([
   "stroke_color",
   "stroke_width",
   "coordinate_space",
+  "box_width",
+  "box_height",
 ]);
 
 // Arrow path geometry: ChartView keeps this copy until WASM. Canonical
@@ -780,8 +782,39 @@ Object.assign(ChartView.prototype, {
         [px, py] = this._dataPxPoint(Number(ann.x), Number(ann.y));
       }
       if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
-      if (px < p.x - 24 || px > p.x + p.w + 24 || py < p.y - 24 || py > p.y + p.h + 24) {
+      // Axes/figure-fraction text is explicitly placed chrome (Matplotlib
+      // tables below the axes, panel letters), not data that scrolled away.
+      const fractionPlaced = ann.kind === "text"
+        && (style.coordinate_space === "axes_fraction" || style.coordinate_space === "figure_fraction");
+      if (!fractionPlaced
+        && (px < p.x - 24 || px > p.x + p.w + 24 || py < p.y - 24 || py > p.y + p.h + 24)) {
         continue;
+      }
+      // #1006 explicit label box (`box_width`/`box_height`): px numbers, or
+      // "<n>%" of the plot rectangle on axes-fraction text, the same
+      // geometry static export resolves in Rust. The box is vertically
+      // centered on the anchor and the text keeps its horizontal padding
+      // inset from the anchored edge.
+      const plotLength = (value, side) => {
+        if (typeof value === "number") return value;
+        if (typeof value === "string" && value.endsWith("%") && style.coordinate_space === "axes_fraction") {
+          return (Number(value.slice(0, -1)) / 100) * side;
+        }
+        return Number.NaN;
+      };
+      const boxWidth = plotLength(style.box_width, p.w);
+      const boxHeight = plotLength(style.box_height, p.h);
+      const fixedBox = ann.kind === "text"
+        && Number.isFinite(boxWidth) && boxWidth > 0 && Number.isFinite(boxHeight) && boxHeight > 0;
+      // A fixed box's two-value padding ("<v> <h>") may give the horizontal
+      // inset as a plot-width percentage; CSS would resolve it against the
+      // label layer, so it is converted here.
+      let boxInset = null;
+      if (fixedBox && typeof style.padding === "string") {
+        const parts = style.padding.trim().split(/\s+/);
+        const horizontal = parts[parts.length - 1];
+        const inset = horizontal.endsWith("%") ? plotLength(horizontal, p.w) : parseFloat(horizontal);
+        if (Number.isFinite(inset) && inset >= 0) boxInset = inset;
       }
       const d = document.createElement("div");
       const mathRanges = String(style.math_italic_ranges || "")
@@ -809,7 +842,7 @@ Object.assign(ChartView.prototype, {
       // grow LEFT, x labels sit at the top edge and must hang DOWN (band text
       // centered on the band, y-band text centered on its span).
       let anchorName = ann.anchor;
-      let va = String(style.vertical_align || "");
+      let va = fixedBox ? "center" : String(style.vertical_align || "");
       if (ann.kind === "rule" || ann.kind === "band") {
         if (ann.axis === "x") {
           if (!anchorName && ann.kind === "band") anchorName = "middle";
@@ -880,9 +913,21 @@ Object.assign(ChartView.prototype, {
         }
         if (XY_ANNOTATION_SHAPE_STYLE_KEYS.has(key)) continue;
         if (opacityIsShape && key === "opacity") continue;
+        if (fixedBox && key === "padding") continue;
         labelStyle[key] = value;
       }
       this._applyStyle(d, labelStyle);
+      if (fixedBox) {
+        d.style.boxSizing = "border-box";
+        d.style.width = `${boxWidth}px`;
+        d.style.height = `${boxHeight}px`;
+        d.style.display = "flex";
+        d.style.alignItems = "center";
+        d.style.whiteSpace = "pre";
+        d.style.justifyContent = anchorName === "middle" ? "center" : anchorName === "end" ? "flex-end" : "flex-start";
+        d.style.paddingTop = "0px";
+        d.style.paddingBottom = "0px";
+      }
       // Only pin color inline when the annotation asked for one — otherwise the
       // stylesheet's --chart-annotation-text default stays overridable by CSS.
       if (style && (style.label_color || style.color)) {
@@ -895,6 +940,14 @@ Object.assign(ChartView.prototype, {
         }
       }
       this.labels.appendChild(d);
+      if (fixedBox) {
+        // The border-box IS the cell rectangle (static export's rect), so the
+        // text inset from its edge includes the border: pad by the rest.
+        const borders = getComputedStyle(d);
+        const inset = boxInset ?? 3;
+        d.style.paddingLeft = `${Math.max(0, inset - (parseFloat(borders.borderLeftWidth) || 0))}px`;
+        d.style.paddingRight = `${Math.max(0, inset - (parseFloat(borders.borderRightWidth) || 0))}px`;
+      }
       // matplotlib anchors the TEXT at its position; a bbox patch grows
       // outward around it. A padded/bordered label must therefore anchor by
       // its text edge, not its box edge — shift the translate by the leading

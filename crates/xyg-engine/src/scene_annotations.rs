@@ -126,6 +126,8 @@ pub struct WrappedRow<'a> {
     pub kind: u8,
     pub anchor: u8,
     pub rotation: f64,
+    /// XYAW byte 62 (#1006): 0 data, 1 axes-fraction anchor (text only).
+    pub coordinate_space: u8,
     pub text: &'a [u8],
 }
 
@@ -358,6 +360,7 @@ pub fn wrapped_rows_from_meta<'a>(
             kind: chunk[60],
             anchor: chunk[61],
             rotation: 0.0,
+            coordinate_space: 0,
             text: parts[index],
         });
     }
@@ -526,7 +529,12 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
             row.rotation,
         ])?;
         require_text(row.text, false, &mut wrapped_budget)?;
-        if row.wrap < 0.0 || row.kind > 1 || row.anchor > 2 {
+        if row.wrap < 0.0
+            || row.kind > 1
+            || row.anchor > 2
+            || row.coordinate_space > 1
+            || (row.coordinate_space != 0 && row.kind != 0)
+        {
             return Err(AnnotationError::NonFinite);
         }
         let has_border = row.border_rgba[3] != 0;
@@ -548,7 +556,7 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         xyaw.extend_from_slice(&(if has_border { row.border_width } else { 0.0 }).to_le_bytes());
         xyaw.push(row.kind);
         xyaw.push(row.anchor);
-        xyaw.extend_from_slice(&[0, 0]);
+        xyaw.extend_from_slice(&[row.coordinate_space, 0]);
         if xyaw_v2 {
             xyaw.extend_from_slice(&row.rotation.to_le_bytes());
         }
@@ -696,6 +704,7 @@ struct AnnotationFacts<'a> {
     axis: u8,
     symbol: u8,
     anchor: u8,
+    coordinates: u8,
     facts: u32,
     style_bits: u32,
     linecap: u8,
@@ -954,7 +963,12 @@ fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, Anno
         let style_bits = read_u32(bytes, at + 20)?;
         let linecap = bytes[at + 24];
         let dash_count = bytes[at + 25];
-        if bytes[at + 26] != 0 || bytes[at + 27] != 0 || kind > XYAF_KIND_MARKER {
+        let coordinates = bytes[at + 26];
+        if coordinates > 1
+            || (coordinates != 0 && kind != XYAF_KIND_TEXT)
+            || bytes[at + 27] != 0
+            || kind > XYAF_KIND_MARKER
+        {
             return Err(AnnotationError::Length);
         }
         if facts & !FACT_BITS != 0
@@ -996,6 +1010,7 @@ fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, Anno
             axis,
             symbol,
             anchor,
+            coordinates,
             facts,
             style_bits,
             linecap,
@@ -1070,7 +1085,8 @@ pub fn pack_annotation_facts(
             && (has(row.facts, FACT_HAS_DX)
                 || has(row.facts, FACT_HAS_DY)
                 || has(row.facts, FACT_HAS_ANCHOR)
-                || has(row.facts, FACT_HAS_ROTATION));
+                || has(row.facts, FACT_HAS_ROTATION)
+                || row.coordinates != 0);
         let wrapped_kind = ((row.kind == XYAF_KIND_TEXT || row.kind == XYAF_KIND_CALLOUT)
             && has_wrap)
             || text_layout;
@@ -1113,6 +1129,7 @@ pub fn pack_annotation_facts(
                 kind: u8::from(row.kind == XYAF_KIND_CALLOUT),
                 anchor,
                 rotation,
+                coordinate_space: row.coordinates,
                 text: row.text,
             });
             continue;
@@ -1304,6 +1321,7 @@ pub fn pack_annotation_facts(
                             },
                             // Markers never set FACT_HAS_WRAP; nums[8] is rotation.
                             rotation: or_default(row, FACT_HAS_ROTATION, 8, 0.0)?,
+                            coordinate_space: 0,
                             text: row.text,
                         });
                     } else {
@@ -1527,6 +1545,64 @@ mod tests {
     }
 
     #[test]
+    fn axes_fraction_xyaf_text_frames_xyaw_coordinate_byte() {
+        use crate::scene_xyaf_bulk_pack::{
+            scene_xyaf_bulk_pack, XyafBulkAnnotationObs, XyafBulkStyleObs,
+        };
+        let obs = |coordinate_space| XyafBulkAnnotationObs {
+            kind: "text",
+            text: Some("cell"),
+            x: Some(0.25),
+            y: Some(0.0),
+            x0: None,
+            y0: None,
+            x1: None,
+            y1: None,
+            value: None,
+            start: None,
+            end: None,
+            dx: None,
+            dy: Some(12.0),
+            size: None,
+            wrap: None,
+            rotation: None,
+            anchor: Some("end"),
+            axis: None,
+            symbol: None,
+            record_index: None,
+            style: XyafBulkStyleObs {
+                label_background: Some("#dbeafe"),
+                coordinate_space,
+                ..Default::default()
+            },
+        };
+        let xyaw_coordinate = |facts: &[u8]| {
+            let packed = pack_annotation_facts(facts, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+            let at = packed
+                .windows(4)
+                .position(|window| window == b"XYAW")
+                .expect("layout text frames XYAW");
+            // XYAW header (12) + meta byte 62 of the first row.
+            (
+                packed[at + 12 + 61],
+                packed[at + 12 + 62],
+                packed[at + 12 + 63],
+            )
+        };
+        let data = scene_xyaf_bulk_pack(&[obs(None)]).unwrap();
+        assert_eq!(xyaw_coordinate(&data), (2, 0, 0));
+        let fraction = scene_xyaf_bulk_pack(&[obs(Some("axes_fraction"))]).unwrap();
+        assert_eq!(xyaw_coordinate(&fraction), (2, 1, 0));
+        // A non-text record may not claim a coordinate space.
+        let mut bad = fraction.clone();
+        bad[12] = XYAF_KIND_MARKER;
+        assert!(pack_annotation_facts(&bad, 0, 0.0, 1.0, 0.0, 1.0).is_err());
+        let mut bad = fraction;
+        bad[26] = 2;
+        assert!(pack_annotation_facts(&bad, 0, 0.0, 1.0, 0.0, 1.0).is_err());
+    }
+
+    #[test]
     fn wrapped_rows_select_xyad_v3() {
         let wrapped = WrappedRow {
             x: 0.5,
@@ -1541,6 +1617,7 @@ mod tests {
             kind: 0,
             anchor: 0,
             rotation: 0.0,
+            coordinate_space: 0,
             text: b"wrap",
         };
         let framed = pack_annotations(AnnotationFrameInput {

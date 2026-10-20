@@ -67,10 +67,14 @@ def _label_entry(
     flags: int = 0,
     padding: tuple[float, float] | None = None,
     align: int = 0,
+    box: tuple[float, float] | None = None,
+    units: int = 0,
 ) -> bytes:
-    """One per-label annotation entry (the XYAO label-table layout)."""
+    """One per-label annotation entry (the XYAO v3 label-table layout)."""
     pad_x, pad_y = padding or (0.0, 0.0)
-    return struct.pack("<I3fBBxx", 1 | (2 if padding else 0), size, pad_x, pad_y, flags, align)
+    box_w, box_h = box or (0.0, 0.0)
+    present = 1 | (2 if padding else 0) | (4 if box else 0)
+    return struct.pack("<I3f3Bx2f", present, size, pad_x, pad_y, flags, align, units, box_w, box_h)
 
 
 # Literal envelope facts, not a host-side renderer or layout implementation.
@@ -92,6 +96,15 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_grid_dash": ({"grid_dash": (1, 0, 0, 2)}, {}),
     "document_chrome_text": ({"chrome_text": CHROME_TEXT}, {}),
     "document_colorbar_fill_plot": ({"colorbar_fill_plot": True}, {}),
+    # #1006 table cell: a box half the plot width (unit bit 1) and 18px tall,
+    # with a 5%-of-plot-width inset (unit bit 4), on an axes-fraction anchor.
+    "document_annotation_label_box": (
+        {
+            "annotation_labels": _label_entry()
+            + _label_entry(padding=(0.05, 0.0), align=3, box=(0.5, 18.0), units=1 | 4)
+        },
+        {},
+    ),
     "document_defaults": ({}, {}),
     "document_background": ({}, {"background": "#ddeeff80"}),
     "document_optimized_png": ({}, {"optimize_png": True}),
@@ -155,6 +168,18 @@ def _scene(name: str) -> bytes:
                 ),
                 xyg.arrow(0.5, 1, 1.5, 2, color="#667085", width=1.5),
             ]
+        )
+    if name == "document_annotation_label_box":
+        children.append(
+            xyg.text(
+                0.5,
+                0,
+                "cell < & >",
+                dx=0,
+                dy=10,
+                anchor="middle",
+                style={"coordinate_space": "axes_fraction", "label_background": "#dbeafe"},
+            )
         )
     chart = xyg.chart(
         *children,
@@ -258,6 +283,7 @@ REJECTIONS = {
     "panel_retired_annotation_padding",
     "panel_retired_annotation_vertical_align",
     "panel_label_table_empty_present",
+    "panel_label_box_uncentered",
     "panel_inactive_nonzero",
     "panel_ranges_overlap",
     "panel_scene_corrupt",
@@ -287,6 +313,8 @@ def _reject(name: str) -> bytes:
         if name.startswith("legend_")
         else "document_annotation_baseline"
         if name == "panel_label_table_empty_present"
+        else "document_annotation_label_box"
+        if name == "panel_label_box_uncentered"
         else "document_defaults"
     )
     data = bytearray(_build(seed)[0])
@@ -316,11 +344,16 @@ def _reject(name: str) -> bytes:
         # Panel flag 3 with an explicitly empty table over a Scene that has an
         # annotation label: the flag demands exact label coverage.
         table_len = struct.unpack_from("<I", data, 60)[0]
-        assert table_len == 20
+        assert table_len == 28
         del data[scene_at : scene_at + table_len]
         struct.pack_into("<I", data, 60, 0)
         struct.pack_into("<I", data, 64 + 28, 0)
         struct.pack_into("<I", data, 64 + 84, 0)
+    elif name == "panel_label_box_uncentered":
+        # An explicit cell box requires center alignment (entry byte 17).
+        assert struct.unpack_from("<I", data, 60)[0] == 56
+        assert data[scene_at + 28 + 17] == 3
+        data[scene_at + 28 + 17] = 0
     elif name == "centered_title_x_nonzero":
         struct.pack_into("<I", data, 16, struct.unpack_from("<I", data, 16)[0] | 8)
         struct.pack_into("<f", data, 40, 1)
@@ -440,6 +473,25 @@ def test_registered_document_all_consumers(name, node_results):
                 assert float(title.attrib["x"]) == 160.5
             if "annotation" in name:
                 assert "note < & >" in text
+            if name == "document_annotation_label_box":
+                # The cell is laid out by Rust: half the plot width, 18px tall,
+                # centered under the plot (anchor y=0 plus dy=10).
+                assert "cell < & >" in text
+                clip = next(node for node in root.iter() if node.tag.endswith("clipPath"))
+                plot = {
+                    key: float(next(iter(clip)).attrib[key])
+                    for key in ("x", "y", "width", "height")
+                }
+                boxes = [
+                    node
+                    for node in root.iter()
+                    if node.attrib.get("data-xy-slot") == "annotation_label_box"
+                ]
+                cell = {key: float(boxes[-1].attrib[key]) for key in ("x", "y", "width", "height")}
+                assert cell["width"] == pytest.approx(0.5 * plot["width"], abs=0.01)
+                assert cell["height"] == pytest.approx(18.0, abs=1e-4)
+                assert cell["x"] == pytest.approx(plot["x"] + 0.25 * plot["width"], abs=0.01)
+                assert cell["y"] + 9.0 == pytest.approx(plot["y"] + plot["height"] + 10, abs=0.01)
             if name.startswith("document_title_"):
                 assert "Document < & >" in text
             if name.startswith("document_labels_"):

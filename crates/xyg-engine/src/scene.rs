@@ -185,11 +185,22 @@ const _: () = assert!(
 
 /// Per-label typography and label-box facts applied while Rust consumes XYST
 /// (never serialized in the Scene wire): `(size, italic/bold bits, vertical
-/// alignment)` and the `(horizontal, vertical)` box padding.
+/// alignment)`, the `(horizontal, vertical)` box padding, and an explicit
+/// label box (#1006 Matplotlib table cells).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub(crate) struct StaticLabelStyle {
     pub(crate) typography: Option<(f64, u8, u8)>,
     pub(crate) padding: Option<(f64, f64)>,
+    pub(crate) cell: Option<StaticLabelCell>,
+}
+
+/// An explicit label box: `(width, height)` in px, or fractions of the
+/// panel plot rectangle per the `static_annotation_style::UNIT_*` bits (which
+/// also mark a plot-width-fraction horizontal padding).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct StaticLabelCell {
+    pub(crate) size: (f64, f64),
+    pub(crate) units: u8,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2892,12 +2903,16 @@ fn decode_xyaw(
         let border_width = batch_f64(fixed, 52)?;
         let kind = fixed[60];
         let anchor = fixed[61];
+        // Byte 62 (#1006): 0 data coordinates, 1 axes-fraction text anchor.
+        let coordinate_space = fixed[62];
         let rotation = if version == 2 {
             batch_f64(fixed, 64)?
         } else {
             0.0
         };
-        if fixed[62..64] != [0; 2]
+        if fixed[63] != 0
+            || coordinate_space > 1
+            || (coordinate_space == 1 && kind != 0)
             || kind > 1
             || anchor > 2
             || ![x, y, dx, dy, wrap, border_width, rotation]
@@ -2957,8 +2972,16 @@ fn decode_xyaw(
             return Err(SceneError::Limit);
         }
         let text = lines.join("\n");
-        let px = x_scale.pixel(x);
-        let py = y_scale.pixel(y);
+        // Axes fractions resolve against the finalized plot rectangle here,
+        // in Rust (0,0 = lower left, 1,1 = upper right); hosts never see px.
+        let (px, py) = if coordinate_space == 1 {
+            (
+                layout.left + x * (layout.right - layout.left),
+                layout.bottom - y * (layout.bottom - layout.top),
+            )
+        } else {
+            (x_scale.pixel(x), y_scale.pixel(y))
+        };
         let lx = px + dx;
         let ly = py + dy;
         if ![px, py, lx, ly].into_iter().all(f64::is_finite)
@@ -10217,6 +10240,73 @@ struct CartesianCallout {
 // The literal frame fields stay separate here so the decoder remains aligned
 // with the versioned XYAC record layout.
 #[allow(clippy::too_many_arguments)]
+/// Resolve an explicit cell's px `(width, height)` and horizontal inset:
+/// plot-fraction sizes/padding resolve against the finalized plot rectangle
+/// here, in Rust (hosts never see the final plot size).
+fn resolved_static_label_cell(
+    cell: StaticLabelCell,
+    horizontal: f64,
+    layout: PlotLayout,
+) -> Result<((f64, f64), f64), SceneError> {
+    use crate::static_annotation_style::{
+        UNIT_BITS, UNIT_BOX_HEIGHT_PLOT, UNIT_BOX_WIDTH_PLOT, UNIT_PAD_X_PLOT,
+    };
+    if cell.units & !UNIT_BITS != 0 {
+        return Err(SceneError::Length);
+    }
+    let (plot_width, plot_height) = (layout.right - layout.left, layout.bottom - layout.top);
+    let scale = |value: f64, bit: u8, side: f64| {
+        if cell.units & bit != 0 {
+            value * side
+        } else {
+            value
+        }
+    };
+    let (width, height) = cell.size;
+    Ok((
+        (
+            scale(width, UNIT_BOX_WIDTH_PLOT, plot_width),
+            scale(height, UNIT_BOX_HEIGHT_PLOT, plot_height),
+        ),
+        scale(horizontal, UNIT_PAD_X_PLOT, plot_width),
+    ))
+}
+
+/// Replace one boxed label's measured box with an explicit `(width, height)`
+/// cell (#1006 Matplotlib table cells). Horizontally the text keeps `inset`
+/// from the box edge it is anchored to (start/end) or is centered (middle);
+/// vertically the box is centered on the measured text block, so the
+/// subsequent center alignment centers both on the anchor. Upright only.
+fn place_static_label_cell(
+    label: &SceneLabel,
+    background: &mut SceneLabelBox,
+    (width, height): (f64, f64),
+    inset: f64,
+) -> Result<(), SceneError> {
+    let max = crate::static_annotation_style::MAX_STATIC_LABEL_BOX;
+    if !(width.is_finite() && width > 0.0 && width <= max)
+        || !(height.is_finite() && height > 0.0 && height <= max)
+        || !(inset.is_finite() && (0.0..=width).contains(&inset))
+        || label.rotation != 0.0
+    {
+        return Err(SceneError::Length);
+    }
+    let block = textblock::measure(&label.text, label.font_size, textblock::LINE_HEIGHT, None)
+        .ok_or(SceneError::Length)?;
+    let trailing = (block.line_count().saturating_sub(1)) as f64 * block.line_step;
+    let center_y = label.y + (trailing + block.descent - block.ascent) * 0.5;
+    background.x = match label.anchor {
+        0 => label.x - inset,
+        1 => label.x - width * 0.5,
+        2 => label.x - width + inset,
+        _ => return Err(SceneError::Length),
+    };
+    background.y = center_y - height * 0.5;
+    background.width = width;
+    background.height = height;
+    Ok(())
+}
+
 fn resolved_callout_label_background(
     x: f64,
     y: f64,
@@ -12026,7 +12116,9 @@ impl SceneDocument {
     /// (composed graph labels, chrome) leaves those untouched. Typography
     /// (size, italic/bold, vertical alignment) and the box `(horizontal,
     /// vertical)` padding are resolved against Rust text metrics and the
-    /// canonical 3px label-box inset, per label.
+    /// canonical 3px label-box inset, per label. An explicit `cell` box
+    /// replaces the padded measured box outright (`place_static_label_cell`);
+    /// it requires padding and center alignment, and must stay on the canvas.
     pub(crate) fn apply_static_annotation_labels(
         &mut self,
         styles: Option<&[StaticLabelStyle]>,
@@ -12056,7 +12148,9 @@ impl SceneDocument {
                 }
                 label.font_size = size;
                 self.static_label_text_flags[index] = flags;
-                if let Some(current) = background.as_ref() {
+                // An explicit cell replaces the measured box below, so only a
+                // text-sized box is re-measured for the new size.
+                if let Some(current) = background.as_ref().filter(|_| style.cell.is_none()) {
                     *background = resolved_callout_label_background(
                         label.x,
                         label.y,
@@ -12081,23 +12175,33 @@ impl SceneDocument {
                 let Some(background) = background.as_mut() else {
                     return Err(SceneError::Length);
                 };
-                let (dx, dy) = (
-                    horizontal - CALLOUT_LABEL_BOX_INSET,
-                    vertical - CALLOUT_LABEL_BOX_INSET,
-                );
-                background.x -= dx;
-                background.y -= dy;
-                background.width += 2.0 * dx;
-                background.height += 2.0 * dy;
-                if background.x < 0.0
-                    || background.y < 0.0
-                    || background.width <= 0.0
-                    || background.height <= 0.0
-                    || background.x + background.width > self.layout.viewport_width
-                    || background.y + background.height > self.layout.viewport_height
-                {
-                    return Err(SceneError::Length);
+                if let Some(cell) = style.cell {
+                    if style.typography.map(|(_, _, align)| align) != Some(3) {
+                        return Err(SceneError::Length);
+                    }
+                    let (size, inset) = resolved_static_label_cell(cell, horizontal, self.layout)?;
+                    place_static_label_cell(label, background, size, inset)?;
+                } else {
+                    let (dx, dy) = (
+                        horizontal - CALLOUT_LABEL_BOX_INSET,
+                        vertical - CALLOUT_LABEL_BOX_INSET,
+                    );
+                    background.x -= dx;
+                    background.y -= dy;
+                    background.width += 2.0 * dx;
+                    background.height += 2.0 * dy;
+                    if background.x < 0.0
+                        || background.y < 0.0
+                        || background.width <= 0.0
+                        || background.height <= 0.0
+                        || background.x + background.width > self.layout.viewport_width
+                        || background.y + background.height > self.layout.viewport_height
+                    {
+                        return Err(SceneError::Length);
+                    }
                 }
+            } else if style.cell.is_some() {
+                return Err(SceneError::Length);
             }
             if let Some((_, _, align)) = style.typography {
                 if align > 3 {
@@ -12120,6 +12224,19 @@ impl SceneDocument {
                 label.y += shift;
                 if let Some(background) = background {
                     background.y += shift;
+                }
+            }
+            // The placed cell is final geometry: it must lie on the canvas
+            // (sub-pixel float slack at the edge), never be clipped there.
+            if style.cell.is_some() {
+                let slack = 1e-6;
+                let cell = background.as_ref().ok_or(SceneError::Length)?;
+                if !(cell.x >= -slack
+                    && cell.y >= -slack
+                    && cell.x + cell.width <= self.layout.viewport_width + slack
+                    && cell.y + cell.height <= self.layout.viewport_height + slack)
+                {
+                    return Err(SceneError::Length);
                 }
             }
         }
@@ -23142,14 +23259,17 @@ pub(crate) mod tests {
                 StaticLabelStyle {
                     typography: Some((13.0, 3, 0)),
                     padding: Some((6.0, 2.0)),
+                    cell: None,
                 },
                 StaticLabelStyle {
                     typography: Some((9.0, 1, 0)),
                     padding: None,
+                    cell: None,
                 },
                 StaticLabelStyle {
                     typography: Some((12.0, 0, 3)),
                     padding: Some((5.0, 5.0)),
+                    cell: None,
                 },
             ]))
             .unwrap();
@@ -23178,10 +23298,187 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn static_annotation_label_cells_replace_the_measured_box() {
+        // gamma (label 2) is boxed and start-anchored at x = 75.
+        let cell = |anchor: u8, cell: (f64, f64)| {
+            let mut document = per_label_style_scene();
+            document.labels[2].anchor = anchor;
+            let (anchor_x, anchor_y) = (document.labels[2].x, document.labels[2].y);
+            let plain = StaticLabelStyle::default();
+            let style = StaticLabelStyle {
+                typography: Some((10.0, 0, 3)),
+                padding: Some((4.0, 4.0)),
+                cell: Some(StaticLabelCell {
+                    size: cell,
+                    units: 0,
+                }),
+            };
+            document
+                .apply_static_annotation_labels(Some(&[plain, plain, style]))
+                .map(|()| (document, anchor_x, anchor_y))
+        };
+        for (anchor, left) in [(0, 75.0 - 4.0), (1, 75.0 - 30.0), (2, 75.0 - 60.0 + 4.0)] {
+            let (document, anchor_x, anchor_y) = cell(anchor, (60.0, 16.0)).unwrap();
+            let placed = document.label_backgrounds[2].as_ref().unwrap();
+            assert_eq!(anchor_x, 75.0);
+            assert_eq!((placed.x, placed.width, placed.height), (left, 60.0, 16.0));
+            // Center alignment centers the box and the text block on the anchor.
+            assert!((placed.y + placed.height * 0.5 - anchor_y).abs() < 1e-9);
+            assert_eq!(document.labels[2].x, anchor_x);
+            assert_eq!(document.labels[2].font_size, 10.0);
+            assert!(
+                document.labels[2].y > anchor_y,
+                "the baseline drops to center"
+            );
+        }
+        // SVG paints exactly the explicit rectangle; raster consumes it too.
+        let (document, _, anchor_y) = cell(0, (60.0, 16.0)).unwrap();
+        let mut rect = String::from("x=\"71\" y=\"");
+        push_num(&mut rect, anchor_y - 8.0);
+        rect.push_str("\" width=\"60\" height=\"16\"");
+        let svg = document.to_svg();
+        assert!(svg.contains(&rect), "{rect} not in {svg}");
+        let unboxed = {
+            let (mut document, _, _) = cell(0, (60.0, 16.0)).unwrap();
+            document.label_backgrounds[2] = per_label_style_scene().label_backgrounds[2].clone();
+            document
+        };
+        assert_ne!(
+            document.to_raster_commands(1.0).unwrap(),
+            unboxed.to_raster_commands(1.0).unwrap()
+        );
+        // A cell leaving the 200x120 canvas, or with nonpositive, nonfinite,
+        // or oversized sides, fails closed rather than clipping.
+        for bad in [
+            (500.0, 16.0),
+            (60.0, 400.0),
+            (0.0, 16.0),
+            (60.0, -1.0),
+            (f64::NAN, 16.0),
+            (16_385.0, 16.0),
+        ] {
+            assert!(cell(0, bad).is_err(), "{bad:?}");
+        }
+        assert!(
+            cell(2, (90.0, 16.0)).is_err(),
+            "end-anchored cell crosses x = 0"
+        );
+        // A cell needs a boxed label, its padding inset, center alignment,
+        // and an upright label.
+        let plain = StaticLabelStyle::default();
+        let style = StaticLabelStyle {
+            typography: Some((10.0, 0, 3)),
+            padding: Some((4.0, 4.0)),
+            cell: Some(StaticLabelCell {
+                size: (60.0, 16.0),
+                units: 0,
+            }),
+        };
+        for (index, bad) in [
+            (1, style),
+            (
+                2,
+                StaticLabelStyle {
+                    padding: None,
+                    ..style
+                },
+            ),
+            (
+                2,
+                StaticLabelStyle {
+                    typography: Some((10.0, 0, 0)),
+                    ..style
+                },
+            ),
+            (
+                2,
+                StaticLabelStyle {
+                    typography: None,
+                    ..style
+                },
+            ),
+        ] {
+            let mut styles = [plain; 3];
+            styles[index] = bad;
+            assert!(per_label_style_scene()
+                .apply_static_annotation_labels(Some(&styles))
+                .is_err());
+        }
+        let mut rotated = per_label_style_scene();
+        rotated.labels[2].rotation = 30.0;
+        assert!(rotated
+            .apply_static_annotation_labels(Some(&[plain, plain, style]))
+            .is_err());
+        // An inset wider than the cell, or unknown unit bits, fail closed.
+        for bad in [
+            StaticLabelStyle {
+                padding: Some((61.0, 4.0)),
+                ..style
+            },
+            StaticLabelStyle {
+                cell: Some(StaticLabelCell {
+                    size: (60.0, 16.0),
+                    units: 8,
+                }),
+                ..style
+            },
+        ] {
+            assert!(per_label_style_scene()
+                .apply_static_annotation_labels(Some(&[plain, plain, bad]))
+                .is_err());
+        }
+    }
+
+    #[test]
+    fn static_annotation_label_cells_resolve_plot_fractions_in_rust() {
+        use crate::static_annotation_style::{
+            UNIT_BOX_HEIGHT_PLOT, UNIT_BOX_WIDTH_PLOT, UNIT_PAD_X_PLOT,
+        };
+        let base = per_label_style_scene();
+        let layout = base.layout;
+        let (plot_width, plot_height) = (layout.right - layout.left, layout.bottom - layout.top);
+        let plain = StaticLabelStyle::default();
+        let fraction = StaticLabelStyle {
+            typography: Some((10.0, 0, 3)),
+            padding: Some((0.04, 0.0)),
+            cell: Some(StaticLabelCell {
+                size: (0.4, 0.2),
+                units: UNIT_BOX_WIDTH_PLOT | UNIT_BOX_HEIGHT_PLOT | UNIT_PAD_X_PLOT,
+            }),
+        };
+        let mut document = per_label_style_scene();
+        document
+            .apply_static_annotation_labels(Some(&[plain, plain, fraction]))
+            .unwrap();
+        let placed = document.label_backgrounds[2].as_ref().unwrap();
+        // Width/height are fractions of the plot rectangle, and the start
+        // inset is a fraction of its width: all resolved by Rust.
+        assert!((placed.width - 0.4 * plot_width).abs() < 1e-9);
+        assert!((placed.height - 0.2 * plot_height).abs() < 1e-9);
+        assert!((placed.x - (base.labels[2].x - 0.04 * plot_width)).abs() < 1e-9);
+        // The same px numbers (no unit bits) are px.
+        let px = StaticLabelStyle {
+            padding: Some((0.04 * plot_width, 0.0)),
+            cell: Some(StaticLabelCell {
+                size: (0.4 * plot_width, 0.2 * plot_height),
+                units: 0,
+            }),
+            ..fraction
+        };
+        let mut same = per_label_style_scene();
+        same.apply_static_annotation_labels(Some(&[plain, plain, px]))
+            .unwrap();
+        let other = same.label_backgrounds[2].as_ref().unwrap();
+        assert!((other.width - placed.width).abs() < 1e-9);
+        assert!((other.x - placed.x).abs() < 1e-9);
+    }
+
+    #[test]
     fn static_annotation_labels_fail_closed() {
         let boxed = StaticLabelStyle {
             typography: None,
             padding: Some((4.0, 4.0)),
+            cell: None,
         };
         let plain = StaticLabelStyle::default();
         // The table must cover the Scene's label section exactly.
@@ -23197,7 +23494,8 @@ pub(crate) mod tests {
                 .apply_static_annotation_labels(Some(&[
                     StaticLabelStyle {
                         typography: Some(typography),
-                        padding: None
+                        padding: None,
+                        cell: None,
                     },
                     plain,
                     plain
@@ -23306,6 +23604,7 @@ pub(crate) mod tests {
         let style = StaticLabelStyle {
             typography: Some((17.0, 1, 0)),
             padding: None,
+            cell: None,
         };
         // Exactly one annotation label: two entries (styling an ordinary label
         // that shares an annotation-looking id) fail, one entry succeeds.
@@ -23386,14 +23685,17 @@ pub(crate) mod tests {
             StaticLabelStyle {
                 typography: Some((13.0, 3, 0)),
                 padding: None,
+                cell: None,
             },
             StaticLabelStyle {
                 typography: Some((9.0, 1, 2)),
                 padding: None,
+                cell: None,
             },
             StaticLabelStyle {
                 typography: Some((15.0, 2, 0)),
                 padding: Some((5.0, 5.0)),
+                cell: None,
             },
         ];
         let before: Vec<_> = document.labels.iter().map(|l| (l.y, l.font_size)).collect();
@@ -24335,6 +24637,47 @@ pub(crate) mod tests {
         assert!(callouts.is_empty());
         frame[12 + 32..12 + 40].copy_from_slice(&1.0f64.to_le_bytes());
         assert!(decode_xyaw(&frame, x, y, layout).is_err());
+    }
+
+    #[test]
+    fn xyaw_axes_fraction_rows_project_against_the_plot_rect() {
+        // Plot rect x 20..220, y 20..140 inside a 240x160 viewport; the data
+        // scales deliberately disagree with the plot fractions.
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 10.0, 20.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, -5.0, 5.0, 140.0, 20.0, 1.0, false).unwrap();
+        let frame = |coordinate: u8, xy: [f64; 2], dy: f64| {
+            let text = b"cell";
+            let mut frame = b"XYAW\x01\0\0\0\x01\0\0\0".to_vec();
+            for value in [xy[0], xy[1], 0.0, dy, 0.0] {
+                frame.extend_from_slice(&value.to_le_bytes());
+            }
+            frame.extend_from_slice(&[0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 0]);
+            frame.extend_from_slice(&0.0f64.to_le_bytes());
+            frame.extend_from_slice(&[0, 1, coordinate, 0]);
+            frame.extend_from_slice(&(text.len() as u32).to_le_bytes());
+            frame.extend_from_slice(text);
+            frame
+        };
+        // (0.25, 0) is the plot's bottom edge; a positive dy hangs the label
+        // below the plot (a Matplotlib loc="bottom" table row).
+        let (labels, boxes, _) = decode_xyaw(&frame(1, [0.25, 0.0], 8.0), x, y, layout).unwrap();
+        assert_eq!((labels[0].x, labels[0].y), (70.0, 148.0));
+        assert_eq!(labels[0].anchor, 1);
+        assert!(labels[0].annotation && boxes[0].is_some());
+        let (labels, _, _) = decode_xyaw(&frame(1, [1.0, 1.0], 0.0), x, y, layout).unwrap();
+        assert_eq!((labels[0].x, labels[0].y), (220.0, 20.0));
+        // The same numbers in data space use the axis scales instead.
+        let (labels, _, _) = decode_xyaw(&frame(0, [15.0, 0.0], 0.0), x, y, layout).unwrap();
+        assert_eq!((labels[0].x, labels[0].y), (120.0, 80.0));
+        // Unknown spaces, a nonzero reserved byte, and fraction callouts fail.
+        assert!(decode_xyaw(&frame(2, [0.5, 0.5], 0.0), x, y, layout).is_err());
+        let mut reserved = frame(1, [0.5, 0.5], 0.0);
+        reserved[12 + 63] = 1;
+        assert!(decode_xyaw(&reserved, x, y, layout).is_err());
+        let mut callout = frame(1, [0.5, 0.5], 0.0);
+        callout[12 + 60] = 1;
+        assert!(decode_xyaw(&callout, x, y, layout).is_err());
     }
 
     #[test]

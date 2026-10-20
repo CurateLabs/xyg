@@ -5836,7 +5836,9 @@ class PlotTypeMixin:
         if text_color is not None:
             cell_text_kwargs["color"] = resolve_color(text_color)
         total_rows = rows + (1 if col_labels is not None else 0)
-        row_height_points = fontsize * 1.08
+        # Matplotlib sizes every row from ``Table.FONTSIZE`` (10 pt) * 1.2,
+        # independent of the cell text ``fontsize``.
+        row_height_points = 12.0
         if natural_layout:
             self._table_bottom_points = max(
                 getattr(self, "_table_bottom_points", 0.0),
@@ -5845,7 +5847,14 @@ class PlotTypeMixin:
         row_label_width_points = (
             max((len(label) for label in (row_labels or ())), default=0) * fontsize * 0.6 + 6.0
         )
-        border = None if edges in ("", "open") else "0.8px solid #1f2937"
+        if natural_layout and row_labels is not None:
+            # The row-label column hangs left of the axes; reserve it so the
+            # cells stay on the canvas.
+            self._table_left_points = max(
+                getattr(self, "_table_left_points", 0.0), row_label_width_points + 1.0
+            )
+        # Matplotlib ``Cell`` edges: black at ``patch.linewidth`` points.
+        edge_points = None if edges in ("", "open") else float(rcParams["patch.linewidth"])
         cells: dict[tuple[int, int], Text] = {}
         artists: list[Artist] = []
 
@@ -5890,7 +5899,7 @@ class PlotTypeMixin:
                         "row_from_top": row_from_top,
                         "row_height_points": row_height_points if natural_layout else None,
                         "facecolor": resolve_color(facecolor) or "#ffffff",
-                        "border": border,
+                        "edge_points": edge_points,
                     },
                 },
             )

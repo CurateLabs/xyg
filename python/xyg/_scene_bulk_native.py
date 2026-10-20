@@ -1650,6 +1650,7 @@ _ADMITTED_XYAF_STYLE_KEYS = frozenset(
         "label_opacity",
         "label_border_width",
         "rotation",
+        "coordinate_space",
     }
 )
 
@@ -1676,6 +1677,8 @@ class _XygXyafBulkStyleIn(ctypes.Structure):
         ("rotation_present", ctypes.c_int32),
         ("rotation", ctypes.c_double),
         ("extra_style_key_count", ctypes.c_uint32),
+        # ABI 390 (#1006): text anchor coordinate space literal (Rust validates).
+        ("coordinate_space", _XygStringRef),
     ]
 
 
@@ -1792,6 +1795,7 @@ def _marshal_xyaf_style(
             rotation_present if not skip_rotation else 0,
             rotation,
             len(extra_keys),
+            opt_css("coordinate_space"),
         ),
         bytes(extra_blob),
     )

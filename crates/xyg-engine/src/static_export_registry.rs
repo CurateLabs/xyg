@@ -536,6 +536,13 @@ pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
         family: "annotation-label-entry",
         code: 2,
     },
+    // #1006 (pyplot `table`): an explicit label box replacing the measured
+    // box, placed by Rust against an (axes-fraction) text anchor.
+    StaticDocumentVocabulary {
+        name: "annotation.label-box",
+        family: "annotation-label-entry",
+        code: 4,
+    },
     StaticDocumentVocabulary {
         name: "panel.arrow-metrics",
         family: "panel-flag",
@@ -823,6 +830,17 @@ pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
+        name: "document_annotation_label_box",
+        vocabulary: &[
+            "panel.annotation-labels",
+            "annotation.label-typography",
+            "annotation.label-padding",
+            "annotation.label-box",
+            "annotation.center",
+        ],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
         name: "document_colorbar_fill_plot",
         vocabulary: &["panel.colorbar-fill-plot"],
         formats: STATIC_DOCUMENT_FORMATS,
@@ -996,6 +1014,7 @@ pub const STATIC_DOCUMENT_REJECTIONS: &[&str] = &[
     "panel_retired_annotation_padding",
     "panel_retired_annotation_vertical_align",
     "panel_label_table_empty_present",
+    "panel_label_box_uncentered",
     "panel_inactive_nonzero",
     "panel_ranges_overlap",
     "panel_scene_corrupt",

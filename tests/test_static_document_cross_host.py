@@ -119,7 +119,7 @@ def test_python_and_node_share_static_document_decoration_bytes() -> None:
                 160,
                 120,
                 (12, 13, 4, 12, 13, 4),
-                annotation_labels=struct.pack("<I3fB3x", 1, 15.0, 0.0, 0.0, 2),
+                annotation_labels=struct.pack("<I3fB3x2f", 1, 15.0, 0.0, 0.0, 2, 0.0, 0.0),
             )
         ],
         width=160,
@@ -143,7 +143,9 @@ def test_python_and_node_share_static_document_decoration_bytes() -> None:
         "titleX": 80,
         "titleY": 14,
         "titleFlags": 3,
-        "annotationLabels": base64.b64encode(struct.pack("<I3fB3x", 1, 15.0, 0.0, 0.0, 2)).decode(),
+        "annotationLabels": base64.b64encode(
+            struct.pack("<I3fB3x2f", 1, 15.0, 0.0, 0.0, 2, 0.0, 0.0)
+        ).decode(),
         "labels": labels,
         "legend": legend,
         "encodeOnly": True,

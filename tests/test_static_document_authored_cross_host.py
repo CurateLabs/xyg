@@ -34,7 +34,7 @@ CASES = (
     "facet_panels",
 )
 FORMATS = ("svg", "png", "pdf", "jpeg", "webp")
-# Decode only: v3 XYST header/panel geometry, independently checked against output.
+# Decode only: v4 XYST header/panel geometry, independently checked against output.
 PANEL = struct.Struct("<2i6I12fII2f4B2II16B")
 
 
@@ -133,7 +133,7 @@ def node_authored_documents() -> dict[str, dict]:
 def _document_scenes(document: bytes) -> list[bytes]:
     assert document[:4] == b"XYST"
     version, _width, _height, _flags, count, title_bytes = struct.unpack_from("<6I", document, 4)
-    assert version == 3
+    assert version == 4
     decoration_bytes = struct.unpack_from("<I", document, 52)[0]
     label_table_bytes = struct.unpack_from("<I", document, 60)[0]
     scenes_at = 64 + count * PANEL.size + title_bytes + decoration_bytes + label_table_bytes

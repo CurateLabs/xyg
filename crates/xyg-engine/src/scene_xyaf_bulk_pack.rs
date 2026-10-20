@@ -103,6 +103,8 @@ pub enum XyafBulkError {
     Anchor = 11,
     LabelBorder = 12,
     Axis = 13,
+    /// A text `coordinate_space` other than `data`/`axes_fraction` (#1006).
+    Coordinates = 14,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -140,6 +142,9 @@ pub struct XyafBulkStyleObs<'a> {
     pub label_opacity: Option<f64>,
     pub label_border_width: Option<f64>,
     pub rotation: Option<f64>,
+    /// Text anchor coordinate space (#1006): absent/`data` keeps data
+    /// coordinates; `axes_fraction` projects against the plot rectangle.
+    pub coordinate_space: Option<&'a str>,
     pub extra_keys: &'a [String],
 }
 
@@ -208,6 +213,23 @@ fn symbol_code(name: &str, index: usize) -> Result<u8, XyafBulkPackError> {
     Err(XyafBulkPackError::new(XyafBulkError::Symbol, index))
 }
 
+/// XYAF byte-26 coordinate-space code: 0 data, 1 axes fraction (#1006).
+pub const XYAF_COORDINATES_DATA: u8 = 0;
+pub const XYAF_COORDINATES_AXES_FRACTION: u8 = 1;
+
+fn coordinate_code(kind: &str, name: Option<&str>, index: usize) -> Result<u8, XyafBulkPackError> {
+    match (kind, name) {
+        (_, None) => Ok(XYAF_COORDINATES_DATA),
+        ("text", Some("data")) => Ok(XYAF_COORDINATES_DATA),
+        ("text", Some("axes_fraction")) => Ok(XYAF_COORDINATES_AXES_FRACTION),
+        ("text", Some(_)) => Err(XyafBulkPackError::new(XyafBulkError::Coordinates, index)),
+        _ => Err(XyafBulkPackError::new(
+            XyafBulkError::UnsupportedStyle,
+            index,
+        )),
+    }
+}
+
 fn anchor_code(name: &str, index: usize) -> Result<u8, XyafBulkPackError> {
     match name {
         "start" => Ok(0),
@@ -243,11 +265,15 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
         rotation = obs.style.rotation;
     }
     let authored_wrap = matches!(kind, "text" | "callout") && obs.wrap.is_some();
+    let coordinates = coordinate_code(kind, obs.style.coordinate_space, index)?;
+    // Axes-fraction text rides the XYAW layout path (wrap=0), whose rows
+    // carry the coordinate-space byte the Scene projection honors.
     let layout_text = kind == "text"
         && (obs.dx.is_some()
             || obs.dy.is_some()
             || obs.anchor.is_some()
-            || rotation.is_some());
+            || rotation.is_some()
+            || coordinates == XYAF_COORDINATES_AXES_FRACTION);
     let mut dispatch = crate::scene_pack_orchestrate::XyafAnnotationDispatchPlan {
         wrapped: 0,
         pack_rule_dash: 0,
@@ -504,6 +530,7 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
         axis_code,
         symbol,
         anchor,
+        coordinates,
         facts,
         style_bits,
         linecap,
@@ -574,6 +601,49 @@ mod tests {
         let packed = scene_xyaf_bulk_pack(&[text_obs("hello", 0.5, 0.25, "#667085")]).unwrap();
         assert_eq!(&packed[..4], b"XYAF");
         assert_eq!(&packed[232..], b"hello");
+    }
+
+    #[test]
+    fn axes_fraction_text_packs_byte_26_and_routes_to_layout() {
+        let mut obs = text_obs("cell", 0.25, -0.1, "#000000");
+        let data = scene_xyaf_bulk_pack(&[obs.clone()]).unwrap();
+        assert_eq!(data[26], XYAF_COORDINATES_DATA);
+        assert_eq!(
+            u32::from_le_bytes(data[16..20].try_into().unwrap()) & FACT_HAS_WRAP,
+            0
+        );
+        obs.style.coordinate_space = Some("data");
+        assert_eq!(scene_xyaf_bulk_pack(&[obs.clone()]).unwrap(), data);
+        obs.style.coordinate_space = Some("axes_fraction");
+        let fraction = scene_xyaf_bulk_pack(&[obs.clone()]).unwrap();
+        assert_eq!(fraction[26], XYAF_COORDINATES_AXES_FRACTION);
+        // Axes-fraction text always takes the XYAW layout route (wrap=0).
+        let facts = u32::from_le_bytes(fraction[16..20].try_into().unwrap());
+        assert_ne!(facts & FACT_HAS_WRAP, 0);
+        assert_eq!(fraction[15], 0, "XYAW rows default to start anchoring");
+    }
+
+    #[test]
+    fn coordinate_space_rejects_unknown_values_and_non_text_kinds() {
+        let mut obs = text_obs("cell", 0.25, 0.5, "#000000");
+        for value in [
+            "figure_fraction",
+            "xaxis_transform",
+            "Axes_Fraction",
+            "pixels",
+        ] {
+            obs.style.coordinate_space = Some(value);
+            let error = scene_xyaf_bulk_pack(&[obs.clone()]).unwrap_err();
+            assert_eq!(error.code, XyafBulkError::Coordinates);
+            assert_eq!(error.abi_code(), -14);
+        }
+        let mut callout = text_obs("tip", 0.5, 0.5, "#000000");
+        callout.kind = "callout";
+        callout.style.coordinate_space = Some("axes_fraction");
+        assert_eq!(
+            scene_xyaf_bulk_pack(&[callout]).unwrap_err().code,
+            XyafBulkError::UnsupportedStyle
+        );
     }
 
     #[test]

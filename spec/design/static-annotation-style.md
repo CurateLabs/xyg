@@ -82,6 +82,28 @@ before semantic style validation (their framing is still validated).
   includes canonical `label_background`. Unboxed labels without authored padding
   record none. A label that requests padding but has no box is rejected
   downstream by the Scene consumer.
+- **Explicit label box (#1006, Matplotlib table cells).** `box_width` and
+  `box_height` replace the text-sized box with an exact rectangle. Rust strips
+  both keys (static-only facts; the raw canonical Scene path has no box
+  vocabulary and rejects them like any unknown key). They are admitted only
+  together (a null pair is "no box"), only on a `text` row that has a box
+  (`background` or `label_background`), is upright (rotation absent or
+  normalizing to 0), and is vertically centered (`vertical_align`
+  center/center_baseline). Each side is a px **number** in (0,16384], or — only
+  on text whose `coordinate_space` is `"axes_fraction"`, whose containing block
+  is the panel plot rectangle — a CSS-style **`"<n>%"`** string: a fraction
+  (0,16] of the plot width (`box_width`) or plot height (`box_height`). A
+  cell's padding may give its horizontal component as a percentage of the plot
+  width in the two-value form `<v>px <n>%` (the vertical component stays px and
+  is unused by a cell); a percentage anywhere else, a one-sided box, a string
+  px side (`"40px"`), any other kind, or an ineligible row fails with
+  `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX`. Percentages are resolved by Rust
+  against the **final** plot rectangle when the entry is applied, so a host
+  never needs (or sees) the post-layout plot size.
+- **Axes-fraction anchors.** A `text` row whose `coordinate_space` is exactly
+  `"axes_fraction"` takes an XYAW label slot (the bulk XYAF pack routes it
+  there, [scene-ir.md](scene-ir.md) "ABI 390 axes-fraction text anchors");
+  `coordinate_space` itself is canonical Scene vocabulary and is not stripped.
 - **Box style.** `border_radius` is the Matplotlib `boxstyle="round*"` fact.
   The Scene label box is a rectangle (the Scene label wire has no corner
   radius), so a non-zero radius fails with
@@ -94,9 +116,11 @@ different sizes, weights, styles, alignments, colors, and boxes
 (`XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE` is retired). No
 annotation sampling or per-row typography fallback is permitted.
 
-## XYAO v2 output
+## XYAO v3 output
 
-The 16-byte header is `<4s3I>`: `XYAO`, version 2, original input count, **label
+Version 3 (#1006) appended the explicit label box to each label-table entry;
+hosts reject any other version. The 16-byte header is `<4s3I>`: `XYAO`,
+version 3, original input count, **label
 count** (the number of *annotation* labels in the compiled Scene's label
 section). Then, for each input
 row, u32 drop (0/1), u32 patch count, then patches: required key string, u32
@@ -105,10 +129,15 @@ value payload. Numeric patches are raw f64. Dropped rows have no patches. Patch
 ordering is deterministic.
 
 The remainder is the **label table**: `label count` entries of
-`LABEL_ENTRY_BYTES = 20` (`<I3f2B2x>`): present bits (1 = typography, 2 =
-padding), f32 font size, f32 horizontal padding, f32 vertical padding, u8
-italic(1)/bold(2) flags, u8 vertical alignment, two reserved zero bytes. Absent
-facts are canonical zero. Entries are in the order of the Scene's annotation labels, which
+`LABEL_ENTRY_BYTES = 28` (`<I3f3Bx2f>`): present bits (1 = typography, 2 =
+padding, 4 = explicit box), f32 font size, f32 horizontal padding, f32 vertical
+padding, u8 italic(1)/bold(2) flags, u8 vertical alignment, u8 **unit bits**
+(1 = box width is a plot-width fraction, 2 = box height is a plot-height
+fraction, 4 = horizontal padding is a plot-width fraction), one reserved zero
+byte, f32 box width, f32 box height. Absent facts (and the unit byte without a
+box) are canonical zero; a box requires typography with center alignment and
+padding, and positive sides bounded by 16384 px or a 16 (1600%) fraction.
+Entries are in the order of the Scene's annotation labels, which
 `scene_annotations::label_slots` owns (it reuses the XYAF dispatch plan, so a
 host never repeats the routing): unwrapped text (XYAT), attached rule/band/marker
 labels (XYAL), wrapped text and laid-out marker labels (XYAW), then callouts
@@ -130,6 +159,18 @@ appended) takes a table of annotation entries only. Panel flag 3 requires exact
 coverage: one entry per annotation label, and an explicitly empty table over a
 Scene that has annotation labels is rejected like any other length mismatch.
 
+**Applying an explicit box** (after the font size; the measured box is not
+re-measured): Rust first resolves fractions against the finalized plot
+rectangle (`width·(right − left)`, `height·(bottom − top)`, inset
+`pad_x·(right − left)`), then places the box against the label anchor — the
+text keeps the horizontal inset from the edge it is anchored to (start:
+`x − inset`; end: `x − width + inset`; middle: centered) and the box is centered
+on the measured text block, so the center alignment that follows centers both
+on the anchor. The inset must lie in [0, width], the label must be upright,
+and the placed box must lie inside the panel viewport (sub-pixel slack only);
+otherwise the panel fails with `XYG_STATIC_DOCUMENT_PANEL` rather than being
+clipped or moved.
+
 Existing product failures retain the mathtext/custom-font/annotation-typography/
 vertical-align/bbox reasons and add `XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE`.
 Invalid consumed rotation or text paint uses
@@ -145,9 +186,12 @@ typography/alignment family, per-label heterogeneity (size, style, weight,
 alignment, one- and two-value padding), the Scene label order across every
 annotation kind, CSS paint/box projection, the round-boxstyle rejection,
 negative/full-turn rotation, malformed framing, all truncated prefixes,
-resource limits, nonfinite numbers, and pre-narrowing bounds. `cargo test -p
-xyg-engine static_` adds the XYST label-table decoder and the Scene per-label
-application (`static_annotation_labels_*`).
+resource limits, nonfinite numbers, and pre-narrowing bounds; `explicit_label_box_*`,
+`axes_fraction_cells_carry_plot_relative_units` and
+`axes_fraction_text_takes_an_xyaw_slot` pin the #1006 box/unit facts and slot
+routing. `cargo test -p xyg-engine static_` adds the XYST label-table decoder
+(including box/unit rejection) and the Scene per-label application
+(`static_annotation_labels_*`, `static_annotation_label_cells_*`).
 
 `tests/test_static_annotation_style_cross_host.py` and its Node companion
 `packages/xy-node/scripts/static_annotation_style_cross_host.mjs` send raw
@@ -157,6 +201,10 @@ expected label-table facts, and exact errors.
 `packages/xy-node/scripts/static_annotation_labels_cross_host.mjs` authors the
 same mixed-style, box-padding and mixed-kind charts through the public Python
 composition API and the public Node `Figure`, requiring byte-identical
-SVG/PNG/PDF/JPEG/WebP and identical stable rejection reasons.
-`tests/pyplot/test_corpus_annotations_1006.py` covers the Matplotlib 3.11
-corpus cases 25 and 53 annotation surface through pyplot.
+SVG/PNG/PDF/JPEG/WebP and identical stable rejection reasons; its
+`table_cells`/`axes_fraction_text` cases and the box/coordinate failures are the
+#1006 table vocabulary (Rust lays out percentage cells against the final plot
+rectangle on both hosts). `tests/pyplot/test_corpus_annotations_1006.py` covers
+the Matplotlib 3.11 corpus cases 25 and 53 annotation surface through pyplot,
+and `tests/pyplot/test_table_static_export.py` pins `ax.table` cell
+rectangles against Matplotlib 3.11.

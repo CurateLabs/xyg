@@ -369,8 +369,12 @@ def _measured_axis_chrome(ax: Axes, width: int, height: int) -> tuple[float, flo
     intrinsic = dict(_probe_axis_spec(ax, width, height))
     intrinsic.pop("padding", None)
     measured_width, measured_height, _compact, plot = _svg.layout(intrinsic)
+    # A natural table's row-label column hangs left of the axes like
+    # Matplotlib's; it is axes content the layout must keep on the canvas
+    # (the table height below the axes rides `table_bottom_points`).
+    table_left = float(getattr(ax, "_table_left_points", 0.0)) * ax._point_scale()
     return (
-        float(plot["x"]),
+        max(float(plot["x"]), table_left),
         float(plot["y"]),
         float(measured_width - plot["x"] - plot["w"]),
         float(measured_height - plot["y"] - plot["h"]),

@@ -127,6 +127,9 @@ _LEGEND_LOC_ANCHORS = {
 # Plot box of the default 640x480 figure, for direct `_best_legend_loc` callers
 # that have no chart geometry to hand.
 _DEFAULT_BEST_PLOT_SIZE = (564.0, 428.0)
+# Matplotlib ``Cell.PAD``: cell text sits this fraction of the cell width
+# inside its aligned (left/right) edge.
+_TABLE_CELL_PAD = 0.1
 
 
 # Theme/axis children are immutable declarative specs, so identical ones are
@@ -1318,6 +1321,9 @@ class Axes(PlotTypeMixin):
         # Natural ``table(loc="bottom")`` height in Matplotlib points. It is
         # converted at render time so savefig DPI changes preserve cell size.
         self._table_bottom_points = 0.0
+        # Width of a natural table's row-label column, which hangs left of
+        # the axes; reserved so the cells stay inside the canvas.
+        self._table_left_points = 0.0
         # Matplotlib snapshots the rc autoscale margins when an Axes is
         # created.  Keep those values on the axes so ordinary get_*lim() and
         # rendering use the advertised 5% defaults without requiring an
@@ -1681,6 +1687,7 @@ class Axes(PlotTypeMixin):
         self._plot_box_px = None
         self._padding = None
         self._table_bottom_points = 0.0
+        self._table_left_points = 0.0
         self._annotation_margins = {"x": 0.0, "y": 0.0}
         self._xmargin = float(rcParams["axes.xmargin"])
         self._ymargin = float(rcParams["axes.ymargin"])
@@ -7262,6 +7269,97 @@ class Axes(PlotTypeMixin):
             direction = (0.0, 1.0) if np.isinf(slope) else (1.0, slope)
         return _clip_infinite_line(xy1, direction, xlim, ylim)
 
+    def _table_cell_annotation(self, entry: dict[str, Any], kw: dict[str, Any]) -> Any:
+        """One Matplotlib table cell as one public boxed text annotation.
+
+        The anchor stays in axes-fraction coordinates and every plot-relative
+        length is a CSS-style percentage of the plot rectangle, so Rust
+        resolves the cell against the *final* plot rectangle (this shim never
+        knows it after tight layout). ``box_width``/``box_height`` are the
+        cell rectangle and ``padding`` is Matplotlib's ``Cell.PAD`` text inset
+        from the aligned edge. Fixed-size parts stay px: natural
+        ``loc="bottom"`` rows hang below the axes in point rows (``dy``) and
+        the auto-width row-label column hangs left of the axes (``dx``).
+        """
+        geometry = entry["table_geometry"]
+        point_scale = self._point_scale()
+        font_points = _font_size_points(
+            (kw.get("style") or {}).get("font_size", rcParams["font.size"]),
+            rcParams["font.size"],
+        )
+        anchor = kw.get("anchor", "middle")
+        x1 = float(geometry["x1"])
+        dynamic_width = geometry.get("dynamic_width_points")
+        if dynamic_width is not None:
+            # Row-label column: a px width ending exactly at the table's left
+            # edge (``x1`` in axes fractions).
+            width_px = max(1.0, float(dynamic_width) * point_scale)
+            inset_px = width_px * _TABLE_CELL_PAD
+            text_x = x1
+            dx = (
+                inset_px - width_px
+                if anchor == "start"
+                else -inset_px
+                if anchor == "end"
+                else -width_px * 0.5
+            )
+            box_width: Any = width_px
+            padding = f"0px {inset_px!r}px"
+        else:
+            x0 = float(geometry["x0"])
+            span = x1 - x0
+            inset = span * _TABLE_CELL_PAD
+            text_x = (
+                x0 + inset
+                if anchor == "start"
+                else x1 - inset
+                if anchor == "end"
+                else x0 + span * 0.5
+            )
+            dx = 0.0
+            box_width = f"{span * 100.0!r}%"
+            padding = f"0px {inset * 100.0!r}%"
+        row_height = geometry.get("row_height_points")
+        if row_height is not None:
+            # Natural layout: the table hangs from the axes bottom (y=0) in
+            # fixed point rows, independent of the final plot height.
+            height_px = max(1.0, float(row_height) * point_scale)
+            center_y, dy = 0.0, (float(geometry["row_from_top"]) + 0.5) * height_px
+            box_height: Any = height_px
+        else:
+            y0, y1 = float(geometry["y0"]), float(geometry["y1"])
+            center_y, dy = (y0 + y1) * 0.5, 0.0
+            box_height = f"{(y1 - y0) * 100.0!r}%"
+        style: dict[str, Any] = {
+            **(kw.get("style") or {}),
+            "coordinate_space": "axes_fraction",
+            "vertical_align": "center",
+            "font_size": font_points * point_scale,
+            "label_color": kw.get("color")
+            or resolve_color(rcParams.get("text.color", "black"))
+            or "black",
+            "background": geometry["facecolor"],
+            "padding": padding,
+            "box_width": box_width,
+            "box_height": box_height,
+        }
+        edge_points = geometry.get("edge_points")
+        if edge_points:
+            style["border"] = f"{float(edge_points) * point_scale:.4g}px solid #000000"
+        text = str(entry["args"][2])
+        return xyg.text(
+            text_x,
+            center_y,
+            # A cell always paints its rectangle; an empty cell keeps an
+            # invisible one-space label so the box has a text anchor.
+            text if text else " ",
+            dx=dx,
+            dy=dy,
+            color=kw.get("color"),
+            anchor=anchor,
+            style=style,
+        )
+
     def _chart_children(
         self,
         *,
@@ -7419,90 +7517,7 @@ class Axes(PlotTypeMixin):
                     kw.pop("dash_capstyle", None)
                 children.append(getattr(xyg, e["factory"])(*e["args"], **kw, **axis_kw))
             elif kind == "@table_cell":
-                geometry = e["table_geometry"]
-                plot_width, plot_height = getattr(
-                    self, "_materialize_plot_px", _DEFAULT_BEST_PLOT_SIZE
-                )
-                point_scale = self._point_scale()
-                font_points = _font_size_points(
-                    (kw.get("style") or {}).get("font_size", rcParams["font.size"]),
-                    rcParams["font.size"],
-                )
-                font_px = font_points * point_scale
-                x1 = float(geometry["x1"])
-                dynamic_width = geometry.get("dynamic_width_points")
-                x0 = (
-                    x1 - float(dynamic_width) * point_scale / plot_width
-                    if dynamic_width is not None
-                    else float(geometry["x0"])
-                )
-                row_height = geometry.get("row_height_points")
-                if row_height is not None:
-                    height_fraction = float(row_height) * point_scale / plot_height
-                    y1 = -float(geometry["row_from_top"]) * height_fraction
-                    y0 = y1 - height_fraction
-                else:
-                    y0, y1 = float(geometry["y0"]), float(geometry["y1"])
-                center_x, center_y = (x0 + x1) * 0.5, (y0 + y1) * 0.5
-                cell_width_px = max(1.0, (x1 - x0) * plot_width)
-                cell_height_px = max(1.0, (y1 - y0) * plot_height)
-                # One transparent space supplies a DOM/SVG/native label box;
-                # pixel padding expands it to the exact axes-fraction cell.
-                # The visible text is a separate annotation so its left/right
-                # anchor is independent of the cell background.
-                space_width_px = font_px * 0.32
-                box_style: dict[str, Any] = {
-                    "coordinate_space": "axes_fraction",
-                    "vertical_align": "center",
-                    "font_size": font_px,
-                    "label_color": "transparent",
-                    "background": geometry["facecolor"],
-                    "padding": (
-                        f"{max(0.0, (cell_height_px - font_px) * 0.5):.4g}px "
-                        f"{max(0.0, (cell_width_px - space_width_px) * 0.5):.4g}px"
-                    ),
-                }
-                if geometry.get("border"):
-                    box_style["border"] = geometry["border"]
-                children.append(
-                    xyg.text(
-                        center_x,
-                        center_y,
-                        " ",
-                        dx=0.0,
-                        dy=0.0,
-                        anchor="middle",
-                        class_name="xy-mpl-table-cell",
-                        style=box_style,
-                    )
-                )
-                anchor = kw.get("anchor", "middle")
-                inset = min((x1 - x0) * 0.08, 3.0 / plot_width)
-                text_x = (
-                    x0 + inset if anchor == "start" else x1 - inset if anchor == "end" else center_x
-                )
-                text_style = {
-                    **(kw.get("style") or {}),
-                    "coordinate_space": "axes_fraction",
-                    "vertical_align": "center",
-                    "font_size": font_px,
-                    "label_color": kw.get("color")
-                    or resolve_color(rcParams.get("text.color", "black"))
-                    or "black",
-                }
-                children.append(
-                    xyg.text(
-                        text_x,
-                        center_y,
-                        str(e["args"][2]),
-                        dx=0.0,
-                        dy=0.0,
-                        color=kw.get("color"),
-                        anchor=anchor,
-                        class_name="xy-mpl-table-cell",
-                        style=text_style,
-                    )
-                )
+                children.append(self._table_cell_annotation(e, kw))
             elif kind == "@hline":
                 children.append(xyg.hline(*e["args"], **kw))
                 if e.get("endpoint_marker"):
@@ -8099,7 +8114,7 @@ class Axes(PlotTypeMixin):
         chart_padding = (
             self._frame_padding(width, height) if self._padding is None else list(self._padding)
         )
-        if self._table_bottom_points:
+        if self._table_bottom_points or self._table_left_points:
             compact = width < 520
             extra_bottom = self._outside_padding(compact)[2]
             if chart_padding is None:
@@ -8108,6 +8123,8 @@ class Axes(PlotTypeMixin):
                 chart_padding = list(map(float, chart_padding))
             table_bottom = self._table_bottom_points * self._point_scale()
             chart_padding[2] = max(chart_padding[2], table_bottom - extra_bottom)
+            # Row labels hang left of the axes; keep their cells on the canvas.
+            chart_padding[3] = max(chart_padding[3], self._table_left_points * self._point_scale())
         adjusted_aspect = False
         aspect_domains: Optional[tuple[tuple[float, float], tuple[float, float]]] = None
         if self._aspect_equal and self._aspect_bounds is not None:

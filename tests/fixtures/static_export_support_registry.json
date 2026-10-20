@@ -469,6 +469,11 @@
         "code": 2
       },
       {
+        "name": "annotation.label-box",
+        "family": "annotation-label-entry",
+        "code": 4
+      },
+      {
         "name": "panel.arrow-metrics",
         "family": "panel-flag",
         "code": 16
@@ -917,6 +922,23 @@
         ]
       },
       {
+        "name": "document_annotation_label_box",
+        "vocabulary": [
+          "panel.annotation-labels",
+          "annotation.label-typography",
+          "annotation.label-padding",
+          "annotation.label-box",
+          "annotation.center"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
         "name": "document_colorbar_fill_plot",
         "vocabulary": [
           "panel.colorbar-fill-plot"
@@ -1298,6 +1320,7 @@
       "panel_retired_annotation_padding",
       "panel_retired_annotation_vertical_align",
       "panel_label_table_empty_present",
+      "panel_label_box_uncentered",
       "panel_inactive_nonzero",
       "panel_ranges_overlap",
       "panel_scene_corrupt",

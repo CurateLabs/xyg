@@ -91,6 +91,20 @@ VALID = {
         {"style": {"font_size": 23}},
     ],
     "zero_radius": [_styled(border_radius=0)],
+    # #1006 table cells: an explicit box (px, or plot-rectangle percentages on
+    # axes-fraction text) routed through XYAW like a laid-out label.
+    "cell_px": [_styled(background="white", vertical_align="center", box_width=40, box_height=16)],
+    "cell_percent": [
+        {},
+        _styled(
+            background="white",
+            vertical_align="center",
+            coordinate_space="axes_fraction",
+            box_width="50%",
+            box_height=16.5,
+            padding="0px 5%",
+        ),
+    ],
 }
 for weight in (400, 600, 700, 800, 900, 700.0):
     VALID[f"weight_{weight}"] = [_styled(font_weight=weight)]
@@ -115,6 +129,17 @@ def _invalid() -> dict[str, tuple[bytes, str]]:
         ("padding_negative", {"padding": "-1e-50px"}, "ANNOTATION_BBOX"),
         ("padding_three", {"padding": "1px 2px 3px"}, "ANNOTATION_BBOX"),
         ("round_box", {"background": "white", "border_radius": 5.0}, "ANNOTATION_BOXSTYLE"),
+        ("cell_one_side", {"background": "white", "box_width": 40}, "ANNOTATION_BBOX"),
+        (
+            "cell_uncentered",
+            {"background": "white", "box_width": 40, "box_height": 16},
+            "ANNOTATION_BBOX",
+        ),
+        (
+            "cell_percent_in_data_space",
+            {"background": "white", "vertical_align": "center", "box_width": "5%", "box_height": 9},
+            "ANNOTATION_BBOX",
+        ),
     ):
         result[name] = (_frame([{"style": style}]), "XYG_STATIC_UNSUPPORTED_" + code)
     for key in ("font_size", "font_weight", "rotation"):
@@ -178,11 +203,18 @@ def test_annotation_query_bytes_and_expected_facts(name, node_results):
     assert result == base64.b64decode(node_results[name]["output"])
     rows = VALID[name]
     magic, version, count, label_count = struct.unpack_from("<4s3I", result)
-    assert (magic, version, count) == (b"XYAO", 2, len(rows))
-    table = result[len(result) - 20 * label_count :]
-    entries = [struct.unpack_from("<I3f2B2x", table, 20 * i) for i in range(label_count)]
+    assert (magic, version, count) == (b"XYAO", 3, len(rows))
+    # XYAO v3 label entry: present, size, pad x/y, flags, align, units, box w/h.
+    table = result[len(result) - 28 * label_count :]
+    entries = [struct.unpack_from("<I3f3Bx2f", table, 28 * i) for i in range(label_count)]
     if name == "empty":
-        assert result == struct.pack("<4s3I", b"XYAO", 2, 0, 0)
+        assert result == struct.pack("<4s3I", b"XYAO", 3, 0, 0)
+    elif name == "cell_px":
+        assert entries == [(7, 12.0, 3.0, 3.0, 0, 3, 0, 40.0, 16.0)]
+    elif name == "cell_percent":
+        # The plain text takes the XYAT slot; the axes-fraction cell XYAW.
+        assert entries[0][0] == 1
+        assert entries[1] == (7, 12.0, pytest.approx(0.05), 0.0, 0, 3, 1 | 4, 0.5, 16.5)
     elif name == "dropped":
         assert entries == [] and result[16:] == struct.pack("<2I", 1, 0)
     elif name == "nontext_size":
