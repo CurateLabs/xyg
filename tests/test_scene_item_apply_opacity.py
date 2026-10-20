@@ -19,3 +19,10 @@ def test_scene_item_apply_opacity_table() -> None:
     assert opacity[7] == 20
     assert kernels.scene_item_apply_opacity(packed, 2, [0.5], None) is None
     assert kernels.scene_item_apply_opacity(b"", 0, None, None) == b""
+
+
+def test_artist_alpha_keeps_an_absent_paint_absent() -> None:
+    """``c="none"`` has packed alpha 0 and must not become visible (#1006)."""
+    packed = bytes([9, 8, 7, 0, 1, 2, 3, 80])
+    out = kernels.scene_item_apply_opacity(packed, 2, [0.5, 0.5], None)
+    assert out == bytes([9, 8, 7, 0, 1, 2, 3, 128])

@@ -3073,9 +3073,10 @@ pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: 
 /// packed RGBA8 (ABI 245).
 ///
 /// A present channel whose length is not `n` returns `false`. Artist values
-/// `>= 0` replace the packed alpha in 0–255 units after clipping to `[0, 1]`;
-/// negative artist keeps the packed alpha. Opacity clips to `[0, 1]` and
-/// multiplies. The result quantizes with ties-to-even. Field picking stays
+/// `>= 0` replace the packed alpha in 0–255 units after clipping to `[0, 1]`,
+/// except that an absent paint (packed alpha `0`, e.g. `c="none"`) stays
+/// absent (#1006); negative artist keeps the packed alpha. Opacity clips to
+/// `[0, 1]` and multiplies. The result quantizes with ties-to-even. Field picking stays
 /// host.
 pub fn scene_item_apply_opacity(
     packed: &[u8],
@@ -3107,7 +3108,7 @@ pub fn scene_item_apply_opacity(
     for i in 0..n {
         let mut alpha = packed[i * 4 + 3] as f64;
         if let Some(artist) = artist {
-            if artist[i] >= 0.0 {
+            if artist[i] >= 0.0 && packed[i * 4 + 3] != 0 {
                 alpha = artist[i].clamp(0.0, 1.0) * 255.0;
             }
         }
@@ -12781,6 +12782,19 @@ mod fuzz {
         let mut out = [0u8; 8];
         assert!(scene_item_apply_opacity(&packed, 2, None, None, &mut out));
         assert_eq!(out, packed);
+
+        // An absent paint (alpha 0) stays absent under an artist alpha.
+        let absent = [9u8, 8, 7, 0, 1, 2, 3, 80];
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(
+            &absent,
+            2,
+            Some(&[0.5, 0.5]),
+            None,
+            &mut out,
+        ));
+        assert_eq!(&out[..4], &[9, 8, 7, 0]);
+        assert_eq!(&out[4..], &[1, 2, 3, 128]);
 
         let mut out = [0u8; 8];
         assert!(scene_item_apply_opacity(

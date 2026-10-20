@@ -48,9 +48,9 @@ def _blank_ratio(pixels: np.ndarray) -> float:
 def test_empty_artists_draw_nothing_and_keep_their_legend_entry() -> None:
     """Empty line/scatter artists must export (corpus 47 boxplot fliers).
 
-    Matplotlib draws nothing for an empty artist; Scene compile rejects a
-    zero-point trace, so the static projection drops it after lifting the
-    legend entry of a labelled proxy.
+    Matplotlib draws nothing for an empty artist. The shared Rust pack path
+    treats a zero-point line/scatter trace as a no-op that emits no marks and
+    keeps the legend entry of a labelled proxy.
     """
     try:
         _fig, ax = plt.subplots()
@@ -196,5 +196,26 @@ def test_clabel_supersedes_the_native_contour_trace_instead_of_exporting_it() ->
         assert not any(
             trace.kind == "contour" and trace.style.get("opacity") == 0.0 for trace in built.traces
         )
+    finally:
+        plt.close("all")
+
+
+def test_artist_alpha_keeps_absent_fill_absent_on_the_per_item_path() -> None:
+    """``c="none"`` plus a per-item stroke array must not gain a fill (round 1/2 #1006).
+
+    The edge array makes a per-item stroke channel, so the scalar alpha reaches
+    Rust as an ``artist_alpha`` channel; Rust keeps the alpha-0 fill absent and
+    draws the stroke at 0.5, like Matplotlib 3.11.
+    """
+    try:
+        fig, ax = plt.subplots(figsize=(2, 2))
+        ax.scatter([0.5], [0.5], c="none", s=4000, edgecolors=["red"], alpha=0.5)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        pixels = _png_rgb(fig)
+        centre = pixels[pixels.shape[0] // 2, pixels.shape[1] // 2]
+        assert centre.min() > 0.98  # fill pixels unchanged
+        stroke = (pixels[..., 0] > 0.95) & (pixels[..., 1] > 0.35) & (pixels[..., 1] < 0.65)
+        assert np.any(stroke)  # stroke at alpha 0.5 over white
     finally:
         plt.close("all")

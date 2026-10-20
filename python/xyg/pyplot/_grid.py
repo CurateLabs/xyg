@@ -399,11 +399,12 @@ def _lower_scalar_artist_alpha(trace: Any) -> None:
     """Lower pyplot's scalar ``alpha=`` onto the paint Scene already consumes.
 
     Matplotlib's artist alpha *replaces* the intrinsic paint alpha, whereas the
-    Scene ``opacity`` multiplies it. Constant paints take the alpha as the
-    literal CSS alpha of their fill and stroke; per-item paints get a constant
-    ``artist_alpha`` style channel, which Rust's per-item paint path composes
-    with the same replace-then-multiply rule. This is API coercion: Rust owns
-    the compositing in both cases.
+    Scene ``opacity`` multiplies it. Constant paints take the alpha Rust's
+    ``scene_item_apply_opacity`` computes as the literal CSS alpha of their
+    fill and stroke; per-item paints get a constant ``artist_alpha`` style
+    channel, which Rust's per-item paint path composes with the same rule
+    (replace, absent paint stays absent, then multiply). This is API coercion:
+    Rust owns the compositing in both cases.
     """
     from xyg import _native
     from xyg._channels_types import StyleChannel
@@ -419,12 +420,15 @@ def _lower_scalar_artist_alpha(trace: Any) -> None:
         return
 
     def with_alpha(css: Any) -> str:
-        # `c="none"` / `edgecolors="none"` resolve to "transparent": Matplotlib
-        # keeps an absent paint absent whatever the artist alpha.
-        if str(css).strip().lower() in {"none", "transparent"}:
-            return str(css)
-        red, green, blue, _alpha = _native.css_color_rgba(str(css), 1.0)
-        return f"rgba({red}, {green}, {blue}, {alpha!r})"
+        # The same Rust rule as the per-item path: artist alpha replaces the
+        # paint's alpha, and an absent paint (`c="none"`) stays absent.
+        packed = _native.scene_item_apply_opacity(
+            bytes(_native.css_color_rgba(str(css), 1.0)), 1, [alpha], None
+        )
+        if packed is None:
+            raise ValueError("scalar alpha could not be applied to the paint")
+        red, green, blue, alpha8 = packed
+        return f"rgba({red}, {green}, {blue}, {alpha8 / 255.0!r})"
 
     for key in ("color", "stroke"):
         if trace.style.get(key) is not None:

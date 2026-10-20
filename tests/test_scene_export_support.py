@@ -2850,3 +2850,29 @@ def test_alternate_side_axes_stay_rejected_when_a_contour_is_present(
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
     figure.axis_options[axis_id]["side"] = "bottom" if axis_id == "x" else "left"
     assert scene_export_support_reason(figure) is None
+
+
+def _numeric_color_segments() -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 3.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.segments([0, 1, 2], [0, 1, 2], [1, 2, 3], [1, 0, 3], color=[0.0, 0.5, 1.0])
+    return figure
+
+
+def _colormapped_contour() -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 3.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.contour([[0, 1, 0], [1, 2, 1], [0, 1, 0]], levels=[0.5, 1.5], corner_mask=False)
+    return figure
+
+
+@pytest.mark.parametrize("build", [_numeric_color_segments, _colormapped_contour])
+def test_hidden_colormapped_segment_traces_stay_fail_closed(build: Callable[[], Figure]) -> None:
+    """Per-item segment paint must not exempt a hidden trace from rejection (#1006)."""
+    figure = build()
+    assert scene_export_support_reason(figure) is None
+    figure.traces[0].hidden = True
+    assert scene_export_support_reason(figure) is not None
+    assert "hidden or per-item" in scene_export_support_reason(figure)

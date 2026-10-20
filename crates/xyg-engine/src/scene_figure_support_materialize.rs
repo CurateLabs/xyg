@@ -33,6 +33,8 @@ const OBS_ANNOTATION_MARKUP: u32 = 1 << 9;
 const TRACE_UNSUPPORTED_KIND: u16 = 1 << 0;
 const TRACE_NON_PRIMARY_AXIS: u16 = 1 << 1;
 const TRACE_HIDDEN_OR_PER_ITEM: u16 = 1 << 2;
+/// A hidden trace is never admitted, whatever per-item paint exemptions apply.
+const TRACE_HIDDEN: u16 = 1 << 12;
 const TRACE_DASHED_MARKERS: u16 = 1 << 4;
 const TRACE_CUSTOM_HEX_REDUCE: u16 = 1 << 9;
 const TRACE_HEATMAP_COLORMAP: u16 = 1 << 10;
@@ -168,6 +170,9 @@ fn trace_support_flags(trace: &FigureSupportTraceObs<'_>, polar: bool) -> Result
     ) != 0
     {
         flags |= TRACE_HIDDEN_OR_PER_ITEM;
+    }
+    if trace.hidden != 0 {
+        flags |= TRACE_HIDDEN;
     }
     if dispatch.probe_marker_glyph != 0 {
         let glyph_ok = trace

@@ -16,7 +16,7 @@ const MAX_XYFS_TRACES: usize = 256;
 const MAX_XYFS_KEY_BYTES: usize = 256;
 
 const OBS_MASK: u32 = (1 << 10) - 1;
-const TRACE_FLAG_MASK: u16 = (1 << 12) - 1;
+const TRACE_FLAG_MASK: u16 = (1 << 13) - 1;
 
 /// One axis key row for ``scene_figure_support_pack``.
 #[derive(Clone, Debug, PartialEq, Eq)]

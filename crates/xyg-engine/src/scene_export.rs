@@ -1517,7 +1517,8 @@ const XYFS_TRACE_JOINED_FILL: u16 = 1 << 8;
 const XYFS_TRACE_CUSTOM_HEX_REDUCE: u16 = 1 << 9;
 const XYFS_TRACE_HEATMAP_COLORMAP: u16 = 1 << 10;
 const XYFS_TRACE_NON_CSS_FILL: u16 = 1 << 11;
-const XYFS_TRACE_FLAG_MASK: u16 = (1 << 12) - 1;
+const XYFS_TRACE_HIDDEN: u16 = 1 << 12;
+const XYFS_TRACE_FLAG_MASK: u16 = (1 << 13) - 1;
 
 /// Return Rust's figure-compile support diagnostic for a packed `XYFS`
 /// envelope. Hosts pack literal observations, axis ids/keys, and (v2)
@@ -1725,6 +1726,11 @@ pub fn scene_figure_support_reason_with_attach(
             && tess == crate::scene_trace_attach::CellFillTessellation::ScatterPaint;
         if trace_flags & XYFS_TRACE_NON_PRIMARY_AXIS != 0 {
             return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
+        }
+        // Hidden traces stay rejected independently of the per-item paint
+        // exemptions below, which only cover paint that Scene now encodes.
+        if trace_flags & XYFS_TRACE_HIDDEN != 0 {
+            return Ok(FIGURE_HIDDEN_REASON.to_string());
         }
         if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0
             && !hexbin_cells

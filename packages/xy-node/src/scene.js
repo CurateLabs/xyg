@@ -4821,7 +4821,10 @@ export function marshalXyTcTraceObs(trace, showLegend) {
   }
   const channel = trace.color_ch;
   const colorChPresent = channel != null && typeof channel === "object" ? 1 : 0;
-  const colorChHasConstant = colorChPresent && channel.constant != null ? 1 : 0;
+  // The per-item paint plane carries every mark's paint; the trace-level style
+  // is only the opacity carrier, so it must not inherit a constant paint.
+  const colorChHasConstant = colorChPresent && channel.constant != null
+    && !scatterPacksPaintPlane(trace) ? 1 : 0;
   const color2 = trace.color2_ch;
   const hasColor2 = color2 != null;
   const kindIsRibbon = kindName === "ribbon";

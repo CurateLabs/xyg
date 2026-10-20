@@ -1983,6 +1983,9 @@ test("sceneItemApplyOpacity matches host table", () => {
   assert.deepEqual([...artist.slice(4)], [1, 2, 3, 128]);
   const bad = sceneItemApplyOpacity(packed, 2, [0.5], null);
   assert.equal(bad, null);
+  // An absent paint (alpha 0, e.g. c="none") stays absent under an artist alpha.
+  const absent = sceneItemApplyOpacity(Uint8Array.from([9, 8, 7, 0, 1, 2, 3, 80]), 2, [0.5, 0.5], null);
+  assert.deepEqual([...absent], [9, 8, 7, 0, 1, 2, 3, 128]);
 });
 
 test("sceneItemWidthsAdmit matches host table", () => {
