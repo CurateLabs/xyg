@@ -54,7 +54,7 @@ use crate::scene::{
     MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES, SCENE_STYLE_RECORD_BYTES,
 };
 use crate::scene_annotation_splice::{
-    splice_annotations, XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION,
+    splice_annotations, xyao_mark_rows, XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION,
 };
 use crate::scene_annotations::pack_annotation_facts;
 use crate::scene_chrome::{
@@ -1116,12 +1116,24 @@ pub fn encode_product(
                 map_stage(PRODUCT_STAGE_ROWS, error.code as i32, error.index)
             }
         })?;
+    let trace_rows = packed_rows.len();
     let mut row_bytes = Vec::with_capacity(packed_rows.len() * PACKED_SCENE_ROW_BYTES);
     for row in packed_rows {
         row_bytes.extend_from_slice(&row.to_bytes());
     }
     let annotations = pack_annotation_facts(xyaf, style_ref_base, x_lo, x_hi, y_lo, y_hi)
         .map_err(|error| map_stage(PRODUCT_STAGE_ANNOTATION, error as i32, 0))?;
+    // #1006 backstop: trace rows plus annotation mark rows over the Scene
+    // mark ceiling are the public LOD fail-close, not a splice stage error.
+    let annotation_rows = xyao_mark_rows(&annotations)
+        .map_err(|error| map_stage(PRODUCT_STAGE_SPLICE, error.code as i32, error.index))?;
+    if trace_rows.saturating_add(annotation_rows) > MAX_SCENE_MARKS {
+        return Err(ProductEncodeError {
+            code: PRODUCT_SUPPORT_UNSUPPORTED,
+            index: 0,
+            reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+        });
+    }
     let extras_facts = pack_style_sidecars(&sidecars, &annotations)
         .map_err(|error| map_stage(PRODUCT_STAGE_STYLE, error.code as i32, error.index))?;
     let xyas = splice_annotations(&row_bytes, &sidecars, &annotations)

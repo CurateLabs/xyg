@@ -1772,7 +1772,13 @@ lands). The Scene always keeps every face as three `Triangle` records:
 - compile bounds (`SceneBatch::check_mesh_budgets`, counts only, never
   rasterizes): above 1,024 faces each face is charged its plot-clipped pixel
   bounding box as `height × (width + 1)` CSS px² (covered pixels plus one
-  pixel of per-row edge walking) and the total must stay within
+  pixel of per-row edge walking). A face whose style has
+  `stroke_width > 0` is also charged its closed outline exactly as the raster
+  stroker scans it: the scratch box over the face's bounds padded by
+  `ext = stroke_width / 2 + 1`, plus each of its three edges' padded bounds,
+  all clipped to the viewport (so 2,000 sub-pixel faces with a 100 px outline
+  fail closed in milliseconds; before this charge a 50,000-face version passed
+  and took 12.6 s to PNG). The total must stay within
   `MESH_OVERDRAW_PLOTS` = 64 plot rectangles (never less than
   `MAX_SCENE_IMAGE_PIXELS` = 2,000,000 CSS px², so tiny plots keep a usable
   floor), so painting — whose cost is
@@ -1832,16 +1838,19 @@ tracks SVG export at 1,024, 49,920, and 50,176 faces.
 paint planes, the predicate also fails closed with
 `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` when:
 
-- the rows `scene_trace_rows` will pack for all traces exceed
-  `MAX_SCENE_MARKS` (2,000,000): a Cartesian line above the threshold counts
+- the rows `scene_trace_rows` will pack for all traces, plus up to 5 records
+  per annotation (`MAX_ANNOTATION_RECORDS`: a rule packs 2 mark rows, an
+  arrow or callout encodes 5 records), exceed `MAX_SCENE_MARKS` (2,000,000): a Cartesian line above the threshold counts
   `4 × MAX_SCREEN_DIM` = 16,384 rows (the predicate does not know the
   viewport, so it assumes the widest bucket count), a density blit two, and
   every other trace `max(n_x, n_x0)`. The product encoder maps a row-pack
   `TraceRowsCode::Limit` and an expansion `SceneError::Limit` (more than
   `MAX_SCENE_MARKS` expanded records, e.g. step corners) to the same reason
   (`EncodeAssembledCode::Lod = 7`, `EncodeSidecarsCode::Lod = 22`) as a
-  backstop, so a figure over the mark ceiling never surfaces as a host
-  `ValueError`;
+  backstop, as is trace rows plus the annotation mark rows of XYAO exceeding
+  `MAX_SCENE_MARKS` before `splice_annotations` (which would otherwise fail as
+  splice stage `-703`), so a figure over the mark ceiling never surfaces as a
+  host `ValueError`;
 - a trace's per-item paint plane (hosts observe `scatter_paint_plane` /
   `mesh_paint_plane`, the same facts they pass to
   `xyg_scene_xyta_trace_dispatch_plan`, as XYEF observation bit 25

@@ -263,3 +263,47 @@ def test_dense_mesh_beyond_the_scene_mark_ceiling_fails_closed() -> None:
         xyg.y_axis(domain=(0.0, 1.0)),
     ).figure()
     assert scene_export_support_reason(figure) == _LOD
+
+
+def test_thick_mesh_outlines_are_charged_and_fail_closed_fast() -> None:
+    """Outline painting is charged its padded stroke bounds (#1006).
+
+    2,000 sub-pixel faces with a 100 px outline paint ~2,000 x 4 boxes of
+    ~200 x 200 px; before the outline charge they passed the bound and a
+    50,000-face version took 12.6 s to PNG. The same faces with an ordinary
+    0.5 px outline still export.
+    """
+    import time
+
+    n = 2_000
+    i = np.arange(n, dtype=np.float64)
+    gx, gy = (i % 50) / 50.0, np.floor(i / 50) / 40.0
+    d = 0.0002
+
+    def chart(width: float) -> xyg.Chart:
+        return xyg.chart(
+            xyg.triangle_mesh(
+                x0=gx,
+                y0=gy,
+                x1=gx + d,
+                y1=gy,
+                x2=gx,
+                y2=gy + d,
+                stroke="#111827",
+                stroke_width=width,
+            ),
+            xyg.x_axis(domain=(0.0, 1.0)),
+            xyg.y_axis(domain=(0.0, 1.0)),
+            width=WIDTH,
+            height=HEIGHT,
+        )
+
+    thick = chart(100.0).figure()
+    started = time.perf_counter()
+    assert scene_export_support_reason(thick) == _LOD
+    with pytest.raises(UnsupportedStaticExport, match=_LOD):
+        thick.to_png()
+    assert time.perf_counter() - started < 1.0
+    thin = chart(0.5).figure()
+    assert scene_export_support_reason(thin) is None
+    assert thin.to_png().startswith(b"\x89PNG")

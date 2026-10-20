@@ -350,3 +350,27 @@ def test_xyta_record_budget_backstop_is_the_lod_reason_without_the_predicate(mon
     assert scene_export_support_reason(figure, width=WIDTH, height=HEIGHT) == _LOD
     with pytest.raises(UnsupportedStaticExport, match=_LOD):
         chart.to_svg(width=WIDTH, height=HEIGHT)
+
+
+def test_annotation_records_share_the_scene_mark_ceiling() -> None:
+    """A full 2,000,000-point direct scatter plus one marker annotation (#1006).
+
+    The predicate counts each annotation's records (at most 5) against
+    MAX_SCENE_MARKS, and the product encoder relays a trace-plus-annotation
+    overflow as the LOD reason instead of the splice stage error that used to
+    escape as ``ValueError("invalid scene annotation splice packing")``.
+    """
+    from xyg._figure import Figure
+    from xyg._scene_observations import UnsupportedSceneV3
+    from xyg._scene_v3 import figure_scene
+
+    figure = Figure(width=WIDTH, height=HEIGHT)
+    figure.axis_options["x"]["domain"] = (-5.0, 5.0)
+    figure.axis_options["y"]["domain"] = (-5.0, 5.0)
+    zeros = np.zeros(2_000_000)
+    figure.scatter(zeros, zeros, density=False)
+    figure.annotations = [{"kind": "marker", "x": 0.5, "y": 0.5}]
+    assert scene_export_support_reason(figure, width=WIDTH, height=HEIGHT) == _LOD
+    # Backstop: compiling directly (no predicate) still yields the LOD reason.
+    with pytest.raises(UnsupportedSceneV3, match=_LOD):
+        figure_scene(figure, width=WIDTH, height=HEIGHT)

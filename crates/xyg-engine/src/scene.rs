@@ -9201,7 +9201,8 @@ impl<'a> SceneBatch<'a> {
                 f64::NEG_INFINITY,
             );
             let mut finite = true;
-            for vertex in index..index + 3 {
+            let mut vertices = [(0.0f64, 0.0f64); 3];
+            for (slot, vertex) in (index..index + 3).enumerate() {
                 let (px, py) = match &self.polar {
                     Some(polar) => polar
                         .project(self.x0[vertex], self.y0[vertex])
@@ -9212,6 +9213,7 @@ impl<'a> SceneBatch<'a> {
                     ),
                 };
                 finite &= px.is_finite() && py.is_finite();
+                vertices[slot] = (px, py);
                 x0 = x0.min(px);
                 y0 = y0.min(py);
                 x1 = x1.max(px);
@@ -9224,9 +9226,42 @@ impl<'a> SceneBatch<'a> {
                     // Scanline fill cost: covered pixels plus a per-row
                     // edge-walk term, so full-height slivers are not free.
                     covered += height * (width + 1.0);
-                    if covered > budget {
-                        return Err(SceneError::Limit);
+                }
+                // The closed outline is painted separately (raster
+                // `stroke`): it zero-fills a scratch box over the face's
+                // bounds padded by `ext = width / 2 + 1`, then scans each
+                // edge's padded bounds — the stroker's own work estimate.
+                // Charge exactly those boxes, clipped to the viewport, so a
+                // wide outline on tiny faces cannot hide behind fill bounds.
+                let stroke_width = self
+                    .stroke_width
+                    .get(self.style_refs[index] as usize)
+                    .copied()
+                    .unwrap_or(0.0);
+                if stroke_width > 0.0 && stroke_width.is_finite() {
+                    let ext = stroke_width / 2.0 + 1.0;
+                    let clipped = |ax: f64, ay: f64, bx: f64, by: f64| -> f64 {
+                        let w = bx.min(layout.viewport_width) - ax.max(0.0);
+                        let h = by.min(layout.viewport_height) - ay.max(0.0);
+                        if w > 0.0 && h > 0.0 {
+                            w * h
+                        } else {
+                            0.0
+                        }
+                    };
+                    covered += clipped(x0 - ext, y0 - ext, x1 + ext, y1 + ext);
+                    for edge in 0..3 {
+                        let (a, b) = (vertices[edge], vertices[(edge + 1) % 3]);
+                        covered += clipped(
+                            a.0.min(b.0) - ext,
+                            a.1.min(b.1) - ext,
+                            a.0.max(b.0) + ext,
+                            a.1.max(b.1) + ext,
+                        );
                     }
+                }
+                if covered > budget {
+                    return Err(SceneError::Limit);
                 }
             }
             index += 3;
@@ -24969,6 +25004,10 @@ pub(crate) mod tests {
         }
 
         fn batch(&self, layout: PlotLayout) -> SceneBatch<'_> {
+            self.batch_with_widths(layout, &MESH_STROKE_WIDTH)
+        }
+
+        fn batch_with_widths<'b>(&'b self, layout: PlotLayout, widths: &'b [f64]) -> SceneBatch<'b> {
             let x = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, layout.left, layout.right, 1.0, false)
                 .unwrap();
             let y = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, layout.bottom, layout.top, 1.0, false)
@@ -24984,7 +25023,7 @@ pub(crate) mod tests {
                 &self.refs,
                 &MESH_FILL_RGBA,
                 &MESH_STROKE_RGBA,
-                &MESH_STROKE_WIDTH,
+                widths,
                 &self.zeros,
                 &self.symbols,
                 &self.x0,
@@ -25028,6 +25067,31 @@ pub(crate) mod tests {
             .collect();
         let slivers = MeshFixture::from_faces(&slivers);
         assert_eq!(slivers.batch(layout).check_mesh_budgets(), Err(SceneError::Limit));
+    }
+
+    #[test]
+    fn mesh_overdraw_charges_the_painted_outline_bounds() {
+        // #1006: the raster stroker zero-fills the face's bounds padded by
+        // width / 2 + 1 and scans each edge's padded bounds, so a wide outline
+        // on tiny faces is charged that work, not just the fill bounds.
+        let layout = PlotLayout::new(320.0, 240.0, 30.0, 10.0, 12.0, 26.0).unwrap();
+        let tiny: Vec<[[f64; 2]; 3]> = (0..2_000)
+            .map(|i| {
+                let (x, y) = ((i % 50) as f64 * 0.2, (i / 50) as f64 * 0.25);
+                [[x, y], [x + 0.001, y], [x, y + 0.001]]
+            })
+            .collect();
+        let tiny = MeshFixture::from_faces(&tiny);
+        let thick = [100.0; 3];
+        assert_eq!(
+            tiny.batch_with_widths(layout, &thick).check_mesh_budgets(),
+            Err(SceneError::Limit)
+        );
+        // The same faces with the fixture's ordinary 0.5-0.75 px outlines,
+        // and a stroked tessellation of the plot, still admit.
+        assert_eq!(tiny.batch(layout).check_mesh_budgets(), Ok(()));
+        let grid = MeshFixture::grid(160, 160);
+        assert_eq!(grid.batch(layout).check_mesh_budgets(), Ok(()));
     }
 
     #[test]

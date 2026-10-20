@@ -128,6 +128,13 @@ struct AnnotationTail {
     xyad: Vec<u8>,
 }
 
+/// Packed annotation mark rows (rule/band/marker) an XYAO v1 blob adds to
+/// the Scene, so the product encoder can relay a figure over
+/// `MAX_SCENE_MARKS` as the public LOD reason before splicing (#1006).
+pub(crate) fn xyao_mark_rows(bytes: &[u8]) -> Result<usize, AnnotationSpliceError> {
+    Ok(parse_xyao(bytes)?.rows.len() / PACKED_SCENE_ROW_BYTES)
+}
+
 fn parse_xyao(bytes: &[u8]) -> Result<AnnotationTail, AnnotationSpliceError> {
     if bytes.is_empty() {
         return Ok(AnnotationTail {

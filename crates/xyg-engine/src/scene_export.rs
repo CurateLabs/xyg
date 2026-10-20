@@ -107,6 +107,9 @@ const MAX_PUBLIC_TRIANGLE_MESHES: usize = PUBLIC_POLYFILL_GROUP_BUDGET;
 const MAX_PUBLIC_HEATMAP_CELLS: usize = 10_000;
 const MAX_PUBLIC_POINTS: usize = 10_000;
 const MAX_PUBLIC_STEP_POINTS: usize = 10_001;
+/// Upper bound on Scene records one annotation adds (#1006): a rule packs 2
+/// mark rows, and an arrow or callout encodes 5 records.
+const MAX_ANNOTATION_RECORDS: usize = 5;
 
 const FLAG_FLUID_WIDTH: u32 = 1 << 0;
 const FLAG_FLUID_HEIGHT: u32 = 1 << 1;
@@ -1418,7 +1421,11 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     let mut public_triangle_mesh_count = 0usize;
     // #1006: Scene rows the row packer emits across the figure, bounded by
     // `MAX_SCENE_MARKS` before any host materializes columns or planes.
-    let mut packed_rows = 0usize;
+    // Annotations add records too: at most 2 packed mark rows (a rule) and,
+    // at encode, 5 records for an arrow or callout (#1006).
+    let mut packed_rows = (n_annotations as usize)
+        .checked_mul(MAX_ANNOTATION_RECORDS)
+        .ok_or(SceneError::Limit)?;
     let mut mesh_face_records = 0usize;
     for trace in &traces {
         let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {

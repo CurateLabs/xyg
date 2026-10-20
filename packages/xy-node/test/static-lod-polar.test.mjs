@@ -145,3 +145,37 @@ test("Node relays Rust's XYTA record over-budget code as the LOD reason", async 
   const figure = perItemScatter("numeric color", 300_000);
   assert.throws(() => figureSceneV3(figure), new RegExp(`^RangeError: ${LOD}$`));
 });
+
+test("Node counts annotation records against the Scene mark ceiling", async () => {
+  // #1006: a full direct scatter plus one marker annotation is the LOD reason
+  // in the predicate and in the product encoder's backstop.
+  const { figureSceneV3 } = await import("../src/index.js");
+  const figure = new Figure({ width: 640, height: 420 });
+  figure.setAxisDomain("x", [-5, 5]);
+  figure.setAxisDomain("y", [-5, 5]);
+  const zeros = new Float64Array(2_000_000);
+  figure.scatter(zeros, zeros, { density: false });
+  figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5 }];
+  assert.equal(sceneExportSupportReason(figure), LOD);
+  assert.throws(() => figureSceneV3(figure), new RegExp(`^RangeError: ${LOD}$`));
+});
+
+test("Node charges thick mesh outlines and fails closed fast", () => {
+  // #1006: 2,000 sub-pixel faces with a 100 px outline exceed the overdraw
+  // bound once the outline's padded stroke bounds are charged.
+  const n = 2_000;
+  const gx = Float64Array.from({ length: n }, (_, i) => (i % 50) / 50);
+  const gy = Float64Array.from({ length: n }, (_, i) => Math.floor(i / 50) / 40);
+  const d = 0.0002;
+  const mesh = (width) => {
+    const figure = new Figure({ width: 640, height: 420 });
+    figure.setAxisDomain("x", [0, 1]);
+    figure.setAxisDomain("y", [0, 1]);
+    figure.triangleMesh(gx, gy, gx.map((v) => v + d), gy, gx, gy.map((v) => v + d), { stroke: "#111827", strokeWidth: width });
+    return figure;
+  };
+  const started = performance.now();
+  assert.equal(sceneExportSupportReason(mesh(100)), LOD);
+  assert.ok(performance.now() - started < 1000);
+  assert.equal(sceneExportSupportReason(mesh(0.5)), null);
+});
