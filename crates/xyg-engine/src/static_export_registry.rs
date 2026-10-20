@@ -840,6 +840,15 @@ pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {
+        name: "document_colorbar_discrete_extend",
+        vocabulary: &[
+            "panel.colorbar-discrete",
+            "panel.colorbar-extend-min",
+            "panel.colorbar-extend-max",
+        ],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
         name: "document_panel_title",
         vocabulary: &["panel.title-style"],
         formats: STATIC_DOCUMENT_FORMATS,

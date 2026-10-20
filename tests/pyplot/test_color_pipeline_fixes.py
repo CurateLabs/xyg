@@ -278,6 +278,93 @@ def test_boundary_norm_colorbar_spacing_is_drawn_by_rust(spacing, expected_ratio
     ]
 
 
+@pytest.mark.parametrize("extend", ["both", "min", "max"])
+def test_boundary_norm_colorbar_caps_use_the_colormap_under_and_over_colors(extend):
+    """Extension triangles carry matplotlib's cmap under/over paints, not band colors."""
+    import re
+
+    matplotlib = pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    cmap = matplotlib.colormaps["viridis"]
+    fig, ax = plt.subplots()
+    image = ax.imshow(
+        np.asarray([[0.5, 1.5, 2.5]]),
+        norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256, extend=extend),
+        cmap="viridis",
+    )
+    fig.colorbar(image, extend=extend)
+    caps = dict(re.findall(r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', _svg()))
+
+    def rgba(color):
+        return "rgba({},{},{},1.000000)".format(*(round(255 * channel) for channel in color[:3]))
+
+    expected = {}
+    if extend in ("min", "both"):
+        expected["min"] = rgba(cmap.get_under())
+    if extend in ("max", "both"):
+        expected["max"] = rgba(cmap.get_over())
+    assert caps == expected
+    band_fills = {fill for _, fill in _colorbar_bands(_svg())}
+    assert not band_fills & set(caps.values())
+
+
+def test_boundary_norm_colorbar_caps_follow_an_explicit_under_over_color():
+    import re
+
+    matplotlib = pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    cmap = matplotlib.colormaps["viridis"].with_extremes(under="#ff0000", over="#00ff00")
+    fig, ax = plt.subplots()
+    image = ax.imshow(
+        np.asarray([[0.5, 1.5, 2.5]]), norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256), cmap=cmap
+    )
+    fig.colorbar(image, extend="both")
+    caps = dict(re.findall(r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', _svg()))
+    assert caps == {"min": "rgba(255,0,0,1.000000)", "max": "rgba(0,255,0,1.000000)"}
+
+
+def test_boundary_norm_pcolormesh_colorbar_caps_use_the_cmap_extremes():
+    import re
+
+    matplotlib = pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    cmap = matplotlib.colormaps["plasma"].with_extremes(under="#102030", over="#fedcba")
+    fig, ax = plt.subplots()
+    mesh = ax.pcolormesh(
+        np.asarray([[0.5, 1.5, 2.5]]), norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256), cmap=cmap
+    )
+    fig.colorbar(mesh, extend="both")
+    caps = dict(re.findall(r'data-xy-slot="colorbar_extend_(min|max)"[^>]*fill="([^"]+)"', _svg()))
+    assert caps == {"min": "rgba(16,32,48,1.000000)", "max": "rgba(254,220,186,1.000000)"}
+
+
+@pytest.mark.parametrize(
+    ("new_ticks", "expected"),
+    [
+        ([0.0, 0.5, 2.5, 3.0], ["0.0 u", "0.5 u", "2.5 u", "3.0 u"]),
+        ([0.0, 1.0, 3.0], ["0.0 u", "1.0 u", "3.0 u"]),
+        ([0.0, 0.25, 1.5, 2.0, 2.75, 3.0], ["0.0 u", "0.2 u", "1.5 u", "2.0 u", "2.8 u", "3.0 u"]),
+    ],
+)
+def test_boundary_norm_colorbar_labels_follow_set_ticks(new_ticks, expected):
+    """A formatter is re-applied to the live ticks (equal, fewer and more ticks)."""
+    import re
+
+    pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    fig, ax = plt.subplots()
+    image = ax.imshow(
+        np.asarray([[0.5, 1.5, 2.5]]), norm=BoundaryNorm([0.0, 1.0, 2.0, 3.0], 256), cmap="viridis"
+    )
+    colorbar = fig.colorbar(image, ticks=[0, 1, 2, 3], format="%.1f u")
+    colorbar.set_ticks(new_ticks)
+    assert re.findall(r">([\d.]+ u)<", _svg()) == expected
+
+
 def test_continuous_colorbar_with_formatted_ticks_is_rejected_with_a_stable_reason():
     """Authored tick labels need literal bands; a ramp has none, so it fails closed."""
     plt.imshow(np.arange(6.0).reshape(2, 3))

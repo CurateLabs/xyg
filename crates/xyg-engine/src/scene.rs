@@ -884,6 +884,11 @@ pub(crate) struct StaticDiscreteColorbar {
     /// value maps piecewise-linearly inside its band. `false` is
     /// `"proportional"`: bands span their literal value interval.
     pub(crate) uniform: bool,
+    /// Authored paints of the minimum/maximum endpoint extension triangles
+    /// (matplotlib's colormap under/over colors). A discrete bar never reuses
+    /// an interior band color for a cap: each extended end needs its paint.
+    pub(crate) under: Option<[u8; 4]>,
+    pub(crate) over: Option<[u8; 4]>,
     /// One label per authored major tick, or empty for Rust's default labels.
     pub(crate) tick_labels: Vec<String>,
 }
@@ -4254,11 +4259,15 @@ fn resolved_colorbar_extensions(
                 (x + width / 2.0, by + if maximum { -9.0 } else { 9.0 }),
             ]
         };
-        let rgba = if maximum {
+        let authored = colorbar
+            .static_discrete
+            .as_ref()
+            .and_then(|discrete| if maximum { discrete.over } else { discrete.under });
+        let rgba = authored.unwrap_or(if maximum {
             colorbar.stops.last().unwrap().1
         } else {
             colorbar.stops[0].1
-        };
+        });
         extensions.push((maximum, points, rgba));
     }
     extensions
@@ -12173,9 +12182,18 @@ impl SceneDocument {
     pub(crate) fn apply_static_colorbar_discrete(
         &mut self,
         uniform: bool,
+        under: Option<[u8; 4]>,
+        over: Option<[u8; 4]>,
         tick_labels: Vec<String>,
     ) -> Result<(), SceneError> {
         let colorbar = self.colorbar.as_mut().ok_or(SceneError::Length)?;
+        // Each extended end carries exactly its own paint; a paint without an
+        // extension, or an extension without a paint, would draw a wrong cap.
+        if (colorbar.static_extend & 1 != 0) != under.is_some()
+            || (colorbar.static_extend & 2 != 0) != over.is_some()
+        {
+            return Err(SceneError::Length);
+        }
         if colorbar.static_log_scale || colorbar.minor_ticks || colorbar.stops.len() < 2 {
             return Err(SceneError::Length);
         }
@@ -12191,6 +12209,8 @@ impl SceneDocument {
         }
         colorbar.static_discrete = Some(StaticDiscreteColorbar {
             uniform,
+            under,
+            over,
             tick_labels,
         });
         let bounds = resolved_colorbar_bounds(self.layout, colorbar)?;
@@ -24664,7 +24684,7 @@ pub(crate) mod tests {
         let mut scene = discrete_colorbar_scene([-3.0, -1.0, 0.0, 4.0]);
         let labels = ["-3 u", "-1 u", "0 u", "4 u"].map(String::from).to_vec();
         scene
-            .apply_static_colorbar_discrete(true, labels.clone())
+            .apply_static_colorbar_discrete(true, None, None, labels.clone())
             .unwrap();
         let colorbar = scene.colorbar.as_ref().unwrap();
         // Bands stay literal (no 64-step pyplot interpolation) and equal-sized.
@@ -24688,7 +24708,7 @@ pub(crate) mod tests {
     fn static_discrete_colorbar_proportional_spacing_follows_values() {
         let mut scene = discrete_colorbar_scene([0.0, 1.0, 2.0, 10.0]);
         scene
-            .apply_static_colorbar_discrete(false, Vec::new())
+            .apply_static_colorbar_discrete(false, None, None, Vec::new())
             .unwrap();
         let colorbar = scene.colorbar.as_ref().unwrap();
         let bands = resolved_colorbar_bands(colorbar);
@@ -24706,28 +24726,62 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn static_discrete_colorbar_extensions_use_their_own_authored_paints() {
+        let under = [68, 1, 84, 255];
+        let over = [253, 231, 37, 255];
+        let mut scene = discrete_colorbar_scene([0.0, 1.0, 2.0, 3.0]);
+        scene.apply_static_colorbar_style(false, 3, true).unwrap();
+        // An extended end without its own paint would reuse an interior band.
+        assert!(scene
+            .apply_static_colorbar_discrete(true, Some(under), None, Vec::new())
+            .is_err());
+        assert!(scene
+            .apply_static_colorbar_discrete(true, None, None, Vec::new())
+            .is_err());
+        scene
+            .apply_static_colorbar_discrete(true, Some(under), Some(over), Vec::new())
+            .unwrap();
+        let colorbar = scene.colorbar.as_ref().unwrap();
+        let bounds = resolved_colorbar_bounds(scene.layout, colorbar).unwrap();
+        let caps = resolved_colorbar_extensions(colorbar, bounds)
+            .into_iter()
+            .map(|(maximum, _, rgba)| (maximum, rgba))
+            .collect::<Vec<_>>();
+        assert_eq!(caps, [(true, over), (false, under)]);
+        // A paint for an end that is not extended is a malformed fact.
+        let mut one_sided = discrete_colorbar_scene([0.0, 1.0, 2.0, 3.0]);
+        one_sided.apply_static_colorbar_style(false, 1, true).unwrap();
+        assert!(one_sided
+            .apply_static_colorbar_discrete(true, Some(under), Some(over), Vec::new())
+            .is_err());
+        one_sided
+            .apply_static_colorbar_discrete(true, Some(under), None, Vec::new())
+            .unwrap();
+    }
+
+    #[test]
     fn static_discrete_colorbar_fails_closed_on_unsupported_facts() {
         let edges = [0.0, 1.0, 2.0, 3.0];
         let labels = |count: usize| vec!["x".to_string(); count];
         let mut scene = discrete_colorbar_scene(edges);
         assert!(scene
-            .apply_static_colorbar_discrete(true, labels(3))
+            .apply_static_colorbar_discrete(true, None, None, labels(3))
             .is_err());
         assert!(scene
-            .apply_static_colorbar_discrete(true, vec!["x".repeat(33); 4])
+            .apply_static_colorbar_discrete(true, None, None, vec!["x".repeat(33); 4])
             .is_err());
         scene.colorbar.as_mut().unwrap().minor_ticks = true;
         assert!(scene
-            .apply_static_colorbar_discrete(true, labels(4))
+            .apply_static_colorbar_discrete(true, None, None, labels(4))
             .is_err());
         let mut no_ticks = discrete_colorbar_scene(edges);
         no_ticks.colorbar.as_mut().unwrap().ticks = None;
         assert!(no_ticks
-            .apply_static_colorbar_discrete(true, labels(4))
+            .apply_static_colorbar_discrete(true, None, None, labels(4))
             .is_err());
         let mut log = discrete_colorbar_scene([1.0, 2.0, 3.0, 4.0]);
         log.apply_static_colorbar_style(true, 0, true).unwrap();
-        assert!(log.apply_static_colorbar_discrete(true, labels(4)).is_err());
+        assert!(log.apply_static_colorbar_discrete(true, None, None, labels(4)).is_err());
     }
 
     #[test]

@@ -3147,6 +3147,8 @@ export function staticDocumentEncode({
       colorbarDiscrete: panel.colorbarDiscrete == null ? null : {
         uniform: Boolean(panel.colorbarDiscrete[0]),
         tickLabels: Array.from(panel.colorbarDiscrete[1] ?? [], String),
+        under: panel.colorbarDiscrete[2] == null ? null : staticPaint(panel.colorbarDiscrete[2], `StaticDocument panel ${index} colorbar cap`),
+        over: panel.colorbarDiscrete[3] == null ? null : staticPaint(panel.colorbarDiscrete[3], `StaticDocument panel ${index} colorbar cap`),
       },
       gridDash: panel.gridDash == null ? null : Array.from(panel.gridDash, Number),
       chromeText: panel.chromeText == null ? null : {
@@ -3197,10 +3199,12 @@ export function staticDocumentEncode({
       if (!record.colorbarPyplotLabel) {
         throw new RangeError(`StaticDocument panel ${index} discrete colorbar needs the pyplot label bit`);
       }
+      const { under, over } = record.colorbarDiscrete;
       const parts = [new Uint8Array(8)];
       const head = new DataView(parts[0].buffer);
-      head.setUint32(0, record.colorbarDiscrete.uniform ? 1 : 0, true);
+      head.setUint32(0, (record.colorbarDiscrete.uniform ? 1 : 0) | (under ? 2 : 0) | (over ? 4 : 0), true);
       head.setUint32(4, record.colorbarDiscrete.tickLabels.length, true);
+      parts.push(Uint8Array.from([...(under ?? []), ...(over ?? [])]));
       for (const label of record.colorbarDiscrete.tickLabels) {
         const encoded = encoder.encode(label);
         const part = new Uint8Array(4 + encoded.length);

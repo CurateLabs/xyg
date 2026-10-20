@@ -112,10 +112,19 @@ class Panel:
     # Explicit pyplot cax consumes the Scene plot rectangle itself.
     colorbar_fill_plot: bool = False
     # XYST v4 discrete colorbar (BoundaryNorm / banded contour): ``(uniform,
-    # tick_labels)``. The Scene colorbar carries the literal band edges and
-    # colors; Rust owns the spacing layout and draws ``tick_labels`` verbatim
-    # (empty keeps Rust's labels). Requires ``colorbar_pyplot_label``.
-    colorbar_discrete: Optional[tuple[bool, tuple[str, ...]]] = None
+    # tick_labels, under, over)``. The Scene colorbar carries the literal band
+    # edges and colors; Rust owns the spacing layout, draws ``tick_labels``
+    # verbatim (empty keeps Rust's labels) and paints each extension cap with
+    # its own ``under``/``over`` RGBA8 (required exactly when that end extends).
+    # Requires ``colorbar_pyplot_label``.
+    colorbar_discrete: Optional[
+        tuple[
+            bool,
+            tuple[str, ...],
+            Optional[tuple[int, int, int, int]],
+            Optional[tuple[int, int, int, int]],
+        ]
+    ] = None
     # XYST-only pyplot grid dash codes (0=solid, 1=dashed, 2=dotted,
     # 3=dashdot) for (x major, y major, x minor, y minor). Rust owns the
     # pattern table; the canonical Scene wire keeps its solid contract.
@@ -1188,8 +1197,22 @@ def encode(
                 raise ValueError(
                     f"StaticDocument panel {index} discrete colorbar needs the pyplot label bit"
                 )
-            uniform, tick_labels = panel.colorbar_discrete
-            parts = [struct.pack("<2I", int(bool(uniform)), len(tick_labels))]
+            uniform, tick_labels, under, over = panel.colorbar_discrete
+            caps = [
+                _paint(cap, f"StaticDocument panel {index} colorbar cap")
+                for cap in (under, over)
+                if cap is not None
+            ]
+            parts = [
+                struct.pack(
+                    "<2I",
+                    int(bool(uniform))
+                    | (2 if under is not None else 0)
+                    | (4 if over is not None else 0),
+                    len(tick_labels),
+                ),
+                bytes(channel for cap in caps for channel in cap),
+            ]
             for label in tick_labels:
                 encoded = str(label).encode("utf-8")
                 parts.append(struct.pack("<I", len(encoded)) + encoded)

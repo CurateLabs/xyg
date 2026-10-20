@@ -469,6 +469,9 @@ class BoundaryNormGrid(NamedTuple):
     domain: tuple[float, float]
     boundaries: np.ndarray
     band_colors: np.ndarray
+    #: ``(under, over)`` RGB8 of the colormap extremes a colorbar extension
+    #: cap is painted with (Matplotlib: ``get_under()``/``get_over()``).
+    caps: np.ndarray
 
 
 def prepare_boundary_norm(
@@ -536,11 +539,17 @@ def prepare_boundary_norm(
     ):
         raise ValueError("BoundaryNorm colormap must return one RGB(A) row per interval")
     band_colors = np.rint(np.clip(band_rgba[:, :3], 0.0, 1.0) * 255.0).astype(np.uint8)
+    caps = np.empty((2, 3), dtype=np.uint8)
+    for row, (name, sample) in enumerate((("under", 0.0), ("over", 1.0))):
+        extreme = cmap_extreme(cmap_callable, name)
+        color = np.asarray(cmap_callable(sample) if extreme is None else extreme, dtype=np.float64)
+        caps[row] = np.rint(np.clip(color[:3], 0.0, 1.0) * 255.0).astype(np.uint8)
     return BoundaryNormGrid(
         np.ascontiguousarray(rgba),
         (float(boundaries[0]), float(boundaries[-1])),
         boundaries,
         band_colors,
+        caps,
     )
 
 

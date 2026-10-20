@@ -93,7 +93,18 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_chrome_text": ({"chrome_text": CHROME_TEXT}, {}),
     "document_colorbar_fill_plot": ({"colorbar_fill_plot": True}, {}),
     "document_colorbar_discrete": (
-        {"colorbar_pyplot_label": True, "colorbar_discrete": (True, ("one", "ten", "hundred"))},
+        {
+            "colorbar_pyplot_label": True,
+            "colorbar_discrete": (True, ("one", "ten", "hundred"), None, None),
+        },
+        {},
+    ),
+    "document_colorbar_discrete_extend": (
+        {
+            "colorbar_pyplot_label": True,
+            "colorbar_extend": "both",
+            "colorbar_discrete": (False, (), (68, 1, 84, 255), (253, 231, 37, 255)),
+        },
         {},
     ),
     "document_defaults": ({}, {}),

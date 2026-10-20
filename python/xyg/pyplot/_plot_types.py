@@ -5041,6 +5041,7 @@ class PlotTypeMixin:
         prepared_boundary = prepare_boundary_norm(z, norm, cmap_value, vmin, vmax)
         boundary_boundaries: np.ndarray | None = None
         boundary_colors: np.ndarray | None = None
+        boundary_caps: np.ndarray | None = None
         if prepared_boundary is None:
             render_z, domain, norm_scale = normalize_scalar_grid(z, norm, vmin, vmax)
             truecolor_z = scalar_grid_rgba(render_z, cmap_value) if norm_scale == "log" else None
@@ -5050,6 +5051,7 @@ class PlotTypeMixin:
             truecolor_z = prepared_boundary.rgba
             boundary_boundaries = prepared_boundary.boundaries
             boundary_colors = prepared_boundary.band_colors
+            boundary_caps = prepared_boundary.caps
         regular = None if x is None else _uniform_mesh_axes(x, y, z.shape)
 
         def finish(entry: dict[str, Any]) -> PolyCollection:
@@ -5061,6 +5063,7 @@ class PlotTypeMixin:
                 entry["discrete_levels"] = len(boundary_boundaries) - 1
                 entry["discrete_boundaries"] = boundary_boundaries
                 entry["discrete_colors"] = boundary_colors
+                entry["discrete_caps"] = boundary_caps
             handle = PolyCollection(self, entry)
             handle._rasterized = bool(rasterized)
             return handle

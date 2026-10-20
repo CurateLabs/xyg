@@ -62,9 +62,18 @@ no 64-band interpolation. The Scene contract bounds this to 16 stops, i.e. at
 most 15 bands; pyplot reports the existing `XYG_SCENE_UNSUPPORTED_COLORBAR`
 admission reason beyond that.
 
-The flag's blob (`u32` spacing, `u32` label count, then each label as `u32`
-byte length plus UTF-8; panels consume the region sequentially, NUL and
-invalid UTF-8 rejected) adds two facts:
+The flag's blob is `u32` flags (bit 0 uniform spacing, bit 1 an under-cap
+RGBA8 follows, bit 2 an over-cap RGBA8 follows; other bits rejected), `u32`
+label count, the present cap paints (under, then over), then each label as
+`u32` byte length plus UTF-8. Panels consume the region sequentially; NUL and
+invalid UTF-8 are rejected. It adds three facts:
+
+- **Cap paints.** Each extended end (XYST extend bits min/max) carries exactly
+  its own paint, matplotlib's colormap under/over color; the extension triangle
+  uses it instead of the first/last stop. A paint without its extension, or an
+  extension without its paint, fails closed in
+  `apply_static_colorbar_discrete`, so a discrete bar can never paint a cap with
+  an interior band color.
 
 - **Spacing.** `1` is matplotlib's default `spacing="uniform"`: every band is
   an equal share of the bar and a value maps piecewise-linearly inside its
@@ -74,7 +83,9 @@ invalid UTF-8 rejected) adds two facts:
 - **Tick labels.** Zero labels keep Rust's authored-tick labels; otherwise
   exactly one label (at most 32 bytes) per authored major tick, drawn
   verbatim. This carries `colorbar(format=...)` on a banded bar without a host
-  formatting pass over Rust's layout.
+  formatting pass over Rust's layout. pyplot keeps the formatter and
+  re-evaluates it against the live ticks at each chart build, so labels never
+  outlive a `set_ticks()`.
 
 `apply_static_colorbar_discrete` fails closed (decoder `XYG_STATIC_DOCUMENT_PANEL`)
 for a logarithmic scale, minor ticks, fewer than two stops, or authored labels

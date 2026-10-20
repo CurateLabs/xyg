@@ -949,6 +949,21 @@
         ]
       },
       {
+        "name": "document_colorbar_discrete_extend",
+        "vocabulary": [
+          "panel.colorbar-discrete",
+          "panel.colorbar-extend-min",
+          "panel.colorbar-extend-max"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
         "name": "document_panel_title",
         "vocabulary": [
           "panel.title-style"

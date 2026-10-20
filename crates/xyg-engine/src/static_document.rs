@@ -546,26 +546,51 @@ fn decode_label_table(
         .collect()
 }
 
-/// Decode one panel's discrete-colorbar blob: `u32` spacing (0 proportional,
-/// 1 uniform), `u32` tick-label count, then each label as `u32` byte length
-/// plus UTF-8 bytes. Panels consume the region sequentially.
+/// One panel's decoded discrete-colorbar blob.
+#[derive(Debug, PartialEq)]
+struct DiscreteColorbar {
+    uniform: bool,
+    under: Option<[u8; 4]>,
+    over: Option<[u8; 4]>,
+    tick_labels: Vec<String>,
+}
+
+/// Decode one panel's discrete-colorbar blob: `u32` flags (bit 0 uniform
+/// spacing, bit 1 an under-cap RGBA8 follows, bit 2 an over-cap RGBA8
+/// follows; other bits rejected), `u32` tick-label count, the present cap
+/// paints (under, then over), then each label as `u32` byte length plus UTF-8
+/// bytes. Panels consume the region sequentially.
 fn decode_discrete_colorbar(
     region: &[u8],
     (offset, len): (usize, usize),
     expected_offset: &mut usize,
-) -> Result<(bool, Vec<String>), StaticDocumentError> {
+) -> Result<DiscreteColorbar, StaticDocumentError> {
     if offset != *expected_offset {
         return Err(StaticDocumentError::Panel);
     }
     let end = offset.checked_add(len).ok_or(StaticDocumentError::Limit)?;
     let blob = region.get(offset..end).ok_or(StaticDocumentError::Panel)?;
     *expected_offset = end;
-    let spacing = u32_at(blob, 0)?;
+    let flags = u32_at(blob, 0)?;
     let count = u32_at(blob, 4)? as usize;
-    if spacing > 1 || count > crate::scene::MAX_SCENE_COLORBAR_TICKS {
+    if flags > 0b111 || count > crate::scene::MAX_SCENE_COLORBAR_TICKS {
         return Err(StaticDocumentError::Panel);
     }
     let mut at = 8usize;
+    let mut paint = |present: bool| -> Result<Option<[u8; 4]>, StaticDocumentError> {
+        if !present {
+            return Ok(None);
+        }
+        let rgba = blob
+            .get(at..at + 4)
+            .ok_or(StaticDocumentError::Panel)?
+            .try_into()
+            .unwrap();
+        at += 4;
+        Ok(Some(rgba))
+    };
+    let under = paint(flags & 2 != 0)?;
+    let over = paint(flags & 4 != 0)?;
     let mut labels = Vec::with_capacity(count);
     for _ in 0..count {
         let label_len = u32_at(blob, at)? as usize;
@@ -583,7 +608,12 @@ fn decode_discrete_colorbar(
     if at != blob.len() {
         return Err(StaticDocumentError::Panel);
     }
-    Ok((spacing == 1, labels))
+    Ok(DiscreteColorbar {
+        uniform: flags & 1 != 0,
+        under,
+        over,
+        tick_labels: labels,
+    })
 }
 
 impl StaticDocument {
@@ -833,13 +863,18 @@ impl StaticDocument {
                 None
             };
             if record.metric_flags & PANEL_FLAG_COLORBAR_DISCRETE != 0 {
-                let (uniform, tick_labels) = decode_discrete_colorbar(
+                let discrete = decode_discrete_colorbar(
                     &bytes[discrete_at..scenes_at],
                     record.discrete,
                     &mut expected_discrete_offset,
                 )?;
                 scene
-                    .apply_static_colorbar_discrete(uniform, tick_labels)
+                    .apply_static_colorbar_discrete(
+                        discrete.uniform,
+                        discrete.under,
+                        discrete.over,
+                        discrete.tick_labels,
+                    )
                     .map_err(|_| StaticDocumentError::Panel)?;
             }
             scene
@@ -1996,7 +2031,12 @@ mod tests {
         let mut next = 0;
         assert_eq!(
             decode_discrete_colorbar(&good, (0, good.len()), &mut next),
-            Ok((true, vec!["a".into(), "\u{2212}1".into()]))
+            Ok(DiscreteColorbar {
+                uniform: true,
+                under: None,
+                over: None,
+                tick_labels: vec!["a".into(), "\u{2212}1".into()],
+            })
         );
         assert_eq!(next, good.len());
         // Panels consume the region in order: a replayed offset is rejected.
@@ -2005,21 +2045,55 @@ mod tests {
         let mut next = 0;
         assert_eq!(
             decode_discrete_colorbar(&proportional, (0, 8), &mut next),
-            Ok((false, Vec::new()))
+            Ok(DiscreteColorbar {
+                uniform: false,
+                under: None,
+                over: None,
+                tick_labels: Vec::new(),
+            })
         );
         let mut trailing = good.clone();
         trailing.push(0);
         for bad in [
-            discrete_blob(2, &[]),
+            discrete_blob(8, &[]),
             discrete_blob(0, &[b"a\0b"]),
             discrete_blob(0, &[&[0xff, 0xfe]]),
             trailing,
             good[..good.len() - 1].to_vec(),
             discrete_blob(0, &vec![&b"x"[..]; 33]),
+            // Flagged cap paints must be present in full.
+            discrete_blob(2, &[]),
         ] {
             let mut next = 0;
             assert!(decode_discrete_colorbar(&bad, (0, bad.len()), &mut next).is_err());
         }
+    }
+
+    #[test]
+    fn discrete_colorbar_blob_carries_cap_paints_in_under_over_order() {
+        // flags: uniform | under | over, no labels, then under and over RGBA8.
+        let mut blob = discrete_blob(1 | 2 | 4, &[]);
+        blob.splice(8..8, [68, 1, 84, 255, 253, 231, 37, 255]);
+        let mut next = 0;
+        assert_eq!(
+            decode_discrete_colorbar(&blob, (0, blob.len()), &mut next),
+            Ok(DiscreteColorbar {
+                uniform: true,
+                under: Some([68, 1, 84, 255]),
+                over: Some([253, 231, 37, 255]),
+                tick_labels: Vec::new(),
+            })
+        );
+        // Only the over paint: it is the first (and only) paint after the header.
+        let mut over_only = discrete_blob(4, &[]);
+        over_only.splice(8..8, [1, 2, 3, 255]);
+        let mut next = 0;
+        assert_eq!(
+            decode_discrete_colorbar(&over_only, (0, over_only.len()), &mut next)
+                .unwrap()
+                .over,
+            Some([1, 2, 3, 255])
+        );
     }
 
     #[test]

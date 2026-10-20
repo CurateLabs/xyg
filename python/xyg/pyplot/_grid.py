@@ -625,6 +625,8 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             "spacing",
             "band_colors",
             "tick_labels",
+            "under_color",
+            "over_color",
         }
         if set(colorbar) - supported:
             raise _static_document.UnsupportedStaticExport(
@@ -674,9 +676,22 @@ def _pyplot_scene_figure(figure: Any) -> Any:
                     else {}
                 ),
             }
+            extend = str(colorbar.get("extend", "neither"))
+
+            def cap(key: str, extended: bool) -> Optional[tuple[int, int, int, int]]:
+                rgb = colorbar.get(key) if extended else None
+                return None if rgb is None else (*(int(channel) for channel in rgb[:3]), 255)
+
             projected._static_document_colorbar_discrete = (
                 colorbar.get("spacing", "uniform") == "uniform",
                 tuple(str(label) for label in colorbar.get("tick_labels") or ()),
+                cap("under_color", extend in ("min", "both")),
+                cap("over_color", extend in ("max", "both")),
+            )
+        elif colorbar.keys() & {"under_color", "over_color"}:
+            # Continuous ramps have no literal cap paints to hand to Rust.
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE"
             )
         elif colorbar.get("tick_labels") is not None:
             raise _static_document.UnsupportedStaticExport(
