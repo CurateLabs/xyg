@@ -552,7 +552,10 @@ before allocating or transferring a descriptor table. TypeScript repeats the
 generated ceiling as defense in depth. Callers may reduce fragmentation or
 split work into explicitly managed views; the browser never silently merges
 runs because that would change line breaks, styles, symbols, or stable
-identity.
+identity. Static export admission does not imply painter admission (#1006):
+for example a triangle mesh above 1,024 faces with per-face `stroke_width`
+exports to SVG/PNG/PDF, but the browser painter on that Scene returns
+`XYG_PAINTER_TRACE_LIMIT`.
 
 Per-instance batches are not fragmentation (#945). Kinds 8 and 9 carry every
 marker's or segment's resolved paint, width, symbol, diameter, and complete

@@ -126,15 +126,16 @@ an authored constant CSS stroke and optional finite non-negative scalar width
 (default 1px), and constant-style
 polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
-pairs with bounded stem markers, at most 1,024 fill-only unjoined
-triangle-mesh faces (constant or interned per-face fill/stroke/width, ABI 195),
+pairs with bounded stem markers, unjoined triangle-mesh faces (constant or
+interned per-face fill/stroke/width, ABI 195; the static mesh tiers below),
 interned per-item scatter fill/stroke/width/opacity (ABI 196),
 constant-style Cartesian hexbin PolyFill cells (one
 6-vertex group per cell, sharing that 1,024-group painter budget), constant-style
 Cartesian heatmap Rects (one regular cell per Rect, sharing the 10,000-bin
 histogram ceiling), and finite
 literal solid ribbons. Each accepted mesh face
-is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
+is one three-vertex Triangle group in the Scene; the browser painter keeps its
+1,024-group run budget, while static export keeps every face (#1006);
 `joined_fill` plus per-face paint, polar meshes, and alternate axes remain
 compatibility behavior; a non-joined mesh above the 1,024-group budget keeps
 every face in static export, with SVG/PDF writing one Rust-painted raster per
@@ -597,8 +598,9 @@ ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
 the same `auto_domain` degenerate pad instead of a host-local ±0.5 fork.
-LOD beyond the 1,024-group painter budget, and rich style
-exceptions remain compatibility routes. ABI 107 makes Scene CSS→RGBA8 and
+Browser-painter LOD beyond its 1,024-group budget, and rich style
+exceptions remain compatibility routes (static mesh export above that budget
+is native since #1006: scene-ir.md "Mesh tiers and dense-fill rule"). ABI 107 makes Scene CSS→RGBA8 and
 per-kind mark style defaults the same way: Python and Node pack `XYMS` v1
 kind/opacity/CSS/width literals, then call `xyg_scene_resolve_mark_styles` /
 `xyg_css_color_rgba`. ABI 108 makes Scene chrome defaults the same way:

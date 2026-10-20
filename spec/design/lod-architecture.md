@@ -29,7 +29,11 @@ validate and map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the 
 for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`
 into the decision is dossier F3 — *specified, pending, not implemented*; no
-pixel-area or overdraw term exists in `python/xyg/` or `js/src/` today.
+pixel-area or overdraw term exists in `python/xyg/` or `js/src/` today, and no
+tier decision uses one. The only overdraw term anywhere is static triangle-mesh
+admission (#1006): Rust's Scene compile bounds faces' bounding-box cost above
+1,024 faces (`MESH_OVERDRAW_PLOTS`), which can refuse an export but never
+changes a tier.
 
 | Tier | Name | Representation | Cost model | Status |
 |---|---|---|---|---|

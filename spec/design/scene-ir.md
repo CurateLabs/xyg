@@ -1779,7 +1779,15 @@ lands). The Scene always keeps every face as three `Triangle` records:
   that sum — is never quadratic in faces × pixels (1,100 overlapping
   full-plot faces, or 20,000 full-height zero-width slivers, fail closed; a
   tessellation of the plot charges about 3). Above 50,000 faces the dense-fill
-  grid must also fit (below). Either overrun is `SceneError::Limit` →
+  grid must also fit (below). Known limitation: the bound runs at Scene
+  compile, before any format is chosen, and the support predicate has no
+  format, so it also refuses vector-only SVG/PDF of 1,025–50,000 faces that no
+  consumer would rasterize. It is a bounding-box cost model, not an overlap
+  measure: a radial fan of 1,025 long thin wedges (about 0.27 s to PNG at
+  1,024) fails closed although its faces barely overlap, while its 1,024-face
+  vector SVG writes in 4 ms. Moving the bound to the raster and dense-image
+  consumers needs a format-aware predicate; that is a follow-up, not this
+  change. Either overrun is `SceneError::Limit` →
   `EncodeAssembledCode::Lod` → `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. At or below
   1,024 faces nothing is checked and every byte is unchanged;
 - raster formats (PNG, JPEG, WebP): the raster consumer paints every face
@@ -1801,7 +1809,11 @@ lands). The Scene always keeps every face as three `Triangle` records:
   `/Interpolate true`. A gradient-filled face, or a build without the
   `raster` feature (the direct-browser WASM adapter), keeps vector faces;
 - the Scene bytes, the browser painter, and interactive HTML are unchanged by
-  the tier (it adds no record kind, sidecar, or XYIM format).
+  the tier (it adds no record kind, sidecar, or XYIM format). Static
+  admission does not imply painter admission: a mesh above 1,024 faces with
+  per-face `stroke_width` (which splits runs) exports statically, while
+  `sceneBrowserPainter` / `xyg_scene_browser_painter` on the same Scene still
+  returns `XYG_PAINTER_TRACE_LIMIT` (browser-wasm.md "Painter admission").
 
 `tests/test_static_dense_mesh_tier.py` pins the 1,024-face stroked mesh bytes
 to main, checks a 1,250-face mesh stays vector, checks the 51,200-face dense

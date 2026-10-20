@@ -41,9 +41,13 @@ Large triangle meshes keep every face. PNG, JPEG, and WebP paint all of them
 at the requested scale. SVG and PDF write one vector shape per face up to
 50,000 faces in the figure; above that, each mesh becomes **one raster image**
 of its faces inside the SVG or PDF (painted at twice the figure's pixel size,
-so it is no longer resolution-independent vector art). A mesh whose faces
-overlap so heavily that painting them would cover more than 64 plot areas is
-refused rather than exported slowly.
+so it is no longer resolution-independent vector art). Above 1,024 faces, a
+mesh is also refused when the bounding boxes of its faces add up to more than
+about 64 plot areas. This is a cost estimate from each face's bounding box, not
+a measure of overlap, so a mesh whose faces do not overlap can trip it too:
+for example a radial fan of long, thin wedges around a centre point. The check
+applies to every format, including SVG and PDF that would not paint the
+faces.
 
 Anything outside those tiers raises `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead
 of drawing a reduced chart.

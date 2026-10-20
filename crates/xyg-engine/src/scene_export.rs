@@ -456,8 +456,6 @@ fn public_lod_tier_admits(
             ) == Some(PAYLOAD_TIER_DECIMATED)
         }
         KIND_SCATTER if trace_flags & TRACE_DENSITY_BLIT != 0 => true,
-        // #1006 dense-fill tier: a mesh above the PolyFill-group budget is
-        // one Rust-rasterized Image record (bounded again below).
         // #1006: a non-joined mesh is bounded by its own face rules below
         // (3 expanded records per face within `MAX_SCENE_MARKS`).
         KIND_TRIANGLE_MESH => trace_flags & TRACE_JOINED_FILL == 0,
