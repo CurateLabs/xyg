@@ -1,10 +1,17 @@
 # CoSE progressive-layout size ladder (#35, criterion 4)
 
-First-paint latency and progress cadence of the shipped progressive CoSE
-schedulers on a node-count ladder, plus the evidence behind the cross-host
-parity tolerance (`spec/design/graph-mark.md`, "CoSE cross-host parity").
-**Evidence, not a CI gate** (#108 lean policy); regenerate on a quiet host
-before quoting absolute numbers.
+**Checkpoint-delivery latency and cadence** of the shipped progressive CoSE
+schedulers on a node-count ladder (the cross-host parity tolerance lives in
+`spec/design/graph-mark.md`, "CoSE cross-host parity"). **Evidence, not a CI
+gate** (#108 lean policy); regenerate on a quiet host before quoting absolute
+numbers.
+
+**What this is not.** It does *not* measure first paint or interactivity. The
+browser rung records when a checkpoint reaches an otherwise empty page: it
+renders no graph, excludes browser start-up, and measures no pick/pan latency.
+Criterion 4's first-paint gate therefore stays **open** (see "Remaining for
+#35"). The JSON key `first_paint_ms` in `results.json` is a historical name for
+*first-checkpoint delivery latency*.
 
 ## Protocol
 
@@ -18,13 +25,15 @@ before quoting absolute numbers.
   `createXygWasmWorker` + `layoutWasmCose` (WASM kernel in a Web Worker, one
   Worker per rung, fresh job per repetition) in headless Chromium 149 with
   SwiftShader (the Worker path does not touch GL).
-- **First paint** = job start → first delivered checkpoint (Worker start where
-  applicable + handle build + seeded placement + tick 1 + delivery to the host
-  thread). **Cadence** = gap between delivered checkpoints of 10 ticks each
+- **First-checkpoint latency** (`first_paint_ms`) = job start → first delivered
+  checkpoint (Worker start where applicable + handle build + seeded placement +
+  tick 1 + delivery to the host thread; nothing is rendered). **Cadence** = gap between delivered checkpoints of 10 ticks each
   (`chunk_steps = 10`). **Event-loop lag** = worst/p95 overshoot of a 5 ms
   ticker on the host thread while the job ran. Peak RSS is of a fresh per-rung
   process (Python: `ru_maxrss`; Node: process incl. Worker thread; browser: not
-  measured, JS heap in raw rows).
+  measured). The browser script also reports `worker_ready_ms` and `js_heap_mb`,
+  but the orchestrator that wrote the committed `results.json` dropped them (fixed
+  for future runs; the committed run does not contain them).
 - Rungs: 1k, 10k, 100k, 1M nodes (7/7/5/1 repetitions, 40/30/10/5 progress
   chunks). **1M is the admission ceiling** (`MAX_NODES = 1_000_000` in the Node
   scheduler and the WASM `XYGL` request, `MAX_EDGES = 4_000_000`); nothing above
@@ -33,11 +42,11 @@ before quoting absolute numbers.
 
 ## Result (this host, see caveats)
 
-Milliseconds. First paint is the median (max); cadence is the gap between
-delivered 10-tick checkpoints; lag is the host-thread p95 / max stall while the
-job ran.
+Milliseconds. First-checkpoint latency is the median (max); cadence is the gap
+between delivered 10-tick checkpoints; lag is the host-thread p95 / max stall of
+a 5 ms ticker while the job ran.
 
-| Rung | Host | first paint p50 (max) | cadence p50 | cadence p95 | lag p95 / max | peak RSS |
+| Rung | Host | first-checkpoint p50 (max) | cadence p50 | cadence p95 | lag p95 / max | peak RSS |
 |---|---|---:|---:|---:|---:|---:|
 | 1k | python-native | 2 (4) | 11 | 13 | 3.2 / 8 | 44 MB |
 | 1k | node-worker-threads | 143 (160) | 11 | 14 | 2.1 / 10 | 102 MB |
@@ -52,13 +61,16 @@ job ran.
 | 1M | node-worker-threads | 965 (965) | 1376 | 1395 | 1.8 / 25 | 423 MB |
 | 1M | browser-wasm-worker | 1281 (1281) | 2852 | 3214 | 0.1 / 19 | n/a |
 
-Reading: no host runs layout on its interactive thread — the host-thread p95
-stall is ≤ 3.6 ms on every rung of every host. First paint is ≤ 0.13 s through
-100k nodes (Python/WASM ≤ 0.05 s) and 0.8–1.3 s at 1M; progress then arrives
-every ~11–13 ms (1k), 32–112 ms (10k), 136–315 ms (100k) and ~1.4 s native /
-~2.9 s WASM (1M). The Node first paint (~120–140 ms through 100k) is Worker
-spawn + native-library load, because `runForceTicks` creates a fresh Worker per
-job. The WASM kernel's cadence is ~2–3× the native one at 10k and above.
+Reading: the layout work runs on a worker thread/Worker on every host, and
+the measured host-thread stalls are small but not zero: p95 ≤ 3.6 ms on every
+rung, **max stalls up to 40 ms** (browser, 10k), 25 ms (Node, 1M), 12 ms (Python,
+1M). This is consistent with, but does not prove, "layout never blocks the
+host". First-checkpoint latency p50 is ≤ 0.15 s through 100k nodes (Python/WASM
+≤ 0.06 s) and 0.8–1.3 s at 1M; progress then arrives every ~11–13 ms (1k),
+32–112 ms (10k), 136–315 ms (100k) and ~1.4 s native / ~2.9 s WASM (1M). The
+Node latency (~120–140 ms through 100k) is Worker spawn + native-library load,
+because `runForceTicks` creates a fresh Worker per job. The WASM kernel's cadence
+is ~2–3× the native one at 10k and above.
 
 **Browser main-thread stalls — not reproduced.** The first (more heavily
 loaded, load average 35–45) run measured single browser host-thread stalls of
@@ -79,7 +91,7 @@ if they are reported again they should be tracked as a separate issue.
   from earlier runs).
 - Python's `GraphLayoutController` reuses one thread across repetitions; Node
   spawns a Worker per job (as shipped); the WASM Worker is created once per
-  rung and its start-up is not part of first paint.
+  rung and its start-up is not part of first-checkpoint latency.
 
 ## Reproduce
 
@@ -90,6 +102,14 @@ export XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so"
 uv run python scripts/bench_cose_progressive.py --out results.json
 #   subset:  --rungs 1k,10k --hosts python,node   (browser rung: --chromium PATH)
 ```
+
+## Remaining for #35
+
+- A **render-based first-paint and interactivity measurement** on the ladder
+  (graph drawn, first pick/pan latency, browser start-up included) — criterion 4
+  stays open until it exists.
+- **Node async composition** (criterion 7: `composeGraphForge` /
+  `graphforgeWebviewPayload` defaulting to `worker_threads`), after #934.
 
 `results.json` holds the raw per-repetition `first_paint_ms` / `cadence_ms`
 arrays, the per-rung summary, the protocol, and `benchmarks/environment.py`

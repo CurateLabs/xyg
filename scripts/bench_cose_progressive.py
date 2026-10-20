@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""First-paint and progress-cadence ladder for progressive CoSE layout (issue #35).
+"""Checkpoint-delivery latency and cadence ladder for progressive CoSE layout (#35).
 
 Drives the *shipped* schedulers on one seeded CoSE graph per rung (ring + one
 deterministic chord per node, Rust-seeded start, default CoSE options):
@@ -12,10 +12,11 @@ deterministic chord per node, Rust-seeded start, default CoSE options):
   headless Chromium (``scripts/bench_cose_progressive_browser.py``), when a
   Chromium binary is available.
 
-Per rung it records first paint (job start -> first delivered checkpoint, which
-includes worker start, handle construction and the seeded placement plus tick 1)
-and progress cadence (gaps between later delivered checkpoints of
-``chunk_steps`` ticks each), plus the worst host event-loop stall and the peak
+Per rung it records first-checkpoint latency (job start -> first delivered
+checkpoint, which includes worker start, handle construction and the seeded
+placement plus tick 1; the JSON key stays ``first_paint_ms`` for historical
+reasons) and progress cadence (gaps between later delivered checkpoints of
+``chunk_steps`` ticks each), plus the host event-loop lag and the peak
 RSS of a fresh per-rung process. Evidence, not a CI gate.
 
   flock /tmp/xyg-heavy-build.lock uv run python scripts/bench_cose_progressive.py \
@@ -220,6 +221,7 @@ def run(rungs: list[str], hosts: list[str], chromium: str | None) -> dict[str, A
                         "status": "ok",
                         "summary": summarize(raw),
                         "reps": raw["reps"],
+                        "extra": {k: raw[k] for k in ("worker_ready_ms", "js_heap_mb") if k in raw},
                         "elapsed_s": time.time() - started,
                         "loadavg_1m": {"start": row_load[0], "end": os.getloadavg()[0]},
                     }
@@ -240,7 +242,7 @@ def run(rungs: list[str], hosts: list[str], chromium: str | None) -> dict[str, A
         "protocol": {
             "graph": "ring + one deterministic chord per node (2 edges/node), Rust-seeded start, "
             "default CoSE options, seed 7",
-            "first_paint": "job start -> first delivered checkpoint (worker start + handle build + "
+            "first_paint": "NOT first paint (nothing is rendered): job start -> first delivered checkpoint (worker start + handle build + "
             "seeded placement + tick 1 + delivery)",
             "cadence": f"gap between delivered checkpoints of {CHUNK_STEPS} ticks each",
             "rungs": {k: {"nodes": v[0], "chunks": v[1], "reps": v[2]} for k, v in RUNGS.items()},

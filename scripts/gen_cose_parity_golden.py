@@ -192,6 +192,8 @@ def fixtures() -> list[dict]:
 
 
 def _digest(x: np.ndarray, y: np.ndarray, alpha: float) -> str:
+    if not (np.isfinite(x).all() and np.isfinite(y).all() and np.isfinite(alpha)):
+        raise ValueError("non-finite CoSE checkpoint; refusing to hash it into the golden")
     h = hashlib.sha256()
     h.update(np.ascontiguousarray(x, dtype="<f8").tobytes())
     h.update(np.ascontiguousarray(y, dtype="<f8").tobytes())

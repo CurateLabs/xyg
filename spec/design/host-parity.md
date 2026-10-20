@@ -1852,9 +1852,11 @@ client must not grow a parallel “JS layout/LOD” product path.
   `GraphLayoutController` likewise schedules bounded native ticks on its own
   worker thread and restarts Rust CoSE from drag coordinates plus the current
   pin mask. Cross-host parity is bitwise (no ε): Python/Node native and WASM agree on every
-  f64 checkpoint of the committed 13-fixture golden because the CoSE path uses
-  only `+ − × ÷ √` and `portable_sin_cos`. The size-ladder timing evidence
-  (1k–1M nodes, three hosts) is committed under
+  f64 checkpoint of the committed 12-fixture golden because the CoSE path uses
+  only `+ − × ÷ √` and `portable_sin_cos`. Checkpoint-delivery latency and cadence
+  evidence (1k–1M nodes, three hosts; not first paint — criterion 4's
+  render-based first-paint/interactivity gate and Node async composition,
+  criterion 7, remain open for #35) is committed under
   `spec/performance/cose-progressive-ladder-2026-10-20/`. Policy and results:
   `graph-mark.md` §4 "CoSE cross-host parity".
 - **Box-select:** reuses the existing scatter/segments selection path — no

@@ -241,6 +241,11 @@ pub fn layout_grid(n: usize, out_x: &mut [f64], out_y: &mut [f64]) {
     }
 }
 
+/// Circle of radius `n`. Built with [`portable_sin_cos`] (not platform `libm`) so
+/// native and wasm32 agree bitwise. This also seeds *every* `ForceState` family
+/// started without authored positions, not only CoSE: their seeded outputs
+/// changed relative to platform `sin`/`cos`, by ulps at seeding and by more than
+/// ulps after force iteration amplifies them.
 pub fn layout_circle(n: usize, out_x: &mut [f64], out_y: &mut [f64]) {
     if n == 0 {
         return;

@@ -334,12 +334,14 @@ Hosts must not emulate the shipped CoSE policy.
 the same `libxyg_core` C ABI) and the wasm32 kernel (`xyg_wasm_graph_begin` /
 `_step`, exactly as the Worker drives it) are compared on one committed golden,
 `tests/fixtures/graphforge/cose-parity/golden.json` (regenerate with
-`scripts/gen_cose_parity_golden.py --write`). It holds 13 fixtures — default and
+`scripts/gen_cose_parity_golden.py --write`). It holds 12 fixtures — default and
 custom options, compound parents, disconnected components plus isolated nodes,
 pins with bounds, coincident authored positions, a 200-node exact-repulsion
-graph and a 700-node uniform-grid-tier graph with compounds — each with
-authored and Rust-seeded start positions, and, per tick schedule `1,9,20,30`,
-the sha256 of the f64 `x‖y‖alpha` bytes plus the final positions.
+graph and a 700-node uniform-grid-tier graph with compounds. Five graphs (path,
+compound, disconnected, 200-node, 700-node) appear twice — authored and
+Rust-seeded start positions — and `pinned-bounds-initial` and `coincident-start`
+are authored-only. Per tick schedule `1,9,20,30` each case records the sha256 of
+the f64 `x‖y‖alpha` bytes plus the final positions.
 
 **Tolerance policy: bitwise, no ε.** Every f64 position and `alpha` at every
 checkpoint must be `==` across Python native, Node native and WASM
@@ -353,18 +355,25 @@ CoSE path must use a portable implementation and extend the golden; the
 force-iteration is chaotic, so a one-ulp platform difference grows to O(1) drift
 within tens of ticks (observed up to 6.5 units on the 200-node graph with
 platform `sin`/`cos`), which is why no tolerance is offered instead.
+`layout_circle` seeds every `ForceState` family started without authored
+positions, so the other force algorithms' seeded outputs also changed with this
+switch — by ulps at seeding and by more than ulps after iteration.
 
-**Size-ladder evidence (#35, criterion 4).**
-`scripts/bench_cose_progressive.py` drives the shipped schedulers
+**Checkpoint-delivery latency and cadence evidence (#35, criterion 4 — gate
+stays open).** `scripts/bench_cose_progressive.py` drives the shipped schedulers
 (`GraphLayoutController`, `force_scheduler.js` `runForceTicks`, and
 `layoutWasmCose` in a headless-Chromium Worker) on 1k/10k/100k/1M nodes, 2
-edges/node (1M = the admission ceiling, `MAX_NODES`). Measured on a loaded
-shared host (details and raw rows in
-`spec/performance/cose-progressive-ladder-2026-10-20/`): first paint p50 ≤ 0.13 s
-through 100k (Node's ~0.12–0.14 s is Worker spawn + library load) and 0.8–1.3 s
-at 1M; cadence p50 per 10-tick checkpoint ≈ 11–13 ms (1k), 32–112 ms (10k),
-136–315 ms (100k), 1.4 s native / 2.9 s WASM (1M); host-thread p95 stall ≤ 3.6 ms
-on every rung and host, i.e. layout never blocks the host. Not a CI gate.
+edges/node (1M = the admission ceiling, `MAX_NODES`). It measures when
+checkpoints reach the host thread, not first paint: the browser rung renders
+nothing and excludes browser start-up. On a loaded shared host (raw rows in
+`spec/performance/cose-progressive-ladder-2026-10-20/`): first-checkpoint p50
+≤ 0.15 s through 100k (Node's ~0.12–0.14 s is Worker spawn + library load) and
+0.8–1.3 s at 1M; cadence p50 per 10-tick checkpoint ≈ 11–13 ms (1k), 32–112 ms
+(10k), 136–315 ms (100k), 1.4 s native / 2.9 s WASM (1M); host-thread ticker
+lag p95 ≤ 3.6 ms with maximum stalls of 40 ms (browser, 10k), 25 ms (Node, 1M)
+and 12 ms (Python, 1M). Not a CI gate. **Remaining for #35:** a render-based
+first-paint/interactivity measurement on the ladder, and Node async composition
+(criterion 7, after #934).
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid
 approximation: at most 32 members per neighboring cell are evaluated exactly;
 denser neighboring cells and the complete far field are represented by mass
