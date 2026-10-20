@@ -62,6 +62,31 @@ def test_release_classifier_covers_every_contract_family() -> None:
 
 def test_release_classifier_leaves_prose_only_change_optional() -> None:
     assert not classify(["docs/guide.md", "spec/design/example.md"])
+    assert not classify(
+        ["README.md", "CHANGELOG.md", "LICENSE", "spec/performance/run/summary.json"]
+    )
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "tsconfig.json",  # a root file nobody listed
+        "vite.config.ts",
+        "examples/chart.py",
+        "demo/js_demo.mjs",
+        ".gitignore",
+        "new_top_level_dir/anything.txt",
+        "python/README.md",  # prose suffix inside a release prefix is still code-adjacent
+        "spec/abi/xyg.h",  # generated-contract inputs are not prose
+        "spec/wasm/abi.json",
+    ],
+)
+def test_release_classifier_treats_unknown_paths_as_release_surface(path: str) -> None:
+    assert classify([path]), path
+
+
+def test_release_classifier_mixed_change_is_required() -> None:
+    assert classify(["docs/guide.md", "spec/design/example.md", "tsconfig.json"])
 
 
 def test_inventory_covers_the_failed_main_jobs_of_1008() -> None:
@@ -193,3 +218,61 @@ def test_workflow_aggregate_command_propagates_each_injected_failure(
         )
         assert rejected.returncode == 1, (event, name)
         assert name in rejected.stdout
+
+
+METHODOLOGY_STEP = "Benchmark methodology contract (smallest sizes, report verified)"
+
+
+def _methodology_commands(root: Path) -> list[list[str]]:
+    """The real `test`-job step commands, runnable against ``root`` as RUNNER_TEMP."""
+    import shlex
+
+    import yaml
+
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    step = next(s for s in workflow["jobs"]["test"]["steps"] if s.get("name") == METHODOLOGY_STEP)
+    commands = []
+    for line in step["run"].splitlines():
+        argv = shlex.split(line.replace("$RUNNER_TEMP", str(root)))
+        if argv[0] == ".venv/bin/python":
+            argv[0] = sys.executable
+        commands.append(argv)
+    return commands
+
+
+def _run_methodology_step(root: Path, *, tamper: bool) -> str:
+    """Run the step as the runner would (set -e) and return the `test` job conclusion."""
+    for argv in _methodology_commands(root):
+        if (
+            tamper
+            and argv[1].endswith("verify_benchmark_report.py")
+            and "workflows.json" in argv[2]
+        ):
+            report = Path(argv[2])
+            report.write_text(
+                report.read_text(encoding="utf-8").replace(
+                    '"oracle_status": "pass"', '"oracle_status": "FAIL"'
+                ),
+                encoding="utf-8",
+            )
+        if subprocess.run(argv, capture_output=True, text=True, check=False).returncode != 0:
+            return "failure"
+    return "success"
+
+
+@pytest.mark.parametrize("event", ["merge_group", "pull_request"])
+def test_broken_benchmark_report_fails_the_aggregate_before_merge(
+    event: str, tmp_path: Path
+) -> None:
+    """#1005/#1008: the methodology producers and report verifier gate merge_group and PRs.
+
+    The step lives in the always-hard ``test`` job, so a broken report turns ``test`` red
+    and the aggregate rejects it on the pre-merge events, not only after the push.
+    """
+    assert _run_methodology_step(tmp_path / "ok", tamper=False) == "success"
+    assert _run_methodology_step(tmp_path / "broken", tamper=True) == "failure"
+
+    green = _green(event=event, required=True)
+    assert verify(required=True, results=green, event=event) == []
+    red = {**green, "test": "failure"}
+    assert verify(required=True, results=red, event=event) == ["test must succeed, got 'failure'"]

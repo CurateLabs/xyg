@@ -94,7 +94,7 @@ applicable is a failure; a skipped job that is inapplicable is recorded as such.
 | --- | --- | --- | --- |
 | Baseline hard | `test`, `wasm_assets`, `wasm_foundation`, `python_floor` | every event | `success` |
 | Release-surface hard | `browser_conformance`, `sdist`, `wheels`, `install_without_rust`, `authored_scene`, `matplotlib_reference` | `merge_group`, `push`, `workflow_dispatch`, and a pull request the trusted-base classifier marks required | `success` when applicable; `skipped` or `success` for a prose-only pull request; never `failure`. `matplotlib_reference` is a pre-merge gate: its failure turns `Release surfaces` red and the merge queue cannot promote a classifier-positive change until the Matplotlib 3.11 reference corpus passes |
-| Main evidence hard | `benchmark_vs`, `benchmark_methodology`, `benchmark` | `push` and `workflow_dispatch` only (post-merge; they cannot gate the queue) | `success` on main; `skipped` or `success` on pull requests and merge groups |
+| Main evidence hard | `benchmark_vs`, `benchmark_methodology`, `benchmark` | `push` and `workflow_dispatch` only (post-merge; they cannot gate the queue; their producers and report verifier run pre-merge in `test`'s `Benchmark methodology contract` step at the smallest sizes, without timing) | `success` on main; `skipped` or `success` on pull requests and merge groups |
 | Support | `release_surface_changes` (classifier), `release_surfaces` (aggregate) | every event | n/a |
 | Advisory (outside `ci.yml`) | `codspeed.yml`, `density-100m.yml`, `ceiling-benchmark.yml`, `benchmark-refresh.yml`, `docs.yml`, `binder.yml`, `final-coderabbit.yml` | scheduled or manual | not an aggregate input |
 
@@ -125,8 +125,13 @@ workflows the checker does not validate: `docs.yml`, `binder.yml`, `benchmark-re
 browser evidence (CodSpeed, the density authority) is not an aggregate input and never runs
 on pull requests, but a known unresolved failure must not read as readiness. Before a release
 authorization, a "main is green" claim, or closing the release tracker, run
-`python3 scripts/check_scheduled_evidence.py`: it blocks while the latest completed run of any
-scheduled workflow on `main` failed or is older than three days; while a `ci.yml` push run on
+`python3 scripts/check_scheduled_evidence.py`: it judges each scheduled workflow on `main` by
+its evidence jobs' own results, not the run conclusion. The newest run that actually executed
+the evidence jobs must have every one succeed; a run whose detector skipped them
+(`codspeed_should_run.py` saw an earlier success on the same commit) is no evidence, so it cannot
+clear an earlier failed execution (for example success on S, failed manual rerun on S, then a
+skipped scheduled run that concludes `success`). The check also blocks when the newest run is older
+than three days or no run ever executed the evidence jobs; while a `ci.yml` push run on
 `main` is still queued or in progress (no evidence yet, never green); and unless the latest
 completed `ci.yml` push run concluded `success` at run level, has at least one job (a zero-job
 startup failure is no evidence), and has no failed, cancelled, or timed-out job (including the

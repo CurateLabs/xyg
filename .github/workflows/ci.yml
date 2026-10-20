@@ -415,6 +415,21 @@ jobs:
       - name: Benchmark smoke (1e5/1e6 — §12 harness runs every phase)
         run: .venv/bin/python scripts/bench.py --sizes 1e5,1e6
 
+      # The methodology suites and their report verifier otherwise run only after merge
+      # (benchmark_methodology / benchmark are push-and-dispatch evidence), so a broken
+      # bench script or report shape could land and fail main. Run the same producers at
+      # the smallest CI sizes - correctness and report contract only, no timing comparison
+      # - inside the already-required `test` job, so merge_group and pull requests gate it.
+      - name: Benchmark methodology contract (smallest sizes, report verified)
+        run: |
+          mkdir -p "$RUNNER_TEMP/bench-contract"
+          .venv/bin/python benchmarks/bench_workflows.py --profile smoke --reps 1 --json "$RUNNER_TEMP/bench-contract/workflows.json"
+          .venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/workflows.json" --kind workflow-native
+          .venv/bin/python benchmarks/bench_line.py --sizes 1e5 --json "$RUNNER_TEMP/bench-contract/line.json"
+          .venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/line.json" --kind line-decimation
+          .venv/bin/python benchmarks/bench_install.py --packages xyg --json "$RUNNER_TEMP/bench-contract/install.json"
+          .venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/install.json" --kind install-footprint
+
       # Benchmark bodies carry correctness assertions (policy oracles) but only the
       # scheduled CodSpeed run executed them, so intentional policy changes left stale
       # oracles with green PR CI. `--test` runs every divan body exactly once, with its

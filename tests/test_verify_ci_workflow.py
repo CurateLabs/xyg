@@ -4454,6 +4454,37 @@ def test_benchmark_oracles_are_the_final_two_steps_of_the_test_job(tmp_path: Pat
     assert any("must be its final two steps" in e for e in errors), errors
 
 
+def _sub(root: Path, name: str) -> Path:
+    (root / name).mkdir()
+    return root / name
+
+
+def test_benchmark_methodology_contract_cannot_be_dropped_from_the_test_job(
+    tmp_path: Path,
+) -> None:
+    """The pre-merge producer + report-verifier step is verifier-enforced (#1005/#1008)."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "test")
+    block = workflow[start:end]
+    step = "      - name: Benchmark methodology contract (smallest sizes, report verified)\n"
+    at = block.index(step)
+    after = block.index("\n      # Benchmark bodies carry correctness assertions")
+    assert _wasm_errors(_sub(tmp_path, "ok"), workflow) == []
+
+    dropped = _wasm_errors(
+        _sub(tmp_path, "dropped"), workflow[:start] + block[:at] + block[after:] + workflow[end:]
+    )
+    assert any("Benchmark methodology contract" in e for e in dropped), dropped
+
+    weakened = block.replace(
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/workflows.json" --kind workflow-native\n',
+        "",
+        1,
+    )
+    errors = _wasm_errors(_sub(tmp_path, "weak"), workflow[:start] + weakened + workflow[end:])
+    assert any("Benchmark methodology contract" in e for e in errors), errors
+
+
 def test_makefile_check_bench_oracles_runs_the_same_commands_as_ci() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     recipe = makefile.split("check-bench-oracles:\n", 1)[1].split("\n\n", 1)[0]

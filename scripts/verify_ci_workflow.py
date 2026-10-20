@@ -2127,6 +2127,23 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "Benchmark methodology contract (smallest sizes, report verified)",
+        "pre-merge execution of the methodology producers and their report verifier",
+        'mkdir -p "$RUNNER_TEMP/bench-contract"',
+        ".venv/bin/python benchmarks/bench_workflows.py --profile smoke --reps 1 "
+        '--json "$RUNNER_TEMP/bench-contract/workflows.json"',
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/workflows.json" '
+        "--kind workflow-native",
+        '.venv/bin/python benchmarks/bench_line.py --sizes 1e5 --json "$RUNNER_TEMP/bench-contract/line.json"',
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/line.json" '
+        "--kind line-decimation",
+        '.venv/bin/python benchmarks/bench_install.py --packages xyg --json "$RUNNER_TEMP/bench-contract/install.json"',
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/install.json" '
+        "--kind install-footprint",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "Native benchmark oracles (divan --test, no timing)",
         "pull-request execution of every Rust benchmark body and its assertions",
         "cargo bench -p xyg-engine --bench kernels -- --test",

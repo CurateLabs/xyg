@@ -11,10 +11,24 @@ from scripts import check_scheduled_evidence as gate
 NOW = datetime(2026, 10, 19, 15, 0, tzinfo=UTC)
 
 
+DETECTOR = {"name": "Check for changed main", "conclusion": "success"}
+
+
+def _evidence(conclusion: str) -> list[dict]:
+    """A run that executed its evidence job and the detector that allowed it."""
+    return [DETECTOR, {"name": "Run benchmarks", "conclusion": conclusion}]
+
+
 def _run(
-    conclusion: str, created: str, *, status: str = "completed", sha: str = "4e27ef4b0e1a"
+    conclusion: str,
+    created: str,
+    *,
+    status: str = "completed",
+    sha: str = "4e27ef4b0e1a",
+    jobs: list[dict] | None = None,
 ) -> dict:
     return {
+        "jobs": jobs if jobs is not None else _evidence(conclusion),
         "databaseId": 1,
         "event": "schedule",
         "status": status,
@@ -63,8 +77,90 @@ def test_repeatedly_failing_scheduled_run_blocks_readiness() -> None:
     findings = gate.evaluate(scheduled=scheduled, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW)
 
     assert len(findings) == 1
-    assert "codspeed.yml: latest run concluded 'failure'" in findings[0]
+    assert "codspeed.yml: the newest evidence execution concluded 'failure'" in findings[0]
     assert "linked open issue" in findings[0]
+
+
+SKIPPED_BY_DETECTOR = [
+    DETECTOR,
+    {"name": "Run benchmarks", "conclusion": "skipped"},
+    {"name": "Main-only browser evidence (not CodSpeed)", "conclusion": "skipped"},
+]
+
+
+def test_detector_skipped_success_does_not_clear_a_failed_rerun() -> None:
+    """CodSpeed succeeds on S, a manual rerun on S fails, then the schedule skips.
+
+    The next scheduled run concludes ``success`` because the detector saw the earlier green
+    run on S and skipped every evidence job; no benchmark execution succeeded after the
+    failed rerun, so readiness must stay blocked.
+    """
+    scheduled = {
+        "codspeed.yml": [
+            _run("success", "2026-10-17T12:00:00Z"),
+            _run("failure", "2026-10-18T09:00:00Z"),
+            _run("success", "2026-10-19T12:00:00Z", jobs=SKIPPED_BY_DETECTOR),
+        ],
+        "density-100m.yml": [_run("success", "2026-10-19T06:31:00Z")],
+    }
+
+    findings = gate.evaluate(scheduled=scheduled, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW)
+
+    assert len(findings) == 1
+    assert "codspeed.yml: the newest evidence execution concluded 'failure'" in findings[0]
+    assert "2026-10-18T09:00:00Z" in findings[0]
+    assert "detector-skipped runs do not count" in findings[0]
+
+
+def test_detector_skip_after_a_green_execution_is_still_green() -> None:
+    scheduled = {
+        "codspeed.yml": [
+            _run("success", "2026-10-18T12:00:00Z"),
+            _run("success", "2026-10-19T12:00:00Z", jobs=SKIPPED_BY_DETECTOR),
+        ],
+        "density-100m.yml": [_run("success", "2026-10-19T06:31:00Z")],
+    }
+
+    assert gate.evaluate(scheduled=scheduled, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW) == []
+
+
+def test_only_skipped_runs_are_absent_evidence_and_a_failed_detector_is_a_failure() -> None:
+    skipped = {
+        "codspeed.yml": [_run("success", "2026-10-19T12:00:00Z", jobs=SKIPPED_BY_DETECTOR)],
+        "density-100m.yml": [_run("success", "2026-10-19T06:31:00Z")],
+    }
+    findings = gate.evaluate(scheduled=skipped, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW)
+    assert len(findings) == 1 and "no run on main executed its evidence jobs" in findings[0]
+
+    broken_detector = {
+        "codspeed.yml": [
+            _run(
+                "failure",
+                "2026-10-19T12:00:00Z",
+                jobs=[{"name": "Check for changed main", "conclusion": "failure"}]
+                + SKIPPED_BY_DETECTOR[1:],
+            )
+        ],
+        "density-100m.yml": [_run("success", "2026-10-19T06:31:00Z")],
+    }
+    findings = gate.evaluate(
+        scheduled=broken_detector, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW
+    )
+    assert len(findings) == 1 and "newest evidence execution concluded 'failure'" in findings[0]
+
+
+def test_partially_skipped_evidence_is_not_green() -> None:
+    mixed = [
+        DETECTOR,
+        {"name": "Run benchmarks", "conclusion": "success"},
+        {"name": "Main-only browser evidence (not CodSpeed)", "conclusion": "skipped"},
+    ]
+    scheduled = {
+        "codspeed.yml": [_run("success", "2026-10-19T12:00:00Z", jobs=mixed)],
+        "density-100m.yml": [_run("success", "2026-10-19T06:31:00Z")],
+    }
+    findings = gate.evaluate(scheduled=scheduled, ci_runs=[CI_RUN], ci_jobs=GREEN_JOBS, now=NOW)
+    assert len(findings) == 1
 
 
 def test_a_later_green_run_clears_the_block() -> None:

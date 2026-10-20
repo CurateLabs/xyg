@@ -23,7 +23,11 @@ matrix three consecutive times.
 
 ## Release-surface classifier
 
-`scripts/classify_release_surface.py` is deliberately conservative. For pull
+`scripts/classify_release_surface.py` is deliberately conservative and is an exemption list,
+not an allowlist: only root Markdown files, `LICENSE`, and paths under `docs/` or `spec/` (other
+than `spec/abi/` and `spec/wasm/`, which feed the native and WASM jobs) are prose-exempt; every
+other path, including one the classifier has never seen such as a new root `tsconfig.json`, is a
+release surface and requires the complete matrix. A mixed change is required. For pull
 requests, CI feeds the base/head path diff to the classifier loaded from the
 trusted base revision; if that revision predates the classifier, the complete
 matrix is required. Rust,

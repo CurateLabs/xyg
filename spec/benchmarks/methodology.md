@@ -269,6 +269,21 @@ without skipping the other `test` results ahead of them (the checker enforces th
 `uv sync --extra reflex --group dev --group codspeed`). Timings stay scheduled; only the
 assertions run before merge.
 
+**Methodology producers and report contract gate merge groups and pull requests (#1005/#1008).**
+`benchmark_methodology` and `benchmark` are post-merge evidence (push/dispatch), so a broken
+`bench_workflows.py`, `bench_line.py`, `bench_install.py`, or report shape could otherwise land and
+fail only on `main`. The hard `test` job therefore runs the step `Benchmark methodology contract
+(smallest sizes, report verified)`: `bench_workflows.py --profile smoke --reps 1`, `bench_line.py
+--sizes 1e5`, and `bench_install.py --packages xyg`, each followed by `scripts/verify_benchmark_report.py`
+with its `--kind` (`workflow-native`, `line-decimation`, `install-footprint`). No timing is compared and no
+competitor is installed. Merge and cross-library verification of fixtures stays in
+`tests/test_merge_benchmark_reports.py` and `tests/test_verify_benchmark_report.py` (run by the
+`test` job's full pytest); the browser-driven interaction and dashboard reports, the cross-library
+matrix, and every timing comparison remain post-merge. The step is verifier-enforced and
+`tests/test_release_surface_gate.py::test_broken_benchmark_report_fails_the_aggregate_before_merge`
+executes it with a tampered report to show `test` and therefore `Release surfaces` fail on
+`merge_group` and `pull_request`.
+
 `.github/workflows/codspeed.yml` runs nightly on the latest `main` commit and
 allows an on-demand manual run from `main`; it does not run for pull requests
 or pushes. A
