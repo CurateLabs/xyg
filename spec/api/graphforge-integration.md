@@ -136,7 +136,7 @@ message}`). Details: design §6.4.
 | WASM ABI | 27 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 31 | `SCENE_VERSION` |
 | Paint protocol | 13 | `PROTOCOL_VERSION` (typed tooltip columns) |
-| `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
+| `XYGF` composition semantics | 2 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 1 | `composition.ledgerVersion` |
 | GraphForge algorithm / search schema | 1 / 1 | ledger (GraphForge 0.5.2: 94 algorithms) |

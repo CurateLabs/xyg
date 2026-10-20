@@ -16,11 +16,14 @@ use super::recognize::{recognize, Recognized};
 use super::request::{self, ExtraPolicy, LayerRequest, MissingPolicy, Request};
 use super::{GfError, GfResult, Uuid, UuidKey, NIL_UUID};
 use crate::arrow_ipc::{read_table, DataType, Table};
+use crate::graph::COSE_NO_PARENT;
 use crate::graph_style::{semantic_palette, FLAG_DISABLED, FLAG_SELECTED, THEME_DARK, THEME_LIGHT};
 
 /// Version of the composition semantics carried by `XYGF` documents. Bumps
-/// when a plane's meaning changes; added sections do not bump it.
-pub const COMPOSITION_VERSION: u32 = 1;
+/// when a plane's meaning changes; added sections do not bump it, except that
+/// version 2 makes the document the single carrier of the compound hierarchy
+/// (`node.parent`, `node.parent.valid`).
+pub const COMPOSITION_VERSION: u32 = 2;
 /// Absent row / index sentinel in u64 planes.
 pub const NONE_U64: u64 = u64::MAX;
 /// Absent layer sentinel in u32 planes.
@@ -1575,6 +1578,30 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
         &pick_f64(&planes.node_priority, &nodes),
     );
 
+    // Compound hierarchy in composed node indices. A child whose parent was
+    // hidden attaches to its nearest visible ancestor (counted, never silent).
+    let mut reparented = 0u64;
+    if !base.node_parent.is_empty() {
+        let mut parent = Vec::with_capacity(nodes.len());
+        let mut valid = Vec::with_capacity(nodes.len());
+        for &node in &nodes {
+            let mut up = base.node_parent[node];
+            let direct = up;
+            while up != COSE_NO_PARENT && remap[up as usize] == NONE_U64 {
+                up = base.node_parent[up as usize];
+            }
+            reparented += u64::from(up != direct);
+            valid.push(u8::from(up != COSE_NO_PARENT));
+            parent.push(if up == COSE_NO_PARENT {
+                NONE_U32
+            } else {
+                remap[up as usize] as u32
+            });
+        }
+        out.u32s("node.parent", 0, &parent);
+        out.u8s("node.parent.valid", 0, &valid);
+    }
+
     let (mut sources, mut targets) = (
         Vec::with_capacity(edges.len()),
         Vec::with_capacity(edges.len()),
@@ -1771,6 +1798,13 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
             code: "GF_COMPOSE_PATHS_HIDDEN",
             layer: None,
             count: hidden_paths,
+        });
+    }
+    if reparented > 0 {
+        decisions.push(Decision {
+            code: "GF_COMPOSE_PARENT_REPARENTED",
+            layer: None,
+            count: reparented,
         });
     }
     if cascaded > 0 {

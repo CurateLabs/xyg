@@ -12,16 +12,27 @@
 //! UUIDs are merged; a relationship seen twice must name the same endpoints.
 //! Merges are counted, never silent. The canonical graph is never mutated by
 //! any composition layer.
+//!
+//! A flat node table may carry an optional `parent_uuid` column (the compound
+//! hierarchy; same name as the Python `GraphData` mapping default). Parents
+//! resolve through the shared [`resolve_parents`] and must form a forest:
+//! unknown parents, self-parents, and cycles fail the whole build.
 
 use super::columns::{texts, uuids};
 use super::{uuid_map, GfError, GfResult, Uuid, UuidKey, UuidMap, NIL_UUID};
 use crate::arrow_ipc::{Column, DataType, Table};
+use crate::graph::COSE_NO_PARENT;
+use crate::projection::{
+    resolve_parents, validate_parent_forest, ParentForestError, ProjectionError,
+};
 
 /// Hard bounds on the canonical base graph.
 pub const MAX_BASE_NODES: usize = 20_000_000;
 pub const MAX_BASE_EDGES: usize = 50_000_000;
 /// Per-label text bound (display labels are truncated far earlier).
 pub const MAX_LABEL_BYTES: usize = 1024;
+/// Optional flat-node-table column naming each node's compound parent.
+pub const PARENT_FIELD: &str = "parent_uuid";
 
 #[derive(Debug, Default)]
 pub struct BaseGraph {
@@ -40,6 +51,9 @@ pub struct BaseGraph {
     pub directed: bool,
     /// Rows that repeated an already-collected entity.
     pub merged_entities: u64,
+    /// Compound parent per node (dense base index, [`COSE_NO_PARENT`] for
+    /// roots). Empty when no node table carried `parent_uuid`.
+    pub node_parent: Vec<u64>,
 }
 
 #[derive(Default)]
@@ -48,6 +62,10 @@ struct Collector {
     /// `(edge uuid, source uuid, target uuid, type)` resolved after all nodes.
     pending_edges: Vec<(Uuid, Uuid, Uuid, Option<String>)>,
     pending_index: UuidMap,
+    /// Parent UUID per collected node, parallel to `graph.node_uuid`.
+    pending_parents: Vec<Option<Uuid>>,
+    /// Whether any node table carried a `parent_uuid` column.
+    has_parents: bool,
 }
 
 fn bounded_label(text: Option<&str>) -> Option<String> {
@@ -98,9 +116,26 @@ impl Collector {
                 self.graph.node_uuid.push(id);
                 self.graph.node_name.push(bounded_label(name));
                 self.graph.node_type.push(bounded_label(kind));
+                self.pending_parents.push(None);
             }
         }
         Ok(())
+    }
+
+    /// Record `parent` for the already-collected node `id`; repeated rows
+    /// must agree.
+    fn parent(&mut self, id: Uuid, parent: Uuid) -> GfResult<()> {
+        let dense = self.graph.node_index[&UuidKey(id)];
+        match self.pending_parents[dense] {
+            Some(existing) if existing != parent => Err(GfError::new(
+                "GF_BASE_PARENT_CONFLICT",
+                "a node UUID appears with two different parents",
+            )),
+            _ => {
+                self.pending_parents[dense] = Some(parent);
+                Ok(())
+            }
+        }
     }
 
     fn edge(&mut self, id: Uuid, source: Uuid, target: Uuid, kind: Option<&str>) -> GfResult<()> {
@@ -280,8 +315,19 @@ impl Collector {
                 ids.len(),
             );
             let kinds = Self::first_labels(table.column("labels"), ids.len());
-            for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
-                self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
+            let parents = match table.column(PARENT_FIELD) {
+                Some(column) => {
+                    self.has_parents = true;
+                    uuids(&column, true)?
+                }
+                None => vec![None; ids.len()],
+            };
+            for (((id, name), kind), parent) in ids.into_iter().zip(names).zip(kinds).zip(parents) {
+                let id = id.ok_or_else(|| null_identity("node_uuid"))?;
+                self.node(id, name, kind)?;
+                if let Some(parent) = parent {
+                    self.parent(id, parent)?;
+                }
             }
             return Ok(());
         }
@@ -295,6 +341,52 @@ impl Collector {
                 "base table carries no GraphForge node or relationship identity",
             ));
         }
+        Ok(())
+    }
+
+    /// Resolve and validate the compound hierarchy (all-or-nothing).
+    fn resolve_hierarchy(&mut self) -> GfResult<()> {
+        if !self.has_parents {
+            return Ok(());
+        }
+        let ids: Vec<Uuid> = self
+            .pending_parents
+            .iter()
+            .map(|parent| parent.unwrap_or(NIL_UUID))
+            .collect();
+        let validity: Vec<u8> = self
+            .pending_parents
+            .iter()
+            .map(|parent| u8::from(parent.is_some()))
+            .collect();
+        let (parents, validity) = resolve_parents(&ids, &validity, ids.len(), |id| {
+            self.graph.node_index.get(&UuidKey(*id)).map(|&i| i as u64)
+        })
+        .map_err(|error| match error {
+            ProjectionError::MissingEndpoint => GfError::new(
+                "GF_BASE_PARENT_UNKNOWN",
+                "a node names a parent that is absent from the base nodes",
+            ),
+            ProjectionError::MalformedUuid => null_identity(PARENT_FIELD),
+            _ => GfError::new(
+                "GF_COMPOSE_REQUEST_INVALID",
+                "base parent planes are malformed",
+            ),
+        })?;
+        validate_parent_forest(&parents, &validity).map_err(|error| match error {
+            ParentForestError::SelfParent(_) => {
+                GfError::new("GF_BASE_PARENT_SELF", "a node names itself as its parent")
+            }
+            ParentForestError::Cycle(_) => GfError::new(
+                "GF_BASE_PARENT_CYCLE",
+                "the base node parents contain a cycle",
+            ),
+        })?;
+        self.graph.node_parent = parents
+            .iter()
+            .zip(&validity)
+            .map(|(&parent, &valid)| if valid == 1 { parent } else { COSE_NO_PARENT })
+            .collect();
         Ok(())
     }
 
@@ -327,6 +419,7 @@ impl Collector {
         if self.graph.node_uuid.is_empty() {
             return Err(GfError::new("GF_BASE_EMPTY", "the base graph has no nodes"));
         }
+        self.resolve_hierarchy()?;
         Ok(self.graph)
     }
 }
@@ -368,6 +461,8 @@ pub fn build(
         },
         pending_edges: Vec::new(),
         pending_index: uuid_map(0),
+        pending_parents: Vec::new(),
+        has_parents: false,
     };
     if let Some(planes) = planes {
         if planes.edge_source.len() != planes.edge_uuid.len()
@@ -489,5 +584,41 @@ mod tests {
             build(&[], Some(planes), true).unwrap_err().code,
             "GF_BASE_EDGE_CONFLICT"
         );
+    }
+
+    fn hierarchy_base(nodes: &str) -> GfResult<BaseGraph> {
+        let nodes = std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/{nodes}.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let edges = load("base-dag-edges");
+        let tables = [read_table(&nodes).unwrap(), read_table(&edges).unwrap()];
+        build(&tables, None, true)
+    }
+
+    #[test]
+    fn parent_uuid_column_resolves_to_a_dense_forest() {
+        let graph = hierarchy_base("hierarchy_dag_nodes").unwrap();
+        assert_eq!(graph.node_parent, [COSE_NO_PARENT, 0, 1, COSE_NO_PARENT]);
+        // Tables without the column carry no hierarchy plane at all.
+        let (nodes, edges) = (load("base-dag-nodes"), load("base-dag-edges"));
+        let tables = [read_table(&nodes).unwrap(), read_table(&edges).unwrap()];
+        let plain = build(&tables, None, true).unwrap();
+        assert!(plain.node_parent.is_empty());
+    }
+
+    #[test]
+    fn invalid_hierarchies_fail_atomically_with_stable_codes() {
+        for (fixture, code) in [
+            (
+                "hierarchy_dag_nodes_unknown_parent",
+                "GF_BASE_PARENT_UNKNOWN",
+            ),
+            ("hierarchy_dag_nodes_self_parent", "GF_BASE_PARENT_SELF"),
+            ("hierarchy_dag_nodes_cycle", "GF_BASE_PARENT_CYCLE"),
+        ] {
+            assert_eq!(hierarchy_base(fixture).unwrap_err().code, code, "{fixture}");
+        }
     }
 }

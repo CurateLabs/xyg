@@ -399,6 +399,12 @@ is never serialized into `spec.graph` or the paint payload.
 
 ## 7. Interaction
 
+Retained interaction (coordinated selection, focus, pin/drag/relayout, picks,
+and accessibility) over composed graphs is specified in
+[graph-interaction.md](graph-interaction.md); slice S1 (composition hierarchy,
+identity, the shared interaction state, session create/select/focus) is
+implemented, the render/pick pipeline and hosts follow per its slice table.
+
 - Pan / zoom / fit (chart view) — zoom drives §1.4 LOD, not client-side
   topology walks.
 - Pick nodes via scatter GPU pick; edges via segment hit or neighbor of picked node.
