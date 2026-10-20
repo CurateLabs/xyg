@@ -5,9 +5,12 @@
 use std::sync::{Arc, Mutex};
 
 use super::*;
+use crate::graph::COSE_NO_PARENT;
 use crate::graph_interaction_state::{DerivedKey, GraphEntity, MAX_GRAPH_SELECTION_REFS};
 use crate::graphforge::base;
-use crate::graphforge::compose::{compose_bytes, COMPOSITION_VERSION, NONE_U32, NONE_U64};
+use crate::graphforge::compose::{
+    compose_bytes, nearest_visible_ancestors, COMPOSITION_VERSION, NONE_U32, NONE_U64,
+};
 use crate::graphforge::container::{Builder, Container, DOCUMENT_MAGIC, REQUEST_MAGIC};
 use crate::graphforge::identity::{
     AggregateRef, DerivedRef, Fnv1a, GraphIdentity, ResolveError, ResultHash, ResultRef,
@@ -410,6 +413,97 @@ fn load_pinned_seeds_the_uuid_keyed_pin_set() {
     assert_eq!(s.pinned().unwrap(), [id(1), id(3)]);
 }
 
+/// The definition: walk up through hidden ancestors, one node at a time.
+fn naive_nearest_visible(parent: &[u64], visible: &[bool]) -> Vec<u64> {
+    (0..parent.len())
+        .map(|node| {
+            let mut up = parent[node];
+            while up != COSE_NO_PARENT && !visible[up as usize] {
+                up = parent[up as usize];
+            }
+            up
+        })
+        .collect()
+}
+
+#[test]
+fn nearest_visible_ancestors_match_the_walking_definition_on_random_forests() {
+    let mut state = 0x2545_f491_4f6c_dd1du64;
+    let mut next = move |bound: u64| {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        state % bound
+    };
+    for round in 0..200 {
+        let n = 1 + next(40) as usize;
+        // Parents point backwards in rank, then ranks are relabelled so a
+        // parent may have a larger index than its child.
+        let mut label: Vec<usize> = (0..n).collect();
+        for i in (1..n).rev() {
+            label.swap(i, next(i as u64 + 1) as usize);
+        }
+        let mut parent = vec![COSE_NO_PARENT; n];
+        for rank in 1..n {
+            if next(4) != 0 {
+                parent[label[rank]] = label[next(rank as u64) as usize] as u64;
+            }
+        }
+        let visible: Vec<bool> = (0..n).map(|_| next(3) == 0).collect();
+        assert_eq!(
+            nearest_visible_ancestors(&parent, &visible),
+            naive_nearest_visible(&parent, &visible),
+            "round {round}"
+        );
+    }
+}
+
+#[test]
+fn a_deep_shared_hidden_ancestry_is_resolved_in_linear_time() {
+    // 100,000 hidden chain nodes, then 100,000 visible children of the bottom
+    // one: the walking definition needs ~10^10 steps, the memoized pass ~10^5.
+    let chain = 100_000usize;
+    let n = 2 * chain;
+    let mut parent = vec![COSE_NO_PARENT; n];
+    for node in 1..chain {
+        parent[node] = (node - 1) as u64;
+    }
+    for child in chain..n {
+        parent[child] = (chain - 1) as u64;
+    }
+    // The root is visible; everything else in the chain is hidden.
+    let mut visible = vec![false; n];
+    visible[0] = true;
+    for flag in &mut visible[chain..] {
+        *flag = true;
+    }
+    let started = std::time::Instant::now();
+    let ancestor = nearest_visible_ancestors(&parent, &visible);
+    assert!(started.elapsed().as_secs() < 5, "quadratic ancestor walk");
+    assert!(ancestor[chain..].iter().all(|&a| a == 0));
+    assert_eq!(ancestor[1], 0);
+    assert_eq!(ancestor[0], COSE_NO_PARENT);
+}
+
+#[test]
+fn a_malformed_result_id_rejects_the_session_instead_of_reading_as_absent() {
+    let good = handmade(&[id(1), id(2)], &[], &[None]);
+    // Same document, but layer 0 carries a result id of the wrong element type.
+    let mut b = Builder::new(DOCUMENT_MAGIC);
+    b.extend_from(&Container::decode(&good, DOCUMENT_MAGIC).unwrap());
+    b.u32s("layer.result_id", 0, &[7]);
+    let bad = b.finish();
+    let doc = ComposedDocument::decode(&bad).unwrap();
+    assert_eq!(doc.result_id(0).unwrap_err().code, "GF_INTERACTION_INVALID");
+    assert!(GraphIdentity::<Fnv1a>::from_document(&doc).is_err());
+    assert_eq!(
+        GraphSession::create(&bad, SessionLoad::default(), 1).map(|_| ()),
+        Err(InteractionStatus::Invalid)
+    );
+    // The well-formed absent id still creates a session.
+    assert!(GraphSession::create(&good, SessionLoad::default(), 1).is_ok());
+}
+
 // -- identity ----------------------------------------------------------------
 
 fn assert_roundtrips<H: ResultHash>(identity: &GraphIdentity<H>) {
@@ -803,7 +897,7 @@ fn focus_is_independent_of_selection_and_survives_clear() {
     );
     s.select_focused(header(&s, 5), SelectMode::Replace)
         .unwrap();
-    assert_eq!(s.selection().unwrap(), [derived.clone()]);
+    assert_eq!(s.selection().unwrap(), std::slice::from_ref(&derived));
     let cleared = s.clear(header(&s, 6)).unwrap();
     assert!(cleared.state_changed);
     assert!(

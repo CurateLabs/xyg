@@ -188,8 +188,8 @@ impl<H: ResultHash> GraphIdentity<H> {
 
         let mut results = ResultTable::default();
         let layer_result = (0..doc.layer_count())
-            .map(|layer| results.intern(doc.result_id(layer).as_deref()))
-            .collect::<Vec<_>>();
+            .map(|layer| Ok(results.intern(doc.result_id(layer)?.as_deref())))
+            .collect::<GfResult<Vec<_>>>()?;
 
         let mut node_index = uuid_map(node_uuid.len());
         for (dense, &id) in node_uuid.iter().enumerate() {
@@ -216,11 +216,13 @@ impl<H: ResultHash> GraphIdentity<H> {
             // Overlay steps are unique by (path, step). Derived pairs have no
             // overlay: their layer's result row is the unique discriminator.
             let order = if edge_path[edge] == NONE_U64 {
-                if !layer_rows.contains_key(&layer) {
-                    layer_rows.insert(layer, doc.edge_rows(layer)?);
-                }
-                layer_rows[&layer]
-                    .get(edge)
+                let rows = match layer_rows.entry(layer) {
+                    std::collections::hash_map::Entry::Occupied(rows) => rows.into_mut(),
+                    std::collections::hash_map::Entry::Vacant(slot) => {
+                        slot.insert(doc.edge_rows(layer)?)
+                    }
+                };
+                rows.get(edge)
                     .copied()
                     .filter(|&row| row != NONE_U64)
                     .ok_or_else(|| invalid("a derived edge has no result row"))?

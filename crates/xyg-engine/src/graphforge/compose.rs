@@ -1458,6 +1458,34 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
     }
 }
 
+/// Nearest *visible proper* ancestor of every node ([`COSE_NO_PARENT`] when
+/// none), for a parent forest. Memoized along each climbed chain, so a shared
+/// hidden ancestry is walked once: O(n) instead of O(n x depth).
+pub(super) fn nearest_visible_ancestors(parent: &[u64], visible: &[bool]) -> Vec<u64> {
+    let mut ancestor: Vec<Option<u64>> = vec![None; parent.len()];
+    let mut chain = Vec::new();
+    for start in 0..parent.len() {
+        let mut node = start;
+        // Climb through hidden parents until a node whose answer is known.
+        while ancestor[node].is_none() {
+            let up = parent[node];
+            if up == COSE_NO_PARENT || visible[up as usize] {
+                ancestor[node] = Some(up);
+            } else {
+                chain.push(node);
+                node = up as usize;
+            }
+        }
+        while let Some(below) = chain.pop() {
+            ancestor[below] = ancestor[parent[below] as usize];
+        }
+    }
+    ancestor
+        .into_iter()
+        .map(|a| a.expect("every node was resolved"))
+        .collect()
+}
+
 /// Append the direct-tier canonical Scene (spec §6.3) to a graph document.
 fn with_scene(document: Vec<u8>, render: &super::request::Render<'_>) -> GfResult<Vec<u8>> {
     let decoded = super::container::Container::decode(&document, DOCUMENT_MAGIC)?;
@@ -1582,15 +1610,13 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     // hidden attaches to its nearest visible ancestor (counted, never silent).
     let mut reparented = 0u64;
     if !base.node_parent.is_empty() {
+        let visible: Vec<bool> = remap.iter().map(|&dense| dense != NONE_U64).collect();
+        let ancestor = nearest_visible_ancestors(&base.node_parent, &visible);
         let mut parent = Vec::with_capacity(nodes.len());
         let mut valid = Vec::with_capacity(nodes.len());
         for &node in &nodes {
-            let mut up = base.node_parent[node];
-            let direct = up;
-            while up != COSE_NO_PARENT && remap[up as usize] == NONE_U64 {
-                up = base.node_parent[up as usize];
-            }
-            reparented += u64::from(up != direct);
+            let up = ancestor[node];
+            reparented += u64::from(up != base.node_parent[node]);
             valid.push(u8::from(up != COSE_NO_PARENT));
             parent.push(if up == COSE_NO_PARENT {
                 NONE_U32

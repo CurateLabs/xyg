@@ -62,8 +62,10 @@ struct Collector {
     /// `(edge uuid, source uuid, target uuid, type)` resolved after all nodes.
     pending_edges: Vec<(Uuid, Uuid, Uuid, Option<String>)>,
     pending_index: UuidMap,
-    /// Parent UUID per collected node, parallel to `graph.node_uuid`.
-    pending_parents: Vec<Option<Uuid>>,
+    /// Declared parent per collected node, parallel to `graph.node_uuid`:
+    /// `None` no `parent_uuid` row seen, `Some(None)` declared root (null),
+    /// `Some(Some(p))` declared under `p`.
+    pending_parents: Vec<Option<Option<Uuid>>>,
     /// Whether any node table carried a `parent_uuid` column.
     has_parents: bool,
 }
@@ -122,14 +124,15 @@ impl Collector {
         Ok(())
     }
 
-    /// Record `parent` for the already-collected node `id`; repeated rows
-    /// must agree.
-    fn parent(&mut self, id: Uuid, parent: Uuid) -> GfResult<()> {
+    /// Record a `parent_uuid` row for the already-collected node `id` (`None`
+    /// is an explicit root). Repeated rows must declare the same thing: a root
+    /// and a parented declaration conflict, in either order.
+    fn parent(&mut self, id: Uuid, parent: Option<Uuid>) -> GfResult<()> {
         let dense = self.graph.node_index[&UuidKey(id)];
         match self.pending_parents[dense] {
             Some(existing) if existing != parent => Err(GfError::new(
                 "GF_BASE_PARENT_CONFLICT",
-                "a node UUID appears with two different parents",
+                "a node UUID appears with two different parent declarations",
             )),
             _ => {
                 self.pending_parents[dense] = Some(parent);
@@ -318,15 +321,15 @@ impl Collector {
             let parents = match table.column(PARENT_FIELD) {
                 Some(column) => {
                     self.has_parents = true;
-                    uuids(&column, true)?
+                    Some(uuids(&column, true)?)
                 }
-                None => vec![None; ids.len()],
+                None => None,
             };
-            for (((id, name), kind), parent) in ids.into_iter().zip(names).zip(kinds).zip(parents) {
+            for (row, ((id, name), kind)) in ids.into_iter().zip(names).zip(kinds).enumerate() {
                 let id = id.ok_or_else(|| null_identity("node_uuid"))?;
                 self.node(id, name, kind)?;
-                if let Some(parent) = parent {
-                    self.parent(id, parent)?;
+                if let Some(parents) = &parents {
+                    self.parent(id, parents[row])?;
                 }
             }
             return Ok(());
@@ -352,12 +355,12 @@ impl Collector {
         let ids: Vec<Uuid> = self
             .pending_parents
             .iter()
-            .map(|parent| parent.unwrap_or(NIL_UUID))
+            .map(|parent| parent.flatten().unwrap_or(NIL_UUID))
             .collect();
         let validity: Vec<u8> = self
             .pending_parents
             .iter()
-            .map(|parent| u8::from(parent.is_some()))
+            .map(|parent| u8::from(parent.flatten().is_some()))
             .collect();
         let (parents, validity) = resolve_parents(&ids, &validity, ids.len(), |id| {
             self.graph.node_index.get(&UuidKey(*id)).map(|&i| i as u64)
@@ -620,5 +623,38 @@ mod tests {
         ] {
             assert_eq!(hierarchy_base(fixture).unwrap_err().code, code, "{fixture}");
         }
+    }
+
+    #[test]
+    fn a_root_and_a_parent_declaration_for_one_node_conflict_in_either_order() {
+        let read_fixture = |name: &str| {
+            std::fs::read(format!(
+                "{}/../../tests/fixtures/graphforge/{name}.arrow",
+                env!("CARGO_MANIFEST_DIR")
+            ))
+            .unwrap()
+        };
+        let (roots, forest, edges) = (
+            read_fixture("hierarchy_dag_roots"),
+            read_fixture("hierarchy_dag_nodes"),
+            load("base-dag-edges"),
+        );
+        let build_order = |first: &[u8], second: &[u8]| {
+            let tables = [
+                read_table(first).unwrap(),
+                read_table(second).unwrap(),
+                read_table(&edges).unwrap(),
+            ];
+            build(&tables, None, true)
+        };
+        for (first, second) in [(&roots, &forest), (&forest, &roots)] {
+            assert_eq!(
+                build_order(first, second).unwrap_err().code,
+                "GF_BASE_PARENT_CONFLICT"
+            );
+        }
+        // Agreeing repeats are not a conflict: null twice is the same root.
+        let graph = build_order(&roots, &roots).unwrap();
+        assert_eq!(graph.node_parent, [COSE_NO_PARENT; 4]);
     }
 }

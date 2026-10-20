@@ -109,12 +109,17 @@ impl<'a> ComposedDocument<'a> {
         }
     }
 
-    /// The caller-supplied result id of a layer, when it had one.
-    pub fn result_id(&self, layer: usize) -> Option<String> {
+    /// The caller-supplied result id of a layer, when it had one. A present
+    /// but mistyped or non-UTF-8 id is an error, never "no id".
+    pub fn result_id(&self, layer: usize) -> GfResult<Option<String>> {
         self.container
             .get("layer.result_id", layer as u32)
-            .and_then(|s| s.as_utf8("layer.result_id").ok())
-            .map(str::to_owned)
+            .map(|s| {
+                s.as_utf8("layer.result_id")
+                    .map(str::to_owned)
+                    .map_err(retype)
+            })
+            .transpose()
     }
 
     /// Result row of every composed edge in `layer` (`u64::MAX` absent).

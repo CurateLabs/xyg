@@ -258,7 +258,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging enforces 1,472 KiB raw / 612 KiB gzip limits (the 612 KiB gzip limit is the #36 S1 decision below). The release compiler and pinned Binaryen 132 `-O3
+packaging enforces 1,480 KiB raw / 612 KiB gzip limits (both raised by the #36 S1 decision below). The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -1098,9 +1098,10 @@ No alternate compiler profile is adopted and no runtime speedup is claimed.
 document now carries the compound hierarchy (`parent_uuid` resolution, forest
 validation, hidden-parent re-attachment, composition version 2), all in the
 shared Rust `compose` path that the direct browser runs. On the unchanged
-release profile this moved the level-6 gzip artifact to 624,045 bytes, 1,453
-over the 622,592-byte limit; raw size stays under its limit. The gzip hard limit
-is raised to **626,688 bytes (612 KiB)**, a 4 KiB step sized to this change; the
+release profile this moved the level-6 gzip artifact to 624,045 bytes (1,453
+over the 622,592-byte limit) and the raw artifact to 1,512,618 bytes (5,290 over
+the 1,507,328-byte limit). The hard limits are raised to **1,515,520 raw bytes
+(1,480 KiB) and 626,688 gzip bytes (612 KiB)**, steps sized to this change; the
 retained interaction session itself is not exported from WASM until the session
 ABI slice, which will record its own size decision. Compiler profile unchanged.
 

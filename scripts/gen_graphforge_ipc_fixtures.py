@@ -49,6 +49,9 @@ def _hierarchy_fixtures() -> None:
     _write("hierarchy_dag_nodes_unknown_parent.arrow", table([None, unknown, None, None]))
     _write("hierarchy_dag_nodes_self_parent.arrow", table([None, ids[1], None, None]))
     _write("hierarchy_dag_nodes_cycle.arrow", table([None, ids[2], ids[1], None]))
+    # Every node an explicit root (null parent): conflicts with the forest above
+    # when a node is declared both ways across tables, in either order.
+    _write("hierarchy_dag_roots.arrow", table([None, None, None, None]))
 
 
 def main() -> None:

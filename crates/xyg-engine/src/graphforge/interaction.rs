@@ -113,7 +113,7 @@ pub trait TemporalHost: Send + Sync {
 
 /// Where a session's interaction state lives.
 pub enum StateSlot {
-    Owned(GraphInteractionState),
+    Owned(Box<GraphInteractionState>),
     /// No state of its own: every access runs on the temporal graph's value.
     Bound {
         host: Arc<dyn TemporalHost>,
@@ -228,7 +228,7 @@ impl GraphSession {
             collapsed,
             budgets,
             seed: load.seed,
-            slot: StateSlot::Owned(state),
+            slot: StateSlot::Owned(Box::new(state)),
             render_revision: 0,
             last_op: None,
         })
@@ -378,7 +378,7 @@ impl GraphSession {
     /// Leave the temporal graph (which keeps its state) for a fresh empty
     /// `Owned` state.
     pub fn unbind(&mut self) {
-        self.slot = StateSlot::Owned(GraphInteractionState::default());
+        self.slot = StateSlot::Owned(Box::default());
     }
 
     // -- operations -----------------------------------------------------------
