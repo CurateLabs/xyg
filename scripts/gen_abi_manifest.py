@@ -366,11 +366,17 @@ def _rejection_diagnostic(text: str, fn_start: int) -> Optional[str]:
         if not doc and (stripped.startswith("#[") or not stripped):
             continue
         break
-    paragraphs = " ".join(reversed(doc)).split("  ")
-    # Paragraph breaks are the empty `///` lines, which join as double spaces.
+    # Paragraphs are separated by empty `///` lines, never by spacing in prose.
+    paragraphs: list[list[str]] = [[]]
+    for line in reversed(doc):
+        if line:
+            paragraphs[-1].append(line)
+        elif paragraphs[-1]:
+            paragraphs.append([])
     for paragraph in paragraphs:
-        if paragraph.strip().startswith(_DIAGNOSTIC_MARKER):
-            return " ".join(paragraph.split())
+        joined = " ".join(" ".join(paragraph).split())
+        if joined.startswith(_DIAGNOSTIC_MARKER):
+            return joined
     return None
 
 
@@ -935,7 +941,9 @@ def render_c_header(manifest: dict[str, Any]) -> str:
         for contract_comment in _length_contract_comments(symbol):
             lines.append(f"/* Buffer contract: {contract_comment}. */")
         if "rejection_diagnostic" in symbol:
-            lines.append(f"/* {symbol['rejection_diagnostic']} */")
+            # Doc text must never close the C comment early.
+            diagnostic = symbol["rejection_diagnostic"].replace("*/", "* /")
+            lines.append(f"/* {diagnostic} */")
         lines.append(f"{symbol['c_signature']};")
     lines.extend(
         [

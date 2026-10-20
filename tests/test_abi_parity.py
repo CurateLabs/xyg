@@ -550,3 +550,26 @@ def test_rejection_diagnostic_is_never_borrowed_from_an_earlier_symbol() -> None
         "Rejection diagnostic: writes a NUL-terminated reason."
     )
     assert gen_abi_manifest._rejection_diagnostic(source, undocumented) is None
+
+
+def test_rejection_diagnostic_keeps_prose_spacing_and_cannot_close_the_header_comment() -> None:
+    source = (
+        "pub const ABI_VERSION: u32 = 1;\n"
+        "/// Exports a document.\n"
+        "///\n"
+        "/// Rejection diagnostic: first.  Second sentence with `*/` in it.\n"
+        "/// Continues on a second line.\n"
+        "///\n"
+        "/// Trailing paragraph.\n"
+        "#[no_mangle]\n"
+        'pub extern "C" fn xyg_doc(value: u32) -> i32 { 0 }\n'
+    )
+    manifest = gen_abi_manifest.parse_rust_abi(source)
+    diagnostic = manifest["symbols"][0]["rejection_diagnostic"]
+    assert diagnostic == (
+        "Rejection diagnostic: first. Second sentence with `*/` in it. Continues on a second line."
+    )
+    header = gen_abi_manifest.render_c_header(manifest)
+    comment = next(line for line in header.splitlines() if "Rejection diagnostic" in line)
+    assert comment.startswith("/* ") and comment.endswith(" */")
+    assert "*/" not in comment[3:-3]
