@@ -514,6 +514,25 @@ test("hexbin kernel matches Python fixture when present", () => {
   assert.equal(fig.buildPayload().spec.traces[0].kind, "hexbin");
 });
 
+test("hexbinChart bins the raw points once at the requested gridsize (#887)", () => {
+  const n = 5000;
+  const x = Float64Array.from({ length: n }, (_, i) => ((i * 7919) % 10007) / 10007);
+  const y = Float64Array.from({ length: n }, (_, i) => ((i * 104729) % 10009) / 10009);
+  for (const gridsize of [[12, 12], [40, 30]]) {
+    const direct = composeHexbin(x, y, { gridsize });
+    const trace = hexbinChart(x, y, { gridsize }).traces[0];
+    // Re-binning pre-binned centres at the default gridsize collapsed every
+    // chart to the same ~16-wide lattice regardless of `gridsize`.
+    assert.equal(trace.x.length, direct.centersX.length);
+    assert.equal(f64Hex(trace.x), f64Hex(direct.centersX));
+    assert.equal(f64Hex(trace.y), f64Hex(direct.centersY));
+    assert.equal(trace.style.hex_dx, direct.dx);
+  }
+  const small = hexbinChart(x, y, { gridsize: [12, 12] }).traces[0].x.length;
+  const large = hexbinChart(x, y, { gridsize: [40, 30] }).traces[0].x.length;
+  assert.ok(large > 3 * small);
+});
+
 test("hexbin auto domain and default aspect are rust-owned", () => {
   const x = new Float64Array([Number.NaN, 10, Number.POSITIVE_INFINITY, 10]);
   const y = new Float64Array([0, 4, 1, 4]);

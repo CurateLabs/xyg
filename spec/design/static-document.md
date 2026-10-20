@@ -174,14 +174,36 @@ call raises the listed stable `XYG_*` reason.
   of XYST. Unoutlined painted affine Cartesian and polar heatmaps lower in Rust
   to one RGBA Image record and share Scene's 2,000,000-pixel image ceiling;
   nonlinear Cartesian axes and authored visible per-cell outlines retain
-  transformed cell records and the 10,000-record cell ceiling. The Scene
-  consumer's existing 1,024 PolyFill-group ceiling remains
-  authoritative. A pyplot hexbin above that bound (including the original
-  100,000-source-row, `gridsize=50` gallery witness that yields 1,226 cells)
-  fails closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`, with no host-renderer
-  retry. [Issue #887](https://github.com/CurateLabs/xyg/issues/887) tracks the
-  separately versioned Rust admission and resource proof needed for a future
-  static-only larger group budget.
+  transformed cell records and the 10,000-record cell ceiling.
+  Hexbin keeps one literal 6-vertex PolyFill group per lattice cell (the
+  seam-free, fully attributable representation; an RGBA Image would lose the
+  hexagon geometry), so no cell is ever dropped, merged, or decimated. Static
+  hexbin cells are budgeted independently of the 1,024-group browser painter
+  and triangle-mesh budgets: the public-export predicate admits at most
+  **50,000 hexbin cells in aggregate across a document's hexbin traces**
+  (`MAX_PUBLIC_HEXBIN_CELLS`; the default-gridsize Matplotlib lattice is
+  11,558 cells and the original 100,000-row `gridsize=50` gallery witness is
+  1,226). One cell over fails closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in
+  both hosts, with no host-renderer retry. The ceiling is product policy, not
+  a buffer limit: when a host's initial output buffer is too small,
+  `xyg_scene_encode_product` returns `-4` and writes the exact required byte
+  count as a little-endian u32 into `out[0..4]` when capacity is at least
+  four bytes (capacities 0–3 remain untouched). This includes short support
+  diagnostics: the required size includes the four-byte reason-length prefix
+  plus the UTF-8 reason; retrying with that size returns `-801` and the complete
+  diagnostic. Rust checks that this envelope size fits u32 before reporting it;
+  an unrepresentable envelope returns `-3` with the `u32::MAX` marker when the
+  size slot fits. Hosts retry once with the reported
+  size and otherwise raise a specific "output buffer too small" diagnostic
+  (never the generic scene-batch error). Constant-paint hexbin (tiny input, six
+  56-byte Scene records per cell) and mixed documents are covered by the
+  cross-host test. The browser painter keeps its separate
+  1,024-group ceiling (`XYG_PAINTER_TRACE_LIMIT`); this change does not alter
+  any browser resource budget. Evidence for issue #887:
+  `tests/test_static_hexbin_cross_host.py` (Python/Node byte identity, scene
+  SVG, document SVG, PNG), the Rust boundary test at 1,024 / 1,025 / 11,558 /
+  50,000 / 50,001 cells, and
+  `spec/performance/hexbin-static-887-2026-10-20/` (`scripts/bench_hexbin_static.py`).
 
   Rust owns these validated Scene behaviors for every host (#1006): an empty
   line/scatter trace is a no-op that emits no marks; per-segment colormapped

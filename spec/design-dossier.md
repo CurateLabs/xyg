@@ -672,7 +672,9 @@ F3, still pending (above).
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
-  the browser painter's 1,024-group ceiling. Explicit
+  the browser painter's 1,024-group ceiling; hexbin cells are the exception
+  and carry their own recorded 50,000-cell aggregate ceiling (§28: a hard
+  fail-closed `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`, never silent decimation). Explicit
   Scene APIs retain no second fallback predicate. Rust also owns
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;

@@ -422,6 +422,35 @@ def test_manifest_documents_fused_png_output_slice_bounds() -> None:
         assert rendered.count("out_capacity must be 1..=isize::MAX bytes") == 3
 
 
+def test_manifest_documents_product_encode_required_size_contract() -> None:
+    manifest = gen_abi_manifest.generate_manifest()
+    symbol = next(
+        item for item in manifest["symbols"] if item["name"] == "xyg_scene_encode_product"
+    )
+    out = next(item for item in symbol["arguments"] if item["name"] == "out")
+    assert out["type"]["length_contract"] == {
+        "unit": "bytes",
+        "capacity_argument": "out_cap",
+        "maximum_total_bytes": "i32::MAX",
+        "payload_format": "encoded Scene v33 batch",
+        "short_capacity": "report_required_size",
+        "required_size_slot": "out[0..4] little-endian u32 when capacity >= 4",
+        "required_size_status": -4,
+        "capacity_below_size_slot": "no_size_written",
+        "host_retry": "once_with_reported_size",
+        "oversized_output_status": -3,
+        "oversized_output_marker": "0xFFFFFFFF in out[0..4]",
+        "success_status": "encoded_byte_count",
+    }
+    for rendered in (
+        gen_abi_manifest.render_python_bindings(manifest),
+        gen_abi_manifest.render_node_bindings(manifest),
+        gen_abi_manifest.render_c_header(manifest),
+    ):
+        assert "capacity 0-3 gets no size" in rendered
+        assert "never copied" in rendered
+
+
 def test_unsupported_rust_ffi_type_is_rejected() -> None:
     source = """
 pub const ABI_VERSION: u32 = 1;

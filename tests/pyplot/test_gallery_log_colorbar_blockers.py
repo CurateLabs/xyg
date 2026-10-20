@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 import xyg.pyplot as plt
-from xyg._static_document import UnsupportedStaticExport
 
 
 class LogNorm:
@@ -138,18 +137,16 @@ def test_hexbin_demo_log_colorbar_keeps_counts_and_covers_svg_cell_seams() -> No
         "scale": "log",
     }
 
-    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"):
-        fig.savefig(BytesIO(), format="svg")
-
-    # The bounded positive witness keeps the same log/colorbar journey below
-    # Scene's independently specified 1,024 PolyFill-group ceiling.
-    bounded, bounded_ax = plt.subplots(figsize=(4.5, 4))
-    bounded_hexagons = bounded_ax.hexbin(x, y, gridsize=25, bins="log", cmap="inferno")
-    bounded.colorbar(bounded_hexagons, ax=bounded_ax, label="counts")
+    # The original oversized journey (1,226 cells > the former 1,024-group
+    # ceiling) now exports natively with every cell kept (#887).
+    assert len(trace.x.values) == 1_226
+    for fmt in ("svg", "png"):
+        target = BytesIO()
+        fig.savefig(target, format=fmt)
+        assert target.getvalue()
     target = BytesIO()
-    bounded.savefig(target, format="svg")
-    svg = target.getvalue().decode()
-    root = ElementTree.fromstring(svg)
+    fig.savefig(target, format="svg")
+    root = ElementTree.fromstring(target.getvalue().decode())
     assert {node.text for node in root.iter() if node.get("data-xy-slot") == "colorbar_tick"} >= {
         "1",
         "10",
@@ -161,7 +158,7 @@ def test_hexbin_demo_log_colorbar_keeps_counts_and_covers_svg_cell_seams() -> No
         for node in root.iter()
         if node.tag.endswith("path") and node.get("fill-opacity") == "0.9"
     ]
-    assert 100 < len(cells) <= 1_024
+    assert len(cells) == 1_226
     assert all(node.get("fill") == node.get("stroke") for node in cells)
     assert all(node.get("stroke-width") == "0.5" for node in cells)
 

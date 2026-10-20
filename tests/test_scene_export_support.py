@@ -1475,7 +1475,8 @@ def test_public_hexbin_matches_exact_cross_host_scene_and_consumers(reduce: str)
     assert b"XYLG" in painter
 
 
-def test_public_hexbin_honors_the_painter_group_boundary() -> None:
+def test_public_hexbin_static_export_is_not_bound_by_the_browser_painter_group_ceiling() -> None:
+    """Static cells have their own ceiling (#887); browser budgets are unchanged."""
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
     figure.axis_options["y"]["domain"] = (0.0, 1.0)
@@ -1486,10 +1487,13 @@ def test_public_hexbin_honors_the_painter_group_boundary() -> None:
         range=((0.0, 1.0), (0.0, 1.0)),
         color="#3987e5",
     )
-    assert len(figure.traces[0].x.values) > 1024
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-    with pytest.raises(UnsupportedStaticExport, match="XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"):
-        document_svg(figure)
+    cells = len(figure.traces[0].x.values)
+    assert cells > 1024
+    assert scene_export_support_reason(figure) is None
+    svg = document_svg(figure)
+    assert svg.count('<path d="M ') == cells
+    with pytest.raises(_native.ScenePainterError, match="XYG_PAINTER_TRACE_LIMIT"):
+        _native.scene_browser_painter(figure_scene(figure))
 
 
 def test_colormap_hexbin_is_scene_supported() -> None:

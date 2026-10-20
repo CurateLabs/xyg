@@ -130,7 +130,7 @@ pairs with bounded stem markers, at most 1,024 fill-only unjoined
 triangle-mesh faces (constant or interned per-face fill/stroke/width, ABI 195),
 interned per-item scatter fill/stroke/width/opacity (ABI 196),
 constant-style Cartesian hexbin PolyFill cells (one
-6-vertex group per cell, sharing that 1,024-group painter budget), constant-style
+6-vertex group per cell, up to a separate 50,000-cell aggregate ceiling, #887), constant-style
 Cartesian heatmap Rects (one regular cell per Rect, sharing the 10,000-bin
 histogram ceiling), and finite
 literal solid ribbons. Each accepted mesh face
@@ -1312,7 +1312,8 @@ ABI 152
 `xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation codes,
 and flag derivation from packed XYEF v1. The public-export predicate also
 owns the PolyFill group budget, including companion traces that share the
-browser painter's 1,024-group ceiling.
+browser painter's 1,024-group ceiling; hexbin cells use their own 50,000-cell
+aggregate ceiling (#887).
 ABI 153
 `xyg_scene_pack_figure_chrome` owns plot layout, chrome-style resolve, legend
 loc default/allowlists (empty authored loc is fail-closed), colorbar

@@ -44966,7 +44966,21 @@
             "pointer_depth": 1,
             "direction": "out",
             "nullable": "contract-defined",
-            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+            "buffer_contract": "caller-owned writable encoded Scene byte storage; out_cap is measured in bytes; when it is too small the call returns -4 and, if capacity >= 4, writes the exact required byte count as a little-endian u32 into out[0..4] (capacity 0-3 receives no size); hosts retry exactly once with that size; an encoded product longer than i32::MAX bytes returns -3 with 0xFFFFFFFF in out[0..4] and is never copied",
+            "length_contract": {
+              "unit": "bytes",
+              "capacity_argument": "out_cap",
+              "maximum_total_bytes": "i32::MAX",
+              "payload_format": "encoded Scene v33 batch",
+              "short_capacity": "report_required_size",
+              "required_size_slot": "out[0..4] little-endian u32 when capacity >= 4",
+              "required_size_status": -4,
+              "capacity_below_size_slot": "no_size_written",
+              "host_retry": "once_with_reported_size",
+              "oversized_output_status": -3,
+              "oversized_output_marker": "0xFFFFFFFF in out[0..4]",
+              "success_status": "encoded_byte_count"
+            }
           }
         },
         {

@@ -90,9 +90,23 @@ Each is regression-tested in `tests/pyplot/test_corpus_regressions_1006.py`,
 
 Still open on this lane (named gaps, all fail closed with stable diagnostics):
 secondary y axes (`twinx`), heterogeneous annotation styles and annotation
-`bbox=`, and more than 1,024 hexbin cells (#887). (Per-item scatter sizes,
-line+marker legend swatches and multi-panel legends, listed open when this
-entry was written, are closed by the entries below.)
+`bbox=`. (Per-item scatter sizes, line+marker legend swatches, multi-panel
+legends and more than 1,024 hexbin cells (#887), listed open when this entry
+was written, are closed by the entries below.)
+
+## Static hexbin beyond the painter-group limit — 2026-10-20 (Matplotlib 3.11.0 lane)
+
+- Native static `hexbin` exports (SVG, PNG, PDF) now keep every lattice cell up
+  to a documented 50,000-cell aggregate ceiling instead of failing closed at
+  the browser painter's 1,024-group budget. Matplotlib's default-gridsize
+  lattice (11,558 cells, reference-corpus case 47) and the 1,226-cell
+  `hexbin_demo` log-colorbar gallery journey now export without dropping or
+  merging cells. One cell over the ceiling still fails closed with
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in both hosts; browser budgets are
+  unchanged. See `spec/design/static-document.md` §2 and
+  [#887](https://github.com/CurateLabs/xyg/issues/887).
+- Node `hexbinChart` no longer bins pre-binned centres a second time, which had
+  silently replaced the requested `gridsize` with the default.
 
 ## Per-item scatter size — #1006
 

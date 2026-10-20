@@ -1372,6 +1372,7 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_encode_assembled_from_sidecars
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # Buffer contract: out: out_cap bytes; short capacity returns -4 and, when capacity >= 4, writes the exact required byte count as little-endian u32 into out[0..4] (capacity 0-3 gets no size); hosts retry once with that size; an encoded product longer than i32::MAX bytes returns -3 with 0xFFFFFFFF in out[0..4], never copied; success returns the encoded byte count
     # int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_encode_product
     function.restype = ctypes.c_int32
