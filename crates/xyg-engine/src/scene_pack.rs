@@ -998,6 +998,13 @@ pub const ANN_MARK_ROW_BYTES: usize = 40;
 pub const ANN_KIND_RULE: u8 = 1;
 pub const ANN_KIND_BAND: u8 = 2;
 pub const ANN_KIND_MARKER: u8 = 3;
+/// Scene rows `pack_annotation_marks` emits per annotation kind (#1006):
+/// a rule is a two-vertex Polyline, a band one Rect, a marker one Scatter.
+/// The public predicate charges these against `MAX_SCENE_MARKS`; the
+/// `annotation_mark_row_counts_match_the_packer` test pins them.
+pub const ANN_RULE_ROWS: usize = 2;
+pub const ANN_BAND_ROWS: usize = 1;
+pub const ANN_MARKER_ROWS: usize = 1;
 const ANN_AXIS_X: u8 = 0;
 const ANN_AXIS_Y: u8 = 1;
 const ANN_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
@@ -1257,6 +1264,28 @@ mod tests {
         assert!(pack(&ends, "line").is_err());
     }
     use super::*;
+
+    #[test]
+    fn annotation_mark_row_counts_match_the_packer() {
+        for (kind, expected) in [
+            (ANN_KIND_RULE, ANN_RULE_ROWS),
+            (ANN_KIND_BAND, ANN_BAND_ROWS),
+            (ANN_KIND_MARKER, ANN_MARKER_ROWS),
+        ] {
+            let row = AnnotationMarkInput {
+                kind,
+                axis: ANN_AXIS_X,
+                symbol: 0,
+                style_ref: 0,
+                index: 0,
+                value0: 0.25,
+                value1: 0.75,
+                size: 6.0,
+            };
+            let rows = pack_annotation_marks(&[row], 0.0, 1.0, 0.0, 1.0).unwrap();
+            assert_eq!(rows.len(), expected, "kind {kind}");
+        }
+    }
 
     #[test]
     fn scatter_keeps_one_row_per_point() {

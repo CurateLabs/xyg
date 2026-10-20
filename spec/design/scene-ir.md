@@ -1877,7 +1877,11 @@ The Scene always keeps every face as three `Triangle` records:
   `ext = stroke_width / 2 + 1`, plus each of its three edges' padded bounds,
   all clipped to the viewport (so 2,000 sub-pixel faces with a 100 px outline
   fail closed in milliseconds; before this charge a 50,000-face version passed
-  and took 12.6 s to PNG). The total must stay within
+  and took 12.6 s to PNG). The outline charge also caps ordinary stroked
+  meshes: a face that is small on screen still charges about 49 CSS px² for
+  its padded scratch and edge boxes, so a stroked mesh on a 320×240 chart
+  fails closed near 73k faces, well below the 666,666-face record ceiling
+  that an unstroked mesh reaches. The total must stay within
   `MESH_OVERDRAW_PLOTS` = 64 plot rectangles (never less than
   `MAX_SCENE_IMAGE_PIXELS` = 2,000,000 CSS px², so tiny plots keep a usable
   floor), so painting — whose cost is
@@ -1937,9 +1941,13 @@ tracks SVG export at 1,024, 49,920, and 50,176 faces.
 paint planes, the predicate also fails closed with
 `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` when:
 
-- the rows `scene_trace_rows` will pack for all traces, plus up to 5 records
-  per annotation (`MAX_ANNOTATION_RECORDS`: a rule packs 2 mark rows, an
-  arrow or callout encodes 5 records), exceed `MAX_SCENE_MARKS` (2,000,000): a Cartesian line above the threshold counts
+- the rows `scene_trace_rows` will pack for all traces, plus each
+  annotation's Scene records charged per kind from the encoder's own
+  constants (`annotation_scene_records`: text 0, rule `ANN_RULE_ROWS` = 2,
+  band `ANN_BAND_ROWS` = 1, marker `ANN_MARKER_ROWS` = 1, arrow
+  `STRAIGHT_ARROW_MAX_RECORDS` = 8, the worst admitted #1034 shape, callout
+  `CALLOUT_SCENE_RECORDS` = 5), exceed `MAX_SCENE_MARKS` (2,000,000), so
+  1,999,998 points plus one rule admit and 1,999,999 refuse: a Cartesian line above the threshold counts
   `4 × MAX_SCREEN_DIM` = 16,384 rows (the predicate does not know the
   viewport, so it assumes the widest bucket count), a density blit two, and
   every other trace `max(n_x, n_x0)`. The product encoder maps a row-pack
@@ -1948,7 +1956,10 @@ paint planes, the predicate also fails closed with
   (`EncodeAssembledCode::Lod = 7`, `EncodeSidecarsCode::Lod = 22`) as a
   backstop, as is trace rows plus the annotation mark rows of XYAO exceeding
   `MAX_SCENE_MARKS` before `splice_annotations` (which would otherwise fail as
-  splice stage `-703`), so a figure over the mark ceiling never surfaces as a
+  splice stage `-703`), and as is an arrow or callout whose encoded records
+  overflow `MAX_SCENE_MARKS` in `SceneBatch::with_authored_annotations`
+  (`SceneError::Limit`, mapped through the expansion mapper rather than the
+  `-16` length code), so a figure over the mark ceiling never surfaces as a
   host `ValueError`;
 - a trace's per-item paint plane (hosts observe `scatter_paint_plane` /
   `mesh_paint_plane`, the same facts they pass to

@@ -75,9 +75,10 @@ use crate::lod_plan::{
     PAYLOAD_TIER_DECIMATED,
 };
 use crate::scene::{
-    SceneError, MAX_PUBLIC_VECTOR_POLYGON_GROUPS, MAX_SCENE_IMAGE_PIXELS, MAX_SCENE_MARKS,
-    PUBLIC_POLYFILL_GROUP_BUDGET,
+    SceneError, CALLOUT_SCENE_RECORDS, MAX_PUBLIC_VECTOR_POLYGON_GROUPS, MAX_SCENE_IMAGE_PIXELS,
+    MAX_SCENE_MARKS, PUBLIC_POLYFILL_GROUP_BUDGET, STRAIGHT_ARROW_MAX_RECORDS,
 };
+use crate::scene_pack::{ANN_BAND_ROWS, ANN_MARKER_ROWS, ANN_RULE_ROWS};
 use crate::scene_xyta_trace_observations_materialize::{
     xyta_paint_plane_fits, XYTA_MESH_PAINT_ITEM_BYTES, XYTA_SCATTER_PAINT_ITEM_BYTES,
 };
@@ -117,9 +118,22 @@ const MAX_PUBLIC_HEXBIN_CELLS: usize = MAX_PUBLIC_VECTOR_POLYGON_GROUPS;
 const MAX_PUBLIC_HEATMAP_CELLS: usize = 10_000;
 const MAX_PUBLIC_POINTS: usize = 10_000;
 const MAX_PUBLIC_STEP_POINTS: usize = 10_001;
-/// Upper bound on Scene records one annotation adds (#1006): a rule packs 2
-/// mark rows, and an arrow or callout encodes 5 records.
-const MAX_ANNOTATION_RECORDS: usize = 5;
+/// Scene records one annotation adds against `MAX_SCENE_MARKS` (#1006), tied
+/// to the encoder's own counts: text adds none (it is a label), rule/band/
+/// marker add their packed mark rows, an arrow its worst-case shape records,
+/// and a callout its fixed record set. Unknown kinds (refused below) charge
+/// the maximum so the bound never under-counts.
+fn annotation_scene_records(kind: u8) -> usize {
+    match kind {
+        1 => 0,
+        2 => ANN_RULE_ROWS,
+        3 => ANN_BAND_ROWS,
+        4 => ANN_MARKER_ROWS,
+        5 => STRAIGHT_ARROW_MAX_RECORDS,
+        6 => CALLOUT_SCENE_RECORDS,
+        _ => STRAIGHT_ARROW_MAX_RECORDS.max(CALLOUT_SCENE_RECORDS),
+    }
+}
 
 const FLAG_FLUID_WIDTH: u32 = 1 << 0;
 const FLAG_FLUID_HEIGHT: u32 = 1 << 1;
@@ -1436,11 +1450,11 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     let mut public_triangle_mesh_count = 0usize;
     // #1006: Scene rows the row packer emits across the figure, bounded by
     // `MAX_SCENE_MARKS` before any host materializes columns or planes.
-    // Annotations add records too: at most 2 packed mark rows (a rule) and,
-    // at encode, 5 records for an arrow or callout (#1006).
-    let mut packed_rows = (n_annotations as usize)
-        .checked_mul(MAX_ANNOTATION_RECORDS)
-        .ok_or(SceneError::Limit)?;
+    // Annotations add records too, charged per kind (#1006).
+    let mut packed_rows = annotations
+        .iter()
+        .map(|annotation| annotation_scene_records(annotation.kind))
+        .sum::<usize>();
     let mut mesh_face_records = 0usize;
     let mut public_hexbin_cell_count = 0usize;
     for trace in &traces {
@@ -2175,6 +2189,47 @@ mod tests {
             scene_public_export_reason(&figure(&[], &["dash"])),
             Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
         );
+    }
+
+    #[test]
+    fn public_annotation_records_are_charged_per_kind_at_the_mark_ceiling() {
+        // #1006: annotations share MAX_SCENE_MARKS with trace rows at the
+        // encoder's own per-kind counts, so the predicate admits exactly what
+        // the Scene can hold: a rule packs ANN_RULE_ROWS (2) mark rows and a
+        // marker ANN_MARKER_ROWS (1).
+        fn figure(points: u32, annotation_kind: u8) -> Vec<u8> {
+            let mut buf = header(0, 0, 0, 0, 2, 1, 1);
+            for axis_id in [0u8, 1u8] {
+                buf.extend_from_slice(&[axis_id, 0, 0, 1, 0, 0]);
+                buf.extend_from_slice(&0u16.to_le_bytes());
+            }
+            buf.extend_from_slice(&[annotation_kind, 0]);
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&[KIND_SCATTER, 0, 255, 255, 255, 0, 0, 0]);
+            buf.extend_from_slice(&(TRACE_HAS_X | TRACE_HAS_Y).to_le_bytes());
+            buf.extend_from_slice(&points.to_le_bytes());
+            buf.extend_from_slice(&points.to_le_bytes());
+            buf.extend_from_slice(&[0u8; 28]);
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&[0u8; 4]);
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf
+        }
+        const RULE: u8 = 2;
+        const MARKER: u8 = 4;
+        const TEXT: u8 = 1;
+        let marks = MAX_SCENE_MARKS as u32;
+        assert_eq!(ANN_RULE_ROWS, 2);
+        assert_eq!(ANN_MARKER_ROWS, 1);
+        let lod = Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        assert_eq!(scene_public_export_reason(&figure(1_999_998, RULE)), Ok(""));
+        assert_eq!(scene_public_export_reason(&figure(1_999_999, RULE)), lod);
+        assert_eq!(scene_public_export_reason(&figure(1_999_999, MARKER)), Ok(""));
+        assert_eq!(scene_public_export_reason(&figure(marks, MARKER)), lod);
+        // Text is a label, not a mark record.
+        assert_eq!(scene_public_export_reason(&figure(marks, TEXT)), Ok(""));
     }
 
     #[test]

@@ -355,8 +355,8 @@ def test_xyta_record_budget_backstop_is_the_lod_reason_without_the_predicate(mon
 def test_annotation_records_share_the_scene_mark_ceiling() -> None:
     """A full 2,000,000-point direct scatter plus one marker annotation (#1006).
 
-    The predicate counts each annotation's records (at most 5) against
-    MAX_SCENE_MARKS, and the product encoder relays a trace-plus-annotation
+    The predicate charges each annotation's Scene records per kind (a marker
+    packs one mark row) against MAX_SCENE_MARKS, and the product encoder relays a trace-plus-annotation
     overflow as the LOD reason instead of the splice stage error that used to
     escape as ``ValueError("invalid scene annotation splice packing")``.
     """

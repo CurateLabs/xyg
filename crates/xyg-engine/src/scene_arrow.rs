@@ -333,6 +333,26 @@ pub fn arrow_run_head_length(line: &[[f64; 2]], fill: &[[f64; 2]]) -> Option<f64
 mod tests {
     use super::*;
 
+    #[test]
+    fn arrow_max_records_bounds_every_admitted_shape() {
+        let ends = [ArrowEnd::None, ArrowEnd::Triangle, ArrowEnd::Open];
+        let mut max = 0;
+        for head in ends {
+            for tail in ends {
+                let shape = ArrowShape {
+                    head,
+                    tail,
+                    ..ArrowShape::DEFAULT
+                };
+                if shape.is_admitted() {
+                    max = max.max(shape.record_count());
+                }
+            }
+        }
+        assert_eq!(max, crate::scene::STRAIGHT_ARROW_MAX_RECORDS);
+        assert_eq!(ArrowShape::DEFAULT.record_count(), 5);
+    }
+
     const H: f64 = STRAIGHT_ARROW_HEAD_LENGTH;
 
     fn close(a: [f64; 2], b: [f64; 2]) -> bool {

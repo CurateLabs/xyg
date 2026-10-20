@@ -163,7 +163,9 @@ const SCENE_ANNOTATION_TAG_STRAIGHT_ARROW: u8 = 5;
 const SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT: u8 = 6;
 pub(crate) const STRAIGHT_ARROW_HEAD_LENGTH: f64 = 8.0;
 /// Longest straight-arrow run: V tail, shaft and V head (see `scene_arrow`).
-const STRAIGHT_ARROW_MAX_RECORDS: usize = 8;
+/// The public predicate charges it per arrow annotation (#1006); the
+/// `arrow_max_records_bounds_every_admitted_shape` test pins it.
+pub const STRAIGHT_ARROW_MAX_RECORDS: usize = 8;
 const STRAIGHT_ARROW_HEAD_HALF_WIDTH: f64 = 4.0;
 
 /// The ids annotation decoration assigns to labels (text 4, attached 5,
@@ -4972,6 +4974,10 @@ pub const MAX_SCENE_IMAGE_PIXELS: usize = 2_000_000;
 /// triangle meshes at or below it byte-identical to before #1006 and applies
 /// the mesh overdraw bound only above it.
 pub const PUBLIC_POLYFILL_GROUP_BUDGET: usize = 1_024;
+/// Scene records one callout encodes: a two-vertex connector Polyline and a
+/// three-vertex head PolyFill (its label rides XYLB, not a record). The
+/// public predicate charges it per callout (#1006).
+pub const CALLOUT_SCENE_RECORDS: usize = 5;
 /// The one recorded static vector polygon-group ceiling (#887, #1006): at
 /// most this many polygon groups of one family, aggregate across the figure,
 /// are written as one vector shape each in SVG/PDF. Hexbin cells
@@ -8487,18 +8493,23 @@ impl<'a> SceneBatch<'a> {
         self.labels = labels;
         self.label_backgrounds = label_backgrounds;
         let arrows = decode_xyar(&bytes[xyal_end..xyar_end])?;
+        // #1006: records past the Scene mark ceiling are a budget (`Limit`,
+        // relayed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`), not malformed input.
+        if self
+            .kinds
+            .len()
+            .checked_add(straight_arrow_record_count(&arrows))
+            .ok_or(SceneError::Limit)?
+            > MAX_SCENE_MARKS
+        {
+            return Err(SceneError::Limit);
+        }
         if self
             .stroke_width
             .len()
             .checked_add(arrows.len())
             .ok_or(SceneError::Limit)?
             > MAX_SCENE_STYLES
-            || self
-                .kinds
-                .len()
-                .checked_add(straight_arrow_record_count(&arrows))
-                .ok_or(SceneError::Limit)?
-                > MAX_SCENE_MARKS
             || arrows.iter().any(|arrow| {
                 self.stable_ids.contains(&arrow.stable_id)
                     || straight_arrow_paint(self.x_scale, self.y_scale, arrow).is_err()
@@ -8513,7 +8524,10 @@ impl<'a> SceneBatch<'a> {
             self.y_scale,
             self.layout,
         )?;
-        let callout_records = callouts.len().checked_mul(5).ok_or(SceneError::Limit)?;
+        let callout_records = callouts
+            .len()
+            .checked_mul(CALLOUT_SCENE_RECORDS)
+            .ok_or(SceneError::Limit)?;
         let total_styles = self
             .stroke_width
             .len()
@@ -9895,7 +9909,7 @@ impl<'a> SceneBatch<'a> {
                     * SCENE_STYLE_RECORD_BYTES
                 + (marks.len()
                     + straight_arrow_record_count(&self.arrows)
-                    + self.callouts.len() * 5)
+                    + self.callouts.len() * CALLOUT_SCENE_RECORDS)
                     * SCENE_BATCH_RECORD_BYTES
                 + self.text.encoded_bytes()
                 + encode_tick_labels(self.chrome.x_tick_labels.as_deref())
@@ -9919,8 +9933,9 @@ impl<'a> SceneBatch<'a> {
         out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
         out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
         out.extend_from_slice(
-            &((marks.len() + straight_arrow_record_count(&self.arrows) + self.callouts.len() * 5)
-                as u64)
+            &((marks.len()
+                + straight_arrow_record_count(&self.arrows)
+                + self.callouts.len() * CALLOUT_SCENE_RECORDS) as u64)
                 .to_le_bytes(),
         );
         out.extend_from_slice(
@@ -12823,7 +12838,12 @@ impl SceneDocument {
             || self
                 .records
                 .len()
-                .checked_add(callouts.len().checked_mul(5).ok_or(SceneError::Limit)?)
+                .checked_add(
+                    callouts
+                        .len()
+                        .checked_mul(CALLOUT_SCENE_RECORDS)
+                        .ok_or(SceneError::Limit)?,
+                )
                 .ok_or(SceneError::Limit)?
                 > MAX_SCENE_MARKS
             || self

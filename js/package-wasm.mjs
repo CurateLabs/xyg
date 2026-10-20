@@ -102,9 +102,9 @@ const WASM_SIZE_BUDGET_BYTES = 1504 * 1024;
 // 624 KiB gzip (raw unchanged): the static LOD tiers and their budget checks,
 // layered/polar/mesh autorange admission, the XYWA exact polar wedge-arc
 // encode/validate/SVG path, and the mesh overdraw bound (#1006) are a recorded
-// +10,255 raw / +4,096 gzip bytes (1,538,122 / 635,039) over main's
-// 1,527,867 / 630,943 after #1023/#1034/#1037, 159 bytes over the 620 KiB gate;
-// 3,937 bytes of gzip and 1,974 bytes of raw headroom remain (local build).
+// +10,255 raw / +4,097 gzip bytes (1,538,122 / 635,040) over main's
+// 1,527,867 / 630,943 after #1023/#1034/#1037, 160 bytes over the 620 KiB gate;
+// 3,936 bytes of gzip and 1,974 bytes of raw headroom remain (local build).
 const WASM_GZIP_BUDGET_BYTES = 624 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
