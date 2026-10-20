@@ -329,3 +329,24 @@ def test_log_y_nonpositive_rows_follow_each_side_of_the_decimation_threshold() -
             rows = _browser_payload_rows(figure, 1.0)
             assert points == browser_rows == len(rows)
             assert (y[rows] > 0).all()
+
+
+def test_xyta_record_budget_backstop_is_the_lod_reason_without_the_predicate(monkeypatch) -> None:
+    """A host that omits XYEF bit 25 still gets the stable LOD reason (#1006).
+
+    Rust's XYTA materializer returns its distinct over-budget code (-3) when a
+    per-item paint plane does not fit one 4 MiB record, and the host relays it
+    as ``XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`` instead of a buffer ValueError.
+    """
+    from xyg import _scene_marshal
+    from xyg._scene_observations import UnsupportedSceneV3
+    from xyg._scene_v3 import figure_scene
+
+    chart = _per_item_scatters(300_000)["numeric color"]
+    figure = chart.figure()
+    with pytest.raises(UnsupportedSceneV3, match=_LOD):
+        figure_scene(figure, width=WIDTH, height=HEIGHT)
+    monkeypatch.setattr(_scene_marshal, "_XYEF_OBS_ITEM_PAINT_PLANE", 0)
+    assert scene_export_support_reason(figure, width=WIDTH, height=HEIGHT) == _LOD
+    with pytest.raises(UnsupportedStaticExport, match=_LOD):
+        chart.to_svg(width=WIDTH, height=HEIGHT)

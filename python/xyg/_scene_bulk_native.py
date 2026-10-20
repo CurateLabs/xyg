@@ -1079,6 +1079,11 @@ def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
         )
     )
     del keepers
+    if code == -3:
+        # Rust's XYTA record budget (#1006): the stable public LOD reason.
+        from xyg._scene_observations import UnsupportedSceneV3
+
+        raise UnsupportedSceneV3("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD")
     if code == -2:
         raise ValueError("scene_xyta_trace_observations_materialize output buffer too small")
     if code != 0:

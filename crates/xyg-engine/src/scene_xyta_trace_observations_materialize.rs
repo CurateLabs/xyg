@@ -16,6 +16,12 @@ use crate::scene_pack_orchestrate::XytaTraceDispatchPlan;
 use crate::scene_trace_attach::XYTA_PREFIX_BYTES;
 
 pub const SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES: usize = 1 << 22;
+/// Return code when a trace's complete XYTA record would exceed
+/// `SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES` (#1006). Distinct from `-1`
+/// (invalid arguments) and `-2` (caller buffer too small): both hosts relay it
+/// as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`, the Rust backstop for the public
+/// predicate's `xyta_paint_plane_fits` bound.
+pub const SCENE_XYTA_RECORD_OVER_BUDGET: i32 = -3;
 
 /// Widest per-point scatter paint plane (#1006): RGBA8 fill + RGBA8 stroke +
 /// f64 width + f64 diameter (the diameter column is present only with a
@@ -767,7 +773,7 @@ pub fn scene_xyta_trace_observations_materialize(
     .try_fold(XYTA_PREFIX_BYTES, |total, len| total.checked_add(len))
     .ok_or(-1)?;
     if fixed_total > SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES {
-        return Err(-1);
+        return Err(SCENE_XYTA_RECORD_OVER_BUDGET);
     }
     if input.dispatch.pack_density != 0 {
         let source_total = input
@@ -844,6 +850,33 @@ mod tests {
             stroke_width_ch: SceneXytaStyleChannelIn::default(),
             size_ch: SceneXytaSizeChannelIn::default(),
         }
+    }
+
+    #[test]
+    fn record_over_the_xyta_budget_is_its_own_code() {
+        // #1006: a record over the 4 MiB budget returns the distinct
+        // over-budget code hosts relay as XYG_SCENE_UNSUPPORTED_PUBLIC_LOD,
+        // never the invalid-argument code.
+        let dispatch = XytaTraceDispatchPlan {
+            kind_class: 0,
+            pack_heatmap: 1,
+            pack_hexbin_colormap: 0,
+            pack_hexbin_rgba: 0,
+            pack_ribbon_ends: 0,
+            pack_mesh_faces: 0,
+            pack_scatter_paint: 0,
+            pack_density: 0,
+        };
+        let grid = vec![0.5f64; SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES / 8 + 1];
+        let mut input = minimal_input(dispatch, empty_color_ch(), &[], &[]);
+        input.grid_values = &grid;
+        assert_eq!(
+            scene_xyta_trace_observations_materialize(&input).unwrap_err(),
+            SCENE_XYTA_RECORD_OVER_BUDGET
+        );
+        let small = vec![0.5f64; 16];
+        input.grid_values = &small;
+        assert!(scene_xyta_trace_observations_materialize(&input).is_ok());
     }
 
     #[test]

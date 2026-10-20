@@ -4,7 +4,8 @@ use xyg_engine::scene_xyta_trace_observations_materialize::{
     scene_xyta_trace_observations_materialize, SceneXytaColorChannelIn,
     SceneXytaColormapInput, SceneXytaSizeChannelIn, SceneXytaStyleChannelIn,
     SceneXytaTraceObservationsIn,
-    SceneXytaTraceObservationsOut, SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+    SceneXytaTraceObservationsOut, SCENE_XYTA_RECORD_OVER_BUDGET,
+    SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
 };
 use xyg_engine::scene_pack_orchestrate::XytaTraceDispatchPlan;
 
@@ -285,7 +286,12 @@ fn write_xyta_observations_out(
     summary.color_ch_len = materialized.color_ch.len();
     summary.style_color_off = append(&mut blob, &materialized.style_color);
     summary.style_color_len = materialized.style_color.len();
-    if blob.len() > out_cap.min(SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES) {
+    // #1006: a record over the Rust budget is a product limit, not a
+    // caller buffer problem.
+    if blob.len() > SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES {
+        return Err(SCENE_XYTA_RECORD_OVER_BUDGET);
+    }
+    if blob.len() > out_cap {
         return Err(-2);
     }
     if !blob.is_empty() {
@@ -302,6 +308,15 @@ fn write_xyta_observations_out(
     Ok(())
 }
 
+/// Materialize one trace's XYTA observations (ABI 323).
+///
+/// Returns `0` on success, `-1` for invalid arguments, `-2` when `out_cap` is
+/// smaller than the materialized record (callers pass
+/// `SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES`), and `-3`
+/// (`SCENE_XYTA_RECORD_OVER_BUDGET`, #1006) when the complete record would
+/// exceed that 4 MiB budget — e.g. a per-item paint plane too large for one
+/// record. Hosts relay `-3` as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`; before
+/// #1006 the over-budget case returned `-2` or `-1`.
 #[allow(clippy::too_many_arguments)]
 #[no_mangle]
 pub unsafe extern "C" fn xyg_scene_xyta_trace_observations_materialize(

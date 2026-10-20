@@ -137,3 +137,11 @@ test("Node counts every trace's packed rows against the Scene mark ceiling", () 
     assert.throws(() => figure.toPng({ scale: 1 }), new RegExp(LOD));
   }
 });
+
+test("Node relays Rust's XYTA record over-budget code as the LOD reason", async () => {
+  // Bypass the public predicate: the Rust materializer itself refuses a
+  // per-item paint plane over one 4 MiB XYTA record (#1006).
+  const { figureSceneV3 } = await import("../src/index.js");
+  const figure = perItemScatter("numeric color", 300_000);
+  assert.throws(() => figureSceneV3(figure), new RegExp(`^RangeError: ${LOD}$`));
+});

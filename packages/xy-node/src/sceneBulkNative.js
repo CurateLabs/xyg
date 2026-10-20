@@ -1073,6 +1073,8 @@ export function sceneXytaTraceObservationsMaterialize(obs) {
     BigInt(out.length),
     pointer(outLen, "size_t *"),
   ));
+  // Rust's XYTA record budget (#1006): the stable public LOD reason.
+  if (code === -3) throw new RangeError("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
   if (code === -2) throw new RangeError("sceneXytaTraceObservationsMaterialize output buffer too small");
   if (code !== 0) throw new RangeError("invalid sceneXytaTraceObservationsMaterialize arguments");
   const summary = koffi.decode(summaryBuf, SceneXytaTraceObservationsOut);
