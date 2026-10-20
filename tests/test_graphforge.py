@@ -78,7 +78,7 @@ def test_python_reproduces_the_cross_host_bytes_for_every_case() -> None:
         assert hashlib.sha256(document).hexdigest() == case["document_sha256"], case["name"]
 
 
-def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
+def test_render_document_refresh_changes_only_its_version_words() -> None:
     gen = _generator()
     case = next(case for case in gen.cases() if case["name"] == "multi-layer + render + select")
     document = bytearray(compose_graphforge_request(gen.build_request(case)))
@@ -90,7 +90,12 @@ def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
             "<IIIIQQQ", document, 32 + i * 40
         )
         name = document[names + name_offset : names + name_offset + name_length].decode()
-        if name == "scene.version":
+        if name == "composition.version":
+            # Composition v2 only adds the optional hierarchy planes (#36 S1).
+            assert struct.unpack_from("<I", document, offset)[0] == 2
+            struct.pack_into("<I", document, offset, 1)
+            changed.add(name)
+        elif name == "scene.version":
             assert struct.unpack_from("<I", document, offset)[0] == 32
             struct.pack_into("<I", document, offset, 31)
             changed.add(name)
@@ -99,7 +104,7 @@ def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
             assert struct.unpack_from("<I", document, offset + 4)[0] == 32
             struct.pack_into("<I", document, offset + 4, 31)
             changed.add(name)
-    assert changed == {"scene.version", "scene.canonical"}
+    assert changed == {"composition.version", "scene.version", "scene.canonical"}
     refresh = json.loads((ROOT / "tests/fixtures/graphforge/scene32_refresh.json").read_text())
     assert (
         hashlib.sha256(document).hexdigest()
