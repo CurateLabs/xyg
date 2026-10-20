@@ -262,7 +262,10 @@ impl GraphSession {
             }
         }
         for edge in 0..e {
-            let (s, t) = (self.edge_source[edge] as usize, self.edge_target[edge] as usize);
+            let (s, t) = (
+                self.edge_source[edge] as usize,
+                self.edge_target[edge] as usize,
+            );
             edge_visible[edge] &= node_visible[s] & node_visible[t];
         }
         *work += (n + e) as u64;
@@ -341,7 +344,10 @@ impl GraphSession {
                 if edge_visible[edge] == 0 {
                     continue;
                 }
-                let (s, t) = (self.edge_source[edge] as usize, self.edge_target[edge] as usize);
+                let (s, t) = (
+                    self.edge_source[edge] as usize,
+                    self.edge_target[edge] as usize,
+                );
                 if hovered[s] && !hovered[t] {
                     node_flags[t] |= FLAG_NEIGHBOR;
                 } else if hovered[t] && !hovered[s] {
@@ -376,9 +382,8 @@ impl GraphSession {
     fn build_output(&mut self, camera: Option<Camera>) -> Result<RenderOutput, InteractionStatus> {
         let (n, e) = (self.identity.node_count(), self.identity.edge_count());
         let mut work = 0u64;
-        let inputs = self.read_world(|state, visibility| {
-            self.collect_inputs(state, visibility, &mut work)
-        })??;
+        let inputs = self
+            .read_world(|state, visibility| self.collect_inputs(state, visibility, &mut work))??;
         let collapse = compound_collapse(
             &self.parent,
             &self.parent_valid,
@@ -405,8 +410,14 @@ impl GraphSession {
         let kept: Vec<usize> = (0..e)
             .filter(|&i| inputs.edge_visible[i] == 1 && collapse.edge_keep[i])
             .collect();
-        let ks: Vec<u64> = kept.iter().map(|&i| collapse.edge_source[i] as u64).collect();
-        let kt: Vec<u64> = kept.iter().map(|&i| collapse.edge_target[i] as u64).collect();
+        let ks: Vec<u64> = kept
+            .iter()
+            .map(|&i| collapse.edge_source[i] as u64)
+            .collect();
+        let kt: Vec<u64> = kept
+            .iter()
+            .map(|&i| collapse.edge_target[i] as u64)
+            .collect();
         work += (n + e + kept.len()) as u64;
 
         let (node_budget, edge_budget) = (self.budgets.0.max(1), self.budgets.1.max(1));

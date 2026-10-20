@@ -88,7 +88,10 @@ fn host_render(
     let cap = n.min(node_budget as usize);
     let (mut out_x, mut out_y) = (vec![0.0; cap], vec![0.0; cap]);
     let mut member_of = vec![0u64; n];
-    let (mut es, mut et) = (vec![0u64; edge_budget as usize], vec![0u64; edge_budget as usize]);
+    let (mut es, mut et) = (
+        vec![0u64; edge_budget as usize],
+        vec![0u64; edge_budget as usize],
+    );
     let (mut nn, mut ne) = (0u64, 0u64);
     let mut offsets = vec![0u64; (edge_budget as usize).min(sources.len()) + 1];
     let mut members = vec![0u64; sources.len().max(1)];
@@ -171,7 +174,10 @@ fn authored_positions_publish_exactly_what_the_host_render_path_builds() {
             },
         );
         let out = s.render(None).unwrap().clone();
-        assert_same_render(&out, &host_render(&x, &y, &sources, &targets, budgets, None));
+        assert_same_render(
+            &out,
+            &host_render(&x, &y, &sources, &targets, budgets, None),
+        );
         if budgets == (200_000, 500_000) {
             assert_eq!(out.tier, LodTier::Direct, "the direct tier is the contract");
         }
@@ -196,9 +202,19 @@ fn authored_positions_publish_exactly_what_the_host_render_path_builds() {
     };
     assert_same_render(
         &out,
-        &host_render(&x, &y, &sources, &targets, (200_000, 500_000), Some(viewport)),
+        &host_render(
+            &x,
+            &y,
+            &sources,
+            &targets,
+            (200_000, 500_000),
+            Some(viewport),
+        ),
     );
-    assert!(out.member_of.contains(&NOT_RENDERED), "something was culled");
+    assert!(
+        out.member_of.contains(&NOT_RENDERED),
+        "something was culled"
+    );
 }
 
 #[test]
@@ -276,7 +292,11 @@ fn a_collapsed_compound_hides_members_and_reroutes_edges_to_its_representative()
     let mut s = loaded(&compound_doc(), compound_load(true));
     let out = s.render(None).unwrap().clone();
     assert_eq!(out.node_count(), 3, "A, D, E");
-    assert_eq!(out.member_of, [0, 0, 0, 1, 2], "B and C ride A's render node");
+    assert_eq!(
+        out.member_of,
+        [0, 0, 0, 1, 2],
+        "B and C ride A's render node"
+    );
     assert_eq!(out.edge_source, [0, 0, 1], "B→D and C→D reroute to A→D");
     assert_eq!(out.edge_target, [1, 1, 2]);
     assert_eq!(out.edge_member_offsets, [0, 1, 2, 3]);
@@ -315,7 +335,11 @@ fn collapse_runs_before_culling_so_an_off_screen_group_does_not_leak_its_child()
     };
     let mut collapsed = loaded(&compound_doc(), load(true));
     let out = collapsed.render(Some(camera)).unwrap();
-    assert_eq!(out.node_count(), 0, "the representative is culled, not the child");
+    assert_eq!(
+        out.node_count(),
+        0,
+        "the representative is culled, not the child"
+    );
     assert_eq!(out.member_of[1], NOT_RENDERED);
 
     let mut expanded = loaded(&compound_doc(), load(false));
@@ -350,9 +374,17 @@ fn aggregate_centroids_exclude_hidden_descendants() {
     };
     let hidden = render(1);
     assert_eq!(hidden.tier, LodTier::Aggregate);
-    assert!(hidden.node_x.iter().all(|&x| x < 500.0), "{:?}", hidden.node_x);
+    assert!(
+        hidden.node_x.iter().all(|&x| x < 500.0),
+        "{:?}",
+        hidden.node_x
+    );
     let shown = render(0);
-    assert!(shown.node_x.iter().any(|&x| x > 100.0), "{:?}", shown.node_x);
+    assert!(
+        shown.node_x.iter().any(|&x| x > 100.0),
+        "{:?}",
+        shown.node_x
+    );
 }
 
 // -- selection, focus, hover, emphasis -----------------------------------------
@@ -367,14 +399,18 @@ fn selection_modes_and_clear_drive_the_published_state_planes() {
     select(&mut s, 1, &[1], SelectMode::Replace);
     assert_eq!(states(&mut s), [STATE_SELECTED, STATE_NORMAL, STATE_NORMAL]);
     select(&mut s, 2, &[2], SelectMode::Add);
-    assert_eq!(states(&mut s), [STATE_SELECTED, STATE_SELECTED, STATE_NORMAL]);
+    assert_eq!(
+        states(&mut s),
+        [STATE_SELECTED, STATE_SELECTED, STATE_NORMAL]
+    );
     let out = select(&mut s, 3, &[1, 3], SelectMode::Toggle);
     assert_eq!(out.changed.len(), 2);
     assert_eq!(selected_nodes(&s), [id(2), id(3)]);
     select(&mut s, 4, &[3], SelectMode::Replace);
     assert_eq!(selected_nodes(&s), [id(3)]);
 
-    s.focus_ref(header(&s, 5), Some(&ElementRef::Node(id(2)))).unwrap();
+    s.focus_ref(header(&s, 5), Some(&ElementRef::Node(id(2))))
+        .unwrap();
     let cleared = s.clear(header(&s, 6)).unwrap();
     assert!(cleared.state_changed);
     assert_eq!(states(&mut s), [STATE_NORMAL; 3]);
@@ -398,14 +434,18 @@ fn hover_marks_the_target_and_its_neighbors_without_a_revision_bump() {
     );
     let mut s = loaded(&doc, at(&[0.0, 1.0, 2.0, 3.0], &[0.0; 4]));
     let before = s.render(None).unwrap().revision;
-    let out = s.hover(header(&s, 1), Some(&ElementRef::Node(id(2)))).unwrap();
+    let out = s
+        .hover(header(&s, 1), Some(&ElementRef::Node(id(2))))
+        .unwrap();
     assert!(out.state_changed);
     assert_eq!(s.render_revision(), before, "hover is style, not structure");
     assert_eq!(
         s.render(None).unwrap().visual_states,
         [STATE_NEIGHBOR, STATE_HOVERED, STATE_NEIGHBOR, STATE_NORMAL]
     );
-    let again = s.hover(header(&s, 2), Some(&ElementRef::Node(id(2)))).unwrap();
+    let again = s
+        .hover(header(&s, 2), Some(&ElementRef::Node(id(2))))
+        .unwrap();
     assert!(!again.state_changed);
     s.hover(header(&s, 3), None).unwrap();
     assert_eq!(s.render(None).unwrap().visual_states, [STATE_NORMAL; 4]);
@@ -416,7 +456,8 @@ fn emphasis_is_an_independent_plane_that_follows_hidden_members_to_their_represe
     let mut s = loaded(&compound_doc(), compound_load(true));
     s.render(None).unwrap();
     // Focus the hidden child B and highlight the path B—C (edge e2).
-    s.focus_ref(header(&s, 1), Some(&ElementRef::Node(id(2)))).unwrap();
+    s.focus_ref(header(&s, 1), Some(&ElementRef::Node(id(2))))
+        .unwrap();
     s.set_highlight(
         header(&s, 2),
         HighlightPlane::Path,
@@ -435,11 +476,14 @@ fn emphasis_is_an_independent_plane_that_follows_hidden_members_to_their_represe
     // bit0 FOCUSED, bit1 PATH, bit2 COMMUNITY, bit3 EXTERNAL.
     assert_eq!(out.emphasis, [0b0011, 0b1000, 0]);
     assert_eq!(
-        out.visual_states,
-        [STATE_NORMAL; 3],
+        out.visual_states, [STATE_NORMAL; 3],
         "emphasis never competes in visual-state precedence"
     );
-    assert_eq!(out.edge_emphasis, [0, 0, 0], "the internal edge is not drawn");
+    assert_eq!(
+        out.edge_emphasis,
+        [0, 0, 0],
+        "the internal edge is not drawn"
+    );
 
     // Expanded: the planes land on the members themselves, edge e2 included.
     let mut open = loaded(&compound_doc(), compound_load(false));
@@ -460,7 +504,11 @@ fn emphasis_is_an_independent_plane_that_follows_hidden_members_to_their_represe
     .unwrap();
     let out = open.render(None).unwrap().clone();
     assert_eq!(out.emphasis, [0, 0b0010, 0b0010, 0b0100, 0b0100]);
-    assert_eq!(out.edge_emphasis, [0, 0, 0b0010, 0b0100], "path edge and induced edge");
+    assert_eq!(
+        out.edge_emphasis,
+        [0, 0, 0b0010, 0b0100],
+        "path edge and induced edge"
+    );
     assert_eq!(FLAG_COMMUNITY >> 7, 0b100);
 }
 
@@ -520,7 +568,11 @@ fn focus_step_walks_drawn_nodes_and_wraps() {
     let mut s = ring_session();
     let (node, edge) = (|n| ElementRef::Node(id(n)), |e| ElementRef::Edge(id(e)));
     s.focus_step(header(&s, 1), 1).unwrap();
-    assert_eq!(focus_of(&s), node(1), "nothing focused: +1 enters at the first");
+    assert_eq!(
+        focus_of(&s),
+        node(1),
+        "nothing focused: +1 enters at the first"
+    );
     for (seq, want) in [(2, 2), (3, 3), (4, 4), (5, 1)] {
         s.focus_step(header(&s, seq), 1).unwrap();
         assert_eq!(focus_of(&s), node(want));
@@ -538,7 +590,11 @@ fn focus_step_walks_drawn_nodes_and_wraps() {
 
     let mut fresh = ring_session();
     fresh.focus_step(header(&fresh, 1), -1).unwrap();
-    assert_eq!(focus_of(&fresh), node(4), "nothing focused: -1 enters at the last");
+    assert_eq!(
+        focus_of(&fresh),
+        node(4),
+        "nothing focused: -1 enters at the last"
+    );
 }
 
 #[test]
@@ -547,7 +603,15 @@ fn the_focus_ring_walks_node_out_edges_in_edges_then_neighbors_and_stays_anchore
     let (node, edge) = (|n| ElementRef::Node(id(n)), |e| ElementRef::Edge(id(e)));
     s.focus_ref(header(&s, 1), Some(&node(1))).unwrap();
     // A's ring: A, out A→B (e11), A→C (e12), in D→A (e13), neighbors B, C, D.
-    let want = [edge(11), edge(12), edge(13), node(2), node(3), node(4), node(1)];
+    let want = [
+        edge(11),
+        edge(12),
+        edge(13),
+        node(2),
+        node(3),
+        node(4),
+        node(1),
+    ];
     for (i, want) in want.iter().enumerate() {
         s.focus_ring(header(&s, 2 + i as u64), 1).unwrap();
         assert_eq!(&focus_of(&s), want, "stop {i}");
@@ -568,9 +632,13 @@ fn the_focus_ring_walks_node_out_edges_in_edges_then_neighbors_and_stays_anchore
 #[test]
 fn walks_need_the_current_publication() {
     let mut s = loaded(&ring_doc(), at(&[0.0, 1.0, 2.0, 3.0], &[0.0; 4]));
-    assert_eq!(s.focus_step(header(&s, 1), 1), Err(InteractionStatus::Stale));
+    assert_eq!(
+        s.focus_step(header(&s, 1), 1),
+        Err(InteractionStatus::Stale)
+    );
     s.render(None).unwrap();
-    s.pin(header(&s, 1), &ElementRef::Node(id(1)), true).unwrap();
+    s.pin(header(&s, 1), &ElementRef::Node(id(1)), true)
+        .unwrap();
     assert_eq!(
         s.focus_ring(header(&s, 2), 1),
         Err(InteractionStatus::Stale),
@@ -587,9 +655,14 @@ fn walks_need_the_current_publication() {
 fn a_stale_revision_is_rejected_with_no_change_and_no_op_seq_consumed() {
     let mut s = ring_session();
     let old = header(&s, 2);
-    s.pin(header(&s, 1), &ElementRef::Node(id(1)), true).unwrap();
+    s.pin(header(&s, 1), &ElementRef::Node(id(1)), true)
+        .unwrap();
     assert_ne!(old.stamp.render_revision, s.render_revision());
-    let before = (s.selection().unwrap(), s.pinned().unwrap(), s.render_revision());
+    let before = (
+        s.selection().unwrap(),
+        s.pinned().unwrap(),
+        s.render_revision(),
+    );
     for result in [
         s.select_refs(old, &[ElementRef::Node(id(2))], SelectMode::Replace),
         s.clear(old),
@@ -608,7 +681,11 @@ fn a_stale_revision_is_rejected_with_no_change_and_no_op_seq_consumed() {
         assert_eq!(result, Err(InteractionStatus::Stale));
     }
     assert_eq!(
-        (s.selection().unwrap(), s.pinned().unwrap(), s.render_revision()),
+        (
+            s.selection().unwrap(),
+            s.pinned().unwrap(),
+            s.render_revision()
+        ),
         before
     );
     assert_eq!(s.positions().unwrap().0[1], 1.0, "nothing moved");
@@ -627,7 +704,8 @@ fn a_stale_revision_is_rejected_with_no_change_and_no_op_seq_consumed() {
         render_revision: s.published().unwrap().revision,
         index: 0,
     });
-    s.select_refs(header(&s, 2), &[current], SelectMode::Replace).unwrap();
+    s.select_refs(header(&s, 2), &[current], SelectMode::Replace)
+        .unwrap();
     assert_eq!(selected_nodes(&s), [id(1)]);
 }
 
@@ -646,19 +724,28 @@ fn disclosure_bumps_the_revision_and_propagates_between_members_and_representati
         .unwrap();
     assert!(out.state_changed);
     assert_eq!(out.render_revision, r0 + 1);
-    assert_eq!(out.disclosure.as_ref().unwrap().collapsed, true);
+    assert!(out.disclosure.as_ref().unwrap().collapsed);
     assert_eq!(s.collapsed(), [1, 0, 0, 0, 0]);
     // Member → representative: B is hidden but selected; A shows it.
     let render = s.render(None).unwrap().clone();
     assert_eq!(render.visual_states[0], STATE_SELECTED);
-    assert_eq!(selected_nodes(&s), [id(2)], "hidden members keep their state");
+    assert_eq!(
+        selected_nodes(&s),
+        [id(2)],
+        "hidden members keep their state"
+    );
 
     // Representative → members: selecting A's render node selects all three.
     let agg = ElementRef::Aggregate(AggregateRef {
         render_revision: render.revision,
         index: 0,
     });
-    s.select_refs(header(&s, 3), &[agg.clone()], SelectMode::Replace).unwrap();
+    s.select_refs(
+        header(&s, 3),
+        std::slice::from_ref(&agg),
+        SelectMode::Replace,
+    )
+    .unwrap();
     assert_eq!(selected_nodes(&s), [id(1), id(2), id(3)]);
 
     // Expand: back to members, the selection intact.
@@ -669,7 +756,13 @@ fn disclosure_bumps_the_revision_and_propagates_between_members_and_representati
     let render = s.render(None).unwrap().clone();
     assert_eq!(
         render.visual_states,
-        [STATE_SELECTED, STATE_SELECTED, STATE_SELECTED, STATE_NORMAL, STATE_NORMAL]
+        [
+            STATE_SELECTED,
+            STATE_SELECTED,
+            STATE_SELECTED,
+            STATE_NORMAL,
+            STATE_NORMAL
+        ]
     );
 
     // Toggle is expand/collapse; a no-op neither bumps nor reports a change.
@@ -678,7 +771,8 @@ fn disclosure_bumps_the_revision_and_propagates_between_members_and_representati
         .toggle_disclosure(header(&s, 5), &a, DisclosureAction::Expand)
         .unwrap();
     assert_eq!((noop.state_changed, s.render_revision()), (false, before));
-    s.toggle_disclosure(header(&s, 6), &a, DisclosureAction::Toggle).unwrap();
+    s.toggle_disclosure(header(&s, 6), &a, DisclosureAction::Toggle)
+        .unwrap();
     assert_eq!(s.collapsed()[0], 1);
     assert_eq!(s.render_revision(), before + 1);
 
@@ -697,12 +791,20 @@ fn disclosure_rejects_non_compounds_aggregates_and_leaves_state_alone() {
     let before = (s.render_revision(), s.collapsed().to_vec());
     // D is not a compound.
     assert_eq!(
-        s.toggle_disclosure(header(&s, 1), &ElementRef::Node(id(4)), DisclosureAction::Collapse),
+        s.toggle_disclosure(
+            header(&s, 1),
+            &ElementRef::Node(id(4)),
+            DisclosureAction::Collapse
+        ),
         Err(InteractionStatus::Invalid)
     );
     // Edges and render aggregates take no action.
     assert_eq!(
-        s.toggle_disclosure(header(&s, 1), &ElementRef::Edge(id(11)), DisclosureAction::Toggle),
+        s.toggle_disclosure(
+            header(&s, 1),
+            &ElementRef::Edge(id(11)),
+            DisclosureAction::Toggle
+        ),
         Err(InteractionStatus::Invalid)
     );
     let agg = ElementRef::Aggregate(AggregateRef {
@@ -810,7 +912,13 @@ fn move_previews_commit_and_cancel_bit_exact() {
     let r0 = s.render_revision();
     for (seq, expect) in [(1, (11.5, 2.5)), (2, (13.0, 5.0))] {
         let out = s
-            .move_node(header(&s, seq), &n2, (1.5, 2.5), MoveSpace::Data, MoveCommit::Preview)
+            .move_node(
+                header(&s, seq),
+                &n2,
+                (1.5, 2.5),
+                MoveSpace::Data,
+                MoveCommit::Preview,
+            )
             .unwrap();
         assert!(out.positions.is_empty(), "previews are not persisted");
         assert_eq!(
@@ -818,7 +926,11 @@ fn move_previews_commit_and_cancel_bit_exact() {
             expect
         );
     }
-    assert_eq!(s.render_revision(), r0 + 2, "each preview bumps the revision");
+    assert_eq!(
+        s.render_revision(),
+        r0 + 2,
+        "each preview bumps the revision"
+    );
     assert!(s.pinned().unwrap().is_empty(), "a preview does not pin");
 
     // Another node cannot start moving while one is in flight.
@@ -832,19 +944,43 @@ fn move_previews_commit_and_cancel_bit_exact() {
         ),
         Err(InteractionStatus::Invalid)
     );
-    s.move_node(header(&s, 3), &n2, (0.0, 0.0), MoveSpace::Data, MoveCommit::Cancel)
-        .unwrap();
+    s.move_node(
+        header(&s, 3),
+        &n2,
+        (0.0, 0.0),
+        MoveSpace::Data,
+        MoveCommit::Cancel,
+    )
+    .unwrap();
     assert_eq!(pos(&s, 1), start, "cancel restores the origin bit for bit");
     assert_eq!(
-        s.move_node(header(&s, 4), &n2, (0.0, 0.0), MoveSpace::Data, MoveCommit::Cancel),
+        s.move_node(
+            header(&s, 4),
+            &n2,
+            (0.0, 0.0),
+            MoveSpace::Data,
+            MoveCommit::Cancel
+        ),
         Err(InteractionStatus::Invalid),
         "nothing to cancel"
     );
 
-    s.move_node(header(&s, 4), &n2, (1.0, 1.0), MoveSpace::Data, MoveCommit::Preview)
-        .unwrap();
+    s.move_node(
+        header(&s, 4),
+        &n2,
+        (1.0, 1.0),
+        MoveSpace::Data,
+        MoveCommit::Preview,
+    )
+    .unwrap();
     let out = s
-        .move_node(header(&s, 5), &n2, (1.0, 1.0), MoveSpace::Data, MoveCommit::Commit)
+        .move_node(
+            header(&s, 5),
+            &n2,
+            (1.0, 1.0),
+            MoveSpace::Data,
+            MoveCommit::Commit,
+        )
         .unwrap();
     assert_eq!(
         out.positions,
@@ -857,10 +993,22 @@ fn move_previews_commit_and_cancel_bit_exact() {
     );
     assert_eq!(s.pinned().unwrap(), [id(2)], "commit pins");
     // The committed move ended: the next move starts a new origin.
-    s.move_node(header(&s, 6), &n2, (5.0, 0.0), MoveSpace::Data, MoveCommit::Preview)
-        .unwrap();
-    s.move_node(header(&s, 7), &n2, (0.0, 0.0), MoveSpace::Data, MoveCommit::Cancel)
-        .unwrap();
+    s.move_node(
+        header(&s, 6),
+        &n2,
+        (5.0, 0.0),
+        MoveSpace::Data,
+        MoveCommit::Preview,
+    )
+    .unwrap();
+    s.move_node(
+        header(&s, 7),
+        &n2,
+        (0.0, 0.0),
+        MoveSpace::Data,
+        MoveCommit::Cancel,
+    )
+    .unwrap();
     assert_eq!(f64::from_bits(pos(&s, 1).0), 12.0);
 }
 
@@ -869,7 +1017,13 @@ fn screen_deltas_convert_through_the_rendered_camera_and_bad_deltas_change_nothi
     let mut s = loaded(&standard_doc(), at(&[0.0, 10.0, 20.0], &[0.0; 3]));
     let n2 = ElementRef::Node(id(2));
     assert_eq!(
-        s.move_node(header(&s, 1), &n2, (4.0, 8.0), MoveSpace::ScreenDelta, MoveCommit::Preview),
+        s.move_node(
+            header(&s, 1),
+            &n2,
+            (4.0, 8.0),
+            MoveSpace::ScreenDelta,
+            MoveCommit::Preview
+        ),
         Err(InteractionStatus::Invalid),
         "no camera has been rendered"
     );
@@ -883,26 +1037,54 @@ fn screen_deltas_convert_through_the_rendered_camera_and_bad_deltas_change_nothi
         dpr: 1.0,
     }))
     .unwrap();
-    s.move_node(header(&s, 1), &n2, (4.0, 8.0), MoveSpace::ScreenDelta, MoveCommit::Preview)
-        .unwrap();
+    s.move_node(
+        header(&s, 1),
+        &n2,
+        (4.0, 8.0),
+        MoveSpace::ScreenDelta,
+        MoveCommit::Preview,
+    )
+    .unwrap();
     let (x, y) = s.positions().unwrap();
     assert_eq!((x[1], y[1]), (12.0, -2.0));
 
     let before = (pos(&s, 1), s.render_revision());
-    for delta in [(f64::NAN, 0.0), (0.0, f64::INFINITY), (f64::NEG_INFINITY, 1.0)] {
+    for delta in [
+        (f64::NAN, 0.0),
+        (0.0, f64::INFINITY),
+        (f64::NEG_INFINITY, 1.0),
+    ] {
         assert_eq!(
-            s.move_node(header(&s, 2), &n2, delta, MoveSpace::Data, MoveCommit::Preview),
+            s.move_node(
+                header(&s, 2),
+                &n2,
+                delta,
+                MoveSpace::Data,
+                MoveCommit::Preview
+            ),
             Err(InteractionStatus::Invalid)
         );
         assert_eq!((pos(&s, 1), s.render_revision()), before);
     }
     // A finite delta whose sum overflows is rejected too, leaving the node at
     // its last valid position.
-    s.move_node(header(&s, 2), &n2, (f64::MAX, 0.0), MoveSpace::Data, MoveCommit::Preview)
-        .unwrap();
+    s.move_node(
+        header(&s, 2),
+        &n2,
+        (f64::MAX, 0.0),
+        MoveSpace::Data,
+        MoveCommit::Preview,
+    )
+    .unwrap();
     let last_valid = pos(&s, 1);
     assert_eq!(
-        s.move_node(header(&s, 3), &n2, (f64::MAX, 0.0), MoveSpace::Data, MoveCommit::Preview),
+        s.move_node(
+            header(&s, 3),
+            &n2,
+            (f64::MAX, 0.0),
+            MoveSpace::Data,
+            MoveCommit::Preview
+        ),
         Err(InteractionStatus::Invalid)
     );
     assert_eq!(pos(&s, 1), last_valid);
@@ -941,7 +1123,11 @@ fn relayout_holds_pins_bit_exact_over_64_steps_with_parents() {
     );
 
     // The state continues: alpha only cools.
-    let second = s.relayout_step(header(&s, 2), 64).unwrap().relayout.unwrap();
+    let second = s
+        .relayout_step(header(&s, 2), 64)
+        .unwrap()
+        .relayout
+        .unwrap();
     assert!(second.alpha <= first.alpha);
     assert_eq!(second.done, second.alpha < RELAYOUT_SETTLED_ALPHA);
 
@@ -1002,7 +1188,10 @@ fn positions_and_pins_round_trip_through_a_new_session_without_relayout() {
     )
     .unwrap();
 
-    let (px, py) = s.positions().map(|(a, b)| (a.to_vec(), b.to_vec())).unwrap();
+    let (px, py) = s
+        .positions()
+        .map(|(a, b)| (a.to_vec(), b.to_vec()))
+        .unwrap();
     let pinned = s.pinned().unwrap();
     let plane: Vec<u8> = s
         .identity()
@@ -1078,7 +1267,11 @@ fn a_bound_session_neither_draws_nor_exposes_what_the_temporal_frame_hides() {
     s.bind_temporal(registry.clone(), HANDLE).unwrap();
     select(&mut s, 1, &[2], SelectMode::Replace);
     let all = s.render(None).unwrap().clone();
-    assert_eq!(all.edge_render, [0, 1, 2], "no frame yet: everything is visible");
+    assert_eq!(
+        all.edge_render,
+        [0, 1, 2],
+        "no frame yet: everything is visible"
+    );
 
     // A new frame changes the revision: the host's old stamp is stale.
     frame_at(&registry, 1, 10);
@@ -1087,7 +1280,10 @@ fn a_bound_session_neither_draws_nor_exposes_what_the_temporal_frame_hides() {
     assert_eq!(selected_nodes(&s), [id(2)], "a stale op changed nothing");
     let visible = s.render(None).unwrap().clone();
     assert!(visible.revision > all.revision);
-    assert_eq!(visible.visual_states, [STATE_NORMAL, STATE_SELECTED, STATE_NORMAL]);
+    assert_eq!(
+        visible.visual_states,
+        [STATE_NORMAL, STATE_SELECTED, STATE_NORMAL]
+    );
 
     // Cursor 20 expires node 2 (valid_to is half-open).
     frame_at(&registry, 2, 20);
@@ -1099,10 +1295,19 @@ fn a_bound_session_neither_draws_nor_exposes_what_the_temporal_frame_hides() {
         [NOT_RENDERED, NOT_RENDERED, 0],
         "both edges incident to node 2 are gone; the derived edge 3→1 stays"
     );
-    assert!((0..hidden.node_count())
-        .all(|r| !hidden.members_of_node(r).contains(&1)), "not reachable through any group");
-    assert_eq!(hidden.visual_states, [STATE_NORMAL; 2], "its selection is not drawn");
-    assert_eq!(selected_nodes(&s), [id(2)], "but its identity state is kept");
+    assert!(
+        (0..hidden.node_count()).all(|r| !hidden.members_of_node(r).contains(&1)),
+        "not reachable through any group"
+    );
+    assert_eq!(
+        hidden.visual_states, [STATE_NORMAL; 2],
+        "its selection is not drawn"
+    );
+    assert_eq!(
+        selected_nodes(&s),
+        [id(2)],
+        "but its identity state is kept"
+    );
     assert_eq!(
         s.select_refs(
             header(&s, 2),
@@ -1120,7 +1325,10 @@ fn a_bound_session_neither_draws_nor_exposes_what_the_temporal_frame_hides() {
     frame_at(&registry, 3, 10);
     let back = s.render(None).unwrap().clone();
     assert_eq!(back.member_of, [0, 1, 2]);
-    assert_eq!(back.visual_states, [STATE_NORMAL, STATE_SELECTED, STATE_NORMAL]);
+    assert_eq!(
+        back.visual_states,
+        [STATE_NORMAL, STATE_SELECTED, STATE_NORMAL]
+    );
 
     // An Owned session has no temporal visibility.
     assert_eq!(owned.render(None).unwrap().member_of, [0, 1, 2]);
@@ -1190,16 +1398,28 @@ fn identity_round_trips_uuid_index_and_exact_result_rows() {
             order: 5,
         })
     };
-    assert_eq!(identity.resolve(&pair(2, Some(""))), Ok(ElementIndex::Edge(3)));
+    assert_eq!(
+        identity.resolve(&pair(2, Some(""))),
+        Ok(ElementIndex::Edge(3))
+    );
     assert_eq!(identity.resolve(&pair(3, None)), Ok(ElementIndex::Edge(4)));
-    for wrong in [pair(2, None), pair(3, Some("")), pair(2, Some("aa")), pair(3, Some("bb"))] {
+    for wrong in [
+        pair(2, None),
+        pair(3, Some("")),
+        pair(2, Some("aa")),
+        pair(3, Some("bb")),
+    ] {
         assert_eq!(identity.resolve(&wrong), Err(ResolveError::Unresolved));
     }
 
     // Transported refs select the same edges; the render shows all five.
-    s.select_refs(header(&s, 1), &transports, SelectMode::Replace).unwrap();
+    s.select_refs(header(&s, 1), &transports, SelectMode::Replace)
+        .unwrap();
     assert_eq!(s.selection().unwrap().len(), 5);
-    assert_eq!(s.render(None).unwrap().edge_visual_states, [STATE_SELECTED; 5]);
+    assert_eq!(
+        s.render(None).unwrap().edge_visual_states,
+        [STATE_SELECTED; 5]
+    );
 }
 
 // -- bounded work -----------------------------------------------------------------
@@ -1240,7 +1460,8 @@ fn exercise(s: &mut GraphSession) -> u64 {
         render_revision: s.published().unwrap().revision,
         index: 0,
     });
-    s.select_refs(header(s, 4), &[root], SelectMode::Replace).unwrap();
+    s.select_refs(header(s, 4), &[root], SelectMode::Replace)
+        .unwrap();
     s.render(None).unwrap();
     s.work()
 }
@@ -1272,8 +1493,16 @@ fn render_and_walks_stay_linear_across_a_size_ladder() {
 fn a_hundred_thousand_deep_parent_chain_renders_and_collapses_without_a_quadratic_walk() {
     let mut s = ladder_session(100_000, true);
     let render = s.render(None).unwrap();
-    assert_eq!(render.node_count(), 1, "everything hides under the collapsed root");
+    assert_eq!(
+        render.node_count(),
+        1,
+        "everything hides under the collapsed root"
+    );
     assert_eq!(render.members_of_node(0).len(), 100_000);
-    assert_eq!(render.edge_count(), 0, "every edge is internal to the group");
+    assert_eq!(
+        render.edge_count(),
+        0,
+        "every edge is internal to the group"
+    );
     assert_eq!(STATE_AGGREGATE, 1);
 }

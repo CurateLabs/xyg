@@ -122,9 +122,10 @@ impl GraphSession {
     }
 
     fn node_position(&self, node: usize, pinned: bool) -> NodePosition {
-        let (x, y) = self.positions.as_ref().map_or((f64::NAN, f64::NAN), |(x, y)| {
-            (x[node], y[node])
-        });
+        let (x, y) = self
+            .positions
+            .as_ref()
+            .map_or((f64::NAN, f64::NAN), |(x, y)| (x[node], y[node]));
         NodePosition {
             node: self.identity.node_ref(node),
             x,
@@ -181,7 +182,10 @@ impl GraphSession {
                 }
             }
             let (x, y) = {
-                let (x, y) = session.positions.as_ref().ok_or(InteractionStatus::Invalid)?;
+                let (x, y) = session
+                    .positions
+                    .as_ref()
+                    .ok_or(InteractionStatus::Invalid)?;
                 (x[node], y[node])
             };
             let (next, origin) = match commit {
@@ -198,7 +202,10 @@ impl GraphSession {
                             .data_delta(delta.0, delta.1),
                     };
                     let next = (x + dx, y + dy);
-                    if !(dx.is_finite() && dy.is_finite() && next.0.is_finite() && next.1.is_finite())
+                    if !(dx.is_finite()
+                        && dy.is_finite()
+                        && next.0.is_finite()
+                        && next.1.is_finite())
                     {
                         return Err(InteractionStatus::Invalid);
                     }
@@ -255,7 +262,10 @@ impl GraphSession {
                         }
                     }
                 })?;
-                let (x, y) = session.positions.as_ref().ok_or(InteractionStatus::Invalid)?;
+                let (x, y) = session
+                    .positions
+                    .as_ref()
+                    .ok_or(InteractionStatus::Invalid)?;
                 session.relayout = Some(
                     ForceState::new_configured(
                         n as u64,
@@ -272,7 +282,10 @@ impl GraphSession {
                     .ok_or(InteractionStatus::Invalid)?,
                 );
             }
-            let layout = session.relayout.as_mut().ok_or(InteractionStatus::Invalid)?;
+            let layout = session
+                .relayout
+                .as_mut()
+                .ok_or(InteractionStatus::Invalid)?;
             layout.tick(steps);
             session.work += u64::from(steps) * (n + e) as u64;
             if !layout.alpha.is_finite() || layout.x.iter().chain(&layout.y).any(|v| !v.is_finite())

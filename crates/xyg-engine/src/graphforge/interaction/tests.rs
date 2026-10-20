@@ -168,10 +168,20 @@ fn handmade_ends(
     let n = nodes.len().max(1) as u64;
     let ends: Vec<(u64, u64)> = match ends {
         Some(ends) => ends.to_vec(),
-        None => (0..edges.len() as u64).map(|i| (i % n, (i + 1) % n)).collect(),
+        None => (0..edges.len() as u64)
+            .map(|i| (i % n, (i + 1) % n))
+            .collect(),
     };
-    b.u64s("edge.source", 0, &ends.iter().map(|e| e.0).collect::<Vec<_>>());
-    b.u64s("edge.target", 0, &ends.iter().map(|e| e.1).collect::<Vec<_>>());
+    b.u64s(
+        "edge.source",
+        0,
+        &ends.iter().map(|e| e.0).collect::<Vec<_>>(),
+    );
+    b.u64s(
+        "edge.target",
+        0,
+        &ends.iter().map(|e| e.1).collect::<Vec<_>>(),
+    );
     for (i, result_id) in layers.iter().enumerate() {
         b.utf8("layer.schema", i, "test");
         if let Some(result_id) = result_id {

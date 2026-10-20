@@ -232,12 +232,19 @@ impl GraphSession {
         let n = identity.node_count();
         let generation = doc.generation().map_err(|_| InteractionStatus::Invalid)?;
         let parent = Self::hierarchy(&doc, n)?;
-        let edge_source = doc.u64s("edge.source").map_err(|_| InteractionStatus::Invalid)?;
-        let edge_target = doc.u64s("edge.target").map_err(|_| InteractionStatus::Invalid)?;
+        let edge_source = doc
+            .u64s("edge.source")
+            .map_err(|_| InteractionStatus::Invalid)?;
+        let edge_target = doc
+            .u64s("edge.target")
+            .map_err(|_| InteractionStatus::Invalid)?;
         let edges = identity.edge_count();
         if edge_source.len() != edges
             || edge_target.len() != edges
-            || edge_source.iter().chain(&edge_target).any(|&v| v >= n as u64)
+            || edge_source
+                .iter()
+                .chain(&edge_target)
+                .any(|&v| v >= n as u64)
         {
             return invalid();
         }
@@ -635,7 +642,9 @@ impl GraphSession {
                             .min()
                             .ok_or(InteractionStatus::Invalid)?;
                         let stand_in = render.focus_node[render.member_of[first] as usize];
-                        session.identity.focus_of(ElementIndex::Node(stand_in as usize))
+                        session
+                            .identity
+                            .focus_of(ElementIndex::Node(stand_in as usize))
                     }
                 }),
             };
