@@ -1109,7 +1109,7 @@ ABI slice, which will record its own size decision. Compiler profile unchanged.
 render pipeline and widens the interaction-state mask; no WASM export changed,
 so the session code is not linked. The packaged artifact measures 1,514,183 raw
 bytes (1,337 under the unchanged 1,515,520-byte gate; +1,565 over S1) and
-622,334 level-6 gzip bytes (4,354 under the 626,688-byte gate; −1,711 against
+622,333 level-6 gzip bytes (4,355 under the 626,688-byte gate; −1,711 against
 S1's 624,045). Neither budget is raised; the raw margin is thin, and the
 session ABI slice owns the next size decision.
 

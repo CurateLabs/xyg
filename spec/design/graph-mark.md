@@ -428,7 +428,7 @@ browser/Python/Node hosts follow per its slice table.
   u8 (`(flags >> 7) & 0xF`: FOCUSED, PATH, COMMUNITY, EXTERNAL; they never
   enter the precedence). Emphasis flags and `SELECTED/HOVERED/NEIGHBOR/PINNED`
   propagate from hidden members to their representative; across an aggregate
-  the plane is the OR over members. `KNOWN_STATE_FLAGS` is `(1 << 11) - 1`.
+  the plane is the OR over members. `KNOWN_STATE_FLAGS` (the authored style vocabulary, `state_flag_mask` 127 in every host) stays 7 bits; only `compound_collapse` accepts the session emphasis flags (`KNOWN_SESSION_FLAGS`, `(1 << 11) - 1`).
   Hover (`HOVERED` on the target, `NEIGHBOR` one visible edge away) is transient
   session state, not part of the shared interaction state.
 - **Revisions and stamps.** `render_revision` advances on every *structural*
