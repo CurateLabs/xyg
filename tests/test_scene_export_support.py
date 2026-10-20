@@ -2902,3 +2902,26 @@ def test_constant_color_scatter_keeps_its_color_in_the_legend_with_per_item_stro
     assert 'fill="rgb(255,0,0)"' in legend.split("<text", 1)[0]
     assert "rgb(57,135,229)" not in svg  # the default blue never appears
     assert 'fill="rgb(255,0,0)"' in svg.split('data-xy-chrome="legend"')[0]
+
+
+def test_constant_stroke_opacity_is_folded_into_the_per_item_stroke_plane() -> None:
+    """A constant ``stroke_opacity`` applies to per-item strokes (kept from main, #1006)."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter(
+        [0.3, 0.7],
+        [0.5, 0.5],
+        color="red",
+        size=30,
+        stroke=["#000000", "#0000ff"],
+        stroke_width=2,
+        opacity=1.0,
+    )
+    figure.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    svg = _public_svg(figure)
+    assert svg is not None
+    assert 'stroke="rgb(0,0,0)" stroke-opacity="0.5"' in svg
+    assert 'stroke="rgb(0,0,255)" stroke-opacity="0.5"' in svg
+    assert 'fill="rgb(255,0,0)" stroke=' in svg  # the fill keeps its full opacity

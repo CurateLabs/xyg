@@ -5387,6 +5387,8 @@ export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
     has_style_opacity: Object.hasOwn(style, "opacity"),
     style_fill_opacity: packedFill.flags ? packedFill.value : Number.NaN,
     has_style_fill_opacity: packedFill.flags !== 0,
+    style_stroke_opacity: Object.hasOwn(style, "stroke_opacity") ? Number(style.stroke_opacity) : Number.NaN,
+    has_style_stroke_opacity: Object.hasOwn(style, "stroke_opacity"),
     style_truecolor: Boolean(style.truecolor),
     style_domain: style.domain ?? null,
     style_colormap_mode: styleColormapMode,
@@ -7248,10 +7250,6 @@ export function scatterPacksPaintPlane(trace) {
   if (String(trace.kind || "") !== "scatter" || scatterUsesDensity(trace)) return false;
   const names = scatterPaintChannelNames(trace);
   if (!names.length) return false;
-  // The plane is final paint with trace opacity/fill_opacity folded in; a
-  // constant stroke_opacity is not part of that fold, so it keeps failing closed.
-  const strokeOpacity = (trace.style ?? {}).stroke_opacity;
-  if (strokeOpacity != null && Number(strokeOpacity) !== 1) return false;
   return names.every((name) => sceneScatterPaintChannelAdmit(name));
 }
 

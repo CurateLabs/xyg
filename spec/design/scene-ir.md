@@ -60,10 +60,10 @@ a hidden trace. The figure-support probe rejects it with the stable
 any per-item-paint exemption (hexbin, ribbon, mesh, scatter, segments/contour)
 is considered, so a hidden trace is never exported as painted marks. A scatter
 per-item paint plane is final paint: the XYTA materializer folds the trace's
-`opacity`/`fill_opacity` into it and Scene interns it as authored, never
+`opacity`/`fill_opacity` (fill) and `opacity`/`stroke_opacity` (stroke; XYTA
+header fields added at ABI 384) into it and Scene interns it as authored, never
 multiplying it by the trace-level paint, which keeps its own constant color for
-chrome such as the legend swatch. A constant `stroke_opacity` is not part of
-that fold, so such a trace keeps failing closed. A constant color channel
+chrome such as the legend swatch. A constant color channel
 authored as the keyword `transparent`/`none` is an absent paint that an artist
 alpha does not replace; explicit RGBA paints (including `#rrggbb00`) take the
 artist alpha like any other.

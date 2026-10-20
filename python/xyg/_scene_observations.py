@@ -265,10 +265,6 @@ def _scatter_packs_paint_plane(trace: Any) -> bool:
     names = set(getattr(trace, "per_item_channel_names", lambda: ())())
     if not names:
         return False
-    # The plane is final paint with trace opacity/fill_opacity folded in; a
-    # constant stroke_opacity is not part of that fold, so it keeps failing closed.
-    if (getattr(trace, "style", None) or {}).get("stroke_opacity", 1.0) != 1.0:
-        return False
     return all(_native.scene_scatter_paint_channel_admit(name) for name in names)
 
 

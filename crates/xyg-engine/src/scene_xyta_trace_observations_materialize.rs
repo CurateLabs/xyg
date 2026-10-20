@@ -70,6 +70,8 @@ pub struct SceneXytaTraceObservationsIn<'a> {
     pub has_style_opacity: i32,
     pub style_fill_opacity: f32,
     pub has_style_fill_opacity: i32,
+    pub style_stroke_opacity: f32,
+    pub has_style_stroke_opacity: i32,
     pub style_truecolor: i32,
     pub style_domain_lo: f64,
     pub style_domain_hi: f64,
@@ -618,8 +620,10 @@ pub fn scene_xyta_trace_observations_materialize(
         if let Some(fills) = fills.as_mut() {
             scale_alpha(fills, opacity * fill_opacity);
         }
+        let stroke_opacity =
+            if input.has_style_stroke_opacity != 0 { input.style_stroke_opacity } else { 1.0 };
         if let Some(strokes) = strokes.as_mut() {
-            scale_alpha(strokes, opacity);
+            scale_alpha(strokes, opacity * stroke_opacity);
         }
         let widths = item_widths(
             &input.stroke_width_ch,
@@ -745,6 +749,8 @@ mod tests {
             has_style_opacity: 0,
             style_fill_opacity: 1.0,
             has_style_fill_opacity: 0,
+            style_stroke_opacity: 1.0,
+            has_style_stroke_opacity: 0,
             style_truecolor: 0,
             style_domain_lo: 0.0,
             style_domain_hi: 1.0,

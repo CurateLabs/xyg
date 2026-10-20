@@ -67,6 +67,10 @@ pub struct XygSceneXytaTraceObservationsIn {
     pub has_style_opacity: i32,
     pub style_fill_opacity: f32,
     pub has_style_fill_opacity: i32,
+
+pub style_stroke_opacity: f32,
+
+pub has_style_stroke_opacity: i32,
     pub style_truecolor: i32,
     pub style_domain_lo: f64,
     pub style_domain_hi: f64,
@@ -522,6 +526,10 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_observations_materialize(
         has_style_opacity: header.has_style_opacity,
         style_fill_opacity: header.style_fill_opacity,
         has_style_fill_opacity: header.has_style_fill_opacity,
+
+style_stroke_opacity: header.style_stroke_opacity,
+
+has_style_stroke_opacity: header.has_style_stroke_opacity,
         style_truecolor: header.style_truecolor,
         style_domain_lo: header.style_domain_lo,
         style_domain_hi: header.style_domain_hi,

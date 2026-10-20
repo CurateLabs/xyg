@@ -565,6 +565,10 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
         "has_style_opacity": "opacity" in style,
         "style_fill_opacity": float(style["fill_opacity"]) if "fill_opacity" in style else nan,
         "has_style_fill_opacity": "fill_opacity" in style,
+        "style_stroke_opacity": (
+            float(style["stroke_opacity"]) if "stroke_opacity" in style else nan
+        ),
+        "has_style_stroke_opacity": "stroke_opacity" in style,
         "style_truecolor": bool(style.get("truecolor")),
         "style_domain": style.get("domain"),
         "style_colormap_mode": style_colormap_mode,
