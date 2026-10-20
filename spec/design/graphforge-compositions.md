@@ -538,7 +538,7 @@ the `graph` mark with the composition's planes and Rust legend; bar charts,
 parallel coordinates, and embedding scatters attach the same UUID hover rows
 as Node. `encode_graphforge_request` and `decode_graphforge_document` expose
 the raw bytes. `tests/fixtures/graphforge/cross_host.json` pins the request and
-document SHA-256 for 99 cases; the Python generator
+document SHA-256 for 101 cases; the Python generator
 (`scripts/gen_graphforge_cross_host.py`) writes it and both
 `tests/test_graphforge.py` and `packages/xy-node/test/graphforge-cross-host.test.mjs`
 reproduce it.
