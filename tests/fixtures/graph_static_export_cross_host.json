@@ -324,5 +324,105 @@
     "png_scale2_sha256": "0d594e431bb0f7215761eb4a7aaef0e776bca703653c2bdcd9ca87dbadaeca6a"
    }
   }
+ },
+ "annotated": {
+  "cases": {
+   "text": {
+    "graph": "plain",
+    "annotations": [
+     {
+      "kind": "text",
+      "x": 2.0,
+      "y": 1.5,
+      "text": "NOTE"
+     }
+    ],
+    "svg_sha256": "70df20badc0e287fb7b4b6c6fcff907d3245e6a79622d59bee070864a02ac703",
+    "png_scale1_sha256": "26e1d7e8b500472664234e2e7265a4bfbfb113c69a09ae95816c0c67241dedca",
+    "png_scale2_sha256": "a454ea5d589307a86c5abac87100ee50f68e0a26957515cfd069a1b3102c75ab"
+   },
+   "rules": {
+    "graph": "plain",
+    "annotations": [
+     {
+      "kind": "hline",
+      "y": 1.5,
+      "text": "HL"
+     },
+     {
+      "kind": "vline",
+      "x": 2.0
+     }
+    ],
+    "svg_sha256": "ffa42f7c3255baf2697e92303050ad80a83f33eb458ae2b80a38f3bb0d4da187",
+    "png_scale1_sha256": "592fc8c4a464ce76557a77f72619ca60d1281598cc3178aba32d7f210acae36e",
+    "png_scale2_sha256": "e6c55e9002fb42e475f6e5e3c2b81971e60279af373a7e07202d8fba72c0543b"
+   },
+   "arrow": {
+    "graph": "plain",
+    "annotations": [
+     {
+      "kind": "arrow",
+      "x0": 0.5,
+      "y0": 0.5,
+      "x1": 3.5,
+      "y1": 2.5
+     }
+    ],
+    "svg_sha256": "fae34009bda6c0d0e6de8e23c4c62c61844740265243bea25636de9026bcc45c",
+    "png_scale1_sha256": "b94e4ea175daee042e8cb5231fed450642fa0e2416ea04e8a0f130848642201d",
+    "png_scale2_sha256": "3289326e3cd797a26eacfa72815b484a5ff917144ed5eb7ad4c8fb7e69694f43"
+   },
+   "callout": {
+    "graph": "plain",
+    "annotations": [
+     {
+      "kind": "callout",
+      "x": 2.0,
+      "y": 1.5,
+      "text": "CALL"
+     }
+    ],
+    "svg_sha256": "d772bc6b436391bc0b02f8e0f64138ad84d3c341fda6cac399bd8fc7fa342cde",
+    "png_scale1_sha256": "9715921b753cc30cc14909b32b4230d1443e684fa2649429d428569f0f0f61f7",
+    "png_scale2_sha256": "38f89d960c4b8a09c850c8fbdb8629cb29d0606e1121a23a36b5e9ab616d2bef"
+   },
+   "composed_all": {
+    "graph": "composed",
+    "annotations": [
+     {
+      "kind": "text",
+      "x": 4.5,
+      "y": 2.5,
+      "text": "MID"
+     },
+     {
+      "kind": "hline",
+      "y": 2.5
+     },
+     {
+      "kind": "vline",
+      "x": 4.5,
+      "text": "VL"
+     },
+     {
+      "kind": "arrow",
+      "x0": 1.0,
+      "y0": 1.0,
+      "x1": 8.0,
+      "y1": 4.0
+     },
+     {
+      "kind": "callout",
+      "x": 5.0,
+      "y": 0.0,
+      "text": "CALL"
+     }
+    ],
+    "svg_sha256": "e9c5eaac55ed4bcb305e872f98e978bac0ab0d9bfa4a521abcce828b2a5b9fcb",
+    "png_scale1_sha256": "a412b2b364355cb3c294231e320bbcc410523556344c38a7542ca62634560772",
+    "png_scale2_sha256": "ef07f23ef81e16c5edfce289d30e00a35ace8bdaa5b87113caf78268b8ac956d"
+   }
+  }
  }
 }
