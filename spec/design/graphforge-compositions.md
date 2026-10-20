@@ -704,6 +704,9 @@ another result or generation never matches (generation checks, §4.2).
   wasm32 artifact and requires byte-identical documents and Scenes; the
   browser bundle's request framing must equal Node's and decode the same
   identities. `cargo test -p xyg-wasm` checks the adapter against the C ABI.
+  The default view (§4.4a) adds about 1.1 KB gzip to `xyg-wasm` (measured
+  with `gzip -9`: 618,240 → 619,337 bytes), inside the packaging gate; its
+  class ranking is a sort-free selection so no new sort instantiations ship.
 - Browser: `scripts/graphforge_wasm_smoke.mjs` serves only the packaged
   Worker/WASM/client and fixtures under a strict CSP (no `blob:`), paints a
   PageRank + similarity composition through WebGL, maps every painted row to

@@ -1573,15 +1573,12 @@ fn composing_the_same_graph_twice_is_byte_identical() {
 
 #[test]
 fn label_classes_bucket_beyond_six_like_every_group() {
-    let sizes: BTreeMap<&str, u64> = ["a", "b", "c", "d", "e", "f", "g", "h"]
-        .into_iter()
-        .zip([3, 3, 2, 2, 2, 1, 1, 1])
-        .collect();
-    let (ranked, named) = rank_codes(sizes);
-    assert_eq!(named, 6);
-    let codes: Vec<(&str, u8)> = ranked;
-    assert_eq!(
-        codes,
-        [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5), ("f", 6), ("g", 7), ("h", 7)]
-    );
+    // Sizes of eight labels in ascending label order: ties rank by label.
+    let (codes, bucket) = rank_codes(&[3, 3, 2, 2, 2, 1, 1, 1], &|a, b| a < b);
+    assert!(bucket);
+    assert_eq!(codes, [1, 2, 3, 4, 5, 6, 7, 7]);
+    // Seven groups all keep their own code.
+    let (codes, bucket) = rank_codes(&[1, 5, 1, 1, 1, 1, 1], &|a, b| a < b);
+    assert!(!bucket);
+    assert_eq!(codes, [2, 1, 3, 4, 5, 6, 7]);
 }

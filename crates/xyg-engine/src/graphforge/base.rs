@@ -141,6 +141,7 @@ impl Collector {
     }
 
     /// Optional text child: absent or non-text columns yield no labels.
+    #[inline(never)]
     fn optional_text<'a>(column: Option<Column<'_, 'a>>, len: usize) -> Vec<Option<&'a str>> {
         match column {
             Some(column) if matches!(column.field.data_type, DataType::Utf8 { .. }) => {
@@ -150,12 +151,13 @@ impl Collector {
         }
     }
 
-    /// Per row, the first non-empty text among [`CAPTION_PROPERTIES`].
-    fn captions<'c, 'a: 'c>(
-        column: impl Fn(&str) -> Option<Column<'c, 'a>>,
+    /// Per row, the first non-empty text among [`CAPTION_PROPERTIES`]
+    /// (`columns` in that order).
+    fn captions<'a>(
+        columns: [Option<Column<'_, 'a>>; CAPTION_PROPERTIES.len()],
         len: usize,
     ) -> Vec<Option<&'a str>> {
-        let candidates = CAPTION_PROPERTIES.map(|name| Self::optional_text(column(name), len));
+        let candidates = columns.map(|column| Self::optional_text(column, len));
         (0..len)
             .map(|row| {
                 candidates
@@ -193,7 +195,7 @@ impl Collector {
 
     fn node_struct(&mut self, column: &Column<'_, '_>) -> GfResult<()> {
         let ids = uuids(&column.child("node_uuid").unwrap(), true)?;
-        let names = Self::captions(|name| column.child(name), ids.len());
+        let names = Self::captions(CAPTION_PROPERTIES.map(|name| column.child(name)), ids.len());
         let kinds = Self::first_labels(column.child("labels"), ids.len());
         for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
             self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
@@ -293,7 +295,7 @@ impl Collector {
         if names.contains(&"node_uuid") {
             // Flat node table.
             let ids = uuids(&table.column("node_uuid").unwrap(), true)?;
-            let names = Self::captions(|name| table.column(name), ids.len());
+            let names = Self::captions(CAPTION_PROPERTIES.map(|name| table.column(name)), ids.len());
             let kinds = Self::first_labels(table.column("labels"), ids.len());
             for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
                 self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
