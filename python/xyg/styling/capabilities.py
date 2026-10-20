@@ -264,6 +264,25 @@ _SLOT_EXCEPTIONS: dict[str, tuple[str, str, str]] = {
     slot: ("partial", f"styles={{{slot!r}: ...}}", _SLOT_SUBSET_NOTE)
     for slot in STATIC_STYLED_SLOTS
 }
+#: The three text slots whose static decisions come from the shared Rust
+#: chrome-style projection (`static_chrome_style`, #1004), identically in the
+#: Python and Node hosts and in every native format.
+_STATIC_TEXT_SLOT_NOTE = (
+    "Native SVG, PNG, PDF, JPEG, and WebP resolve font-size (a `px` length), "
+    "`color`, font-weight (`normal`/`400`/`bold`/`700`), and font-style "
+    "(`normal`/`italic`) through one Rust projection shared by the Python and "
+    "Node hosts; precedence is axis style, then this slot, then the chart "
+    "`--chart-text` token, then the default. The font stays fixed DejaVu: "
+    "another `font-family`, other weights, styles or units, letter-spacing, "
+    "opacity, and browser-only values fail with a stable "
+    "`XYG_STATIC_UNSUPPORTED_*` reason instead of a fallback renderer."
+)
+for _slot in ("title", "axis_title", "tick_label"):
+    _SLOT_EXCEPTIONS[_slot] = (
+        "partial",
+        f"styles={{{_slot!r}: ...}}",
+        _STATIC_TEXT_SLOT_NOTE,
+    )
 _SLOT_EXCEPTIONS["legend"] = (
     "partial",
     "styles={'legend': ...} / xyg.legend(style=...) / --chart-legend-bg",

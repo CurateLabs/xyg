@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 383
-#define XYG_ABI_SIGNATURE_SHA256 "42a1d60815b48a0a88d78fba338c454c45c402d9b9f9f40835fb2e80cbf8e243"
+#define XYG_ABI_VERSION 384
+#define XYG_ABI_SIGNATURE_SHA256 "64459a8de05ee9ea06c1337ff21f30149740d8880af468187e0adb837a67b048"
 
 #ifdef __cplusplus
 extern "C" {
@@ -450,6 +450,7 @@ size_t xyg_sorted_display_label_remap(const uint32_t * label_lens, const uint8_t
 int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power);
 int32_t xyg_stacked_bounds(const double * values, size_t rows, size_t cols, uint32_t baseline, double * out_lower, double * out_upper);
 size_t xyg_static_annotation_style(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
+size_t xyg_static_chrome_style(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
 size_t xyg_static_document_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, int32_t quality, uint8_t * out, size_t out_cap);
 size_t xyg_static_document_labels(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
 size_t xyg_static_document_layout(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);

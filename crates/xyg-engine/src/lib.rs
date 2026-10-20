@@ -266,6 +266,9 @@ pub mod static_document;
 pub use static_document::{static_document_export, StaticDocument, StaticDocumentError};
 pub mod static_document_labels;
 pub mod static_annotation_style;
+pub mod static_chrome_style;
+#[cfg(test)]
+mod static_chrome_style_tests;
 pub mod static_document_layout;
 pub mod static_document_legend;
 pub mod static_legend_fit;

@@ -175,7 +175,7 @@ execution on ordinary, styled, facet, pyplot, legend, and custom-font-failure
 journeys. Node exposes the same XYST product seam (`Figure.toSvg/toPng/...`)
 and pins byte-identical XYST/SVG/PNG output per admitted registry shape.
 Pyplot grid dashes (`ax.grid(linestyle=...)`) ride XYST panel fact bit 14
-(panel record 108 bytes; Rust owns the dash table, mirrored in
+(panel record 128 bytes since #1004; Rust owns the dash table, mirrored in
 `js/src/50_chartview.ts`); horizontal y tick labels anchor end/start per side
 and the y-axis title clears the widest label by 0.4 em, matching matplotlib
 3.11.1 measurements. Remaining pyplot static-route admissions (gradients,
@@ -185,13 +185,24 @@ explicit fail-closes tracked in
 [#889](https://github.com/CurateLabs/xyg/issues/889) with reason-carrying
 xfails; they do not reintroduce a host renderer.
 
+**Correction (#1004).** The #873/#855 closure claims above were too strong in
+one respect: public native export admitted `title`, `axis_title`, and
+`tick_label` slot styles and then silently discarded everything except the
+title size/color (identical SVG for 12px and 30px tick labels; title bold and
+axis-title color dropped), and both hosts carried copies of that host style
+policy. #1004 replaces the copies with one Rust projection
+([static-chrome-style.md](../design/static-chrome-style.md), ABI 384) consumed
+by Scene/StaticDocument for SVG, raster, and PDF in both hosts. Earlier "40
+cases" figures are now 41 (`document_chrome_text`). The fixed-font limitation
+stands: no custom-font support.
+
 **Milestone closed (2026-09-05).** With #873/#875 landed and #855 closed after
 its adversarial close-when review, the `M2: Rust-Owned Cross-Host Core`
 milestone has no open issues (406 closed). Post-M2 admission work continues in
 #889 and the packaging/RC tracks (#884, #885, #886, #54).
 
 **#875 registry complete.** The same Rust registry now carries the full XYST
-document vocabulary: 40 runtime cases (panel flags 0–14 including grid dash,
+document vocabulary: 41 runtime cases (panel flags 0–15 including grid dash and chrome text,
 document flags, annotation/label/legend/colorbar families, scale and quality
 variants), 21 byte-exact rejection mutations verified at both host boundaries,
 and six independent public-authoring witnesses compared across Scene, XYST,

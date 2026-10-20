@@ -89,6 +89,7 @@ use xyg_engine::scene_static_export;
 use xyg_engine::scene_style::{self, MarkStyleError};
 use xyg_engine::splice_annotations;
 use xyg_engine::static_annotation_style;
+use xyg_engine::static_chrome_style;
 use xyg_engine::static_document_export;
 use xyg_engine::static_document_labels;
 use xyg_engine::static_document_layout;
@@ -198,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 383;
+pub const ABI_VERSION: u32 = 384;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4135,6 +4136,43 @@ pub unsafe extern "C" fn xyg_static_annotation_style(
             encoded,
             encoded_len,
         )) {
+            Ok(bytes) => Some(bytes),
+            Err(error) => Some(error.reason().as_bytes().to_vec()),
+        }
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYCS v1 chrome-style frame (title / axis-title /
+/// tick-label slots, root theme, axis overrides) into the Rust-owned XYCO v1
+/// resolved text decisions. Stable validation reasons are returned as ASCII so
+/// every host observes the same failure classification.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_chrome_style(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        match static_chrome_style::resolve_packed(std::slice::from_raw_parts(encoded, encoded_len))
+        {
             Ok(bytes) => Some(bytes),
             Err(error) => Some(error.reason().as_bytes().to_vec()),
         }

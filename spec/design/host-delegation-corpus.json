@@ -431,6 +431,36 @@
         "xyg_stream_new"
       ],
       "output_oracle": "Both host suites assert canonical stream lifecycle and stable payload-prefix behavior."
+    },
+    {
+      "id": "static-chrome-style",
+      "surfaces": [
+        "title, axis-title, and tick-label size, paint, bold, and italic",
+        "admission and precedence",
+        "stable failure reasons"
+      ],
+      "commands": [
+        [
+          "uv",
+          "run",
+          "pytest",
+          "tests/test_static_chrome_style.py",
+          "-q",
+          "--tb=short"
+        ],
+        [
+          "node",
+          "packages/xy-node/scripts/static_chrome_style_cross_host.mjs"
+        ]
+      ],
+      "hosts": [
+        "python",
+        "node"
+      ],
+      "required_shared_symbols": [
+        "xyg_static_chrome_style"
+      ],
+      "output_oracle": "tests/test_static_chrome_style.py and tests/test_static_chrome_style_cross_host.py: Python and Node export byte-identical SVG/PNG/PDF/JPEG/WebP from one Rust XYCO projection, with identical raw XYCS results and stable failure reasons; ownership tests fail when the native result is tampered with or discarded."
     }
   ]
 }

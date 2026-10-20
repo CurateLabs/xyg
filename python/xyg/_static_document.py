@@ -14,7 +14,7 @@ import numpy as np
 from . import _native
 
 _HEADER = struct.Struct("<4s6I4B4BfffBB2xII4x")
-_PANEL = struct.Struct("<2i6I12fII2f4B2I")
+_PANEL = struct.Struct("<2i6I12fII2f4B2II16B")
 _DECORATION_HEADER = struct.Struct("<4s7I")
 _DOCUMENT_LABELS_HEADER = struct.Struct("<4s3I")
 _DOCUMENT_LABEL = struct.Struct("<2I5d")
@@ -31,6 +31,8 @@ _LEGEND_FIT_ENTRY = struct.Struct("<6I")
 _LEGEND_FIT_OUTPUT = struct.Struct("<4s3I21d")
 _ANNOTATION_STYLE_HEADER = struct.Struct("<4s3I")
 _ANNOTATION_STYLE_OUTPUT = struct.Struct("<4s3I2f2I")
+_CHROME_STYLE_HEADER = struct.Struct("<4s3I")
+_CHROME_STYLE_OUTPUT = struct.Struct("<4s2II16Bd4B6d")
 _MAX_U32 = (1 << 32) - 1
 _MAX_PANELS = 256
 _MAX_TITLE_BYTES = 4096
@@ -90,8 +92,8 @@ class Panel:
     # uniform deterministic italic/bold bits and label-box padding.
     annotation_text_flags: Optional[int] = None
     annotation_padding: Optional[float] = None
-    # resolved panel title size/color and uniform annotation vertical align.
-    title_style: Optional[tuple[float, str]] = None
+    # resolved panel title size/RGBA and uniform annotation vertical align.
+    title_style: Optional[tuple[float, tuple[int, int, int, int]]] = None
     annotation_vertical_align: Optional[int] = None
     # XYST-only pyplot colorbar compatibility flags. Scene keeps the canonical
     # color scale while Rust owns log projection, endpoint extends, and label
@@ -105,6 +107,10 @@ class Panel:
     # 3=dashdot) for (x major, y major, x minor, y minor). Rust owns the
     # pattern table; the canonical Scene wire keeps its solid contract.
     grid_dash: Optional[tuple[int, int, int, int]] = None
+    # Rust-resolved chrome text facts (XYCO): the XYST ``chrome_text`` word and
+    # the x tick, y tick, x title, y title RGBA paints. ``None`` keeps the
+    # canonical Scene text.
+    chrome_text: Optional[tuple[int, tuple[tuple[int, int, int, int], ...]]] = None
 
 
 @dataclass(frozen=True)
@@ -554,6 +560,121 @@ def _rgba(value: Optional[str]) -> tuple[int, int, int, int]:
     return _native.css_color_rgba(value)
 
 
+def _put_text(out: bytearray, value: Any) -> None:
+    encoded = str(value).encode("utf-8")
+    out.extend(len(encoded).to_bytes(4, "little"))
+    out.extend(encoded)
+
+
+def _put_value(out: bytearray, value: Any) -> None:
+    """One tagged authored style fact: null, text, f64, bool, or opaque."""
+    if value is None:
+        out.extend(struct.pack("<I", 0))
+    elif isinstance(value, str):
+        out.extend(struct.pack("<I", 1))
+        _put_text(out, value)
+    elif isinstance(value, bool):
+        out.extend(struct.pack("<2I", 3, int(value)))
+    elif isinstance(value, Real):
+        out.extend(struct.pack("<Id", 2, float(value)))
+    else:
+        out.extend(struct.pack("<I", 4))
+
+
+def _put_entries(out: bytearray, mapping: Optional[dict[str, Any]]) -> None:
+    entries = sorted((mapping or {}).items(), key=lambda item: str(item[0]))
+    out.extend(struct.pack("<I", len(entries)))
+    for key, value in entries:
+        _put_text(out, key)
+        _put_value(out, value)
+
+
+@dataclass(frozen=True)
+class ResolvedChromeStyle:
+    """Rust-resolved title / axis-title / tick-label decisions (XYCO)."""
+
+    title_style: Optional[tuple[float, tuple[int, int, int, int]]]
+    chrome_metrics: tuple[float, float, float, float, float, float]
+    chrome_text: Optional[tuple[int, tuple[tuple[int, int, int, int], ...]]]
+    # axis id -> (keys to drop from ``style``, keys to drop from ``minor_style``)
+    consumed: dict[str, tuple[tuple[str, ...], tuple[str, ...]]]
+
+
+def resolve_chrome_style(
+    *,
+    has_title: bool,
+    root_style: dict[str, Any],
+    chrome_styles: dict[str, dict[str, Any]],
+    axis_options: dict[str, dict[str, Any]],
+    admit_legend_slot: bool = False,
+) -> ResolvedChromeStyle:
+    """Marshal authored chrome style facts; Rust owns admission and precedence."""
+    request = bytearray(
+        _CHROME_STYLE_HEADER.pack(b"XYCS", 1, int(has_title) | (int(admit_legend_slot) << 1), 0)
+    )
+    _put_entries(request, root_style)
+    slots = sorted(chrome_styles.items())
+    request.extend(struct.pack("<I", len(slots)))
+    for name, slot_style in slots:
+        _put_text(request, name)
+        _put_entries(request, slot_style)
+    for axis_id in ("x", "y"):
+        options = axis_options.get(axis_id) or {}
+        _put_entries(request, options.get("style"))
+        _put_entries(request, options.get("minor_style"))
+    try:
+        output = _native.static_chrome_style(bytes(request))
+    except ValueError as error:
+        reason = str(error)
+        if reason.startswith("XYG_STATIC_UNSUPPORTED_"):
+            raise UnsupportedStaticExport(reason) from None
+        raise
+    if len(output) < _CHROME_STYLE_OUTPUT.size:
+        raise RuntimeError("invalid XYCO output")
+    magic, version, flags, chrome_text, *rest = _CHROME_STYLE_OUTPUT.unpack_from(output)
+    if magic != b"XYCO" or version != 1 or flags & ~1:
+        raise RuntimeError("invalid XYCO output")
+    paints = tuple(tuple(rest[4 * index : 4 * index + 4]) for index in range(4))
+    title_size = rest[16]
+    title_rgba = tuple(rest[17:21])
+    metrics = tuple(rest[21:27])
+    at = _CHROME_STYLE_OUTPUT.size
+
+    def take_keys() -> tuple[str, ...]:
+        nonlocal at
+        (count,) = struct.unpack_from("<I", output, at)
+        at += 4
+        keys = []
+        for _ in range(count):
+            (length,) = struct.unpack_from("<I", output, at)
+            keys.append(output[at + 4 : at + 4 + length].decode("utf-8"))
+            at += 4 + length
+        return tuple(keys)
+
+    consumed = {axis_id: (take_keys(), take_keys()) for axis_id in ("x", "y")}
+    if at != len(output):
+        raise RuntimeError("invalid XYCO output")
+    return ResolvedChromeStyle(
+        title_style=(title_size, title_rgba) if flags & 1 else None,
+        chrome_metrics=metrics,
+        chrome_text=(chrome_text, paints) if chrome_text else None,
+        consumed=consumed,
+    )
+
+
+def apply_chrome_style_consumption(
+    axis_options: dict[str, dict[str, Any]], resolved: ResolvedChromeStyle
+) -> None:
+    """Drop the axis-style keys XYST carries so the Scene wire never sees them."""
+    for axis_id, (style_keys, minor_keys) in resolved.consumed.items():
+        options = axis_options.get(axis_id)
+        if options is None:
+            continue
+        for slot, keys in (("style", style_keys), ("minor_style", minor_keys)):
+            if slot in options:
+                options[slot] = {k: v for k, v in options[slot].items() if k not in keys}
+
+
 def resolve_annotation_styles(
     sources: Sequence[dict[str, Any]],
 ) -> ResolvedAnnotationStyles:
@@ -565,9 +686,7 @@ def resolve_annotation_styles(
         if optional and value is None:
             request.extend(_MAX_U32.to_bytes(4, "little"))
             return
-        encoded = str(value).encode("utf-8")
-        request.extend(len(encoded).to_bytes(4, "little"))
-        request.extend(encoded)
+        _put_text(request, value)
 
     for annotation in annotations:
         style = dict(annotation.get("style") or {})
@@ -577,17 +696,7 @@ def resolve_annotation_styles(
         put_text(annotation.get("kind"), optional=True)
         for key, value in entries:
             put_text(key)
-            if value is None:
-                request.extend(struct.pack("<I", 0))
-            elif isinstance(value, str):
-                request.extend(struct.pack("<I", 1))
-                put_text(value)
-            elif isinstance(value, bool):
-                request.extend(struct.pack("<2I", 3, int(value)))
-            elif isinstance(value, Real):
-                request.extend(struct.pack("<Id", 2, float(value)))
-            else:
-                request.extend(struct.pack("<I", 4))
+            _put_value(request, value)
         annotation["style"] = style
 
     try:
@@ -943,7 +1052,7 @@ def encode(
             if len(panel.title_style) != 2:
                 raise ValueError(f"StaticDocument panel {index} title style needs size/color")
             panel_title_size = float(panel.title_style[0])
-            panel_title_rgba = _rgba(str(panel.title_style[1]))
+            panel_title_rgba = tuple(panel.title_style[1])
             metric_flags |= 256
         annotation_vertical_align = 0
         if panel.annotation_vertical_align is not None:
@@ -984,6 +1093,17 @@ def encode(
             x_major, y_major, x_minor, y_minor = panel.grid_dash
             grid_dash = x_major | (y_major << 4) | (x_minor << 16) | (y_minor << 24)
             metric_flags |= 1 << 14
+        chrome_text_bits = 0
+        chrome_text_rgba: tuple[int, ...] = (0,) * 16
+        if panel.chrome_text is not None:
+            chrome_text_bits = _u32(
+                panel.chrome_text[0], f"StaticDocument panel {index} chrome text"
+            )
+            paints = tuple(panel.chrome_text[1])
+            if len(paints) != 4 or any(len(paint) != 4 for paint in paints):
+                raise ValueError(f"StaticDocument panel {index} chrome text needs four RGBA paints")
+            chrome_text_rgba = tuple(channel for paint in paints for channel in paint)
+            metric_flags |= 1 << 15
         if panel.colorbar_fill_plot:
             metric_flags |= 1 << 24
         values = (
@@ -1005,6 +1125,8 @@ def encode(
             *panel_title_rgba,
             annotation_vertical_align,
             grid_dash,
+            chrome_text_bits,
+            *chrome_text_rgba,
         )
         records.extend(_PANEL.pack(*values))
         scenes.extend(scene)
@@ -1058,48 +1180,23 @@ def project_figure(
     root_style = dict(getattr(projected, "style", None) or {})
     if getattr(projected, "_pyplot_static_mathtext", False):
         raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE")
-    allowed_root = {
-        "background",
-        "--chart-bg",
-        "--chart-grid",
-        "--chart-axis",
-        "--chart-text",
-        "font-family",
-        "font-size",
-    }
-    if set(root_style) - allowed_root:
-        raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_BROWSER_CSS")
-    family = str(root_style.get("font-family", "DejaVu Sans, sans-serif")).lower().replace(" ", "")
-    if family not in {"dejavusans,sans-serif", "system-ui,sans-serif", "sans-serif"}:
-        raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT")
-    chrome_styles = copy.deepcopy(getattr(projected, "chrome_styles", None) or {})
-    for slot, chrome_style in chrome_styles.items():
-        if slot not in {"title", "axis_title", "tick_label"} or set(chrome_style) - {
-            "font-size",
-            "color",
-            "font-weight",
-            "font-family",
-        }:
-            raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CHROME_STYLE")
-        chrome_family = str(chrome_style.get("font-family", "DejaVu Sans")).lower()
-        if chrome_family not in {"dejavu sans", "dejavusans", "sans-serif"}:
-            raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT")
+    chrome = resolve_chrome_style(
+        has_title=bool(getattr(projected, "title", None)),
+        root_style=root_style,
+        chrome_styles=getattr(projected, "chrome_styles", None) or {},
+        axis_options=projected.axis_options,
+    )
+    apply_chrome_style_consumption(projected.axis_options, chrome)
     projected.style = {
         key: value for key, value in root_style.items() if key in {"background", "--chart-bg"}
     }
     projected.chrome_styles = {}
-    chrome_metrics: dict[str, tuple[float, float, float]] = {}
     grid_dash: dict[str, Optional[int]] = {"x": None, "y": None}
     grid_dash_minor: dict[str, Optional[int]] = {"x": None, "y": None}
     for axis_id, options in projected.axis_options.items():
         style = dict(options.get("style") or {})
         minor = dict(options.get("minor_style") or {})
         if axis_id in {"x", "y"}:
-            chrome_metrics[axis_id] = (
-                float(style.pop("tick_label_size", style.pop("tick_size", 12.0))),
-                float(style.pop("label_size", 12.0)),
-                float(style.pop("tick_padding", 4.0)),
-            )
             raw_dash = style.pop("grid_dash", None)
             if raw_dash is not None:
                 if raw_dash not in _GRID_DASH_CODES:
@@ -1110,8 +1207,6 @@ def project_figure(
                 if raw_minor_dash not in _GRID_DASH_CODES:
                     raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_GRID_DASH")
                 grid_dash_minor[axis_id] = _GRID_DASH_CODES[raw_minor_dash]
-        for key in ("tick_label_size", "tick_size", "label_size", "tick_padding"):
-            minor.pop(key, None)
         if root_style.get("--chart-grid") is not None:
             style["grid_color"] = root_style["--chart-grid"]
             minor["grid_color"] = root_style["--chart-grid"]
@@ -1119,9 +1214,6 @@ def project_figure(
             style["axis_color"] = root_style["--chart-axis"]
             style["tick_color"] = root_style["--chart-axis"]
             minor["tick_color"] = root_style["--chart-axis"]
-        if root_style.get("--chart-text") is not None:
-            style.setdefault("label_color", root_style["--chart-text"])
-            style.setdefault("tick_label_color", root_style["--chart-text"])
         if style:
             options["style"] = style
         else:
@@ -1181,23 +1273,13 @@ def project_figure(
         except ValueError as exc:
             raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_GRAPH") from exc
     frame_sides = set(getattr(projected, "frame_sides", None) or ("left", "bottom"))
-    title_style = None
-    if getattr(projected, "title", None):
-        authored = dict(chrome_styles.get("title") or {})
-        raw_size = str(authored.get("font-size", "14px"))
-        if not raw_size.endswith("px"):
-            raise UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_TITLE_STYLE")
-        title_style = (
-            float(raw_size[:-2]),
-            str(authored.get("color", root_style.get("--chart-text", "#262626"))),
-        )
     panel = Panel(
         scene,
         0,
         0,
         width,
         height,
-        chrome_metrics=(*chrome_metrics["x"], *chrome_metrics["y"]),
+        chrome_metrics=chrome.chrome_metrics,
         annotation_font_size=annotation_style.font_size,
         axis_sides=(
             (1 if "bottom" in frame_sides else 0) | (2 if "top" in frame_sides else 0),
@@ -1205,9 +1287,10 @@ def project_figure(
         ),
         annotation_text_flags=annotation_style.text_flags,
         annotation_padding=annotation_style.padding,
-        title_style=title_style,
+        title_style=chrome.title_style,
         annotation_vertical_align=annotation_style.vertical_align,
         grid_dash=_grid_dash_fact(grid_dash, grid_dash_minor),
+        chrome_text=chrome.chrome_text,
     )
     return panel, legend
 

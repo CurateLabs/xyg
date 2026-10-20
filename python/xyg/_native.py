@@ -9039,6 +9039,18 @@ def static_annotation_style(encoded: bytes) -> bytes:
     return output
 
 
+def static_chrome_style(encoded: bytes) -> bytes:
+    """Resolve XYCS v1 chrome-style facts into Rust-owned XYCO v1 decisions."""
+    output = _scene_bytes_output(
+        encoded,
+        _lib.xyg_static_chrome_style,
+        "StaticDocument chrome style",
+    )
+    if output.startswith(b"XYG_"):
+        raise ValueError(output.decode("ascii"))
+    return output
+
+
 def static_document_labels(encoded: bytes) -> bytes:
     """Resolve XYDA v1 authored facts into Rust-owned XYDD label records."""
     output = _scene_bytes_output(

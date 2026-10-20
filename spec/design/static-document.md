@@ -27,7 +27,8 @@ The companion Rust-owned marshal contracts are
 [best-legend placement](static-legend-fit.md), and
 [document-label](static-document-labels.md) and
 [document-legend](static-document-legend.md) authoring, plus
-[annotation-style projection](static-annotation-style.md). Hosts may carry their
+[annotation-style projection](static-annotation-style.md), and the
+[chrome-style projection](static-chrome-style.md). Hosts may carry their
 literal facts but do not repeat those contracts' defaults or policy.
 
 ### 1.1 XYST v1 framing
@@ -42,8 +43,9 @@ bytes 36–47 are title size/x/y `f32`, bytes 48–49 are title anchor and
 italic/bold flags, bytes 52–59 are decoration byte count and crop padding, and
 all reserved bytes must be zero.
 
-Each panel record is 108 bytes (`<2i6I12fII2f4B2I>`; the trailing `u32`
-carries the grid dash nibbles). The first 24 bytes carry
+Each panel record is 128 bytes (`<2i6I12fII2f4B2II16B>`; the `u32` at offset
+104 carries the grid dash nibbles and the final 20 bytes the chrome-text word
+plus four RGBA8 paints). The first 24 bytes carry
 signed x/y, width/height, Scene offset/length; byte offset 24 is the panel flag
 mask. Optional floats and integers are canonical zero when their flag is
 inactive. The admitted flags are:
@@ -63,6 +65,7 @@ inactive. The admitted flags are:
 | 11–12 | pyplot colorbar minimum/maximum endpoint extends |
 | 13 | pyplot colorbar label/orientation compatibility |
 | 14 | uniform grid dash codes for (x major, y major, x minor, y minor) |
+| 15 | Rust-resolved chrome text: italic/bold flags for the title, axis titles, and tick labels plus separate tick-label and axis-title RGBA8 paints ([chrome-style projection](static-chrome-style.md)) |
 | 24 | explicit pyplot `cax` fills the panel Scene plot rectangle |
 
 Bit 14 packs four nibble codes (`0=solid, 1=dashed, 2=dotted, 3=dashdot`)
