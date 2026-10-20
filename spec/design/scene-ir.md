@@ -1709,8 +1709,9 @@ packs `XYFS` on that same product call so figure-compile support cannot drift
 either; empty `XYFS` skips the probe. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics. Rust owns the public PolyFill group budget, including companion
-traces that share the browser painter's 1,024-group ceiling; hosts do not
-count meshes or probe the painter. Python
+traces that share the browser painter's 1,024-group ceiling (hexbin cells carry
+a separate 50,000-cell aggregate ceiling, `MAX_PUBLIC_HEXBIN_CELLS`, #887);
+hosts do not count meshes or probe the painter. Python
 `public_static_export`, `FacetGrid.to_svg`, and `FacetGrid._compose_rgba`
 reuse that compiled batch rather than encoding twice. ABI 164 owns the
 SVG/PNG/PDF/JPEG/WebP consumers from that batch. ABI 106 does not

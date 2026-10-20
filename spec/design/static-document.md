@@ -174,14 +174,25 @@ call raises the listed stable `XYG_*` reason.
   of XYST. Unoutlined painted affine Cartesian and polar heatmaps lower in Rust
   to one RGBA Image record and share Scene's 2,000,000-pixel image ceiling;
   nonlinear Cartesian axes and authored visible per-cell outlines retain
-  transformed cell records and the 10,000-record cell ceiling. The Scene
-  consumer's existing 1,024 PolyFill-group ceiling remains
-  authoritative. A pyplot hexbin above that bound (including the original
-  100,000-source-row, `gridsize=50` gallery witness that yields 1,226 cells)
-  fails closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`, with no host-renderer
-  retry. [Issue #887](https://github.com/CurateLabs/xyg/issues/887) tracks the
-  separately versioned Rust admission and resource proof needed for a future
-  static-only larger group budget.
+  transformed cell records and the 10,000-record cell ceiling.
+  Hexbin keeps one literal 6-vertex PolyFill group per lattice cell (the
+  seam-free, fully attributable representation; an RGBA Image would lose the
+  hexagon geometry), so no cell is ever dropped, merged, or decimated. Static
+  hexbin cells are budgeted independently of the 1,024-group browser painter
+  and triangle-mesh budgets: the public-export predicate admits at most
+  **50,000 hexbin cells in aggregate across a document's hexbin traces**
+  (`MAX_PUBLIC_HEXBIN_CELLS`; the default-gridsize Matplotlib lattice is
+  11,558 cells and the original 100,000-row `gridsize=50` gallery witness is
+  1,226). One cell over fails closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` in
+  both hosts, with no host-renderer retry (ceiling chosen below the ~55k-cell
+  point where the product-encode buffer is exhausted, so the stable diagnostic
+  is always reached first). The browser painter keeps its separate
+  1,024-group ceiling (`XYG_PAINTER_TRACE_LIMIT`); this change does not alter
+  any browser resource budget. Evidence for issue #887:
+  `tests/test_static_hexbin_cross_host.py` (Python/Node byte identity, scene
+  SVG, document SVG, PNG), the Rust boundary test at 1,024 / 1,025 / 11,558 /
+  50,000 / 50,001 cells, and
+  `spec/performance/hexbin-static-887-2026-10-20/` (`scripts/bench_hexbin_static.py`).
 
   Rust owns these validated Scene behaviors for every host (#1006): an empty
   line/scatter trace is a no-op that emits no marks; per-segment colormapped

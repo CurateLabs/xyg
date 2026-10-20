@@ -75,7 +75,8 @@ identity metadata). Public scatter admits interned per-item fill/stroke/width/
 opacity (ABI 196) and, from ABI 386, Rust-mapped per-item size (#1006); per-item symbol stays fail-closed. Python and Node pack six authored
 vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
 plot clipping, legend swatch, SVG/raster/browser lowering, and the public
-PolyFill group budget (companion traces share the 1,024-group ceiling).
+PolyFill group budget (companion traces share the 1,024-group ceiling; hexbin
+cells use a separate 50,000-cell aggregate ceiling, #887).
 `joined_fill` plus per-face paint, alternate axes, polar meshes, and
 larger meshes remain compatibility behavior.
 
