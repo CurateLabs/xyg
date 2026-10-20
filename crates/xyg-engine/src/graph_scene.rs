@@ -198,7 +198,9 @@ impl Columns {
 /// ends trimmed at node outlines by the Scene's edge-end pass), filled
 /// arrowheads, and each node's halo then marker. Labels paint where the export's
 /// isotropic scale reaches their Rust threshold and their planned box fits the
-/// plot; the explicit legend replaces the base legend.
+/// plot; the explicit legend replaces the base legend. The base's authored
+/// annotations (already expanded records, styles, and labels) are appended
+/// after the graph, once (#922).
 pub fn rebuild_composed_graph_scene(
     base: &[u8],
     planes: &ComposedGraphPlanes<'_>,

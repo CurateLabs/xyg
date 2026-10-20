@@ -907,10 +907,20 @@ boundary edges retain their canonical source identity.
   (the semantic legend) uses the chart-level legend placement the browser
   honors: the nine fixed `loc` names resolve in Rust; any other placement
   (such as `"best"` or an anchor) fails closed with
-  `XYG_STATIC_UNSUPPORTED_GRAPH`, as does any plane Rust rejects. The rebuild
-  re-emits only the graph, so a graph chart with authored annotations (text,
-  rules, arrows) fails closed with the same reason instead of silently losing
-  them (carrying annotations through the rebuild: #922). A legend
+  `XYG_STATIC_UNSUPPORTED_GRAPH`, as does any plane Rust rejects. Authored
+  annotations (text, rules, arrows, callouts; #922) ride the rebuild: the
+  figure route's base Scene already holds them expanded into records, styles,
+  labels, and label backgrounds, so Rust splits them out of the base
+  (`SceneDocument::into_graph_parts`) and appends them after the graph records
+  through the literal-geometry encoder (`with_graph_annotations`), keeping
+  their stable ids, tags, dashes, caps, and CSS-pixel coordinates. They are
+  never re-expanded, and paint above the graph as the browser overlays them.
+  Annotation labels follow the graph's own labels and take their share of the
+  Scene label caps first; only the graph's planned labels yield to the caps (a
+  decoded Scene already bounds annotation labels within them), so an authored
+  annotation is never dropped. A base Scene with a polar, colorbar, image, or
+  gradient-styled annotation part still fails closed with
+  `XYG_STATIC_UNSUPPORTED_GRAPH`. A legend
   taller or wider than the plot (the browser scrolls it) reports
   `XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT`, like every static legend
   (`out_reason` 2). A themed (opaque) chart background carries the legend
@@ -920,9 +930,12 @@ boundary edges retain their canonical source identity.
   `_graph_static`, Node `composedGraphPlanes`); a figure with more than one
   graph mark keeps the plain route. `tests/test_graph_static_export.py` pins
   SVG and PNG bytes for semantic (light and dark), collapsed compound,
-  per-node size, labels with ordinal/diverging scales, and legend placement
-  in `tests/fixtures/graph_static_export_cross_host.json`, and
-  `packages/xy-node/test/graph.test.mjs` asserts the same bytes.
+  per-node size, labels with ordinal/diverging scales, legend placement, and
+  annotated graphs (text, rules, arrow, callout, and all five on a semantic
+  composed graph) in `tests/fixtures/graph_static_export_cross_host.json`, and
+  `packages/xy-node/test/graph.test.mjs` asserts the same bytes;
+  `test_browser_annotations_match_static_export` checks the browser paints the
+  same annotation geometry.
 - Home view (#910): node-center autorange used to clip markers, halos,
   labels, and compound frames at the plot edge. `xyg_graph_home_domain`
   (`graph_scene::graph_home_domain`) returns the smallest domain containing
