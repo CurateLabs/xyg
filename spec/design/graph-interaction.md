@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **design final; S1 implemented** (see [Implementation status](#implementation-status)).
+Status: **design final; S1 and S2 implemented** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -54,7 +54,7 @@ frame projections omit it and a `TemporalGraph::set_selection` replacement drops
 `GraphSession::create(document, load, instance_id)` takes the composed `XYGF`
 document and session-local inputs only:
 ```
-load.x.f64 / load.y.f64        optional, both or neither; absent -> CoSE from the deterministic seed (S2)
+load.x.f64 / load.y.f64        optional, both or neither; absent -> CoSE from the deterministic seed (300 steps, document parents)
 load.collapsed.u8              optional, per source node
 load.pinned.u8                 optional, per source node; seeds the UUID-keyed pin set
 load.budgets.u64 [node_budget, edge_budget]   default 200_000 / 500_000 (_graph.py layout_render)
@@ -113,8 +113,9 @@ hash-equal neighbor. State keys store the exact id, so an update that replaces a
 layer's result id invalidates derived state keyed to the old string.
 
 Resolution: `kind + uuid` through the document's node/edge indices; derived refs
-through `(layer, path, order)` then the exact result id; aggregates need a
-published render (not available before S2: `GF_INTERACTION_STALE`). An unresolved
+through `(layer, path, order)` then the exact result id; aggregates resolve
+against the current publication (`GF_INTERACTION_STALE` before one exists or
+after the revision moved on). An unresolved
 ref is fatal for local `SelectRefs` (`GF_INTERACTION_INVALID`, nothing changes)
 and counted for transported refs and `SelectUuids`.
 
@@ -230,10 +231,10 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 | Slice | Content | Status |
 |---|---|---|
 | S1 | Hierarchy in composition (`parent_uuid` -> `node.parent`, composition v2); identity (`ElementRef`, exact result-id table); `GraphInteractionState` extraction and 10,000-ref cap; `GraphSession` create / select / clear / focus / bind / unbind with stamps and `op_seq` idempotency | **implemented** |
-| S2 | Render/pick pipeline (§2.3, §2.9): publication, pick index and admission, emphasis plane, aggregate refs, disclosure, pin/move/relayout, `session_update`, FocusStep/FocusRing, `CoordinationGate` + ApplyRemote | planned |
-| S3 | Native + WASM session ABI, browser `DT.u32`, manifest | planned |
-| S4 | Browser controller and accessibility; delete the `58_graph.ts` hover policy | planned |
-| S5 | Browser emphasis pass and painter attributes | planned |
+| S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
+| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | planned |
+| S4 | Native + WASM session ABI, browser `DT.u32`, manifest | planned |
+| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | planned |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
 
@@ -241,12 +242,49 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 - **Typed seam, no placeholder.** The session publishes no render in S1:
   `render_revision` stays 0, the only stamp that can match; an aggregate ref
   (which names a published render) answers `GF_INTERACTION_STALE`. Temporal
-  visibility (§2.9) and the pick index enter at S2 through the same bound
-  `TemporalHost`.
+  visibility (§2.9) entered at S2 through the same bound `TemporalHost`.
 - **Derived-pair keys.** The earlier claim that `(layer, path, order)` alone is
   unique was false for derived pair edges (`order = -1`, `path = NONE`); §2.1
   keys those by result row.
 - **Wire shape.** Statuses and refs are Rust types in S1. The 56-byte
   `ElementRef` wire layout and numeric status values are defined with the ABI in
-  S3; transported derived refs carry the exact result id, not a hash.
-- **Coordination.** The `CoordinationGate` extraction and `ApplyRemote` are S2.
+  S4; transported derived refs carry the exact result id, not a hash.
+- **Coordination.** The `CoordinationGate` extraction and `ApplyRemote` are S3.
+
+### S2 notes
+- **Revisions.** `render_revision` is the stamp. It advances on structural
+  changes only (pin, move preview/commit/cancel, relayout step, an effective
+  disclosure, a changed bound temporal frame, bind/unbind) and when a render is
+  requested with a different camera than the previous publication. Selection,
+  focus, hover and highlight republish at the same revision. A bound session
+  folds the temporal frame revision in before every stamp check (F4), so a host
+  holding a pre-frame render is rejected `Stale` and repaints. `render(None)`
+  is the unculled render the host `layout_render` produces; `Some(camera)` culls
+  to the camera's data-space viewport (`screen = data * scale + offset`).
+- **Visibility is not a published plane.** `member_of == NOT_RENDERED` already
+  says a source node is hidden, culled, or temporally invisible; the design's
+  separate `visible` u8 would restate it, so S2 omits it (S3's pick index and
+  the S4 wire read `member_of`). A collapsed group is visible and rendered; its
+  hidden members map to its render node.
+- **Focus on a group.** Focus is UUID-keyed state, so an aggregate render node
+  (or collapsed group) is focused through its lowest-index visible member
+  (`RenderOutput::focus_node`), a rendered aggregate edge through its
+  lowest-index member edge. `FocusRing` orders the ring node, out-edges,
+  in-edges, then neighbors (each ascending in render index) around an anchor
+  that persists until focus changes by another operation or the render changes.
+- **Hover** is a transient session set (HOVERED on the target and every member
+  of an aggregate, NEIGHBOR across visible edges); it is not part of
+  `GraphInteractionState`, so it neither binds to a temporal graph nor bumps the
+  revision.
+- **Path highlight** accepts consecutive nodes joined by a composed edge in
+  either direction (the lowest edge index joins the highlight); a pair with no
+  edge is `Invalid` and nothing changes. Community highlight adds the induced
+  edges.
+- **Deferred to S3.** The pick index and admission, `CoordinationGate` /
+  `ApplyRemote`, and `session_update` are not in S2. Relayout persistence is by
+  re-creating a session from `positions()` + `pinned()` (`load.x/y/pinned`),
+  which restores without relayout and renders byte-identically.
+- **Bounded work.** Every pass of render, hover, walks, highlight and
+  disclosure is linear in nodes + edges (+ the bounded selection); a
+  deterministic `work()` counter in the session backs the size-ladder test, and
+  a 100,000-node parent chain renders in the same test run.

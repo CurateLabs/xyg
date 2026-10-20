@@ -42,6 +42,20 @@ Several `graph` layers compose together when they write different channels
 (e.g. PageRank size + community class + spanning-tree overlay + a path);
 two layers writing one channel fail with `GF_COMPOSE_CHANNEL_CONFLICT`.
 
+**Retained interaction sessions (#36).** A `GraphSession` is created from the
+composed `XYGF` document plus session-local inputs only; hosts never pass
+hierarchy (it travels in the document as `node.parent` / `node.parent.valid`,
+resolved from the base node table's `parent_uuid`). The Rust-side `SessionLoad`
+(the `load.*` sections the S4 ABI will carry) is: `x`/`y` f64 positions (both
+or neither; absent positions are the seeded CoSE layout, 300 steps over the
+document hierarchy), `collapsed` u8 per node, `pinned` u8 per node (seeds the
+UUID-keyed pin set), `budgets` `[node_budget, edge_budget]` (default 200,000 /
+500,000), and `seed`. Lengths must equal the node count, positions be finite,
+flags be 0/1, budgets non-zero. At the Direct tier the session's render planes
+are byte-equal to what `layout_render` builds from the same inputs; hosts do not
+run `layout_render` beside a session. Sessions are Rust-only until the ABI slice
+(S4); see [graph-interaction.md](../design/graph-interaction.md).
+
 ## 2. Node host (extension host process)
 
 ```js
@@ -151,6 +165,7 @@ message}`). Details: design §6.4.
 | Composition | `GF_COMPOSE_REQUEST_INVALID`, `GF_COMPOSE_VERSION`, `GF_COMPOSE_INTENT_REQUIRED`, `GF_COMPOSE_INTENT_INVALID`, `GF_COMPOSE_INTENT_UNSUPPORTED`, `GF_COMPOSE_INTENT_CONFLICT`, `GF_COMPOSE_BASE_REQUIRED`, `GF_COMPOSE_GENERATION_STALE`, `GF_COMPOSE_GENERATION_MISSING`, `GF_COMPOSE_EXTRA_IDS`, `GF_COMPOSE_MISSING_IDS`, `GF_COMPOSE_DUPLICATE_ID`, `GF_COMPOSE_IDENTITY_KIND`, `GF_COMPOSE_EDGE_ENDPOINT_MISMATCH`, `GF_COMPOSE_CHANNEL_CONFLICT`, `GF_COMPOSE_TOO_LARGE`, `GF_COMPOSE_COORDINATES_REQUIRED`, `GF_COMPOSE_COORDINATES_MISSING`, `GF_COMPOSE_COORDINATES_INVALID` |
 | Scene | `GF_COMPOSE_RENDER_UNSUPPORTED`, `GF_COMPOSE_SCENE_TOO_LARGE`, `GF_COMPOSE_SCENE_INVALID`, `GF_COMPOSE_SCENE_EMPTY` (every node hidden: `renderWasmGraphForge` rejects, the document records the decision) |
 | Document decoding | `GF_COMPOSE_DOCUMENT_INVALID` (a supplied document is malformed or its sections disagree on shape) |
+| Interaction session (`InteractionStatus::code`) | `GF_INTERACTION_STALE` (destination stamp, aggregate ref, or walk against a render that is no longer current; nothing changed), `GF_INTERACTION_UNLINKED`, `GF_INTERACTION_INVALID` (malformed document or load, unknown or wrong-kind ref, stale-ordered `op_seq`, non-finite move, unreachable path), `GF_INTERACTION_BUDGET` (relayout work over 4,000,000 units), `GF_INTERACTION_CAPACITY`, `GF_INTERACTION_SELF_ECHO`, `GF_INTERACTION_STALE_REMOTE`, `GF_INTERACTION_SELECTION_TOO_LARGE` (more than 10,000 refs), `GF_INTERACTION_COMPOUND_TOO_LARGE` (disclosure on a graph over 1,024 nodes), `GF_INTERACTION_UNBOUND` (the bound temporal graph is gone). A failed operation never changes state or consumes its `op_seq`. |
 | Native loading (`LOAD_ERROR_CODES`) | `XYG_NATIVE_UNSUPPORTED_PLATFORM`, `XYG_NATIVE_LIBRARY_MISSING`, `XYG_NATIVE_LIBRARY_PATH_INVALID`, `XYG_NATIVE_LOAD_FAILED`, `XYG_NATIVE_ABI_MISMATCH` (also a library without `xyg_abi_version`), `XYG_NODE_DEPENDENCY_MISSING` (e.g. `koffi` absent), `XYG_NODE_IMPORT_FAILED`; messages never include filesystem paths or loader text |
 | WASM init | `XYG_WASM_ABI_MISMATCH`, `XYG_WASM_SCENE_MISMATCH`, `XYG_WASM_PALETTE_MISMATCH`, `XYG_WASM_EXPORT_MISMATCH`, `XYG_WASM_IMPORTS_REJECTED`, `XYG_WASM_BUDGET_EXCEEDED`, `XYG_WASM_INSTANCE_EXHAUSTED`, `XYG_WASM_INIT_FAILED` (asset loading) |
 
@@ -191,6 +206,15 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
   unchanged.
 
 - WASM Scene: direct tier only (≤ 1,024 elements).
+- Interaction sessions (#36 S2, Rust engine only; no host ABI yet): explicit
+  compound disclosure is bounded at 1,024 source nodes (above it
+  `GF_INTERACTION_COMPOUND_TOO_LARGE`; render-tier aggregates are selectable but
+  take no disclosure action); a selection or highlight plane holds at most
+  10,000 refs, atomically; one relayout call runs at most 64 force steps and at
+  most 4,000,000 `steps × (nodes + edges)` units of work; relayout is always
+  CoSE seeded from the current positions (the only engine honoring pins and
+  parents); aggregate refs are valid for exactly one render revision.
+
 - Scene positions come from Rust's seeded force layout with a `libm`-free
   seed, so documents and Scene bytes are bit-identical across hosts and
   platforms.
