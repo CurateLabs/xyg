@@ -412,9 +412,15 @@ surface Rust's reasons; no host adds admission or layout policy.
     A range-sensitive proof rides the tier-2 density grid, which is binned
     against the trace's own y2 domain (a direct line column is data-relative
     offset-f32 and cannot distinguish the two).
-  - Node `setAxis("y2")` defaults `side: "right"` and syncs the authored x/y
-    `label` into `x_label`/`y_label`, both exactly like Python `set_axis`, so the
-    same authored chart produces the same live spec in both hosts.
+  - Node `setAxis("y2")` preserves an omitted `side` (the stored option stays
+    absent, as Python `set_axis` does; the primary x/y defaults are unchanged), so
+    the omission reaches Rust unobserved on the static path and Rust resolves it
+    to the right edge. It also syncs the authored x/y `label` into
+    `x_label`/`y_label`, exactly like Python `set_axis`, so the same authored
+    chart produces the same live spec in both hosts. The live path resolves an
+    absent non-primary y side to the right edge with host mirror constants
+    (`_Y2_LIVE_SIDE` / `Y2_LIVE_SIDE`); those predate this PR as host defaults and
+    are tracked for replacement by a Rust-owned resolution in #1044.
   - A y2-bound annotation keeps `y_axis: "y2"` on the live wire (Python
     `_annotation_common`, Node `annotationCommon`); the key is emitted only when
     bound, so unbound payloads stay byte-identical. Both hosts refuse the
