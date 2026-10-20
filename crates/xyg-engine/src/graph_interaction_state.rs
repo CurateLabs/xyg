@@ -201,6 +201,15 @@ impl GraphInteractionState {
         self.pinned = pinned;
     }
 
+    /// Pin or unpin one node. Returns whether the pin set changed.
+    pub fn set_pin(&mut self, node: Uuid, on: bool) -> bool {
+        if on {
+            self.pinned.insert(node)
+        } else {
+            self.pinned.remove(&node)
+        }
+    }
+
     /// Empty the selection and every highlight plane; focus and pins stay.
     /// Returns whether anything was cleared (hosts propagate Escape only then).
     pub fn clear(&mut self) -> bool {

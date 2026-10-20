@@ -14,12 +14,11 @@
 //! [`InteractionStatus::Stale`] and changes nothing; a repeated `op_seq`
 //! returns the retained outcome without touching state.
 //!
-//! Implemented here (S1): create, state operations (select / clear / focus),
-//! identity, binding. The render and pick pipeline is the S2 seam: the session
-//! publishes no render, so `render_revision` stays `0` and an
-//! [`ElementRef::Aggregate`] (which names a published render) answers
-//! `Stale`. Temporal frame visibility (F4) enters at the same seam, through the
-//! bound temporal graph. Nothing here pretends to paint or pick.
+//! Implemented here: create, state operations (select / clear / focus / hover /
+//! highlight), identity, binding, the render publication
+//! ([`render::RenderOutput`], F2 pipeline order, temporal visibility F4),
+//! compound disclosure, pin / move / relayout, and the keyboard walks. The
+//! pick index and admission (S3) and the C/WASM ABI (S4) are not here.
 //!
 //! [`TemporalGraph::frame`]: crate::temporal_graph::TemporalGraph::frame
 
@@ -27,14 +26,24 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use super::composed::ComposedDocument;
-use super::identity::{ElementIndex, ElementRef, GraphIdentity, ResolveError};
+use super::identity::{ElementIndex, ElementRef, GraphIdentity};
 use super::Uuid;
-use crate::graph::COSE_NO_PARENT;
+use crate::graph::{ForceState, COSE_NO_PARENT};
 use crate::graph_interaction_state::{
     ElementSet, GraphInteractionState, SelectMode, SelectionTooLarge,
 };
 use crate::projection::validate_parent_forest;
 use crate::temporal_graph::TemporalGraph;
+
+mod layout;
+mod render;
+mod walk;
+
+pub use layout::{
+    DisclosureAction, DisclosureReport, MoveCommit, MoveSpace, NodePosition, RelayoutReport,
+    INITIAL_LAYOUT_STEPS, MAX_GRAPH_INTERACTION_WORK, MAX_RELAYOUT_STEPS, RELAYOUT_SETTLED_ALPHA,
+};
+pub use render::{Camera, RenderOutput, NOT_RENDERED};
 
 /// Default direct-tier budgets (`_graph.py` `layout_render`).
 pub const DEFAULT_NODE_BUDGET: u64 = 200_000;
@@ -137,7 +146,7 @@ pub struct OpHeader {
 }
 
 /// Result of one applied operation.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct OpOutcome {
     pub render_revision: u32,
     /// Elements whose selection membership changed.
@@ -148,6 +157,17 @@ pub struct OpOutcome {
     pub unmatched: u32,
     /// Selection size after the operation.
     pub selected: usize,
+    /// Node positions to persist (`graph.positions`): pin and move commit.
+    pub positions: Vec<NodePosition>,
+    pub relayout: Option<RelayoutReport>,
+    pub disclosure: Option<DisclosureReport>,
+}
+
+/// Transient hover emphasis; never part of the shared interaction state.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+struct Hover {
+    nodes: Vec<usize>,
+    edge: Option<usize>,
 }
 
 pub struct GraphSession {
@@ -156,6 +176,14 @@ pub struct GraphSession {
     generation: Option<Uuid>,
     /// Compound parent per node (`COSE_NO_PARENT` for roots), from the document.
     parent: Vec<u64>,
+    /// `1` where `parent` is a real parent.
+    parent_valid: Vec<u8>,
+    /// Composed edge endpoints (dense node indices).
+    edge_source: Vec<u64>,
+    edge_target: Vec<u64>,
+    /// Ordinal of each persisted edge among persisted edges (the temporal
+    /// graph's edge order); `u32::MAX` for derived edges.
+    edge_ordinal: Vec<u32>,
     positions: Option<(Vec<f64>, Vec<f64>)>,
     collapsed: Vec<u8>,
     budgets: (u64, u64),
@@ -163,6 +191,20 @@ pub struct GraphSession {
     slot: StateSlot,
     render_revision: u32,
     last_op: Option<(u64, OpOutcome)>,
+    /// Temporal frame revision last folded into `render_revision` (F4).
+    seen_temporal: u64,
+    camera: Option<Camera>,
+    published: Option<RenderOutput>,
+    /// Revision `published` was built at (`0`: nothing published).
+    published_revision: u32,
+    hover: Hover,
+    move_origin: Option<layout::MoveOrigin>,
+    relayout: Option<ForceState>,
+    /// Render node a focus ring is walking around.
+    ring_anchor: Option<u64>,
+    /// Deterministic work units the session has performed, for the bounded
+    /// complexity proofs (every pass adds the elements it touches).
+    work: u64,
 }
 
 fn invalid<T>() -> Result<T, InteractionStatus> {
@@ -190,6 +232,26 @@ impl GraphSession {
         let n = identity.node_count();
         let generation = doc.generation().map_err(|_| InteractionStatus::Invalid)?;
         let parent = Self::hierarchy(&doc, n)?;
+        let edge_source = doc.u64s("edge.source").map_err(|_| InteractionStatus::Invalid)?;
+        let edge_target = doc.u64s("edge.target").map_err(|_| InteractionStatus::Invalid)?;
+        let edges = identity.edge_count();
+        if edge_source.len() != edges
+            || edge_target.len() != edges
+            || edge_source.iter().chain(&edge_target).any(|&v| v >= n as u64)
+        {
+            return invalid();
+        }
+        let mut persisted = 0u32;
+        let edge_ordinal = (0..edges)
+            .map(|edge| {
+                if identity.is_derived(edge) {
+                    u32::MAX
+                } else {
+                    persisted += 1;
+                    persisted - 1
+                }
+            })
+            .collect();
 
         let positions = match (load.x, load.y) {
             (None, None) => None,
@@ -223,7 +285,14 @@ impl GraphSession {
             instance_id,
             identity,
             generation,
+            parent_valid: parent
+                .iter()
+                .map(|&p| u8::from(p != COSE_NO_PARENT))
+                .collect(),
             parent,
+            edge_source,
+            edge_target,
+            edge_ordinal,
             positions,
             collapsed,
             budgets,
@@ -231,6 +300,15 @@ impl GraphSession {
             slot: StateSlot::Owned(Box::new(state)),
             render_revision: 0,
             last_op: None,
+            seen_temporal: 0,
+            camera: None,
+            published: None,
+            published_revision: 0,
+            hover: Hover::default(),
+            move_origin: None,
+            relayout: None,
+            ring_anchor: None,
+            work: 0,
         })
     }
 
@@ -267,7 +345,7 @@ impl GraphSession {
         self.instance_id
     }
 
-    /// Revision of the last published render; `0` until the S2 pipeline lands.
+    /// Stamp revision: advances on every structural change (see `render`).
     pub fn render_revision(&self) -> u32 {
         self.render_revision
     }
@@ -302,6 +380,11 @@ impl GraphSession {
         self.seed
     }
 
+    /// Deterministic work units performed so far (see the field).
+    pub fn work(&self) -> u64 {
+        self.work
+    }
+
     pub fn is_bound(&self) -> bool {
         matches!(self.slot, StateSlot::Bound { .. })
     }
@@ -312,12 +395,24 @@ impl GraphSession {
         &self,
         f: impl FnOnce(&GraphInteractionState) -> R,
     ) -> Result<R, InteractionStatus> {
+        self.read_world(|state, _| f(state))
+    }
+
+    /// The shared state together with the bound temporal graph's published
+    /// source visibility `(nodes, edges)`, read under one registry lock (F4).
+    /// An `Owned` session has no temporal visibility.
+    fn read_world<R>(
+        &self,
+        f: impl FnOnce(&GraphInteractionState, Option<(&[u8], &[u8])>) -> R,
+    ) -> Result<R, InteractionStatus> {
         match &self.slot {
-            StateSlot::Owned(state) => Ok(f(state)),
+            StateSlot::Owned(state) => Ok(f(state, None)),
             StateSlot::Bound { host, handle } => {
                 let (mut f, mut out) = (Some(f), None);
                 let found = host.with_graph(*handle, &mut |graph| {
-                    out = f.take().map(|f| f(graph.interaction_state()));
+                    out = f
+                        .take()
+                        .map(|f| f(graph.interaction_state(), graph.applied_visibility()));
                 });
                 match (found, out) {
                     (true, Some(out)) => Ok(out),
@@ -355,22 +450,26 @@ impl GraphSession {
         host: Arc<dyn TemporalHost>,
         handle: TemporalHandle,
     ) -> Result<(), InteractionStatus> {
-        let mut equal = None;
+        let mut bound = None;
         let found = host.with_graph(handle, &mut |graph| {
-            equal = Some(
+            bound = Some((
                 self.identity.node_uuids() == graph.node_ids()
                     && self
                         .identity
                         .persisted_edge_uuids()
                         .eq(graph.edge_ids().iter().copied()),
-            );
+                graph.applied_revision(),
+            ));
         });
-        match (found, equal) {
-            (true, Some(true)) => {
+        match (found, bound) {
+            (true, Some((true, revision))) => {
                 self.slot = StateSlot::Bound { host, handle };
+                self.seen_temporal = revision;
+                // The temporal frame's visibility now applies.
+                self.bump();
                 Ok(())
             }
-            (true, Some(false)) => invalid(),
+            (true, Some((false, _))) => invalid(),
             _ => Err(InteractionStatus::Unbound),
         }
     }
@@ -379,6 +478,9 @@ impl GraphSession {
     /// `Owned` state.
     pub fn unbind(&mut self) {
         self.slot = StateSlot::Owned(Box::default());
+        self.seen_temporal = 0;
+        // The temporal visibility no longer applies.
+        self.bump();
     }
 
     // -- operations -----------------------------------------------------------
@@ -395,6 +497,7 @@ impl GraphSession {
             Some((last, _)) if header.op_seq < *last => return invalid(),
             _ => {}
         }
+        self.sync_temporal()?;
         if header.stamp
             != (Stamp {
                 instance_id: self.instance_id,
@@ -408,17 +511,33 @@ impl GraphSession {
         Ok(outcome)
     }
 
-    fn resolve_all(&self, refs: &[ElementRef]) -> Result<ElementSet, InteractionStatus> {
+    /// Resolve references into state identities. Aggregates expand to their
+    /// member source nodes. Any failure rejects the whole set.
+    fn resolve_all(&mut self, refs: &[ElementRef]) -> Result<ElementSet, InteractionStatus> {
         let mut set = ElementSet::default();
         for element in refs {
-            match self.identity.resolve(element) {
-                Ok(index) => self.identity.insert_into(&mut set, index),
-                // No render is published, so an aggregate's stamp can never match.
-                Err(ResolveError::NeedsRender) => return Err(InteractionStatus::Stale),
-                Err(ResolveError::Unresolved) => return invalid(),
+            match self.resolve(element)? {
+                render::Resolved::Element(index) => self.identity.insert_into(&mut set, index),
+                render::Resolved::Group(nodes) => {
+                    self.work += nodes.len() as u64;
+                    for node in nodes {
+                        self.identity
+                            .insert_into(&mut set, ElementIndex::Node(node));
+                    }
+                }
             }
         }
         Ok(set)
+    }
+
+    /// Outcome of an operation that changed no element membership.
+    fn outcome(&self, state_changed: bool) -> Result<OpOutcome, InteractionStatus> {
+        Ok(OpOutcome {
+            render_revision: self.render_revision,
+            state_changed,
+            selected: self.read_state(|state| state.selection().len())?,
+            ..OpOutcome::default()
+        })
     }
 
     fn select_set(
@@ -438,6 +557,7 @@ impl GraphSession {
             changed: self.identity.refs_of(&changed.0),
             unmatched,
             selected: changed.1,
+            ..OpOutcome::default()
         })
     }
 
@@ -489,8 +609,7 @@ impl GraphSession {
                 render_revision: session.render_revision,
                 changed: session.identity.refs_of(&before),
                 state_changed: cleared,
-                unmatched: 0,
-                selected: 0,
+                ..OpOutcome::default()
             })
         })
     }
@@ -504,24 +623,29 @@ impl GraphSession {
         self.operate(header, |session| {
             let focus = match target {
                 None => None,
-                Some(element) => match session.identity.resolve(element) {
-                    Ok(index) => Some(session.identity.focus_of(index)),
-                    Err(ResolveError::NeedsRender) => return Err(InteractionStatus::Stale),
-                    Err(ResolveError::Unresolved) => return invalid(),
-                },
+                Some(element) => Some(match session.resolve(element)? {
+                    render::Resolved::Element(index) => session.identity.focus_of(index),
+                    // An aggregate is focused through its lowest-index visible
+                    // member; focus is UUID-keyed, so it cannot name the group.
+                    render::Resolved::Group(nodes) => {
+                        let render = session.published().ok_or(InteractionStatus::Stale)?;
+                        let first = nodes
+                            .iter()
+                            .copied()
+                            .min()
+                            .ok_or(InteractionStatus::Invalid)?;
+                        let stand_in = render.focus_node[render.member_of[first] as usize];
+                        session.identity.focus_of(ElementIndex::Node(stand_in as usize))
+                    }
+                }),
             };
-            let (changed, selected) = session.write_state(|state| {
+            session.ring_anchor = None;
+            let changed = session.write_state(|state| {
                 let changed = state.focus() != focus.as_ref();
                 state.set_focus(focus);
-                (changed, state.selection().len())
+                changed
             })?;
-            Ok(OpOutcome {
-                render_revision: session.render_revision,
-                changed: Vec::new(),
-                state_changed: changed,
-                unmatched: 0,
-                selected,
-            })
+            session.outcome(changed)
         })
     }
 

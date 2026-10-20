@@ -269,6 +269,11 @@ impl<H: ResultHash> GraphIdentity<H> {
             .map(|(&id, _)| id)
     }
 
+    /// Whether a composed edge is derived (NIL UUID) rather than persisted.
+    pub fn is_derived(&self, edge: usize) -> bool {
+        self.edge_derived[edge].is_some()
+    }
+
     pub fn node_index(&self, id: &Uuid) -> Option<usize> {
         self.node_index.get(&UuidKey(*id)).copied()
     }

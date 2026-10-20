@@ -111,6 +111,19 @@ fn handmade_with(
     layers: &[Option<&str>],
     parent: Option<(&[u32], &[u8])>,
 ) -> Vec<u8> {
+    handmade_ends(version, nodes, edges, layers, parent, None)
+}
+
+/// `ends` are the dense `(source, target)` of each edge; absent, edge `i`
+/// joins node `i % n` to `(i + 1) % n`.
+fn handmade_ends(
+    version: u32,
+    nodes: &[Uuid],
+    edges: &[E],
+    layers: &[Option<&str>],
+    parent: Option<(&[u32], &[u8])>,
+    ends: Option<&[(u64, u64)]>,
+) -> Vec<u8> {
     let mut b = Builder::new(DOCUMENT_MAGIC);
     b.u32s("status", 0, &[0]);
     b.utf8("kind", 0, "graph");
@@ -152,6 +165,13 @@ fn handmade_with(
     b.u32s("edge.layer", 0, &layer);
     b.i64s("edge.order", 0, &order);
     b.u64s("edge.path", 0, &path);
+    let n = nodes.len().max(1) as u64;
+    let ends: Vec<(u64, u64)> = match ends {
+        Some(ends) => ends.to_vec(),
+        None => (0..edges.len() as u64).map(|i| (i % n, (i + 1) % n)).collect(),
+    };
+    b.u64s("edge.source", 0, &ends.iter().map(|e| e.0).collect::<Vec<_>>());
+    b.u64s("edge.target", 0, &ends.iter().map(|e| e.1).collect::<Vec<_>>());
     for (i, result_id) in layers.iter().enumerate() {
         b.utf8("layer.schema", i, "test");
         if let Some(result_id) = result_id {
@@ -1055,7 +1075,10 @@ fn a_bound_session_and_its_temporal_graph_are_one_state() {
     let f = frame(&registry, 2);
     assert_eq!(f.selected_visible_node_ids(), [id(3)]);
 
-    // Clearing through the session is visible to the next frame.
+    // Clearing through the session is visible to the next frame. Two frames
+    // changed the temporal visibility since the host last rendered, so the
+    // host republishes first (a stale stamp would be rejected).
+    s.render(None).unwrap();
     s.clear(header(&s, 3)).unwrap();
     assert!(frame(&registry, 3).selected_visible_node_ids().is_empty());
 }
@@ -1122,3 +1145,5 @@ fn destroying_a_bound_session_leaves_the_temporal_state_untouched() {
     assert_eq!(f.selected_visible_node_ids(), [id(1)]);
     assert_eq!(f.selected_visible_edge_ids(), [id(12)]);
 }
+
+mod session;

@@ -21,7 +21,16 @@ pub const FLAG_FILTERED: u32 = 1 << 3;
 pub const FLAG_PINNED: u32 = 1 << 4;
 pub const FLAG_AGGREGATE: u32 = 1 << 5;
 pub const FLAG_DISABLED: u32 = 1 << 6;
-pub const KNOWN_STATE_FLAGS: u32 = (1 << 7) - 1;
+/// Emphasis flags (spec/design/graph-interaction.md §2.7). They never enter
+/// [`resolve_visual_state`] precedence: hosts read them as the independent
+/// `emphasis` plane, `(flags >> EMPHASIS_SHIFT) & EMPHASIS_MASK`.
+pub const FLAG_FOCUSED: u32 = 1 << 7;
+pub const FLAG_PATH: u32 = 1 << 8;
+pub const FLAG_COMMUNITY: u32 = 1 << 9;
+pub const FLAG_EXTERNAL: u32 = 1 << 10;
+pub const EMPHASIS_SHIFT: u32 = 7;
+pub const EMPHASIS_MASK: u32 = 0xF;
+pub const KNOWN_STATE_FLAGS: u32 = (1 << 11) - 1;
 pub const NO_COMPOUND: u64 = u64::MAX;
 pub const COMPOUND_ACTION_EXPAND: u8 = 0;
 pub const COMPOUND_ACTION_COLLAPSE: u8 = 1;
@@ -1883,7 +1892,14 @@ fn collapsed_node_flags(flags: &[u32], hierarchy: &CompoundHierarchy) -> Option<
     if flags.len() != hierarchy.visible.len() {
         return None;
     }
-    const PROPAGATED: u32 = FLAG_SELECTED | FLAG_HOVERED | FLAG_NEIGHBOR | FLAG_PINNED;
+    const PROPAGATED: u32 = FLAG_SELECTED
+        | FLAG_HOVERED
+        | FLAG_NEIGHBOR
+        | FLAG_PINNED
+        | FLAG_FOCUSED
+        | FLAG_PATH
+        | FLAG_COMMUNITY
+        | FLAG_EXTERNAL;
     let mut effective = flags.to_vec();
     for index in 0..flags.len() {
         if !hierarchy.visible[index] {
@@ -2939,7 +2955,7 @@ mod tests {
                 &[1],
                 &[1],
                 &[1.0],
-                &[1 << 7],
+                &[1 << 11],
                 false,
                 THEME_LIGHT,
                 &mut out
