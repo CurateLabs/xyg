@@ -50,10 +50,10 @@ Each is regression-tested in `tests/pyplot/test_corpus_regressions_1006.py`,
   chart, so no opacity heuristic is needed downstream.
 
 Still open on this lane (named gaps, all fail closed with stable diagnostics):
-per-item scatter sizes (`s=array`), secondary y axes (`twinx`), heterogeneous
-annotation styles and annotation `bbox=`, and more than 1,024 hexbin cells
-(#887). (Line+marker legend swatches and multi-panel legends, listed open when
-this entry was written, are closed by the legend entry below.)
+secondary y axes (`twinx`), heterogeneous annotation styles and annotation
+`bbox=`, and more than 1,024 hexbin cells (#887). (Per-item scatter sizes,
+line+marker legend swatches and multi-panel legends, listed open when this
+entry was written, are closed by the entries below.)
 
 ## Per-item scatter size — #1006
 

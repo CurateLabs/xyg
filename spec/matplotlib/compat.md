@@ -142,7 +142,6 @@ falling back to a second renderer. Currently open (tracked under #1006):
 
 | Corpus case | Gap | Diagnostic |
 |---|---|---|
-| `12_scatter_size_array` | per-item scatter sizes (`s=array`) | `Scene v12 does not yet encode hidden or per-item styled marks` |
 | `25_annotate_text`, `53_matplotlib_311_plotting` | mixed annotation text styles in one panel; annotation `bbox=` | `XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE`, `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX` |
 | `26_twinx_dual_axis` | secondary y axis | `Scene v12 figure compilation currently supports exactly x/y axes` |
 | `47_statistical_families` | default-gridsize `hexbin` lattice above the 1,024 PolyFill-group ceiling ([#887](https://github.com/CurateLabs/xyg/issues/887)) | `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
