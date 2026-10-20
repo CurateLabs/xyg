@@ -185,8 +185,10 @@ def test_svg_export_polar_wedges(benchmark, polar_data):
     document = benchmark(figure.to_svg, width=720, height=720)
     assert document.startswith("<svg")
     # Four stacked speed bands across sixteen sectors produce 64 closed wedge
-    # paths.  This figure is outside #856's Cartesian autorange slice, so SVG
-    # remains the exact-arc control for the raster row's polygon flattening.
+    # paths. The rose consumes the shared Rust autorange, and the Rust SVG
+    # writer draws each plain wedge as exact `A` arcs from the Scene's XYWA
+    # sidecar, so SVG is the exact-arc control for the raster row's polygon
+    # flattening.
     paths = document.split("<path d=")[1:]
     assert len(paths) == ROSE_SECTORS * 4
     assert all(" A " in path and " L " in path and " Z" in path for path in paths)

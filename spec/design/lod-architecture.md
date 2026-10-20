@@ -59,12 +59,28 @@ real marks with real channels — never a sample, never an aggregate.
 
 Static export (#1006) takes the same compile-time first-paint tier rather
 than its own reduction: a Cartesian line above `DECIMATION_THRESHOLD` exports
-the browser's M4 rows (buckets = figure CSS width via `screen_shape`, window =
-resolved x domain), a direct-tier scatter exports every point up to
-`DIRECT_SOFT_CEILING`, and a density-tier scatter exports one Rust-binned
-density Image; beyond those tiers the export fails closed with
-`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (`spec/design/scene-ir.md`, "Public static
-LOD tiers (#1006)").
+the browser's M4 rows (window = resolved x domain), a direct-tier scatter
+exports every point, a density-tier scatter exports one Rust-binned density
+Image, and a triangle mesh above the 1,024-group painter budget exports one
+Rust-rasterized dense-fill Image; beyond those tiers the export fails closed
+with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (`spec/design/scene-ir.md`, "Public
+static LOD tiers (#1006)").
+
+The static bucket count is the **export** viewport width (the `width` the
+caller passes to `to_svg`/`to_png`, else the figure's width) through
+`screen_shape`. It never uses the browser payload's 2,048-pixel fallback for a
+fluid (`"100%"`) figure width: static export rejects fluid viewports
+(`XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT`) before any tier runs, so the browser
+and static bucket counts agree whenever both exist (equal widths).
+
+Two static bounds are tighter than the browser's: a scatter with a per-item
+paint or size plane exports directly only while that plane fits one 4 MiB XYTA
+record (≤ 174,586 points), and all traces' packed rows share
+`MAX_SCENE_MARKS`. Log axes also split at the threshold: above it the static
+rows are the browser's decimated rows after its log prefilter (non-positive
+rows dropped and bridged); at or below it the Scene keeps every authored row
+and applies the axis's own `nonpositive` policy, while the browser's direct
+tier drops those rows — a pre-existing static/browser difference.
 
 Key asymmetry to respect: **histogram/heatmap are born aggregated** — their
 Tier-1 is "re-aggregate at the right resolution," and truthfulness means the

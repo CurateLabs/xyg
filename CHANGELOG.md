@@ -14,6 +14,23 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
+  JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing
+  with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` above 10,000 points: Cartesian lines
+  above `DECIMATION_THRESHOLD` export the browser's M4 rows at the export width,
+  direct-tier scatters export every point, density scatters bin their canonical
+  columns, and non-joined triangle meshes above the 1,024-group painter budget
+  export one Rust-rasterized dense-fill Image (smooth XYIM plane format 1).
+  Layered and polar figures, and ordinary triangle meshes, consume the shared
+  Rust autorange. Polar bar/rose wedges are written as exact SVG arcs from an
+  optional `XYWA` sidecar (raster and the browser painter unchanged). Static
+  bounds stricter than the browser fail closed with the LOD reason: per-item
+  scatter paint planes must fit one 4 MiB XYTA record (≤ 174,586 points; XYEF
+  observation bit 25), all traces' packed rows share 2,000,000 marks, and a
+  Scene with a `y2` axis does not decimate yet. No C signature, `ABI_VERSION`,
+  or `SCENE_VERSION` change; the WASM gzip budget is 624 KiB. Node also fixes
+  categorical-color static export (palette pointers) and large label
+  factorization (call-stack overflow).
 - ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
   (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
   `XYY2` block (scale, axis chrome record, resolved typography and paints, tick

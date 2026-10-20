@@ -300,3 +300,32 @@ def test_scene_mark_ceiling_counts_every_trace_before_packing() -> None:
         assert scene_export_support_reason(figure, width=WIDTH, height=HEIGHT) == _LOD
         with pytest.raises(UnsupportedStaticExport, match=_LOD):
             chart.to_png(width=WIDTH, height=HEIGHT, scale=1)
+
+
+def test_log_y_nonpositive_rows_follow_each_side_of_the_decimation_threshold() -> None:
+    """Pins the documented split for log-y lines with y <= 0 (#1006).
+
+    Above ``DECIMATION_THRESHOLD`` the static Scene keeps exactly the browser
+    payload's M4 rows after its decimated log prefilter, so non-positive rows
+    are dropped and the line bridges them. At or below the threshold the static
+    Scene keeps every authored row and applies the axis's own ``nonpositive``
+    policy, as it did before; the browser's direct tier drops those rows, a
+    pre-existing static/browser difference recorded in scene-ir.md.
+    """
+    for n in (5_000, 20_000):
+        i = np.arange(n, dtype=np.float64)
+        y = np.sin(i / 50.0) * 10.0
+        axes = (xyg.x_axis(domain=(0.0, float(n))), xyg.y_axis(type_="log", domain=(0.1, 10.0)))
+        figure = xyg.chart(xyg.line(x=i, y=y), *axes, width=WIDTH, height=HEIGHT).figure()
+        spec, _ = figure.build_payload(WIDTH)
+        browser_rows = spec["traces"][0]["n_marks"]
+        assert browser_rows < n  # the browser drops y <= 0 at both sizes
+        points = sum(
+            len(p.split()) for p in _POLYLINE.findall(figure.to_svg(width=WIDTH, height=HEIGHT))
+        )
+        if n <= 10_000:
+            assert points == n
+        else:
+            rows = _browser_payload_rows(figure, 1.0)
+            assert points == browser_rows == len(rows)
+            assert (y[rows] > 0).all()

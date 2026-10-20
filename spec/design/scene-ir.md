@@ -38,10 +38,18 @@ polygon's vertex count. See `browser-wasm.md` for XYPB derived planes (v16 adds 
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v33, so additive emission is not safe.
-If capability negotiation lands later, only explicitly negotiated additions
-may avoid a version bump. Consumers must reject an unsupported scene version
-and, once decoders land, fail closed on an unknown kind rather than guessing.
+bitmap or schema negotiation in Scene v33, so additive emission of new
+records or new record semantics is not safe. One narrow class is exempt: an
+optional sidecar that only restates records already in the Scene and is
+validated against them (the `XYGR`/`XYDS`/`XYMG` style sidecars, the #1006
+`XYWA` exact polar wedge arcs, and the #1006 smooth XYIM plane format 1 for
+a dense-fill Image record) may be added without a bump, because every
+consumer is the same Rust source and a decoder that predates the sidecar
+fails closed on the unknown bytes with `SceneError::Length` — not
+`SceneError::Version`, since the version field is unchanged. If capability
+negotiation lands later, only explicitly negotiated additions may avoid a
+version bump. Consumers must reject an unsupported scene version and, once
+decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
 WASM lifecycle foundation; it validates the current Scene v33 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
@@ -1723,6 +1731,18 @@ step/curve expansion (the browser client likewise steps the decimated arrays):
 - bound: at most `4 × buckets` (≤ 16,384) rows per decimated trace, far under
   `MAX_SCENE_MARKS`; the transient cost is the host's f64 XYCL ingress
   (16 B/point) plus one Rust decode copy.
+
+**Log axes either side of the threshold.** The decimated prefilter is the
+browser's: above `DECIMATION_THRESHOLD` a log x or y axis drops rows with a
+non-positive coordinate from the kept M4 rows, so the static line bridges
+them exactly like the browser's first paint. At or below the threshold the
+Scene packs every authored row and its log scale applies the axis's
+`nonpositive` policy (masking or clamping, as before #1006); the browser's
+direct tier drops those rows instead (`payload_visible_indices` with
+`prefiltered = false`). The split is deliberate — it keeps sub-threshold
+static output byte-identical and keeps the decimated rows bit-for-bit the
+browser's — and `tests/test_static_lod_tiers.py::test_log_y_nonpositive_rows_follow_each_side_of_the_decimation_threshold`
+pins both sides.
 
 Static export fails closed where the browser kernel's own preconditions do not
 hold instead of drawing an arbitrary subset: non-finite x/y keep the shared
