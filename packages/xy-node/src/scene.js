@@ -219,7 +219,8 @@ function packProductFacts({
 // (`scene_arrow.rs`); Python raises the same text.
 const ARROW_STYLE_UNSUPPORTED =
   "XYG_SCENE_UNSUPPORTED_ARROW_STYLE: Scene arrows encode head_style none|triangle|v, " +
-  "tail_style none|v, and finite non-negative start_offset/label_clear/gap_* pixels";
+  "tail_style none|v, finite signed start_offset pixels in [-4096, 4096], " +
+  "and finite non-negative label_clear/gap_* pixels in [0, 4096]";
 const XYAF_KIND_CODES = { text: 0, arrow: 1, callout: 2, rule: 3, band: 4, marker: 5 };
 const XYAF_FACT_HAS_WRAP = 1 << 0;
 const XYAF_FACT_HAS_TEXT = 1 << 1;

@@ -138,6 +138,57 @@ def test_arrowstyles_outside_the_documented_set_fail_closed(arrowprops, reason) 
         plt.close("all")
 
 
+@pytest.mark.parametrize(
+    "arrowstyle",
+    ["]->", "-<", "<-[", "not-a-style", "v", "none", "triangle"],
+)
+def test_unmapped_arrowstyle_names_fail_closed_at_static_admission(arrowstyle) -> None:
+    # End-style vocabulary words are not aliases for Matplotlib arrowstyles.
+    try:
+        fig = _annotated(dict(arrowstyle=arrowstyle))
+        with pytest.raises(
+            UnsupportedStaticExport, match=r"Scene arrow style does not encode.*arrowstyle"
+        ):
+            _svg(fig)
+    finally:
+        plt.close("all")
+
+
+@pytest.mark.parametrize("name", ["-", "->", "<-", "<->", "-|>"])
+@pytest.mark.parametrize(
+    "options",
+    [
+        "head_length=4,head_width=2",
+        "head_length=4",
+        "head_width=2",
+        "tail_width=0.5",
+        "widthA=2",
+        "widthB=2",
+        "lengthA=2",
+        "lengthB=2",
+        "angleA=45",
+        "angleB=45",
+        "scaleA=2",
+        "scaleB=2",
+        "shrink_factor=0.5",
+        "unknown_option=1",
+        "head_length=invalid",
+        "head_length",
+        "",
+    ],
+)
+def test_arrowstyle_options_fail_closed_at_static_admission(name, options) -> None:
+    arrowstyle = f"{name},{options}"
+    try:
+        fig = _annotated(dict(arrowstyle=arrowstyle))
+        with pytest.raises(
+            UnsupportedStaticExport, match=r"Scene arrow style does not encode.*arrowstyle"
+        ):
+            _svg(fig)
+    finally:
+        plt.close("all")
+
+
 def _ends(**shrinks):
     # A long arrow (~300 px) so 40 pt + 30 pt of shrink still leave a shaft.
     svg = _svg(_annotated(dict(arrowstyle="-", **shrinks), xy=(0.5, 0.0), xytext=(5.5, 1.0)))

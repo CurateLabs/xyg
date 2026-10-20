@@ -66,6 +66,37 @@ KEY_REJECTED = {
     "angle": {"angle_a": 90.0, "angle_b": 0.0},
     "tapered-shaft": {"shaft_width_start": 3.0},
     "bar-size": {"head_size": 6.0},
+    # The shim retains unmapped names and every authored option string in this
+    # unencoded key; neither host may silently discard it before admission.
+    **{
+        f"mpl-{source}": {"arrowstyle": source}
+        for source in (
+            "]->",
+            "-<",
+            "<-[",
+            "not-a-style",
+            "v",
+            "none",
+            "triangle",
+            "->,head_length=4,head_width=2",
+            "->,head_length=4",
+            "->,head_width=2",
+            "->,tail_width=0.5",
+            "->,widthA=2",
+            "->,widthB=2",
+            "->,lengthA=2",
+            "->,lengthB=2",
+            "->,angleA=45",
+            "->,angleB=45",
+            "->,scaleA=2",
+            "->,scaleB=2",
+            "->,shrink_factor=0.5",
+            "->,unknown_option=1",
+            "->,head_length=invalid",
+            "->,head_length",
+            "->,",
+        )
+    },
 }
 VOCABULARY_REASON = "XYG_SCENE_UNSUPPORTED_ARROW_STYLE"
 

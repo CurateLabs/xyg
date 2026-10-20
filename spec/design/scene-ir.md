@@ -1504,14 +1504,27 @@ produce identical Scene bytes.
 fail-closed rejection and never falls back to a different arrow:
 
 - a value outside `none|triangle|v`, a `triangle` tail (so `<|-`, `<|-|>`), bars
-  (`|-|`, `]-[`), malformed or negative `start_offset` / `label_clear` /
-  `gap_*`, or a magnitude over 4,096 px → bulk-pack code `-15`, reason
+  (`|-|`, `]-[`), malformed pixel facts, negative `label_clear` / `gap_*`, or
+  a magnitude over 4,096 px → bulk-pack code `-15`, reason
   `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`;
 - keys outside the admit table (`curve`, `angle_a`, `angle_b`, `elbow`,
   `shaft_width_*` with unequal ends, `dash`, …) → `Scene arrow style does not
   encode [...]`; tapered pyplot arrows (`fancy`, `simple`, `wedge`) →
   `XYG_STATIC_UNSUPPORTED_TAPERED_ANNOTATION_ARROW`; curved connectionstyles
   are keys of that kind.
+
+`start_offset` components are finite signed pixels in `[-4096, 4096]`;
+`label_clear` extents and `gap_*` are finite nonnegative pixels in `[0, 4096]`.
+The pyplot shim lowers bare recognized `arrowstyle` names to endpoint facts.
+Unmapped names (including `]->`, `-<`, `<-[` and unknown strings) and **all**
+comma-suffixed option strings retain their full original text as the unencoded
+`arrowstyle` style key. Scene admission on both hosts rejects that key with
+`Scene arrow style does not encode [...]`; it never substitutes a triangle or
+drops options, including malformed options that the browser parser skips.
+Pyplot's existing tapered-shaft diagnostic may reject tapered forms earlier.
+No parameterized arrowstyle is currently encoded (`head_length`, `head_width`,
+tail/bar dimensions and angles/scales included). The browser's approximations
+remain separate from this static rejection contract.
 
 Screen-space geometry (pixels, y down) is `arrow_geom::arrow_geometry`: the
 projected start moves by `start_offset` (anchor → label-box centre), then both

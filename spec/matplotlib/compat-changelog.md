@@ -53,11 +53,17 @@ label anchor. The Rust-owned arrow now carries a bounded vocabulary (Scene v34,
 offset, label clearance and shrink in pixels. `->` is an open V (two strokes, no
 fill), `<-`/`<->` put the V at the start/both ends, `-` is a plain shaft, and the
 shaft starts at the label box edge plus the margin instead of its centre. The
-admitted `arrowstyle` set is `-`, `->`, `<-`, `<->`, `-|>`; bars, filled tails,
+admitted bare `arrowstyle` set is `-`, `->`, `<-`, `<->`, `-|>`; bars, filled tails,
 tapered shafts and curved connections remain explicit rejections (see
 `compat.md`). Python and Node produce byte-identical Scenes for every admitted
 style (`tests/test_arrow_style_cross_host.py`); the pyplot regression is
-`tests/pyplot/test_annotate_arrowstyle_1006.py`.
+`tests/pyplot/test_annotate_arrowstyle_1006.py`. Unmapped names (`]->`, `-<`,
+`<-[`, unknown strings) and every comma-suffixed option string (including
+`head_length`/`head_width` and malformed options) retain their original source
+as an unencoded `arrowstyle` fact until static admission rejects it with
+`Scene arrow style does not encode [...]`. They cannot silently become a
+triangle or lose their authored options. The Node normal test gate also runs
+`arrow-painter-hydration.test.mjs`.
 
 `shrinkA`/`shrinkB` were previously dropped; they now map from points to the pixel
 shrink (2 pt default, so the tip stops 2 pt short of `xy` as in Matplotlib), and the

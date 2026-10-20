@@ -22,7 +22,8 @@ from .marks import _SYMBOL_CODES
 # Rust-owned vocabulary (`scene_arrow.rs`); Node raises the same text.
 ARROW_STYLE_UNSUPPORTED = (
     "XYG_SCENE_UNSUPPORTED_ARROW_STYLE: Scene arrows encode head_style none|triangle|v, "
-    "tail_style none|v, and finite non-negative start_offset/label_clear/gap_* pixels"
+    "tail_style none|v, finite signed start_offset pixels in [-4096, 4096], "
+    "and finite non-negative label_clear/gap_* pixels in [0, 4096]"
 )
 
 

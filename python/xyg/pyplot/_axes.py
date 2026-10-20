@@ -8839,7 +8839,8 @@ def _arrow_visuals(
     Head/tail shapes, filled tapered shafts (fancy/simple/wedge), and
     connectionstyle curves map onto the engine's arrow style vocabulary;
     ``mutation_scale`` mirrors matplotlib's (the annotation text size, px).
-    What has no equivalent (corner rounding) is approximated, never dropped."""
+    The browser approximates corner rounding. Names/options without a faithful
+    Scene encoding remain authored facts so static admission fails closed."""
     arrowstyle = arrowprops.get("arrowstyle")
     fancy = arrowstyle is None  # matplotlib's YAArrow-style thick default
     color = resolve_color(
@@ -8882,6 +8883,13 @@ def _arrow_visuals(
         style["gap_start"] = shrink_a
         style["gap_end"] = shrink_b
         name = str(arrowstyle).split(",")[0].strip()
+        if name not in _ARROWSTYLE_ENDS or "," in str(arrowstyle):
+            # Preserve the entire authored grammar, including malformed options
+            # that _parse_style_options skips. Scene does not encode this key
+            # and rejects it through its shared unsupported-style-key path;
+            # the browser may still use the approximation below (scene-ir.md,
+            # Straight-arrow vocabulary; dossier §24). No options are encoded.
+            style["arrowstyle"] = str(arrowstyle)
         tail, head = _ARROWSTYLE_ENDS.get(name, ("none", "triangle"))
         options = _parse_style_options(str(arrowstyle))
         scale = float(mutation_scale)
