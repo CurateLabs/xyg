@@ -347,16 +347,10 @@ def _pyplot_static_document(
             )
         )
     panel_legends = [
-        figure._static_document_panel_legend
-        for figure in figures
+        (index, figure._static_document_panel_legend)
+        for index, figure in enumerate(figures)
         if figure._static_document_panel_legend is not None
     ]
-    if panel_legends:
-        if len(figures) != 1 or len(panel_legends) != 1 or figure_legend is not None:
-            raise _static_document.UnsupportedStaticExport(
-                "XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS"
-            )
-        figure_legend = panel_legends[0]
     anchor = {"left": 0, "center": 1, "right": 2}.get(str(style.get("ha", "center")), 1)
     family = str(style.get("family", "system-ui,sans-serif")).lower().replace(" ", "")
     if suptitle and family not in {"system-ui,sans-serif", "dejavusans", "sans-serif"}:
@@ -388,6 +382,7 @@ def _pyplot_static_document(
         crop_padding=crop_padding,
         colorbar=None if colorbar is None else str(colorbar.get("colormap", "viridis")),
         legend=figure_legend,
+        panel_legends=panel_legends,
     )
 
 
@@ -446,6 +441,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
 
     projected = copy.copy(figure)
     projected.traces = []
+    legend_markers: dict[int, Any] = {}
     for trace in figure.traces:
         cloned = copy.copy(trace)
         cloned.style = {
@@ -453,6 +449,11 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             for key, value in (trace.style or {}).items()
             if not str(key).startswith("_legend_")
         }
+        # The line-handle marker is a legend-only fact: the document legend
+        # draws it, and the public Scene style allowlist must not see it.
+        marker = cloned.style.pop("legend_marker", None)
+        if marker is not None:
+            legend_markers[id(cloned)] = marker
         _lower_scalar_artist_alpha(cloned)
         if (
             trace.kind == "heatmap"
@@ -574,7 +575,18 @@ def _pyplot_scene_figure(figure: Any) -> Any:
                 "XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS"
             )
         legend_items = [
-            {"kind": trace.kind, "name": trace.name, "style": dict(trace.style or {})}
+            {
+                "kind": trace.kind,
+                "name": trace.name,
+                "style": {
+                    **(trace.style or {}),
+                    **(
+                        {"legend_marker": legend_markers[id(trace)]}
+                        if id(trace) in legend_markers
+                        else {}
+                    ),
+                },
+            }
             for trace in projected.traces
             if trace.name
         ]

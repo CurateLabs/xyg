@@ -238,11 +238,9 @@ pub fn polar_layout(input: PolarLayoutInput, out: &mut [f64]) -> Option<usize> {
     Some(POLAR_METRICS_LEN)
 }
 
-fn partial_sector_layout(
-    plot_x: f64,
-    plot_y: f64,
-    plot_w: f64,
-    plot_h: f64,
+/// Bounding box `(xmin, xmax, ymin, ymax)` of the visible sector in unit-disc
+/// coordinates (y down), including the inner radius when the hole is open.
+fn sector_unit_box(
     sector_a0: f64,
     sector_a1: f64,
     r_scale: &AxisScale,
@@ -250,7 +248,7 @@ fn partial_sector_layout(
     r_origin_coord: f64,
     r_hi_coord: f64,
     hole: f64,
-) -> Option<(f64, f64, f64)> {
+) -> (f64, f64, f64, f64) {
     let lo_angle = sector_a0.min(sector_a1);
     let hi_angle = sector_a0.max(sector_a1);
     let mut angles = vec![sector_a0, sector_a1];
@@ -283,6 +281,61 @@ fn partial_sector_layout(
     let xmax = xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
     let ymin = ys.iter().copied().fold(f64::INFINITY, f64::min);
     let ymax = ys.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    (xmin, xmax, ymin, ymax)
+}
+
+/// Visible plot box `(x, y, width, height)` of a laid-out polar Scene: the full
+/// disc's square, or the bounding box of the visible sector. It always lies
+/// inside the layout rectangle the disc was fitted to.
+pub fn visible_box(metrics: &[f64]) -> Option<(f64, f64, f64, f64)> {
+    if metrics.len() < POLAR_METRICS_LEN {
+        return None;
+    }
+    let (cx, cy, radius) = (metrics[METRIC_CX], metrics[METRIC_CY], metrics[METRIC_RADIUS]);
+    let (xmin, xmax, ymin, ymax) = if metrics[METRIC_FULL_SECTOR] >= 0.5 {
+        (-1.0, 1.0, -1.0, 1.0)
+    } else {
+        let r_scale = build_r_scale(metrics)?;
+        sector_unit_box(
+            metrics[METRIC_SECTOR_A0],
+            metrics[METRIC_SECTOR_A1],
+            &r_scale,
+            metrics[METRIC_R_LO],
+            metrics[METRIC_R_ORIGIN_COORD],
+            metrics[METRIC_R_HI_COORD],
+            metrics[METRIC_HOLE],
+        )
+    };
+    Some((
+        cx + radius * xmin,
+        cy + radius * ymin,
+        radius * (xmax - xmin),
+        radius * (ymax - ymin),
+    ))
+}
+
+fn partial_sector_layout(
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    sector_a0: f64,
+    sector_a1: f64,
+    r_scale: &AxisScale,
+    r_lo: f64,
+    r_origin_coord: f64,
+    r_hi_coord: f64,
+    hole: f64,
+) -> Option<(f64, f64, f64)> {
+    let (xmin, xmax, ymin, ymax) = sector_unit_box(
+        sector_a0,
+        sector_a1,
+        r_scale,
+        r_lo,
+        r_origin_coord,
+        r_hi_coord,
+        hole,
+    );
     let xspan = (xmax - xmin).max(1e-12);
     let yspan = (ymax - ymin).max(1e-12);
     let radius = (plot_w / xspan).min(plot_h / yspan);
@@ -1149,6 +1202,62 @@ mod tests {
         let mut y = [0.0];
         polar_project(metrics, &[theta], &[r], &mut x, &mut y).unwrap();
         (x[0], y[0])
+    }
+
+    fn visible(input: PolarLayoutInput) -> (f64, f64, f64, f64) {
+        let mut metrics = [0.0; POLAR_METRICS_LEN];
+        polar_layout(input, &mut metrics).unwrap();
+        visible_box(&metrics).unwrap()
+    }
+
+    fn inside(
+        (x, y, w, h): (f64, f64, f64, f64),
+        (px, py, pw, ph): (f64, f64, f64, f64),
+    ) -> bool {
+        x >= px - 1e-9 && y >= py - 1e-9 && x + w <= px + pw + 1e-9 && y + h <= py + ph + 1e-9
+    }
+
+    #[test]
+    fn visible_box_is_the_disc_square_for_a_full_sector() {
+        let (x, y, w, h) = visible(default_input());
+        assert_eq!((x, y, w, h), (0.0, 0.0, 400.0, 400.0));
+        let wide = visible(PolarLayoutInput { plot_w: 600.0, ..default_input() });
+        assert_eq!(wide, (100.0, 0.0, 400.0, 400.0));
+    }
+
+    #[test]
+    fn visible_box_follows_partial_sectors_inside_the_layout() {
+        // (start, end, expected width:height ratio of the visible bounds)
+        for (start, end, ratio) in [
+            (0.0, PI, 2.0),            // upper semicircle
+            (PI, 2.0 * PI, 2.0),       // lower semicircle
+            (0.0, FRAC_PI_2, 1.0),     // quarter
+        ] {
+            let layout = (40.0, 40.0, 320.0, 400.0);
+            let input = PolarLayoutInput {
+                plot_x: layout.0,
+                plot_y: layout.1,
+                plot_w: layout.2,
+                plot_h: layout.3,
+                sector_start: start,
+                sector_end: end,
+                ..default_input()
+            };
+            let bounds = visible(input);
+            assert!(inside(bounds, layout), "{start}..{end}: {bounds:?}");
+            assert!((bounds.2 / bounds.3 - ratio).abs() < 1e-9, "{start}..{end}: {bounds:?}");
+        }
+        // The reviewer's counterexample: the upper semicircle's full-disc
+        // square would end at y=440; the visible box ends well inside.
+        let (_, y, _, h) = visible(PolarLayoutInput {
+            plot_x: 40.0,
+            plot_y: 40.0,
+            plot_w: 320.0,
+            plot_h: 400.0,
+            sector_end: PI,
+            ..default_input()
+        });
+        assert_eq!((y, h), (160.0, 160.0));
     }
 
     #[test]

@@ -102,7 +102,7 @@ const MS_HAS_WIDTH: u8 = 1 << 6;
 const MS_HAS_LINE_WIDTH: u8 = 1 << 7;
 const LINECAP_NONE: u8 = 255;
 
-const SYMBOL_NAMES: [&str; 19] = [
+pub(crate) const SYMBOL_NAMES: [&str; 19] = [
     "circle",
     "square",
     "diamond",

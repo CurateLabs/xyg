@@ -2,6 +2,7 @@
 //! Hosts carry optional literals; defaults, glyph choice, paint, and framing
 //! live here. Output is the existing XYDD legend block, not Scene's XYLG wire.
 use crate::css::{color_rgba8, parse_color, Checked};
+use crate::scene_trace_compile::SYMBOL_NAMES;
 
 const MAX_BYTES: usize = 2 * 1024 * 1024;
 const MAX_TEXT: usize = 4096;
@@ -217,7 +218,8 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
     out.extend_from_slice(loc.as_bytes());
     for _ in 0..count {
         let flags = r.u32()?;
-        if flags & !31 != 0 || r.u32()? != 0 {
+        // Bits 64 / 128 qualify the marker numbers, so they require bit 32.
+        if flags & !255 != 0 || (flags & 32 == 0 && flags & 192 != 0) || r.u32()? != 0 {
             return Err(DocumentLegendError::Flags);
         }
         let width = r.number(flags & 1 != 0, 1.5)?;
@@ -228,13 +230,45 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         let name = r.text()?.unwrap_or("");
         let rgba = paint(r.text()?, "#4c78a8")?;
         let symbol = r.text()?.unwrap_or("circle");
+        // Bit 32 appends a line-handle marker: symbol, fill, stroke text, then
+        // marker size and stroke width (f64, present only with bits 64 / 128;
+        // inactive bytes are zero). Rust owns every default: circle, item
+        // paint, size 8, unstroked.
+        let marker = if flags & 32 != 0 {
+            let marker_symbol = r.text()?.unwrap_or("circle");
+            let marker_fill = r.text()?;
+            let marker_stroke = r.text()?;
+            let marker_size = r.number(flags & 64 != 0, 8.0)?;
+            let marker_stroke_width = r.number(flags & 128 != 0, 0.0)?;
+            let code = SYMBOL_NAMES
+                .iter()
+                .position(|candidate| *candidate == marker_symbol)
+                .ok_or(DocumentLegendError::Style)?;
+            let fill = match marker_fill {
+                Some(value) => paint(Some(value), "")?,
+                None => rgba,
+            };
+            let stroke = match marker_stroke {
+                Some(value) => paint(Some(value), "")?,
+                None => fill,
+            };
+            Some((code as u8, fill, stroke, marker_size, marker_stroke_width))
+        } else {
+            None
+        };
         let kind = match kind {
-            "line" | "segments" | "step" | "stairs" | "errorbar" | "stem" => 0,
+            "line" | "segments" | "step" | "stairs" | "errorbar" | "stem" => u8::from(marker.is_some()) * 3,
+            _ if marker.is_some() => return Err(DocumentLegendError::Style),
             "scatter" if symbol == "circle" => 1,
             "scatter" => return Err(DocumentLegendError::Style),
             _ => 2,
         };
-        out.extend_from_slice(&[kind, u8::from(flags & 16 != 0), 0, 0]);
+        out.extend_from_slice(&[
+            kind,
+            u8::from(flags & 16 != 0),
+            marker.map_or(0, |marker| marker.0),
+            0,
+        ]);
         out.extend_from_slice(&rgba);
         output_f32(
             &mut out,
@@ -245,6 +279,15 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         output_f32(&mut out, opacity, false)?;
         out.extend_from_slice(&(name.len() as u32).to_le_bytes());
         out.extend_from_slice(&[0; 4]);
+        match marker {
+            Some((_, fill, stroke, size, stroke_width)) => {
+                out.extend_from_slice(&fill);
+                out.extend_from_slice(&stroke);
+                output_f32(&mut out, size, true)?;
+                output_f32(&mut out, stroke_width, false)?;
+            }
+            None => out.extend_from_slice(&[0; 16]),
+        }
         out.extend_from_slice(name.as_bytes());
     }
     if r.at != bytes.len() {
@@ -294,7 +337,7 @@ mod tests {
     #[test]
     fn defaults_match_existing_document_legend_wire() {
         let out = resolve_packed(&request([None; 11], &["line"])).unwrap();
-        assert_eq!(out.len(), 64 + 11 + 28 + 3);
+        assert_eq!(out.len(), 64 + 11 + 44 + 3);
         assert_eq!(
             &out[..16],
             &[1, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 1, 0, 0, 0]
@@ -311,7 +354,7 @@ mod tests {
         assert_eq!(f32_at(&out, 83), 1.5);
         assert_eq!(f32_at(&out, 87), 8.0);
         assert_eq!(f32_at(&out, 91), 1.0);
-        assert_eq!(&out[103..], b"key");
+        assert_eq!(&out[119..], b"key");
         assert!(resolve_packed(&request([None; 11], &[]))
             .unwrap()
             .is_empty());
@@ -323,7 +366,7 @@ mod tests {
         ];
         let out = resolve_packed(&request([None; 11], &kinds)).unwrap();
         for (i, expected) in [0, 0, 0, 0, 0, 0, 1, 2, 2].into_iter().enumerate() {
-            assert_eq!(out[75 + i * 31], expected);
+            assert_eq!(out[75 + i * 47], expected);
         }
     }
     #[test]
@@ -366,6 +409,78 @@ mod tests {
         assert_eq!(f32_at(&out, 83), 4.0);
         assert_eq!(f32_at(&out, 91), 1.0);
     }
+    fn marker_request(kind: &str, symbol: &str) -> Vec<u8> {
+        let mut input = request([None; 11], &[kind]);
+        let item = 64 + 11 * 4;
+        // Bits: 32 marker, 64 marker size, 128 marker stroke width.
+        input[item..item + 4].copy_from_slice(&(32u32 | 64 | 128).to_le_bytes());
+        // Marker block: symbol, fill, stroke text, then size and stroke width.
+        for value in [Some(symbol), Some("#ff0000"), None] {
+            text(&mut input, value);
+        }
+        for value in [9.0_f64, 1.25] {
+            input.extend_from_slice(&value.to_le_bytes());
+        }
+        input
+    }
+    #[test]
+    fn line_handle_marker_is_a_native_glyph_kind_with_its_own_paint() {
+        let out = resolve_packed(&marker_request("line", "square")).unwrap();
+        // 64 header + "upper right" + one 44-byte record ("key" follows).
+        let item = 64 + 11;
+        assert_eq!(&out[item..item + 3], &[3, 0, 1]);
+        assert_eq!(&out[item + 28..item + 36], &[255, 0, 0, 255, 255, 0, 0, 255]);
+        assert_eq!(f32_at(&out, item + 36), 9.0);
+        assert_eq!(f32_at(&out, item + 40), 1.25);
+        assert_eq!(&out[item + 44..], b"key");
+        // The plain line handle keeps a zero marker block.
+        let plain = resolve_packed(&request([None; 11], &["line"])).unwrap();
+        assert_eq!(&plain[item + 28..item + 44], &[0; 16]);
+    }
+    #[test]
+    fn line_handle_marker_rejects_zero_size_and_resolves_every_default() {
+        let mut zero = marker_request("line", "circle");
+        let at = zero.len() - 16;
+        zero[at..at + 8].copy_from_slice(&0.0f64.to_le_bytes());
+        assert_eq!(resolve_packed(&zero), Err(DocumentLegendError::Style));
+        // An empty marker object: flag 32 alone, absent symbol/paint/numbers.
+        let mut empty = request([None; 11], &["line"]);
+        let item = 64 + 11 * 4;
+        empty[item..item + 4].copy_from_slice(&32u32.to_le_bytes());
+        for _ in 0..3 {
+            text(&mut empty, None);
+        }
+        empty.extend_from_slice(&[0; 16]);
+        let out = resolve_packed(&empty).unwrap();
+        let record = 64 + 11;
+        assert_eq!(&out[record..record + 3], &[3, 0, 0]); // circle
+        assert_eq!(&out[record + 28..record + 32], &out[record + 4..record + 8]);
+        assert_eq!(f32_at(&out, record + 36), 8.0);
+        assert_eq!(f32_at(&out, record + 40), 0.0);
+        // Inactive numeric bytes must stay zero.
+        let at = empty.len() - 16;
+        empty[at..at + 8].copy_from_slice(&5.0f64.to_le_bytes());
+        assert_eq!(resolve_packed(&empty), Err(DocumentLegendError::Flags));
+    }
+    #[test]
+    fn marker_number_presence_bits_require_the_marker_bit() {
+        for bits in [64u32, 128, 192] {
+            let mut input = request([None; 11], &["line"]);
+            let item = 64 + 11 * 4;
+            input[item..item + 4].copy_from_slice(&bits.to_le_bytes());
+            assert_eq!(resolve_packed(&input), Err(DocumentLegendError::Flags), "{bits}");
+        }
+    }
+    #[test]
+    fn line_handle_marker_rejects_unknown_symbols_and_non_line_kinds() {
+        for (kind, symbol) in [("line", "blob"), ("bar", "square"), ("scatter", "square")] {
+            assert_eq!(
+                resolve_packed(&marker_request(kind, symbol)),
+                Err(DocumentLegendError::Style),
+                "{kind}/{symbol}"
+            );
+        }
+    }
     #[test]
     fn header_text_resource_and_narrowing_failures_are_explicit() {
         let input = request([None; 11], &["line"]);
@@ -375,7 +490,7 @@ mod tests {
             (12, 257, DocumentLegendError::Limit),
             (20, 1, DocumentLegendError::Flags),
             (64, 4097, DocumentLegendError::Limit),
-            (64 + 11 * 4, 32, DocumentLegendError::Flags),
+            (64 + 11 * 4, 256, DocumentLegendError::Flags),
         ] {
             let mut bad = input.clone();
             bad[at..at + 4].copy_from_slice(&value.to_le_bytes());
