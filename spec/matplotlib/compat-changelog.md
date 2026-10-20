@@ -61,6 +61,22 @@ than 1,024 hexbin cells (#887), and a panel legend in a multi-panel document.
   to per-point diameters in the scatter paint plane (XYHP kind 7 stride 12 → 20
   bytes) instead of failing closed. ABI 386.
 
+## Legend marker swatches and per-panel legends — #1006
+
+- A line drawn with `marker=` now shows its marker in the static-export legend
+  (corpus case 41): the Rust document legend gains a line-with-marker glyph
+  that reuses Scene's scatter symbol geometry, instead of the whole figure
+  failing with `XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE`.
+- Axes legends in a multi-panel static document are carried per panel and laid
+  out against that panel's plot box (corpus case 55's legend), replacing the
+  one-legend-per-document limit. Single-axes legends also move from the canvas
+  corner into their axes, as in Matplotlib. The XYDD legend item record grows
+  from 28 to 44 bytes; the document header's first reserved word carries the
+  panel-legend section length. Polar panels anchor to the drawn disc's
+  bounding square (never the overflowing layout rectangle). A legend marker is
+  present whenever authored, with Rust resolving all of its defaults (closes
+  #1026 together with the `loc` position matrix test).
+
 ## Patch bodies and geometry — 2026-07-30 (Matplotlib 3.11.1 reference)
 
 - `xyg.pyplot.Axes.add_patch` now fills a patch instead of drawing only its

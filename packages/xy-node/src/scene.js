@@ -2933,6 +2933,14 @@ function staticLegendBytes(legend, encoder) {
     itemFlags |= 4;
     if (hasNumeric(itemStyle, "opacity")) itemFlags |= 8;
     if (itemStyle.dash) itemFlags |= 16;
+    // A marker is present whenever authored (even as an empty object); each
+    // numeric fact rides its own presence bit and Rust resolves every default.
+    const marker = itemStyle.legend_marker;
+    if (marker != null) {
+      itemFlags |= 32;
+      if (marker.size != null) itemFlags |= 64;
+      if (marker.stroke_width != null) itemFlags |= 128;
+    }
     const packed = new Uint8Array(40);
     const view = new DataView(packed.buffer);
     view.setUint32(0, itemFlags, true);
@@ -2947,6 +2955,20 @@ function staticLegendBytes(legend, encoder) {
       optionalText(itemStyle.color),
       optionalText(itemStyle.symbol),
     );
+    if (marker != null) {
+      // Authored line-handle marker facts; Rust resolves glyph, defaults, and
+      // rejects custom marker paths/glyphs it cannot draw.
+      const numbers = new Uint8Array(16);
+      const numberView = new DataView(numbers.buffer);
+      numberView.setFloat64(0, itemFlags & 64 ? Number(marker.size) : 0, true);
+      numberView.setFloat64(8, itemFlags & 128 ? Number(marker.stroke_width) : 0, true);
+      chunks.push(
+        optionalText(marker.marker_path != null ? "marker_path" : marker.marker_glyph != null ? "marker_glyph" : marker.symbol),
+        optionalText(marker.color),
+        optionalText(marker.stroke),
+        numbers,
+      );
+    }
   });
   const request = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
   let at = 0;
@@ -3055,6 +3077,7 @@ export function staticDocumentEncode({
   cropPadding = 0,
   colorbar = null,
   legend = null,
+  panelLegends = [],
 }) {
   const documentWidth = staticU32(width, "StaticDocument width", true);
   const documentHeight = staticU32(height, "StaticDocument height", true);
@@ -3163,23 +3186,43 @@ export function staticDocumentEncode({
   }
   const legendBytes = staticLegendBytes(legend, encoder);
   const labelBytes = staticLabelBytes(labels, encoder);
-  const decorationLength = labels.length || legendBytes.length || colorbarBytes.length
-    ? 32 + labelBytes.length + legendBytes.length + colorbarBytes.length
+  // Panel-owned legends: `<2I>` (panel index, block length) + XYDD block each.
+  const panelLegendChunks = [];
+  for (const [panelIndex, panelLegend] of [...panelLegends].sort((a, b) => a[0] - b[0])) {
+    const block = staticLegendBytes(panelLegend, encoder);
+    if (!block.length) continue;
+    const framing = new Uint8Array(8);
+    const framingView = new DataView(framing.buffer);
+    framingView.setUint32(0, staticU32(panelIndex, "StaticDocument legend panel"), true);
+    framingView.setUint32(4, block.length, true);
+    panelLegendChunks.push(framing, block);
+  }
+  const panelLegendBytes = new Uint8Array(panelLegendChunks.reduce((total, chunk) => total + chunk.length, 0));
+  let panelLegendAt = 0;
+  for (const chunk of panelLegendChunks) {
+    panelLegendBytes.set(chunk, panelLegendAt);
+    panelLegendAt += chunk.length;
+  }
+  const decorationLength = labels.length || legendBytes.length || colorbarBytes.length || panelLegendBytes.length
+    ? 32 + labelBytes.length + legendBytes.length + colorbarBytes.length + panelLegendBytes.length
     : 0;
   const decorations = new Uint8Array(decorationLength);
   if (decorationLength) {
     const decorationView = new DataView(decorations.buffer);
     decorations.set([88, 89, 68, 68], 0);
-    decorationView.setUint32(4, 1, true);
+    decorationView.setUint32(4, 2, true);
     decorationView.setUint32(8, labels.length, true);
     decorationView.setUint32(12, legendBytes.length, true);
     decorationView.setUint32(16, colorbarBytes.length, true);
+    decorationView.setUint32(20, panelLegendBytes.length, true);
     let decorationAt = 32;
     decorations.set(labelBytes, decorationAt);
     decorationAt += labelBytes.length;
     decorations.set(legendBytes, decorationAt);
     decorationAt += legendBytes.length;
     decorations.set(colorbarBytes, decorationAt);
+    decorationAt += colorbarBytes.length;
+    decorations.set(panelLegendBytes, decorationAt);
   }
   const out = new Uint8Array(64 + panels.length * 128 + titleBytes.length + decorations.length + sceneBytes);
   const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
@@ -3357,12 +3400,17 @@ export function figureStaticDocument(figure, {
     else delete next.minor_style;
     axisOptions[axisId] = next;
   }
+  // `legend_marker` is a legend-only fact: the document legend draws it, so it
+  // is lifted off the Scene trace style (the public allowlist rejects it).
+  const legendMarkers = new Map();
   let traces = (figure.traces ?? []).map((trace) => {
     const style = {};
     for (const [key, value] of Object.entries(trace.style ?? {})) {
-      if (!String(key).startsWith("_legend_")) style[key] = value;
+      if (!String(key).startsWith("_legend_") && key !== "legend_marker") style[key] = value;
     }
-    return { ...trace, style };
+    const next = { ...trace, style };
+    if (trace.style?.legend_marker != null) legendMarkers.set(next, trace.style.legend_marker);
+    return next;
   });
   // Composed graphs (#34): read the planes, then make the base pass plain.
   const graphPlanes = composedGraphPlanes(figure);
@@ -3381,7 +3429,9 @@ export function figureStaticDocument(figure, {
     const items = [];
     for (const trace of traces) {
       if (!trace.name) continue;
-      items.push({ kind: trace.kind, name: trace.name, style: { ...trace.style } });
+      const itemStyle = { ...trace.style };
+      if (legendMarkers.has(trace)) itemStyle.legend_marker = legendMarkers.get(trace);
+      items.push({ kind: trace.kind, name: trace.name, style: itemStyle });
     }
     if (items.length) legend = { ...(figure.legend_options ?? {}), items };
   }

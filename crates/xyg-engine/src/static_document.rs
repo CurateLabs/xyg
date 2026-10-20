@@ -11,7 +11,9 @@ use crate::legend_layout::{legend_box_layout, LegendBoxLayout, LegendBoxRequest}
 use crate::pdf;
 use crate::png_encode;
 use crate::raster;
-use crate::scene::SceneDocument;
+use crate::scene::{
+    legend_marker_geometry, push_legend_marker_svg, SceneDocument,
+};
 use crate::scene_static::{flatten_rgba_over_white, scene_static_export, SceneStaticFormat};
 use crate::textblock;
 use crate::webp;
@@ -44,6 +46,9 @@ const PANEL_FLAG_COLORBAR_EXTEND_MAX: u32 = 1 << 12;
 const PANEL_FLAG_COLORBAR_PYPLOT_LABEL: u32 = 1 << 13;
 const PANEL_FLAG_GRID_DASH: u32 = 1 << 14;
 const PANEL_FLAG_CHROME_TEXT: u32 = 1 << 15;
+/// XYDD legend item record bytes before the name (`<8B3f2I>` plus a 16-byte
+/// marker block that is zero unless the item kind is 3).
+const LEGEND_ITEM_BYTES: usize = 44;
 const PANEL_FLAG_COLORBAR_FILL_PLOT: u32 = 1 << 24;
 const PANEL_FLAGS: u32 = PANEL_FLAG_X_CHROME_METRICS
     | PANEL_FLAG_Y_CHROME_METRICS
@@ -143,6 +148,15 @@ struct DocumentLabel {
     text: String,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct DocumentLegendMarker {
+    symbol: u8,
+    fill_rgba: [u8; 4],
+    stroke_rgba: [u8; 4],
+    size: f32,
+    stroke_width: f32,
+}
+
 #[derive(Clone, Debug)]
 struct DocumentLegendItem {
     kind: u8,
@@ -151,6 +165,7 @@ struct DocumentLegendItem {
     width: f32,
     size: f32,
     opacity: f32,
+    marker: Option<DocumentLegendMarker>,
     name: String,
 }
 
@@ -185,7 +200,8 @@ pub struct StaticDocument {
     title_flags: u8,
     title: String,
     labels: Vec<DocumentLabel>,
-    legend: Option<DocumentLegend>,
+    /// `None` anchors to the document; `Some(panel)` to that panel's plot box.
+    legends: Vec<(Option<usize>, DocumentLegend)>,
     colorbar: Option<String>,
     crop_padding: usize,
     panels: Vec<(PanelRecord, SceneDocument, Vec<u8>)>,
@@ -221,22 +237,28 @@ fn f32_at(bytes: &[u8], at: usize) -> Result<f32, StaticDocumentError> {
     ))
 }
 
-fn decode_decorations(
-    bytes: &[u8],
-) -> Result<(Vec<DocumentLabel>, Option<DocumentLegend>, Option<String>), StaticDocumentError> {
+type DecodedDecorations = (
+    Vec<DocumentLabel>,
+    Vec<(Option<usize>, DocumentLegend)>,
+    Option<String>,
+);
+
+fn decode_decorations(bytes: &[u8]) -> Result<DecodedDecorations, StaticDocumentError> {
     if bytes.is_empty() {
-        return Ok((Vec::new(), None, None));
+        return Ok((Vec::new(), Vec::new(), None));
     }
-    if bytes.len() < 32 || &bytes[..4] != b"XYDD" || u32_at(bytes, 4)? != 1 {
+    if bytes.len() < 32 || &bytes[..4] != b"XYDD" || u32_at(bytes, 4)? != 2 {
         return Err(StaticDocumentError::Panel);
     }
     let count = u32_at(bytes, 8)? as usize;
     let legend_len = u32_at(bytes, 12)? as usize;
     let colorbar_len = u32_at(bytes, 16)? as usize;
+    let panel_legends_len = u32_at(bytes, 20)? as usize;
     if count > MAX_DOCUMENT_LABELS
         || legend_len > MAX_DECORATION_BYTES
         || colorbar_len > 256
-        || bytes[20..32] != [0; 12]
+        || panel_legends_len > MAX_DECORATION_BYTES
+        || bytes[24..32] != [0; 8]
     {
         return Err(StaticDocumentError::Limit);
     }
@@ -287,20 +309,46 @@ fn decode_decorations(
     let legend_end = at
         .checked_add(legend_len)
         .ok_or(StaticDocumentError::Limit)?;
-    let legend = if legend_len == 0 {
-        None
-    } else {
-        Some(decode_document_legend(
-            bytes
-                .get(at..legend_end)
-                .ok_or(StaticDocumentError::Panel)?,
-        )?)
-    };
+    let mut legends = Vec::new();
+    if legend_len != 0 {
+        legends.push((
+            None,
+            decode_document_legend(
+                bytes
+                    .get(at..legend_end)
+                    .ok_or(StaticDocumentError::Panel)?,
+            )?,
+        ));
+    }
     let colorbar_end = legend_end
         .checked_add(colorbar_len)
         .ok_or(StaticDocumentError::Limit)?;
-    if colorbar_end != bytes.len() {
+    let panel_legends_end = colorbar_end
+        .checked_add(panel_legends_len)
+        .ok_or(StaticDocumentError::Limit)?;
+    if panel_legends_end != bytes.len() {
         return Err(StaticDocumentError::Panel);
+    }
+    // Panel legends: repeated `<2I>` (panel, block length) + XYDD legend block,
+    // strictly ascending by panel so each axes owns at most one legend.
+    let mut cursor = colorbar_end;
+    let mut previous: Option<usize> = None;
+    while cursor < panel_legends_end {
+        let panel = u32_at(bytes, cursor)? as usize;
+        let block_len = u32_at(bytes, cursor + 4)? as usize;
+        let block_end = (cursor + 8)
+            .checked_add(block_len)
+            .filter(|end| *end <= panel_legends_end && block_len != 0)
+            .ok_or(StaticDocumentError::Panel)?;
+        if previous.is_some_and(|last| panel <= last) {
+            return Err(StaticDocumentError::Panel);
+        }
+        previous = Some(panel);
+        legends.push((
+            Some(panel),
+            decode_document_legend(&bytes[cursor + 8..block_end])?,
+        ));
+        cursor = block_end;
     }
     let colorbar = if colorbar_len == 0 {
         None
@@ -311,7 +359,7 @@ fn decode_decorations(
                 .to_owned(),
         )
     };
-    Ok((labels, legend, colorbar))
+    Ok((labels, legends, colorbar))
 }
 
 fn decode_document_legend(bytes: &[u8]) -> Result<DocumentLegend, StaticDocumentError> {
@@ -366,12 +414,24 @@ fn decode_document_legend(bytes: &[u8]) -> Result<DocumentLegend, StaticDocument
     let mut at = items_at;
     let mut items = Vec::with_capacity(item_count);
     for _ in 0..item_count {
-        let record = bytes.get(at..at + 28).ok_or(StaticDocumentError::Panel)?;
+        let record = bytes
+            .get(at..at + LEGEND_ITEM_BYTES)
+            .ok_or(StaticDocumentError::Panel)?;
         let name_len = u32_at(record, 20)? as usize;
         let end = at
-            .checked_add(28)
+            .checked_add(LEGEND_ITEM_BYTES)
             .and_then(|value| value.checked_add(name_len))
             .ok_or(StaticDocumentError::Limit)?;
+        // Kind 3 is a line handle with a marker overlay; its marker block is
+        // the only nonzero use of record bytes 2 and 28..44.
+        let marker = (record[0] == 3).then(|| DocumentLegendMarker {
+            symbol: record[2],
+            fill_rgba: record[28..32].try_into().unwrap(),
+            stroke_rgba: record[32..36].try_into().unwrap(),
+            size: f32_at(record, 36).unwrap_or(f32::NAN),
+            stroke_width: f32_at(record, 40).unwrap_or(f32::NAN),
+        });
+        let marker_bytes_clear = marker.is_some() || (record[2] == 0 && record[28..44] == [0; 16]);
         let item = DocumentLegendItem {
             kind: record[0],
             dashed: record[1] != 0,
@@ -379,13 +439,26 @@ fn decode_document_legend(bytes: &[u8]) -> Result<DocumentLegend, StaticDocument
             width: f32_at(record, 8)?,
             size: f32_at(record, 12)?,
             opacity: f32_at(record, 16)?,
-            name: std::str::from_utf8(bytes.get(at + 28..end).ok_or(StaticDocumentError::Panel)?)
-                .map_err(|_| StaticDocumentError::Title)?
-                .to_owned(),
+            marker,
+            name: std::str::from_utf8(
+                bytes
+                    .get(at + LEGEND_ITEM_BYTES..end)
+                    .ok_or(StaticDocumentError::Panel)?,
+            )
+            .map_err(|_| StaticDocumentError::Title)?
+            .to_owned(),
         };
-        if item.kind > 2
-            || record[2..4] != [0; 2]
+        if item.kind > 3
+            || !marker_bytes_clear
+            || record[3] != 0
             || u32_at(record, 24)? != 0
+            || item.marker.is_some_and(|marker| {
+                usize::from(marker.symbol) >= crate::scene_trace_compile::SYMBOL_NAMES.len()
+                    || !marker.size.is_finite()
+                    || marker.size <= 0.0
+                    || !marker.stroke_width.is_finite()
+                    || marker.stroke_width < 0.0
+            })
             || !item.width.is_finite()
             || item.width < 0.0
             || !item.size.is_finite()
@@ -496,7 +569,13 @@ impl StaticDocument {
         };
         let background: [u8; 4] = bytes[28..32].try_into().unwrap();
         let title_rgba: [u8; 4] = bytes[32..36].try_into().unwrap();
-        let (labels, legend, colorbar) = decode_decorations(&bytes[decorations_at..scenes_at])?;
+        let (labels, legends, colorbar) = decode_decorations(&bytes[decorations_at..scenes_at])?;
+        if legends
+            .iter()
+            .any(|(panel, _)| panel.is_some_and(|panel| panel >= panel_count))
+        {
+            return Err(StaticDocumentError::Panel);
+        }
         let mut panels = Vec::with_capacity(panel_count);
         let mut expected_offset = 0usize;
         for index in 0..panel_count {
@@ -722,7 +801,7 @@ impl StaticDocument {
             title_flags,
             title,
             labels,
-            legend,
+            legends,
             colorbar,
             crop_padding,
             panels,
@@ -738,7 +817,7 @@ impl StaticDocument {
         if self.flags == 0
             && self.title.is_empty()
             && self.labels.is_empty()
-            && self.legend.is_none()
+            && self.legends.is_empty()
             && self.colorbar.is_none()
             && self.panels.len() == 1
         {
@@ -894,7 +973,7 @@ impl StaticDocument {
             }
             out.push_str("</text>");
         }
-        if let Some((legend, layout)) = self.document_legend_layout() {
+        for (legend, layout) in self.document_legend_layouts() {
             out.push_str("<g data-xy-static-legend=\"\"><rect x=\"");
             out.push_str(&layout.x.to_string());
             out.push_str("\" y=\"");
@@ -934,7 +1013,7 @@ impl StaticDocument {
                 let center_y = y + layout.text_h * 0.5;
                 let rgba = legend_item_rgba(item);
                 match item.kind {
-                    0 => {
+                    0 | 3 => {
                         out.push_str("<line x1=\"");
                         out.push_str(&x.to_string());
                         out.push_str("\" y1=\"");
@@ -951,6 +1030,18 @@ impl StaticDocument {
                             out.push_str("\" stroke-dasharray=\"4,3");
                         }
                         out.push_str("\"/>");
+                        if let Some(marker) = item.marker {
+                            push_legend_marker_svg(
+                                &mut out,
+                                marker.symbol,
+                                x + layout.handle * 0.5,
+                                center_y,
+                                f64::from(marker.size),
+                                legend_marker_rgba(marker.fill_rgba, item.opacity),
+                                legend_marker_rgba(marker.stroke_rgba, item.opacity),
+                                f64::from(marker.stroke_width),
+                            );
+                        }
                     }
                     1 => {
                         out.push_str("<circle cx=\"");
@@ -1020,30 +1111,44 @@ impl StaticDocument {
         ))
     }
 
-    fn document_legend_layout(&self) -> Option<(&DocumentLegend, LegendBoxLayout)> {
-        let legend = self.legend.as_ref()?;
-        let names: Vec<&str> = legend.items.iter().map(|item| item.name.as_str()).collect();
-        let layout = legend_box_layout(LegendBoxRequest {
-            plot_x: 0.0,
-            plot_y: 0.0,
-            plot_w: self.width as f64,
-            plot_h: self.height as f64,
-            names: &names,
-            title: (!legend.title.is_empty()).then_some(legend.title.as_str()),
-            loc: &legend.location,
-            font_size: f64::from(legend.font_size),
-            handlelength: Some(f64::from(legend.handle_length)),
-            handletextpad: Some(f64::from(legend.handle_text_pad)),
-            handleheight: None,
-            ncols: legend.ncols,
-            padding_em: f64::from(legend.padding_em),
-            row_gap_em: f64::from(legend.row_gap_em),
-            anchor: legend
-                .anchor
-                .map(|anchor| (f64::from(anchor[0]), f64::from(anchor[1]), 0.0, 0.0)),
-            border_axes_pad: f64::from(legend.border_pad),
-        })?;
-        Some((legend, layout))
+    /// Resolve every legend box in document coordinates: document legends
+    /// against the canvas, panel legends against their Scene plot box.
+    fn document_legend_layouts(&self) -> Vec<(&DocumentLegend, LegendBoxLayout)> {
+        self.legends
+            .iter()
+            .filter_map(|(panel, legend)| {
+                let (plot_x, plot_y, plot_w, plot_h) = match panel {
+                    None => (0.0, 0.0, self.width as f64, self.height as f64),
+                    Some(index) => {
+                        let (record, scene, _) = &self.panels[*index];
+                        let (x, y, width, height) = scene.plot_bounds();
+                        (f64::from(record.x) + x, f64::from(record.y) + y, width, height)
+                    }
+                };
+                let names: Vec<&str> = legend.items.iter().map(|item| item.name.as_str()).collect();
+                let layout = legend_box_layout(LegendBoxRequest {
+                    plot_x,
+                    plot_y,
+                    plot_w,
+                    plot_h,
+                    names: &names,
+                    title: (!legend.title.is_empty()).then_some(legend.title.as_str()),
+                    loc: &legend.location,
+                    font_size: f64::from(legend.font_size),
+                    handlelength: Some(f64::from(legend.handle_length)),
+                    handletextpad: Some(f64::from(legend.handle_text_pad)),
+                    handleheight: None,
+                    ncols: legend.ncols,
+                    padding_em: f64::from(legend.padding_em),
+                    row_gap_em: f64::from(legend.row_gap_em),
+                    anchor: legend
+                        .anchor
+                        .map(|anchor| (f64::from(anchor[0]), f64::from(anchor[1]), 0.0, 0.0)),
+                    border_axes_pad: f64::from(legend.border_pad),
+                })?;
+                Some((legend, layout))
+            })
+            .collect()
     }
 
     fn export_raster(
@@ -1120,7 +1225,7 @@ impl StaticDocument {
                 }
             }
         }
-        if !self.title.is_empty() || !self.labels.is_empty() || self.legend.is_some() {
+        if !self.title.is_empty() || !self.labels.is_empty() || !self.legends.is_empty() {
             let mut overlay = vec![0u8; len];
             let mut commands = Vec::new();
             for (line, text) in self.title.split('\n').enumerate() {
@@ -1161,7 +1266,7 @@ impl StaticDocument {
                     commands.extend_from_slice(line.as_bytes());
                 }
             }
-            if let Some((legend, layout)) = self.document_legend_layout() {
+            for (legend, layout) in self.document_legend_layouts() {
                 push_document_rect(
                     &mut commands,
                     layout.x,
@@ -1225,17 +1330,37 @@ impl StaticDocument {
                     let center_y = y + layout.text_h * 0.5;
                     let rgba = legend_item_rgba(item);
                     match item.kind {
-                        0 => push_document_line(
-                            &mut commands,
-                            x,
-                            center_y,
-                            x + layout.handle,
-                            center_y,
-                            f64::from(item.width),
-                            rgba,
-                            item.dashed,
-                            scale,
-                        ),
+                        0 | 3 => {
+                            push_document_line(
+                                &mut commands,
+                                x,
+                                center_y,
+                                x + layout.handle,
+                                center_y,
+                                f64::from(item.width),
+                                rgba,
+                                item.dashed,
+                                scale,
+                            );
+                            if let Some(marker) = item.marker {
+                                let (radius, stroke_width) = legend_marker_geometry(
+                                    marker.symbol,
+                                    f64::from(marker.size),
+                                    f64::from(marker.stroke_width),
+                                );
+                                push_document_marker(
+                                    &mut commands,
+                                    x + layout.handle * 0.5,
+                                    center_y,
+                                    radius,
+                                    marker.symbol,
+                                    legend_marker_rgba(marker.fill_rgba, item.opacity),
+                                    stroke_width,
+                                    legend_marker_rgba(marker.stroke_rgba, item.opacity),
+                                    scale,
+                                );
+                            }
+                        }
                         1 => push_document_point(
                             &mut commands,
                             x + layout.handle * 0.5,
@@ -1393,14 +1518,29 @@ fn push_document_line(
 }
 
 fn push_document_point(out: &mut Vec<u8>, x: f64, y: f64, radius: f64, rgba: [u8; 4], scale: f64) {
+    push_document_marker(out, x, y, radius, 0, rgba, 0.0, [0; 4], scale);
+}
+
+#[allow(clippy::too_many_arguments)]
+fn push_document_marker(
+    out: &mut Vec<u8>,
+    x: f64,
+    y: f64,
+    radius: f64,
+    symbol: u8,
+    fill: [u8; 4],
+    stroke_width: f64,
+    stroke: [u8; 4],
+    scale: f64,
+) {
     out.push(4);
     push_document_f32(out, x, scale);
     push_document_f32(out, y, scale);
     push_document_f32(out, radius, scale);
-    out.push(0);
-    out.extend_from_slice(&rgba);
-    push_document_f32(out, 0.0, scale);
-    out.extend_from_slice(&[0; 4]);
+    out.push(symbol);
+    out.extend_from_slice(&fill);
+    push_document_f32(out, stroke_width, scale);
+    out.extend_from_slice(&stroke);
 }
 
 fn push_document_text(
@@ -1540,6 +1680,11 @@ fn label_rgba(label: &DocumentLabel) -> [u8; 4] {
     rgba
 }
 
+fn legend_marker_rgba(mut rgba: [u8; 4], opacity: f32) -> [u8; 4] {
+    rgba[3] = (f32::from(rgba[3]) * opacity).round() as u8;
+    rgba
+}
+
 fn legend_item_rgba(item: &DocumentLegendItem) -> [u8; 4] {
     let mut rgba = item.rgba;
     rgba[3] = (f32::from(rgba[3]) * item.opacity).round() as u8;
@@ -1624,7 +1769,7 @@ mod tests {
                 text_flags: 3,
                 text: "Label".into(),
             }],
-            legend: None,
+            legends: Vec::new(),
             colorbar: None,
             crop_padding: 0,
             panels: Vec::new(),

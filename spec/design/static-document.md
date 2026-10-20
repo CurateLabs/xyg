@@ -31,6 +31,28 @@ The companion Rust-owned marshal contracts are
 [chrome-style projection](static-chrome-style.md). Hosts may carry their
 literal facts but do not repeat those contracts' defaults or policy.
 
+### 1.0 Legend ownership
+
+A document legend belongs to either the **document** or one **panel**. The
+document legend (figure legends) is laid out against the whole canvas. A panel
+legend (every axes legend, including pyplot's) is laid out against that
+panel's Scene plot box, offset by the panel's placement, by the same Rust
+`legend_box_layout`, so each axes of a multi-panel document keeps its own
+legend and location. The XYDD header's first reserved word carries the byte
+length of a trailing panel-legend section appended after the colorbar name:
+repeated `<2I>` (panel index, block length) plus an XYDD legend block, strictly
+ascending by panel index and each index below the panel count. The XYDD envelope is version 2 (44-byte legend item records); version 1 is
+rejected. Documents without panel legends keep a zero word. The
+`XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS` rejection now applies only to a
+second legend within one axes (`extra_legends`). Both hosts marshal the same
+facts (`_static_document.encode(panel_legends=)`, Node
+`staticDocumentEncode({ panelLegends })`). The anchor is `SceneDocument::plot_bounds`:
+the Scene plot box, except that a polar Scene's box is the drawn disc's
+bounding square clipped to its layout (the layout rectangle itself can extend
+past the disc and the canvas), so a legend is never placed outside the figure.
+Tests pin containment for every `loc` (including `best`) against the axes plot
+box and for the polar corpus layout against the canvas.
+
 ### 1.1 XYST v2 framing
 
 Version 2 (#1004) widened the panel record from 108 to 128 bytes. The version

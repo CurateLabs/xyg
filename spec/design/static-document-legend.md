@@ -23,7 +23,18 @@ to 4,096 bytes per field.
 Each item has a 40-byte `<2I4d>` header: flags, reserved zero, width,
 stroke_width, size, opacity. Presence bits are width=1, stroke_width=2, size=4,
 opacity=8; bit 16 carries authored dash truth. Four optional strings follow:
-kind, name, color, symbol. Inactive numeric bytes must be zero. There are at
+kind, name, color, symbol. Bit 32 marks a **line-handle marker** (Matplotlib's
+`plot(..., marker=...)` swatch); a marker is present whenever authored, even as
+an empty object, and both hosts use that same presence rule. Three optional
+strings follow (marker symbol, fill, stroke) and then two f64 (marker size,
+marker stroke width) that are meaningful only with presence bits 64 and 128
+(inactive bytes zero). Hosts marshal absent fields as absent; **Rust resolves
+every default**: symbol `circle`, fill = item color, stroke = fill, size 8,
+stroke width 0 (unstroked, like `markeredgecolor="none"`). The marker symbol
+is a built-in Scene scatter symbol name; hosts name `marker_path` /
+`marker_glyph` for custom markers, which Rust rejects with
+`XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE`, as it does unknown symbols, a
+zero marker size, and a marker on a non-line kind. Inactive numeric bytes must be zero. There are at
 most 256 items and 2 MiB of input. No JSON numeric arrays cross this boundary.
 
 ## Native policy and output
@@ -58,7 +69,15 @@ half-integer rounding divergence. Item opacity is retained as an f32 for the
 shared renderer. No other dimensions silently clamp.
 
 Output is the existing XYDD legend block: 64-byte `<4I6f12B2fB3x>` header,
-title/location bytes, then 28-byte `<8B3f2I>` item records and name bytes.
+title/location bytes, then 44-byte item records and name bytes (the XYDD envelope is version 2 for this record size; version 1's 28-byte records are rejected). A record is
+`<8B3f2I>` (kind, dashed, marker symbol code, zero, line RGBA8, width, size,
+opacity, name length, zero) followed by a 16-byte marker block (fill RGBA8,
+stroke RGBA8, marker size f32, marker stroke width f32). Kinds are 0 line,
+1 circle, 2 fill rectangle, and 3 line with a marker overlay; the marker bytes
+and symbol code are zero for every other kind. The static document draws the
+marker through Scene's own scatter geometry (`MarkerGeometry`, `push_symbol`
+for SVG, raster `OP_POINT`), so the swatch shares the Scene glyph set and item
+opacity applies to the marker paint.
 It has no independent magic. Zero items produce empty output after validation.
 Malformed inputs use stable `XYG_STATIC_DOCUMENT_LEGEND_*` reasons;
 unrepresentable anchors use `XYG_STATIC_UNSUPPORTED_PANEL_LEGEND_ANCHOR`.

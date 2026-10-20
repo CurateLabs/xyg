@@ -828,8 +828,9 @@ def _decorations(
     labels: Optional[Sequence[dict[str, Any]]],
     legend: Optional[dict[str, Any]],
     colorbar: Optional[str],
+    panel_legends: Sequence[tuple[int, dict[str, Any]]] = (),
 ) -> bytes:
-    if not labels and not legend and not colorbar:
+    if not labels and not legend and not colorbar and not panel_legends:
         return b""
     if len(labels or ()) > 64:
         raise ValueError("StaticDocument supports at most 64 document labels")
@@ -839,14 +840,29 @@ def _decorations(
     actual_labels = labels or ()
     label_bytes = _label_bytes(actual_labels)
     legend_bytes = _legend_bytes(legend)
+    # Panel-owned legends: `<2I>` (panel index, block length) + XYDD block each.
+    panel_bytes = bytearray()
+    for panel_index, panel_legend in sorted(panel_legends, key=lambda entry: entry[0]):
+        block = _legend_bytes(panel_legend)
+        if block:
+            panel_bytes.extend(struct.pack("<2I", panel_index, len(block)))
+            panel_bytes.extend(block)
     out = bytearray(
         _DECORATION_HEADER.pack(
-            b"XYDD", 1, len(actual_labels), len(legend_bytes), len(colorbar_bytes), 0, 0, 0
+            b"XYDD",
+            2,
+            len(actual_labels),
+            len(legend_bytes),
+            len(colorbar_bytes),
+            len(panel_bytes),
+            0,
+            0,
         )
     )
     out.extend(label_bytes)
     out.extend(legend_bytes)
     out.extend(colorbar_bytes)
+    out.extend(panel_bytes)
     return bytes(out)
 
 
@@ -926,6 +942,16 @@ def _legend_bytes(legend: Optional[dict[str, Any]]) -> bytes:
         item_flags |= 4
         if item_style.get("dash"):
             item_flags |= 16
+        # A marker is present whenever authored (even as an empty object); each
+        # of its numeric facts rides its own presence bit and Rust resolves
+        # every default.
+        marker = item_style.get("legend_marker")
+        if marker is not None:
+            item_flags |= 32
+            if marker.get("size") is not None:
+                item_flags |= 64
+            if marker.get("stroke_width") is not None:
+                item_flags |= 128
         out.extend(
             _DOCUMENT_LEGEND_ITEM.pack(
                 item_flags,
@@ -943,6 +969,25 @@ def _legend_bytes(legend: Optional[dict[str, Any]]) -> bytes:
             item_style.get("symbol"),
         ):
             text(value)
+        if marker is not None:
+            # Authored line-handle marker facts; Rust resolves glyph, defaults,
+            # and rejects custom marker paths/glyphs it cannot draw.
+            text(
+                "marker_path"
+                if marker.get("marker_path") is not None
+                else "marker_glyph"
+                if marker.get("marker_glyph") is not None
+                else marker.get("symbol")
+            )
+            text(marker.get("color"))
+            text(marker.get("stroke"))
+            out.extend(
+                struct.pack(
+                    "<2d",
+                    float(marker["size"]) if item_flags & 64 else 0.0,
+                    float(marker["stroke_width"]) if item_flags & 128 else 0.0,
+                )
+            )
     try:
         return _native.static_document_legend(bytes(out))
     except ValueError as error:
@@ -971,6 +1016,7 @@ def encode(
     crop_padding: int = 0,
     colorbar: Optional[str] = None,
     legend: Optional[dict[str, Any]] = None,
+    panel_legends: Sequence[tuple[int, dict[str, Any]]] = (),
 ) -> bytes:
     """Marshal literal document facts; all validation/rendering is Rust-owned."""
     document_width = _u32(width, "StaticDocument width", positive=True)
@@ -986,7 +1032,7 @@ def encode(
         raise ValueError("StaticDocument title anchor must be 0, 1, or 2")
     if title_flags not in (0, 1, 2, 3):
         raise ValueError("StaticDocument title flags must contain only italic/bold bits")
-    decorations = _decorations(labels, legend, colorbar)
+    decorations = _decorations(labels, legend, colorbar, panel_legends)
     flags = (
         (_FLAG_BACKGROUND if background is not None else 0)
         | (_FLAG_OPTIMIZE_PNG if optimize_png else 0)
@@ -1242,11 +1288,16 @@ def project_figure(
             options["minor_style"] = minor
         else:
             options.pop("minor_style", None)
+    # `legend_marker` is a legend-only fact: the document legend draws it, so it
+    # is lifted off the Scene trace style (the public allowlist rejects it).
+    legend_markers: dict[int, Any] = {}
     for trace in projected.traces:
+        if (trace.style or {}).get("legend_marker") is not None:
+            legend_markers[id(trace)] = trace.style["legend_marker"]
         trace.style = {
             key: value
             for key, value in (trace.style or {}).items()
-            if not str(key).startswith("_legend_")
+            if not str(key).startswith("_legend_") and key != "legend_marker"
         }
     annotation_style = resolve_annotation_styles(
         list(getattr(projected, "annotations", None) or [])
@@ -1269,6 +1320,8 @@ def project_figure(
             size_constant = getattr(size_channel, "constant", None)
             if getattr(size_channel, "mode", None) == "constant" and size_constant is not None:
                 item_style.setdefault("size", size_constant)
+            if id(trace) in legend_markers:
+                item_style["legend_marker"] = legend_markers[id(trace)]
             items.append({"kind": trace.kind, "name": trace.name, "style": item_style})
         if items:
             legend_options = {

@@ -145,7 +145,7 @@ def _bad_frames() -> dict[str, tuple[bytes, str]]:
     data = bytearray(good)
     struct.pack_into("<d", data, 24, -0.0)
     rows["inactive_negative_zero"] = (bytes(data), "FLAGS")
-    for name, offset, value in (("item_flags", 108, 32), ("item_reserved", 112, 1)):
+    for name, offset, value in (("item_flags", 108, 256), ("item_reserved", 112, 1)):
         data = bytearray(good)
         struct.pack_into("<I", data, offset, value)
         rows[name] = (bytes(data), "FLAGS")
@@ -264,7 +264,7 @@ def test_raw_legend_query_bytes_and_policy(name, node_results):
         kinds = []
         while offset < len(actual):
             kinds.append(actual[offset])
-            offset += 28 + struct.unpack_from("<I", actual, offset + 20)[0]
+            offset += 44 + struct.unpack_from("<I", actual, offset + 20)[0]
         assert kinds == [0, 0, 0, 0, 0, 0, 1, 2]
 
 

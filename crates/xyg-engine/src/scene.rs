@@ -11274,6 +11274,27 @@ impl SceneDocument {
         (self.layout.viewport_width, self.layout.viewport_height)
     }
 
+    /// Plot box `(x, y, width, height)` inside the Scene viewport. StaticDocument
+    /// anchors panel-owned legends to it after document-level chrome overrides.
+    /// A polar Scene's layout rectangle can extend past the drawn disc (and the
+    /// viewport), so its box is the disc's bounding square clipped to the layout.
+    pub(crate) fn plot_bounds(&self) -> (f64, f64, f64, f64) {
+        let (mut left, mut top) = (self.layout.left, self.layout.top);
+        let (mut right, mut bottom) = (self.layout.right, self.layout.bottom);
+        if let Some(polar) = &self.polar {
+            let (cx, cy, radius) = (
+                polar.metrics[crate::polar::METRIC_CX],
+                polar.metrics[crate::polar::METRIC_CY],
+                polar.metrics[crate::polar::METRIC_RADIUS],
+            );
+            left = left.max(cx - radius);
+            top = top.max(cy - radius);
+            right = right.min(cx + radius);
+            bottom = bottom.min(cy + radius);
+        }
+        (left, top, right - left, bottom - top)
+    }
+
     /// Replace authored chart/plot backdrops with transparent paint so one
     /// document-level export background is composited exactly once.
     pub(crate) fn clear_backgrounds(&mut self) {
@@ -16108,6 +16129,42 @@ fn push_symbol(out: &mut String, symbol: ScatterSymbol, cx: f64, cy: f64, radius
         ScatterSymbol::Hexagon => push_regular_polygon(out, cx, cy, radius, 6, -90.0, 1.0),
         ScatterSymbol::Star => push_regular_polygon(out, cx, cy, radius, 10, -90.0, 0.45),
     }
+}
+
+/// Outer radius and effective stroke width of a built-in marker glyph. The
+/// StaticDocument legend swatch shares Scene scatter geometry through this.
+pub(crate) fn legend_marker_geometry(symbol: u8, diameter: f64, stroke_width: f64) -> (f64, f64) {
+    let geometry = MarkerGeometry::new(ScatterSymbol::from_code(symbol), diameter, stroke_width);
+    (geometry.radius, geometry.stroke_width)
+}
+
+/// One built-in marker element with Scene's scatter fill/stroke attributes.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn push_legend_marker_svg(
+    out: &mut String,
+    symbol: u8,
+    cx: f64,
+    cy: f64,
+    diameter: f64,
+    fill: [u8; 4],
+    stroke: [u8; 4],
+    stroke_width: f64,
+) {
+    let symbol = ScatterSymbol::from_code(symbol);
+    let geometry = MarkerGeometry::new(symbol, diameter, stroke_width);
+    push_symbol(out, symbol, cx, cy, geometry.radius);
+    if symbol.is_line() {
+        out.push_str(" fill=\"none\"");
+    } else {
+        push_paint(out, "fill", fill, None);
+    }
+    if geometry.stroke_width > 0.0 || symbol.is_line() {
+        push_paint(out, "stroke", stroke, None);
+        out.push_str(" stroke-width=\"");
+        push_num(out, geometry.stroke_width);
+        out.push('"');
+    }
+    out.push_str("/>");
 }
 
 fn push_triangle(out: &mut String, symbol: ScatterSymbol, cx: f64, cy: f64, r: f64) {

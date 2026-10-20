@@ -164,6 +164,15 @@ static output: the document legend lays out against the document rectangle.
   closed with the stable `hidden or per-item styled marks` diagnostic
   (corpus case 12; `tests/test_scatter_size_plane.py`). ABI 386 appends the
   size channel to `xyg_scene_xyta_trace_observations_materialize`.
+- Static export (`savefig` PNG/SVG/PDF) draws a line with `marker=` in the
+  legend as Matplotlib does: the line handle with the marker overlaid, from the
+  same built-in symbol set as Scene scatter. Each axes' legend is anchored to
+  its own panel's plot box, so multi-panel figures keep one legend per axes
+  (corpus 41 and the legend half of 55). Custom marker paths/glyphs in a
+  legend handle, and a second legend inside one axes, still fail closed with
+  `XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE` /
+  `XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS`. Polar panels anchor the
+  legend to the drawn disc's bounding square, so it stays inside the figure.
 - Custom Matplotlib marker paths, arbitrary clipping graphs, and unsupported
   collection gradients are rejected rather than silently approximated.
 - The shim's figure/axes bookkeeping adds ~50µs of fixed per-figure cost over
