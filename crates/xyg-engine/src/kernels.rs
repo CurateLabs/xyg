@@ -3069,6 +3069,10 @@ pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: 
     )
 }
 
+/// Longest authored CSS paint (UTF-8 bytes) `scene_artist_alpha_css_rgba8` is
+/// asked to parse; it reuses the Scene text bound so every host shares one limit.
+pub const MAX_ARTIST_ALPHA_CSS_BYTES: usize = crate::scene::MAX_SCENE_TEXT_BYTES;
+
 /// Whether an authored CSS paint is the absent-paint keyword (`none`, or the
 /// CSS `transparent`): no fill or stroke at all, rather than a color whose
 /// alpha happens to be 0. An artist alpha never replaces an absent paint;

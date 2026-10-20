@@ -2273,3 +2273,9 @@ test("sceneArtistAlphaCss is the Rust-owned keyword and paint rule", () => {
   assert.deepEqual([...sceneArtistAlphaCss("#ff000080", 0.5)], [255, 0, 0, 128]);
   assert.deepEqual([...sceneArtistAlphaCss("#ff000000", 0.5)], [255, 0, 0, 128]);
 });
+
+test("sceneArtistAlphaCss bounds its input at the Scene text limit", () => {
+  const atLimit = "#ff0000".padEnd(4096, " ");
+  assert.deepEqual([...sceneArtistAlphaCss(atLimit, 0.5)], [255, 0, 0, 128]);
+  assert.throws(() => sceneArtistAlphaCss(`${atLimit} `, 0.5), RangeError);
+});
