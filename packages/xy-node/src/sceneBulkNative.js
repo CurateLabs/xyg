@@ -151,6 +151,7 @@ const FigureSupportAnnotationObs = koffi.struct("XygFigureSupportAnnotationObs",
 
 const FigureSupportAxisObsIn = koffi.struct("XygFigureSupportAxisObsIn", {
   axis_code: "uint8_t",
+  side: "uint8_t",
   key_count: "uint32_t",
   strategy: StringRef,
   collision: StringRef,
@@ -425,6 +426,8 @@ export function sceneChromePack(kwargs) {
     yLabelRefs.length ? koffi.as(yLabelBuf, "const void *") : 0,
     colorbarStops.length ? u8Ptr(colorbarStops) : 0,
     colorbarTicks.length ? f64Ptr(colorbarTicks) : 0,
+    0,
+    0n,
     u8Ptr(out),
     BigInt(out.length),
     pointer(outLen, "size_t *"),
@@ -438,6 +441,7 @@ export function sceneChromePack(kwargs) {
 export function sceneFigureSupportMaterialize({
   polar = false,
   colorbarUnsupported = false,
+  hasColorbar = false,
   hasCustomFont = false,
   hasBrowserCss = false,
   hasExtraLegends = false,
@@ -464,6 +468,7 @@ export function sceneFigureSupportMaterialize({
     }
     return {
       axis_code: Number(row.axis_code) & 0xff,
+      side: Number(row.side ?? 0) & 0xff,
       key_count: keys.length,
       strategy: optionalStringRef(row.tick_label_strategy, keep),
       collision: optionalStringRef(row.collision, keep),
@@ -527,6 +532,7 @@ export function sceneFigureSupportMaterialize({
   const code = Number(xySceneFigureSupportMaterialize(
     polar ? 1 : 0,
     colorbarUnsupported ? 1 : 0,
+    hasColorbar ? 1 : 0,
     hasCustomFont ? 1 : 0,
     hasBrowserCss ? 1 : 0,
     hasExtraLegends ? 1 : 0,

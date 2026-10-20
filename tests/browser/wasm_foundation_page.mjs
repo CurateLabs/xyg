@@ -239,6 +239,50 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   return bytes;
 }
 
+// Scene v33 twin-axis document: one primary scatter record at the plot center
+// and one record plotted against the secondary right-hand y axis (record
+// byte 3 bit 0x40). The XYY2 block carries the y2 scale, chrome record, and
+// the resolved XYCO typography/paints that XYPB v16 hands to the browser.
+function twinAxisSceneV33({
+  tickSize = 14, titleSize = 16, padding = 4, tickRgba = null, titleRgba = [255, 0, 0, 255], title = "Right axis",
+  tickFlags = 0, titleFlags = 0, y2Tag = 0x40,
+} = {}) {
+  const encoder = new TextEncoder(), titleBytes = encoder.encode(title);
+  const y2 = new Uint8Array(204 + titleBytes.length), y2View = new DataView(y2.buffer);
+  y2.set([88, 89, 89, 50]); // XYY2
+  [0, 100, 1].forEach((value, index) => y2View.setFloat64(8 + index * 8, value, true)); // linear: lo, hi, constant
+  y2.set([1, 2, 2, 0, 0, 0, 0, 0], 36); // High side, right ticks, right labels, outward ticks
+  y2.set([32, 32, 32, 140], 44); y2.set([32, 32, 32, 36], 48); y2.set([32, 32, 32, 140], 52);
+  y2.set([32, 32, 32, 140], 60); y2.set([32, 32, 32, 217], 64);
+  [1, 1, 1, 4, 1, 1, 0].forEach((value, index) => y2View.setFloat64(36 + 32 + index * 8, value, true));
+  [tickSize, titleSize, padding].forEach((value, index) => y2View.setFloat64(124 + index * 8, value, true));
+  y2View.setUint32(148, tickFlags | (titleFlags << 2), true); // bit 0 italic, bit 1 bold per slot
+  y2.set(tickRgba ?? [0, 0, 0, 0], 152); y2.set(titleRgba ?? [0, 0, 0, 0], 156);
+  y2[160] = 1 | (tickRgba ? 2 : 0) | (titleRgba ? 4 : 0);
+  y2View.setFloat64(168, 4, true); y2View.setFloat64(176, NaN, true); // min gap, no angle
+  y2View.setUint32(184, 0xffffffff, true); y2View.setUint32(196, titleBytes.length, true);
+  y2.set(titleBytes, 204);
+  const body = 160 + 16 + 2 * 56;
+  const bytes = new Uint8Array(body + 248 + 4 + y2.length), view = new DataView(bytes.buffer);
+  bytes.set([88, 89, 71, 83]); // XYGS
+  view.setUint32(4, CANONICAL_SCENE_VERSION, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setBigUint64(16, 2n, true); view.setBigUint64(24, 1n, true);
+  [260, 140, 10, 10, 190, 110].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
+  view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
+  [0, 1, 0, 1, 1, 1].forEach((value, index) => view.setFloat64(112 + index * 8, value, true));
+  bytes.set([37, 99, 235, 255, 0, 0, 0, 0], 160); view.setFloat64(168, 0, true);
+  [[100, 60, 0, 7n], [150, 35, y2Tag, 8n]].forEach(([x, y, tag, id], index) => {
+    const record = 176 + index * 56;
+    bytes[record + 1] = 1; bytes[record + 3] = tag; view.setBigUint64(record + 8, id, true);
+    view.setFloat64(record + 16, x, true); view.setFloat64(record + 24, y, true); view.setFloat64(record + 48, 8, true);
+  });
+  writeDefaultSceneV9Chrome(bytes, view, body);
+  bytes[body + 15] |= 0x20; // trailer byte 15 bit 5: XYY2 block follows
+  view.setUint32(body + 248, y2.length, true);
+  bytes.set(y2, body + 252);
+  return bytes;
+}
+
 function primaryAnnotationSceneV10() {
   const recordCount = 5, styleCount = 3;
   const records = 160 + styleCount * 16;
@@ -2051,7 +2095,7 @@ async function run() {
       throw new Error(`direct WASM painter v14 drifted from Rust-generated fixture ${fixture.name}`);
     }
     if (fixture.name === "area_visible_stroke_perimeter"
-        && (actual[160 + fixture.styles * 16 + 2] !== 2 || actualPainter[301] !== 2)) {
+        && (actual[160 + fixture.styles * 16 + 2] !== 2 || actualPainter[WASM_MANIFEST.painter_header_bytes + 1] !== 2)) {
       throw new Error("XYTS v2 visible area stroke lost its legacy perimeter topology");
     }
   }
@@ -2061,7 +2105,7 @@ async function run() {
       sequence: fixtureSequence++, transfer: false,
     }).result;
     const painter = new Uint8Array(prepared.painter);
-    if (painter[301] !== expectedSymbol) {
+    if (painter[WASM_MANIFEST.painter_header_bytes + 1] !== expectedSymbol) {
       throw new Error(`Rust Band ${mode} painter descriptor lost its outline mode`);
     }
     const host = document.body.appendChild(document.createElement("div"));
@@ -3236,6 +3280,107 @@ async function run() {
     })}`);
   }
   fullChrome.destroy(); fullChromeHost.remove(); await fullChromeWorker.dispose();
+
+  // Scene v33 / XYPB v16: the secondary right-hand y axis reaches the live
+  // client with its own title paint, tick paint, typography and padding.
+  foundationStage = "Scene v33 secondary y axis through XYPB v16";
+  const twinWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
+  });
+  await twinWorker.ready;
+  const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const measureTwin = async (options) => {
+    const host = document.body.appendChild(document.createElement("div"));
+    const view = await renderWasmScene({ el: host, scene: twinAxisSceneV33(options), worker: twinWorker, transfer: false });
+    await settle();
+    const y2Labels = [...host.querySelectorAll('[data-xy-label-kind="tick"][data-xy-axis="y2"]')];
+    const y2Title = host.querySelector('[data-xy-label-kind="label"][data-xy-axis="y2"]');
+    const yLabels = [...host.querySelectorAll('[data-xy-label-kind="tick"][data-xy-axis="y"]')];
+    const measured = {
+      view, host,
+      ranges: view.spec?.axes?.y2?.range,
+      traceAxes: (view.spec?.traces ?? []).map((trace) => trace.y_axis),
+      y2Sides: new Set(y2Labels.map((node) => node.dataset.xyAxisSide)),
+      tickColors: y2Labels.map((node) => getComputedStyle(node).color),
+      yTickColors: yLabels.map((node) => getComputedStyle(node).color),
+      tickSizes: y2Labels.map((node) => getComputedStyle(node).fontSize),
+      titleText: y2Title?.textContent,
+      tickWeights: y2Labels.map((node) => getComputedStyle(node).fontWeight),
+      tickStyles: y2Labels.map((node) => getComputedStyle(node).fontStyle),
+      yTickWeights: yLabels.map((node) => getComputedStyle(node).fontWeight),
+      yTickStyles: yLabels.map((node) => getComputedStyle(node).fontStyle),
+      titleWeight: y2Title && getComputedStyle(y2Title).fontWeight,
+      titleStyle: y2Title && getComputedStyle(y2Title).fontStyle,
+      titleColor: y2Title && getComputedStyle(y2Title).color,
+      titleSize: y2Title && getComputedStyle(y2Title).fontSize,
+      tickLeft: Math.min(...y2Labels.map((node) => node.getBoundingClientRect().left)) - host.getBoundingClientRect().left,
+      count: y2Labels.length,
+    };
+    return measured;
+  };
+  const roomy = await measureTwin({ tickSize: 20, padding: 12 });
+  const tight = await measureTwin({ tickSize: 12, padding: 4 });
+  const detail = JSON.stringify({
+    roomy: { count: roomy.count, sides: [...roomy.y2Sides], traces: roomy.traceAxes, sizes: roomy.tickSizes, titleColor: roomy.titleColor, tickColors: roomy.tickColors, left: roomy.tickLeft },
+    tight: { sizes: tight.tickSizes, left: tight.tickLeft },
+  });
+  if (!roomy.count || roomy.ranges?.[0] !== 110 || roomy.ranges?.[1] !== 10 || roomy.y2Sides.size !== 1 || !roomy.y2Sides.has("right")
+      || roomy.titleText !== "Right axis"
+      || !roomy.traceAxes.includes("y2") || !roomy.traceAxes.includes("y")
+      || roomy.tickColors.some((color) => color !== roomy.yTickColors[0])
+      || roomy.tickColors.some((color) => color === roomy.titleColor)
+      || !/^rgb\(255, 0, 0\)/.test(roomy.titleColor ?? "")
+      || roomy.tickSizes.some((size) => size !== "20px") || tight.tickSizes.some((size) => size !== "12px")
+      || !(roomy.tickLeft >= tight.tickLeft + 7)) {
+    throw new Error(`Scene v33 y2 chrome lost its resolved typography or paints: ${detail}`);
+  }
+  // Non-zero typography flags: tick labels bold+italic, title italic only (and the
+  // reverse), resolved by Rust and applied by the client per slot.
+  const styled = await measureTwin({ tickFlags: 3, titleFlags: 1 });
+  const styledBold = await measureTwin({ tickFlags: 1, titleFlags: 2 });
+  if (!styled.count
+      || styled.tickWeights.some((value) => value !== "700") || styled.tickStyles.some((value) => value !== "italic")
+      || styled.titleStyle !== "italic" || styled.titleWeight === "700"
+      || styledBold.tickStyles.some((value) => value !== "italic") || styledBold.tickWeights.some((value) => value === "700")
+      || styledBold.titleWeight !== "700" || styledBold.titleStyle === "italic"
+      || styled.yTickWeights.some((value) => value === "700") || styled.yTickStyles.some((value) => value === "italic")) {
+    throw new Error(`Scene v33 y2 tick/title bold-italic flags were not applied per slot: ${JSON.stringify({
+      styled: { tick: [styled.tickWeights, styled.tickStyles], title: [styled.titleWeight, styled.titleStyle], y: [styled.yTickWeights, styled.yTickStyles] },
+      bold: { tick: [styledBold.tickWeights, styledBold.tickStyles], title: [styledBold.titleWeight, styledBold.titleStyle] },
+    })}`);
+  }
+  for (const measured of [styled, styledBold]) { measured.view.destroy(); measured.host.remove(); }
+  // A y2-selected annotation record (tag 3 | 0x40) is valid Rust output: it lowers
+  // to the marker annotation through renderWasmScene instead of being rejected.
+  const annotated = await measureTwin({ y2Tag: 0x43 });
+  if (!annotated.view.spec.annotations.some((annotation) => annotation.kind === "marker")) {
+    throw new Error("a y2-selected annotation did not lower to its marker annotation");
+  }
+  annotated.view.destroy(); annotated.host.remove();
+  const primaryOnly = await measureTwin({ titleRgba: null });
+  if (/^rgb\(255, 0, 0\)/.test(primaryOnly.titleColor ?? "")) {
+    throw new Error("a y2 title without a resolved paint must inherit the axis label paint");
+  }
+  for (const measured of [roomy, tight, primaryOnly]) { measured.view.destroy(); measured.host.remove(); }
+  const v32Twin = twinAxisSceneV33();
+  new DataView(v32Twin.buffer).setUint32(4, 32, true);
+  const v32Host = document.body.appendChild(document.createElement("div"));
+  await rejected(renderWasmScene({ el: v32Host, scene: v32Twin, worker: twinWorker, transfer: false }), "XYG_WASM_SCENE_VERSION", 4);
+  v32Host.remove();
+  // An XYPB v15 painter (the pre-y2 contract) is rejected by the reader, never
+  // reinterpreted: the header grew by 120 bytes.
+  const twinPrepared = await twinWorker.prepareScene(twinAxisSceneV33(), { transfer: false }).result;
+  const v15Painter = twinPrepared.painter.slice(0);
+  new DataView(v15Painter).setUint32(4, 15, true);
+  const v15Host = document.body.appendChild(document.createElement("div"));
+  try {
+    hydrateWasmPainter(v15Host, { ...twinPrepared, painter: v15Painter });
+    throw new Error("an XYPB v15 painter was accepted");
+  } catch (error) {
+    if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_MALFORMED_OUTPUT") throw error;
+  }
+  v15Host.remove();
+  await twinWorker.dispose();
 
   const fragmentedWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

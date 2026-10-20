@@ -29,6 +29,7 @@ const OBS_ANNOTATION_COLLISION: u32 = 1 << 6;
 const OBS_ANNOTATION_TEXT: u32 = 1 << 7;
 const OBS_ANNOTATION_HTML: u32 = 1 << 8;
 const OBS_ANNOTATION_MARKUP: u32 = 1 << 9;
+const OBS_HAS_COLORBAR: u32 = 1 << 10;
 
 const TRACE_UNSUPPORTED_KIND: u16 = 1 << 0;
 const TRACE_NON_PRIMARY_AXIS: u16 = 1 << 1;
@@ -39,6 +40,8 @@ const TRACE_DASHED_MARKERS: u16 = 1 << 4;
 const TRACE_CUSTOM_HEX_REDUCE: u16 = 1 << 9;
 const TRACE_HEATMAP_COLORMAP: u16 = 1 << 10;
 const TRACE_NON_CSS_FILL: u16 = 1 << 11;
+/// The trace is plotted against the secondary right-hand y axis (`y2`).
+const TRACE_Y2: u16 = 1 << 13;
 
 const POLAR_COLLISION_KEYS: &[&str] = &[
     "tick_label_strategy",
@@ -101,6 +104,9 @@ pub struct FigureSupportTraceObs<'a> {
 #[derive(Clone, Debug)]
 pub struct FigureSupportAxisObs<'a> {
     pub axis_code: u8,
+    /// Authored side (`scene_figure_support_pack::AXIS_SIDE_*`); Rust alone
+    /// decides whether a secondary axis on that side is admissible.
+    pub side: u8,
     pub keys: Vec<String>,
     pub tick_label_strategy: Option<&'a str>,
     pub collision: Option<&'a str>,
@@ -111,6 +117,8 @@ pub struct FigureSupportAxisObs<'a> {
 pub struct SceneFigureSupportMaterializeIn<'a> {
     pub polar: i32,
     pub colorbar_unsupported: i32,
+    /// The figure carries any colorbar, supported or not.
+    pub has_colorbar: i32,
     pub has_custom_font: i32,
     pub has_browser_css: i32,
     pub has_extra_legends: i32,
@@ -160,8 +168,10 @@ fn trace_support_flags(trace: &FigureSupportTraceObs<'_>, polar: bool) -> Result
     if scene_kind_admit(trace.kind) == 0 {
         flags |= TRACE_UNSUPPORTED_KIND;
     }
-    if trace.x_axis != "x" || trace.y_axis != "y" {
+    if trace.x_axis != "x" || !matches!(trace.y_axis, "y" | "y2") {
         flags |= TRACE_NON_PRIMARY_AXIS;
+    } else if trace.y_axis == "y2" {
+        flags |= TRACE_Y2;
     }
     if scene_hidden_or_per_item_admit(
         trace.hidden,
@@ -286,6 +296,9 @@ fn figure_level_flags(input: &SceneFigureSupportMaterializeIn<'_>) -> Result<u32
     if input.colorbar_unsupported != 0 {
         flags |= OBS_COLORBAR;
     }
+    if input.has_colorbar != 0 {
+        flags |= OBS_HAS_COLORBAR;
+    }
     if input.has_extra_legends != 0 {
         flags |= OBS_EXTRA_LEGENDS;
     }
@@ -311,6 +324,7 @@ pub fn scene_figure_support_materialize(
     for axis in input.axes {
         axes.push(FigureSupportAxisInput {
             axis_code: axis.axis_code,
+            side: axis.side,
             keys: significant_axis_keys(axis, polar),
         });
     }
@@ -332,6 +346,7 @@ mod tests {
     fn materializes_minimal_xyfs() {
         let axes = [FigureSupportAxisObs {
             axis_code: 0,
+            side: 0,
             keys: vec!["label".to_string(), "side".to_string()],
             tick_label_strategy: None,
             collision: None,
@@ -345,6 +360,7 @@ mod tests {
         let input = SceneFigureSupportMaterializeIn {
             polar: 0,
             colorbar_unsupported: 0,
+            has_colorbar: 0,
             has_custom_font: 0,
             has_browser_css: 0,
             has_extra_legends: 0,

@@ -260,6 +260,7 @@ def test_scene_bulk_pack_minimal_fixture_bytes() -> None:
     xyfs = scene_figure_support_materialize(
         polar=support["polar"],
         colorbar_unsupported=support["colorbar_unsupported"],
+        has_colorbar=support["has_colorbar"],
         has_custom_font=support["has_custom_font"],
         has_browser_css=support["has_browser_css"],
         has_extra_legends=support["has_extra_legends"],
@@ -295,6 +296,7 @@ def test_scene_bulk_pack_cross_host_node() -> None:
     py_xyfs = scene_figure_support_materialize(
         polar=support["polar"],
         colorbar_unsupported=support["colorbar_unsupported"],
+        has_colorbar=support["has_colorbar"],
         has_custom_font=support["has_custom_font"],
         has_browser_css=support["has_browser_css"],
         has_extra_legends=support["has_extra_legends"],

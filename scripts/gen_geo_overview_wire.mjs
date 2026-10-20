@@ -5,6 +5,7 @@ import {mkdtempSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {nodeSceneVersion} from './geo_node_scene_version.mjs';
 const root=new URL('../',import.meta.url),source=new URL('js/src/67_geo_overview.ts',root);
 const directory=mkdtempSync(join(tmpdir(),'xyg-overview-declarations-'));
 // Full client validation remains in js/build.mjs. Match the other declaration
@@ -16,7 +17,7 @@ try{
  const clean=s=>s.split('\n').map(line=>line.trimEnd()).join('\n');
  const imports=s=>s.replaceAll("'./63_geo_source'","'./geoscale.js'");
  const outputs={
-  'geo-overview.js':'// Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.\n'+imports(clean(stripTypeScriptTypes(readFileSync(source,'utf8')))),
+  'geo-overview.js':'// Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.\n'+imports(clean(nodeSceneVersion(stripTypeScriptTypes(readFileSync(source,'utf8'))))),
   'geo-overview.d.ts':imports(readFileSync(join(directory,'67_geo_overview.d.ts'),'utf8')),
  };
  for(const [name,text] of Object.entries(outputs)){

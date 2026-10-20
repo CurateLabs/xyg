@@ -2843,7 +2843,7 @@ mod tests {
         assert_eq!(decoded.membership(), membership());
         assert_eq!(decoded.attributions(), attrs);
         assert!(decoded.binding().is_none());
-        assert_eq!(u32at(decoded.scene(), 4), 32);
+        assert_eq!(u32at(decoded.scene(), 4), crate::scene::SCENE_VERSION);
     }
     #[test]
     fn stale_camera_time_layer_source_style_state_and_provenance_are_rejected() {

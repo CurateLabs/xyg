@@ -2,6 +2,7 @@
 // Reproduce thin shared transport/overview Node bindings; never ABI declarations.
 import fs from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
+import {nodeSceneVersion} from './geo_node_scene_version.mjs';
 import {execFileSync} from 'node:child_process';
 import {mkdtempSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -14,8 +15,8 @@ const clean=s=>s.split('\n').map(l=>l.trimEnd()).join('\n');
 const marker='// Load generated native bindings only when requested; framing stays host-neutral.';
 const path='packages/xy-node/src/geoscale.js',old=fs.readFileSync(path,'utf8'),at=old.indexOf(marker);
 if(at<0)throw Error('Canonical Node native suffix missing');
-write(path,clean(stripTypeScriptTypes(fs.readFileSync('js/src/63_geo_source.ts','utf8')).replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'").replaceAll("import {withGeoWorkerMutationOutcome} from './47_wasm';","// Captured native outcome is declared in the canonical suffix.\nconst withGeoWorkerMutationOutcome=(...args)=>withGeoNativeMutationOutcome(...args);"))+'\n'+old.slice(at));
-const overview=clean(stripTypeScriptTypes(fs.readFileSync('js/src/67_geo_overview.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'");
+write(path,clean(nodeSceneVersion(stripTypeScriptTypes(fs.readFileSync('js/src/63_geo_source.ts','utf8'))).replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'").replaceAll("import {withGeoWorkerMutationOutcome} from './47_wasm';","// Captured native outcome is declared in the canonical suffix.\nconst withGeoWorkerMutationOutcome=(...args)=>withGeoNativeMutationOutcome(...args);"))+'\n'+old.slice(at));
+const overview=clean(nodeSceneVersion(stripTypeScriptTypes(fs.readFileSync('js/src/67_geo_overview.ts','utf8')))).replaceAll("'./63_geo_source'","'./geoscale.js'");
 write('packages/xy-node/src/geo-overview.js','// Mechanical type stripping of js/src/67_geo_overview.ts; no host policy.\n'+overview);
 write('packages/xy-node/src/geo-allocation-attempt.js','// Mechanical type stripping of shared private allocation recovery.\n'+clean(stripTypeScriptTypes(fs.readFileSync('js/src/72_geo_allocation_attempt.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'"));
 const members=clean(stripTypeScriptTypes(fs.readFileSync('js/src/73_geo_overview_members.ts','utf8'))).replaceAll("'./63_geo_source'","'./geoscale.js'").replaceAll("'./72_geo_allocation_attempt'","'./geo-allocation-attempt.js'").replace("withGeoWorkerMemberDataOutcome as withGeoMemberDataOutcome} from './47_wasm'","withGeoNativeMemberDataOutcome as withGeoMemberDataOutcome} from './geoscale.js'");

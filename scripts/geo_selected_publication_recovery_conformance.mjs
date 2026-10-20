@@ -78,7 +78,7 @@ async function fiveIndexedPublications(bridge){
  }
  for(const {f,index,m,p} of views){await close(bridge,index);await bridge.execute(ack(m,f.seed,1));await close(bridge,f.seed);await confirm(bridge,p,f.seed,true);await bridge.execute(ack(p,f.seed,2));await bridge.execute(ack(p,f.seed,1));await close(bridge,f.scope);}
 }
-const wasmPath=process.env.XYG_SELECTED_PUBLICATION_WASM??'packages/xy-client/dist/xyg-wasm.wasm',wasmBytes=await readFile(wasmPath),{instance}=await WebAssembly.instantiate(wasmBytes,{}),x=instance.exports,instanceId=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(instanceId);assert.equal(x.xyg_wasm_abi_version(),33);let transportSequence=0;
+const wasmPath=process.env.XYG_SELECTED_PUBLICATION_WASM??'packages/xy-client/dist/xyg-wasm.wasm',wasmBytes=await readFile(wasmPath),{instance}=await WebAssembly.instantiate(wasmBytes,{}),x=instance.exports,instanceId=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(instanceId);assert.equal(x.xyg_wasm_abi_version(),34);let transportSequence=0;
 async function wasmCall(b,read){assert.equal(x.xyg_wasm_arena_resize(instanceId,b.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(instanceId)>>>0,b.byteLength).set(new Uint8Array(b));const status=x[read?'xyg_wasm_geo_scale_read':'xyg_wasm_geo_scale_execute'](instanceId,++transportSequence,0,b.byteLength);if(status)throw new Error(`WASM:${status}`);return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(instanceId)>>>0,x.xyg_wasm_output_len(instanceId)).slice().buffer;}
 try{
  const wasm={execute:b=>wasmCall(b,false),read:b=>wasmCall(b,true)},native=nativeGeoScaleBridge(budget.processorBytes),packets=[],legacy=[];

@@ -15,13 +15,25 @@ const MAX_XYFS_AXES: usize = 8;
 const MAX_XYFS_TRACES: usize = 256;
 const MAX_XYFS_KEY_BYTES: usize = 256;
 
-const OBS_MASK: u32 = (1 << 10) - 1;
-const TRACE_FLAG_MASK: u16 = (1 << 13) - 1;
+const OBS_MASK: u32 = (1 << 11) - 1;
+const TRACE_FLAG_MASK: u16 = (1 << 14) - 1;
+
+/// Authored axis side carried in the second axis-header byte, using the same
+/// codes as the `XYEP` axis rows: 0 = not authored, 1 bottom, 2 left, 3 top,
+/// 4 right, 255 = any other authored value.
+pub const AXIS_SIDE_UNOBSERVED: u8 = 0;
+pub const AXIS_SIDE_BOTTOM: u8 = 1;
+pub const AXIS_SIDE_LEFT: u8 = 2;
+pub const AXIS_SIDE_TOP: u8 = 3;
+pub const AXIS_SIDE_RIGHT: u8 = 4;
+pub const AXIS_SIDE_OTHER: u8 = 255;
 
 /// One axis key row for ``scene_figure_support_pack``.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FigureSupportAxisInput {
     pub axis_code: u8,
+    /// `AXIS_SIDE_*`; the remaining header bytes stay zero.
+    pub side: u8,
     pub keys: Vec<String>,
 }
 
@@ -46,8 +58,12 @@ fn put_keys(buf: &mut Vec<u8>, keys: &[String]) -> Result<(), i32> {
 
 fn put_axes(buf: &mut Vec<u8>, axes: &[FigureSupportAxisInput]) -> Result<(), i32> {
     for axis in axes {
+        if axis.side > AXIS_SIDE_RIGHT && axis.side != AXIS_SIDE_OTHER {
+            return Err(-1);
+        }
         buf.push(axis.axis_code);
-        buf.extend_from_slice(&[0, 0, 0]);
+        buf.push(axis.side);
+        buf.extend_from_slice(&[0, 0]);
         if axis.keys.len() > u32::MAX as usize {
             return Err(-1);
         }
@@ -114,6 +130,7 @@ mod tests {
         let axes = PRIMARY_XY
             .iter()
             .map(|(code, keys)| FigureSupportAxisInput {
+                side: 0,
                 axis_code: *code,
                 keys: keys.iter().map(|s| (*s).to_string()).collect(),
             })

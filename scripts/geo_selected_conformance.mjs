@@ -15,7 +15,7 @@ const MAX=0xffffffffffffffffn,MIN=-0x8000000000000000n;
 const style=encodeGeoScaleStyle({fill:new Uint8Array([255,0,0,255]),stroke:new Uint8Array(4),strokeWidth:0,diameter:6,opacity:1,symbol:0});
 const path=process.env.XYG_SELECTED_WASM??'packages/xy-client/dist/xyg-wasm.wasm';
 const {instance}=await WebAssembly.instantiate(await readFile(path),{}),x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);
-assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),33);let sequence=0;
+assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),34);let sequence=0;
 async function call(request,read){assert.equal(x.xyg_wasm_arena_resize(h,request.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h)>>>0,request.byteLength).set(new Uint8Array(request));const status=x[`xyg_wasm_geo_scale_${read?'read':'execute'}`](h,++sequence,0,request.byteLength);if(status){const error=new Error(new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h)>>>0,x.xyg_wasm_last_error_len(h))));error.nativeCode=status;throw error;}return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h)).slice().buffer;}
 const wasm={execute:r=>call(r,false),read:r=>call(r,true)};
 // These test-only bridges call raw exports; they have no genuine Worker/native

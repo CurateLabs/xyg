@@ -1,6 +1,7 @@
 /** Thin XYGQ/XYGZ source-session framing. All geographic policy remains in Rust. */
 import {GeoAllocationAttempt,selectedGeoAllocationIssuer,preflightSelectedGeoAllocation,trackSelectedGeoAllocation,forgetSelectedGeoAllocationIssuer} from './72_geo_allocation_attempt';
 import {withGeoWorkerMutationOutcome} from './47_wasm';
+import {XYG_WASM_SCENE_VERSION} from './wasm_abi_generated';
 import type {XygGeoCamera} from './49_wasm_geoviewport';
 
 export const GEO_SCALE_HEADER = 256;
@@ -95,7 +96,7 @@ export function encodeGeoChunkRequest(input:{descriptor:ArrayBuffer|Uint8Array;r
 export function parseGeoSceneData(packet:ArrayBuffer){
  const {b,v}=response(packet,true),footerLength=count(v,248),aggregate=v.getUint32(8,true),droppedChannels=v.getUint32(12,true),sceneLength=count(v,32),metadataLength=count(v,40),columns=v.getUint32(64,true),rows=v.getUint32(68,true),gridCapped=v.getUint32(72,true),timeKind=v.getUint32(208,true),reducedKind=v.getUint32(212,true);
  if(aggregate>1||gridCapped>1||timeKind>2||reducedKind>1||droppedChannels&~7||256+sceneLength+metadataLength+footerLength!==packet.byteLength||sceneLength<160)throw new TypeError('malformed SceneData framing');zero(b,76,80);if(v.getUint32(4,true)===1)zero(b,248,256);
- const scene=b.subarray(256,256+sceneLength),sv=new DataView(packet,256,sceneLength);if(String.fromCharCode(...scene.subarray(0,4))!=='XYGS'||sv.getUint32(4,true)!==32)throw new TypeError('invalid Scene32 packet');
+ const scene=b.subarray(256,256+sceneLength),sv=new DataView(packet,256,sceneLength);if(String.fromCharCode(...scene.subarray(0,4))!=='XYGS'||sv.getUint32(4,true)!==XYG_WASM_SCENE_VERSION)throw new TypeError('invalid Scene packet');
  const stride=aggregate?24:40;if(metadataLength%stride||aggregate&&columns*rows!==metadataLength/stride)throw new TypeError('invalid provenance framing');
  const sourceRows=v.getBigUint64(232,true),geometry=v.getUint32(240,true);if(![1,4].includes(geometry))throw new TypeError('invalid retained source geometry');
  const metadata=new DataView(packet,256+sceneLength,metadataLength),length=metadataLength/stride;

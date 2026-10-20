@@ -2,6 +2,7 @@
 import {getGeoWorkerSnapshotTransport,beginGeoWorkerMutationCapture,isGeoWorkerTerminated,type XygWasmWorker} from './47_wasm';
 import {overviewFrameAuthority,type GeoOverviewFrame} from './71_geo_overview_owner';
 import type {XygGeoScaleBridge} from './63_geo_source';
+import {XYG_WASM_SCENE_VERSION} from './wasm_abi_generated';
 const HEADER=256,PROFILE_BYTES=2432,MAX_SCENE=757920,MAX_PACKET=PROFILE_BYTES+MAX_SCENE;
 const CAP=Symbol('issued overview binary');
 const nonces=new WeakMap<GeoOverviewFrame,bigint>();
@@ -36,7 +37,7 @@ function aborted(){return new DOMException('Overview binary freeze cancelled','A
 function expectedPrefix(source:Uint8Array,length:number){
  const out=new Uint8Array(PROFILE_BYTES),v=new DataView(out.buffer),s=new DataView(source.buffer,source.byteOffset,source.byteLength);
  const copy=(at:number,from:number,n:number)=>out.set(source.subarray(from,from+n),at);
- out.set([88,89,71,88]);v.setUint32(4,4,true);v.setUint32(8,32,true);v.setBigUint64(16,BigInt(length),true);v.setBigUint64(24,s.getBigUint64(32,true),true);v.setUint32(32,1,true);
+ out.set([88,89,71,88]);v.setUint32(4,4,true);v.setUint32(8,XYG_WASM_SCENE_VERSION,true);v.setBigUint64(16,BigInt(length),true);v.setBigUint64(24,s.getBigUint64(32,true),true);v.setUint32(32,1,true);
  copy(52,224,4);copy(56,232,16);copy(72,96,8);copy(80,112,56);copy(136,176,8);copy(176,184,8);v.setUint32(192,1,true);v.setUint32(196,2144,true);
  copy(208,80,8);copy(224,56,8);copy(232,192,24);copy(256,64,8);copy(264,88,8);copy(272,76,4);copy(276,72,4);
  out.set([88,89,79,70],288);v.setUint32(292,1,true);v.setUint32(296,3,true);v.setUint32(300,16,true);copy(304,80,8);v.setUint32(312,1,true);copy(320,48,8);copy(328,64,8);copy(336,56,8);copy(344,88,8);copy(352,72,4);copy(356,76,4);v.setBigUint64(360,2048n,true);copy(384,256,2048);return out;
@@ -106,7 +107,7 @@ export class GeoOverviewFrozenBinary {
    if(!(packet instanceof ArrayBuffer)||packet.byteLength!==this.#length||packet.byteLength>MAX_PACKET)throw new TypeError('Snapshot plane length mismatch');
    const bytes=new Uint8Array(packet),expected=expectedPrefix(this.#header!,this.#length);
    for(let i=0;i<PROFILE_BYTES;i++)if(bytes[i]!==expected[i])throw new TypeError('Snapshot metadata differs from accepted overview');
-   const scene=new DataView(packet,PROFILE_BYTES);if(scene.getUint32(0,true)!==0x53475958||scene.getUint32(4,true)!==32)throw new TypeError('Snapshot Scene32 mismatch');if(!this.#viewsDropped)this.#bytes=bytes;
+   const scene=new DataView(packet,PROFILE_BYTES);if(scene.getUint32(0,true)!==0x53475958||scene.getUint32(4,true)!==XYG_WASM_SCENE_VERSION)throw new TypeError('Snapshot Scene version mismatch');if(!this.#viewsDropped)this.#bytes=bytes;
   });return this.#read;
  }
  /** @internal Captured lifecycle drops inspection before native retirement. */

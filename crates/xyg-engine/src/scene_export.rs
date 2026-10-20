@@ -1487,7 +1487,10 @@ const OBS_ANNOTATION_COLLISION: u32 = 1 << 6;
 const OBS_LABELED_ANNOTATION: u32 = 1 << 7;
 const OBS_ANNOTATION_HTML: u32 = 1 << 8;
 const OBS_ANNOTATION_MARKUP: u32 = 1 << 9;
-const OBS_MASK: u32 = (1 << 10) - 1;
+/// The figure carries a (supported or unsupported) colorbar: a literal
+/// observation, so Rust can refuse the colorbar + secondary-y combination.
+const OBS_HAS_COLORBAR: u32 = 1 << 10;
+const OBS_MASK: u32 = (1 << 11) - 1;
 
 const ANNOTATION_HTML_REASON: &str =
     "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML: Scene does not encode annotation html";
@@ -1497,6 +1500,25 @@ const ANNOTATION_MARKUP_REASON: &str =
     "XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP: Scene does not encode annotation markup";
 const FIGURE_AXIS_SET_REASON: &str =
     "Scene v12 figure compilation currently supports exactly x/y axes";
+const FIGURE_EXTRA_AXES_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_EXTRA_AXES: Scene supports at most one secondary axis, a right-hand y axis";
+const FIGURE_X2_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_X2: Scene does not encode a secondary x axis";
+const FIGURE_Y2_SIDE_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_Y2_SIDE: Scene encodes the secondary y axis only on the right";
+const FIGURE_Y2_TICK_ONLY_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_Y2_TICK_ONLY: Scene encodes a secondary y axis only when a trace is plotted against it";
+const FIGURE_Y2_POLAR_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_Y2_POLAR: Scene does not combine a secondary y axis with polar coordinates";
+const FIGURE_Y2_COLORBAR_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_Y2_COLORBAR: Scene does not combine a secondary y axis with a colorbar";
+
+/// XYFS axis ids: 0 = x, 1 = y, 2 = secondary y (`y2`), 3 = secondary x (`x2`).
+/// Any other id is an unrecognized axis.
+const XYFS_AXIS_X: u8 = 0;
+const XYFS_AXIS_Y: u8 = 1;
+const XYFS_AXIS_Y2: u8 = 2;
+const XYFS_AXIS_X2: u8 = 3;
 const FIGURE_AXIS_KEYS_REASON: &str =
     "Scene v12 does not yet encode tick formatting, collision policy, or advanced axis layout";
 const FIGURE_TRACE_AXIS_REASON: &str = "Scene v12 currently supports only the primary x/y axes";
@@ -1520,7 +1542,8 @@ const XYFS_TRACE_CUSTOM_HEX_REDUCE: u16 = 1 << 9;
 const XYFS_TRACE_HEATMAP_COLORMAP: u16 = 1 << 10;
 const XYFS_TRACE_NON_CSS_FILL: u16 = 1 << 11;
 const XYFS_TRACE_HIDDEN: u16 = 1 << 12;
-const XYFS_TRACE_FLAG_MASK: u16 = (1 << 13) - 1;
+const XYFS_TRACE_Y2: u16 = 1 << 13;
+const XYFS_TRACE_FLAG_MASK: u16 = (1 << 14) - 1;
 
 /// Return Rust's figure-compile support diagnostic for a packed `XYFS`
 /// envelope. Hosts pack literal observations, axis ids/keys, and (v2)
@@ -1592,27 +1615,42 @@ pub fn scene_figure_support_reason_with_attach(
 
     let mut has_x = false;
     let mut has_y = false;
+    let mut extra_axes: Vec<(u8, u8)> = Vec::new();
     let mut axis_keys: Vec<Vec<&str>> = Vec::new();
     for _ in 0..n_axes {
         if cursor.remaining() < XYFS_AXIS_BYTES {
             return Err(SceneError::Length);
         }
         let axis_id = cursor.u8()?;
-        let _pad0 = cursor.u8()?;
-        let _pad1 = cursor.u8()?;
-        let _pad2 = cursor.u8()?;
+        let side = cursor.u8()?;
+        let pad = (cursor.u8()?, cursor.u8()?);
+        if (side > crate::scene_figure_support_pack::AXIS_SIDE_RIGHT
+            && side != crate::scene_figure_support_pack::AXIS_SIDE_OTHER)
+            || pad != (0, 0)
+        {
+            return Err(SceneError::Length);
+        }
         let n_keys = cursor.u32()?;
         match axis_id {
-            0 => has_x = true,
-            1 => has_y = true,
-            _ => {
-                return Ok(FIGURE_AXIS_SET_REASON.to_string());
-            }
+            XYFS_AXIS_X => has_x = true,
+            XYFS_AXIS_Y => has_y = true,
+            _ => extra_axes.push((axis_id, side)),
         }
         axis_keys.push(cursor.keys(n_keys)?);
     }
-    if n_axes != 2 || !has_x || !has_y {
+    if !has_x || !has_y || n_axes as usize != 2 + extra_axes.len() {
         return Ok(FIGURE_AXIS_SET_REASON.to_string());
+    }
+    // Right-only secondary y: Rust alone admits it; hosts only report axis
+    // ids, sides, and traces.
+    let mut has_y2 = false;
+    match extra_axes.as_slice() {
+        [] => {}
+        [(XYFS_AXIS_Y2, crate::scene_figure_support_pack::AXIS_SIDE_RIGHT)] => has_y2 = true,
+        [(XYFS_AXIS_Y2, _)] => return Ok(FIGURE_Y2_SIDE_REASON.to_string()),
+        [(XYFS_AXIS_X2, _)] => return Ok(FIGURE_X2_REASON.to_string()),
+        [_] => return Ok(FIGURE_AXIS_SET_REASON.to_string()),
+        _ => return Ok(FIGURE_EXTRA_AXES_REASON.to_string()),
     }
 
     let mut traces = Vec::with_capacity(n_traces as usize);
@@ -1641,6 +1679,24 @@ pub fn scene_figure_support_reason_with_attach(
     }
     if cursor.remaining() != 0 {
         return Err(SceneError::Length);
+    }
+    if has_y2 {
+        if flags & OBS_POLAR != 0 {
+            return Ok(FIGURE_Y2_POLAR_REASON.to_string());
+        }
+        if flags & (OBS_COLORBAR | OBS_HAS_COLORBAR) != 0 {
+            return Ok(FIGURE_Y2_COLORBAR_REASON.to_string());
+        }
+    }
+    let y2_traces = traces
+        .iter()
+        .filter(|(trace_flags, _)| trace_flags & XYFS_TRACE_Y2 != 0)
+        .count();
+    if y2_traces != 0 && !has_y2 {
+        return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
+    }
+    if has_y2 && y2_traces == 0 {
+        return Ok(FIGURE_Y2_TICK_ONLY_REASON.to_string());
     }
 
     if flags & OBS_POLAR != 0 {
@@ -2116,7 +2172,7 @@ mod tests {
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(
                 0,
-                &[(0, &["label"]), (1, &["label"]), (2, &["label"])],
+                &[(0, &["label"]), (1, &["label"]), (255, &["label"])],
                 &[(XYFS_TRACE_DENSITY, "scatter")]
             )),
             Ok(FIGURE_AXIS_SET_REASON.to_string())

@@ -194,6 +194,7 @@ class _XygFigureSupportAnnotationObs(ctypes.Structure):
 class _XygFigureSupportAxisObsIn(ctypes.Structure):
     _fields_ = [
         ("axis_code", ctypes.c_uint8),
+        ("side", ctypes.c_uint8),
         ("key_count", ctypes.c_uint32),
         ("strategy", _XygStringRef),
         ("collision", _XygStringRef),
@@ -494,6 +495,8 @@ def scene_chrome_pack(**kwargs: Any) -> bytes:
             ctypes.cast(y_label_refs, ctypes.c_void_p) if len(y_label_refs) else 0,
             stops_ptr if stops_len else 0,
             _ptr_f64(colorbar_ticks_arr) if len(colorbar_ticks_arr) else 0,
+            0,
+            0,
             _ptr_u8(out),
             len(out),
             ctypes.byref(out_len),
@@ -511,6 +514,7 @@ def scene_figure_support_materialize(
     *,
     polar: bool,
     colorbar_unsupported: bool,
+    has_colorbar: bool,
     has_custom_font: bool,
     has_browser_css: bool,
     has_extra_legends: bool,
@@ -544,6 +548,7 @@ def scene_figure_support_materialize(
             axis_keys_blob.extend(encoded)
         axis_rows[index] = _XygFigureSupportAxisObsIn(
             int(row["axis_code"]) & 0xFF,
+            int(row.get("side", 0)) & 0xFF,
             len(keys),
             strategy_ref,
             collision_ref,
@@ -605,6 +610,7 @@ def scene_figure_support_materialize(
         _lib.xyg_scene_figure_support_materialize(
             1 if polar else 0,
             1 if colorbar_unsupported else 0,
+            1 if has_colorbar else 0,
             1 if has_custom_font else 0,
             1 if has_browser_css else 0,
             1 if has_extra_legends else 0,

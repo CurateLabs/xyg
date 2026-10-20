@@ -6,6 +6,7 @@ import struct
 
 import pytest
 
+from xyg import _native
 from xyg._figure import Figure
 from xyg._native import (
     css_color_rgba,
@@ -186,7 +187,7 @@ def test_empty_encode_assembled_facts_emit_xygs() -> None:
         y_axis=(2, 0, 0.0, 1.0, 1.0, False),
     )
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 32
+    assert int.from_bytes(encoded[4:8], "little") == _native.scene_version()
 
 
 def test_encode_assembled_from_sidecars_matches_packed_encode() -> None:
@@ -1015,7 +1016,7 @@ def test_pack_figure_chrome_empty_facts_is_xycc() -> None:
     assert chrome["x_major_ticks"] is None
     assert chrome["legend_input"] == b""
     scene = figure_scene(figure)
-    assert int.from_bytes(scene[4:8], "little") == 32
+    assert int.from_bytes(scene[4:8], "little") == _native.scene_version()
 
 
 def test_pack_figure_chrome_rejects_empty_authored_legend_loc() -> None:

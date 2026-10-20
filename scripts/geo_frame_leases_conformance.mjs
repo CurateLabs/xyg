@@ -9,7 +9,7 @@ const budget={processorBytes:128<<20,maxRowsExamined:1000000n,maxReadBytes:128n<
 const style=encodeGeoScaleStyle({fill:Uint8Array.of(255,0,0,255),stroke:new Uint8Array(4),strokeWidth:0,diameter:6,opacity:1,symbol:0});
 const MAX=0xffffffffffffffffn;
 const {instance}=await WebAssembly.instantiate(await readFile(process.env.XYG_FRAME_LEASE_WASM??'target/wasm32-unknown-unknown/release/xyg_wasm.wasm'),{});
-const x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),33);
+const x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),34);
 let sequence=0;
 async function call(request,read,family='scale'){
  assert.equal(x.xyg_wasm_arena_resize(h,request.byteLength),0);

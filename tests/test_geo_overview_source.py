@@ -246,6 +246,9 @@ def test_generator_check_is_nonmutating_and_rejects_stale_output(tmp_path):
     shutil.copyfile(
         root / "scripts/gen_geo_overview_hosts.mjs", tmp_path / "scripts/gen_geo_overview_hosts.mjs"
     )
+    shutil.copyfile(
+        root / "scripts/geo_node_scene_version.mjs", tmp_path / "scripts/geo_node_scene_version.mjs"
+    )
     (tmp_path / "js").mkdir()
     (tmp_path / "js/src").symlink_to(root / "js/src", target_is_directory=True)
     (tmp_path / "node_modules").symlink_to(root / "node_modules", target_is_directory=True)

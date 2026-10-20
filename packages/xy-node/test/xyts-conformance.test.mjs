@@ -50,5 +50,5 @@ test("native Node retains the legacy XYTS v2 visible area perimeter", () => {
   const svg = sceneSvg(scene);
   assert.match(svg, /stroke="rgb\(17,34,51\)"/);
   assert.match(svg, /stroke-opacity="0\.5"/);
-  assert.equal(sceneBrowserPainter(scene)[301], 2);
+  assert.equal((() => { const p = sceneBrowserPainter(scene); return p[new DataView(p.buffer, p.byteOffset).getUint32(12, true) + 1]; })(), 2);
 });

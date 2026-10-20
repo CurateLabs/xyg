@@ -77,7 +77,7 @@ XYMY is256 bytes: magic0/version4/kind8u32; handle16, nonce24, owner32,
 byte length40, all u64. Kind0 is an ordinary mutation reply; kind1 identifies a
 candidate mixed Data; kind2 transfers independently retained SourceData.
 
-XYMF is256 bytes followed by exact mixed Scene32, original XYGU tile receipt,
+XYMF is256 bytes followed by exact mixed the current Scene version, original XYGU tile receipt,
 snapshot160 and style48. Header: coordinator16/nonce24; Scene length32 and
 receipt length40; retained record start48/end56 and style start64/end72;
 original source handle80/sequence88, tile handle96/epoch104/cache112/view120;

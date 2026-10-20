@@ -14,7 +14,7 @@ const wasmBytes=await readFile(wasmPath),nativePath=process.env.XYG_NATIVE_LIB;
 assert.ok(nativePath,'XYG_NATIVE_LIB must pin the actual native artifact');
 const nativeBytes=await readFile(nativePath);
 const {instance}=await WebAssembly.instantiate(wasmBytes,{}),x=instance.exports;
-assert.equal(x.xyg_wasm_abi_version(),33);
+assert.equal(x.xyg_wasm_abi_version(),34);
 const budget={processorBytes:128<<20,maxRowsExamined:1000000n,maxReadBytes:128n<<20n,maxChunks:65536,pageRows:4};
 const h=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(h);let transport=0;
 const wasm={async execute(request){return call(request,false);},async read(request){return call(request,true);}};

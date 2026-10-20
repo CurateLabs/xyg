@@ -1,0 +1,298 @@
+# Native secondary y axis (`y2`, twinx) in the Rust Scene/static path
+
+Authoritative design (r2 plus the final addendum, which overrides conflicting
+text). Part of #1006 (twinx PR 1 of 3). The *PR 1 implementation record* at the
+end states where the shipped format refines this text.
+
+Closes Matplotlib corpus case 26 (`tests/pyplot/corpus/26_twinx_dual_axis.py`)
+for #1006. Supersedes r1 (`.m4/design-twinx.md`); r1 §0 facts still hold unless
+restated here. Builds on #1019 (`origin/fix/a-chrome-style-1004`, ABI 384);
+citations marked (1019) are to that branch, all others to `t3/complete-milestone-4`.
+Verified 2026-10-20.
+
+## 1. Blocker resolution
+
+| # | Sol finding (verified) | r2 resolution |
+|---|---|---|
+| 1 | Literal Scene version `32` in readers: `js/src/63_geo_source.ts:98`, `66_geo_mixed.ts:39`, `67_geo_overview.ts:54`, `74_geo_overview_snapshot.ts:109`; Node `geoscale.js:99`, `geo-mixed-wire.js:40`, `geo-overview.js:55`; Python `_geoscale.py:530`, `_geo_overview.py:132`, `_geo_mixed.py:111`. Generated/runtime constants already exist: `js/src/wasm_abi_generated.ts:5` (`XYG_WASM_SCENE_VERSION`), Node `scene.js:674` (`sceneVersion()` via `xyg_scene_version`), Python `_native.py:5121` (`scene_version()`). Fixtures embedding v32 bytes: `tests/fixtures/graphforge/scene32_refresh.json`, `graph_static_export_scene32_refresh.json`, `geo_cross_host.json`. | §5: every reader compares against the constant; fixtures regenerated; a source guard forbids `getUint32(4,true)!==<digits>` / `!= 32` version literals. All in PR 1. |
+| 2 | WASM path drops y2: `crates/xyg-wasm/src/lib.rs:1099,1194,1307` call `to_browser_painter`; `scene.rs:15116-15160` resolves only x/y ticks; `js/src/48_wasm_scene.ts:346-348` rebuilds only x/y from XYPB (header 300 B, x block at 88, y at 176, text lengths at 264, reserved 276..280) and `:179` hard-codes `y_axis:"y"` per trace. | §4: XYPB v16 adds a y2 axis block, y2 tick run, y2 title, and a per-trace y-axis selector; TS emits `axes.y2` + `y_axis:"y2"`. Test through `renderWasmScene` in `tests/browser/wasm_foundation_page.mjs`. PR 1. |
+| 3 | `python/xyg/_native.py:3302-3426` is a handwritten `xyg_scene_xycf_pack` wrapper; `_scene_unpack.py:161` and `scene.js:5990` reject XYAS ≠ v1; r1's PR A would break main. | §6: PR 1 is one atomic format PR (Rust + generated ABI + the two handwritten wrappers + every version reader + fixtures + bundles), with hosts still fail-closed on y2; PRs 2/3 add host policy only. XYAS stays v1 (§2.2), so the two unpackers do not change. |
+| 4 | Metrics arrive after layout: (1019) `static_document.rs:573-585` decodes the laid-out Scene then `apply_static_chrome_metrics`; (1019) `scene.rs:11244-11266` only stores them; `widen_gutters` measures with literal `12.0` (`scene_encode_assembled.rs:612,633`). XYST panel record is full (1019 `PANEL_BYTES = 128`, `chrome_text_rgba` ends at 128, `static_document.rs:480-528`). | §3: y2 chrome metrics/paints/text flags are resolved by XYCO **before** Scene encode ((1019) `_static_document.py` `project_figure`: `resolve_chrome_style` precedes `_scene_v3._public_scene_or_reason`) and travel in the XYY2 sidecar → Rust lays out with them. No XYST record change for y2; compat floor preserved. |
+
+## 2. Scene format v33
+
+### 2.1 `XYGS` trailer
+
+`SCENE_VERSION = 33` (`scene.rs:22`). Trailer byte 15 **bit 1 = `has_y2`**;
+when set, a length-prefixed `XYY2` block follows the bit-0 extras block
+(`scene.rs:3033,3096`) and precedes the text tables, so every existing offset
+becomes `trailer + extras_len + y2_len`. `XYY2` carries, in this order:
+
+- scale: `kind u32, lo f64, hi f64, constant f64, mask_nonpositive u8, pad[3]`;
+- chrome: one `SceneAxisChromeStyle` record packed by the same writer/reader as
+  the y record (`scene.rs:1380` region), side = right;
+- **resolved metrics** (new, canonical for y2 only): `tick_label_size f64,
+  label_size f64, tick_padding f64, text_flags u32` (two-bit italic/bold for
+  tick labels and title, same encoding as XYCO), `tick_rgba [u8;4]`,
+  `title_rgba [u8;4]`, `present u8` (bit 0 metrics, 1 tick paint, 2 title paint),
+  `pad[3]`;
+- ticks: `major_count u32 (u32::MAX = auto)`, `minor_count u32`, f64 values,
+  `labels_len u32` + NUL-joined labels;
+- text: `title_len u32` + UTF-8, `format_len u32` + grammar;
+- policy: `tick_strategy u8, tick_anchor u8, anchor_authored u8, category u8,
+  min_gap f64, angle f64 (NaN = none)`.
+
+Bounds mirror y (`MAX_AXIS_TICKS`, `MAX_SCENE_TEXT_BYTES`,
+`MAX_SCENE_CHROME_LENGTH`). The metrics live on the Scene because the XYST
+panel record is full and because y2 has no legacy "static-only compat" to
+preserve; x/y keep the #1019 overlay path unchanged.
+
+### 2.2 Records
+
+`SCENE_BATCH_RECORD_BYTES` stays 56. Each record gains a **`Y2_SCALE` bit** in
+the existing flag/tag byte (implementer confirms the free bit against the
+decoder's reserved-zero check; the `EncodedRecord` fields `scene.rs:9531-9540`
+show `annotation_tag`/`symbol` as candidates). Set while `has_y2` is clear →
+`SceneError::Length`. Decode, pick/hover inversion and the geographic rebuild
+select the scale from this bit; encode→decode→encode is byte-identical.
+
+The same bit rides the host-authored 56-byte XYAS rows (same record layout),
+so **XYAS stays v1** and `_scene_unpack.py:161` / `scene.js:5990` are
+untouched. Rust rejects the bit when XYCF has no `XYY2` sidecar
+(`EncodeAssembledCode::Payload`). Fallback only if no bit is free: XYAS v2
+with a trailing selector column, updating both unpackers in PR 1.
+
+### 2.3 Ingress
+
+- **XYCF v1**: header gains `has_y2` in a reserved u32 (`scene_xycf_pack.rs`
+  header struct, offset confirmed by the implementer) plus an `XYY2` sidecar at
+  the end of the concat order with exactly §2.1's facts (chrome record, resolved
+  metrics/paints/flags, ticks, title, format, policy). `xyg_scene_xycf_pack`
+  gains `y2_ptr, y2_len`; null/0 = no y2.
+- **XYFS**: axis id **2 = y2** admitted when `side == right` and its key set ⊆
+  y's (`scene_export.rs:1581-1597`); `n_axes ∈ {2,3}`; traces with `y_axis ==
+  "y2"` no longer raise `XYFS_TRACE_NON_PRIMARY_AXIS` (`:1494,1711`).
+- **XYCS/XYCO** (1019 `static_chrome_style.rs:369-466`): XYCS flag **bit 2 =
+  has y2**, then a third `(style, minor_style)` pair after y. XYCO appends y2
+  tick paint, y2 title paint, three y2 sizes, and two more consumed-key lists.
+  `chrome_text` bits: title/x/y flags 0..9, paints 10..13 unchanged (1019 mask
+  `0x3fff`); **y2 title flags 14..15, y2 tick flags 16..17, y2 tick paint 18,
+  y2 title paint 19** (Sol's note that 14..17 are not paint bits is correct;
+  r1's numbering was wrong). Hosts copy these into XYY2, not into XYST.
+
+### 2.4 ABI
+
+`xyg_scene_xycf_pack` (new args), `xyg_static_chrome_style` (longer XYCO),
+`xyg_scene_figure_support_materialize` (axis-code docs) change: `ABI_VERSION`
+385, `python3 scripts/gen_abi_manifest.py --write`, `BROWSER_PAINTER_VERSION`
+16 / `BROWSER_PAINTER_HEADER_BYTES` regenerated into
+`js/src/wasm_abi_generated.ts`. No hand edits to generated files.
+
+## 3. Rust layout and painting (blocker 4)
+
+Order on the static path, both hosts:
+
+1. Host resolves chrome style through XYCO (already before Scene encode on
+   #1019: `resolve_chrome_style` at `_static_document.py` `project_figure`
+   precedes `_scene_v3._public_scene_or_reason`; Node mirrors in
+   `figureChromeStyle`, `scene.js:2567`).
+2. Host copies y2's XYCO outputs into the `XYY2` sidecar; x/y outputs keep
+   riding the XYST panel record as today.
+3. `encode_assembled` builds `y2_scale` with the shared vertical span and
+   `widen_gutters` (`scene_encode_assembled.rs:595-636`) gains a y2 branch:
+   `margin_right = max(margin_right, 8 + tick_out + tick_padding + widest
+   visible y2 label advance at tick_label_size + (title ? gap + label_size ×
+   1.25 : 0))`. Measurement uses `scene_text_advance` at the resolved size
+   (fallback 12.0 as for y). Auto ticks are produced for measurement by the
+   same `resolved_axis_ticks(scale, length, false, ...)` (`scene.rs:1640`)
+   with `length = height - margins`, so measurement and paint see one ladder.
+   `chrome.margin_right` arriving from `static_panel_chrome` already includes
+   `compat_layout::right_y_room()` for `RIGHT_SECONDARY`
+   (`static_panel_chrome.rs:238`, `compat_layout.rs:151`, 54/42 px); the
+   `max` keeps it as the floor. No relayout after decode is needed.
+4. Expansion picks the scale per record from `Y2_SCALE`.
+5. Drawing: extract the y-axis emission in `SceneDocument::to_svg`
+   (`scene.rs:13454` on 1019) and the raster display list into
+   `emit_y_axis(scale, chrome, metrics, ticks, title, side)`; call for y (left)
+   and y2 (right): spine at `layout.right`, ticks outward, labels anchored
+   `start` at `right + tick_out + padding`, title rotated +90° in the right
+   gutter, **no y2 grid** (Matplotlib default; recorded in §28). PDF follows
+   SVG. y2 text uses the styled text command #1019 introduces, with XYY2's
+   sizes/paints/flags.
+
+Tick ownership (accurate): hosts never tick. Python `Figure._range()` already
+calls Rust autorange (`python/xyg/_figure_autorange.py:65-67`); explicit
+majors/labels pass through; auto majors are Rust f64 ticks via
+`resolved_axis_ticks`, parameterized by axis, not copied. Live ticks are
+Rust/WASM-owned and TypeScript fails closed without them
+(`js/src/50_chartview.ts:1434-1466`); the §4 projection feeds that same slot
+for y2.
+
+## 4. XYPB v16 and the browser reader (blocker 2)
+
+`to_browser_painter` (`scene.rs:15116`): after the y axis block (176..264)
+insert an 88-byte **y2 axis block** of identical layout; shift the text-length
+words, legend/colorbar/scene-label lengths and all later offsets by 88; use the
+reserved word (old 276..280) as `y2_title_len`; add `y2_tick_count` beside the
+x/y tick counts; the y2 tick run follows y's with pixel = `y2_scale.pixel`
+(`browser_ticks(false, self.y2_scale, resolved y2 ticks)`); the y2 title is
+`text[3]`. When `has_y2` is clear the block is zero, counts 0, title empty,
+`axes.y2` omitted. Each 64-byte trace descriptor gains a `y_axis` byte
+(0 = y, 1 = y2) in a byte the TS reader currently requires to be zero.
+
+`js/src/48_wasm_scene.ts`: header check uses the regenerated constants
+(`:33`); `axis("y2", [bottom, top], xTickCount + yTickCount, y2TickCount,
+false, chrome + 200)` with `tick_sides` right, `label: text[3]`; traces get
+`y_axis: "y2"` from the descriptor byte (`:179`); spec emits `y2_axis` and
+`axes.y2` in the shape the live client already consumes
+(`57_viewstate.ts:310,550`). `hydrateWasmPainter`'s borrowed-surface guard is
+unchanged (y2 chrome on a geo surface is rejected by `padding !== 0` already).
+
+## 5. Version readers and fixtures (blocker 1)
+
+PR 1 replaces every version literal with the owning constant:
+TS readers import `XYG_WASM_SCENE_VERSION`; Node readers call
+`sceneVersion()`; Python readers use `_native.scene_version()`. Regenerate
+`tests/fixtures/graphforge/scene32_refresh.json`,
+`graph_static_export_scene32_refresh.json`, `geo_cross_host.json` and any
+fixture the Rust `fixture refresh` tests write (`scene.rs:16771` pattern), via
+their existing refresh scripts. Add a source guard test
+(`tests/test_scene_version_literals.py`) grepping `js/src`, `packages/xy-node/src`,
+`python/xyg` (excluding generated files) for `XYGS` checks against a numeric
+literal. Spec: `spec/design/scene-ir.md` version table and the geo transport
+pages that quote "Scene32" (`geo-mixed-transport.md`, `geo-frozen-export.md`,
+`geo-spatial-index.md`, `geo-linked-state.md`) become "current Scene version".
+
+## 6. PR sequence — every PR leaves `main` green (blocker 3)
+
+Rebase onto `main` after #1019 lands; do not stack.
+
+1. **PR 1 — atomic format PR.** Rust: v33 + `XYY2`, `Y2_SCALE`, XYCF `XYY2`
+   sidecar, XYFS id 2, XYCS/XYCO y2, `widen_gutters`, `emit_y_axis`, XYPB v16,
+   ABI 385 in the original draft (shipped as 387; see the implementation record) + generated manifests. Hosts, mechanical only: `_native.py:3302`
+   wrapper passes `None, 0` for y2 (and reads the longer XYCO in
+   `_static_document.py:626-662` / `scene.js figureChromeStyle`); all §5 version
+   readers; fixtures; `48_wasm_scene.ts` reader; `node js/build.mjs`. Hosts
+   still send no `XYY2`, so y2 figures keep failing closed with the existing
+   reason. Specs: `scene-ir.md`, `static-chrome-style.md`, `host-parity.md`.
+   Justification: the version bumps already force every reader, both wrappers
+   and all fixtures to move together; splitting them is what broke r1. Size is
+   bounded because no host policy is included.
+2. **PR 2 — Python host.** `_scene_marshal.py` packs `XYY2` from
+   `figure.axis_options["y2"]`, `_range("y2")`, tickers, title, format, and the
+   XYCO y2 outputs; `_layout.py:1195` admits `{"y2"}`/right; XYAS rows set the
+   bit from `trace.y_axis`; pyplot `twinx()` seeds `_axis["y2"]["style"]`
+   through the function that seeds y (rc `ytick.*`, `axes.labelcolor`,
+   `axes.edgecolor`); corpus 26 enabled; `compat.md`, `chart-grammar.md`.
+3. **PR 3 — Node host + cross-host.** `scene.js` `packFigureSupport` (`:3991`,
+   axis code 2), flag test (`:7085`), `packChromeAxis` (`:2458`) for y2,
+   `XYY2` packer, XYAS bit, third XYCS pair; cross-host byte-identity test;
+   `host-delegation-corpus.json`.
+
+PRs 2 and 3 run in parallel worktrees after PR 1; PR 3's cross-host test is the
+gate for the issue's "dual axes" line.
+
+## 7. Tests (each fails on revert)
+
+- **Rust**: y2 row expands with `y2_scale`; `Y2_SCALE` without `has_y2` →
+  `Length`; bit in XYAS without `XYY2` → `Payload`; v32 bytes → `Version`;
+  v33 round trip byte-identical; `widen_gutters` grows `margin_right` for
+  (a) styled auto ticks at `tick_label_size = 20`, (b) explicit long labels
+  (`"1,000,000 units"`), (c) padding 12, and never below the compat floor;
+  SVG: right labels have `x > layout.right` and no label exceeds `width`;
+  `to_browser_painter` on a twin scene has a non-zero y2 block, `y2_tick_count
+  > 0`, descriptor byte 1 for y2 traces; XYCS bit 2 without entries →
+  `_HEADER`; `chrome_text` y2 bits 14..19 round-trip.
+- **Tick parity**: equal-domain y and y2 (same lo/hi, auto) produce identical
+  tick values in SVG, raster display list, and XYPB y/y2 runs; and the
+  WASM live result for `y2` equals the static ladder (same `resolved_axis_ticks`
+  call).
+- **Browser**: `tests/browser/wasm_foundation_page.mjs` renders a v33 twin
+  scene through `renderWasmScene`; asserts `spec.axes.y2.range`, right-side
+  tick labels in the chrome layer, one trace with `y_axis === "y2"`, and no
+  console error; a v32 blob → `XYG_WASM_SCENE_VERSION` status (`lib.rs:1022`).
+- **Geo readers**: existing geo conformance tests pass with regenerated
+  fixtures; source-guard test for literals (§5).
+- **Python**: `tests/test_static_dual_axis.py` — public `y_axis(id="y2",
+  side="right")` + `line(..., y_axis="y2")` → SVG/PNG/PDF; left-side y2 and
+  `x2` rejected with stable reasons; tampered native output changes bytes.
+  Corpus 26 gains focused assertions beyond
+  `tests/pyplot/test_reference_corpus.py:120-136` (ink fraction / bbox): left
+  axis title pixel colour ≈ `tab:blue`, right title ≈ `tab:red`, y2 tick
+  labels use default rc tick colour (not red), one shared x ladder, right
+  labels fully inside the canvas.
+- **Cross-host**: `tests/test_static_dual_axis_cross_host.py` +
+  `packages/xy-node/scripts/static_dual_axis_cross_host.mjs`: byte-identical
+  SVG/PNG/PDF, identical `XYY2`/XYCS bytes, identical reasons, no y2 table in
+  either host.
+
+## 8. Scope boundary
+
+In: one right-side `y2`, linear/log/symlog, auto/explicit ticks, title,
+format, chrome style and slots, static and WASM-live paint.
+Out (fail-closed, stable reasons): `x2`/`twiny`, left-side `y2`, >1 extra y,
+`secondary_yaxis()` conversions, y2 grid, y2 + colorbar on one panel
+(`XYG_SCENE_UNSUPPORTED_Y2_COLORBAR`). Overlay-panel alternative remains
+rejected for the r1 §5 reasons (hosts would need Rust's final margins).
+
+---
+
+## Final addendum — orchestrator resolution of Sol round-2 findings (2026-10-20)
+
+Sol round 2 marked round-1 blockers 1, 3, 4 RESOLVED and left two blockers with precise resolutions. The orchestrator closes them here; these override conflicting text above.
+
+**F1 — XYPB y2 chrome is complete, not an identical axis block.** XYPB v16 carries, after the 88-byte y2 axis block, a fixed y2 chrome-text record holding the resolved XYCO outputs for y2: tick-label size (f32), title size (f32), tick padding (f32), tick-label paint (RGBA u8×4), title paint (RGBA u8×4), text flags (u32: bold/italic per slot), with explicit presence bits; reserved bytes must be zero. `js/src/48_wasm_scene.ts` reads these into `axes.y2` and applies them, rather than reusing the shared `labelSize`/single paint. Tests through `renderWasmScene`: (a) red y2 title with default-colored y2 ticks renders distinct colors; (b) y2 tick size 20 / padding 12 changes measured label geometry; (c) primary-axis rendering unchanged (existing fixtures).
+
+**F2 — Right-only admission is Rust-owned via an observed side.** `FigureSupportAxisObs` (crates/xyg-engine/src/scene_figure_support_materialize.rs:~100) gains the authored axis side; the XYFS axis header carries it in one of the three currently zero bytes (scene_figure_support_pack.rs:~47), with defined codes and the remaining bytes still zero. Rust admits axis id 2 only when side == right, and returns stable reasons for x2, left y2, multiple extras and tick-only secondary axes. Python `_layout.py:~1193` and Node `scene.js:~7085` do NOT add admission conditions: they translate axis id/side into the observation and surface Rust's reason. Allowed host work is limited to axis-code translation, XYCO copying, selector marshalling and pyplot rc seeding. Test: identical left-y2 and right-y2 inputs from Python and Node yield the same Rust decision and the same reason bytes.
+
+**F3 — Selector bit reservation.** Bit `0x40` of byte 3 is reserved as the y2 selector in both XYAS rows (scene_pack.rs:~161) and XYGS records (scene.rs:~4080). It is preserved through Rust packing and expansion and masked off before every annotation-tag comparison (tags 0..6 and 0x80). Tests: an annotation-tagged record on y2 keeps both its tag and selector; a non-y2 record is unchanged.
+
+**F4 — PR 1 hygiene (non-blocking from Sol, adopted).** PR 1 also updates literal-version test assertions (e.g. tests/test_scene_ir.py:~237, ~1010), not only the JSON fixtures. It regenerates WASM constants with `scripts/gen_wasm_abi.py` in addition to `scripts/gen_abi_manifest.py --write`.
+
+**Sequencing:** implementation starts after PR #1019 (#1004) merges, because y2 reuses its XYCS/XYCO projection. PR 1 (atomic format) → PR 2 (Python marshal + pyplot) → PR 3 (Node marshal + cross-host byte identity). Each PR leaves main green.
+
+---
+
+## PR 1 implementation record (format PR)
+
+PR 1 ships the atomic format and Rust policy with hosts still fail-closed for
+y2: Scene v33, XYPB v16 (`WASM_ABI_VERSION` 34), `ABI_VERSION` 387, the browser
+reader, every Scene-version reader, regenerated fixtures, and Rust-owned
+admission. The normative wire layouts are in `scene-ir.md` (Secondary
+right-hand y axis). Where the implementation refines this document:
+
+- **Trailer flag.** `has_y2` is trailer byte 15 bit **5** (`0x20`). Bits 1–4 of
+  that byte already carry the x/y collision category/anchor flags (§2.1 named
+  bit 1).
+- **Record selector.** Byte 3 bit `0x40` of XYGS records and XYAS rows (§2.2/F3);
+  XYAS stays v1. Decoded records keep the masked annotation tag and a separate
+  `y2` flag, so no annotation-tag comparison can see the selector.
+- **`XYCF` ingress.** The reserved header word at 284..288 carries the *byte
+  length* of the trailing `XYY2` sidecar (non-zero = present) so the sidecar is
+  self-locating after the variable collision extras. `xyg_scene_xycf_pack` gains
+  `y2_ptr, y2_len`; the bulk `xyg_scene_chrome_pack` that the hosts actually call
+  gains the same pair so PRs 2 and 3 are host-only.
+- **`format`.** The numeric-format grammar is part of the sidecar and the Scene
+  block, but it is materialized into explicit ticks and labels at encode exactly
+  as for y, so consumers never interpret it. Time-format y2 axes are not
+  admitted (tick kind numeric only).
+- **XYFS (F2).** Axis ids 2 = y2, 3 = x2; the second axis-header byte carries
+  the authored side using the existing `XYEP` side codes; trace flag bit 13
+  marks y2 traces, so "tick-only secondary" (a y2 axis with no trace) is
+  detectable. `FigureSupportAxisObs` carries `side`; both bulk wrappers pass it.
+  XYFS observation bit 10 and the materialize argument `has_colorbar` report a
+  colorbar of any kind, so y2 + a supported colorbar is rejected by Rust
+  (`_Y2_COLORBAR`) rather than looking like no colorbar.
+- **XYPB v16 (F1).** Header 420 bytes; layout in `scene-ir.md`. The y2 chrome-text
+  record stores sizes as f32 (the browser works in f32); the Scene keeps f64.
+- **XYCS/XYCO.** The extended XYCO is emitted only when XYCS flag bit 2 is set,
+  so host XYCO readers need no change until the hosts send a y2 pair (PRs 2/3).
+- **Title direction.** The y2 title is drawn rotated +90° (clockwise), per §3;
+  Matplotlib's default for a right-hand label is rotation 90° counter-clockwise,
+  which is a one-line flip in `push_svg_chrome_text` / the raster text command
+  if the corpus comparison asks for it.
+- **Readers.** Every literal-32 Scene reader now uses its owning constant (TS
+  `XYG_WASM_SCENE_VERSION`; the Node geo wire files, which the conformance pages also
+  serve to browsers and so cannot import native bindings, carry the same value as a
+  generated constant that `--check` regeneration keeps current; Python
+  `scene_version()`), enforced by `tests/test_scene_version_literals.py`.

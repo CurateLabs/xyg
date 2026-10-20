@@ -291,6 +291,8 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
     y_tick_labels: *const XygStringRef,
     colorbar_stops: *const u8,
     colorbar_ticks: *const f64,
+    y2: *const u8,
+    y2_len: usize,
     out: *mut u8,
     out_cap: usize,
     out_len: *mut usize,
@@ -302,6 +304,9 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
     if out_cap > 0 && out.is_null() {
         return -1;
     }
+    let Some(y2_bytes) = scene_optional_bytes(y2, y2_len) else {
+        return -1;
+    };
     let Some(title) = string_ref_opt(&input.title) else {
         return -1;
     };
@@ -479,6 +484,7 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
         plot_background: abi!(opt_str(&input.plot_background)),
         legend,
         colorbar,
+        y2: y2_bytes,
     };
     match scene_chrome_pack::scene_chrome_pack(&pack_input) {
         Ok(packed) => {
@@ -511,7 +517,11 @@ pub struct XygFigureSupportAnnotationObs {
 /// Axis observation for ``xyg_scene_figure_support_materialize`` (ABI 322).
 #[repr(C)]
 pub struct XygFigureSupportAxisObsIn {
+    /// 0 = x, 1 = y, 2 = secondary y (`y2`), 3 = secondary x (`x2`), 255 = other.
     pub axis_code: u8,
+    /// Authored side: 0 = not authored, 1 bottom, 2 left, 3 top, 4 right, 255
+    /// other. Rust alone decides whether a secondary axis on that side is admitted.
+    pub side: u8,
     pub key_count: u32,
     pub strategy: XygStringRef,
     pub collision: XygStringRef,
@@ -560,6 +570,7 @@ pub struct XygFigureSupportTraceObsIn {
 pub unsafe extern "C" fn xyg_scene_figure_support_materialize(
     polar: i32,
     colorbar_unsupported: i32,
+    has_colorbar: i32,
     has_custom_font: i32,
     has_browser_css: i32,
     has_extra_legends: i32,
@@ -632,6 +643,7 @@ pub unsafe extern "C" fn xyg_scene_figure_support_materialize(
             keys_at = at;
             axis_obs.push(scene_figure_support_materialize::FigureSupportAxisObs {
                 axis_code: row.axis_code,
+                side: row.side,
                 keys,
                 tick_label_strategy: abi!(opt_str(&row.strategy)),
                 collision: abi!(opt_str(&row.collision)),
@@ -696,6 +708,7 @@ pub unsafe extern "C" fn xyg_scene_figure_support_materialize(
     let materialize = scene_figure_support_materialize::SceneFigureSupportMaterializeIn {
         polar,
         colorbar_unsupported,
+        has_colorbar,
         has_custom_font,
         has_browser_css,
         has_extra_legends,

@@ -137,6 +137,9 @@ pub use scene_export::{
     scene_public_export_reason, ExportPackError,
 };
 pub mod scene_chrome;
+pub mod scene_y2;
+#[cfg(test)]
+mod scene_y2_tests;
 pub use scene_chrome::{pack_figure_chrome, pack_figure_chrome_from_sidecars, ChromePackError};
 pub mod scene_trace_compile;
 pub use scene_trace_compile::{pack_trace_compile, TraceCompileCode, TraceCompileError};

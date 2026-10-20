@@ -170,6 +170,8 @@ pub struct SceneChromePackInput<'a> {
     pub plot_background: Option<&'a str>,
     pub legend: ChromeLegendInput<'a>,
     pub colorbar: Option<ChromeColorbarInput<'a>>,
+    /// Optional `XYY2` secondary-y facts appended to the packed `XYCF`.
+    pub y2: &'a [u8],
 }
 
 fn tick_strategy_code(axis: &ChromeCollisionAxisInput<'_>) -> u8 {
@@ -590,6 +592,7 @@ pub fn scene_chrome_pack(input: &SceneChromePackInput<'_>) -> Result<Vec<u8>, i3
         colorbar_ticks: &cb_ticks,
         colorbar_title: cb_title,
         collision_extra: &collision_extra,
+        y2: input.y2,
     };
     scene_xycf_pack(&header, &sidecars)
 }
@@ -657,6 +660,7 @@ mod tests {
             plot_background: None,
             legend: ChromeLegendInput::default(),
             colorbar: None,
+            y2: &[],
         };
         let packed = scene_chrome_pack(&input).unwrap();
         assert_eq!(&packed[..4], b"XYCF");

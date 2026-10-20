@@ -258,7 +258,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging enforces 1,472 KiB raw / 608 KiB gzip limits. The release compiler and pinned Binaryen 132 `-O3
+packaging enforces 1,504 KiB raw / 616 KiB gzip limits (raised from 1,472 / 608 KiB by the Scene v33 secondary-y axis, #1006: measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -440,8 +440,10 @@ split connected line/area geometry. Painter v14 retains only the annotation tag
 in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
-Painter contract v15 begins with `XYPB`, independent painter version 15, canonical
-Scene v32 (`SCENE_VERSION = 32`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v16 begins with `XYPB`, independent painter version 16, canonical
+Scene v33 (`SCENE_VERSION = 33`), a 420-byte header (v16 inserts the 88-byte y2 axis
+block at 264, a 32-byte y2 chrome-text record at 352, and moves the length words to 384;
+see `scene-ir.md` for the full map), 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v23
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor

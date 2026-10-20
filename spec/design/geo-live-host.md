@@ -61,7 +61,7 @@ Nonce advances only after successful candidate publication, permitting retry of
 an unsuccessful preparation; successful history cannot be replayed as new CAS.
 
 Prepare returns a 64-byte tag (same header/nonce, candidate owner @40 and sequence
-@48), immutable SceneData and ordinary XYPB15 painter. Exact repeated Prepare
+@48), immutable SceneData and ordinary the current XYPB version painter. Exact repeated Prepare
 while that candidate remains uncommitted returns the same authority without
 rerunning a source query or native Data read. Lost/malformed replies retain the
 small original request; recovery resolves its trusted tag then aborts if it was

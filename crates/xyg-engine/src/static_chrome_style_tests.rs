@@ -40,6 +40,7 @@ struct Frame<'a> {
     slots: Vec<(&'a str, Items<'a>)>,
     x: (Items<'a>, Items<'a>),
     y: (Items<'a>, Items<'a>),
+    y2: Option<(Items<'a>, Items<'a>)>,
 }
 
 fn frame<'a>() -> Frame<'a> {
@@ -50,6 +51,7 @@ fn frame<'a>() -> Frame<'a> {
         slots: vec![],
         x: (vec![], vec![]),
         y: (vec![], vec![]),
+        y2: None,
     }
 }
 
@@ -57,7 +59,12 @@ impl Frame<'_> {
     fn pack(&self) -> Vec<u8> {
         let mut out = b"XYCS".to_vec();
         out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&(u32::from(self.title) | u32::from(self.legend) << 1).to_le_bytes());
+        out.extend_from_slice(
+            &(u32::from(self.title)
+                | (u32::from(self.legend) << 1)
+                | (u32::from(self.y2.is_some()) << 2))
+                .to_le_bytes(),
+        );
         out.extend_from_slice(&0u32.to_le_bytes());
         entries(&mut out, &self.root);
         out.extend_from_slice(&(self.slots.len() as u32).to_le_bytes());
@@ -65,7 +72,7 @@ impl Frame<'_> {
             text(&mut out, name);
             entries(&mut out, items);
         }
-        for (style, minor) in [&self.x, &self.y] {
+        for (style, minor) in [&self.x, &self.y].into_iter().chain(self.y2.as_ref()) {
             entries(&mut out, style);
             entries(&mut out, minor);
         }
@@ -107,7 +114,8 @@ fn parse(bytes: &[u8]) -> Resolved {
         }
         removed.push(keys);
     }
-    assert_eq!(at, bytes.len());
+    // A y2 tail (XYCO flag bit 1) is parsed by `parse_y2`.
+    assert!(at == bytes.len() || u32_at(8) & 2 != 0);
     Resolved {
         chrome_text: u32_at(12),
         paints,
@@ -370,7 +378,7 @@ fn framing_is_bounded_and_exact() {
     bad[4] = 2;
     assert_eq!(resolve_packed(&bad), Err(ChromeStyleError::Version));
     let mut bad = bytes.clone();
-    bad[8] = 4;
+    bad[8] = 8;
     assert_eq!(resolve_packed(&bad), Err(ChromeStyleError::Flags));
     assert_eq!(
         resolve_packed(&vec![0; 300 * 1024]),
@@ -389,4 +397,105 @@ fn framing_is_bounded_and_exact() {
     let mut huge = frame();
     huge.root = vec![("--chart-text", V::Null); 65];
     assert_eq!(reason(&huge), ChromeStyleError::Limit);
+}
+
+/// The y2 tail of an XYCO frame: tick paint, title paint, `(tick, title,
+/// padding)`, then the style / minor-style key lists.
+struct Y2Tail {
+    paints: [[u8; 4]; 2],
+    metrics: [f64; 3],
+    removed: Vec<Vec<String>>,
+}
+
+fn parse_y2(bytes: &[u8]) -> Y2Tail {
+    let u32_at = |at: usize| u32::from_le_bytes(bytes[at..at + 4].try_into().unwrap());
+    let f64_at = |at: usize| f64::from_le_bytes(bytes[at..at + 8].try_into().unwrap());
+    assert_eq!(u32_at(8) & 2, 2, "XYCO flags bit 1 marks the y2 tail");
+    // Skip the x/y body: 92 bytes of fixed fields, then the four key lists.
+    let mut at = 92;
+    for _ in 0..4 {
+        let count = u32_at(at) as usize;
+        at += 4;
+        for _ in 0..count {
+            at += 4 + u32_at(at) as usize;
+        }
+    }
+    let mut paints = [[0u8; 4]; 2];
+    for (index, paint) in paints.iter_mut().enumerate() {
+        paint.copy_from_slice(&bytes[at + 4 * index..at + 4 * index + 4]);
+    }
+    at += 8;
+    let metrics = [f64_at(at), f64_at(at + 8), f64_at(at + 16)];
+    at += 24;
+    let mut removed = Vec::new();
+    for _ in 0..2 {
+        let count = u32_at(at) as usize;
+        at += 4;
+        let mut keys = Vec::new();
+        for _ in 0..count {
+            let n = u32_at(at) as usize;
+            keys.push(String::from_utf8(bytes[at + 4..at + 4 + n].to_vec()).unwrap());
+            at += 4 + n;
+        }
+        removed.push(keys);
+    }
+    assert_eq!(at, bytes.len());
+    Y2Tail {
+        paints,
+        metrics,
+        removed,
+    }
+}
+
+#[test]
+fn y2_flag_without_its_entry_pair_is_a_header_error() {
+    let mut bytes = frame().pack();
+    bytes[8..12].copy_from_slice(&5u32.to_le_bytes());
+    assert_eq!(resolve_packed(&bytes), Err(ChromeStyleError::Header));
+    let mut unknown = frame().pack();
+    unknown[8..12].copy_from_slice(&8u32.to_le_bytes());
+    assert_eq!(resolve_packed(&unknown), Err(ChromeStyleError::Flags));
+}
+
+#[test]
+fn y2_facts_ride_their_own_chrome_text_bits_and_xyco_tail() {
+    let mut plain = frame();
+    plain.slots = vec![
+        (
+            "tick_label",
+            vec![("font-style", V::Text("italic")), ("font-size", V::Text("13px"))],
+        ),
+        ("axis_title", vec![("font-weight", V::Text("bold"))]),
+    ];
+    let base = resolve(&plain);
+    let mut twin = frame();
+    twin.slots = plain.slots.clone();
+    twin.y2 = Some((
+        vec![
+            ("label_color", V::Text("#ff0000")),
+            ("tick_label_size", V::Num(20.0)),
+            ("tick_padding", V::Num(12.0)),
+        ],
+        vec![("tick_size", V::Num(3.0))],
+    ));
+    let bytes = resolve_packed(&twin.pack()).unwrap();
+    let resolved = parse(&bytes);
+    // x/y facts are untouched by the third axis and never carry y2 bits.
+    assert_eq!(resolved.chrome_text & 0x3fff, base.chrome_text & 0x3fff);
+    assert_eq!(resolved.paints, base.paints);
+    assert_eq!(resolved.metrics, base.metrics);
+    // y2 title flags 14..15 (bold = 2), tick flags 16..17 (italic = 1), tick
+    // paint-present 18 (absent), title paint-present 19 (red).
+    assert_eq!((resolved.chrome_text >> 14) & 3, 2);
+    assert_eq!((resolved.chrome_text >> 16) & 3, 1);
+    assert_eq!((resolved.chrome_text >> 18) & 1, 0);
+    assert_eq!((resolved.chrome_text >> 19) & 1, 1);
+    assert_eq!(resolved.chrome_text >> 20, 0);
+    let tail = parse_y2(&bytes);
+    assert_eq!(tail.paints, [[0; 4], [255, 0, 0, 255]]);
+    assert_eq!(tail.metrics, [20.0, 12.0, 12.0]);
+    assert_eq!(tail.removed[0], ["tick_label_size", "tick_padding"]);
+    assert_eq!(tail.removed[1], ["tick_size"]);
+    // Without a y2 pair the record is exactly the legacy XYCO.
+    assert_eq!(parse(&resolve_packed(&plain.pack()).unwrap()).chrome_text >> 14, 0);
 }

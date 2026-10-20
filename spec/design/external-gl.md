@@ -108,7 +108,7 @@ borne by applications choosing MapLibre; XYG adds none of them to its bundle.
 This is ownership/correctness evidence, not a geographic scale/performance
 benchmark, pitched-camera proof, or polygon interaction/decoration proof.
 
-The XYPB v15 primitive/image proof is separate from the worker lifecycle probe:
+The XYPB (v16) primitive/image proof is separate from the worker lifecycle probe:
 
 ```sh
 XYG_M6_PAINTER_FIXTURE=/tmp/xyg-m6-painter.bin \

@@ -12,7 +12,7 @@ command27 even for an empty selected ID plane.
 The existing retained frame prepare export dispatches on private Data kind and
 exact publication sequence. Generic authored Scene bytes do not gain retained
 authority. All allocation follows private owner/snapshot validation. The same
-Scene decoder and XYPB15 compiler are reused; Rust cell projection/palette remain
+Scene decoder and the current XYPB version compiler are reused; Rust cell projection/palette remain
 authoritative.
 
 The fixed16MiB overview Data lease persists with its immutable owner and reserves
@@ -42,7 +42,7 @@ count:u32=1, sidecarBytes:u32=2144, zero8. The existing80B layer record follows.
 It binds the complete source digest/generation/rows/geometry/CRS and layer/style/
 state revisions; the base header binds exact camera/time/camera/time revisions.
 
-One2144B XYOF record then precedes the unchanged Scene32:
+One2144B XYOF record then precedes the unchanged the current Scene version:
 
 | Offset | Type | Meaning |
 |---|---|---|

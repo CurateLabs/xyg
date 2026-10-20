@@ -103,7 +103,7 @@ authority. This slice does not implement hover/focus, brush geometry, arbitrary
 per-row scalar styles or a separate selected mark overlay.
 
 Default `None` and explicit empty state produce byte-identical legacy Scene
-output, including direct, Cluster and Density cases. Scene32 and painter15
+output, including direct, Cluster and Density cases. the current Scene version and the current painter version
 framing are unchanged; this slice adds no ABI or wire contract.
 
 ## Allocation and ownership

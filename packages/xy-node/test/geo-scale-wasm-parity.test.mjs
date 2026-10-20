@@ -43,7 +43,7 @@ async function indexed(frame,{bridge,readChunk,query,style},snapshotBridge){
   return {packet:Buffer.from(packet).toString('hex'),stats:completed.indexStats,rows:await rows(owned,{bridge,readChunk}),frozen:await freeze(snapshotBridge,owned)};
  }finally{if(owned)await owned.dispose();if(session)await bridge.execute(encodeGeoScaleRequest({command:10,handle:session}));await bridge.execute(encodeGeoScaleRequest({command:10,handle:h}));}
 }
-test('packaged ABI33 retained source and frozen snapshot equal actual native bytes',async()=>{
+test('packaged ABI34 retained source and frozen snapshot equal actual native bytes',async()=>{
  let expectedSnapshot,expectedRows,expectedIndex;const expected=await fixture(undefined,async(frame,source)=>{expectedSnapshot=await freeze(nativeGeoSnapshotBridge(budget.processorBytes),frame);expectedRows=await rows(frame,source);expectedIndex=await indexed(frame,source,nativeGeoSnapshotBridge(budget.processorBytes));});
  const{instance}=await WebAssembly.instantiate(readFileSync(artifact),{}),x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);let sequence=0;
  assert.ok(h);assert.equal(x.xyg_wasm_geo_transport_acquire(h),0);
@@ -64,7 +64,7 @@ test('packaged ABI33 retained source and frozen snapshot equal actual native byt
   try{await assert.rejects(bridge('snapshot').execute(encodeGeoSnapshotRequest(2,snapshot,{budget:budget.processorBytes,format:'png'})),error=>error.message==='XYG_GEO_SNAPSHOT_UNSUPPORTED_EXPORT');}
   finally{await bridge('snapshot').execute(encodeGeoSnapshotRequest(3,snapshot));}
   assert.equal(x.xyg_wasm_geo_frame_prepare(h,++sequence,frame.handle,1n),0);
-  const p=new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h));assert.equal(new TextDecoder().decode(p.subarray(0,4)),'XYPB');assert.equal(new DataView(p.buffer,p.byteOffset).getUint32(4,true),15);
+  const p=new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h));assert.equal(new TextDecoder().decode(p.subarray(0,4)),'XYPB');assert.equal(new DataView(p.buffer,p.byteOffset).getUint32(4,true),16);
  });assert.deepEqual(actual,expected);
  }finally{assert.equal(x.xyg_wasm_instance_dispose(h),0);}
 });
