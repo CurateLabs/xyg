@@ -1523,9 +1523,10 @@ cartesian `tick_label_strategy` / `collision` (#304). Collision rooms
 clamp only when compact/authored pads already fit `PlotLayout`;
 overflowing compact pads stay `XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim
 auto/hide/rotate/stagger/preserve stay refused (`polar-axes.md`).
-Secondary
-axes stay fail-closed (`Scene v12 figure compilation currently supports
-exactly x/y axes`). Hosts still choose tick families via
+Only one
+right-hand secondary y axis (`y2`, Scene v33) is admitted, by Rust; `x2`, left y2
+and extra axes stay fail-closed with stable `XYG_SCENE_UNSUPPORTED_*` reasons
+(`design/twinx-secondary-y-axis.md`). Hosts still choose tick families via
 `xyg_scene_axis_ticks` and map values to pixels on the compatibility
 `_svg` path (#276). Polar rim collision strategies stay refused
 (`polar-axes.md`).
