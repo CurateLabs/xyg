@@ -1460,14 +1460,18 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
 
 /// Nearest *visible proper* ancestor of every node ([`COSE_NO_PARENT`] when
 /// none), for a parent forest. Memoized along each climbed chain, so a shared
-/// hidden ancestry is walked once: O(n) instead of O(n x depth).
-pub(super) fn nearest_visible_ancestors(parent: &[u64], visible: &[bool]) -> Vec<u64> {
+/// hidden ancestry is walked once: O(n) instead of O(n x depth). Also returns
+/// the number of parent links followed (at most `2n`), the work the memoization
+/// bounds.
+pub(super) fn nearest_visible_ancestors(parent: &[u64], visible: &[bool]) -> (Vec<u64>, u64) {
     let mut ancestor: Vec<Option<u64>> = vec![None; parent.len()];
     let mut chain = Vec::new();
+    let mut links = 0u64;
     for start in 0..parent.len() {
         let mut node = start;
         // Climb through hidden parents until a node whose answer is known.
         while ancestor[node].is_none() {
+            links += 1;
             let up = parent[node];
             if up == COSE_NO_PARENT || visible[up as usize] {
                 ancestor[node] = Some(up);
@@ -1477,13 +1481,15 @@ pub(super) fn nearest_visible_ancestors(parent: &[u64], visible: &[bool]) -> Vec
             }
         }
         while let Some(below) = chain.pop() {
+            links += 1;
             ancestor[below] = ancestor[parent[below] as usize];
         }
     }
-    ancestor
+    let ancestor = ancestor
         .into_iter()
         .map(|a| a.expect("every node was resolved"))
-        .collect()
+        .collect();
+    (ancestor, links)
 }
 
 /// Append the direct-tier canonical Scene (spec §6.3) to a graph document.
@@ -1611,7 +1617,7 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
     let mut reparented = 0u64;
     if !base.node_parent.is_empty() {
         let visible: Vec<bool> = remap.iter().map(|&dense| dense != NONE_U64).collect();
-        let ancestor = nearest_visible_ancestors(&base.node_parent, &visible);
+        let (ancestor, _) = nearest_visible_ancestors(&base.node_parent, &visible);
         let mut parent = Vec::with_capacity(nodes.len());
         let mut valid = Vec::with_capacity(nodes.len());
         for &node in &nodes {

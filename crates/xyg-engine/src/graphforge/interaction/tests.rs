@@ -451,7 +451,7 @@ fn nearest_visible_ancestors_match_the_walking_definition_on_random_forests() {
         }
         let visible: Vec<bool> = (0..n).map(|_| next(3) == 0).collect();
         assert_eq!(
-            nearest_visible_ancestors(&parent, &visible),
+            nearest_visible_ancestors(&parent, &visible).0,
             naive_nearest_visible(&parent, &visible),
             "round {round}"
         );
@@ -461,7 +461,7 @@ fn nearest_visible_ancestors_match_the_walking_definition_on_random_forests() {
 #[test]
 fn a_deep_shared_hidden_ancestry_is_resolved_in_linear_time() {
     // 100,000 hidden chain nodes, then 100,000 visible children of the bottom
-    // one: the walking definition needs ~10^10 steps, the memoized pass ~10^5.
+    // one.
     let chain = 100_000usize;
     let n = 2 * chain;
     let mut parent = vec![COSE_NO_PARENT; n];
@@ -477,9 +477,13 @@ fn a_deep_shared_hidden_ancestry_is_resolved_in_linear_time() {
     for flag in &mut visible[chain..] {
         *flag = true;
     }
-    let started = std::time::Instant::now();
-    let ancestor = nearest_visible_ancestors(&parent, &visible);
-    assert!(started.elapsed().as_secs() < 5, "quadratic ancestor walk");
+    let (ancestor, links) = nearest_visible_ancestors(&parent, &visible);
+    // Deterministic work bound: every parent link is followed at most twice
+    // (climb, then unwind). The walking definition follows ~10^10.
+    assert!(
+        links <= 2 * n as u64,
+        "quadratic ancestor walk: {links} links"
+    );
     assert!(ancestor[chain..].iter().all(|&a| a == 0));
     assert_eq!(ancestor[1], 0);
     assert_eq!(ancestor[0], COSE_NO_PARENT);
@@ -498,6 +502,17 @@ fn a_malformed_result_id_rejects_the_session_instead_of_reading_as_absent() {
     assert!(GraphIdentity::<Fnv1a>::from_document(&doc).is_err());
     assert_eq!(
         GraphSession::create(&bad, SessionLoad::default(), 1).map(|_| ()),
+        Err(InteractionStatus::Invalid)
+    );
+    // Right element type, invalid UTF-8: also an error, not "no id".
+    let mut utf8 = Builder::new(DOCUMENT_MAGIC);
+    utf8.extend_from(&Container::decode(&good, DOCUMENT_MAGIC).unwrap());
+    utf8.utf8("layer.result_id", 0, "QQ");
+    let mut broken = utf8.finish();
+    let at = broken.windows(2).position(|w| w == b"QQ").unwrap();
+    broken[at..at + 2].copy_from_slice(&[0xff, 0xfe]);
+    assert_eq!(
+        GraphSession::create(&broken, SessionLoad::default(), 1).map(|_| ()),
         Err(InteractionStatus::Invalid)
     );
     // The well-formed absent id still creates a session.
