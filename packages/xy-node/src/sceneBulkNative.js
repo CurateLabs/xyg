@@ -89,6 +89,32 @@ const ChromeColorbarIn = koffi.struct("XygChromeColorbarIn", {
   tick_count: "uint32_t",
 });
 
+const ChromeY2In = koffi.struct("XygChromeY2In", {
+  present: "int32_t",
+  scale_kind: "uint32_t",
+  lo: "double",
+  hi: "double",
+  constant_present: "int32_t",
+  constant: "double",
+  nonpositive_mask: "uint8_t",
+  axis: ChromeAxisIn,
+  collision: ChromeCollisionAxisIn,
+  major_len: "size_t",
+  minor_len: "size_t",
+  tick_label_count: "uint32_t",
+  title: StringRef,
+  format: StringRef,
+  metrics_present: "int32_t",
+  tick_size: "double",
+  title_size: "double",
+  padding: "double",
+  text_flags: "uint32_t",
+  tick_rgba_present: "int32_t",
+  tick_rgba: "uint8_t[4]",
+  title_rgba_present: "int32_t",
+  title_rgba: "uint8_t[4]",
+});
+
 const SceneChromePackIn = koffi.struct("XygSceneChromePackIn", {
   width: "double",
   height: "double",
@@ -137,6 +163,7 @@ const SceneChromePackIn = koffi.struct("XygSceneChromePackIn", {
   legend: ChromeLegendIn,
   colorbar_present: "int32_t",
   colorbar: ChromeColorbarIn,
+  y2: ChromeY2In,
 });
 
 const FigureSupportAnnotationObs = koffi.struct("XygFigureSupportAnnotationObs", {
@@ -283,6 +310,78 @@ function collisionAxis(collision, keep) {
   };
 }
 
+/** Authored secondary y axis (presence and authored values only; Rust owns defaults). */
+function chromeY2(y2, keep) {
+  if (y2 == null) {
+    return {
+      y2: {
+        present: 0,
+        scale_kind: 0,
+        lo: 0,
+        hi: 0,
+        constant_present: 0,
+        constant: 0,
+        nonpositive_mask: 0,
+        axis: chromeAxis({ side_code: 0, tick_sides_mask: 0, label_sides_mask: 0 }).axis,
+        collision: collisionAxis({}, keep),
+        major_len: 0n,
+        minor_len: 0n,
+        tick_label_count: 0,
+        title: { ptr: 0n, len: 0n },
+        format: { ptr: 0n, len: 0n },
+        metrics_present: 0,
+        tick_size: 0,
+        title_size: 0,
+        padding: 0,
+        text_flags: 0,
+        tick_rgba_present: 0,
+        tick_rgba: Uint8Array.of(0, 0, 0, 0),
+        title_rgba_present: 0,
+        title_rgba: Uint8Array.of(0, 0, 0, 0),
+      },
+      major: new Float64Array(0),
+      minor: new Float64Array(0),
+      labelRefs: [],
+    };
+  }
+  const axisPack = chromeAxis(y2.axis);
+  keep.push(...axisPack.keep);
+  const metrics = y2.metrics;
+  const major = y2.major == null ? new Float64Array(0) : Float64Array.from(y2.major, Number);
+  const minor = Float64Array.from(y2.minor ?? [], Number);
+  const labelRefs = (y2.tick_labels ?? []).map((label) => stringRef(label, keep));
+  return {
+    y2: {
+      present: 1,
+      scale_kind: Number(y2.scale_kind),
+      lo: Number(y2.lo),
+      hi: Number(y2.hi),
+      constant_present: y2.constant == null ? 0 : 1,
+      constant: Number(y2.constant ?? 0),
+      nonpositive_mask: Number(y2.nonpositive_mask) & 0xff,
+      axis: axisPack.axis,
+      collision: collisionAxis(y2.collision, keep),
+      major_len: BigInt(major.length),
+      minor_len: BigInt(minor.length),
+      tick_label_count: labelRefs.length,
+      title: optionalStringRef(y2.title, keep),
+      format: optionalStringRef(y2.format, keep),
+      metrics_present: metrics == null ? 0 : 1,
+      tick_size: Number(metrics?.tick_size ?? 0),
+      title_size: Number(metrics?.title_size ?? 0),
+      padding: Number(metrics?.padding ?? 0),
+      text_flags: Number(metrics?.text_flags ?? 0),
+      tick_rgba_present: metrics?.tick_rgba == null ? 0 : 1,
+      tick_rgba: Uint8Array.from(metrics?.tick_rgba ?? [0, 0, 0, 0]),
+      title_rgba_present: metrics?.title_rgba == null ? 0 : 1,
+      title_rgba: Uint8Array.from(metrics?.title_rgba ?? [0, 0, 0, 0]),
+    },
+    major,
+    minor,
+    labelRefs,
+  };
+}
+
 /** Bulk-pack XYCF v1 chrome facts via `xyg_scene_chrome_pack` (ABI 321). */
 export function sceneChromePack(kwargs) {
   const keep = [];
@@ -339,6 +438,7 @@ export function sceneChromePack(kwargs) {
   const yTickLabels = kwargs.y_tick_labels ?? [];
   const xLabelRefs = xTickLabels.map((label) => stringRef(label, keep));
   const yLabelRefs = yTickLabels.map((label) => stringRef(label, keep));
+  const y2Pack = chromeY2(kwargs.y2, keep);
   const margins = kwargs.margins ?? [0, 0, 0, 0];
   const padding = kwargs.padding ?? [0, 0, 0, 0];
   const pack = {
@@ -403,6 +503,7 @@ export function sceneChromePack(kwargs) {
     },
     colorbar_present: colorbarPresent,
     colorbar,
+    y2: y2Pack.y2,
   };
   const inputBuf = Buffer.alloc(koffi.sizeof(SceneChromePackIn));
   koffi.encode(inputBuf, SceneChromePackIn, pack);
@@ -413,6 +514,11 @@ export function sceneChromePack(kwargs) {
   }
   for (let index = 0; index < yLabelRefs.length; index += 1) {
     koffi.encode(yLabelBuf, index * 16, StringRef, yLabelRefs[index]);
+  }
+  const y2LabelRefs = y2Pack.labelRefs;
+  const y2LabelBuf = Buffer.alloc(Math.max(1, y2LabelRefs.length * 16));
+  for (let index = 0; index < y2LabelRefs.length; index += 1) {
+    koffi.encode(y2LabelBuf, index * 16, StringRef, y2LabelRefs[index]);
   }
   const out = new Uint8Array(SCENE_XYCF_PACK_MAX);
   const outLen = new BigUint64Array(1);
@@ -426,8 +532,9 @@ export function sceneChromePack(kwargs) {
     yLabelRefs.length ? koffi.as(yLabelBuf, "const void *") : 0,
     colorbarStops.length ? u8Ptr(colorbarStops) : 0,
     colorbarTicks.length ? f64Ptr(colorbarTicks) : 0,
-    kwargs.y2?.length ? u8Ptr(kwargs.y2) : 0,
-    BigInt(kwargs.y2?.length ?? 0),
+    y2Pack.major.length ? f64Ptr(y2Pack.major) : 0,
+    y2Pack.minor.length ? f64Ptr(y2Pack.minor) : 0,
+    y2LabelRefs.length ? koffi.as(y2LabelBuf, "const void *") : 0,
     u8Ptr(out),
     BigInt(out.length),
     pointer(outLen, "size_t *"),

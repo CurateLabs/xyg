@@ -99,3 +99,50 @@ test("charts without y2 carry no y2 block", () => {
   assert.equal(Buffer.from(plain.toScene()).includes("XYY2"), false);
   assert.equal(Buffer.from(dual().toScene()).includes("XYY2"), true);
 });
+
+const svgOf = (figure) => Buffer.from(figure.toSvg()).toString("utf8");
+const rightLabels = (figure) => texts(svgOf(figure))
+  .filter(({ attrs }) => attrs["text-anchor"] === "start" && Number(attrs.x) > 300)
+  .map(({ body }) => body);
+
+test("y2 title reads bottom to top like the left title", () => {
+  const items = texts(svgOf(dual()));
+  const transform = (body) => items.find((item) => item.body === body).attrs.transform.split(" ")[0];
+  assert.equal(transform("L"), "rotate(-90");
+  assert.equal(transform("R"), "rotate(-90");
+});
+
+test("authored y2 tick collision options reach Rust, strategy before collision", () => {
+  const every = ["0", "100", "200", "300", "400"];
+  assert.deepEqual(rightLabels(dual()), every);
+  assert.deepEqual(rightLabels(dual({ y2: { tick_label_min_gap: 200 } })), ["0", "400"]);
+  assert.deepEqual(rightLabels(dual({ y2: { tick_label_min_gap: 200, tick_label_strategy: "preserve" } })), every);
+  assert.deepEqual(rightLabels(dual({ y2: { tick_label_min_gap: 200, collision: "preserve" } })), every);
+  assert.deepEqual(rightLabels(dual({
+    y2: { tick_label_min_gap: 200, tick_label_strategy: "preserve", collision: "hide" },
+  })), every);
+});
+
+test("a symlog y2 uses the authored constant", () => {
+  const figure = dual({ y2: { type: "symlog", constant: 2, domain: [-100, 100] } });
+  assert.deepEqual(rightLabels(figure), ["-12.78", "0.00", "12.78"]);
+});
+
+test("invalid authored y2 values are rejected by Rust, never defaulted", () => {
+  const message = (y2) => {
+    try { return sceneExportSupportReason(dual({ y2 })); } catch (error) { return error.message; }
+  };
+  for (const y2 of [
+    { type: "symlog", constant: 0 },
+    { type: "symlog", constant: -2 },
+    { domain: [0, Number.POSITIVE_INFINITY] },
+    { tick_label_angle: Number.POSITIVE_INFINITY },
+    { tick_label_angle: Number.NEGATIVE_INFINITY },
+  ]) {
+    assert.equal(message(y2), "invalid canonical scene batch", JSON.stringify(y2));
+  }
+});
+
+test("a category y2 is rejected with Rust's reason", () => {
+  assert.equal(sceneExportSupportReason(dual({ y2: { type: "category" } })), "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+});

@@ -22,8 +22,13 @@ in the README).
   `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`. `annotate(arrowprops=)` maps `arrowstyle`,
   `shrinkA` and `shrinkB` onto it, and the browser painter hydrates the new runs.
 - ABI 388: Python and Node marshal the native secondary right-hand y axis
-  (`twinx`, #1006 PRs 2+3 of 3). Hosts pack the `XYY2` sidecar (scale, resolved
-  chrome record, XYCO y2 metrics/paints/flags, tick policy, ticks, title, format),
+  (`twinx`, #1006 PRs 2+3 of 3). Hosts pass the authored y2 observation to
+  `xyg_scene_chrome_pack` (presence plus authored values; its `y2`/`y2_len` bytes
+  are replaced by an `XygChromeY2In` struct and `y2_major`/`y2_minor`/
+  `y2_tick_labels`) and Rust builds the `XYY2` block, owning every default
+  (scale constant, tick strategy/anchor, minimum label gap) and rejecting invalid
+  authored values (zero/negative constant, non-finite domain or angle) identically
+  for both hosts. The y2 title now reads bottom to top like the left title. Hosts
   translate axis ids (`y2` = 2, `x2` = 3) into the `XYFS` observation, and set the
   new `XYCL` column flag bit 1 (`XYCL_Y2`) so Rust stamps the record y selector on
   every row of a y2 trace. Rust alone admits or rejects and returns the same

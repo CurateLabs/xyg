@@ -389,7 +389,6 @@ fn y2_paints_right_gutter_labels_with_equal_domain_tick_parity() {
     }
     assert!(svg.contains("data-xy-chrome=\"y2-label\""));
     assert!(svg.contains("fill=\"rgba(255,0,0,1.000000)\""));
-    assert!(svg.contains("rotate(90 "));
     // Raster/PDF consume the same document.
     let commands = document.to_raster_commands(1.0).unwrap();
     assert!(commands.windows(4).any(|w| w == b"Righ"));
@@ -535,6 +534,68 @@ fn y2_with_polar_is_rejected_by_the_encoder() {
         &[],
     )
     .is_err());
+}
+
+/// Rotation of the styled raster text command (17) that draws `text`.
+fn raster_title_angle(commands: &[u8], text: &[u8]) -> f32 {
+    let at = commands
+        .windows(text.len())
+        .position(|window| window == text)
+        .expect("title text in the raster display list");
+    // ... angle f32 | flags u8 | reserved u32 | rgba [4] | len u32 | text
+    f32::from_le_bytes(commands[at - 17..at - 13].try_into().unwrap())
+}
+
+#[test]
+fn y2_title_reads_bottom_to_top_like_the_y_title_in_svg_and_raster() {
+    let mut axis = y2_axis(0.0, 100.0);
+    axis.title = "Right".to_owned();
+    axis.axis.static_text.title_flags = 2;
+    let scene = encode(
+        &[scatter(1, 0.5, false), scatter(2, 50.0, true)],
+        &chrome_facts(auto_flags(), Some(&axis)),
+    );
+    let document = SceneDocument::decode(&scene).unwrap();
+    let svg = document.to_svg();
+    let title = svg
+        .split("data-xy-chrome=\"y2-label\"")
+        .nth(1)
+        .expect("y2 title group");
+    assert!(title.contains("transform=\"rotate(-90 "), "{title}");
+    assert!(!svg.contains("rotate(90 "));
+    let angle = raster_title_angle(&document.to_raster_commands(1.0).unwrap(), b"Right");
+    assert_eq!(angle, -90.0);
+    // The rotated ink stays inside the canvas: [x - ascent, x + depth].
+    let x: f64 = title
+        .split("x=\"")
+        .nth(1)
+        .unwrap()
+        .split('"')
+        .next()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!(x > f64_at(&scene, 64) && x < WIDTH);
+}
+
+#[test]
+fn non_finite_tick_angle_is_rejected_and_only_nan_means_absent() {
+    let decode = |bytes: &[u8]| SceneY2Axis::decode(bytes, SceneY2Domain::Data, HEIGHT, 0.0);
+    let mut axis = y2_axis(0.0, 100.0);
+    let none = axis.encode(SceneY2Domain::Data);
+    assert_eq!(decode(&none).unwrap().tick_angle, None);
+    axis.tick_angle = Some(30.0);
+    assert_eq!(
+        decode(&axis.encode(SceneY2Domain::Data)).unwrap().tick_angle,
+        Some(30.0)
+    );
+    for bad in [f64::INFINITY, f64::NEG_INFINITY] {
+        axis.tick_angle = Some(bad);
+        assert!(matches!(
+            decode(&axis.encode(SceneY2Domain::Data)),
+            Err(SceneError::NonFinite)
+        ));
+    }
 }
 
 #[test]

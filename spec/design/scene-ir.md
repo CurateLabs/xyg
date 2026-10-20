@@ -2019,8 +2019,10 @@ before every annotation-tag comparison. A selector without a y2 block is
 `EncodeAssembledCode::Payload`. One trace never straddles both y scales.
 
 **Layout and drawing.** The `XYCF` header's reserved word (284..288) is the byte
-length of a trailing `XYY2` sidecar (0 = none; `xyg_scene_xycf_pack` and
-`xyg_scene_chrome_pack` gain `y2` pointer/length arguments). Gutter widening in
+length of a trailing `XYY2` sidecar (0 = none). `xyg_scene_xycf_pack` takes the
+payload as bytes; `xyg_scene_chrome_pack` takes the authored y2 observation
+(`XygChromeY2In` plus `y2_major`/`y2_minor`/`y2_tick_labels`) and Rust builds the
+payload, owning every default and the axis chrome record. Gutter widening in
 `encode_assembled` measures the y2 labels — styled automatic ticks via the same
 `resolved_axis_ticks` ladder as y (no copy), authored/explicit labels, outward
 ticks, padding, and the rotated title — and takes `margin_right = max(chrome
@@ -2028,7 +2030,8 @@ margin, 8 + tick_out + padding + widest label + title room)`; the chrome margin
 already carries the `compat_layout::right_y_room()` floor for `RIGHT_SECONDARY`.
 SVG, raster, PDF and the browser painter draw the axis through the one axis
 loop shared with x and y (spine and ticks at the right edge, labels anchored
-start, title quarter-turned clockwise in the right gutter). There is no y2 grid
+start, title rotated 90° counter-clockwise in the right gutter, reading bottom to
+top like the left title). There is no y2 grid
 (Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
 
 **XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are

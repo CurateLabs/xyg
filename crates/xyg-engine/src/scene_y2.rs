@@ -92,6 +92,108 @@ fn flag(byte: u8) -> Result<bool, SceneError> {
     }
 }
 
+const CHROME_BYTES: usize = 88;
+
+/// Resolved XYCO typography facts carried by the `XYY2` metrics block.
+#[derive(Clone, Copy, Debug)]
+pub struct SceneY2Metrics {
+    pub tick_size: f64,
+    pub title_size: f64,
+    pub padding: f64,
+}
+
+/// Raw `XYY2` wire fields in layout order. This is the one writer of the
+/// payload: `SceneY2Axis::encode` (validated Scene facts) and the host chrome
+/// pack (authored facts, validated later by `SceneY2Axis::decode`) both fill it,
+/// so no field default lives outside Rust.
+pub struct SceneY2Wire<'a> {
+    pub kind: u32,
+    pub lo: f64,
+    pub hi: f64,
+    pub constant: f64,
+    pub mask: bool,
+    /// The 88-byte resolved axis chrome record.
+    pub chrome: &'a [u8],
+    pub metrics: Option<SceneY2Metrics>,
+    pub text_flags: u32,
+    pub tick_rgba: Option<[u8; 4]>,
+    pub title_rgba: Option<[u8; 4]>,
+    pub tick_strategy: u8,
+    pub tick_anchor: u8,
+    pub tick_anchor_authored: bool,
+    pub tick_category: bool,
+    pub tick_min_gap: f64,
+    /// `None` is written as NaN, the wire's "no angle".
+    pub tick_angle: Option<f64>,
+    pub major_ticks: Option<&'a [f64]>,
+    pub minor_ticks: &'a [f64],
+    /// Encoded `XYTL` label table, empty for automatic labels.
+    pub labels: &'a [u8],
+    pub title: &'a str,
+    pub format: &'a str,
+}
+
+impl SceneY2Wire<'_> {
+    pub fn write(&self) -> Vec<u8> {
+        let majors = self.major_ticks.unwrap_or(&[]);
+        let mut out = Vec::with_capacity(
+            SCENE_Y2_FIXED_BYTES
+                + (majors.len() + self.minor_ticks.len()) * 8
+                + self.labels.len()
+                + self.title.len()
+                + self.format.len(),
+        );
+        out.extend_from_slice(SCENE_Y2_MAGIC);
+        out.extend_from_slice(&self.kind.to_le_bytes());
+        out.extend_from_slice(&self.lo.to_le_bytes());
+        out.extend_from_slice(&self.hi.to_le_bytes());
+        out.extend_from_slice(&self.constant.to_le_bytes());
+        out.push(u8::from(self.mask));
+        out.extend_from_slice(&[0; 3]);
+        out.extend_from_slice(self.chrome);
+        let present = (u8::from(self.metrics.is_some()) * PRESENT_METRICS)
+            | (u8::from(self.tick_rgba.is_some()) * PRESENT_TICK_PAINT)
+            | (u8::from(self.title_rgba.is_some()) * PRESENT_TITLE_PAINT);
+        let metrics = self.metrics.unwrap_or(SceneY2Metrics {
+            tick_size: 0.0,
+            title_size: 0.0,
+            padding: 0.0,
+        });
+        for value in [metrics.tick_size, metrics.title_size, metrics.padding] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&self.text_flags.to_le_bytes());
+        out.extend_from_slice(&self.tick_rgba.unwrap_or([0; 4]));
+        out.extend_from_slice(&self.title_rgba.unwrap_or([0; 4]));
+        out.push(present);
+        out.extend_from_slice(&[0; 3]);
+        out.push(self.tick_strategy);
+        out.push(self.tick_anchor);
+        out.push(u8::from(self.tick_anchor_authored));
+        out.push(u8::from(self.tick_category));
+        out.extend_from_slice(&self.tick_min_gap.to_le_bytes());
+        out.extend_from_slice(&self.tick_angle.unwrap_or(f64::NAN).to_le_bytes());
+        let major_count = if self.major_ticks.is_none() {
+            AUTO_COUNT
+        } else {
+            majors.len() as u32
+        };
+        out.extend_from_slice(&major_count.to_le_bytes());
+        out.extend_from_slice(&(self.minor_ticks.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(self.labels.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(self.title.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(self.format.len() as u32).to_le_bytes());
+        debug_assert_eq!(out.len(), SCENE_Y2_FIXED_BYTES);
+        for value in majors.iter().chain(self.minor_ticks) {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(self.labels);
+        out.extend_from_slice(self.title.as_bytes());
+        out.extend_from_slice(self.format.as_bytes());
+        out
+    }
+}
+
 impl SceneY2Axis {
     /// Right-only, bounded, canonical-form validation shared by decode and
     /// every constructor path.
@@ -161,72 +263,43 @@ impl SceneY2Axis {
     /// Serialize the payload with the scale domain in the requested space.
     pub fn encode(&self, domain: SceneY2Domain) -> Vec<u8> {
         let (kind, lo, hi, constant, mask) = self.scale.wire_scale(domain == SceneY2Domain::Data);
-        let labels = encode_tick_labels(self.tick_labels.as_deref()).expect("validated y2 labels");
-        let majors = self.major_ticks.as_deref().unwrap_or(&[]);
-        let mut out = Vec::with_capacity(
-            SCENE_Y2_FIXED_BYTES
-                + (majors.len() + self.minor_ticks.len()) * 8
-                + labels.len()
-                + self.title.len()
-                + self.format.len(),
-        );
-        out.extend_from_slice(SCENE_Y2_MAGIC);
-        out.extend_from_slice(&(kind as u32).to_le_bytes());
-        out.extend_from_slice(&lo.to_le_bytes());
-        out.extend_from_slice(&hi.to_le_bytes());
-        out.extend_from_slice(&constant.to_le_bytes());
-        out.push(u8::from(mask));
-        out.extend_from_slice(&[0; 3]);
-        write_axis_chrome_style(&mut out, &self.axis);
         let axis = &self.axis;
-        let metrics = axis.static_tick_label_size.is_some();
-        let present = (u8::from(metrics) * PRESENT_METRICS)
-            | (u8::from(axis.static_text.tick_label_rgba.is_some()) * PRESENT_TICK_PAINT)
-            | (u8::from(axis.static_text.title_rgba.is_some()) * PRESENT_TITLE_PAINT);
-        for value in [
-            axis.static_tick_label_size.unwrap_or(0.0),
-            axis.static_label_size.unwrap_or(0.0),
-            axis.static_tick_padding.unwrap_or(0.0),
-        ] {
-            out.extend_from_slice(&value.to_le_bytes());
-        }
-        let text_flags = u32::from(axis.static_text.tick_label_flags)
-            | (u32::from(axis.static_text.title_flags) << 2);
-        out.extend_from_slice(&text_flags.to_le_bytes());
-        out.extend_from_slice(&axis.static_text.tick_label_rgba.unwrap_or([0; 4]));
-        out.extend_from_slice(&axis.static_text.title_rgba.unwrap_or([0; 4]));
-        out.push(present);
-        out.extend_from_slice(&[0; 3]);
-        out.push(self.tick_strategy);
-        out.push(if self.tick_anchor_authored {
-            self.tick_anchor
-        } else {
-            0
-        });
-        out.push(u8::from(self.tick_anchor_authored));
-        out.push(u8::from(self.tick_category));
-        out.extend_from_slice(&self.tick_min_gap.to_le_bytes());
-        out.extend_from_slice(&self.tick_angle.unwrap_or(f64::NAN).to_le_bytes());
-        out.extend_from_slice(
-            &(if self.major_ticks.is_none() {
-                AUTO_COUNT
+        let mut chrome = Vec::with_capacity(CHROME_BYTES);
+        write_axis_chrome_style(&mut chrome, axis);
+        let labels = encode_tick_labels(self.tick_labels.as_deref()).expect("validated y2 labels");
+        SceneY2Wire {
+            kind: kind as u32,
+            lo,
+            hi,
+            constant,
+            mask,
+            chrome: &chrome,
+            metrics: axis.static_tick_label_size.map(|tick_size| SceneY2Metrics {
+                tick_size,
+                title_size: axis.static_label_size.unwrap_or(0.0),
+                padding: axis.static_tick_padding.unwrap_or(0.0),
+            }),
+            text_flags: u32::from(axis.static_text.tick_label_flags)
+                | (u32::from(axis.static_text.title_flags) << 2),
+            tick_rgba: axis.static_text.tick_label_rgba,
+            title_rgba: axis.static_text.title_rgba,
+            tick_strategy: self.tick_strategy,
+            tick_anchor: if self.tick_anchor_authored {
+                self.tick_anchor
             } else {
-                majors.len() as u32
-            })
-            .to_le_bytes(),
-        );
-        out.extend_from_slice(&(self.minor_ticks.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(self.title.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(self.format.len() as u32).to_le_bytes());
-        debug_assert_eq!(out.len(), SCENE_Y2_FIXED_BYTES);
-        for value in majors.iter().chain(&self.minor_ticks) {
-            out.extend_from_slice(&value.to_le_bytes());
+                0
+            },
+            tick_anchor_authored: self.tick_anchor_authored,
+            tick_category: self.tick_category,
+            tick_min_gap: self.tick_min_gap,
+            tick_angle: self.tick_angle,
+            major_ticks: self.major_ticks.as_deref(),
+            minor_ticks: &self.minor_ticks,
+            labels: &labels,
+            title: &self.title,
+            format: &self.format,
         }
-        out.extend_from_slice(&labels);
-        out.extend_from_slice(self.title.as_bytes());
-        out.extend_from_slice(self.format.as_bytes());
-        out
+        .write()
     }
 
     /// Parse one payload. `px0`/`px1` are the pixel positions of the domain's
@@ -360,7 +433,7 @@ impl SceneY2Axis {
             tick_anchor_authored: anchor_authored,
             tick_category: flag(bytes[POLICY_AT + 3])?,
             tick_min_gap: f64_at(bytes, POLICY_AT + 4),
-            tick_angle: angle.is_finite().then_some(angle),
+            tick_angle: (!angle.is_nan()).then_some(angle),
         }
         .validated()
     }

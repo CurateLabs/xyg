@@ -271,8 +271,8 @@ def pack_chrome_facts(
         colorbar=colorbar_payload,
     )
     if "y2" in figure.axis_options:
-        facts["y2"] = _pack_y2_sidecar(
-            figure, facts, marshal_chrome_axis(" y2".strip(), figure.axis_options["y2"]), y2_chrome
+        facts["y2"] = _marshal_y2(
+            figure, marshal_chrome_axis("y2", figure.axis_options["y2"]), y2_chrome
         )
     return _native.scene_chrome_pack(**facts)
 
@@ -293,93 +293,55 @@ class Y2Chrome:
 # XYFS / XYEF axis ids: Rust decides which secondary axes it admits.
 _AXIS_CODES = {"x": 0, "y": 1, "y2": 2, "x2": 3}
 
-# The y record inside the 200-byte resolved Scene chrome style.
-_SCENE_STYLE_Y_AXIS = slice(112, 200)
 
+def _marshal_y2(figure: Any, y2_axis: dict[str, Any], y2_chrome: Y2Chrome | None) -> dict[str, Any]:
+    """Marshal the authored secondary y axis: presence and authored values only.
 
-def _pack_y2_sidecar(
-    figure: Any,
-    facts: dict[str, Any],
-    y2_axis: dict[str, Any],
-    y2_chrome: Y2Chrome | None,
-) -> bytes:
-    """Marshal the ``XYY2`` secondary-y facts; Rust validates and admits them.
-
-    The 88-byte axis chrome record is resolved by Rust from the authored y2
-    style, by resolving the same chrome facts with the y2 axis in the y slot, so
-    colour and width resolution stays in one place.
+    Rust owns every default (scale constant, tick strategy and anchor, minimum
+    label gap), the axis chrome record, validation and the ``XYY2`` layout.
     """
     options = figure.axis_options["y2"]
-    record_facts = {key: value for key, value in facts.items() if key != "y2"}
-    record_facts["y_axis"] = y2_axis
-    record = _native.scene_resolve_chrome_style(
-        xych_from_xycf(_native.scene_chrome_pack(**record_facts))
-    )[_SCENE_STYLE_Y_AXIS]
     lo, hi = (float(v) for v in figure._range("y2"))
-    major = options.get("tick_values")
-    minor = [float(v) for v in (options.get("minor_tick_values") or ())]
-    labels = options.get("tick_labels")
-    labels_blob = b""
-    if labels is not None:
-        encoded = [str(label).encode("utf-8") for label in labels]
-        labels_blob = struct.pack("<4sII", b"XYTL", 1, len(encoded)) + b"".join(
-            struct.pack("<I", len(raw)) + raw for raw in encoded
-        )
-    anchor_raw = _optional_str(options.get("tick_label_anchor"))
-    anchor = _native.scene_tick_anchor(anchor_raw) if anchor_raw is not None else None
-    strategy = _native.scene_tick_label_strategy(
-        _optional_str(options.get("tick_label_strategy"))
-        or _optional_str(options.get("collision"))
-        or "auto"
-    )
-    min_gap = options.get("tick_label_min_gap")
-    angle = options.get("tick_label_angle")
-    title = (_optional_str(options.get("label")) or "").encode("utf-8")
-    number_format = (_optional_str(options.get("format")) or "").encode("utf-8")
-    chrome = y2_chrome
-    present = 0
-    if chrome is not None:
-        present = 1 | (2 if chrome.tick_rgba else 0) | (4 if chrome.title_rgba else 0)
-    out = bytearray(b"XYY2")
-    out += struct.pack(
-        "<I3dB3x",
-        {"linear": 0, "log": 1, "symlog": 2}[figure._axis_scale("y2")],
-        lo,
-        hi,
-        float(options.get("constant") or 1.0),
-        1 if options.get("nonpositive", "clip") == "mask" else 0,
-    )
-    out += record
-    out += struct.pack(
-        "<3dI4s4sB3x",
-        chrome.tick_size if chrome else 0.0,
-        chrome.title_size if chrome else 0.0,
-        chrome.padding if chrome else 0.0,
-        (chrome.text_flags & 0xF) if chrome else 0,
-        bytes(chrome.tick_rgba or (0, 0, 0, 0)) if chrome else bytes(4),
-        bytes(chrome.title_rgba or (0, 0, 0, 0)) if chrome else bytes(4),
-        present,
-    )
-    out += struct.pack(
-        "<4B2d",
-        strategy,
-        (anchor or 0) if anchor_raw is not None else 0,
-        1 if anchor_raw is not None else 0,
-        1 if figure._axis_kind("y2") == "category" else 0,
-        4.0 if min_gap is None else float(min_gap),
-        math.nan if angle is None else float(angle),
-    )
-    out += struct.pack(
-        "<5I",
-        0xFFFFFFFF if major is None else len(major),
-        len(minor),
-        len(labels_blob),
-        len(title),
-        len(number_format),
-    )
-    for value in [*(major or ()), *minor]:
-        out += struct.pack("<d", float(value))
-    return bytes(out + labels_blob + title + number_format)
+    constant = options.get("constant")
+    return {
+        "scale_kind": {"linear": 0, "log": 1, "symlog": 2}[figure._axis_scale("y2")],
+        "lo": lo,
+        "hi": hi,
+        "constant": None if constant is None else float(constant),
+        "nonpositive_mask": 1 if options.get("nonpositive") == "mask" else 0,
+        "axis": y2_axis,
+        "collision": {
+            "strategy": _optional_str(options.get("tick_label_strategy")),
+            "collision": _optional_str(options.get("collision")),
+            "anchor": _optional_str(options.get("tick_label_anchor")),
+            "min_gap": None
+            if options.get("tick_label_min_gap") is None
+            else float(options["tick_label_min_gap"]),
+            "angle": None
+            if options.get("tick_label_angle") is None
+            else float(options["tick_label_angle"]),
+            "tick_kind_category": figure._axis_kind("y2") == "category",
+        },
+        "major": None
+        if options.get("tick_values") is None
+        else [float(v) for v in options["tick_values"]],
+        "minor": [float(v) for v in (options.get("minor_tick_values") or ())],
+        "tick_labels": None
+        if options.get("tick_labels") is None
+        else [str(v) for v in options["tick_labels"]],
+        "title": _optional_str(options.get("label")),
+        "format": _optional_str(options.get("format")),
+        "metrics": None
+        if y2_chrome is None
+        else {
+            "tick_size": y2_chrome.tick_size,
+            "title_size": y2_chrome.title_size,
+            "padding": y2_chrome.padding,
+            "text_flags": y2_chrome.text_flags,
+            "tick_rgba": y2_chrome.tick_rgba,
+            "title_rgba": y2_chrome.title_rgba,
+        },
+    }
 
 
 def _optional_str(value: Any) -> str | None:

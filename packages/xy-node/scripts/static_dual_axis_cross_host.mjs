@@ -32,6 +32,27 @@ const CASES = {
     },
   }),
   log: () => dualFigure({ y2: { type: "log", domain: [10, 1000] }, y2Values: [10, 100, 1000] }),
+  symlog: () => dualFigure({
+    y2: { type: "symlog", constant: 2, domain: [-100, 100] },
+    y2Values: [-50, 0, 50],
+  }),
+  // Authored tick-collision options reach Rust through the same code as y.
+  gap: () => dualFigure({ y2: { tick_label_min_gap: 200 } }),
+  preserve: () => dualFigure({ y2: { tick_label_min_gap: 200, tick_label_strategy: "preserve" } }),
+  collision_key: () => dualFigure({ y2: { tick_label_min_gap: 200, collision: "preserve" } }),
+  strategy_wins: () => dualFigure({
+    y2: { tick_label_min_gap: 200, tick_label_strategy: "preserve", collision: "hide" },
+  }),
+};
+
+// Authored values the Scene rejects: both hosts must pass them through untouched
+// and surface Rust's rejection, never a host default.
+const INVALID = {
+  constant_zero: { type: "symlog", constant: 0 },
+  constant_negative: { type: "symlog", constant: -2 },
+  domain_infinite: { domain: [0, Number.POSITIVE_INFINITY] },
+  angle_infinite: { tick_label_angle: Number.POSITIVE_INFINITY },
+  angle_negative_infinite: { tick_label_angle: Number.NEGATIVE_INFINITY },
 };
 
 const REJECTIONS = {
@@ -54,10 +75,11 @@ const REJECTIONS = {
     figure.coords = "polar";
     return figure;
   },
+  y2_category: () => dualFigure({ y2: { type: "category" } }),
 };
 
 const b64 = (bytes) => Buffer.from(bytes).toString("base64");
-const out = { cases: {}, reasons: {} };
+const out = { cases: {}, reasons: {}, invalid: {} };
 for (const [name, build] of Object.entries(CASES)) {
   const figure = build();
   out.cases[name] = {
@@ -69,5 +91,12 @@ for (const [name, build] of Object.entries(CASES)) {
 }
 for (const [name, build] of Object.entries(REJECTIONS)) {
   out.reasons[name] = sceneExportSupportReason(build());
+}
+for (const [name, y2] of Object.entries(INVALID)) {
+  try {
+    out.invalid[name] = sceneExportSupportReason(dualFigure({ y2 }));
+  } catch (error) {
+    out.invalid[name] = error.message;
+  }
 }
 process.stdout.write(`${JSON.stringify(out)}\n`);

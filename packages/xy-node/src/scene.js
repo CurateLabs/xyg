@@ -2555,7 +2555,7 @@ function defaultChromeStyle() {
   return resolveChromeStyle(envelope);
 }
 
-function packXyCh(figure, yAxisId = "y") {
+function packXyCh(figure) {
   const figureStyle = figure.style ?? {};
   let flags = 2 << 8;
   let chart = new Uint8Array(0);
@@ -2570,7 +2570,7 @@ function packXyCh(figure, yAxisId = "y") {
   }
   const axes = figureAxisOptions(figure) ?? {};
   const x = packChromeAxis("x", axes.x ?? {}, ["bottom", "top"]);
-  const y = packChromeAxis(yAxisId, axes[yAxisId] ?? {}, ["left", "right"]);
+  const y = packChromeAxis("y", axes.y ?? {}, ["left", "right"]);
   const header = new Uint8Array(16);
   const view = new DataView(header.buffer);
   header.set(encodeUtf8("XYCH").slice(0, 4), 0);
@@ -6524,79 +6524,47 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
     },
     colorbar: colorbarPayload,
   };
-  if (axes.y2 != null) facts.y2 = packY2Sidecar(figure, y2Chrome);
+  if (axes.y2 != null) facts.y2 = marshalY2(figure, y2Chrome);
   return sceneChromePack(facts);
 }
 
-/** Pack the `XYY2` secondary-y facts (scene_y2.rs); Rust validates and admits them. The
- * 88-byte axis chrome record is resolved by Rust from the authored y2 style, exactly as
- * for y, by resolving the chrome facts with y2 in the y slot. */
-function packY2Sidecar(figure, y2Chrome) {
+/** Marshal the authored secondary y axis: presence and authored values only. Rust owns
+ * every default (scale constant, tick strategy and anchor, minimum label gap), the axis
+ * chrome record, validation and the `XYY2` layout. */
+function marshalY2(figure, y2Chrome) {
   const options = figureAxisOptions(figure).y2;
-  const record = resolveChromeStyle(packXyCh(figure, "y2")).subarray(112, 200);
   const [lo, hi] = figure._range("y2");
   const major = axisTickValues(options);
-  const minor = Array.from(axisMinorTickValues(options) ?? [], Number);
   const labels = axisTickLabels(options);
-  const encoder = new TextEncoder();
-  const labelChunks = [];
-  if (labels != null) {
-    const header = new DataView(new ArrayBuffer(12));
-    new Uint8Array(header.buffer).set(encoder.encode("XYTL"), 0);
-    header.setUint32(4, 1, true);
-    header.setUint32(8, labels.length, true);
-    labelChunks.push(new Uint8Array(header.buffer));
-    for (const label of labels) {
-      const raw = encoder.encode(String(label));
-      const length = new DataView(new ArrayBuffer(4));
-      length.setUint32(0, raw.length, true);
-      labelChunks.push(new Uint8Array(length.buffer), raw);
-    }
-  }
-  const labelsBlob = concatBytes(labelChunks);
-  const anchorRaw = optionalStr(options.tick_label_anchor);
-  const anchor = anchorRaw == null ? null : sceneTickAnchor(anchorRaw);
-  const strategy = sceneTickLabelStrategy(
-    optionalStr(options.tick_label_strategy) ?? optionalStr(options.collision) ?? "auto",
-  );
-  const title = encoder.encode(optionalStr(options.label) ?? "");
-  const numberFormat = encoder.encode(optionalStr(options.format) ?? "");
-  const present = y2Chrome == null ? 0 : 1 | (y2Chrome.tickRgba ? 2 : 0) | (y2Chrome.titleRgba ? 4 : 0);
-  const head = new Uint8Array(204);
-  const view = new DataView(head.buffer);
-  head.set(encoder.encode("XYY2"), 0);
-  view.setUint32(4, { linear: 0, log: 1, symlog: 2 }[axisScaleName(options)] ?? 0, true);
-  view.setFloat64(8, Number(lo), true);
-  view.setFloat64(16, Number(hi), true);
-  view.setFloat64(24, Number(options.constant ?? 1), true);
-  head[32] = (options.nonpositive ?? "clip") === "mask" ? 1 : 0;
-  head.set(record, 36);
-  view.setFloat64(124, y2Chrome?.tickSize ?? 0, true);
-  view.setFloat64(132, y2Chrome?.titleSize ?? 0, true);
-  view.setFloat64(140, y2Chrome?.padding ?? 0, true);
-  view.setUint32(148, y2Chrome == null ? 0 : y2Chrome.textFlags & 0xf, true);
-  head.set(y2Chrome?.tickRgba ?? [0, 0, 0, 0], 152);
-  head.set(y2Chrome?.titleRgba ?? [0, 0, 0, 0], 156);
-  head[160] = present;
-  head[164] = strategy;
-  head[165] = anchorRaw == null ? 0 : anchor ?? 0;
-  head[166] = anchorRaw == null ? 0 : 1;
-  head[167] = figure._axisKind("y2") === "category" ? 1 : 0;
-  view.setFloat64(168, options.tick_label_min_gap == null ? 4 : Number(options.tick_label_min_gap), true);
-  view.setFloat64(176, options.tick_label_angle == null ? Number.NaN : Number(options.tick_label_angle), true);
-  view.setUint32(184, major == null ? 0xffffffff : major.length, true);
-  view.setUint32(188, minor.length, true);
-  view.setUint32(192, labelsBlob.length, true);
-  view.setUint32(196, title.length, true);
-  view.setUint32(200, numberFormat.length, true);
-  const values = new Float64Array([...Array.from(major ?? [], Number), ...minor]);
-  return concatBytes([
-    head,
-    new Uint8Array(values.buffer, values.byteOffset, values.byteLength),
-    labelsBlob,
-    title,
-    numberFormat,
-  ]);
+  return {
+    scale_kind: { linear: 0, log: 1, symlog: 2 }[axisScaleName(options)] ?? 0,
+    lo: Number(lo),
+    hi: Number(hi),
+    constant: options.constant == null ? null : Number(options.constant),
+    nonpositive_mask: options.nonpositive === "mask" ? 1 : 0,
+    axis: marshalChromeAxis("y2", options),
+    collision: {
+      strategy: optionalStr(options.tick_label_strategy),
+      collision: optionalStr(options.collision),
+      anchor: optionalStr(options.tick_label_anchor),
+      min_gap: options.tick_label_min_gap == null ? null : Number(options.tick_label_min_gap),
+      angle: options.tick_label_angle == null ? null : Number(options.tick_label_angle),
+      tick_kind_category: figure._axisKind("y2") === "category",
+    },
+    major: major == null ? null : Array.from(major, Number),
+    minor: Array.from(axisMinorTickValues(options) ?? [], Number),
+    tick_labels: labels == null ? null : Array.from(labels, String),
+    title: optionalStr(options.label),
+    format: optionalStr(options.format),
+    metrics: y2Chrome == null ? null : {
+      tick_size: y2Chrome.tickSize,
+      title_size: y2Chrome.titleSize,
+      padding: y2Chrome.padding,
+      text_flags: y2Chrome.textFlags,
+      tick_rgba: y2Chrome.tickRgba,
+      title_rgba: y2Chrome.titleRgba,
+    },
+  };
 }
 
 /** XYEF resolved axis kind. Python `_pack_public_export_support` uses `figure._axis_kind(axis_id)`. */

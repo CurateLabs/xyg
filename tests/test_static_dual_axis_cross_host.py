@@ -49,8 +49,10 @@ def node_exports() -> dict[str, Any]:
     return json.loads(proc.stdout)
 
 
-def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right"):
-    return c.line_chart(
+def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right", raw_y2=None):
+    """The public dual-axis chart; `raw_y2` sets axis options the component validators
+    would refuse (or do not expose), so the host-to-Rust path sees them untouched."""
+    figure = c.line_chart(
         c.line(x=[1, 2, 3], y=[1, 2, 3]),
         c.line(x=[1, 2, 3], y=list(y2_values), y_axis="y2"),
         c.x_axis(domain=(0, 4)),
@@ -59,28 +61,59 @@ def _dual(*, y=None, y2=None, y2_values=(100, 200, 300), y2_side="right"):
         width=WIDTH,
         height=HEIGHT,
     ).figure()
+    figure.axis_options["y2"].update(raw_y2 or {})
+    return figure
+
+
+CASES: dict[str, dict[str, Any]] = {
+    "dual": {},
+    "styled": {
+        "y": {"style": {"label_color": "#1f77b4"}},
+        "y2": {
+            "style": {"label_color": "#d62728", "tick_label_size": 20, "tick_padding": 12},
+            "tick_values": [0, 200, 400],
+            "tick_labels": ["zero", "two hundred", "four hundred"],
+        },
+    },
+    "log": {"y2": {"type_": "log", "domain": (10, 1000)}, "y2_values": (10, 100, 1000)},
+    "symlog": {
+        "y2": {"type_": "symlog", "constant": 2, "domain": (-100, 100)},
+        "y2_values": (-50, 0, 50),
+    },
+    "gap": {"y2": {"tick_label_min_gap": 200}},
+    "preserve": {"y2": {"tick_label_min_gap": 200, "tick_label_strategy": "preserve"}},
+    "collision_key": {"y2": {"tick_label_min_gap": 200}, "raw_y2": {"collision": "preserve"}},
+    "strategy_wins": {
+        "y2": {"tick_label_min_gap": 200, "tick_label_strategy": "preserve"},
+        "raw_y2": {"collision": "hide"},
+    },
+}
+
+INVALID: dict[str, dict[str, Any]] = {
+    "constant_zero": {"type": "symlog", "constant": 0},
+    "constant_negative": {"type": "symlog", "constant": -2},
+    "domain_infinite": {"domain": (0, float("inf"))},
+    "angle_infinite": {"tick_label_angle": float("inf")},
+    "angle_negative_infinite": {"tick_label_angle": float("-inf")},
+}
 
 
 def _case(name: str):
-    if name == "dual":
-        figure = _dual()
-    elif name == "styled":
-        figure = _dual(
-            y={"style": {"label_color": "#1f77b4"}},
-            y2={
-                "style": {"label_color": "#d62728", "tick_label_size": 20, "tick_padding": 12},
-                "tick_values": [0, 200, 400],
-                "tick_labels": ["zero", "two hundred", "four hundred"],
-            },
-        )
-    else:
-        figure = _dual(y2={"type_": "log", "domain": (10, 1000)}, y2_values=(10, 100, 1000))
+    figure = _dual(**CASES[name])
     for index, trace in enumerate(figure.traces):
         trace.id = index
     return figure
 
 
-@pytest.mark.parametrize("name", ["dual", "styled", "log"])
+def _reason_or_message(figure: Any) -> str | None:
+    """Rust's reason, whether the host returns it or raises it."""
+    try:
+        return scene_export_support_reason(figure)
+    except ValueError as error:
+        return str(error)
+
+
+@pytest.mark.parametrize("name", list(CASES))
 def test_python_and_node_export_identical_bytes(name: str, node_exports: dict[str, Any]) -> None:
     node = node_exports["cases"][name]
     figure = _case(name)
@@ -106,6 +139,16 @@ def test_python_and_node_report_the_same_rust_reasons(node_exports: dict[str, An
         "x2": scene_export_support_reason(x2),
         "y2_colorbar": scene_export_support_reason(colorbar),
         "y2_polar": scene_export_support_reason(polar),
+        "y2_category": scene_export_support_reason(_dual(raw_y2={"type": "category"})),
     }
     assert python == node_exports["reasons"]
     assert all(reason and reason.startswith("XYG_SCENE_UNSUPPORTED_") for reason in python.values())
+
+
+def test_invalid_authored_y2_values_get_the_same_rust_rejection(
+    node_exports: dict[str, Any],
+) -> None:
+    python = {name: _reason_or_message(_dual(raw_y2=raw)) for name, raw in INVALID.items()}
+    assert python == node_exports["invalid"]
+    # Rust rejects each one; no host substitutes a default and exports anyway.
+    assert all(python.values()), python

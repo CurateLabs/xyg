@@ -86,18 +86,25 @@ lattices above the PolyFill ceiling). Design: `spec/design/twinx-secondary-y-axi
   facts: the axis id/side, scale, ticks, title and format, the XYCO-resolved y2
   chrome (tick/title size, padding, paints, italic/bold flags), the per-trace y
   selector (`XYCL` column flag bit 1, ABI 388), and `has_colorbar` presence. They
-  add no admission or layout policy; Rust returns the stable
+  add no admission, default or layout policy (Rust builds the `XYY2` block from the
+  authored observation); Rust returns the stable
   `XYG_SCENE_UNSUPPORTED_Y2_*` / `_X2` / `_EXTRA_AXES` reasons identically to both.
-- pyplot seeds the twin's right axis from the `ytick.*` rc keys (size, width, pad,
-  colour, label size) the way it seeds the left y axis, onto the public `y2` axis
-  options; titles keep their authored colours while tick labels keep the rc colour.
+- pyplot seeds the twin's right axis the way it seeds the left y axis, onto the
+  public `y2` axis options: `ytick.major.size/pad/width`, `ytick.color`,
+  `ytick.labelcolor`, `ytick.labelsize`, `ytick.minor.size/width/pad`,
+  `axes.linewidth`, `axes.labelcolor`, `axes.labelsize`, `axes.labelweight`,
+  `grid.*` and `font.size`. `ytick.direction` is not seeded (pyplot does not
+  support it on the left axis either). Titles keep their authored colours while
+  tick labels keep the rc colour.
 - Static output of the y2 axis is byte-identical between Python and Node
   (XYST/SVG/PNG/PDF) for the same public dual-axis chart
   (`tests/test_static_dual_axis_cross_host.py`).
-- Not claimed: the right-hand title is quarter-turned clockwise (reads top to
-  bottom), where Matplotlib's `twinx` label reads bottom to top; the corpus
-  comparison (ink fraction, title colour, bbox) does not distinguish them. The
-  flip is a one-line text-rotation change in Rust when a visual diff asks for it.
+- The right-hand title reads bottom to top like the left title and Matplotlib's
+  `twinx` label (rotation 90°) in SVG, PDF and PNG; PR 1 had drawn it clockwise.
+- Invalid authored y2 values (zero or negative scale constant, non-finite domain or
+  tick-label angle) are not defaulted by either host: Rust rejects them and both
+  hosts surface the same rejection. A category y2 gets
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`.
 - `secondary_xaxis()`/`secondary_yaxis()` and `twiny` remain interactive-only or
   fail closed (no x2).
 

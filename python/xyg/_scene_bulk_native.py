@@ -127,6 +127,34 @@ class _XygChromeColorbarIn(ctypes.Structure):
     ]
 
 
+class _XygChromeY2In(ctypes.Structure):
+    _fields_ = [
+        ("present", ctypes.c_int32),
+        ("scale_kind", ctypes.c_uint32),
+        ("lo", ctypes.c_double),
+        ("hi", ctypes.c_double),
+        ("constant_present", ctypes.c_int32),
+        ("constant", ctypes.c_double),
+        ("nonpositive_mask", ctypes.c_uint8),
+        ("axis", _XygChromeAxisIn),
+        ("collision", _XygChromeCollisionAxisIn),
+        ("major_len", ctypes.c_size_t),
+        ("minor_len", ctypes.c_size_t),
+        ("tick_label_count", ctypes.c_uint32),
+        ("title", _XygStringRef),
+        ("format", _XygStringRef),
+        ("metrics_present", ctypes.c_int32),
+        ("tick_size", ctypes.c_double),
+        ("title_size", ctypes.c_double),
+        ("padding", ctypes.c_double),
+        ("text_flags", ctypes.c_uint32),
+        ("tick_rgba_present", ctypes.c_int32),
+        ("tick_rgba", ctypes.c_uint8 * 4),
+        ("title_rgba_present", ctypes.c_int32),
+        ("title_rgba", ctypes.c_uint8 * 4),
+    ]
+
+
 class _XygSceneChromePackIn(ctypes.Structure):
     _fields_ = [
         ("width", ctypes.c_double),
@@ -176,6 +204,7 @@ class _XygSceneChromePackIn(ctypes.Structure):
         ("legend", _XygChromeLegendIn),
         ("colorbar_present", ctypes.c_int32),
         ("colorbar", _XygChromeColorbarIn),
+        ("y2", _XygChromeY2In),
     ]
 
 
@@ -333,6 +362,44 @@ def _collision_axis(
     )
 
 
+def _chrome_y2(y2: Mapping[str, Any] | None, keepers: list[bytes]) -> _XygChromeY2In:
+    """Marshal the authored secondary y axis: presence and authored values only."""
+    if y2 is None:
+        return _XygChromeY2In()
+    metrics = y2.get("metrics")
+    tick_rgba = metrics.get("tick_rgba") if metrics else None
+    title_rgba = metrics.get("title_rgba") if metrics else None
+    constant = y2.get("constant")
+    title_ref, title_b = _string_ref(y2.get("title"))
+    format_ref, format_b = _string_ref(y2.get("format"))
+    keepers.extend([title_b, format_b])
+    return _XygChromeY2In(
+        1,
+        int(y2["scale_kind"]),
+        float(y2["lo"]),
+        float(y2["hi"]),
+        0 if constant is None else 1,
+        0.0 if constant is None else float(constant),
+        int(y2["nonpositive_mask"]),
+        _chrome_axis(y2["axis"], keepers),
+        _collision_axis(y2["collision"], keepers),
+        len(y2.get("major") or ()),
+        len(y2.get("minor") or ()),
+        len(y2.get("tick_labels") or ()),
+        title_ref,
+        format_ref,
+        0 if metrics is None else 1,
+        0.0 if metrics is None else float(metrics["tick_size"]),
+        0.0 if metrics is None else float(metrics["title_size"]),
+        0.0 if metrics is None else float(metrics["padding"]),
+        0 if metrics is None else int(metrics["text_flags"]),
+        0 if tick_rgba is None else 1,
+        (ctypes.c_uint8 * 4)(*(tick_rgba or (0, 0, 0, 0))),
+        0 if title_rgba is None else 1,
+        (ctypes.c_uint8 * 4)(*(title_rgba or (0, 0, 0, 0))),
+    )
+
+
 def scene_chrome_pack(**kwargs: Any) -> bytes:
     """Bulk-pack XYCF v1 chrome facts via ``xyg_scene_chrome_pack`` (ABI 321)."""
     keepers: list[bytes] = []
@@ -456,7 +523,17 @@ def scene_chrome_pack(**kwargs: Any) -> bytes:
         legend,
         colorbar_present,
         colorbar,
+        _chrome_y2(kwargs.get("y2"), keepers),
     )
+    y2_facts = kwargs.get("y2") or {}
+    y2_major = np.ascontiguousarray(y2_facts.get("major") or (), dtype=np.float64)
+    y2_minor = np.ascontiguousarray(y2_facts.get("minor") or (), dtype=np.float64)
+    y2_tick_labels = y2_facts.get("tick_labels")
+    y2_label_refs = (_XygStringRef * len(y2_tick_labels or ()))()
+    for index, label in enumerate(y2_tick_labels or ()):
+        ref, encoded = _string_ref(str(label))
+        keepers.append(encoded)
+        y2_label_refs[index] = ref
     x_major = (
         np.ascontiguousarray(kwargs["x_major"], dtype=np.float64)
         if kwargs.get("x_major") is not None
@@ -495,7 +572,9 @@ def scene_chrome_pack(**kwargs: Any) -> bytes:
             ctypes.cast(y_label_refs, ctypes.c_void_p) if len(y_label_refs) else 0,
             stops_ptr if stops_len else 0,
             _ptr_f64(colorbar_ticks_arr) if len(colorbar_ticks_arr) else 0,
-            *_optional_u8_ptr(kwargs.get("y2", b"")),
+            _ptr_f64(y2_major) if len(y2_major) else 0,
+            _ptr_f64(y2_minor) if len(y2_minor) else 0,
+            ctypes.cast(y2_label_refs, ctypes.c_void_p) if len(y2_label_refs) else 0,
             _ptr_u8(out),
             len(out),
             ctypes.byref(out_len),

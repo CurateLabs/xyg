@@ -106,3 +106,30 @@ def test_twin_axis_is_seeded_from_the_ytick_rc() -> None:
     assert _right_tick_lengths(svg) == pytest.approx([8.0 * 100 / 72] * len(default), abs=0.01)
     right = [a for a, t in _texts(svg) if a.get("text-anchor") == "start"]
     assert {a["fill"] for a in right} == {"rgba(0,128,0,1.000000)"}
+
+
+def test_clearing_a_twin_reseeds_its_right_axis_from_the_current_rc() -> None:
+    fig = _twin_figure()
+    ax2 = fig.axes[0]._twin
+    assert ax2 is not None
+    with plt.rc_context({"ytick.major.size": 8.0}):
+        ax2.clear()
+    ax2.plot([0, 1], [0, 1])
+    # `clear()` drops the authored red title and re-seeds the tick geometry.
+    assert "label_color" not in fig.axes[0]._axis["y2"]["style"]
+    lengths = _right_tick_lengths(_svg(fig))
+    assert lengths
+    assert lengths == pytest.approx([8.0 * 100 / 72] * len(lengths), abs=0.01)
+    assert fig.axes[0]._axis["y2"]["style"]["tick_length"] == pytest.approx(8.0 * 100 / 72)
+
+
+def test_clearing_the_host_drops_the_twin_and_a_new_twin_is_seeded() -> None:
+    fig = _twin_figure()
+    ax1 = fig.axes[0]
+    ax1.clear()
+    assert ax1._twin is None
+    with plt.rc_context({"ytick.major.size": 8.0}):
+        ax2 = ax1.twinx()
+    ax1.plot([0, 1], [0, 1])
+    ax2.plot([0, 1], [0, 1])
+    assert ax1._axis["y2"]["style"]["tick_length"] == pytest.approx(8.0 * 100 / 72)

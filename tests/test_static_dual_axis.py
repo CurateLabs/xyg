@@ -118,6 +118,95 @@ def test_explicit_long_labels_widen_the_right_gutter() -> None:
     assert all(float(a["x"]) < WIDTH for a, _t in _texts(wide))
 
 
+def _y2_labels(svg: str) -> list[str]:
+    return [t for a, t in _texts(svg) if a.get("text-anchor") == "start"]
+
+
+def _dual_with(raw: dict[str, Any] | None = None, **y2: Any):
+    figure = dual_chart(y2=y2).figure()
+    figure.axis_options["y2"].update(raw or {})
+    return figure
+
+
+def _svg_of(figure: Any) -> str:
+    from xyg._static_document import export_figure
+
+    return export_figure(figure, "svg", width=WIDTH, height=HEIGHT).decode("utf-8")
+
+
+def test_authored_min_gap_thins_y2_labels_like_the_primary_axis() -> None:
+    assert _y2_labels(_svg_of(_dual_with())) == ["0", "100", "200", "300", "400"]
+    assert _y2_labels(_svg_of(_dual_with(tick_label_min_gap=200))) == ["0", "400"]
+
+
+def test_authored_strategy_and_collision_reach_rust_with_strategy_first() -> None:
+    gap = {"tick_label_min_gap": 200}
+    every = ["0", "100", "200", "300", "400"]
+    assert _y2_labels(_svg_of(_dual_with(tick_label_strategy="preserve", **gap))) == every
+    assert _y2_labels(_svg_of(_dual_with({"collision": "preserve"}, **gap))) == every
+    # `tick_label_strategy` takes precedence over the legacy `collision` key.
+    both = _dual_with({"collision": "hide"}, tick_label_strategy="preserve", **gap)
+    assert _y2_labels(_svg_of(both)) == every
+    assert _y2_labels(_svg_of(_dual_with({"collision": "hide"}, **gap))) == ["0", "400"]
+
+
+def test_symlog_y2_places_zero_at_the_middle_of_the_plot() -> None:
+    chart = c.line_chart(
+        c.line(x=[1, 2, 3], y=[1, 2, 3]),
+        c.line(x=[1, 2, 3], y=[-50, 0, 50], y_axis="y2"),
+        c.x_axis(domain=(0, 4)),
+        c.y_axis(domain=(0, 4)),
+        c.y_axis(id="y2", side="right", type_="symlog", constant=2, domain=(-100, 100)),
+        width=WIDTH,
+        height=HEIGHT,
+    )
+    svg = chart.to_svg()
+    plot = re.search(
+        r'data-xy-chrome="plot-background" x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"',
+        svg,
+    )
+    middle = float(plot.group(1)) + float(plot.group(2)) / 2
+    _below, at_zero, _above = _polyline_ys(svg)[1]
+    assert at_zero == pytest.approx(middle, abs=0.01)
+    labels = {t: float(a["y"]) for a, t in _texts(svg) if a.get("text-anchor") == "start"}
+    # The authored constant (2) shapes the ladder; an unauthored one would not.
+    assert set(labels) == {"-12.78", "0.00", "12.78"}
+    assert labels["0.00"] == pytest.approx(middle, abs=6)
+
+
+def test_category_y2_is_rejected_by_rust() -> None:
+    figure = c.line_chart(
+        c.line(x=[1, 2, 3], y=[1, 2, 3]),
+        c.line(x=[1, 2, 3], y=["a", "b", "c"], y_axis="y2"),
+        c.x_axis(domain=(0, 4)),
+        c.y_axis(domain=(0, 4)),
+        c.y_axis(id="y2", side="right"),
+    ).figure()
+    assert figure._axis_kind("y2") == "category"
+    assert _reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+
+
+def _raster_title_angle(figure: Any, text: bytes) -> float:
+    import struct
+
+    from xyg._scene_v3 import figure_raster_commands
+
+    commands = figure_raster_commands(figure)
+    at = commands.index(text)
+    # ... angle f32 | flags u8 | reserved u32 | rgba [4] | len u32 | text
+    return struct.unpack("<f", commands[at - 17 : at - 13])[0]
+
+
+def test_y2_title_reads_bottom_to_top_in_svg_pdf_and_raster() -> None:
+    svg = dual_chart().to_svg()
+    transforms = {t: a["transform"].split(" ")[0] for a, t in _texts(svg) if t in {"L", "R"}}
+    # Same orientation as the left title and Matplotlib's twinx label (rotation 90).
+    assert transforms == {"L": "rotate(-90", "R": "rotate(-90"}
+    assert _raster_title_angle(dual_chart().figure(), b"R") == -90.0
+    pdf = dual_chart().to_image("pdf")
+    assert pdf.startswith(b"%PDF")
+
+
 def _reason(figure: Any) -> str | None:
     return scene_export_support_reason(figure)
 

@@ -2531,6 +2531,21 @@ pub fn decode_tick_labels(bytes: &[u8]) -> Result<Option<Vec<String>>, SceneErro
     Ok(Some(labels))
 }
 
+/// Write the `XYTL` v1 label table without validating its entries; callers
+/// that need bounds go through [`encode_tick_labels`], hosts' authored facts are
+/// validated when the Scene decodes them.
+pub(crate) fn tick_label_table<'a>(labels: impl ExactSizeIterator<Item = &'a str>) -> Vec<u8> {
+    let mut out = Vec::with_capacity(12 + labels.len() * 4);
+    out.extend_from_slice(b"XYTL");
+    out.extend_from_slice(&1u32.to_le_bytes());
+    out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
+    for label in labels {
+        out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+        out.extend_from_slice(label.as_bytes());
+    }
+    out
+}
+
 pub fn encode_tick_labels(labels: Option<&[String]>) -> Result<Vec<u8>, SceneError> {
     let Some(labels) = labels else {
         return Ok(Vec::new());
@@ -2548,15 +2563,7 @@ pub fn encode_tick_labels(labels: Option<&[String]>) -> Result<Vec<u8>, SceneErr
     {
         return Err(SceneError::Limit);
     }
-    let mut out = Vec::with_capacity(12 + labels.len() * 4 + total);
-    out.extend_from_slice(b"XYTL");
-    out.extend_from_slice(&1u32.to_le_bytes());
-    out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
-    for label in labels {
-        out.extend_from_slice(&(label.len() as u32).to_le_bytes());
-        out.extend_from_slice(label.as_bytes());
-    }
-    Ok(out)
+    Ok(tick_label_table(labels.iter().map(String::as_str)))
 }
 
 /// Decode bounded host-framed Cartesian text annotations and project them in
@@ -11392,7 +11399,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         push_num(out, label_size);
         out.push('"');
         push_svg_text_flags(out, y2.axis.static_text.title_flags);
-        out.push_str(" text-anchor=\"middle\" transform=\"rotate(90 ");
+        out.push_str(" text-anchor=\"middle\" transform=\"rotate(-90 ");
         push_num(out, x);
         out.push(' ');
         push_num(out, y);
@@ -11895,9 +11902,10 @@ impl SceneDocument {
         }
     }
 
-    /// Right-gutter counterpart of [`Self::y_title_baseline`]: the quarter-turned
-    /// y2 title sits outside the widest y2 tick label with the same 0.4 em gap,
-    /// and its ink is kept inside the canvas.
+    /// Right-gutter counterpart of [`Self::y_title_baseline`]: the y2 title is
+    /// rotated like the y title (reads bottom to top), so its ink spans
+    /// `[x - ascent, x + depth]`; it sits outside the widest y2 tick label with
+    /// the same 0.4 em gap and its ink is kept inside the canvas.
     fn y2_title_baseline(&self) -> f64 {
         let y2 = self
             .y2
@@ -11934,10 +11942,10 @@ impl SceneDocument {
             .map(|block| block.ascent)
             .unwrap_or(label_size * 0.8);
         let x = match tick_right {
-            Some(tick_right) => tick_right + gap + depth,
+            Some(tick_right) => tick_right + gap + ascent,
             None => self.layout.right + (self.layout.viewport_width - self.layout.right) * 0.65,
         };
-        x.min(self.layout.viewport_width - ascent)
+        x.min(self.layout.viewport_width - depth)
     }
 
     /// Apply bounded static-document text metrics to one decoded Scene.
@@ -15299,14 +15307,15 @@ impl SceneDocument {
             -90.0,
         )?;
         if let Some(y2) = self.y2.as_ref().filter(|y2| !y2.title.is_empty()) {
-            // The right-gutter title is quarter-turned clockwise, which only the
-            // styled text command (explicit angle) can express.
+            // The right-gutter title reads bottom to top like the left title and
+            // Matplotlib's twinx label (90° counter-clockwise); the styled text
+            // command carries the explicit angle.
             out.push(17);
             push_raster_f32(out, self.y2_title_baseline(), scale)?;
             push_raster_f32(out, 0.5 * (self.layout.top + self.layout.bottom), scale)?;
             out.push(1);
             push_raster_f32(out, y2.axis.label_size(self.chrome.label_font_size), scale)?;
-            out.extend_from_slice(&90.0f32.to_le_bytes());
+            out.extend_from_slice(&(-90.0f32).to_le_bytes());
             out.push(y2.axis.static_text.title_flags);
             out.extend_from_slice(&0u32.to_le_bytes());
             out.extend_from_slice(&y2.axis.title_paint());

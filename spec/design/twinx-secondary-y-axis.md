@@ -116,7 +116,7 @@ Order on the static path, both hosts:
    (`scene.rs:13454` on 1019) and the raster display list into
    `emit_y_axis(scale, chrome, metrics, ticks, title, side)`; call for y (left)
    and y2 (right): spine at `layout.right`, ticks outward, labels anchored
-   `start` at `right + tick_out + padding`, title rotated +90° in the right
+   `start` at `right + tick_out + padding`, title rotated −90° (reads bottom to top, as the left title) in the right
    gutter, **no y2 grid** (Matplotlib default; recorded in §28). PDF follows
    SVG. y2 text uses the styled text command #1019 introduces, with XYY2's
    sizes/paints/flags.
@@ -288,10 +288,9 @@ right-hand y axis). Where the implementation refines this document:
   record stores sizes as f32 (the browser works in f32); the Scene keeps f64.
 - **XYCS/XYCO.** The extended XYCO is emitted only when XYCS flag bit 2 is set,
   so host XYCO readers need no change until the hosts send a y2 pair (PRs 2/3).
-- **Title direction.** The y2 title is drawn rotated +90° (clockwise), per §3;
-  Matplotlib's default for a right-hand label is rotation 90° counter-clockwise,
-  which is a one-line flip in `push_svg_chrome_text` / the raster text command
-  if the corpus comparison asks for it.
+- **Title direction.** PR 1 drew the y2 title clockwise; the host PR flips it to
+  read bottom to top like the left title and Matplotlib's `twinx` label (rotation
+  90° counter-clockwise). See the PRs 2+3 record.
 - **Readers.** Every literal-32 Scene reader now uses its owning constant (TS
   `XYG_WASM_SCENE_VERSION`; the Node geo wire files, which the conformance pages also
   serve to browsers and so cannot import native bindings, carry the same value as a
@@ -311,14 +310,26 @@ surface Rust's reasons; no host adds admission or layout policy.
   flagged trace; undefined bits stay rejected. Python (`_scene_sidecars.py`) and
   Node (`scene.js` `packXyCl`) set the bit from `trace.y_axis == "y2"`. This is
   the only Rust change; admission still reads the `XYFS` trace flag.
-- **XYY2 sidecar.** Both hosts hand-pack the 204-byte head plus variable data of
-  `scene_y2.rs` and pass it through `xyg_scene_chrome_pack` (`y2` pointer/length).
-  Domains are data values; tick policy codes come from the existing native
-  admits (`scene_tick_label_strategy`, `scene_tick_anchor`); the 88-byte chrome
-  record is resolved by Rust from the authored y2 style by resolving the chrome
-  facts with y2 in the y slot (`scene_resolve_chrome_style`, bytes 112..200), so
-  colour/width resolution has one owner. Python: `_scene_marshal._pack_y2_sidecar`;
-  Node: `scene.js packY2Sidecar`.
+- **XYY2 is built by Rust (review round 1).** Hosts do not write the sidecar. They
+  pass the authored y2 observation to `xyg_scene_chrome_pack` the way they pass
+  the primary y: an `XygChromeY2In` struct (presence flags plus authored values:
+  scale kind, domain, optional constant, nonpositive mask, the same chrome-axis
+  and collision observations as y, title, format) and the `y2_major`,
+  `y2_minor`, `y2_tick_labels` arrays, replacing the earlier `y2`/`y2_len` bytes
+  (still ABI 388). `scene_chrome_pack.rs::pack_y2_sidecar` resolves the axis
+  chrome record from the y2 style exactly as the y style resolves
+  (`scene_style::resolve_chrome_style`, y record bytes 112..200) and writes the
+  payload through `scene_y2::SceneY2Wire`, the one layout writer shared with
+  `SceneY2Axis::encode`. The strategy/collision precedence and anchor code
+  (`tick_strategy_code`, `tick_anchor_nibble`), the 4 px minimum label gap
+  (`DEFAULT_Y_MIN_GAP`) and the scale constant default 1
+  (`DEFAULT_SCALE_CONSTANT`) are Rust's; the y axis shares the same functions
+  and constant. No host holds a default for any `XYY2` field: an absent fact
+  stays absent and an authored value (a zero constant, an infinite angle or
+  domain) passes through untouched, so both hosts receive Rust's rejection
+  (`SceneY2Axis::decode` / the scene encoder). Python:
+  `_scene_marshal._marshal_y2`; Node: `scene.js marshalY2`. A non-finite
+  `tick_label_angle` is rejected; only NaN on the wire means "no angle".
 - **XYCS/XYCO.** `resolve_chrome_style` / `resolveStaticChromeStyle` set XYCS flag
   bit 2 when `axis_options` carries `y2`, send the third `(style, minor_style)`
   pair, parse the y2 tail of XYCO, drop the consumed y2 style keys, and carry
@@ -329,9 +340,15 @@ surface Rust's reasons; no host adds admission or layout policy.
   the authored side was already marshalled. Rust returns `_Y2_SIDE`, `_X2`,
   `_EXTRA_AXES`, `_Y2_TICK_ONLY`, `_Y2_POLAR` and `_Y2_COLORBAR` to both hosts.
 - **pyplot.** `Axes._seed_rc_axis_styles` seeds a twin's host `_axis["y2"]` with
-  `_rc_axis_style("y")` / `_rc_minor_axis_style("y")` (the `ytick.*` and `axes.*`
-  rc keys), the same function that seeds the left axis, on construction and on
-  `clear()`.
+  `_rc_axis_style("y")` / `_rc_minor_axis_style("y")`, the same functions that
+  seed the left axis, on construction and on `clear()`. The seeded rc keys are
+  exactly: `axes.linewidth`, `grid.linewidth`, `grid.alpha`, `grid.linestyle`,
+  `ytick.major.size`, `ytick.major.pad`, `ytick.major.width`, `ytick.color`,
+  `ytick.labelcolor`, `ytick.labelsize`, `axes.labelcolor`, `axes.labelsize`,
+  `axes.labelweight`, `font.size`, and for the minor ticks `ytick.minor.size`,
+  `ytick.minor.width`, `ytick.minor.pad`. `ytick.direction` (and every other
+  `ytick.*` key) is not seeded: pyplot does not support it for the left axis
+  either, so the twin does not either.
 - **Node surface.** `Figure.setAxis` accepts `"y2"`; traces bind with `yAxis: "y2"`.
 - **Tests.** `tests/test_static_dual_axis.py`, `tests/pyplot/test_twinx.py`,
   `tests/test_static_dual_axis_cross_host.py` with
@@ -340,6 +357,16 @@ surface Rust's reasons; no host adds admission or layout policy.
   `scene_trace_rows::y2_flag_selects_the_secondary_scale_for_that_trace_only`.
   Corpus case 26 passes (52/55 overall; the three open cases are the named
   annotation/hexbin gaps in `spec/matplotlib/compat.md`).
-- **Open.** The right-hand title is drawn clockwise; Matplotlib's `twinx` label
-  reads bottom to top (see the PR 1 "Title direction" note). The corpus
-  comparison does not distinguish them.
+- **Title direction.** The y2 title now reads bottom to top: SVG/PDF
+  `rotate(-90 …)` (`push_svg_chrome_text` path in `scene.rs`) and the styled
+  raster text command angle −90°, like the left title. The title baseline
+  swaps the roles of ascent and depth accordingly
+  (`y2_title_baseline`: ink spans `[x − ascent, x + depth]`). Pinned by
+  `y2_title_reads_bottom_to_top_like_the_y_title_in_svg_and_raster` (Rust) and
+  `test_y2_title_reads_bottom_to_top_in_svg_pdf_and_raster` (Python). The live
+  browser client's DOM title is not changed here.
+- **Invalid-input tests.** `tests/test_static_dual_axis_cross_host.py` sends a zero
+  and a negative constant, an infinite domain and ±infinite
+  `tick_label_angle`; Python and Node get the same Rust rejection
+  (`invalid canonical scene batch`, which Python raises and Node returns). A
+  category y2 gets `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS` in both.
