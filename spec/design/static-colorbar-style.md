@@ -51,6 +51,42 @@ interpolates those samples into exactly 64 paint bands, including ties-to-even
 RGBA rounding. SVG and raster consume the same resolved bands. Ordinary Scene
 colorbars without the pyplot override retain literal authored-band semantics.
 
+## Discrete bands
+
+XYST v4 (#1035) adds panel flag 25 for matplotlib's discrete colorbars
+(`BoundaryNorm` image/mesh colorbars and banded contour fills). It requires the
+pyplot label bit (13) and a Scene colorbar. The canonical XYCB stops are the
+band edges: `stops[i]` opens band `i` and paints it with `stops[i].1` (the last
+stop only closes the final band), so the bar is the literal Scene stops with
+no 64-band interpolation. The Scene contract bounds this to 16 stops, i.e. at
+most 15 bands; pyplot reports the existing `XYG_SCENE_UNSUPPORTED_COLORBAR`
+admission reason beyond that.
+
+The flag's blob (`u32` spacing, `u32` label count, then each label as `u32`
+byte length plus UTF-8; panels consume the region sequentially, NUL and
+invalid UTF-8 rejected) adds two facts:
+
+- **Spacing.** `1` is matplotlib's default `spacing="uniform"`: every band is
+  an equal share of the bar and a value maps piecewise-linearly inside its
+  band (`uniform_discrete_fraction`, shared by the bands and the tick
+  positions, so SVG and raster agree). `0` is `"proportional"`: bands span
+  their literal value interval, the ordinary linear layout.
+- **Tick labels.** Zero labels keep Rust's authored-tick labels; otherwise
+  exactly one label (at most 32 bytes) per authored major tick, drawn
+  verbatim. This carries `colorbar(format=...)` on a banded bar without a host
+  formatting pass over Rust's layout.
+
+`apply_static_colorbar_discrete` fails closed (decoder `XYG_STATIC_DOCUMENT_PANEL`)
+for a logarithmic scale, minor ticks, fewer than two stops, or authored labels
+without authored ticks or of the wrong count. pyplot admits `band_colors`,
+`boundaries`, `spacing` and `tick_labels` on the panel colorbar and marshals
+them as literal Scene stops plus this blob; `tick_labels` without bands (a
+formatted continuous ramp) stays rejected with the stable
+`XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS` reason because the named
+ramp has no literal bands to label. A discrete colormap without `BoundaryNorm`
+boundaries (`get_cmap(name, n)`) still renders the continuous ramp, which is the
+pre-existing behavior this change does not widen.
+
 ## Extensions and labels
 
 Endpoint extension triangles use the first/last stop's literal RGBA paint.

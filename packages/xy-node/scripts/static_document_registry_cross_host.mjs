@@ -37,6 +37,7 @@ const options = {
   document_grid_dash: [{ gridDash: [1, 0, 0, 2] }, {}],
   document_chrome_text: [{ chromeText: [2 | (1 << 2) | (2 << 4) | (3 << 6) | (1 << 8) | (0xF << 10), [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [10, 20, 30, 255]]] }, {}],
   document_colorbar_fill_plot: [{ colorbarFillPlot: true }, {}],
+  document_colorbar_discrete: [{ colorbarPyplotLabel: true, colorbarDiscrete: [true, ["one", "ten", "hundred"]] }, {}],
   document_defaults: [{}, {}],
   document_background: [{}, { background: "#ddeeff80" }],
   document_optimized_png: [{}, { optimizePng: true }],

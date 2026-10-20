@@ -405,9 +405,11 @@ pub struct StaticDocumentVocabulary {
 pub const STATIC_DOCUMENT_HEADER_FLAGS: u32 = 15;
 /// Panel flag bits 6, 7 and 9 (the v2 uniform annotation flags/padding/alignment)
 /// are retired in XYST v3 and rejected; bit 3 is the per-label annotation table.
-/// Bit 24 (explicit `cax` fills the plot rectangle) is admitted outside the low
-/// sixteen; a test pins this mask to the decoder's.
-pub const STATIC_DOCUMENT_PANEL_FLAGS: u32 = (0xffff & !((1 << 6) | (1 << 7) | (1 << 9))) | (1 << 24);
+/// Bit 24 (explicit `cax` fills the plot rectangle) and bit 25 (the XYST v4
+/// discrete-colorbar region) are admitted outside the low sixteen; a test pins
+/// this mask to the decoder's.
+pub const STATIC_DOCUMENT_PANEL_FLAGS: u32 =
+    (0xffff & !((1 << 6) | (1 << 7) | (1 << 9))) | (1 << 24) | (1 << 25);
 pub const STATIC_DOCUMENT_FORMATS: &[&str] = &["svg", "png", "pdf", "jpeg", "webp"];
 
 pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
@@ -445,6 +447,11 @@ pub const STATIC_DOCUMENT_VOCABULARY: &[StaticDocumentVocabulary] = &[
         name: "panel.colorbar-fill-plot",
         family: "panel-flag",
         code: 1 << 24,
+    },
+    StaticDocumentVocabulary {
+        name: "panel.colorbar-discrete",
+        family: "panel-flag",
+        code: 1 << 25,
     },
     StaticDocumentVocabulary {
         name: "annotation.baseline",
@@ -825,6 +832,11 @@ pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
     StaticDocumentCase {
         name: "document_colorbar_fill_plot",
         vocabulary: &["panel.colorbar-fill-plot"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_colorbar_discrete",
+        vocabulary: &["panel.colorbar-discrete", "panel.colorbar-pyplot-label"],
         formats: STATIC_DOCUMENT_FORMATS,
     },
     StaticDocumentCase {

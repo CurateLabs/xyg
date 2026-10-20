@@ -191,9 +191,10 @@ pyplot label-placement bits (10 through 13), the grid-dash fact (bit 14),
 the Rust-resolved chrome-text fact (bit 15, #1004), and the per-label
 annotation table (bit 3, #1006, with typography/padding entry facts and the
 vertical-alignment codes) and the explicit-`cax` fill-plot fact (bit 24, with
-the `document_colorbar_fill_plot` positive witness in both hosts). XYST v3
-retires the v2 uniform annotation bits 6, 7 and 9, so the full panel mask is
-`0x0100fd3f` (a Rust test pins the registry masks to the decoder's admitted
+the `document_colorbar_fill_plot` positive witness in both hosts) and the
+discrete-colorbar region (bit 25, #1035, `document_colorbar_discrete` in both
+hosts). XYST v3 retires the v2 uniform annotation bits 6, 7 and 9, so the full
+panel mask is `0x0300fd3f` (a Rust test pins the registry masks to the decoder's admitted
 `PANEL_FLAGS`/`FLAGS`) and rejection mutations pin the retired bits (`panel_retired_annotation_*`) together with the explicitly empty present
 table (`panel_label_table_empty_present`); minimum, maximum, and combined extension
 have distinct runtime case rows, and `document_grid_dash` drives both hosts'

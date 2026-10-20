@@ -238,6 +238,65 @@ def test_boundary_norm_is_shared_by_imshow_pcolormesh_and_colorbar():
     assert all(f">{value}<" in svg for value in options["tick_labels"])
 
 
+def _colorbar_bands(svg: str) -> list[tuple[float, str]]:
+    """``(height, fill)`` of each Rust-drawn colorbar band, bottom to top."""
+    import re
+
+    return [
+        (float(height), fill)
+        for height, fill in re.findall(
+            r'data-xy-slot="colorbar_band"[^>]*height="([\d.]+)" fill="([^"]+)"', svg
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ("spacing", "expected_ratio"),
+    [("uniform", [1, 1, 1]), ("proportional", [2, 1, 4])],
+)
+def test_boundary_norm_colorbar_spacing_is_drawn_by_rust(spacing, expected_ratio):
+    """Uniform bands are equal; proportional bands follow the boundary values."""
+    pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    boundaries = [-3.0, -1.0, 0.0, 4.0]
+    fig, ax = plt.subplots()
+    image = ax.imshow(
+        np.asarray([[-2.0, -0.5, 2.0]]), norm=BoundaryNorm(boundaries, 256), cmap="RdYlBu"
+    )
+    fig.colorbar(image, spacing=spacing, ticks=boundaries)
+    bands = _colorbar_bands(_svg())
+    assert len(bands) == 3
+    heights = [height for height, _ in bands]
+    assert heights == pytest.approx(
+        [ratio * heights[0] / expected_ratio[0] for ratio in expected_ratio], abs=0.02
+    )
+    # Bands are literal solid colors, bottom (lowest) first: no interpolation.
+    assert len({fill for _, fill in bands}) == 3
+    assert [fill for _, fill in bands] == [
+        f"rgba({r},{g},{b},1.000000)" for r, g, b in image._entry["discrete_colors"]
+    ]
+
+
+def test_continuous_colorbar_with_formatted_ticks_is_rejected_with_a_stable_reason():
+    """Authored tick labels need literal bands; a ramp has none, so it fails closed."""
+    plt.imshow(np.arange(6.0).reshape(2, 3))
+    plt.colorbar(ticks=[0, 2, 4], format=plt.FuncFormatter(lambda value, _: f"{value:g}u"))
+    with pytest.raises(RuntimeError, match="XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS"):
+        _svg()
+
+
+def test_boundary_norm_colorbar_beyond_the_bounded_stop_budget_is_rejected():
+    """Scene colorbars carry at most 16 literal stops (15 bands); more fails closed."""
+    pytest.importorskip("matplotlib")
+    from matplotlib.colors import BoundaryNorm
+
+    plt.imshow(np.arange(6.0).reshape(2, 3), norm=BoundaryNorm(np.linspace(0, 10, 18), 256))
+    plt.colorbar()
+    with pytest.raises(RuntimeError, match="XYG_SCENE_UNSUPPORTED_COLORBAR"):
+        _svg()
+
+
 # -- defect 7: contour conventions --------------------------------------------
 
 

@@ -379,6 +379,11 @@
         "code": 16777216
       },
       {
+        "name": "panel.colorbar-discrete",
+        "family": "panel-flag",
+        "code": 33554432
+      },
+      {
         "name": "annotation.baseline",
         "family": "annotation-vertical-align",
         "code": 0
@@ -920,6 +925,20 @@
         "name": "document_colorbar_fill_plot",
         "vocabulary": [
           "panel.colorbar-fill-plot"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_colorbar_discrete",
+        "vocabulary": [
+          "panel.colorbar-discrete",
+          "panel.colorbar-pyplot-label"
         ],
         "formats": [
           "svg",

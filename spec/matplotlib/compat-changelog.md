@@ -4,6 +4,20 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## `BoundaryNorm` colorbar static export — 2026-10-20 (Matplotlib 3.11.0 reference, #1035)
+
+- Static export (SVG/PNG/PDF/JPEG/WebP) draws a `BoundaryNorm` (or banded
+  contour) colorbar. Before, `test_boundary_norm_is_shared_by_imshow_pcolormesh_and_colorbar`
+  failed on main with `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` because the
+  pyplot admission list lacked `band_colors`, `tick_labels` and `spacing`, which
+  Rust could not draw either. XYST moves to v4 with a discrete-colorbar region
+  (panel flag 25): Rust renders the literal bands, resolves `uniform` (default)
+  and `proportional` spacing and draws the `format=` tick labels; pyplot only
+  marshals the facts. No C ABI signature changed (ABI 390).
+- `format=` on a continuous ramp now fails closed with the stable
+  `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS` reason, and a banded bar
+  beyond 15 bands reports `XYG_SCENE_UNSUPPORTED_COLORBAR`. Both are known gaps.
+
 ## Annotation coordinate spaces and `table()` — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 
 - Static export (SVG/PNG/PDF/JPEG/WebP, Python and Node) places text in
