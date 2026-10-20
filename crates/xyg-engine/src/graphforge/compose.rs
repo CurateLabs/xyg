@@ -249,8 +249,9 @@ impl<'b> Planes<'b> {
 
     /// The property-graph default view of a composition with no result layer
     /// (spec §4.4a): nodes classed by first label with a label legend,
-    /// captions that fall back to a short identity, and relationship types as
-    /// low-priority edge labels (the interactive mark zoom-gates them).
+    /// captions that fall back to a short identity, arrowheads on directed
+    /// graphs (edge status 1), and relationship types as low-priority edge
+    /// labels (the interactive mark zoom-gates them).
     fn default_view(&mut self) {
         let base = self.base;
         let mut index: HashMap<&str, usize> = HashMap::new();
@@ -303,6 +304,12 @@ impl<'b> Planes<'b> {
             }
         }
         self.decide("GF_COMPOSE_CAPTION_IDENTITY", None, captioned);
+        // Direction rides the edge status plane like every directional overlay
+        // (status 1 resolves to an arrowhead in the graph mark and the Scene).
+        if base.directed && !base.edge_uuid.is_empty() {
+            self.edge_status.fill(1);
+            self.legend(LEGEND_EDGE, 2, 1, "directed relationship".into());
+        }
         for (edge, kind) in base.edge_type.iter().enumerate() {
             if kind.is_some() {
                 self.edge_label[edge] = kind.clone();

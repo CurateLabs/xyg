@@ -103,9 +103,29 @@ def property_graph() -> None:
         print(f"wrote {path} rows={table.num_rows}")
 
 
+def flat_captions() -> None:
+    """A flat node table carrying both ``name`` and ``label`` (#934): captions
+    follow ``name``, ``title``, ``label`` in that order, so ``name`` wins."""
+    nodes = pa.table(
+        {
+            "node_uuid": pa.array(
+                [
+                    "00000000-0000-0000-0000-0000000000a1",
+                    "00000000-0000-0000-0000-0000000000a2",
+                ],
+                type=pa.string(),
+            ),
+            "name": pa.array(["Name A", None], type=pa.string()),
+            "label": pa.array(["Label A", "Label B"], type=pa.string()),
+        }
+    )
+    _write("captions_nodes.arrow", nodes)
+
+
 def main() -> None:
     ROOT.mkdir(parents=True, exist_ok=True)
     property_graph()
+    flat_captions()
     nodes = pa.table(
         {
             "node_uuid": pa.array(

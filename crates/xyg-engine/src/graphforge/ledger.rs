@@ -692,9 +692,9 @@ pub fn schema_for_algorithm(algorithm: &str) -> Option<&'static SchemaEntry> {
 pub fn ledger_tsv() -> String {
     let mut out =
         String::from("schema\tversion\tdisposition\tcomposition\tintents\tfields\talgorithms\n");
-    for entry in std::iter::once(&ENTITY_GRAPH_SCHEMA)
-        .chain(ALGORITHM_SCHEMAS.iter())
-        .chain(std::iter::once(&SEARCH_SCHEMA))
+    for entry in ALGORITHM_SCHEMAS
+        .iter()
+        .chain([&SEARCH_SCHEMA, &ENTITY_GRAPH_SCHEMA])
     {
         let intents: Vec<_> = entry
             .composition
@@ -790,9 +790,9 @@ mod tests {
             .filter(|l| l.starts_with("| `"))
             .map(cells)
             .collect();
-        let entries: Vec<&SchemaEntry> = std::iter::once(&ENTITY_GRAPH_SCHEMA)
-            .chain(ALGORITHM_SCHEMAS.iter())
-            .chain(std::iter::once(&SEARCH_SCHEMA))
+        let entries: Vec<&SchemaEntry> = ALGORITHM_SCHEMAS
+            .iter()
+            .chain([&SEARCH_SCHEMA, &ENTITY_GRAPH_SCHEMA])
             .collect();
         assert_eq!(rows.len(), entries.len(), "one spec row per schema");
         for (row, entry) in rows.iter().zip(entries) {

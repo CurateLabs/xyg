@@ -87,7 +87,6 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 <!-- graphforge-ledger:begin -->
 | Schema | Disposition | Composition | Intents | Algorithms |
 |---|---|---|---|---|
-| `entity_graph` | entity-graph | entity-graph | graph | (base graph) |
 | `node-score` | node-layer | node-score | graph | pagerank, betweenness, closeness, harmonic_closeness, degree, eigenvector, article_rank, hits_hub, hits_authority, celf, clustering_coefficient, local_clustering_coefficient, triangles, k_core, preferential_attachment, adamic_adar, common_neighbors, resource_allocation, total_neighbors |
 | `node-community` | node-layer | node-group | graph | louvain, leiden, label_propagation, speaker_listener, girvan_newman, modularity_optimization, fastgreedy, infomap, leading_eigenvector, walktrap, spinglass, hdbscan, k_means, approximate_max_k_cut, components, strongly_connected, biconnected, k_core_decomposition |
 | `similarity` | derived-edges | derived-edges | graph | node_similarity, knn, filtered_knn, filtered_node_similarity, cosine |
@@ -128,6 +127,7 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 | `dyad-census` | table-only | category | table, bar-chart | dyad_census |
 | `embedding` | composition-required | embedding | embedding-coordinates, parallel-coordinates | node2vec, graphsage, fast_random_projection, hashgnn |
 | `search` | node-layer | node-search | graph | (find) |
+| `entity_graph` | entity-graph | entity-graph | graph | (base graph) |
 <!-- graphforge-ledger:end -->
 
 `entity_graph` is the ledger's row for the base property graph itself (the
@@ -256,7 +256,7 @@ no base still fails with `GF_COMPOSE_BASE_REQUIRED`, and layers still check
 | Legend | one node row per label class present, labeled with the label text, `other labels (n)` for the shared bucket, and `no label` for class 0 when labeled nodes also exist |
 | Node caption | the first non-empty of `name`, `title`, `label` (§4.1), else the last eight hex digits of the node UUID (the random tail of a UUIDv7); nodes that fell back are counted in `GF_COMPOSE_CAPTION_IDENTITY` |
 | Relationship type | `edge.type` carries it for hover and selection; `edge.label` repeats it with `edge.label_priority` −1, below every node caption (0), so the graph mark's zoom-monotone label plan (`graph_label_plan`) ranks types after captions and shows them as zoom frees room |
-| Direction | the direct-tier Scene draws a target-end arrowhead on every relationship when `graph.directed` is 1 (layered compositions keep their per-layer status arrowheads) |
+| Direction | when `graph.directed` is 1 every base relationship gets edge `status` 1, the directional-overlay signal that `graph_style` resolves to a target-end arrowhead in both the graph mark and the Scene, with a `directed relationship` legend row. Undirected graphs keep status 0 and no arrowheads (layered compositions keep their per-layer status) |
 | Layout | the graph mark's seeded force layout (§6.3: seed 0, 300 ticks over every composed edge) |
 | Identity | every node and relationship keeps its UUID; parallel relationships stay separate edges and self-loops stay one edge with equal endpoints, both painted by the Scene under their own stable IDs |
 
@@ -274,6 +274,12 @@ captions are placed in stable-ID order, truncated to the label bound, and
 dropped when they collide or leave the plot; the default view puts no
 relationship-type labels in the static Scene, because a still picture cannot
 zoom-gate them and edge labels would outrank node captions in that order.
+**Known gap:** the direct-browser WASM view paints that fixed-range Scene
+(`renderWasmScene`: `drag_action: "none"`, one fixed view range, labels baked
+into the Scene), so relationship types appear there on selection only (the
+`xy:graphforge-select` detail carries `type`), not at zoom; zoom-gated types are delivered by the native graph mark
+(`edge.label`). Zoom-gating on the WASM path needs the interactive
+render/pick pipeline of #36 and is tracked on #934.
 Static PNG/SVG export of the default view follows the Scene, and its parity
 with the interactive view is tracked by #935. Accessible selection and
 keyboard navigation of the graph are owned by #36, not by this composition.
@@ -704,8 +710,8 @@ another result or generation never matches (generation checks, §4.2).
   wasm32 artifact and requires byte-identical documents and Scenes; the
   browser bundle's request framing must equal Node's and decode the same
   identities. `cargo test -p xyg-wasm` checks the adapter against the C ABI.
-  The default view (§4.4a) adds about 1.1 KB gzip to `xyg-wasm` (measured
-  with `gzip -9`: 618,240 → 619,337 bytes), inside the packaging gate; its
+  The default view (§4.4a) adds about 1.2 KB gzip to `xyg-wasm` (measured
+  with `gzip -9`: 618,240 → 619,398 bytes), inside the packaging gate; its
   class ranking is a sort-free selection so no new sort instantiations ship.
 - Browser: `scripts/graphforge_wasm_smoke.mjs` serves only the packaged
   Worker/WASM/client and fixtures under a strict CSP (no `blob:`), paints a

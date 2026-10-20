@@ -1510,8 +1510,11 @@ fn the_default_view_classes_nodes_by_label_with_a_legend() {
     let doc = Doc::new(&rendered);
     // Equal-sized labels rank by name: Company 1, Person 2; unlabeled stays 0.
     assert_eq!(doc.u8s("node.class"), &[2, 2, 1, 1, 0]);
-    assert_eq!(doc.texts("legend.text", 0), ["no label", "Company", "Person"]);
-    assert_eq!(doc.u8s("legend.value"), &[0, 1, 2]);
+    assert_eq!(
+        doc.texts("legend.text", 0),
+        ["no label", "Company", "Person", "directed relationship"]
+    );
+    assert_eq!(doc.u8s("legend.value"), &[0, 1, 2, 1]);
     assert_eq!(doc.u8s("edge.class"), &[0; 5]);
 }
 
@@ -1545,21 +1548,25 @@ fn default_relationship_types_label_below_every_node_caption() {
 }
 
 #[test]
-fn directed_default_views_draw_arrowheads_and_undirected_ones_do_not() {
-    let scene_of = |directed: bool| {
+fn directed_default_views_mark_every_edge_for_an_arrowhead_and_undirected_ones_do_not() {
+    let compose_with = |directed: bool| {
         let bytes = with_directed(&with_render(property_request(), "light"), directed);
-        let rendered = property_document(bytes);
-        let scene = Doc::new(&rendered)
-            .0
-            .get("scene.canonical", 0)
-            .unwrap()
-            .as_bytes("s")
-            .unwrap()
-            .to_vec();
-        crate::scene::SceneDocument::decode(&scene).unwrap()
+        property_document(bytes)
     };
-    let (directed, undirected) = (scene_of(true), scene_of(false));
-    assert!(directed.record_count() > undirected.record_count());
+    let (directed, undirected) = (compose_with(true), compose_with(false));
+    // Direction is the edge status plane: the one signal the graph mark and
+    // the Scene both resolve to an arrowhead (graph_style `arrow`).
+    assert_eq!(Doc::new(&directed).u8s("edge.status"), &[1; 5]);
+    assert_eq!(Doc::new(&undirected).u8s("edge.status"), &[0; 5]);
+    assert!(!Doc::new(&undirected)
+        .texts("legend.text", 0)
+        .contains(&"directed relationship"));
+    let scene = |bytes: &[u8]| {
+        let doc = Doc::new(bytes);
+        let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
+        crate::scene::SceneDocument::decode(scene).unwrap().record_count()
+    };
+    assert!(scene(&directed) > scene(&undirected));
 }
 
 #[test]

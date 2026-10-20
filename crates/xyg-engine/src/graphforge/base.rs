@@ -492,6 +492,22 @@ mod tests {
     }
 
     #[test]
+    fn flat_node_captions_prefer_name_over_label() {
+        // `captions_nodes.arrow` carries both columns (#934): `name` wins, and
+        // a row without one falls through to `label`.
+        let nodes = std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/captions_nodes.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let graph = build(&[read_table(&nodes).unwrap()], None, true).unwrap();
+        assert_eq!(
+            graph.node_name,
+            [Some("Name A".to_owned()), Some("Label B".to_owned())]
+        );
+    }
+
+    #[test]
     fn conflicting_relationship_endpoints_fail() {
         let a = [1; 16];
         let b = [2; 16];

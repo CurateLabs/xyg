@@ -257,13 +257,30 @@ def test_zero_layer_request_composes_the_property_graph_defaults() -> None:
     # Captions: name, then title, then label, then a short identity.
     assert list(c.nodes.label) == ["ada", "Prof", "Acme", "00000004", "00000005"]
     assert list(c.nodes.class_) == [2, 2, 1, 1, 0]
-    assert [row["text"] for row in c.legend["rows"]] == ["no label", "Company", "Person"]
+    assert [row["text"] for row in c.legend["rows"]] == [
+        "no label",
+        "Company",
+        "Person",
+        "directed relationship",
+    ]
     # Relationship types ride the label plane below every caption.
     assert list(c.edges.label) == list(c.edges.type)
     assert c.scene is not None and len(c.scene["x"]) == 5
     # The same graph and Version compose to the same bytes.
     request = xyg.encode_graphforge_request(base=_base("property"), render=render)
     assert compose_graphforge_request(request) == compose_graphforge_request(request)
+
+
+def test_directed_property_graph_keeps_its_arrowheads_in_the_interactive_mark() -> None:
+    def head_bits(directed: bool) -> set[int]:
+        c = xyg.compose_graphforge(base={**_base("property"), "directed": directed})
+        fig = xyg.graphforge_chart(c).figure()
+        edges = fig.traces[fig._graph_meta[0]["edge_trace"]]
+        return {int(flag) & 0x40 for flag in edges.style_channels["edge_ends"].values[:, 6]}
+
+    # Rust's arrow policy (edge status) replaces the directed default.
+    assert head_bits(True) == {0x40}
+    assert head_bits(False) == {0}
 
 
 def test_large_parallel_coordinates_keep_every_segment_identity() -> None:
