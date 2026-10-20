@@ -1,13 +1,16 @@
-//! Per-annotation XYAF v1 record packing (M2 Push 3A, ABI 319).
+//! Per-annotation XYAF record packing (M2 Push 3A, ABI 319).
 //!
 //! Hosts marshal validated annotation facts and style bytes; Rust owns the
-//! XYAF v1 header layout and text tail concat.
+//! XYAF header layout and text tail concat. XYAF v2 (#1006) appends the
+//! 72-byte arrow extension (head/tail codes, start offset, shrink, label
+//! clearance) to the v1 header; v1 records are rejected with a version error.
 
 pub const SCENE_XYAF_PACK_MAX_RECORD: usize = 1 << 16;
 
 const XYAF_MAGIC: &[u8; 4] = b"XYAF";
-const XYAF_VERSION: u32 = 1;
+const XYAF_VERSION: u32 = 2;
 const XYAF_V1_HEADER_BYTES: usize = 232;
+const XYAF_HEADER_BYTES: usize = XYAF_V1_HEADER_BYTES + 72;
 
 /// Host-marshaled XYAF record for ``scene_xyaf_pack``.
 #[derive(Clone, Debug)]
@@ -31,10 +34,14 @@ pub struct XyafPackInput<'a> {
     pub label_fill: [u8; 4],
     pub label_border: [u8; 4],
     pub dash: [f32; 8],
+    /// `ArrowEnd` codes of the head and tail; zero for non-arrow kinds.
+    pub arrow_ends: [u8; 2],
+    /// Start offset x/y, gap start/end, label clearance l/r/u/d (pixels).
+    pub arrow_facts: [f64; 8],
     pub text: &'a [u8],
 }
 
-/// Pack one XYAF v1 record. Returns ``-1`` invalid, ``-2`` text too long.
+/// Pack one XYAF v2 record. Returns ``-1`` invalid, ``-2`` text too long.
 pub fn scene_xyaf_pack(input: &XyafPackInput<'_>) -> Result<Vec<u8>, i32> {
     if input.kind_code > 5
         || input.axis_code > 2
@@ -47,7 +54,7 @@ pub fn scene_xyaf_pack(input: &XyafPackInput<'_>) -> Result<Vec<u8>, i32> {
     {
         return Err(-1);
     }
-    let total = XYAF_V1_HEADER_BYTES
+    let total = XYAF_HEADER_BYTES
         .checked_add(input.text.len())
         .ok_or(-2)?;
     if total > SCENE_XYAF_PACK_MAX_RECORD {
@@ -82,7 +89,13 @@ pub fn scene_xyaf_pack(input: &XyafPackInput<'_>) -> Result<Vec<u8>, i32> {
         let at = 200 + i * 4;
         out[at..at + 4].copy_from_slice(&value.to_le_bytes());
     }
-    out[XYAF_V1_HEADER_BYTES..].copy_from_slice(input.text);
+    out[XYAF_V1_HEADER_BYTES] = input.arrow_ends[0];
+    out[XYAF_V1_HEADER_BYTES + 1] = input.arrow_ends[1];
+    for (i, value) in input.arrow_facts.iter().enumerate() {
+        let at = XYAF_V1_HEADER_BYTES + 8 + i * 8;
+        out[at..at + 8].copy_from_slice(&value.to_le_bytes());
+    }
+    out[XYAF_HEADER_BYTES..].copy_from_slice(input.text);
     Ok(out)
 }
 
@@ -113,10 +126,12 @@ mod tests {
             label_fill: [0; 4],
             label_border: [0; 4],
             dash: [0.0; 8],
+            arrow_ends: [0; 2],
+            arrow_facts: [0.0; 8],
             text: b"hi",
         })
         .unwrap();
         assert_eq!(&packed[..4], b"XYAF");
-        assert_eq!(&packed[XYAF_V1_HEADER_BYTES..], b"hi");
+        assert_eq!(&packed[XYAF_HEADER_BYTES..], b"hi");
     }
 }

@@ -789,9 +789,9 @@ def test_named_text_annotation_compiles_through_rust_xyad() -> None:
 def test_pack_annotation_facts_frames_text_and_expands_rule() -> None:
     text = (
         struct.pack(
-            "<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f",
+            "<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f2B6x8d",
             b"XYAF",
-            1,
+            2,
             0,
             0,
             0,
@@ -813,6 +813,9 @@ def test_pack_annotation_facts_frames_text_and_expands_rule() -> None:
             bytes(4),
             0,
             *[0.0] * 8,
+            0,
+            0,
+            *[0.0] * 8,
         )
         + b"hi"
     )
@@ -830,9 +833,9 @@ def test_pack_annotation_facts_frames_text_and_expands_rule() -> None:
     assert b"hi" in xyad
 
     rule = struct.pack(
-        "<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f",
+        "<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f2B6x8d",
         b"XYAF",
-        1,
+        2,
         7,
         3,
         1,
@@ -852,6 +855,9 @@ def test_pack_annotation_facts_frames_text_and_expands_rule() -> None:
         bytes(4),
         bytes(4),
         bytes(4),
+        0,
+        *[0.0] * 8,
+        0,
         0,
         *[0.0] * 8,
     )

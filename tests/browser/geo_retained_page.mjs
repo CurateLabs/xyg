@@ -265,7 +265,7 @@ try{
   let frozen=null,secondFrozen=null,frozenView=null;
   try{
     frozen=await rawGeo('geo.snapshot.read',snapshotRequest(20,frozenHandle));frozenView=new DataView(frozen);
-    assert(String.fromCharCode(...new Uint8Array(frozen,0,4))==='XYGX'&&frozenView.getUint32(4,true)===2&&frozenView.getUint32(8,true)===33,'snapshot did not freeze actual Scene32');
+    assert(String.fromCharCode(...new Uint8Array(frozen,0,4))==='XYGX'&&frozenView.getUint32(4,true)===2&&frozenView.getUint32(8,true)===34,'snapshot did not freeze actual Scene34');
     assert(frozenView.getUint32(52,true)===1&&frozenView.getBigInt64(56,true)===MIN&&frozenView.getBigUint64(192,true)===MAX&&frozenView.getBigUint64(208,true)===MAX&&frozenView.getBigUint64(288,true)===MAX,'frozen camera/time/layer/source/direct identity');
     const unavailable=await reject(rawGeo('geo.snapshot.execute',snapshotRequest(2,frozenHandle)),'WASM unexpectedly exposed raster artifact export');
     assert(unavailable.code==='XYG_GEO_SNAPSHOT_UNSUPPORTED_EXPORT','WASM raster feature gate gave wrong unsupported error');

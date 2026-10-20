@@ -258,7 +258,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging enforces 1,504 KiB raw / 616 KiB gzip limits (raised from 1,472 / 608 KiB by the Scene v33 secondary-y axis, #1006: measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The release compiler and pinned Binaryen 132 `-O3
+packaging enforces 1,504 KiB raw / 620 KiB gzip limits (gzip raised again from 616 KiB by the #1006 straight-arrow vocabulary, below; raised from 1,472 / 608 KiB by the Scene v33 secondary-y axis, #1006: measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -414,7 +414,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 32 for this contract.
+`SCENE_VERSION` remains independently versioned and is 34 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -441,7 +441,7 @@ in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
 Painter contract v16 begins with `XYPB`, independent painter version 16, canonical
-Scene v33 (`SCENE_VERSION = 33`), a 420-byte header (v16 inserts the 88-byte y2 axis
+Scene v34 (`SCENE_VERSION = 34`), a 420-byte header (v16 inserts the 88-byte y2 axis
 block at 264, a 32-byte y2 chrome-text record at 352, and moves the length words to 384;
 see `scene-ir.md` for the full map), 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
@@ -1089,8 +1089,8 @@ alone, but their combined unchanged-profile artifact measures **1,454,428 raw /
 597,662 gzip bytes (level 6)**, SHA-256
 `ad68147eb89bbc8b4f1d6039642ee3068e3484243b48ccf6cb4d6359d9780b15`.
 It exceeds the historical gates by12,636 raw and7,838 gzip bytes. The current
-hard packaging limits are **1,507,328 raw bytes (1,472 KiB) and622,592 gzip bytes
-(608 KiB, level 6)**; runtime source, Data, handle, processor and transfer limits
+hard packaging limits are **1,523,712 raw bytes (1,488 KiB) and626,688 gzip bytes
+(612 KiB, level 6)**; runtime source, Data, handle, processor and transfer limits
 remain unchanged. Rust release O3/inline100 and pinned Binaryen132 O3 remain
 unchanged. An O3 shrink-level1 experiment produced identical bytes; Oz reduced
 raw size to1,434,576 but increased gzip to598,701, so neither solves the gates.
@@ -1103,3 +1103,18 @@ are recorded in
 These local startup measurements exclude browser painting, network delivery and
 massive-source interaction. Future functionality growth still requires a separate
 recorded decision; package checks continue to fail above either current limit.
+
+### Straight-arrow vocabulary size decision (#1006)
+
+Scene v34's bounded arrow vocabulary (`crates/xyg-engine/src/scene_arrow.rs`: open
+heads, tails, shrink and label clearance, one geometry shared by encode, document
+lowering, batch validation and the XYST arrow-metric pass) adds about 5 KB raw and
+2.4 KB gzip to the module. On top of the Scene v33 secondary-y axis the packaged
+module measures 1,525,677 raw bytes (inside the 1,504 KiB = 1,540,096-byte gate) and
+627,558 gzip bytes at level 6 locally, which with CI's ~2.7 KB toolchain offset
+leaves under 0.5 KB below the former 616 KiB gate. The gzip gate is therefore
+raised to **620 KiB (634,880 bytes)**; the raw gate is unchanged. Duplicate paint
+projection was folded into one out-of-line function and the paint buffer is a fixed
+array to keep the addition at that size; the browser consumes the same Rust vertices
+rather than a second arrow renderer. The painter contract is unchanged (XYPB v16,
+WASM ABI 34): arrow runs are ordinary line and triangle traces.

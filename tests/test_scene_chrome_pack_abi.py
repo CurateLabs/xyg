@@ -77,7 +77,7 @@ def test_scene_xyaf_pack_roundtrip_bytes() -> None:
         text=b"hi",
     )
     assert packed[:4] == b"XYAF"
-    assert packed[232:] == b"hi"
+    assert packed[304:] == b"hi"
 
 
 def test_scene_figure_support_pack_minimal() -> None:
@@ -126,7 +126,7 @@ def test_scene_xyaf_bulk_pack_text_annotation() -> None:
     }
     packed = scene_xyaf_bulk_pack([annotation])
     assert packed[:4] == b"XYAF"
-    assert packed[232:] == b"hello"
+    assert packed[304:] == b"hello"
 
 
 def test_scene_xyaf_bulk_pack_matches_low_level_pack() -> None:
@@ -177,7 +177,7 @@ def test_scene_xyaf_bulk_pack_via_scene_v3_helper() -> None:
 
     packed = _pack_xyaf_bulk(_text_annotation_figure().annotations)
     assert packed[:4] == b"XYAF"
-    assert packed[232:] == b"hello"
+    assert packed[304:] == b"hello"
 
 
 @pytest.mark.skipif(

@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 389;
+pub const ABI_VERSION: u32 = 390;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2348,7 +2348,7 @@ pub unsafe extern "C" fn xyg_scene_pack_annotations(
     })
 }
 
-/// Pack concatenated XYAF v1 annotation facts into an XYAO v1 envelope.
+/// Pack concatenated XYAF v2 annotation facts into an XYAO v1 envelope.
 ///
 /// Hosts pass authored kind/coords/style presence, literal RGBA, dash/linecap,
 /// and UTF-8. Rust owns wrap vs text vs arrow vs callout vs rule/band/marker
@@ -3259,7 +3259,7 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch
 /// cannot drift. ABI 148 does not change Scene records;
 /// `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
-/// rule/band/marker routing from packed XYAF v1. ABI 149 does not change
+/// rule/band/marker routing from packed XYAF v2. ABI 149 does not change
 /// Scene records; `xyg_scene_pack_heatmap_facts` owns XYHP kind routing from
 /// packed XYHF v1 so heatmap/density paint planes cannot drift.
 /// ABI 150 does not change Scene records;
@@ -21967,7 +21967,7 @@ pub struct XygSceneXyafPackIn {
     pub dash: [f32; 8],
 }
 
-/// Pack one XYAF v1 record (ABI 319).
+/// Pack one XYAF v2 record (ABI 319).
 #[no_mangle]
 pub unsafe extern "C" fn xyg_scene_xyaf_pack(
     input: *const XygSceneXyafPackIn,
@@ -22004,6 +22004,10 @@ pub unsafe extern "C" fn xyg_scene_xyaf_pack(
         label_fill: input.label_fill,
         label_border: input.label_border,
         dash: input.dash,
+        // This record ABI carries no arrow style: arrows keep the default
+        // filled-triangle head (the bulk packer carries the richer vocabulary).
+        arrow_ends: [u8::from(input.kind_code == 1), 0],
+        arrow_facts: [0.0; 8],
         text: text_bytes,
     };
     match scene_xyaf_pack::scene_xyaf_pack(&pack_input) {
@@ -28930,9 +28934,9 @@ mod tests {
         };
         assert_eq!(facts_code, 3);
         assert_eq!(line_out[2], 11);
-        let mut xyaf = vec![0u8; 232];
+        let mut xyaf = vec![0u8; 304];
         xyaf[..4].copy_from_slice(b"XYAF");
-        xyaf[4..8].copy_from_slice(&1u32.to_le_bytes());
+        xyaf[4..8].copy_from_slice(&2u32.to_le_bytes());
         xyaf[12] = 3;
         xyaf[13] = 1;
         xyaf[15] = 255;

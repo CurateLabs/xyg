@@ -18,6 +18,13 @@ from ._scene_observations import (
 )
 from .marks import _SYMBOL_CODES
 
+# Stable reason when an admitted arrow style key carries a value outside the
+# Rust-owned vocabulary (`scene_arrow.rs`); Node raises the same text.
+ARROW_STYLE_UNSUPPORTED = (
+    "XYG_SCENE_UNSUPPORTED_ARROW_STYLE: Scene arrows encode head_style none|triangle|v, "
+    "tail_style none|v, and finite non-negative start_offset/label_clear/gap_* pixels"
+)
+
 
 def colorbar_input(figure: Any) -> bytes:
     """Frame only the small literal XYCB subset; Rust resolves all policy."""
@@ -152,6 +159,12 @@ def annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[st
         "label_background",
         "label_border_color",
         "label_border_width",
+        "head_style",
+        "tail_style",
+        "start_offset",
+        "label_clear",
+        "gap_start",
+        "gap_end",
     )
     return {
         key for key in keys if _native.scene_annotation_style_admit(kind, wrapped, labelled, key)
@@ -374,6 +387,8 @@ def _raise_xyaf_bulk_error(error: _native.SceneXyafBulkPackError, annotations: l
         raise UnsupportedSceneV3(
             "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE: Scene text annotations support data, axes_fraction, xaxis_transform and yaxis_transform coordinates only; figure_fraction needs the figure rectangle a panel Scene does not own"
         )
+    if code == -15:
+        raise UnsupportedSceneV3(ARROW_STYLE_UNSUPPORTED)
     if code == -6:
         style = dict(annotation.get("style") or {})
         if "label_opacity" in style:
@@ -416,7 +431,7 @@ def pack_xyaf_bulk(annotations: list[Any]) -> bytes:
 
 
 def pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
-    """Pack one authored annotation as XYAF v1 via ``xyg_scene_xyaf_bulk_pack`` (ABI 324).
+    """Pack one authored annotation as XYAF v2 via ``xyg_scene_xyaf_bulk_pack`` (ABI 324).
 
     Annotation ``class_name`` is an XYFS observation (ABI 165 / #306), not an
     XYAF field. Scene SVG/raster do not encode CSS classes. Product encode

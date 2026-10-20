@@ -4,7 +4,7 @@ Issue [#58](https://github.com/CurateLabs/xyg/issues/58) moves parity-affecting
 scene and static-export decisions into `xyg-engine` in bounded vertical slices.
 This document is the version contract for that migration.
 
-Scene v33 adds the secondary right-hand y axis (`y2`, Matplotlib `twinx`); see
+Scene v34 widens the straight-arrow run grammar (see *Straight-arrow vocabulary*). Scene v33 adds the secondary right-hand y axis (`y2`, Matplotlib `twinx`); see
 [Secondary right-hand y axis](#secondary-right-hand-y-axis-scene-v33-xypb-v16)
 and the authoritative design in `twinx-secondary-y-axis.md`. A Scene without y2
 is byte-identical to its v32 form except for the version word.
@@ -34,16 +34,16 @@ polygon's vertex count. See `browser-wasm.md` for XYPB derived planes (v16 adds 
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 33 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 34 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v33, so additive emission is not safe.
+bitmap or schema negotiation in Scene v34, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v33 batch layout,
+WASM lifecycle foundation; it validates the current Scene v34 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
@@ -179,7 +179,7 @@ ABI 147 does not change Scene records; `xyg_scene_pack_product_facts` owns
 flags, `step_mode`, and extra0/extra1 from packed XYPK v1 so cartesian-vs-polar
 smooth and painted heatmap dispatch cannot drift. ABI 148 does not change
 Scene records; `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow
-vs callout vs rule/band/marker routing from packed XYAF v1. ABI 149 does not
+vs callout vs rule/band/marker routing from packed XYAF v2 (v1 until the straight-arrow vocabulary, #1006). ABI 149 does not
 change Scene records; `xyg_scene_pack_heatmap_facts` owns heatmap/density
 XYHP kind routing from packed XYHF v1. ABI 150 does not
 change Scene records; `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR/XYMG
@@ -699,7 +699,7 @@ encoded Scene v32 keeps XYGR). ABI 147 does not change Scene records;
 packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch cannot
 drift. ABI 148 does not change Scene records;
 `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
-rule/band/marker routing from packed XYAF v1. ABI 149 does not change Scene
+rule/band/marker routing from packed XYAF v2 (v1 until the straight-arrow vocabulary, #1006). ABI 149 does not change Scene
 records; `xyg_scene_pack_heatmap_facts` owns heatmap/density XYHP kind routing
 from packed XYHF v1.
 ABI 150 does not change Scene records;
@@ -1444,13 +1444,14 @@ endpoints, literal RGBA8 paint, opacity in `[0, 1]`, and a positive finite
 stroke width. The payload is exact-length (60 bytes per row); duplicate ids,
 nonfinite values, zero/too-short projected arrows, malformed frames, and ids
 that collide with canonical records fail closed. Python and Node only frame
-these bounded author values.
+these bounded author values (`XYAR` v1 = 60-byte rows; see v2 below).
 
 Rust projects both endpoints, derives the fixed screen-space arrowhead after
 projection, applies literal alpha and clipping/paint order, and lowers the
 shaft plus head into the same canonical records consumed byte-identically by
 SVG, raster, and painter output. The slice has no text, label attachment,
-callout placement, offsets, curved/orthogonal routes, host-resolved pixels or
+callout placement, curved/orthogonal routes (the end/shrink vocabulary is
+`XYAR` v2 below), host-resolved pixels or
 head geometry, dash patterns, custom caps/joins, gradients, CSS, custom fonts,
 markup, collision, rotation, wrapping, or boxes. Those forms remain loud
 unsupported boundaries.
@@ -1461,7 +1462,7 @@ Unwrapped `text` annotations may carry `style.coordinate_space`, one of `data`
 (default), `axes_fraction`, `xaxis_transform` (x data, y axes fraction) or
 `yaxis_transform` (x axes fraction, y data). Hosts marshal that string only
 (`XygXyafBulkStyleIn.coordinate_space`); `scene_xyaf_bulk_pack` maps it to a
-code (0..=3) in XYAF v1 byte 26 (formerly reserved zero, so zero stays `data`)
+code (0..=3) in XYAF byte 26 (formerly reserved zero, so zero stays `data`; unchanged by XYAF v2)
 and routes any non-data text to the laid-out `XYAW` path. `figure_fraction`,
 unknown values and any non-text kind (callout, arrow, marker, rule, band) fail
 closed with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE` /
@@ -1480,6 +1481,82 @@ magnitude limit still reject. The browser painter label table is unchanged
 label anchored outside the canvas rather than emit geometry the TS client
 (`48_wasm_scene.ts`) rejects. `figure_fraction` is a known gap: a pyplot panel
 Scene does not own the figure rectangle.
+
+### Straight-arrow vocabulary: Scene v34, `XYAR` v2, `XYAF` v2 (#1006)
+
+The fixed filled triangle is the *default* arrow, not the only one. A bounded,
+Rust-owned vocabulary (`crates/xyg-engine/src/scene_arrow.rs`) describes the
+end decorations, shrink and label clearance of an arrow. Hosts marshal facts
+only (style keys `head_style`, `tail_style`, `start_offset`, `label_clear`,
+`gap_start`, `gap_end` on an `arrow` annotation); Rust validates, positions and
+draws, so SVG, raster and PDF come from one implementation and Python and Node
+produce identical Scene bytes.
+
+| `head_style` | `tail_style` | Matplotlib arrowstyle | Drawn as |
+|--------------|--------------|-----------------------|----------|
+| `triangle` (default) | `none` (default) | `-\|>` | filled triangle head |
+| `v` | `none` | `->` | open V head (two wing strokes) |
+| `none` | `v` | `<-` | open V at the start |
+| `v` | `v` | `<->` | open V at both ends |
+| `none` | `none` | `-` | plain shaft |
+
+`triangle` also combines with `tail_style=v`. Everything else is a stable,
+fail-closed rejection and never falls back to a different arrow:
+
+- a value outside `none|triangle|v`, a `triangle` tail (so `<|-`, `<|-|>`), bars
+  (`|-|`, `]-[`), malformed or negative `start_offset` / `label_clear` /
+  `gap_*`, or a magnitude over 4,096 px → bulk-pack code `-15`, reason
+  `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`;
+- keys outside the admit table (`curve`, `angle_a`, `angle_b`, `elbow`,
+  `shaft_width_*` with unequal ends, `dash`, …) → `Scene arrow style does not
+  encode [...]`; tapered pyplot arrows (`fancy`, `simple`, `wedge`) →
+  `XYG_STATIC_UNSUPPORTED_TAPERED_ANNOTATION_ARROW`; curved connectionstyles
+  are keys of that kind.
+
+Screen-space geometry (pixels, y down) is `arrow_geom::arrow_geometry`: the
+projected start moves by `start_offset` (anchor → label-box centre), then both
+ends trim along the shaft by `gap_start` / `gap_end`, the start by at least the
+distance at which the shaft leaves the `label_clear` box (`[left, right, up,
+down]` extents around that centre). The facts are honored exactly or the arrow
+is rejected (`SceneError::Length`, which hosts surface as the shared `invalid canonical scene batch` rejection): when the start clearance plus `gap_end`
+reaches the shaft length (no 90 % "restore the untrimmed arrow" rule as in the
+interactive path), or the remaining shaft is too short for its heads, the Scene
+fails closed instead of silently ignoring a fact. Heads are `head_length` (default 8 px, or
+the XYST arrow-metric head size) long with half-width `head_length / 2`; the V
+uses the triangle's corners, so open and filled heads share one footprint.
+
+Run grammar (tag 5, shaft vertices then an optional 3-vertex fill):
+
+| polyline | fill | contents |
+|----------|------|----------|
+| 2 | 0 | `[p0, p1]` |
+| 2 | 3 | `[p0, base]`, `[tip, base+side, base-side]` (the pre-#1006 run, byte-identical) |
+| 5 | 0 | `[p0, p1, wing, p1, wing]` (V at `p1`; `<-` is the reversed arrow) |
+| 5 | 3 | `[wing, p0, wing, p0, base]`, head fill |
+| 8 | 0 | `[wing, p0, wing, p0, p1, wing, p1, wing]` |
+
+Arrow runs are screen-space and primary-plane: Scene v33's record byte-3 y2 selector (`0x40`) is masked when grouping a run by its annotation tag (as for every annotation run) but a run whose records carry it is rejected, and the encoder always writes it clear.
+
+Batch validation rebuilds each run from its recovered ends and head length and
+rejects any drift; `apply_static_arrow_metrics` re-derives every head through
+the same function. Callouts (tag 6) keep the exact 5-record triangle run.
+
+Versioning is use-gated, like `XYAL`/`XYAC`: `XYAR` stays **v1** (60-byte rows)
+while every arrow has the default shape and becomes **v2** (132-byte rows: the
+v1 row, head/tail codes, six zero padding bytes, then `start_offset` x/y,
+`gap_start`, `gap_end`, `label_clear` l/r/u/d as f64) when any arrow does;
+unknown `XYAR` versions are `SceneError::Version`. `XYAF` becomes **v2**: the
+232-byte v1 header gains a 72-byte arrow extension (head code, tail code, six
+zero bytes, eight f64 facts), zero for non-arrow kinds; v1 `XYAF` records are
+rejected with the annotation `Version` error. `xyg_scene_xyaf_pack` (single
+record) carries no arrow style and writes the default; the bulk packer
+(`xyg_scene_xyaf_bulk_pack`, whose style input gains the six arrow facts) is
+the vocabulary's only authoring seam. The widened run grammar changes what a
+tag-5 run may contain, so **`SCENE_VERSION` is 34** (v33 is the secondary y axis): every consumer of the batch
+(Rust, Python, Node, the WASM painter and the browser hydrator) rejects a scene
+whose version differs, and the painter hydrator accepts the 2/5/8-vertex shaft
+runs and draws the Rust-provided vertices as traces (the browser has no second
+arrow renderer for Scene-sourced arrows).
 
 ## Version 18 bounded Cartesian callouts
 

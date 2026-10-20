@@ -792,6 +792,7 @@ Forbidden:
 | `crates/xyg-engine/src/scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_annotation_splice.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 159 XYAS annotation splice packing | — |
 | `crates/xyg-engine/src/scene_annotations.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene_arrow.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_colorbar.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_chrome.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 153 XYCF figure-chrome packing; ABI 161 XYSD legend-paint splice | — |
 | `crates/xyg-engine/src/scene_density.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 151 Scene density grid packing | — |

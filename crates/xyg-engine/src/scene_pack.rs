@@ -49,7 +49,7 @@
 //! presence, hex pitch, and grid shape; Rust resolves flags, `step_mode`, and
 //! extra0/extra1 so Python and Node cannot drift on cartesian-vs-polar smooth
 //! or painted-vs-lattice heatmap dispatch. ABI 148 lives in
-//! `scene_annotations.rs`: XYAF v1 facts pack wrap/text/arrow/callout/rule
+//! `scene_annotations.rs`: XYAF v2 facts pack wrap/text/arrow/callout/rule
 //! routing so those families cannot drift. ABI 149 lives in
 //! `scene_heatmap.rs`: XYHF v1 facts pack heatmap/density XYHP kind routing
 //! so painted-lattice sidecars cannot drift. ABI 150 lives in

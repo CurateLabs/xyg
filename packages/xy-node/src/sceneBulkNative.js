@@ -1479,6 +1479,7 @@ export function scenePolarInputPack(kwargs) {
 const ADMITTED_XYAF_STYLE_KEYS = new Set([
   "color", "stroke_color", "label_color", "label_background", "label_border_color",
   "dash", "linecap", "coordinate_space", "opacity", "width", "stroke_width", "label_opacity", "label_border_width", "rotation",
+  "head_style", "tail_style", "start_offset", "label_clear", "gap_start", "gap_end",
 ]);
 
 const XyafBulkStyleIn = koffi.struct("XygXyafBulkStyleIn", {
@@ -1502,6 +1503,14 @@ const XyafBulkStyleIn = koffi.struct("XygXyafBulkStyleIn", {
   label_border_width: "double",
   rotation_present: "int32_t",
   rotation: "double",
+  head_style: StringRef,
+  tail_style: StringRef,
+  start_offset: StringRef,
+  label_clear: StringRef,
+  gap_start_present: "int32_t",
+  gap_start: "double",
+  gap_end_present: "int32_t",
+  gap_end: "double",
   extra_style_key_count: "uint32_t",
 });
 
@@ -1570,6 +1579,9 @@ function marshalXyafStyle(style, keep, { skipRotation = false } = {}) {
   const [labelOpacityPresent, labelOpacity] = num("label_opacity");
   const [labelBorderWidthPresent, labelBorderWidth] = num("label_border_width");
   const [rotationPresent, rotation] = num("rotation");
+  const [gapStartPresent, gapStart] = num("gap_start");
+  const [gapEndPresent, gapEnd] = num("gap_end");
+  const optText = (key) => stringRef(style[key] != null ? String(style[key]) : null, keep);
   return {
     style: {
       color: stringRef(typeof style.color === "string" ? style.color : null, keep),
@@ -1592,6 +1604,14 @@ function marshalXyafStyle(style, keep, { skipRotation = false } = {}) {
       label_border_width: labelBorderWidth,
       rotation_present: skipRotation ? 0 : rotationPresent,
       rotation,
+      head_style: optText("head_style"),
+      tail_style: optText("tail_style"),
+      start_offset: optText("start_offset"),
+      label_clear: optText("label_clear"),
+      gap_start_present: gapStartPresent,
+      gap_start: gapStart,
+      gap_end_present: gapEndPresent,
+      gap_end: gapEnd,
       extra_style_key_count: extraKeys.length,
     },
     extraBlob: new Uint8Array(extraBlob),

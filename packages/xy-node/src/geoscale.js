@@ -2,7 +2,7 @@
 import {GeoAllocationAttempt,selectedGeoAllocationIssuer,preflightSelectedGeoAllocation,trackSelectedGeoAllocation,forgetSelectedGeoAllocationIssuer} from './geo-allocation-attempt.js';
 // Captured native outcome is declared in the canonical suffix.
 const withGeoWorkerMutationOutcome=(...args)=>withGeoNativeMutationOutcome(...args);
-const XYG_WASM_SCENE_VERSION=33; // generated: scripts/geo_node_scene_version.mjs
+const XYG_WASM_SCENE_VERSION=34; // generated: scripts/geo_node_scene_version.mjs
 
 
 export const GEO_SCALE_HEADER = 256;

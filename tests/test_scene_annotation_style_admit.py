@@ -26,7 +26,17 @@ def test_scene_annotation_style_admit_table() -> None:
 
 
 def test_annotation_allowed_style_host_wrapper() -> None:
-    assert _annotation_allowed_style("arrow", False, False) == {"color", "opacity", "width"}
+    assert _annotation_allowed_style("arrow", False, False) == {
+        "color",
+        "opacity",
+        "width",
+        "head_style",
+        "tail_style",
+        "start_offset",
+        "label_clear",
+        "gap_start",
+        "gap_end",
+    }
     assert "label_color" not in _annotation_allowed_style("rule", False, False)
     assert "label_color" in _annotation_allowed_style("rule", False, True)
     assert "width" not in _annotation_allowed_style("text", True, True)

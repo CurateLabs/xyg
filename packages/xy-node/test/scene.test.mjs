@@ -2291,7 +2291,7 @@ test("Node symlog ticks fail closed at invalid arguments and honor the 200 targe
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 33);
+  assert.equal(sceneVersion(), 34);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
