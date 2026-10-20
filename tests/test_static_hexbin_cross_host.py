@@ -129,3 +129,38 @@ def test_hexbin_above_cell_ceiling_fails_closed_identically_in_both_hosts(
     node = node_cases["above_cell_ceiling"]
     assert node["cells"] > CEILING
     assert node["reason"] == reason
+
+
+def test_unrepresentable_product_output_surfaces_the_stable_reason(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Rust rejects >i32::MAX outputs with `-3` + a 0xFFFFFFFF marker (#887)."""
+    import ctypes
+
+    from xyg import _native
+    from xyg._scene_v3 import UnsupportedSceneV3, figure_scene
+
+    real = _native._lib
+
+    def reject(marker: int):
+        def call(*args: Any) -> int:
+            ctypes.memmove(args[-2], marker.to_bytes(4, "little"), 4)
+            return -3
+
+        return call
+
+    class Lib:
+        xyg_scene_encode_product = staticmethod(reject(0xFFFFFFFF))
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(real, name)
+
+    figure = _figure("above_former_group_ceiling")
+    monkeypatch.setattr(_native, "_lib", Lib())
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"):
+        figure_scene(figure)
+
+    # A genuine encode-sidecar Limit (small failing index) keeps its meaning.
+    Lib.xyg_scene_encode_product = staticmethod(reject(3))
+    with pytest.raises(ValueError, match="invalid scene chrome packing"):
+        figure_scene(figure)

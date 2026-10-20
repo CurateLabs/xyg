@@ -1086,7 +1086,10 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// other errors write the failing index as a little-endian u32 when
 /// `out_cap >= 4`. A top-level `-4` (`Output`, buffer too small) instead
 /// writes the exact required byte count as a little-endian u32 when
-/// `out_cap >= 4`, so hosts retry once with that size. Encoded Scene v31 is
+/// `out_cap >= 4` (nothing is written for `out_cap` 0–3), so hosts retry once
+/// with that size. An encoded product longer than `i32::MAX` bytes cannot be
+/// represented by the return value or the size slot: it returns `-3` (Limit)
+/// with `u32::MAX` in `out[0..4]` and is never copied. Encoded Scene v31 is
 /// unchanged.
 ///
 /// # Safety
@@ -1188,27 +1191,34 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
             polar_bytes,
             xyfs_bytes,
         ) {
-            Ok(bytes) => {
-                if bytes.len() > out_cap {
+            Ok(bytes) => match product_output_fit(bytes.len(), out_cap) {
+                ProductOutputFit::Unrepresentable => {
+                    // The positive-i32 return and u32 size slot cannot carry
+                    // this length: reject before reporting a size or copying.
+                    if out_cap >= 4 {
+                        let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                        dest[..4].copy_from_slice(&PRODUCT_OUTPUT_UNREPRESENTABLE.to_le_bytes());
+                    }
+                    -(EncodeSidecarsCode::Limit as i32)
+                }
+                ProductOutputFit::Required(required) => {
                     // Insufficient buffer: report the exact required byte
                     // count so hosts retry once instead of guessing (#887).
                     if out_cap >= 4 {
                         let dest = std::slice::from_raw_parts_mut(out, out_cap);
-                        let required = u32::try_from(bytes.len()).unwrap_or(u32::MAX);
                         dest[..4].copy_from_slice(&required.to_le_bytes());
                     }
-                    return -(EncodeSidecarsCode::Output as i32);
+                    -(EncodeSidecarsCode::Output as i32)
                 }
-                if bytes.is_empty() {
-                    return 0;
+                ProductOutputFit::Fits => {
+                    if bytes.is_empty() {
+                        return 0;
+                    }
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..bytes.len()].copy_from_slice(&bytes);
+                    bytes.len() as i32
                 }
-                let dest = std::slice::from_raw_parts_mut(out, out_cap);
-                dest[..bytes.len()].copy_from_slice(&bytes);
-                match i32::try_from(bytes.len()) {
-                    Ok(count) => count,
-                    Err(_) => -(EncodeSidecarsCode::Limit as i32),
-                }
-            }
+            },
             Err(error) => {
                 if error.code == PRODUCT_SUPPORT_UNSUPPORTED {
                     let n = error.reason.len();
@@ -1229,6 +1239,31 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
             }
         }
     })
+}
+
+/// `out[0..4]` marker written with `-3` (Limit) when an encoded product is
+/// longer than the positive-`i32` return and `u32` size slot can represent.
+const PRODUCT_OUTPUT_UNREPRESENTABLE: u32 = u32::MAX;
+
+/// How an encoded product of `len` bytes fits a caller buffer of `out_cap`.
+#[derive(Debug, PartialEq, Eq)]
+enum ProductOutputFit {
+    Fits,
+    /// Exact byte count the caller must provide (always `<= i32::MAX`).
+    Required(u32),
+    /// Longer than the return/size contract can represent.
+    Unrepresentable,
+}
+
+fn product_output_fit(len: usize, out_cap: usize) -> ProductOutputFit {
+    let Ok(count) = i32::try_from(len) else {
+        return ProductOutputFit::Unrepresentable;
+    };
+    if len > out_cap {
+        ProductOutputFit::Required(count as u32)
+    } else {
+        ProductOutputFit::Fits
+    }
 }
 
 /// Query Rust's figure-compile support diagnostic for a packed `XYFS`
@@ -29250,6 +29285,25 @@ mod tests {
             u32::from_le_bytes(small[..4].try_into().unwrap()),
             product_code as u32
         );
+    }
+
+    #[test]
+    fn product_output_fit_decides_without_allocating_the_output() {
+        assert_eq!(product_output_fit(0, 0), ProductOutputFit::Fits);
+        assert_eq!(product_output_fit(10, 10), ProductOutputFit::Fits);
+        assert_eq!(product_output_fit(10, 9), ProductOutputFit::Required(10));
+        let max = i32::MAX as usize;
+        assert_eq!(product_output_fit(max, max), ProductOutputFit::Fits);
+        assert_eq!(
+            product_output_fit(max, 1),
+            ProductOutputFit::Required(i32::MAX as u32)
+        );
+        // 50,000 hexbin cells plus 537 unoutlined 2,000,000-px heatmaps
+        // exceed 4 GiB: never a wrapped or saturated "exact" size.
+        for len in [max + 1, 1usize << 32, (1usize << 32) + 7, usize::MAX] {
+            assert_eq!(product_output_fit(len, 64), ProductOutputFit::Unrepresentable);
+            assert_eq!(product_output_fit(len, usize::MAX), ProductOutputFit::Unrepresentable);
+        }
     }
 
     #[test]

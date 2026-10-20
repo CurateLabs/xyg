@@ -331,6 +331,10 @@ _ENCODED_OUTPUT_CONTRACTS = {
     )
 }
 
+# Product encode output: the Rust function is the source of truth for the
+# retry contract; hosts size the buffer from the reported requirement (#887).
+_PRODUCT_ENCODE_OUTPUT_CONTRACTS = {("xyg_scene_encode_product", "out"): "out_cap"}
+
 _DEFAULT_PALETTE_OUTPUT_CONTRACTS = {
     ("xyg_default_palette_utf8", "out"): (
         "out_cap",
@@ -464,6 +468,30 @@ def parse_rust_abi(text: str) -> dict[str, Any]:
                     "success_status": "encoded_byte_count",
                     "failure_status": "usize::MAX",
                 }
+            product_capacity = _PRODUCT_ENCODE_OUTPUT_CONTRACTS.get((name, arg_name))
+            if product_capacity is not None:
+                contract["buffer_contract"] = (
+                    "caller-owned writable encoded Scene byte storage; "
+                    f"{product_capacity} is measured in bytes; when it is too small the call "
+                    "returns -4 and, if capacity >= 4, writes the exact required byte count as "
+                    "a little-endian u32 into out[0..4] (capacity 0-3 receives no size); hosts "
+                    "retry exactly once with that size; an encoded product longer than "
+                    "i32::MAX bytes returns -3 with 0xFFFFFFFF in out[0..4] and is never copied"
+                )
+                contract["length_contract"] = {
+                    "unit": "bytes",
+                    "capacity_argument": product_capacity,
+                    "maximum_total_bytes": "i32::MAX",
+                    "payload_format": "encoded Scene v31 batch",
+                    "short_capacity": "report_required_size",
+                    "required_size_slot": "out[0..4] little-endian u32 when capacity >= 4",
+                    "required_size_status": -4,
+                    "capacity_below_size_slot": "no_size_written",
+                    "host_retry": "once_with_reported_size",
+                    "oversized_output_status": -3,
+                    "oversized_output_marker": "0xFFFFFFFF in out[0..4]",
+                    "success_status": "encoded_byte_count",
+                }
             palette_contract = _DEFAULT_PALETTE_OUTPUT_CONTRACTS.get((name, arg_name))
             if palette_contract is not None:
                 capacity_argument, row_bytes, payload_format = palette_contract
@@ -588,6 +616,17 @@ def _length_contract_comments(symbol: dict[str, Any]) -> list[str]:
                 f"{contract['capacity_argument']} >= checked({factors}) {contract['unit']}; "
                 "null with zero capacity queries the required count; short capacity returns "
                 f"that count without writing; null with nonzero capacity returns {contract['failure_status']}"
+            )
+            continue
+        if contract.get("short_capacity") == "report_required_size":
+            comments.append(
+                f"{argument['name']}: {contract['capacity_argument']} bytes; short capacity "
+                f"returns {contract['required_size_status']} and, when capacity >= 4, writes the "
+                "exact required byte count as little-endian u32 into out[0..4] (capacity 0-3 "
+                "gets no size); hosts retry once with that size; an encoded product longer than "
+                f"{contract['maximum_total_bytes']} bytes returns "
+                f"{contract['oversized_output_status']} with 0xFFFFFFFF in out[0..4], never "
+                "copied; success returns the encoded byte count"
             )
             continue
         if "required_checked_product" not in contract:

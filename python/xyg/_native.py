@@ -5874,6 +5874,11 @@ def _product_stage(code: int) -> tuple[int, int] | None:
     return magnitude // 100, -(magnitude % 100)
 
 
+_PRODUCT_OUTPUT_LIMIT_REASON = (
+    "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD: encoded Scene exceeds the 2 GiB native output limit"
+)
+
+
 def scene_encode_product(
     *,
     compile_facts: bytes,
@@ -6023,6 +6028,10 @@ def scene_encode_product(
                 break
             capacity = required
             continue
+        if code == -3 and int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) == 0xFFFFFFFF:
+            # Rust marks an encoded product too long for the i32 return / u32
+            # size slot; it is rejected before any size report or copy.
+            raise SceneFigureSupportError(_PRODUCT_OUTPUT_LIMIT_REASON)
         if code == -801:
             n = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
             reason = bytes(out[4 : 4 + n]).decode("utf-8")

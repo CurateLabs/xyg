@@ -97,6 +97,8 @@ import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sc
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
 const MAX_SCENE_STYLES = 65_536;
+const PRODUCT_OUTPUT_LIMIT_REASON =
+  "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD: encoded Scene exceeds the 2 GiB native output limit";
 const MAX_SCENE_TEXT_BYTES = 4_096;
 const SYMBOL_CODES = new Map([
   "circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star",
@@ -6097,6 +6099,11 @@ function encodeProduct(
       if (required <= capacity) break;
       capacity = required;
       continue;
+    }
+    if (code === -3 && new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true) === 0xffffffff) {
+      // Rust marks an encoded product too long for the i32 return / u32 size
+      // slot; it is rejected before any size report or copy.
+      throw new RangeError(PRODUCT_OUTPUT_LIMIT_REASON);
     }
     if (code === -801) {
       const n = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
