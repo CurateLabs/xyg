@@ -14,5 +14,5 @@ def test_scene_scatter_paint_channel_admit_table() -> None:
     assert kernels.scene_scatter_paint_channel_admit(None) is False
     assert kernels.scene_scatter_paint_channel_admit("STROKE") is False
     assert kernels.scene_scatter_paint_channel_admit(" color") is False
-    assert kernels.scene_scatter_paint_channel_admit("size") is False
+    assert kernels.scene_scatter_paint_channel_admit("size") is True
     assert kernels.scene_scatter_paint_channel_admit("symbol") is False

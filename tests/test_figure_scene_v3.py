@@ -808,8 +808,9 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries() -> None
         svg = _native.scene_svg(figure.to_scene())
         assert _scene_v3.figure_svg(figure) == svg
 
+    # Per-item size rides the Rust scatter paint plane (#1006).
     sized = Figure(width=320, height=240).scatter([0.5, 1.0], [0.5, 1.0], size=[4.0, 12.0])
-    assert _scene_v3.scene_export_support_reason(sized) is not None
+    assert _scene_v3.scene_export_support_reason(sized) is None
 
     for opacity_key in ("fill_opacity", "stroke_opacity"):
         figure = Figure(width=320, height=240).scatter([0.5], [0.5], color="#336699")

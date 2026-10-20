@@ -609,6 +609,13 @@ const SceneXytaTraceObservationsIn = koffi.struct("XygSceneXytaTraceObservations
   rgba_grid_f64_len: "size_t",
   x_values_len: "size_t",
   y_values_len: "size_t",
+  size_present: "int32_t",
+  size_has_domain: "int32_t",
+  size_domain_lo: "double",
+  size_domain_hi: "double",
+  size_range_lo: "double",
+  size_range_hi: "double",
+  size_values_len: "size_t",
 });
 
 const SceneXytaTraceObservationsOut = koffi.struct("XygSceneXytaTraceObservationsOut", {
@@ -937,6 +944,10 @@ export function sceneXytaTraceObservationsMaterialize(obs) {
     : Float64Array.from(obs.rgba_grid_f64 ?? []);
   const xValues = obs.x_values instanceof Float64Array ? obs.x_values : Float64Array.from(obs.x_values ?? []);
   const yValues = obs.y_values instanceof Float64Array ? obs.y_values : Float64Array.from(obs.y_values ?? []);
+  const sizeCh = obs.size_ch ?? {};
+  const sizeValues = sizeCh.values_f64 instanceof Float64Array
+    ? sizeCh.values_f64
+    : Float64Array.from(sizeCh.values_f64 ?? []);
   const styleDomain = obs.style_domain;
   const hasStyleDomain = styleDomain != null && styleDomain.length === 2;
   const inputBuf = Buffer.alloc(koffi.sizeof(SceneXytaTraceObservationsIn));
@@ -980,6 +991,13 @@ export function sceneXytaTraceObservationsMaterialize(obs) {
     rgba_grid_f64_len: BigInt(rgbaGridF64.length),
     x_values_len: BigInt(xValues.length),
     y_values_len: BigInt(yValues.length),
+    size_present: sizeCh.present ? 1 : 0,
+    size_has_domain: sizeCh.has_domain ? 1 : 0,
+    size_domain_lo: Number(sizeCh.domain_lo ?? 0),
+    size_domain_hi: Number(sizeCh.domain_hi ?? 0),
+    size_range_lo: Number(sizeCh.range_lo ?? 0),
+    size_range_hi: Number(sizeCh.range_hi ?? 0),
+    size_values_len: BigInt(sizeValues.length),
   });
   const color = xytaColorChannelSide(obs.color_ch, keep);
   const stroke = xytaColorChannelSide(obs.stroke_ch, keep);
@@ -1039,6 +1057,7 @@ export function sceneXytaTraceObservationsMaterialize(obs) {
     artist.valuesF64.length ? f64Ptr(artist.valuesF64) : 0,
     strokeWidth.desc,
     strokeWidth.valuesF64.length ? f64Ptr(strokeWidth.valuesF64) : 0,
+    sizeValues.length ? f64Ptr(sizeValues) : 0,
     koffi.as(summaryBuf, "void *"),
     u8Ptr(out),
     BigInt(out.length),

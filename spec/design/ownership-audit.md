@@ -72,7 +72,7 @@ custom paths/glyphs, and density/LOD scatter remain compatibility routes.
 The public literal triangle-mesh slice admits at most 1,024 unjoined faces with
 constant or interned per-face fill/stroke/width (ABI 195; custom `role` is
 identity metadata). Public scatter admits interned per-item fill/stroke/width/
-opacity (ABI 196; per-item size/symbol stay fail-closed). Python and Node pack six authored
+opacity (ABI 196) and, from ABI 386, Rust-mapped per-item size (#1006); per-item symbol stays fail-closed. Python and Node pack six authored
 vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
 plot clipping, legend swatch, SVG/raster/browser lowering, and the public
 PolyFill group budget (companion traces share the 1,024-group ceiling).
@@ -207,7 +207,7 @@ hexbin as interned HexCell PolyFills.
 ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned
 from packed XYHP kind 6 (`joined_fill` plus per-face paint stays fail-closed).
 ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7
-(per-item size/symbol stay fail-closed).
+(ABI 386 adds the Rust-mapped per-point size diameter, stride 12 -> 20; per-item symbol stays fail-closed).
 Polar contour compiles as SegmentPair polylines. ABI 134
 `HeatmapPainted` moves Cartesian/polar scalar colormap and truecolor intern into
 Rust: hosts pack XYHP, Rust emits per-cell Rect fills.

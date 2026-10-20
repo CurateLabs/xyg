@@ -1236,7 +1236,7 @@ Extra legends, named/advanced colorbars, other deferred
   representations through it and reject non-u32 request versions before FFI
   coercion. See
 [scene-ir.md](scene-ir.md).
-Per-item scatter size/symbol stay fail-closed; density/LOD remain explicit compatibility exceptions. Python custom glyph/path markers and other
+Per-item scatter symbol stays fail-closed (per-item size rides the Rust-mapped scatter paint plane, ABI 386, #1006); density/LOD remain explicit compatibility exceptions. Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.
 

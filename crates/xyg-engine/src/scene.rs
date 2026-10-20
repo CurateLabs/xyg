@@ -4575,10 +4575,16 @@ pub const XYHP_PAINT_RIBBON: u32 = 5;
 /// Payload is `cols * 12` bytes (`rows` must be 1); expansion interns unique
 /// triples onto PolyFill `style_ref`s.
 pub const XYHP_PAINT_MESH: u32 = 6;
-/// ABI 196: N scatter points as fill RGBA8 + stroke RGBA8 + f32 width.
-/// Payload is `cols * 12` bytes (`rows` must be 1); expansion interns unique
-/// triples onto Scatter `style_ref`s by record order within the trace.
+/// ABI 196: N scatter points as fill RGBA8 + stroke RGBA8 + f32 width, plus
+/// (#1006) an f64 diameter per point (NaN = inherit the record's diameter).
+/// Payload is `cols * 20` bytes (`rows` must be 1); expansion interns unique
+/// triples onto Scatter `style_ref`s by record order within the trace and
+/// overrides each record's diameter.
 pub const XYHP_PAINT_SCATTER: u32 = 7;
+/// Bytes per fill/stroke/width triple (mesh faces).
+pub const XYHP_TRIPLE_STRIDE_BYTES: usize = 12;
+/// Bytes per scatter point: a triple plus the f64 diameter.
+pub const XYHP_SCATTER_STRIDE_BYTES: usize = 20;
 pub const XYHP_MAX_NAME_BYTES: usize = 64;
 /// XYIM v1 image-blit sidecar (ABI 137 / Scene v27). One RGBA8 plane per
 /// `DensityBlit` Image record, keyed by stable id, image-top-first.
@@ -4847,7 +4853,12 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
                 return Err(SceneError::Length);
             }
         } else if kind == XYHP_PAINT_MESH || kind == XYHP_PAINT_SCATTER {
-            if rows != 1 || payload_len != cols.checked_mul(12).ok_or(SceneError::Limit)? {
+            let stride = if kind == XYHP_PAINT_SCATTER {
+                XYHP_SCATTER_STRIDE_BYTES
+            } else {
+                XYHP_TRIPLE_STRIDE_BYTES
+            };
+            if rows != 1 || payload_len != cols.checked_mul(stride).ok_or(SceneError::Limit)? {
                 return Err(SceneError::Length);
             }
         } else if kind == XYHP_PAINT_RGBA {
@@ -5029,10 +5040,35 @@ fn mesh_face_paints(
     paint_triples(plane, XYHP_PAINT_MESH)
 }
 
-fn scatter_point_paints(
-    plane: HeatmapPaintPlane<'_>,
-) -> Result<Vec<([u8; 4], [u8; 4], f64)>, SceneError> {
-    paint_triples(plane, XYHP_PAINT_SCATTER)
+/// One scatter point's fill, stroke, stroke width, and optional diameter.
+type ScatterPointPaint = ([u8; 4], [u8; 4], f64, Option<f64>);
+
+fn scatter_point_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<ScatterPointPaint>, SceneError> {
+    if plane.kind != XYHP_PAINT_SCATTER || plane.rows != 1 {
+        return Err(SceneError::Length);
+    }
+    let mut points = Vec::with_capacity(plane.cols);
+    for index in 0..plane.cols {
+        let start = index
+            .checked_mul(XYHP_SCATTER_STRIDE_BYTES)
+            .ok_or(SceneError::Limit)?;
+        let slice = plane
+            .payload
+            .get(start..start + XYHP_SCATTER_STRIDE_BYTES)
+            .ok_or(SceneError::Length)?;
+        let width = f32::from_le_bytes([slice[8], slice[9], slice[10], slice[11]]) as f64;
+        let diameter = scene_read_f64(slice, 12)?;
+        if !width.is_finite() || width < 0.0 || diameter.is_infinite() || diameter < 0.0 {
+            return Err(SceneError::NonFinite);
+        }
+        points.push((
+            [slice[0], slice[1], slice[2], slice[3]],
+            [slice[4], slice[5], slice[6], slice[7]],
+            width,
+            (!diameter.is_nan()).then_some(diameter),
+        ));
+    }
+    Ok(points)
 }
 
 fn intern_mesh_face(
@@ -6649,7 +6685,7 @@ pub fn expand_scene_records_painted(
     let mut mesh_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
     let mut segment_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
     let mut segment_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
-    let mut scatter_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
+    let mut scatter_paints: HashMap<u64, Vec<ScatterPointPaint>> = HashMap::new();
     let mut scatter_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
     let mut scatter_cursors: HashMap<u64, usize> = HashMap::new();
 
@@ -6866,6 +6902,7 @@ pub fn expand_scene_records_painted(
         let mode = SceneExpansionMode::from_code(input.expansion_modes[cursor])?;
         if mode == SceneExpansionMode::None {
             let mut style_ref = input.style_refs[cursor];
+            let mut diameter = input.diameter[cursor];
             if intern_scatter && input.kinds[cursor] == SceneRecordKind::Scatter as u8 {
                 let parent = input.stable_ids[cursor];
                 if let Entry::Vacant(slot) = scatter_paints.entry(parent) {
@@ -6882,7 +6919,10 @@ pub fn expand_scene_records_painted(
                         *cursor_slot += 1;
                         index
                     };
-                    if let Some(&(fill, stroke, width)) = points.get(index) {
+                    if let Some(&(fill, stroke, width, point_diameter)) = points.get(index) {
+                        if let Some(point_diameter) = point_diameter {
+                            diameter = point_diameter;
+                        }
                         // The plane's paint is final (trace-level opacity was
                         // folded in when it was materialized), so it is not
                         // multiplied by the base style's paint alpha.
@@ -6898,7 +6938,7 @@ pub fn expand_scene_records_painted(
                 output.kinds.push(input.kinds[cursor]);
                 output.stable_ids.push(input.stable_ids[cursor]);
                 output.style_refs.push(style_ref);
-                output.diameter.push(input.diameter[cursor]);
+                output.diameter.push(diameter);
                 output.symbols.push(input.symbols[cursor]);
                 output.x0.push(input.x0[cursor]);
                 output.y0.push(input.y0[cursor]);
@@ -17529,6 +17569,38 @@ mod tests {
         assert_eq!(expanded.y1, [12.0, 12.0, 12.0, 14.0, 14.0, 14.0]);
         assert!(expanded.stable_ids.iter().all(|id| *id == 9));
         assert!(expanded.style_refs.iter().all(|style| *style == 3));
+    }
+
+    fn xyhp_scatter(cols: u32, payload: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend_from_slice(b"XYHP");
+        for word in [1u32, 1, 0] {
+            out.extend_from_slice(&word.to_le_bytes());
+        }
+        out.extend_from_slice(&7u64.to_le_bytes());
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&cols.to_le_bytes());
+        out.extend_from_slice(&XYHP_PAINT_SCATTER.to_le_bytes());
+        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.extend_from_slice(payload);
+        out
+    }
+
+    #[test]
+    fn scatter_xyhp_rejects_the_pre_size_twelve_byte_stride() {
+        // ABI 386 widened kind 7 from 12 to 20 bytes per point (fill, stroke,
+        // f32 width, f64 diameter). A plane in the old layout must fail with
+        // the stable length error rather than be misread.
+        assert_eq!(
+            parse_heatmap_paint(&xyhp_scatter(2, &[0u8; 2 * 12])).unwrap_err(),
+            SceneError::Length
+        );
+        assert_eq!(
+            parse_heatmap_paint(&xyhp_scatter(2, &[0u8; 2 * XYHP_SCATTER_STRIDE_BYTES]))
+                .unwrap()
+                .len(),
+            1
+        );
     }
 
     fn xyhp_rgba(stable_id: u64, rows: u32, cols: u32, rgba: &[u8]) -> Vec<u8> {

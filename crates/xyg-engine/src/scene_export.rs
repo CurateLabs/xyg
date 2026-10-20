@@ -31,7 +31,9 @@
 //! from the Rust boundary walk (disconnected meshes keep per-face triangles;
 //! ABI 195 admits custom `role` and per-item fill/stroke/width on those faces).
 //! ABI 196 admits scatter per-item fill/stroke/width/opacity interned onto
-//! Scatter records from packed XYHP kind 7 (per-item size/symbol stay fail-closed).
+//! Scatter records from packed XYHP kind 7. ABI 386 (#1006) also admits scatter
+//! per-item `size`: Rust maps the raw continuous channel to per-point diameters
+//! on that plane (per-item symbol stays fail-closed).
 //! #875 removes Node-only redundant step/area/ECDF/stairs `role` and violin
 //! `orientation` metadata before Scene packing. Orientation is already resolved
 //! into bounded violin rectangles; keeping the ignored string would create a

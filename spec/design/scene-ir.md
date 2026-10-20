@@ -1834,3 +1834,21 @@ style, and conversion to existing Rect, Polyline, and Scatter Scene families.
 Constant-style primary-Cartesian boxes route public SVG/PNG/PDF through those
 Scene consumers; alternate axes, polar, gradients, and per-item styles remain
 explicit compatibility paths.
+
+### Per-point scatter size (#1006)
+
+ABI 386 appends a continuous size channel (raw values, authored domain,
+`range_px`) to `xyg_scene_xyta_trace_observations_materialize`;
+`scene_scatter_paint_channel_admit` now also admits `size`. For a scatter paint
+plane Rust computes `diameter = lo + (hi - lo) * clip((v - d0) / (d1 - d0), 0,
+1)` (zero or non-finite span maps to `lo`) and writes it to the XYTA `y` array.
+The XYHP kind-7 payload stride grows from 12 to 20 bytes: fill RGBA8, stroke
+RGBA8, f32 width, then an f64 diameter (NaN = inherit the trace's constant
+diameter, so per-item-color-only scatters keep their bytes). Expansion
+overrides each Scatter record's diameter by record order, exactly as it interns
+the paint triple. A non-finite value, an inadmissible range, a non-finite
+domain, or a length mismatch yields no plane and the figure keeps the stable
+`Scene v12 does not yet encode hidden or per-item styled marks` diagnostic;
+a negative or non-finite plane diameter is rejected by the attach pack.
+Constant color plus per-item size packs a plane too. Python and Node marshal
+the same raw channel and export identical bytes.

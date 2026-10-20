@@ -1,7 +1,7 @@
 # Geospatial data contract — GeoColumn, GeoArrow ingress, GeoViewport
 
 **Status:** GeoColumn native validation, canonical metadata, host read-back
-and derived-cache inputs (#47; current ABI 383), GeoViewport perspective camera
+and derived-cache inputs (#47; current ABI 386), GeoViewport perspective camera
 (#48), and the seven-family geographic catalog/interaction processor (#49).
 Direct-browser WASM ABI 33 shares typed descriptor ingestion (`XYGD` to `XYGM`),
 frozen point/outline scene lowering (`XYGP` to canonical `XYGS`), perspective

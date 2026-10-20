@@ -5306,6 +5306,31 @@ function marshalXytaStyleChannel(channel) {
   };
 }
 
+/** Raw continuous size values, domain, and `range_px`; Rust maps diameters. */
+function marshalXytaSizeChannel(channel) {
+  if (channel == null || typeof channel === "string" || channel.mode === "constant") {
+    return { present: false, values_f64: new Float64Array() };
+  }
+  // Any other mode is marshaled as present: a non-continuous channel carries no
+  // values, so Rust's length check fails it closed instead of silently
+  // inheriting the trace diameter.
+  if (channel.mode !== "continuous" || channel.values == null) {
+    return { present: true, values_f64: new Float64Array() };
+  }
+  const domain = channel.domain;
+  const hasDomain = Array.isArray(domain) && domain.length === 2;
+  const [lo, hi] = channel.range_px ?? [2, 18];
+  return {
+    present: true,
+    has_domain: hasDomain,
+    domain_lo: hasDomain ? Number(domain[0]) : 0,
+    domain_hi: hasDomain ? Number(domain[1]) : 0,
+    range_lo: Number(lo),
+    range_hi: Number(hi),
+    values_f64: Float64Array.from(channel.values, Number),
+  };
+}
+
 export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
   const style = trace.style ?? {};
   const kindName = String(trace.kind ?? "");
@@ -5408,6 +5433,7 @@ export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
     opacity_ch: marshalXytaStyleChannel(styleChannels.opacity),
     artist_alpha_ch: marshalXytaStyleChannel(styleChannels.artist_alpha),
     stroke_width_ch: marshalXytaStyleChannel(styleChannels.stroke_width),
+    size_ch: marshalXytaSizeChannel(trace.size_ch),
   };
 }
 

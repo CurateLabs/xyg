@@ -737,6 +737,13 @@ class _XygSceneXytaTraceObservationsIn(ctypes.Structure):
         ("rgba_grid_f64_len", ctypes.c_size_t),
         ("x_values_len", ctypes.c_size_t),
         ("y_values_len", ctypes.c_size_t),
+        ("size_present", ctypes.c_int32),
+        ("size_has_domain", ctypes.c_int32),
+        ("size_domain_lo", ctypes.c_double),
+        ("size_domain_hi", ctypes.c_double),
+        ("size_range_lo", ctypes.c_double),
+        ("size_range_hi", ctypes.c_double),
+        ("size_values_len", ctypes.c_size_t),
     ]
 
 
@@ -916,6 +923,10 @@ def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
     y_values = np.ascontiguousarray(
         obs.get("y_values", np.empty(0, dtype=np.float64)), dtype=np.float64
     ).reshape(-1)
+    size_ch = obs["size_ch"]
+    size_values = np.ascontiguousarray(
+        size_ch.get("values_f64", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
     style_domain = obs.get("style_domain")
     has_style_domain = style_domain is not None and len(style_domain) == 2
     pack_in = _XygSceneXytaTraceObservationsIn(
@@ -958,6 +969,13 @@ def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
         len(rgba_grid_f64),
         len(x_values),
         len(y_values),
+        1 if size_ch.get("present") else 0,
+        1 if size_ch.get("has_domain") else 0,
+        float(size_ch.get("domain_lo", 0.0)),
+        float(size_ch.get("domain_hi", 0.0)),
+        float(size_ch.get("range_lo", 0.0)),
+        float(size_ch.get("range_hi", 0.0)),
+        len(size_values),
     )
     color_side = _xyta_color_channel_side(obs["color_ch"])
     stroke_side = _xyta_color_channel_side(obs["stroke_ch"])
@@ -1047,6 +1065,7 @@ def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
             _ptr_f64(artist_values) if len(artist_values) else 0,
             ctypes.byref(stroke_width_desc),
             _ptr_f64(stroke_width_values) if len(stroke_width_values) else 0,
+            _ptr_f64(size_values) if len(size_values) else 0,
             ctypes.byref(summary),
             _ptr_u8(out_bytes),
             len(out_bytes),

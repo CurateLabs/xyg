@@ -2864,7 +2864,17 @@ test("Node Scene compiles scatter per-item paint", () => {
   });
   sized.traces[0].size_ch = { mode: "direct", values: [4, 12] };
   sized.traces[0].sizeChannel = sized.traces[0].size_ch;
+  // A non-continuous per-item size has no plane to ride and stays fail-closed.
   assert.notEqual(sceneExportSupportReason(sized), null);
+
+  const mapped = new Figure({ width: 320, height: 240 });
+  mapped.setAxisDomain("x", [0, 3]);
+  mapped.setAxisDomain("y", [0, 3]);
+  mapped.scatter([1, 2], [1, 2], { color: "#3987e5", name: null, forceDirect: true });
+  mapped.traces[0].size_ch = { mode: "continuous", values: [4, 12], domain: [4, 12], range_px: [4, 12] };
+  assert.equal(sceneExportSupportReason(mapped), null);
+  const radii = [...sceneSvg(mapped.toScene()).matchAll(/<circle[^>]* r="([^"]+)"/g)].map((m) => Number(m[1]));
+  assert.equal(new Set(radii).size, 2);
 });
 
 test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {
