@@ -396,7 +396,7 @@ def test_matshow_pcolorfast_and_spy_delegate_to_native_grid_paths() -> None:
     ax.pcolorfast([0, 1, 2], [0, 1, 2], matrix[:2, :2])
     ax.spy(np.eye(4))
     assert [trace.kind for trace in _traces(ax)] == ["heatmap", "heatmap", "heatmap"]
-    np.testing.assert_array_equal(ax._entries[-1]["z"][..., 0], (1.0 - np.eye(4))[::-1])
+    np.testing.assert_array_equal(ax._entries[-1]["z"][..., 0], 1.0 - np.eye(4))
 
 
 def test_imshow_accepts_descending_extent_with_upper_origin() -> None:

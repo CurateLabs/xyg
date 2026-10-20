@@ -8430,9 +8430,12 @@ class Axes(PlotTypeMixin):
             component_legend_options.pop("handlelength", None)
             component_legend_options.pop("handletextpad", None)
             children.append(xyg.legend(**component_legend_options))
-        elif not any(entry.get("kwargs", {}).get("name") for entry in self._entries):
-            # Core XYG can auto-create a continuous-color "value" legend.
-            # An unlabeled Matplotlib collection must not acquire one.
+        else:
+            # Core XYG auto-creates a legend for named traces and a
+            # continuous-color "value" legend. Matplotlib draws a legend only
+            # when `legend()` asks for one: labels (including pie wedge labels)
+            # name artists for a later legend, and an unlabeled collection must
+            # not acquire one.
             children.append(xyg.legend(show=False))
         if not self.figure._show_toolbar():
             children.append(_cached_modebar(False))

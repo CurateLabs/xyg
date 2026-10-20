@@ -1254,13 +1254,25 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 && !extra_key(&pair[1].style_keys, &["color", "opacity", "size", "symbol"])
         });
     let ordinary_autorange_shape = ordinary_autorange_shape || graph_autorange_shape;
+    let heatmap_only_geometry = traces
+        .iter()
+        .filter(|trace| kind_literal_geometry(trace.kind))
+        .all(|trace| trace.kind == KIND_HEATMAP);
     if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             };
             let default_side = if wanted == 0 { 1 } else { 2 };
-            if axis.side != 0 && axis.side != default_side {
+            // A heatmap lattice is anchored to data coordinates, so the Scene
+            // chrome (which owns top/right axes) places its cells exactly as
+            // for the default sides (`matshow`, `spy`). Other literal
+            // geometry keeps the default-side contract.
+            let alternate_side = if wanted == 0 { 3 } else { 4 };
+            if axis.side != 0
+                && axis.side != default_side
+                && !(heatmap_only_geometry && axis.side == alternate_side)
+            {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             }
             if needs_authored_domain && !axis.domain_present && !ordinary_autorange_shape {

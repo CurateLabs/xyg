@@ -2819,3 +2819,12 @@ def test_public_mark_figures_encode_jpeg_and_webp_through_rust(monkeypatch) -> N
             _sd.export_figure(figure, "webp", width=int(figure.width), height=int(figure.height))
             == webp
         ), label
+
+
+@pytest.mark.parametrize("axis_id,side", [("x", "top"), ("y", "right")])
+def test_public_heatmap_admits_alternate_side_cartesian_axes(axis_id: str, side: str) -> None:
+    """matshow/spy-style heatmaps keep top/right axes on the public Scene (#1006)."""
+    figure = _public_heatmap()
+    figure.axis_options[axis_id]["side"] = side
+    assert scene_export_support_reason(figure) is None
+    assert b"XYGS" in figure_scene(figure)

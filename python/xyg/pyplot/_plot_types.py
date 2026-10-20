@@ -5267,9 +5267,10 @@ class PlotTypeMixin:
             image = np.full(present.shape + (3,), 255, dtype=np.uint8)
             image[present] = color
         kwargs["origin"] = origin
-        kwargs["extent"] = (-0.5, present.shape[1] - 0.5, -0.5, present.shape[0] - 0.5)
+        # Matplotlib's spy places the first row at y = -0.5 and inverts the axis
+        # through the extent itself, so the image is never flipped twice.
+        kwargs["extent"] = (-0.5, present.shape[1] - 0.5, present.shape[0] - 0.5, -0.5)
         result = self.imshow(image, **kwargs)
-        self._axis_props("y")["reverse"] = True
         self._axis_props("x")["side"] = "top"
         self._invalidate()
         return result

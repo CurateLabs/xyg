@@ -106,3 +106,51 @@ def test_scalar_alpha_replaces_paint_alpha_for_constant_and_per_item_paint() -> 
         assert centre.min() > 0.3  # half-transparent over white, not opaque
     finally:
         plt.close("all")
+
+
+def test_top_side_heatmap_axes_export_with_the_first_row_on_top() -> None:
+    """matshow/spy put the x axis on top; the public Scene admits it (corpus 51/54).
+
+    ``spy`` must also draw row 0 at the top: a diagonal matrix runs from the
+    top-left to the bottom-right corner, not through the other diagonal.
+    """
+    try:
+        fig, ax = plt.subplots(figsize=(3, 3))
+        ax.spy(np.eye(6), markersize=None)
+        pixels = _png_rgb(fig).mean(axis=-1)
+        height, width = pixels.shape
+        inner = pixels[int(height * 0.3) : int(height * 0.85), int(width * 0.3) : int(width * 0.85)]
+        rows, cols = np.nonzero(inner < 0.2)
+        assert len(rows)
+        # The identity diagonal runs top-left to bottom-right.
+        assert np.corrcoef(rows, cols)[0, 1] > 0.8
+
+        fig, ax = plt.subplots()
+        ax.matshow(np.arange(16.0).reshape(4, 4))
+        assert _blank_ratio(_png_rgb(fig)) < 0.9
+    finally:
+        plt.close("all")
+
+
+def test_colormapped_contour_lines_export_as_literal_level_colors() -> None:
+    """contour/tricontour with cmap= lower to per-level literal strokes (corpus 49/54)."""
+    xx, yy = np.meshgrid(np.linspace(-2, 2, 40), np.linspace(-2, 2, 40))
+    try:
+        fig, ax = plt.subplots(figsize=(4, 3))
+        ax.contour(xx, yy, np.exp(-(xx**2 + yy**2)), levels=6, cmap="viridis")
+        pixels = _png_rgb(fig)
+        hues = {tuple(np.round(p, 1)) for p in pixels.reshape(-1, 3) if p.max() - p.min() > 0.25}
+        assert len(hues) >= 4  # several distinct level colors, not one flat stroke
+    finally:
+        plt.close("all")
+
+
+def test_pie_labels_do_not_create_a_legend_in_multi_panel_figures() -> None:
+    """Pie wedge labels name artists; only ``legend()`` draws a legend (corpus 50)."""
+    try:
+        fig, axes = plt.subplots(1, 2, figsize=(6, 3))
+        axes[0].pie([2, 3, 5], labels=["A", "B", "C"])
+        axes[1].pie([4, 2, 3], labels=["x", "y", "z"], wedgeprops={"width": 0.4})
+        assert _blank_ratio(_png_rgb(fig)) < 0.95
+    finally:
+        plt.close("all")
