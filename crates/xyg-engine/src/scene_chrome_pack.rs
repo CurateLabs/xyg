@@ -800,8 +800,10 @@ mod tests {
         assert!(axis.major_ticks.is_none() && axis.tick_labels.is_none());
         assert_eq!(axis.scale.wire_scale(true).3, DEFAULT_SCALE_CONSTANT);
         // The same strategy code serves y and y2: `strategy` wins over `collision`.
-        let mut collision = ChromeCollisionAxisInput::default();
-        collision.collision_raw = Some("hide");
+        let collision = ChromeCollisionAxisInput {
+            collision_raw: Some("hide"),
+            ..Default::default()
+        };
         let mut y2 = y2_input();
         y2.collision = collision.clone();
         assert_eq!(decoded_y2(y2).unwrap().tick_strategy, tick_strategy_code(&collision));
@@ -813,10 +815,12 @@ mod tests {
         assert_eq!(strategy, tick_strategy_code(&both));
         assert_ne!(strategy, tick_strategy_code(&collision));
         // Authored values pass through untouched.
-        let mut authored = ChromeCollisionAxisInput::default();
-        authored.min_gap = Some(9.0);
-        authored.angle = Some(30.0);
-        authored.anchor_raw = Some("end");
+        let authored = ChromeCollisionAxisInput {
+            min_gap: Some(9.0),
+            angle: Some(30.0),
+            anchor_raw: Some("end"),
+            ..Default::default()
+        };
         let mut y2 = y2_input();
         y2.collision = authored;
         let axis = decoded_y2(y2).unwrap();
