@@ -1838,10 +1838,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   emits revision-tagged f64 checkpoints. Python's per-graph
   `GraphLayoutController` likewise schedules bounded native ticks on its own
   worker thread and restarts Rust CoSE from drag coordinates plus the current
-  pin mask. Cross-host parity is bitwise for the sqrt-only path (Python/Node
-  native and WASM on the committed golden) and carries a documented ulp-level
-  libm exception for the seeded circle and disconnected-component anchors;
-  the size-ladder timing evidence (1k–1M nodes, three hosts) is committed under
+  pin mask. Cross-host parity is bitwise (no ε): Python/Node native and WASM agree on every
+  f64 checkpoint of the committed 13-fixture golden because the CoSE path uses
+  only `+ − × ÷ √` and `portable_sin_cos`. The size-ladder timing evidence
+  (1k–1M nodes, three hosts) is committed under
   `spec/performance/cose-progressive-ladder-2026-10-20/`. Policy and results:
   `graph-mark.md` §4 "CoSE cross-host parity".
 - **Box-select:** reuses the existing scatter/segments selection path — no

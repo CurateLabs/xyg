@@ -180,11 +180,12 @@ def run(rungs: list[str], hosts: list[str], chromium: str | None) -> dict[str, A
     from environment import collect_environment_metadata
 
     rows: list[dict[str, Any]] = []
+    load_start = os.getloadavg()
     for rung in rungs:
         nodes, chunks, reps = RUNGS[rung]
         for host in hosts:
             started = time.time()
-            load_start = os.getloadavg()
+            row_load = os.getloadavg()
             try:
                 if host == "python":
                     raw = _run_child(
@@ -220,7 +221,7 @@ def run(rungs: list[str], hosts: list[str], chromium: str | None) -> dict[str, A
                         "summary": summarize(raw),
                         "reps": raw["reps"],
                         "elapsed_s": time.time() - started,
-                        "loadavg_1m": {"start": load_start[0], "end": os.getloadavg()[0]},
+                        "loadavg_1m": {"start": row_load[0], "end": os.getloadavg()[0]},
                     }
                 )
             except Exception as error:  # a failed rung is recorded, never dropped
@@ -244,7 +245,14 @@ def run(rungs: list[str], hosts: list[str], chromium: str | None) -> dict[str, A
             "cadence": f"gap between delivered checkpoints of {CHUNK_STEPS} ticks each",
             "rungs": {k: {"nodes": v[0], "chunks": v[1], "reps": v[2]} for k, v in RUNGS.items()},
         },
-        "environment": collect_environment_metadata(chromium=chromium),
+        "environment": {
+            **collect_environment_metadata(chromium=chromium),
+            "loadavg": {
+                "start": list(load_start),
+                "end": list(os.getloadavg()),
+                "note": "1/5/15-minute host load averages (16 CPUs); shared host",
+            },
+        },
         "rows": rows,
     }
 

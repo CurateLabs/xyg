@@ -334,31 +334,25 @@ Hosts must not emulate the shipped CoSE policy.
 the same `libxyg_core` C ABI) and the wasm32 kernel (`xyg_wasm_graph_begin` /
 `_step`, exactly as the Worker drives it) are compared on one committed golden,
 `tests/fixtures/graphforge/cose-parity/golden.json` (regenerate with
-`scripts/gen_cose_parity_golden.py --write`). It holds seeded fixtures — default
-and custom options, compound parents, disconnected components plus isolated
-nodes, pins with bounds, a 200-node exact-repulsion graph and a 700-node
-uniform-grid-tier graph with compounds — and, per tick schedule `1,9,20,30`, the
-sha256 of the f64 `x‖y‖alpha` bytes and the final positions. Tolerance policy:
+`scripts/gen_cose_parity_golden.py --write`). It holds 13 fixtures — default and
+custom options, compound parents, disconnected components plus isolated nodes,
+pins with bounds, coincident authored positions, a 200-node exact-repulsion
+graph and a 700-node uniform-grid-tier graph with compounds — each with
+authored and Rust-seeded start positions, and, per tick schedule `1,9,20,30`,
+the sha256 of the f64 `x‖y‖alpha` bytes plus the final positions.
 
-- **Bitwise** (`==` on every f64, every checkpoint) for any run whose Rust path
-  uses only `+ − × ÷ √` — authored start positions on connected graphs,
-  including compound, pinned/bounded, exact tier and grid tier. Python native,
-  Node native and WASM all pass (`tests/test_cose_native_parity.py`,
-  `packages/xy-node/test/cose-wasm-parity.test.mjs`). No ε is applied here.
-- **Known libm-dependent paths** (measured divergence, not tolerated as
-  equivalence): the Rust-seeded circle (`ForceState::new` → `layout_circle`) and
-  the per-component gravity anchor of disconnected graphs call the platform
-  `sin`/`cos`; wasm32 and glibc differ by ulps (first-checkpoint |Δ| ≤ 2.3e-13 on
-  coordinates ~10), which the chaotic force iteration amplifies (up to 6.5 after
-  60 ticks on the 200-node seeded graph). These fixtures are asserted with a
-  first-checkpoint bound of 1e-9 plus a `todo` bitwise assertion. Native hosts
-  agree with each other bitwise on every fixture. Replacing both sites with
-  `portable_sin_cos` was verified to make all 11 fixtures bitwise on WASM
-  (`spec/performance/cose-progressive-ladder-2026-10-20/portable-sincos-experiment.patch`)
-  but changes every seeded layout on all hosts, so it is a separate tracked
-  change; when it lands the `libm` lists in the golden go empty and the policy
-  becomes bitwise everywhere. Until then a seeded or multi-component layout is
-  **not** guaranteed identical between browser WASM and native.
+**Tolerance policy: bitwise, no ε.** Every f64 position and `alpha` at every
+checkpoint must be `==` across Python native, Node native and WASM
+(`tests/test_cose_native_parity.py`,
+`packages/xy-node/test/cose-wasm-parity.test.mjs`). This holds because the CoSE
+path consults the platform `libm` nowhere: it uses only `+ − × ÷ √` (IEEE
+correctly rounded) and `portable_sin_cos` for the seeded circle
+(`layout_circle`), the coincident-overlap seeding, the coincident-pair
+direction, and the per-component gravity anchors. Any new transcendental on the
+CoSE path must use a portable implementation and extend the golden; the
+force-iteration is chaotic, so a one-ulp platform difference grows to O(1) drift
+within tens of ticks (observed up to 6.5 units on the 200-node graph with
+platform `sin`/`cos`), which is why no tolerance is offered instead.
 
 **Size-ladder evidence (#35, criterion 4).**
 `scripts/bench_cose_progressive.py` drives the shipped schedulers
