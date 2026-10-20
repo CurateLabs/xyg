@@ -85,7 +85,7 @@ Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus i
 - `twinx()` exports through Scene v33's `XYY2` block. Python and Node marshal only
   facts: the axis id/side, scale, ticks, title and format, the XYCO-resolved y2
   chrome (tick/title size, padding, paints, italic/bold flags), the per-trace y
-  selector (`XYCL` column flag bit 1, ABI 390), and `has_colorbar` presence. They
+  selector (`XYCL` column flag bit 1, ABI 391), and `has_colorbar` presence. They
   add no admission or layout policy and no default for any y2-specific wire field
   (Rust builds the `XYY2` block from the authored observation; the shared chrome-axis
   marshalling still resolves side/mask defaults, as before); Rust returns the stable
