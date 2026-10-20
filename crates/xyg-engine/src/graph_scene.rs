@@ -1304,29 +1304,31 @@ mod tests {
         let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
         let xs = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
         let ys = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
-        let literal = SceneBatch::new_with_chrome_literal_ids(
-            layout,
-            1,
-            2,
-            xs,
-            ys,
-            Default::default(),
-            Default::default(),
-            &[SceneRecordKind::Scatter as u8],
-            &[1],
-            &[0],
-            &[0, 0, 0, 255],
-            &[0, 0, 0, 0],
-            &[0.0],
-            &[8.0],
-            &[0],
-            &[0.5],
-            &[0.5],
-            &[0.5],
-            &[0.5],
-        )
-        .unwrap()
-        .encode();
+        let literal = |id: u64| {
+            SceneBatch::new_with_chrome_literal_ids(
+                layout,
+                1,
+                2,
+                xs,
+                ys,
+                Default::default(),
+                Default::default(),
+                &[SceneRecordKind::Scatter as u8],
+                &[id],
+                &[0],
+                &[0, 0, 0, 255],
+                &[0, 0, 0, 0],
+                &[0.0],
+                &[8.0],
+                &[0],
+                &[0.5],
+                &[0.5],
+                &[0.5],
+                &[0.5],
+            )
+            .unwrap()
+            .encode()
+        };
         let circles = |bytes: &[u8]| {
             let out = rebuild_composed_graph_scene(bytes, &nodes()).unwrap();
             SceneDocument::decode(&out)
@@ -1335,7 +1337,10 @@ mod tests {
                 .matches("<circle")
                 .count()
         };
-        assert_eq!(circles(&literal), circles(&base()));
+        // Reserved-prefix ids are legal in literal mode too.
+        for id in [1, 0x5859_0100_0000_0001] {
+            assert_eq!(circles(&literal(id)), circles(&base()), "{id:#x}");
+        }
     }
 
     #[test]
