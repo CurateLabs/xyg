@@ -24,7 +24,7 @@
 //! gives every chrome slot an explicit pixel size, so it never reaches them.
 use crate::css::{color_rgba8, parse_color, Checked};
 use crate::scene::MAX_SCENE_CHROME_LENGTH;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 const MAX_BYTES: usize = 256 * 1024;
 const MAX_TEXT: usize = 4096;
@@ -37,6 +37,7 @@ const DEFAULT_TICK_PADDING: f64 = 4.0;
 const DEFAULT_TITLE_SIZE: f64 = 14.0;
 const DEFAULT_TITLE_RGBA: [u8; 4] = [0x26, 0x26, 0x26, 0xff];
 const SIZE_KEYS: [&str; 4] = ["tick_label_size", "tick_size", "label_size", "tick_padding"];
+const COLOR_KEYS: [&str; 2] = ["tick_label_color", "label_color"];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ChromeStyleError {
@@ -335,10 +336,18 @@ fn axis(
         .map(|v| axis_number(v, -MAX_SCENE_CHROME_LENGTH, MAX_SCENE_CHROME_LENGTH))
         .transpose()?;
     let color = |key: &str| authored(style, key).map(paint).transpose();
-    let removed = |entries: &Entries<'_>| {
+    // Size keys always travel in XYST. A null/empty colour is "not authored",
+    // so it is dropped too rather than reaching the Scene encoder as text.
+    let removed = |entries: &Entries<'_>, colors: &[&'static str]| {
         SIZE_KEYS
             .into_iter()
             .filter(|key| entries.contains_key(key))
+            .chain(
+                colors
+                    .iter()
+                    .copied()
+                    .filter(|key| entries.contains_key(key) && authored(entries, key).is_none()),
+            )
             .collect::<Vec<_>>()
     };
     Ok(Axis {
@@ -347,8 +356,8 @@ fn axis(
         tick_padding: tick_padding.unwrap_or(DEFAULT_TICK_PADDING),
         tick_rgba: color("tick_label_color")?.or(tick_slot.rgba).or(root_paint),
         title_rgba: color("label_color")?.or(title_slot.rgba).or(root_paint),
-        removed_style: removed(style),
-        removed_minor: removed(minor),
+        removed_style: removed(style, &COLOR_KEYS),
+        removed_minor: removed(minor, &[]),
     })
 }
 
@@ -394,9 +403,13 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         return Err(ChromeStyleError::Limit);
     }
     let mut slots: BTreeMap<&str, Slot> = BTreeMap::new();
+    let mut seen = BTreeSet::new();
     for _ in 0..slot_count {
         let name = reader.text()?;
         let entries = reader.entries()?;
+        if !seen.insert(name) {
+            return Err(ChromeStyleError::Flags);
+        }
         if name == "legend" && admit_legend {
             legend_slot(&entries)?;
             continue;
@@ -404,9 +417,7 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         if !matches!(name, "title" | "axis_title" | "tick_label") {
             return Err(ChromeStyleError::Slot);
         }
-        if slots.insert(name, slot(&entries)?).is_some() {
-            return Err(ChromeStyleError::Flags);
-        }
+        slots.insert(name, slot(&entries)?);
     }
     let mut axes = Vec::with_capacity(2);
     let mut axis_entries = Vec::with_capacity(2);

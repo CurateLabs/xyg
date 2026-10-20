@@ -69,8 +69,9 @@ Scene wire has one `label_rgba` per axis; XYST carries the split.
 `XYCO`, version 1, flags (bit 0 = title), the XYST `chrome_text` word, four RGBA8
 paints (x tick, y tick, x title, y title; zero when absent), title size (f64) and
 RGBA8, six f64s (x then y tick size, axis-title size, tick padding), then for each
-axis the `style` and `minor_style` keys the host must drop because XYST carries
-them. The `chrome_text` word packs two-bit flags (bit 0 italic, bit 1 bold) for
+axis the `style` and `minor_style` keys the host must drop: the size keys XYST
+carries and any null/empty `tick_label_color` / `label_color` (an unauthored
+colour must not reach the Scene encoder as text). The `chrome_text` word packs two-bit flags (bit 0 italic, bit 1 bold) for
 title, x title, y title, x ticks, y ticks (bits 0..10) and four paint-present bits
 (10..14).
 

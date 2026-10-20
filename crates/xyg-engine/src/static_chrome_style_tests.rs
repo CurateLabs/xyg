@@ -216,6 +216,21 @@ fn tick_size_alias_and_removed_keys() {
 }
 
 #[test]
+fn unauthored_axis_colors_are_dropped_from_the_scene_style() {
+    let mut f = frame();
+    f.x.0 = vec![
+        ("tick_label_color", V::Null),
+        ("label_color", V::Text("")),
+        ("grid_color", V::Text("red")),
+    ];
+    f.y.0 = vec![("label_color", V::Text("#112233"))];
+    let resolved = resolve(&f);
+    assert_eq!(resolved.removed[0], ["tick_label_color", "label_color"]);
+    assert!(resolved.removed[2].is_empty()); // authored colours stay for the Scene
+    assert_eq!(resolved.chrome_text >> 10, 0b1000); // only the y title paint
+}
+
+#[test]
 fn weight_and_style_pack_per_slot() {
     let mut f = frame();
     f.slots = vec![
@@ -363,6 +378,10 @@ fn framing_is_bounded_and_exact() {
     );
     let mut dup = frame();
     dup.slots = vec![("title", vec![]), ("title", vec![])];
+    assert_eq!(reason(&dup), ChromeStyleError::Flags);
+    let mut dup = frame();
+    dup.legend = true;
+    dup.slots = vec![("legend", vec![]), ("legend", vec![])];
     assert_eq!(reason(&dup), ChromeStyleError::Flags);
     let mut dup = frame();
     dup.root = vec![("font-size", V::Null), ("font-size", V::Null)];

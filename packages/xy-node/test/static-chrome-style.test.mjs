@@ -59,6 +59,12 @@ test("legacy defaults are unchanged", () => {
   assert.equal(svgOf(chart()), svgOf(chart({ styles: {} })));
 });
 
+test("null or empty axis colors are not authored and never reach the Scene", () => {
+  const baseline = svgOf(chart());
+  assert.equal(svgOf(chart({ xStyle: { tick_label_color: null, label_color: "" } })), baseline);
+  assert.equal(svgOf(chart({ yStyle: { label_color: null } })), baseline);
+});
+
 test("SVG and PDF carry resolved paint, weight, style and fonts", () => {
   const fig = chart({ styles: TYPOGRAPHY });
   const t = byText(svgOf(fig));
