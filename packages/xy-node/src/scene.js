@@ -4821,10 +4821,7 @@ export function marshalXyTcTraceObs(trace, showLegend) {
   }
   const channel = trace.color_ch;
   const colorChPresent = channel != null && typeof channel === "object" ? 1 : 0;
-  // The per-item paint plane carries every mark's paint; the trace-level style
-  // is only the opacity carrier, so it must not inherit a constant paint.
-  const colorChHasConstant = colorChPresent && channel.constant != null
-    && !scatterPacksPaintPlane(trace) ? 1 : 0;
+  const colorChHasConstant = colorChPresent && channel.constant != null ? 1 : 0;
   const color2 = trace.color2_ch;
   const hasColor2 = color2 != null;
   const kindIsRibbon = kindName === "ribbon";
@@ -7251,6 +7248,10 @@ export function scatterPacksPaintPlane(trace) {
   if (String(trace.kind || "") !== "scatter" || scatterUsesDensity(trace)) return false;
   const names = scatterPaintChannelNames(trace);
   if (!names.length) return false;
+  // The plane is final paint with trace opacity/fill_opacity folded in; a
+  // constant stroke_opacity is not part of that fold, so it keeps failing closed.
+  const strokeOpacity = (trace.style ?? {}).stroke_opacity;
+  if (strokeOpacity != null && Number(strokeOpacity) !== 1) return false;
   return names.every((name) => sceneScatterPaintChannelAdmit(name));
 }
 

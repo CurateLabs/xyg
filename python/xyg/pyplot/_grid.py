@@ -421,7 +421,11 @@ def _lower_scalar_artist_alpha(trace: Any) -> None:
 
     def with_alpha(css: Any) -> str:
         # The same Rust rule as the per-item path: artist alpha replaces the
-        # paint's alpha, and an absent paint (`c="none"`) stays absent.
+        # paint's alpha.
+        # `c="none"` is the absent-paint keyword, not a color with alpha 0 (the
+        # per-item path applies the same keyword rule in Rust).
+        if str(css).strip().lower() in {"none", "transparent"}:
+            return str(css)
         packed = _native.scene_item_apply_opacity(
             bytes(_native.css_color_rgba(str(css), 1.0)), 1, [alpha], None
         )

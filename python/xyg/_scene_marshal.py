@@ -592,7 +592,6 @@ def marshal_xytc_trace_obs(trace: Any, *, show_legend: bool) -> dict[str, Any]:
     from xyg._scene_observations import (
         _channel_constant_css,
         _ribbon_end_rgba_pair,
-        _scatter_packs_paint_plane,
         _trace_source_color_css,
     )
 
@@ -639,11 +638,6 @@ def marshal_xytc_trace_obs(trace: Any, *, show_legend: bool) -> dict[str, Any]:
     color_ch_has_constant = (
         1 if color_ch_present and getattr(channel, "constant", None) is not None else 0
     )
-    if color_ch_has_constant and _scatter_packs_paint_plane(trace):
-        # The per-item paint plane carries every mark's paint; the trace-level
-        # style is only the opacity carrier Rust multiplies each item by, so it
-        # must not inherit an absent ("none") or translucent constant paint.
-        color_ch_has_constant = 0
     color2 = getattr(trace, "color2_ch", None)
     has_color2 = color2 is not None
     kind_is_ribbon = kind_name == "ribbon"

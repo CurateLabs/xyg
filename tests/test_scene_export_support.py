@@ -2876,3 +2876,29 @@ def test_hidden_colormapped_segment_traces_stay_fail_closed(build: Callable[[], 
     figure.traces[0].hidden = True
     assert scene_export_support_reason(figure) is not None
     assert "hidden or per-item" in scene_export_support_reason(figure)
+
+
+def test_constant_color_scatter_keeps_its_color_in_the_legend_with_per_item_strokes() -> None:
+    """A named ``color="red"`` scatter with per-item strokes: red points, red legend (#1006).
+
+    The per-item paint plane is final paint, so the trace-level style keeps its
+    constant color for the legend swatch instead of falling back to the default.
+    """
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter(
+        [0.3, 0.7],
+        [0.5, 0.5],
+        color="red",
+        size=30,
+        stroke=["#000000", "#0000ff"],
+        stroke_width=2,
+        name="pts",
+    )
+    assert scene_export_support_reason(figure) is None
+    svg = _public_svg(figure)
+    legend = svg[svg.index('data-xy-chrome="legend"') :]
+    assert 'fill="rgb(255,0,0)"' in legend.split("<text", 1)[0]
+    assert "rgb(57,135,229)" not in svg  # the default blue never appears
+    assert 'fill="rgb(255,0,0)"' in svg.split('data-xy-chrome="legend"')[0]

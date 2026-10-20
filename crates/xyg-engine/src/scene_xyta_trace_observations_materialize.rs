@@ -242,6 +242,31 @@ fn channel_end_rgba8(channel: &SceneXytaColorChannelIn<'_>, n: usize, fallback: 
     }
 }
 
+/// A constant channel authored as the CSS `transparent` / Matplotlib `none`
+/// keyword is an absent paint (no fill, no stroke) rather than a color with
+/// alpha 0, so an artist alpha has nothing to replace (#1006). Explicit RGBA
+/// paints, including `#rrggbb00`, are ordinary paints and take the artist
+/// alpha.
+fn is_absent_paint(channel: &SceneXytaColorChannelIn<'_>) -> bool {
+    channel.present != 0
+        && channel.mode == "constant"
+        && channel.constant.is_some_and(|css| {
+            let css = css.trim();
+            css.eq_ignore_ascii_case("transparent") || css.eq_ignore_ascii_case("none")
+        })
+}
+
+/// Scale every item's alpha by a constant factor in `[0, 1]`.
+fn scale_alpha(packed: &mut [u8], factor: f32) {
+    if factor >= 1.0 {
+        return;
+    }
+    let factor = factor.max(0.0);
+    for pixel in packed.chunks_exact_mut(4) {
+        pixel[3] = (f32::from(pixel[3]) * factor).round().clamp(0.0, 255.0) as u8;
+    }
+}
+
 fn item_apply_opacity(
     packed: &[u8],
     n: usize,
@@ -297,6 +322,8 @@ fn item_fill_rgba8(
         packed = Some(rgba);
     }
     let packed = packed?;
+    let no_artist = SceneXytaStyleChannelIn::default();
+    let artist_ch = if is_absent_paint(channel) { &no_artist } else { artist_ch };
     item_apply_opacity(&packed, n, opacity_ch, artist_ch)
 }
 
@@ -425,6 +452,8 @@ fn scatter_point_stroke_rgba8(
     if stroke.present != 0 && stroke.mode == "match_fill" {
         return Some(packed);
     }
+    let no_artist = SceneXytaStyleChannelIn::default();
+    let artist_ch = if is_absent_paint(stroke) { &no_artist } else { artist_ch };
     item_apply_opacity(&packed, n, opacity_ch, artist_ch)
 }
 
@@ -569,7 +598,7 @@ pub fn scene_xyta_trace_observations_materialize(
             &input.opacity_ch,
             &input.artist_alpha_ch,
         );
-        let strokes = fills.as_ref().and_then(|fills| {
+        let mut strokes = fills.as_ref().and_then(|fills| {
             scatter_point_stroke_rgba8(
                 &input.stroke_ch,
                 fills,
@@ -579,6 +608,19 @@ pub fn scene_xyta_trace_observations_materialize(
                 &input.artist_alpha_ch,
             )
         });
+        // The plane's paint is final: Scene interns it as authored and never
+        // multiplies it by the trace-level paint (which keeps its own constant
+        // color for the legend). Trace-level opacity is folded in here instead.
+        let mut fills = fills;
+        let opacity = if input.has_style_opacity != 0 { input.style_opacity } else { 1.0 };
+        let fill_opacity =
+            if input.has_style_fill_opacity != 0 { input.style_fill_opacity } else { 1.0 };
+        if let Some(fills) = fills.as_mut() {
+            scale_alpha(fills, opacity * fill_opacity);
+        }
+        if let Some(strokes) = strokes.as_mut() {
+            scale_alpha(strokes, opacity);
+        }
         let widths = item_widths(
             &input.stroke_width_ch,
             n,

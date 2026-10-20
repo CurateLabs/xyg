@@ -6883,13 +6883,14 @@ pub fn expand_scene_records_painted(
                         index
                     };
                     if let Some(&(fill, stroke, width)) = points.get(index) {
-                        let fill_alpha = style_rgba4(fill_rgba, style_ref)?[3];
-                        let stroke_alpha = style_rgba4(stroke_rgba, style_ref)?[3];
+                        // The plane's paint is final (trace-level opacity was
+                        // folded in when it was materialized), so it is not
+                        // multiplied by the base style's paint alpha.
                         style_ref = intern_mesh_face(
                             painted_styles.as_mut().ok_or(SceneError::Length)?,
                             &mut scatter_intern,
-                            apply_fill_alpha(fill, fill_alpha),
-                            apply_fill_alpha(stroke, stroke_alpha),
+                            fill,
+                            stroke,
                             width,
                         )?;
                     }

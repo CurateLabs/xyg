@@ -22,10 +22,14 @@ Each is regression-tested in `tests/pyplot/test_corpus_regressions_1006.py`,
   it emits no marks and keeps its legend entry. Python and Node export the same
   bytes (`scatter_empty_linear` is now an accepted registry edge case).
 - A scalar `alpha=` replaces the intrinsic paint alpha, as in Matplotlib 3.11
-  (`c="#ff000080", alpha=0.5` draws alpha 0.5). Constant paints carry it as the
-  literal CSS alpha of fill and stroke; `c="none"`/`edgecolors="none"` stay
-  absent. Per-item paints get a constant `artist_alpha` style channel that
-  Rust's per-item paint path composes (replace, then multiply).
+  (`c="#ff000080", alpha=0.5` draws alpha 0.5; an explicit `#ff000000` takes
+  it too). Constant paints carry it as the literal CSS alpha of fill and
+  stroke. The `none` keyword is an absent paint on both paths: a constant
+  channel authored as `transparent`/`none` is never replaced (decided in Rust
+  for per-item paint). Per-item paints get a constant `artist_alpha` style
+  channel that Rust composes (replace, then multiply); the resulting plane is
+  final paint (trace opacity folded in), so the trace-level color stays intact
+  for the legend swatch.
 - Polar axes no longer author the Cartesian `tick_label_strategy="preserve"`
   for explicit `set_thetagrids`/`set_rticks`; rim labels are never culled, so
   the setting is inert there and the polar axis components refuse it.

@@ -150,6 +150,8 @@ call raises the listed stable `XYG_*` reason.
   arguments: a scalar `alpha=` becomes the literal CSS alpha of constant
   fill/stroke paint (never filling `"none"`) or a constant `artist_alpha`
   channel for per-item paint.
+  Hidden traces always fail closed (`XYFS_TRACE_HIDDEN`, scene-ir.md); a
+  per-item scatter paint plane is final paint with trace opacity folded in.
 
 ## 3. Stable failure rules
 

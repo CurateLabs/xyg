@@ -219,3 +219,39 @@ def test_artist_alpha_keeps_absent_fill_absent_on_the_per_item_path() -> None:
         assert np.any(stroke)  # stroke at alpha 0.5 over white
     finally:
         plt.close("all")
+
+
+def test_explicit_transparent_rgba_still_takes_the_artist_alpha() -> None:
+    """``#ff000000`` is a color, not ``none``: Matplotlib's alpha replaces it (#1006)."""
+    try:
+        fig, ax = plt.subplots(figsize=(3, 2))
+        ax.scatter(
+            [0.25, 0.75],
+            [0.5, 0.5],
+            s=3000,
+            c=["#ff000000", "#0000ffff"],
+            alpha=[0.5, 0.5],
+            edgecolors="none",
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        pixels = _png_rgb(fig)
+        height, width = pixels.shape[:2]
+        left = pixels[height // 2, int(width * 0.34)]
+        assert left[0] > 0.98 and 0.4 < left[1] < 0.6  # first point visible at alpha 0.5
+    finally:
+        plt.close("all")
+
+
+def test_translucent_constant_color_is_not_applied_twice_with_per_item_strokes() -> None:
+    """``c="#ff000080"`` with per-item strokes draws the fill at alpha 0.5, not 0.25."""
+    try:
+        fig, ax = plt.subplots(figsize=(2, 2))
+        ax.scatter([0.5], [0.5], s=4000, c="#ff000080", edgecolors=["black"])
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        pixels = _png_rgb(fig)
+        centre = pixels[pixels.shape[0] // 2, pixels.shape[1] // 2]
+        assert 0.4 < centre[1] < 0.6
+    finally:
+        plt.close("all")
