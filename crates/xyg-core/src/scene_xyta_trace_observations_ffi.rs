@@ -2,7 +2,8 @@
 
 use xyg_engine::scene_xyta_trace_observations_materialize::{
     scene_xyta_trace_observations_materialize, SceneXytaColorChannelIn,
-    SceneXytaColormapInput, SceneXytaStyleChannelIn, SceneXytaTraceObservationsIn,
+    SceneXytaColormapInput, SceneXytaSizeChannelIn, SceneXytaStyleChannelIn,
+    SceneXytaTraceObservationsIn,
     SceneXytaTraceObservationsOut, SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
 };
 use xyg_engine::scene_pack_orchestrate::XytaTraceDispatchPlan;
@@ -86,6 +87,15 @@ pub has_style_stroke_opacity: i32,
     pub rgba_grid_f64_len: usize,
     pub x_values_len: usize,
     pub y_values_len: usize,
+    /// Continuous scatter size channel (#1006): raw values, authored domain,
+    /// and `range_px` diameter endpoints; Rust maps them to diameters.
+    pub size_present: i32,
+    pub size_has_domain: i32,
+    pub size_domain_lo: f64,
+    pub size_domain_hi: f64,
+    pub size_range_lo: f64,
+    pub size_range_hi: f64,
+    pub size_values_len: usize,
 }
 
 /// Materialized XYTA pack inputs returned by ABI 323.
@@ -342,6 +352,7 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_observations_materialize(
     artist_values: *const f64,
     stroke_width_ch: *const XygSceneXytaStyleChannelDesc,
     stroke_width_values: *const f64,
+    size_values: *const f64,
     summary: *mut XygSceneXytaTraceObservationsOut,
     out_bytes: *mut u8,
     out_cap: usize,
@@ -480,6 +491,18 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_observations_materialize(
             None => return -1,
         },
     };
+    let size_channel = SceneXytaSizeChannelIn {
+        present: header.size_present,
+        has_domain: header.size_has_domain,
+        domain_lo: header.size_domain_lo,
+        domain_hi: header.size_domain_hi,
+        range_lo: header.size_range_lo,
+        range_hi: header.size_range_hi,
+        values_f64: match optional_f64(size_values, header.size_values_len) {
+            Some(v) => v,
+            None => return -1,
+        },
+    };
     let grid_values_slice = match optional_f64(grid_values, header.grid_values_len) {
         Some(v) => v,
         None => return -1,
@@ -549,6 +572,7 @@ has_style_stroke_opacity: header.has_style_stroke_opacity,
         opacity_ch: opacity_channel,
         artist_alpha_ch: artist_channel,
         stroke_width_ch: stroke_width_channel,
+        size_ch: size_channel,
     };
     let materialized = match scene_xyta_trace_observations_materialize(&materialize_in) {
         Ok(v) => v,

@@ -641,7 +641,7 @@ F3, still pending (above).
   ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
   ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
   ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`joined_fill` plus per-face paint stays fail-closed).
-  ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7 (per-item size/symbol stay fail-closed).
+  ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7; ABI 386 adds the Rust-mapped per-point size diameter to that plane (per-item symbol stays fail-closed).
   ABI 359 makes every caller-owned 2-D RGB/RGBA output explicitly
   capacity-aware: the four display-list framebuffer consumers; mean-color
   binning; normalized/canonical colormap, heatmap, and log/linear density image
@@ -2305,7 +2305,7 @@ ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same
 path. ABI 195 admits custom `role` and per-item fill/stroke/width interned onto
 those TriangleFace PolyFills from packed XYHP kind 6 (`joined_fill` plus per-face
 paint stays fail-closed). ABI 196 intern scatter per-item fill/stroke/width/opacity
-from packed XYHP kind 7 (per-item size/symbol stay fail-closed). ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
+from packed XYHP kind 7; ABI 386 adds the Rust-mapped per-point size diameter to that plane (per-item symbol stays fail-closed). ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from
 the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).

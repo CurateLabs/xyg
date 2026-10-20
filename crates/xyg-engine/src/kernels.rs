@@ -3024,13 +3024,14 @@ pub fn scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
 
 /// Admit Scene scatter paint-plane channel names (ABI 241).
 ///
-/// Exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha` return
-/// `1`. Unknown names, including empty text, return `0`. No lowercasing.
-/// Kind, density, and name gathering stay host.
+/// Exact `color`/`stroke`/`stroke_width`/`size`/`opacity`/`artist_alpha`
+/// return `1` (`size` rides the plane's per-point diameter, #1006). Unknown
+/// names, including empty text, return `0`. No lowercasing. Kind, density,
+/// and name gathering stay host.
 pub fn scene_scatter_paint_channel_admit(text: &str) -> i32 {
     i32::from(matches!(
         text,
-        "color" | "stroke" | "stroke_width" | "opacity" | "artist_alpha"
+        "color" | "stroke" | "stroke_width" | "size" | "opacity" | "artist_alpha"
     ))
 }
 
@@ -12761,6 +12762,7 @@ mod fuzz {
             "color",
             "stroke",
             "stroke_width",
+            "size",
             "opacity",
             "artist_alpha",
         ] {
@@ -12769,7 +12771,6 @@ mod fuzz {
         assert_eq!(scene_scatter_paint_channel_admit(""), 0);
         assert_eq!(scene_scatter_paint_channel_admit("STROKE"), 0);
         assert_eq!(scene_scatter_paint_channel_admit(" color"), 0);
-        assert_eq!(scene_scatter_paint_channel_admit("size"), 0);
         assert_eq!(scene_scatter_paint_channel_admit("symbol"), 0);
     }
 

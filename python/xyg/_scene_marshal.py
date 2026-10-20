@@ -442,6 +442,30 @@ def _marshal_xyta_style_channel(channel: Any) -> dict[str, Any]:
     }
 
 
+def _marshal_xyta_size_channel(channel: Any) -> dict[str, Any]:
+    """Raw continuous size values, domain, and ``range_px``; Rust maps diameters."""
+    mode = getattr(channel, "mode", None)
+    if channel is None or isinstance(channel, str) or mode == "constant":
+        return {"present": False, "values_f64": np.empty(0, dtype=np.float64)}
+    # Any other mode is marshaled as present: a non-continuous channel carries
+    # no values, so Rust's length check fails it closed instead of silently
+    # inheriting the trace diameter.
+    values = getattr(channel, "values", None) if mode == "continuous" else None
+    if values is None:
+        return {"present": True, "values_f64": np.empty(0, dtype=np.float64)}
+    domain = getattr(channel, "domain", None)
+    lo, hi = channel.range_px
+    return {
+        "present": True,
+        "has_domain": domain is not None,
+        "domain_lo": float(domain[0]) if domain is not None else 0.0,
+        "domain_hi": float(domain[1]) if domain is not None else 0.0,
+        "range_lo": float(lo),
+        "range_hi": float(hi),
+        "values_f64": np.ascontiguousarray(np.asarray(values, dtype=np.float64).reshape(-1)),
+    }
+
+
 def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str, Any]:
     """Marshal XYTA trace observations for ABI 323 materialize."""
     from xyg._scene_observations import (
@@ -588,6 +612,7 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
         "opacity_ch": _marshal_xyta_style_channel(style_channels.get("opacity")),
         "artist_alpha_ch": _marshal_xyta_style_channel(style_channels.get("artist_alpha")),
         "stroke_width_ch": _marshal_xyta_style_channel(style_channels.get("stroke_width")),
+        "size_ch": _marshal_xyta_size_channel(getattr(trace, "size_ch", None)),
     }
 
 

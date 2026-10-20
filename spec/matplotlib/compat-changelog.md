@@ -54,6 +54,13 @@ per-item scatter sizes (`s=array`), secondary y axes (`twinx`), heterogeneous
 annotation styles and annotation `bbox=`, line+marker legend swatches, more
 than 1,024 hexbin cells (#887), and a panel legend in a multi-panel document.
 
+## Per-item scatter size — #1006
+
+- `scatter(s=array)` (and the public `size=array` channel) now exports through
+  the static Scene path (corpus case 12): Rust maps the continuous size channel
+  to per-point diameters in the scatter paint plane (XYHP kind 7 stride 12 → 20
+  bytes) instead of failing closed. ABI 386.
+
 ## Patch bodies and geometry — 2026-07-30 (Matplotlib 3.11.1 reference)
 
 - `xyg.pyplot.Axes.add_patch` now fills a patch instead of drawing only its

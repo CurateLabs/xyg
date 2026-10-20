@@ -2020,12 +2020,16 @@ def test_public_scatter_per_item_stroke_interns_distinct_paints() -> None:
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
 
 
-def test_public_scatter_keeps_per_item_size_fail_closed() -> None:
+def test_public_scatter_admits_per_item_size_through_the_paint_plane() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 3.0)
     figure.axis_options["y"]["domain"] = (0.0, 3.0)
     figure.scatter([1.0, 2.0], [1.0, 2.0], color="#3987e5", size=[4.0, 12.0], density=False)
-    assert scene_export_support_reason(figure) is not None
+    assert scene_export_support_reason(figure) is None
+    # A non-finite size value still fails closed with the stable diagnostic.
+    bad = Figure(width=320, height=240)
+    bad.scatter([1.0, 2.0], [1.0, 2.0], color="#3987e5", size=[4.0, float("nan")], density=False)
+    assert scene_export_support_reason(bad) is not None
 
 
 @pytest.mark.parametrize("symbol", BUILTIN_SYMBOLS)

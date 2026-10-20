@@ -154,6 +154,16 @@ static output: the document legend lays out against the document rectangle.
 
 ## Sharp edges
 
+- Per-item scatter size (`s=array`, public `size=array`) is carried by the Rust
+  scatter paint plane. Hosts marshal the raw continuous size channel (values,
+  domain, `range_px`); Rust maps `lo + (hi - lo) * t` per point and interns the
+  diameter onto each Scene scatter record. Pyplot pins `size_range` to the
+  min/max pixel diameter, so the normalization is the identity; a uniform array
+  pins the degenerate `(v, v)` range instead of falling to the 2 px default.
+  A non-finite size value, a malformed range, or a length mismatch still fails
+  closed with the stable `hidden or per-item styled marks` diagnostic
+  (corpus case 12; `tests/test_scatter_size_plane.py`). ABI 386 appends the
+  size channel to `xyg_scene_xyta_trace_observations_materialize`.
 - Custom Matplotlib marker paths, arbitrary clipping graphs, and unsupported
   collection gradients are rejected rather than silently approximated.
 - The shim's figure/axes bookkeeping adds ~50µs of fixed per-figure cost over

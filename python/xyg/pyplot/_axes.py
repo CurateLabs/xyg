@@ -2171,12 +2171,12 @@ class Axes(PlotTypeMixin):
             # matplotlib s= is absolute (points²); pin the engine's size range
             # to the converted pixel values so normalization is the identity
             # instead of compressing everything into the default 2-18 px band.
+            # A uniform array pins the degenerate (v, v) range so every point
+            # keeps its authored diameter rather than the default minimum.
             size_values = np.asarray(size_px, dtype=np.float64)
             finite_sizes = size_values[np.isfinite(size_values)]
             if finite_sizes.size:
-                lo_px, hi_px = float(finite_sizes.min()), float(finite_sizes.max())
-                if hi_px > lo_px:
-                    entry_kwargs["size_range"] = (lo_px, hi_px)
+                entry_kwargs["size_range"] = (float(finite_sizes.min()), float(finite_sizes.max()))
         if c is None:
             entry_kwargs["color"] = self._next_color()
         elif isinstance(c, str) or single_numeric_color:

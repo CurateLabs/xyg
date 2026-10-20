@@ -9,8 +9,8 @@ use crate::css;
 use crate::density_emit::density_mean_color_wire_admit;
 use crate::kernels::{
     clip_quantize_u8, quantize_unit_u8_into, scene_heatmap_shape_admit, scene_item_apply_opacity,
-    scene_item_fill_t, scene_item_widths_admit, scene_xyta_colormap_pack, DEFAULT_MARK_COLOR,
-    DEFAULT_PALETTE,
+    scene_item_fill_t, scene_item_widths_admit, scene_xyta_colormap_pack, size_range_admit,
+    DEFAULT_MARK_COLOR, DEFAULT_PALETTE,
 };
 use crate::scene_pack_orchestrate::XytaTraceDispatchPlan;
 use crate::scene_trace_attach::XYTA_PREFIX_BYTES;
@@ -48,6 +48,20 @@ pub struct SceneXytaColorChannelIn<'a> {
 #[derive(Clone, Debug, Default)]
 pub struct SceneXytaStyleChannelIn<'a> {
     pub present: i32,
+    pub values_f64: &'a [f64],
+}
+
+/// Continuous scatter size channel (#1006). Hosts marshal the raw values, the
+/// authored domain, and the `range_px` diameter endpoints; Rust normalizes and
+/// maps them to per-point diameters. `present` is set only for `continuous`.
+#[derive(Clone, Debug, Default)]
+pub struct SceneXytaSizeChannelIn<'a> {
+    pub present: i32,
+    pub has_domain: i32,
+    pub domain_lo: f64,
+    pub domain_hi: f64,
+    pub range_lo: f64,
+    pub range_hi: f64,
     pub values_f64: &'a [f64],
 }
 
@@ -91,6 +105,7 @@ pub struct SceneXytaTraceObservationsIn<'a> {
     pub opacity_ch: SceneXytaStyleChannelIn<'a>,
     pub artist_alpha_ch: SceneXytaStyleChannelIn<'a>,
     pub stroke_width_ch: SceneXytaStyleChannelIn<'a>,
+    pub size_ch: SceneXytaSizeChannelIn<'a>,
 }
 
 /// Materialized blobs + scalars for [`scene_xyta_trace_pack`].
@@ -384,6 +399,36 @@ fn item_widths(
     }
 }
 
+/// Per-point scatter diameters as f64 bytes (#1006). An absent size channel
+/// yields an empty plane (every point inherits the trace diameter). A present
+/// channel maps `t = (v - lo) / span` clipped to `[0, 1]` onto the admitted
+/// `range_px`; a length mismatch, an invalid range, or a non-finite value
+/// fails closed so the figure keeps the stable per-item diagnostic.
+fn item_diameters(size_ch: &SceneXytaSizeChannelIn<'_>, n: usize) -> Option<Vec<u8>> {
+    if size_ch.present == 0 {
+        return Some(Vec::new());
+    }
+    let (lo, hi) = size_range_admit(size_ch.range_lo, size_ch.range_hi).ok()?;
+    let domain = (size_ch.has_domain != 0).then_some((size_ch.domain_lo, size_ch.domain_hi));
+    if domain.is_some_and(|(d0, d1)| !d0.is_finite() || !d1.is_finite()) {
+        return None;
+    }
+    // Normalization would clip an infinity to a valid endpoint and a zero-width
+    // domain maps every value (even NaN) to zero, so reject bad data first.
+    if size_ch.values_f64.iter().any(|value| !value.is_finite()) {
+        return None;
+    }
+    let mut t = vec![0.0; n];
+    if !scene_item_fill_t(size_ch.values_f64, n, domain, &mut t) {
+        return None;
+    }
+    let diameters: Vec<f64> = t.iter().map(|t| lo + (hi - lo) * t).collect();
+    diameters
+        .iter()
+        .all(|d| d.is_finite() && *d >= 0.0)
+        .then(|| f64_bytes(&diameters))
+}
+
 fn resolve_bin_colors(
     channel: &SceneXytaColorChannelIn<'_>,
 ) -> Option<(Option<Vec<u8>>, Option<Vec<u8>>, Option<Vec<u8>>)> {
@@ -632,7 +677,10 @@ pub fn scene_xyta_trace_observations_materialize(
             input.style_stroke_width,
             input.has_style_stroke_width,
         );
-        if let (Some(fills), Some(strokes), Some(widths)) = (fills, strokes, widths) {
+        let diameters = item_diameters(&input.size_ch, n);
+        if let (Some(fills), Some(strokes), Some(widths), Some(diameters)) =
+            (fills, strokes, widths, diameters)
+        {
             let count = fills.len() / 4;
             out.rows = 1;
             out.cols = i32::try_from(count).map_err(|_| -1)?;
@@ -640,6 +688,7 @@ pub fn scene_xyta_trace_observations_materialize(
             out.rgba = fills;
             out.mean_rgba = strokes;
             out.x = widths;
+            out.y = diameters;
         }
     } else if input.dispatch.pack_density != 0 {
         let (cmap_flags, cmap, stops) = pack_colormap(&input.style_colormap);
@@ -771,6 +820,7 @@ mod tests {
             opacity_ch: SceneXytaStyleChannelIn::default(),
             artist_alpha_ch: SceneXytaStyleChannelIn::default(),
             stroke_width_ch: SceneXytaStyleChannelIn::default(),
+            size_ch: SceneXytaSizeChannelIn::default(),
         }
     }
 
@@ -797,6 +847,96 @@ mod tests {
         assert_eq!(out.rgba.len(), 8);
         assert_eq!(out.mean_rgba.len(), 8);
         assert_eq!(out.x.len(), 16);
+    }
+
+    fn size_scatter(size_ch: SceneXytaSizeChannelIn<'static>) -> SceneXytaTraceObservationsOut {
+        let mut input = minimal_input(
+            XytaTraceDispatchPlan {
+                pack_scatter_paint: 1,
+                ..Default::default()
+            },
+            SceneXytaColorChannelIn {
+                present: 1,
+                mode: "constant",
+                constant: Some("#9467bd"),
+                ..Default::default()
+            },
+            &[0.0, 1.0, 2.0],
+            &[0.0, 1.0, 2.0],
+        );
+        input.size_ch = size_ch;
+        scene_xyta_trace_observations_materialize(&input).unwrap()
+    }
+
+    fn diameters(out: &SceneXytaTraceObservationsOut) -> Vec<f64> {
+        out.y
+            .chunks_exact(8)
+            .map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap()))
+            .collect()
+    }
+
+    fn continuous_size(values: &'static [f64]) -> SceneXytaSizeChannelIn<'static> {
+        SceneXytaSizeChannelIn {
+            present: 1,
+            has_domain: 1,
+            domain_lo: 10.0,
+            domain_hi: 50.0,
+            range_lo: 4.0,
+            range_hi: 14.0,
+            values_f64: values,
+        }
+    }
+
+    #[test]
+    fn scatter_size_channel_maps_values_onto_pixel_diameters() {
+        // Constant color + per-point size still packs a paint plane (#1006).
+        let out = size_scatter(continuous_size(&[10.0, 30.0, 50.0]));
+        assert_eq!(out.has_rgba, 1);
+        assert_eq!(out.cols, 3);
+        assert_eq!(diameters(&out), vec![4.0, 9.0, 14.0]);
+        // Values outside the authored domain clip to the range endpoints.
+        let out = size_scatter(continuous_size(&[-100.0, 30.0, 1.0e9]));
+        assert_eq!(diameters(&out), vec![4.0, 9.0, 14.0]);
+    }
+
+    #[test]
+    fn scatter_without_size_channel_inherits_the_trace_diameter() {
+        let out = size_scatter(SceneXytaSizeChannelIn::default());
+        assert_eq!(out.has_rgba, 1);
+        assert!(out.y.is_empty());
+    }
+
+    #[test]
+    fn scatter_size_channel_fails_closed_without_a_plane() {
+        let bad = |size_ch: SceneXytaSizeChannelIn<'static>| {
+            let label = format!("{size_ch:?}");
+            let out = size_scatter(size_ch);
+            assert_eq!(out.has_rgba, 0, "{label}");
+            assert_eq!(out.cols, 0);
+        };
+        bad(continuous_size(&[10.0, f64::NAN, 50.0]));
+        bad(continuous_size(&[10.0, 30.0]));
+        // An infinity would clip to an endpoint, and a zero-width domain would
+        // map even NaN to a valid diameter; both must still fail closed.
+        bad(continuous_size(&[10.0, f64::INFINITY, 50.0]));
+        bad(SceneXytaSizeChannelIn {
+            domain_lo: 30.0,
+            domain_hi: 30.0,
+            ..continuous_size(&[10.0, f64::NAN, 50.0])
+        });
+        bad(SceneXytaSizeChannelIn {
+            range_lo: 14.0,
+            range_hi: 4.0,
+            ..continuous_size(&[10.0, 30.0, 50.0])
+        });
+        bad(SceneXytaSizeChannelIn {
+            range_lo: -1.0,
+            ..continuous_size(&[10.0, 30.0, 50.0])
+        });
+        bad(SceneXytaSizeChannelIn {
+            domain_hi: f64::INFINITY,
+            ..continuous_size(&[10.0, 30.0, 50.0])
+        });
     }
 
     #[test]

@@ -20,6 +20,7 @@
 use crate::kernels::BinColorSource;
 use crate::scene::{
     XYHP_PAINT_MESH, XYHP_PAINT_RIBBON, XYHP_PAINT_SCATTER, XYHP_PLANE_HEADER_BYTES,
+    XYHP_SCATTER_STRIDE_BYTES, XYHP_TRIPLE_STRIDE_BYTES,
 };
 use crate::scene_density::{self, pack_density_grid, DensityGridError, XYDE_HAS_MEAN_RGBA};
 use crate::scene_heatmap::{
@@ -59,7 +60,8 @@ pub const FLAG_SHAPE: u32 = 1 << 13;
 pub const FLAG_RIBBON_ENDS: u32 = 1 << 14;
 /// ABI 195: triangle-mesh per-face fill/stroke/width (`rgba` + `mean_rgba` + `x`).
 pub const FLAG_MESH_FACES: u32 = 1 << 15;
-/// ABI 196: scatter per-item fill/stroke/width (`rgba` + `mean_rgba` + `x`).
+/// ABI 196: scatter per-item fill/stroke/width (`rgba` + `mean_rgba` + `x`);
+/// #1006: optional per-point diameters (`y`, empty = inherit the trace's).
 pub const FLAG_SCATTER_PAINT: u32 = 1 << 16;
 
 const MAX_TRACES: usize = 4_096;
@@ -543,7 +545,26 @@ fn attach_paint_triples(
     {
         return Err(TraceAttachError::new(TraceAttachCode::HeatmapGrid, index));
     }
-    let payload_len = n.saturating_mul(12);
+    // Scatter planes carry a per-point f64 diameter (NaN = inherit the
+    // trace's constant diameter); mesh planes stop at the width.
+    let diameters = if kind == XYHP_PAINT_SCATTER {
+        let diameters = as_f64s(input.y, index)?;
+        if !diameters.is_empty() && diameters.len() != n {
+            return Err(TraceAttachError::new(TraceAttachCode::HeatmapGrid, index));
+        }
+        if diameters.iter().any(|d| !d.is_finite() || *d < 0.0) {
+            return Err(TraceAttachError::new(TraceAttachCode::HeatmapGrid, index));
+        }
+        Some(diameters)
+    } else {
+        None
+    };
+    let stride = if diameters.is_some() {
+        XYHP_SCATTER_STRIDE_BYTES
+    } else {
+        XYHP_TRIPLE_STRIDE_BYTES
+    };
+    let payload_len = n.saturating_mul(stride);
     let mut plane = vec![0u8; XYHP_PLANE_HEADER_BYTES];
     plane[..8].copy_from_slice(&u64::from(input.stable_id).to_le_bytes());
     plane[8..12].copy_from_slice(&1u32.to_le_bytes());
@@ -556,6 +577,10 @@ fn attach_paint_triples(
         plane.extend_from_slice(&input.rgba[src..src + 4]);
         plane.extend_from_slice(&input.mean_rgba[src..src + 4]);
         plane.extend_from_slice(&(widths[cell] as f32).to_le_bytes());
+        if let Some(diameters) = &diameters {
+            let diameter = diameters.get(cell).copied().unwrap_or(NAN);
+            plane.extend_from_slice(&diameter.to_le_bytes());
+        }
     }
     or_fact(&mut compiled.prefix, FACT_HEATMAP_PAINT);
     Ok((plane, 1, n as u32))
@@ -767,7 +792,12 @@ pub enum CellFillTessellation {
 }
 
 fn classify_paint_triples(input: &AttachInput<'_>) -> bool {
-    input.flags & FLAG_DENSITY == 0
+    let n = (input.cols as usize).saturating_mul(8);
+    let scatter_diameters = input.flags & FLAG_SCATTER_PAINT == 0
+        || input.y.is_empty()
+        || input.y.len() == n;
+    scatter_diameters
+        && input.flags & FLAG_DENSITY == 0
         && input.rows == 1
         && input.cols >= 1
         && input.rgba.len() == (input.cols as usize).saturating_mul(4)
@@ -1334,5 +1364,79 @@ mod tests {
             xyta_cell_fill_tessellation(&mixed).unwrap(),
             vec![CellFillTessellation::None]
         );
+    }
+
+    fn scatter_paint_attach(diameters: &[f64]) -> Vec<u8> {
+        let n = 2usize;
+        let mut attach = xyta_header(1);
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4]
+            .copy_from_slice(&(FLAG_SCATTER_PAINT | FLAG_SHAPE | FLAG_HAS_RGBA).to_le_bytes());
+        prefix[8..12].copy_from_slice(&1i32.to_le_bytes());
+        prefix[12..16].copy_from_slice(&(n as i32).to_le_bytes());
+        prefix[20..24].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        prefix[28..32].copy_from_slice(&(n as u32).to_le_bytes());
+        prefix[32..36].copy_from_slice(&(diameters.len() as u32).to_le_bytes());
+        prefix[36..40].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        attach.extend_from_slice(&prefix);
+        attach.extend_from_slice(&[0xef, 0x44, 0x44, 0xff, 0x22, 0xc5, 0x5e, 0xff]);
+        attach.extend_from_slice(&1.0f64.to_le_bytes());
+        attach.extend_from_slice(&2.0f64.to_le_bytes());
+        for diameter in diameters {
+            attach.extend_from_slice(&diameter.to_le_bytes());
+        }
+        attach.extend_from_slice(&[0x11, 0x11, 0x11, 0xff, 0x22, 0x22, 0x22, 0xff]);
+        attach
+    }
+
+    /// The scatter paint plane carried by the packed `XYTT` record.
+    fn scatter_plane_payload(attach: &[u8]) -> Vec<u8> {
+        let packed = pack_trace_attach(&scatter_compile(), attach).unwrap();
+        let len = u32::from_le_bytes(
+            packed[XYTT_HEADER_BYTES + 160..XYTT_HEADER_BYTES + 164]
+                .try_into()
+                .unwrap(),
+        ) as usize;
+        packed[packed.len() - len + XYHP_PLANE_HEADER_BYTES..].to_vec()
+    }
+
+    #[test]
+    fn scatter_paint_plane_carries_per_point_diameters() {
+        // #1006: the XYTA `y` array is the per-point diameter (px) plane.
+        let payload = scatter_plane_payload(&scatter_paint_attach(&[6.5, 12.25]));
+        assert_eq!(payload.len(), 2 * 20);
+        let diameter = |point: usize| {
+            f64::from_le_bytes(payload[point * 20 + 12..point * 20 + 20].try_into().unwrap())
+        };
+        assert_eq!((diameter(0), diameter(1)), (6.5, 12.25));
+        // The leading fill / stroke / f32 width bytes are unchanged.
+        assert_eq!(&payload[..8], &[0xef, 0x44, 0x44, 0xff, 0x11, 0x11, 0x11, 0xff]);
+        assert_eq!(f32::from_le_bytes(payload[8..12].try_into().unwrap()), 1.0);
+    }
+
+    #[test]
+    fn scatter_paint_plane_without_diameters_inherits_the_trace_diameter() {
+        let payload = scatter_plane_payload(&scatter_paint_attach(&[]));
+        assert_eq!(payload.len(), 2 * 20);
+        for point in 0..2 {
+            let diameter =
+                f64::from_le_bytes(payload[point * 20 + 12..point * 20 + 20].try_into().unwrap());
+            assert!(diameter.is_nan(), "point {point} inherits");
+        }
+    }
+
+    #[test]
+    fn scatter_paint_plane_rejects_malformed_diameters() {
+        // Wrong length: not classified as a scatter paint plane at all.
+        assert_eq!(
+            xyta_cell_fill_tessellation(&scatter_paint_attach(&[6.5])).unwrap(),
+            vec![CellFillTessellation::None]
+        );
+        // Negative / non-finite diameters fail closed with the stable code.
+        for bad in [-1.0, f64::NAN, f64::INFINITY] {
+            let err = pack_trace_attach(&scatter_compile(), &scatter_paint_attach(&[2.0, bad]))
+                .unwrap_err();
+            assert_eq!(err.code, TraceAttachCode::HeatmapGrid, "{bad}");
+        }
     }
 }
