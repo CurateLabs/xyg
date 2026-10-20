@@ -97,12 +97,6 @@ def test_shared_domains_union_across_panels() -> None:
     assert len({fig.x_range() for fig in figures}) == 1
 
 
-@pytest.mark.xfail(
-    reason="StaticDocument wrapped-annotation packing rejects the pyplot "
-    "coordinate_space style key, so axes-fraction annotations fail closed "
-    "on static export (tracked post-#873).",
-    strict=False,
-)
 def test_margin_title_ink_lands_right_of_the_plot() -> None:
     """The full chain: axes-fraction x>1 text reserves right padding, escapes
     the plot clip, and rasterizes rotated — ink must land in the margin."""
@@ -133,12 +127,6 @@ def test_margin_title_ink_lands_right_of_the_plot() -> None:
     assert int((margin < 200).sum()) > 20, "no margin-title ink right of the plot"
 
 
-@pytest.mark.xfail(
-    reason="StaticDocument wrapped-annotation packing rejects the pyplot "
-    "coordinate_space style key, so axes-fraction annotations fail closed "
-    "on static export (tracked post-#873).",
-    strict=False,
-)
 def test_rotated_annotation_survives_svg_export() -> None:
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1])

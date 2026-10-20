@@ -729,7 +729,7 @@ def test_clabel_table_and_quiverkey_complete_annotation_families() -> None:
     spec, _buffers = ax._build_chart(640, 480).figure().build_payload_split()
     assert (
         sum(
-            annotation.get("class_name") == "xy-mpl-table-cell"
+            (annotation.get("style") or {}).get("coordinate_space") == "axes_fraction"
             for annotation in spec["annotations"]
         )
         == 16

@@ -103,6 +103,7 @@ pub enum XyafBulkError {
     Anchor = 11,
     LabelBorder = 12,
     Axis = 13,
+    CoordinateSpace = 14,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -140,6 +141,7 @@ pub struct XyafBulkStyleObs<'a> {
     pub label_opacity: Option<f64>,
     pub label_border_width: Option<f64>,
     pub rotation: Option<f64>,
+    pub coordinate_space: Option<&'a str>,
     pub extra_keys: &'a [String],
 }
 
@@ -217,6 +219,22 @@ fn anchor_code(name: &str, index: usize) -> Result<u8, XyafBulkPackError> {
     }
 }
 
+/// Coordinate-space code of an authored text row. `figure_fraction` is a
+/// known gap: a panel Scene does not own the figure rectangle.
+fn coordinate_space_code(name: Option<&str>, kind: &str, index: usize) -> Result<u8, XyafBulkPackError> {
+    let code = match name {
+        None | Some("data") => 0,
+        Some("axes_fraction") => 1,
+        Some("xaxis_transform") => 2,
+        Some("yaxis_transform") => 3,
+        Some(_) => return Err(XyafBulkPackError::new(XyafBulkError::CoordinateSpace, index)),
+    };
+    if name.is_some() && kind != "text" {
+        return Err(XyafBulkPackError::new(XyafBulkError::CoordinateSpace, index));
+    }
+    Ok(code)
+}
+
 fn parse_dash_text(text: &str) -> Result<Option<Vec<f32>>, XyafBulkPackError> {
     match scene_dash_admit(text, &[], false) {
         Some(SceneDash::Solid) => Ok(None),
@@ -243,8 +261,10 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
         rotation = obs.style.rotation;
     }
     let authored_wrap = matches!(kind, "text" | "callout") && obs.wrap.is_some();
+    let space = coordinate_space_code(obs.style.coordinate_space, kind, index)?;
     let layout_text = kind == "text"
-        && (obs.dx.is_some()
+        && (space != 0
+            || obs.dx.is_some()
             || obs.dy.is_some()
             || obs.anchor.is_some()
             || rotation.is_some());
@@ -508,6 +528,7 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
         style_bits,
         linecap,
         dash_count: dash_count as u8,
+        space,
         nums,
         color,
         stroke,
@@ -605,5 +626,54 @@ mod tests {
             scene_xyaf_bulk_pack(&[obs]).unwrap_err().code,
             XyafBulkError::UnsupportedKind
         );
+    }
+
+    fn spaced<'a>(space: Option<&'a str>) -> XyafBulkAnnotationObs<'a> {
+        let mut obs = text_obs("t", 0.25, 0.75, "#112233");
+        obs.style.coordinate_space = space;
+        obs
+    }
+
+    #[test]
+    fn coordinate_space_is_a_rust_owned_code_on_xyaf_byte_26() {
+        for (space, code) in [
+            (None, 0u8),
+            (Some("data"), 0),
+            (Some("axes_fraction"), 1),
+            (Some("xaxis_transform"), 2),
+            (Some("yaxis_transform"), 3),
+        ] {
+            let packed = scene_xyaf_bulk_pack(&[spaced(space)]).unwrap();
+            assert_eq!(packed[26], code, "{space:?}");
+        }
+    }
+
+    #[test]
+    fn non_data_space_routes_text_to_the_laid_out_xyaw_path() {
+        let plain = scene_xyaf_bulk_pack(&[spaced(None)]).unwrap();
+        let axes = scene_xyaf_bulk_pack(&[spaced(Some("axes_fraction"))]).unwrap();
+        let has_layout = |packed: &[u8]| {
+            let facts = u32::from_le_bytes(packed[16..20].try_into().unwrap());
+            facts & FACT_HAS_ANCHOR != 0
+        };
+        assert!(!has_layout(&plain));
+        assert!(has_layout(&axes));
+    }
+
+    #[test]
+    fn figure_fraction_unknown_and_non_text_spaces_fail_closed() {
+        for space in ["figure_fraction", "polar", ""] {
+            let error = scene_xyaf_bulk_pack(&[spaced(Some(space))]).unwrap_err();
+            assert_eq!(error.code, XyafBulkError::CoordinateSpace, "{space:?}");
+        }
+        // Any authored space on a non-text kind is rejected, `data` included.
+        for space in ["axes_fraction", "data"] {
+            let mut callout = spaced(Some(space));
+            callout.kind = "callout";
+            callout.dx = Some(10.0);
+            callout.dy = Some(-10.0);
+            let error = scene_xyaf_bulk_pack(&[callout]).unwrap_err();
+            assert_eq!(error.code, XyafBulkError::CoordinateSpace, "{space}");
+        }
     }
 }

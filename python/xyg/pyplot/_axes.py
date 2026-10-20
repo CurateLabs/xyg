@@ -7472,7 +7472,6 @@ class Axes(PlotTypeMixin):
                         dx=0.0,
                         dy=0.0,
                         anchor="middle",
-                        class_name="xy-mpl-table-cell",
                         style=box_style,
                     )
                 )
@@ -7499,7 +7498,6 @@ class Axes(PlotTypeMixin):
                         dy=0.0,
                         color=kw.get("color"),
                         anchor=anchor,
-                        class_name="xy-mpl-table-cell",
                         style=text_style,
                     )
                 )

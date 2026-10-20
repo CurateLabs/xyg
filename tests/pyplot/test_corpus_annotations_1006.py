@@ -7,8 +7,9 @@ alignment and box padding, so a panel mixing ``annotate``, ``text``,
 ``..._ANNOTATION_BBOX``. Rust now resolves a per-label table
 (``static_annotation_style.rs``); pyplot only marshals matplotlib facts. These
 programs are the corpus programs' annotation surface; the arrow head
-vocabulary, the table ``axes_fraction`` space and the empty ``bxp`` fliers are
-separate Scene gaps, not annotation style.
+vocabulary and the empty ``bxp`` fliers are separate Scene gaps, not
+annotation style; the table ``axes_fraction`` space is covered by
+``test_annotation_coordinate_space_1006.py``.
 """
 
 from __future__ import annotations

@@ -819,6 +819,7 @@ pub struct XygXyafBulkStyleIn {
     pub label_border_color: XygStringRef,
     pub dash: XygStringRef,
     pub linecap: XygStringRef,
+    pub coordinate_space: XygStringRef,
     pub opacity_present: i32,
     pub opacity: f64,
     pub width_present: i32,
@@ -931,6 +932,7 @@ struct XyafBulkAnnotationOwned {
     style_label_border_color: Option<String>,
     style_dash: Option<String>,
     style_linecap: Option<String>,
+    style_coordinate_space: Option<String>,
     style_opacity: Option<f64>,
     style_width: Option<f64>,
     style_stroke_width: Option<f64>,
@@ -971,6 +973,7 @@ impl XyafBulkAnnotationOwned {
                 label_border_color: self.style_label_border_color.as_deref(),
                 dash: self.style_dash.as_deref(),
                 linecap: self.style_linecap.as_deref(),
+                coordinate_space: self.style_coordinate_space.as_deref(),
                 opacity: self.style_opacity,
                 width: self.style_width,
                 stroke_width: self.style_stroke_width,
@@ -1027,6 +1030,7 @@ unsafe fn xyaf_annotation_owned_from_c(
             style_label_border_color: opt_str(&style.label_border_color)?.map(str::to_string),
             style_dash: opt_str(&style.dash)?.map(str::to_string),
             style_linecap: opt_str(&style.linecap)?.map(str::to_string),
+            style_coordinate_space: opt_str(&style.coordinate_space)?.map(str::to_string),
             style_opacity: if style.opacity_present != 0 {
                 Some(style.opacity)
             } else {

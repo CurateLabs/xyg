@@ -271,7 +271,9 @@ function xyafDispatch(annotation) {
   const kind = String(annotation.kind ?? "");
   const style = { ...(annotation.style ?? {}) };
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
-  const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
+  const layoutText = kind === "text"
+    && (["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key))
+      || style.coordinate_space != null);
   const dispatch = sceneXyafAnnotationDispatchPlan({
     kind,
     authored_wrap: authoredWrap,
@@ -285,7 +287,7 @@ function xyafDispatch(annotation) {
 
 function validateXyafAnnotationStyle(annotation) {
   const { kind, style, wrapped, labelled } = xyafDispatch(annotation);
-  const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
+  const skipStyle = new Set(["markup", "coordinate_space", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
   if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
   const unsupported = Object.entries(style)
     .filter(([key, value]) => value != null && !skipStyle.has(key) && !sceneAnnotationStyleAdmit(kind, wrapped, labelled, key))
@@ -439,6 +441,11 @@ function raiseXyafBulkError(error, annotations) {
   if (code === -11) throw new RangeError("Scene callout anchor must be start, middle, or end");
   if (code === -12) throw new RangeError("Scene v23 label border requires color and width");
   if (code === -13) throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
+  if (code === -14) {
+    throw new RangeError(
+      "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE: Scene text annotations support data, axes_fraction, xaxis_transform and yaxis_transform coordinates only; figure_fraction needs the figure rectangle a panel Scene does not own",
+    );
+  }
   if (code === -6) {
     if (Object.hasOwn(style, "label_opacity")) {
       throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);

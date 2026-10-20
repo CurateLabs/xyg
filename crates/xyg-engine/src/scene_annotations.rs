@@ -126,6 +126,9 @@ pub struct WrappedRow<'a> {
     pub kind: u8,
     pub anchor: u8,
     pub rotation: f64,
+    /// Coordinate-space code (`0` data; see `XYAW` v3). Only unwrapped text
+    /// rows (`kind == 0`) may be non-data.
+    pub space: u8,
     pub text: &'a [u8],
 }
 
@@ -358,6 +361,7 @@ pub fn wrapped_rows_from_meta<'a>(
             kind: chunk[60],
             anchor: chunk[61],
             rotation: 0.0,
+            space: 0,
             text: parts[index],
         });
     }
@@ -514,7 +518,8 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
 
     let mut wrapped_budget = 0usize;
     let mut xyaw = Vec::new();
-    let xyaw_v2 = input.wrapped.iter().any(|row| row.rotation != 0.0);
+    let xyaw_v3 = input.wrapped.iter().any(|row| row.space != 0);
+    let xyaw_v2 = xyaw_v3 || input.wrapped.iter().any(|row| row.rotation != 0.0);
     for row in input.wrapped {
         require_finite(&[
             row.x,
@@ -528,6 +533,9 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         require_text(row.text, false, &mut wrapped_budget)?;
         if row.wrap < 0.0 || row.kind > 1 || row.anchor > 2 {
             return Err(AnnotationError::NonFinite);
+        }
+        if row.space > 3 || (row.space != 0 && row.kind != 0) {
+            return Err(AnnotationError::Order);
         }
         let has_border = row.border_rgba[3] != 0;
         if has_border {
@@ -548,7 +556,7 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         xyaw.extend_from_slice(&(if has_border { row.border_width } else { 0.0 }).to_le_bytes());
         xyaw.push(row.kind);
         xyaw.push(row.anchor);
-        xyaw.extend_from_slice(&[0, 0]);
+        xyaw.extend_from_slice(&[row.space, 0]);
         if xyaw_v2 {
             xyaw.extend_from_slice(&row.rotation.to_le_bytes());
         }
@@ -597,7 +605,13 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         push_section(
             &mut xyaw_section,
             b"XYAW",
-            if xyaw_v2 { 2 } else { 1 },
+            if xyaw_v3 {
+                3
+            } else if xyaw_v2 {
+                2
+            } else {
+                1
+            },
             input.wrapped.len() as u32,
             &xyaw,
         );
@@ -700,6 +714,7 @@ struct AnnotationFacts<'a> {
     style_bits: u32,
     linecap: u8,
     dash_count: u8,
+    space: u8,
     nums: [f64; 18],
     color: [u8; 4],
     stroke_color: [u8; 4],
@@ -954,8 +969,12 @@ fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, Anno
         let style_bits = read_u32(bytes, at + 20)?;
         let linecap = bytes[at + 24];
         let dash_count = bytes[at + 25];
-        if bytes[at + 26] != 0 || bytes[at + 27] != 0 || kind > XYAF_KIND_MARKER {
+        let space = bytes[at + 26];
+        if bytes[at + 27] != 0 || kind > XYAF_KIND_MARKER || space > 3 {
             return Err(AnnotationError::Length);
+        }
+        if space != 0 && kind != XYAF_KIND_TEXT {
+            return Err(AnnotationError::Order);
         }
         if facts & !FACT_BITS != 0
             || style_bits & !(STYLE_KNOWN | STYLE_UNSUPPORTED) != 0
@@ -1000,6 +1019,7 @@ fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, Anno
             style_bits,
             linecap,
             dash_count,
+            space,
             nums,
             color,
             stroke_color,
@@ -1067,7 +1087,8 @@ pub fn pack_annotation_facts(
         }
         let has_wrap = has(row.facts, FACT_HAS_WRAP);
         let text_layout = row.kind == XYAF_KIND_TEXT
-            && (has(row.facts, FACT_HAS_DX)
+            && (row.space != 0
+                || has(row.facts, FACT_HAS_DX)
                 || has(row.facts, FACT_HAS_DY)
                 || has(row.facts, FACT_HAS_ANCHOR)
                 || has(row.facts, FACT_HAS_ROTATION));
@@ -1113,6 +1134,7 @@ pub fn pack_annotation_facts(
                 kind: u8::from(row.kind == XYAF_KIND_CALLOUT),
                 anchor,
                 rotation,
+                space: row.space,
                 text: row.text,
             });
             continue;
@@ -1304,6 +1326,7 @@ pub fn pack_annotation_facts(
                             },
                             // Markers never set FACT_HAS_WRAP; nums[8] is rotation.
                             rotation: or_default(row, FACT_HAS_ROTATION, 8, 0.0)?,
+                            space: 0,
                             text: row.text,
                         });
                     } else {
@@ -1541,6 +1564,7 @@ mod tests {
             kind: 0,
             anchor: 0,
             rotation: 0.0,
+            space: 0,
             text: b"wrap",
         };
         let framed = pack_annotations(AnnotationFrameInput {
@@ -1719,6 +1743,71 @@ mod tests {
         let dx = f64::from_le_bytes(row[16..24].try_into().unwrap());
         assert_eq!(wrap, 0.0);
         assert_eq!(dx, 6.0);
+    }
+
+    fn spaced_text(kind: u8, space: u8) -> Vec<u8> {
+        let mut nums = [f64::NAN; 18];
+        nums[0] = 0.5;
+        nums[1] = -0.1;
+        let mut record = pack_xyaf(
+            kind,
+            0,
+            FACT_HAS_X | FACT_HAS_Y | FACT_HAS_TEXT,
+            STYLE_COLOR,
+            0,
+            nums,
+            [102, 112, 133, 255],
+            b"cell",
+        );
+        record[26] = space;
+        record
+    }
+
+    fn xyaw_section(packed: &[u8]) -> Option<&[u8]> {
+        let xyad_len = u32::from_le_bytes(packed[16..20].try_into().unwrap()) as usize;
+        let xyad = &packed[XYAO_V1_HEADER_BYTES..XYAO_V1_HEADER_BYTES + xyad_len];
+        let at = xyad.windows(4).position(|window| window == b"XYAW")?;
+        Some(&xyad[at..])
+    }
+
+    #[test]
+    fn non_data_space_text_is_xyaw_v3_and_data_text_never_is() {
+        for space in 1u8..=3 {
+            let packed =
+                pack_annotation_facts(&spaced_text(XYAF_KIND_TEXT, space), 0, 0.0, 1.0, 0.0, 1.0)
+                    .unwrap();
+            let section = xyaw_section(&packed).expect("non-data text routes through XYAW");
+            assert_eq!(u32::from_le_bytes(section[4..8].try_into().unwrap()), 3);
+            // Row meta: byte 60 kind, 61 anchor, 62 coordinate space, 63 reserved.
+            let row = &section[12..];
+            assert_eq!((row[60], row[62], row[63]), (0, space, 0));
+        }
+        // A data-space row keeps the v1 XYAT path and emits no XYAW section.
+        let packed =
+            pack_annotation_facts(&spaced_text(XYAF_KIND_TEXT, 0), 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+        assert!(xyaw_section(&packed).is_none());
+    }
+
+    #[test]
+    fn coordinate_space_is_text_only_and_bounded() {
+        assert!(
+            pack_annotation_facts(&spaced_text(XYAF_KIND_TEXT, 4), 0, 0.0, 1.0, 0.0, 1.0).is_err()
+        );
+        let mut nums = [f64::NAN; 18];
+        nums[0] = 0.5;
+        nums[1] = 0.5;
+        let mut marker = pack_xyaf(
+            XYAF_KIND_MARKER,
+            0,
+            FACT_HAS_X | FACT_HAS_Y,
+            STYLE_COLOR,
+            0,
+            nums,
+            [102, 112, 133, 255],
+            b"",
+        );
+        marker[26] = 1;
+        assert!(pack_annotation_facts(&marker, 0, 0.0, 1.0, 0.0, 1.0).is_err());
     }
 
     #[test]

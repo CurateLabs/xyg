@@ -43,7 +43,7 @@ def test_table_is_axes_fraction_geometry_and_does_not_affect_data_limits() -> No
     table_annotations = [
         annotation
         for annotation in spec["annotations"]
-        if annotation.get("class_name") == "xy-mpl-table-cell"
+        if (annotation.get("style") or {}).get("coordinate_space") == "axes_fraction"
     ]
     assert len(table_annotations) == 16
     visible = [annotation for annotation in table_annotations if annotation["text"] != " "]
@@ -72,7 +72,7 @@ def test_table_default_cells_are_readable_and_bbox_stays_inside_axes() -> None:
     table_annotations = [
         annotation
         for annotation in spec["annotations"]
-        if annotation.get("class_name") == "xy-mpl-table-cell"
+        if (annotation.get("style") or {}).get("coordinate_space") == "axes_fraction"
     ]
     boxes = [annotation for annotation in table_annotations if annotation["text"] == " "]
     labels = [annotation for annotation in table_annotations if annotation["text"] != " "]
