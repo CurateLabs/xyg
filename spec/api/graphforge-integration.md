@@ -128,6 +128,17 @@ WASM the `xy:graphforge-select` detail), `xyg.select` host→webview (`{uuids}`:
 recompose with `select`, re-render), `xyg.error` (`{code, layer, field,
 message}`). Details: design §6.4.
 
+**Progressive CoSE (#35).** The WASM Worker (`layoutCose`) and the Node
+`worker_threads` scheduler (`runForceTicks`) run the same Rust kernel as the
+native C ABI. Positions are bitwise-identical to native — seeded and authored
+starts, compound and disconnected graphs, exact and grid tiers
+(`packages/xy-node/test/cose-wasm-parity.test.mjs`; policy: `spec/design/graph-mark.md`
+§4 "CoSE cross-host parity").
+Measured checkpoint-delivery latency and cadence on 1k–1M nodes for Python, Node
+and the browser Worker (not first paint; the render-based first-paint gate and
+Node async composition remain open for #35):
+`spec/performance/cose-progressive-ladder-2026-10-20/README.md`.
+
 ## 5. Versions
 
 | Constant | Value | Where |
