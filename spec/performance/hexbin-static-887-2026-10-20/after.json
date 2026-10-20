@@ -1,0 +1,295 @@
+{
+  "schema": "xyg.bench-hexbin-static/v1",
+  "issue": 887,
+  "environment": {
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "python": "3.13.12",
+    "numpy": "2.5.1",
+    "matplotlib": "3.11.0",
+    "xyg": "0.0.1.dev2847+59d7e58e",
+    "commit": "930878e6598722cd5f48a08668f1f29ba8d51032",
+    "repeats": 3
+  },
+  "rows": [
+    {
+      "engine": "xyg",
+      "gridsize": 25,
+      "format": "svg",
+      "cells": 377,
+      "reason": null,
+      "median_seconds": 0.00432930001989007,
+      "bytes": 90038,
+      "peak_rss_mib": 61.1484375
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 25,
+      "format": "svg",
+      "cells": 740,
+      "reason": null,
+      "median_seconds": 0.08525428106077015,
+      "bytes": 130559,
+      "peak_rss_mib": 90.765625
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 25,
+      "format": "png",
+      "cells": 377,
+      "reason": null,
+      "median_seconds": 0.009673308115452528,
+      "bytes": 56911,
+      "peak_rss_mib": 61.171875
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 25,
+      "format": "png",
+      "cells": 740,
+      "reason": null,
+      "median_seconds": 0.07594829890877008,
+      "bytes": 47619,
+      "peak_rss_mib": 90.296875
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 50,
+      "format": "svg",
+      "cells": 1226,
+      "reason": null,
+      "median_seconds": 0.005648674909025431,
+      "bytes": 269081,
+      "peak_rss_mib": 61.29296875
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 50,
+      "format": "svg",
+      "cells": 2879,
+      "reason": null,
+      "median_seconds": 0.1383111879695207,
+      "bytes": 439008,
+      "peak_rss_mib": 90.50390625
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 50,
+      "format": "png",
+      "cells": 1226,
+      "reason": null,
+      "median_seconds": 0.011906089028343558,
+      "bytes": 81587,
+      "peak_rss_mib": 61.140625
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 50,
+      "format": "png",
+      "cells": 2879,
+      "reason": null,
+      "median_seconds": 0.09398651216179132,
+      "bytes": 62169,
+      "peak_rss_mib": 91.47265625
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 100,
+      "format": "svg",
+      "cells": 3946,
+      "reason": null,
+      "median_seconds": 0.020723070949316025,
+      "bytes": 843832,
+      "peak_rss_mib": 70.41015625
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 100,
+      "format": "svg",
+      "cells": 11558,
+      "reason": null,
+      "median_seconds": 0.35773462196812034,
+      "bytes": 1682719,
+      "peak_rss_mib": 93.890625
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 100,
+      "format": "png",
+      "cells": 3946,
+      "reason": null,
+      "median_seconds": 0.025000251131132245,
+      "bytes": 114431,
+      "peak_rss_mib": 69.9921875
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 100,
+      "format": "png",
+      "cells": 11558,
+      "reason": null,
+      "median_seconds": 0.1140190011356026,
+      "bytes": 85948,
+      "peak_rss_mib": 91.76171875
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 200,
+      "format": "svg",
+      "cells": 11843,
+      "reason": null,
+      "median_seconds": 0.05553231295198202,
+      "bytes": 2506410,
+      "peak_rss_mib": 98.28515625
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 200,
+      "format": "svg",
+      "cells": 46316,
+      "reason": null,
+      "median_seconds": 1.2499067920725793,
+      "bytes": 6610001,
+      "peak_rss_mib": 132.0703125
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 200,
+      "format": "png",
+      "cells": 11843,
+      "reason": null,
+      "median_seconds": 0.05541659099981189,
+      "bytes": 114708,
+      "peak_rss_mib": 93.53125
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 200,
+      "format": "png",
+      "cells": 46316,
+      "reason": null,
+      "median_seconds": 0.2657483571674675,
+      "bytes": 94343,
+      "peak_rss_mib": 97.6015625
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 300,
+      "format": "svg",
+      "cells": 21449,
+      "reason": null,
+      "median_seconds": 0.10348975704982877,
+      "bytes": 4529442,
+      "peak_rss_mib": 133.09375
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 300,
+      "format": "svg",
+      "cells": 104274,
+      "reason": null,
+      "median_seconds": 2.6177191550377756,
+      "bytes": 14754221,
+      "peak_rss_mib": 196.6328125
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 300,
+      "format": "png",
+      "cells": 21449,
+      "reason": null,
+      "median_seconds": 0.09802867705002427,
+      "bytes": 108121,
+      "peak_rss_mib": 128.9453125
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 300,
+      "format": "png",
+      "cells": 104274,
+      "reason": null,
+      "median_seconds": 0.5222517540678382,
+      "bytes": 97307,
+      "peak_rss_mib": 107.66796875
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 400,
+      "format": "svg",
+      "cells": 31488,
+      "reason": null,
+      "median_seconds": 0.16120040090754628,
+      "bytes": 6607963,
+      "peak_rss_mib": 156.41796875
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 400,
+      "format": "svg",
+      "cells": 184631,
+      "reason": null,
+      "median_seconds": 4.467243626946583,
+      "bytes": 25984514,
+      "peak_rss_mib": 285.5078125
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 400,
+      "format": "png",
+      "cells": 31488,
+      "reason": null,
+      "median_seconds": 0.13937163795344532,
+      "bytes": 103099,
+      "peak_rss_mib": 157.90234375
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 400,
+      "format": "png",
+      "cells": 184631,
+      "reason": null,
+      "median_seconds": 0.8569399809930474,
+      "bytes": 99225,
+      "peak_rss_mib": 126.8828125
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 600,
+      "format": "svg",
+      "cells": 50166,
+      "reason": "pyplot panel 0: XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "median_seconds": null,
+      "bytes": null,
+      "peak_rss_mib": 83.33203125
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 600,
+      "format": "svg",
+      "cells": 416147,
+      "reason": null,
+      "median_seconds": 9.833983646938577,
+      "bytes": 58123870,
+      "peak_rss_mib": 545.8828125
+    },
+    {
+      "engine": "xyg",
+      "gridsize": 600,
+      "format": "png",
+      "cells": 50166,
+      "reason": "pyplot panel 0: XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "median_seconds": null,
+      "bytes": null,
+      "peak_rss_mib": 83.6015625
+    },
+    {
+      "engine": "matplotlib",
+      "gridsize": 600,
+      "format": "png",
+      "cells": 416147,
+      "reason": null,
+      "median_seconds": 1.8892060110811144,
+      "bytes": 97817,
+      "peak_rss_mib": 174.55078125
+    }
+  ]
+}

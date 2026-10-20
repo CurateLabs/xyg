@@ -49,6 +49,7 @@ Y = [((i * 104729) % 10009) / 10009 for i in range(N)]
 CASES = {
     "above_former_group_ceiling": (40, 30),
     "default_gridsize_lattice": (100, 100),
+    "near_cell_ceiling": (155, 155),
     "above_cell_ceiling": (330, 330),
 }
 CEILING = 50_000
@@ -78,13 +79,15 @@ def node_cases() -> dict[str, dict[str, Any]]:
     return {case["name"]: case for case in payload["cases"]}
 
 
-@pytest.mark.parametrize("name", ["above_former_group_ceiling", "default_gridsize_lattice"])
+@pytest.mark.parametrize(
+    "name", ["above_former_group_ceiling", "default_gridsize_lattice", "near_cell_ceiling"]
+)
 def test_oversized_hexbin_exports_every_cell_identically_in_both_hosts(
     name: str, node_cases: dict[str, dict[str, Any]]
 ) -> None:
     figure = _figure(CASES[name])
     cells = len(figure.traces[0].x.values)
-    assert cells > GROUP_CEILING
+    assert GROUP_CEILING < cells <= CEILING
     assert scene_export_support_reason(figure) is None
     svg = public_static_export(figure, "svg")
     png = public_static_export(figure, "png")

@@ -10,6 +10,7 @@ const Y = Array.from({ length: N }, (_, i) => ((i * 104729) % 10009) / 10009);
 const CASES = [
   { name: "above_former_group_ceiling", gridsize: [40, 30] },
   { name: "default_gridsize_lattice", gridsize: [100, 100] },
+  { name: "near_cell_ceiling", gridsize: [155, 155] },
   { name: "above_cell_ceiling", gridsize: [330, 330] },
 ];
 
