@@ -527,3 +527,26 @@ def test_rejection_diagnostic_contract_is_carried_from_the_rust_doc_comment() ->
         assert fact in text
     header = (ROOT / "spec" / "abi" / "xyg.h").read_text(encoding="utf-8")
     assert f"/* {text} */\nsize_t xyg_static_document_export(" in header
+
+
+def test_rejection_diagnostic_is_never_borrowed_from_an_earlier_symbol() -> None:
+    source = (
+        "/// Exports a document.\n"
+        "///\n"
+        "/// Rejection diagnostic: writes a NUL-terminated reason.\n"
+        "#[no_mangle]\n"
+        'pub extern "C" fn documented() -> i32 {\n'
+        "    0\n"
+        "}\n"
+        "\n"
+        "#[no_mangle]\n"
+        'pub extern "C" fn undocumented() -> i32 {\n'
+        "    0\n"
+        "}\n"
+    )
+    documented = source.index('pub extern "C" fn documented')
+    undocumented = source.index('pub extern "C" fn undocumented')
+    assert gen_abi_manifest._rejection_diagnostic(source, documented) == (
+        "Rejection diagnostic: writes a NUL-terminated reason."
+    )
+    assert gen_abi_manifest._rejection_diagnostic(source, undocumented) is None

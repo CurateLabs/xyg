@@ -357,11 +357,15 @@ def _rejection_diagnostic(text: str, fn_start: int) -> Optional[str]:
     doc: list[str] = []
     for line in reversed(text[:fn_start].splitlines()):
         stripped = line.strip()
-        if not stripped.startswith("///"):
-            if doc:
-                break
+        if stripped.startswith("///"):
+            doc.append(stripped[3:].strip())
             continue
-        doc.append(stripped[3:].strip())
+        # Only attributes may sit between a symbol and its own doc comment;
+        # anything else means the symbol is undocumented, so never borrow the
+        # doc comment of an earlier item.
+        if not doc and (stripped.startswith("#[") or not stripped):
+            continue
+        break
     paragraphs = " ".join(reversed(doc)).split("  ")
     # Paragraph breaks are the empty `///` lines, which join as double spaces.
     for paragraph in paragraphs:
