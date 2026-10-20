@@ -782,11 +782,12 @@ Object.assign(ChartView.prototype, {
         [px, py] = this._dataPxPoint(Number(ann.x), Number(ann.y));
       }
       if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
-      // Axes/figure-fraction text is explicitly placed chrome (Matplotlib
+      // Axes-fraction text is explicitly placed panel chrome (Matplotlib
       // tables below the axes, panel letters), not data that scrolled away.
-      const fractionPlaced = ann.kind === "text"
-        && (style.coordinate_space === "axes_fraction" || style.coordinate_space === "figure_fraction");
-      if (!fractionPlaced
+      // Figure-fraction text keeps the cull: this panel's layer cannot place
+      // it where Matplotlib does in a multi-panel figure.
+      const axesFractionPlaced = ann.kind === "text" && style.coordinate_space === "axes_fraction";
+      if (!axesFractionPlaced
         && (px < p.x - 24 || px > p.x + p.w + 24 || py < p.y - 24 || py > p.y + p.h + 24)) {
         continue;
       }

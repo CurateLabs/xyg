@@ -131,8 +131,10 @@ fractions against the decoded Scene's final plot rectangle, replaces the label's
 measured box with the cell (text inset from its anchored edge, centered on the
 anchor), and requires the cell inside the panel viewport. Unknown unit bits,
 unit bits or box sides without bit 4, an uncentered box, a label that requests
-padding but has no box, a placed cell off the canvas, or a count mismatch reject
-the document (`XYG_STATIC_DOCUMENT_PANEL`); nothing is clipped. The registry case
+padding but has no box, or a count mismatch reject the document
+(`XYG_STATIC_DOCUMENT_PANEL`); a placed cell off the canvas, or cell text wider
+than its cell (Rust text metrics), rejects it with the stable
+`XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX`. Nothing is clipped. The registry case
 `document_annotation_label_box` and rejection `panel_label_box_uncentered`
 witness both hosts.
 
@@ -222,23 +224,44 @@ call raises the listed stable `XYG_*` reason.
   after `tight_layout` (the shim never knows the post-layout plot size). Fixed
   parts stay px: natural `loc="bottom"` rows hang below the axes in 12 pt rows
   (`Table.FONTSIZE` × 1.2) through `dy`, and the auto-width row-label column
-  hangs left of the axes edge through `dx`. There is no browser-only class and
+  hangs left of the axes edge through `dx`; its width is Matplotlib's
+  `auto_set_column_width` rule (widest label × (1 + 2 · `Cell.PAD`)) measured
+  in the Rust text metrics (`_textblock.measure`, within ~4 px of Matplotlib's
+  221.25 px for a 26-character label). There is no browser-only class and
   no transparent placeholder box; an empty cell keeps a one-space label so its
   rectangle still paints. Rust projects the anchor (Scene XYAW byte 62,
   [scene-ir.md](scene-ir.md) ABI 390) and applies the box as a label-table entry
   (§1.1), so SVG, PNG and PDF paint the same unclipped cells and text. pyplot
   reserves the table height below and the row-label width left of the axes
   (panel padding and tight-layout chrome), so the table stays on the canvas.
-  Limits: at most 128 annotations per panel (`XYG_STATIC_ANNOTATION_STYLE_LIMIT`),
-  a cell placed off the canvas rejects the panel (`XYG_STATIC_DOCUMENT_PANEL`,
-  or the canonical Scene label bound when its text is off the canvas), and
-  `loc` values other than `"bottom"` raise `NotImplementedError`
-  ("does not implement table(loc=...)"). After `tight_layout`, Matplotlib
-  rescales its axes-fraction rows with the final axes height while pyplot keeps
-  the 12 pt row, so row heights differ by a few px there (exact for the default
-  layout). Evidence: `tests/pyplot/test_table_static_export.py` (Matplotlib
-  3.11 cell rectangles to 0.05 px for the default and `bbox=` layouts, live
-  reference re-check in the Matplotlib job).
+  Limits: at most 128 annotations per panel (`XYG_STATIC_ANNOTATION_STYLE_LIMIT`);
+  a cell placed off the canvas or cell text wider than its cell rejects the
+  panel (`XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX`; a cell whose *text anchor*
+  is off the canvas fails the canonical Scene label bound first, "invalid
+  canonical scene batch"); `loc` values other than `"bottom"` raise
+  `NotImplementedError` ("does not implement table(loc=...)").
+  Known differences from Matplotlib 3.11:
+  - **Row height after layout changes.** Matplotlib's rows are axes-height
+    fractions fixed when `table()` runs (12 pt / the creation-time axes
+    height), so after `tight_layout` each row is `16.67 px · H_final /
+    H_initial`; pyplot keeps the 12 pt (16.67 px) row. Each row is off by
+    `16.67 · |1 − H_final / H_initial|` px and the error accumulates down the
+    table, in either direction: an 8-row table plus header in a 640×480 figure
+    (`H` 369.6 → 300 px) has Matplotlib rows of 13.53 px, so its bottom edge is
+    28.2 px lower (relative to the axes) in xyg. Exact for the default layout.
+    Matching it needs the tight-layout bottom reservation to scale with the
+    unknown plot height (a layout-solver change, not taken here).
+  - **Long cell text.** Matplotlib's `auto_set_font_size` shrinks text that
+    does not fit; static export fails closed (above) rather than shrinking.
+  - **Wide row labels.** Without `tight_layout`, Matplotlib leaves the axes
+    where it is and lets a wide row-label column run off the canvas; pyplot
+    widens the left margin (`_table_left_points`) so the cell stays on the
+    canvas, moving the axes right. TODO(#1006 follow-up): clip-to-canvas
+    semantics for off-canvas table cells.
+  Evidence: `tests/pyplot/test_table_static_export.py` (Matplotlib 3.11 cell
+  rectangles to 0.05 px for the default and `bbox=` layouts, the 8-row
+  tight-layout bound and the row-label width/axes shift, live reference
+  re-checks in the Matplotlib 3.11 CI job).
 
 ## 3. Stable failure rules
 

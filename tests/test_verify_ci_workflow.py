@@ -918,6 +918,7 @@ def test_reference_gate_commands_cannot_hide_in_inline_comments(tmp_path: Path) 
         ".venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py",
         ".venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
+        ".venv/bin/pytest -q tests/pyplot/test_table_static_export.py",
     )
     for command in commands:
         workflow = workflow.replace(f"          {command}", f"          echo ignored # {command}")

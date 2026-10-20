@@ -194,6 +194,22 @@ pub(crate) struct StaticLabelStyle {
     pub(crate) cell: Option<StaticLabelCell>,
 }
 
+/// Why a static label table could not be applied. `Cell` is a well-formed
+/// explicit cell whose Rust-resolved geometry does not fit (its text spills
+/// out of the cell, or the placed cell leaves the panel canvas): a stable
+/// unsupported-authoring reason, distinct from malformed facts.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum StaticLabelRejection {
+    Malformed,
+    Cell,
+}
+
+impl From<SceneError> for StaticLabelRejection {
+    fn from(_: SceneError) -> Self {
+        Self::Malformed
+    }
+}
+
 /// An explicit label box: `(width, height)` in px, or fractions of the
 /// panel plot rectangle per the `static_annotation_style::UNIT_*` bits (which
 /// also mark a plot-width-fraction horizontal padding).
@@ -10237,9 +10253,6 @@ struct CartesianCallout {
     label_background: Option<SceneLabelBox>,
 }
 
-// The literal frame fields stay separate here so the decoder remains aligned
-// with the versioned XYAC record layout.
-#[allow(clippy::too_many_arguments)]
 /// Resolve an explicit cell's px `(width, height)` and horizontal inset:
 /// plot-fraction sizes/padding resolve against the finalized plot rectangle
 /// here, in Rust (hosts never see the final plot size).
@@ -10282,24 +10295,37 @@ fn place_static_label_cell(
     background: &mut SceneLabelBox,
     (width, height): (f64, f64),
     inset: f64,
-) -> Result<(), SceneError> {
+) -> Result<(), StaticLabelRejection> {
     let max = crate::static_annotation_style::MAX_STATIC_LABEL_BOX;
     if !(width.is_finite() && width > 0.0 && width <= max)
         || !(height.is_finite() && height > 0.0 && height <= max)
         || !(inset.is_finite() && (0.0..=width).contains(&inset))
         || label.rotation != 0.0
     {
-        return Err(SceneError::Length);
+        return Err(SceneError::Length.into());
     }
     let block = textblock::measure(&label.text, label.font_size, textblock::LINE_HEIGHT, None)
         .ok_or(SceneError::Length)?;
+    // The text must not spill out of its cell (Rust text metrics): an
+    // edge-anchored line keeps the inset on its anchored side, a centered
+    // line has the whole width. Matplotlib shrinks such text
+    // (`auto_set_font_size`); static export fails closed instead of drawing
+    // past the cell edge.
+    let room = if label.anchor == 1 {
+        width
+    } else {
+        width - inset
+    };
+    if block.width > room + 1e-6 {
+        return Err(StaticLabelRejection::Cell);
+    }
     let trailing = (block.line_count().saturating_sub(1)) as f64 * block.line_step;
     let center_y = label.y + (trailing + block.descent - block.ascent) * 0.5;
     background.x = match label.anchor {
         0 => label.x - inset,
         1 => label.x - width * 0.5,
         2 => label.x - width + inset,
-        _ => return Err(SceneError::Length),
+        _ => return Err(SceneError::Length.into()),
     };
     background.y = center_y - height * 0.5;
     background.width = width;
@@ -10307,6 +10333,9 @@ fn place_static_label_cell(
     Ok(())
 }
 
+// The literal frame fields stay separate here so the decoder remains aligned
+// with the versioned XYAC record layout.
+#[allow(clippy::too_many_arguments)]
 fn resolved_callout_label_background(
     x: f64,
     y: f64,
@@ -12122,7 +12151,7 @@ impl SceneDocument {
     pub(crate) fn apply_static_annotation_labels(
         &mut self,
         styles: Option<&[StaticLabelStyle]>,
-    ) -> Result<(), SceneError> {
+    ) -> Result<(), StaticLabelRejection> {
         let Some(styles) = styles else {
             return Ok(());
         };
@@ -12133,7 +12162,7 @@ impl SceneDocument {
             .filter_map(|(index, label)| label.annotation.then_some(index))
             .collect();
         if styles.len() != targets.len() {
-            return Err(SceneError::Length);
+            return Err(SceneError::Length.into());
         }
         self.static_label_text_flags = vec![0; self.labels.len()];
         for (&index, style) in targets.iter().zip(styles) {
@@ -12144,7 +12173,7 @@ impl SceneDocument {
                     || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&size)
                     || flags & !0b11 != 0
                 {
-                    return Err(SceneError::NonFinite);
+                    return Err(SceneError::NonFinite.into());
                 }
                 label.font_size = size;
                 self.static_label_text_flags[index] = flags;
@@ -12170,14 +12199,14 @@ impl SceneDocument {
                     || !(0.0..=max).contains(&horizontal)
                     || !(0.0..=max).contains(&vertical)
                 {
-                    return Err(SceneError::NonFinite);
+                    return Err(SceneError::NonFinite.into());
                 }
                 let Some(background) = background.as_mut() else {
-                    return Err(SceneError::Length);
+                    return Err(SceneError::Length.into());
                 };
                 if let Some(cell) = style.cell {
                     if style.typography.map(|(_, _, align)| align) != Some(3) {
-                        return Err(SceneError::Length);
+                        return Err(SceneError::Length.into());
                     }
                     let (size, inset) = resolved_static_label_cell(cell, horizontal, self.layout)?;
                     place_static_label_cell(label, background, size, inset)?;
@@ -12197,15 +12226,15 @@ impl SceneDocument {
                         || background.x + background.width > self.layout.viewport_width
                         || background.y + background.height > self.layout.viewport_height
                     {
-                        return Err(SceneError::Length);
+                        return Err(SceneError::Length.into());
                     }
                 }
             } else if style.cell.is_some() {
-                return Err(SceneError::Length);
+                return Err(SceneError::Length.into());
             }
             if let Some((_, _, align)) = style.typography {
                 if align > 3 {
-                    return Err(SceneError::Length);
+                    return Err(SceneError::Length.into());
                 }
                 let block = textblock::measure(
                     &label.text,
@@ -12236,7 +12265,7 @@ impl SceneDocument {
                     && cell.x + cell.width <= self.layout.viewport_width + slack
                     && cell.y + cell.height <= self.layout.viewport_height + slack)
                 {
-                    return Err(SceneError::Length);
+                    return Err(StaticLabelRejection::Cell);
                 }
             }
         }
@@ -23349,20 +23378,56 @@ pub(crate) mod tests {
         );
         // A cell leaving the 200x120 canvas, or with nonpositive, nonfinite,
         // or oversized sides, fails closed rather than clipping.
+        // Off the canvas is a cell-geometry rejection (a stable unsupported
+        // reason); impossible sizes are malformed facts.
+        for bad in [(500.0, 16.0), (60.0, 400.0)] {
+            assert_eq!(
+                cell(0, bad).err(),
+                Some(StaticLabelRejection::Cell),
+                "{bad:?}"
+            );
+        }
         for bad in [
-            (500.0, 16.0),
-            (60.0, 400.0),
             (0.0, 16.0),
             (60.0, -1.0),
             (f64::NAN, 16.0),
             (16_385.0, 16.0),
         ] {
-            assert!(cell(0, bad).is_err(), "{bad:?}");
+            assert_eq!(
+                cell(0, bad).err(),
+                Some(StaticLabelRejection::Malformed),
+                "{bad:?}"
+            );
         }
-        assert!(
-            cell(2, (90.0, 16.0)).is_err(),
+        assert_eq!(
+            cell(2, (90.0, 16.0)).err(),
+            Some(StaticLabelRejection::Cell),
             "end-anchored cell crosses x = 0"
         );
+        // Text that would spill out of its cell fails closed (Matplotlib
+        // would shrink it): "gamma" at 10px is wider than a 20px cell
+        // (centered or less the 4px inset) and fits the 60px cell above.
+        let gamma = textblock::measure("gamma", 10.0, textblock::LINE_HEIGHT, None)
+            .unwrap()
+            .width;
+        assert!(gamma > 20.0 && gamma < 56.0);
+        for anchor in [0, 1, 2] {
+            assert_eq!(
+                cell(anchor, (20.0, 16.0)).err(),
+                Some(StaticLabelRejection::Cell),
+                "anchor {anchor}"
+            );
+        }
+        assert!(
+            cell(1, (gamma + 0.5, 16.0)).is_ok(),
+            "a centered line has the whole width"
+        );
+        assert_eq!(
+            cell(0, (gamma + 0.5, 16.0)).err(),
+            Some(StaticLabelRejection::Cell),
+            "an edge-anchored line keeps its inset"
+        );
+        assert!(cell(0, (gamma + 4.5, 16.0)).is_ok());
         // A cell needs a boxed label, its padding inset, center alignment,
         // and an upright label.
         let plain = StaticLabelStyle::default();

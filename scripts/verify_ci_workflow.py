@@ -1275,6 +1275,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "tests/pyplot/test_launch_compat.py",
         "tests/pyplot/test_reference_corpus.py",
         "tests/pyplot/test_reference_semantics.py",
+        "tests/pyplot/test_table_static_export.py",
         "MPLBACKEND: Agg",
     )
     reference = jobs.get("matplotlib_reference", "")
@@ -1307,6 +1308,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ".venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
+        ".venv/bin/pytest -q tests/pyplot/test_table_static_export.py",
         allow_job_gate=True,
     )
 

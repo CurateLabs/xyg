@@ -58,6 +58,7 @@ from ._colors import (
 from ._fmt import parse_fmt
 from ._markers import marker_render_spec
 from ._mathtext import mathtext_italic_ranges, mathtext_to_unicode
+from ._plot_types import TABLE_CELL_PAD as _TABLE_CELL_PAD
 from ._plot_types import PlotTypeMixin
 from ._rc import RcParams, rc_figsize_px, rcParams
 from ._ticker import (
@@ -127,9 +128,6 @@ _LEGEND_LOC_ANCHORS = {
 # Plot box of the default 640x480 figure, for direct `_best_legend_loc` callers
 # that have no chart geometry to hand.
 _DEFAULT_BEST_PLOT_SIZE = (564.0, 428.0)
-# Matplotlib ``Cell.PAD``: cell text sits this fraction of the cell width
-# inside its aligned (left/right) edge.
-_TABLE_CELL_PAD = 0.1
 
 
 # Theme/axis children are immutable declarative specs, so identical ones are

@@ -14,6 +14,22 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- ABI 390 / XYST v4 / XYAO v3: Matplotlib `ax.table()` and axes-fraction text
+  in native static export (#1006, reference-corpus case 53). Text annotations
+  admit `style.coordinate_space="axes_fraction"`: `XygXyafBulkStyleIn` appends a
+  `coordinate_space` string, the code rides the previously reserved XYAF byte 26
+  and XYAW byte 62, and Rust projects the anchor against the final plot
+  rectangle (Scene records and `SCENE_VERSION` unchanged; other spaces fail with
+  bulk-pack code `-14`). `box_width`/`box_height` give a boxed, centered text
+  label an explicit cell: px, or `"<n>%"` of the plot rectangle (also for the
+  cell's horizontal padding) that Rust resolves when it applies the label
+  table. XYAO v3 widens each label-table entry to 28 bytes (box bit, unit byte,
+  box width/height) and XYST v4 carries it; v3 documents are rejected with
+  `XYG_STATIC_DOCUMENT_VERSION`. A cell whose text spills out of it or that
+  leaves the canvas fails with `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX`. pyplot
+  tables author one boxed cell per Matplotlib cell (no browser-only class); the
+  browser draws the same rectangles and no longer culls axes-fraction text
+  placed outside the plot.
 - ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
   (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
   `XYY2` block (scale, axis chrome record, resolved typography and paints, tick

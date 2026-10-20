@@ -120,6 +120,7 @@ const attempts = {
     { kind: "text", x: 0.5, y: 0.5, text: "fig", style: { coordinate_space: "figure_fraction" } },
   ],
   cell_off_canvas: [cell(0.5, 0, "cell", "middle", { box_width: 40, box_height: 160, dy: 20 })],
+  cell_text_overflow: [cell(0.5, 0.5, "far too long for its cell", "start", { box_width: 60, box_height: 16 })],
 };
 for (const [name, annotations] of Object.entries(attempts)) {
   try {

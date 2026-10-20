@@ -318,3 +318,27 @@ def test_scene_bulk_pack_cross_host_node() -> None:
         ]
     )
     assert _sha256(py_xyaf) == payload["xyaf_sha256"]
+
+    # #1006: an axes-fraction text row packs identically (XYAF byte 26 = 1)
+    # and every other coordinate space fails with bulk-pack code -14 in both.
+    def fraction_row(space: str) -> dict:
+        return {
+            "kind": "text",
+            "text": "cell",
+            "x": 0.25,
+            "y": 0,
+            "dy": 8,
+            "anchor": "middle",
+            "style": {
+                "color": "#667085",
+                "label_background": "#dbeafe",
+                "coordinate_space": space,
+            },
+        }
+
+    py_fraction = scene_xyaf_bulk_pack([fraction_row("axes_fraction")])
+    assert _sha256(py_fraction) == payload["xyaf_fraction_sha256"]
+    assert py_fraction[26] == payload["xyaf_fraction_byte26"] == 1
+    with pytest.raises(Exception) as rejected:
+        scene_xyaf_bulk_pack([fraction_row("figure_fraction")])
+    assert getattr(rejected.value, "code", None) == payload["figure_fraction_code"] == -14

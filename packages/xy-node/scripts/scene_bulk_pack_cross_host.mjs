@@ -35,8 +35,30 @@ const xyaf = sceneXyafBulkPack([
   },
 ]);
 
+// #1006: an axes-fraction text row (XYAF byte 26 = 1, routed through XYAW)
+// and the bulk-pack rejection of any other coordinate space (code -14).
+const fractionRow = (coordinateSpace) => ({
+  kind: "text",
+  text: "cell",
+  x: 0.25,
+  y: 0,
+  dy: 8,
+  anchor: "middle",
+  style: { color: "#667085", label_background: "#dbeafe", coordinate_space: coordinateSpace },
+});
+const xyafFraction = sceneXyafBulkPack([fractionRow("axes_fraction")]);
+let figureFractionCode = null;
+try {
+  sceneXyafBulkPack([fractionRow("figure_fraction")]);
+} catch (error) {
+  figureFractionCode = error.code ?? null;
+}
+
 process.stdout.write(
   JSON.stringify({
+    xyaf_fraction_sha256: sha(xyafFraction),
+    xyaf_fraction_byte26: xyafFraction[26],
+    figure_fraction_code: figureFractionCode,
     xycf_sha256: sha(xycf),
     xyfs_sha256: sha(fs),
     xyaf_sha256: sha(xyaf),

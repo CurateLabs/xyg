@@ -282,6 +282,69 @@ def test_tall_bottom_table_stays_inside_the_canvas(monkeypatch: pytest.MonkeyPat
     assert cells["A"][2] == pytest.approx(plot[0], abs=0.01)
 
 
+# Matplotlib 3.11 (Agg, dpi 100) for the 8-row table below after tight_layout:
+# creation-time and final axes heights, and the header / last-row extents.
+TALL_REFERENCE = {
+    "initial_axes_height": 369.6,
+    "axes": (46.72, 15.0, 620.44, 315.0),
+    "h0": (46.72, 315.0, 190.15, 328.53),
+    "H": (33.52, 423.23, 46.72, 436.75),
+}
+# Matplotlib's auto-width row-label column for "a very long row label here"
+# (default layout): it hangs left of an unmoved axes, off the canvas.
+ROW_LABEL_REFERENCE = (-141.25, 443.87, 80.0, 460.53)
+
+
+def test_tight_layout_rows_keep_12pt_and_the_documented_matplotlib_bound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Known difference: Matplotlib's rows are axes-height fractions fixed at
+    ``table()`` time, so after tight_layout each is 16.67 px * H_final /
+    H_initial; xyg keeps the 12 pt (16.67 px) row. The cumulative bottom-edge
+    error is rows * 16.67 * |1 - H_final / H_initial| px, in either direction.
+    """
+    fig, ax = plt.subplots(figsize=(6.4, 4.8))
+    ax.bar([0, 1, 2], [3, 1, 2])
+    rows = [[f"r{row}c{col}" for col in range(4)] for row in range(8)]
+    ax.table(cellText=rows, colLabels=[f"h{col}" for col in range(4)], rowLabels=list("ABCDEFGH"))
+    fig.tight_layout()
+    svg, _calls = _export(fig, "svg", monkeypatch)
+    plot, cells, _texts = _svg_geometry(svg)
+    heights = {round(bottom - top, 2) for _left, top, _right, bottom in cells.values()}
+    assert heights == {16.67}, "every row stays 12 pt"
+    assert cells["h0"][1] == pytest.approx(plot[3], abs=0.02)
+    xyg_bottom = cells["H"][3] - plot[3]
+    assert xyg_bottom == pytest.approx(9 * 100 / 6, abs=0.05)
+    reference = TALL_REFERENCE
+    final_height = reference["axes"][3] - reference["axes"][1]
+    mpl_row = (100 / 6) * final_height / reference["initial_axes_height"]
+    assert reference["h0"][3] - reference["h0"][1] == pytest.approx(mpl_row, abs=0.02)
+    mpl_bottom = reference["H"][3] - reference["axes"][3]
+    bound = 9 * (100 / 6) * abs(1 - final_height / reference["initial_axes_height"])
+    assert abs(xyg_bottom - mpl_bottom) == pytest.approx(bound, abs=0.1)
+    assert bound == pytest.approx(28.2, abs=0.1)
+    assert max(bottom for *_rest, bottom in cells.values()) <= CANVAS[1]
+
+
+def test_row_label_column_uses_rust_text_metrics_and_moves_the_axes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Width: Matplotlib's ``text width * (1 + 2 * Cell.PAD)`` in Rust text
+    metrics (within 4 px of Matplotlib's). Known difference: without
+    tight_layout Matplotlib leaves the axes alone and the label runs off the
+    canvas; xyg widens the left margin so the cell stays on the canvas.
+    """
+    fig, ax = plt.subplots(figsize=(6.4, 4.8))
+    ax.table(cellText=[["1", "2"]], rowLabels=["a very long row label here"], colLabels=["x", "y"])
+    svg, _calls = _export(fig, "svg", monkeypatch)
+    plot, cells, _texts = _svg_geometry(svg)
+    left, _top, right, _bottom = cells["a very long row label here"]
+    reference_width = ROW_LABEL_REFERENCE[2] - ROW_LABEL_REFERENCE[0]
+    assert right - left == pytest.approx(reference_width, abs=4.0)
+    assert left >= 0.0 and right == pytest.approx(plot[0], abs=0.02)
+    assert plot[0] > ROW_LABEL_REFERENCE[2], "the axes moves right instead of clipping"
+
+
 @pytest.mark.parametrize("tight", [False, True])
 def test_long_row_labels_reserve_left_room_on_the_canvas(
     tight: bool, monkeypatch: pytest.MonkeyPatch
@@ -353,7 +416,9 @@ def test_table_limits_fail_closed_with_stable_reasons() -> None:
     # silently: the label-table application rejects the panel ...
     fig, ax = plt.subplots(figsize=(6.4, 4.8))
     ax.table(cellText=[["a", "b"]], bbox=(0.0, -0.15, 1.0, 0.3))
-    with pytest.raises(_native.StaticDocumentRejected, match="XYG_STATIC_DOCUMENT_PANEL"):
+    with pytest.raises(
+        _native.StaticDocumentRejected, match="XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX"
+    ):
         fig.savefig(io.BytesIO(), format="svg")
     # ... and a cell whose text itself is off the canvas fails the canonical
     # Scene's label bound first.
@@ -361,6 +426,17 @@ def test_table_limits_fail_closed_with_stable_reasons() -> None:
     ax.table(cellText=[["a", "b"]], bbox=(0.0, -2.0, 1.0, 0.2))
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
         fig.savefig(io.BytesIO(), format="svg")
+
+    # Cell text wider than its cell (less the Cell.PAD inset, in Rust text
+    # metrics) fails closed; Matplotlib's auto_set_font_size would shrink it
+    # (to 8 pt here), xyg never draws it past the cell edge.
+    fig, ax = plt.subplots(figsize=(6.4, 4.8))
+    ax.table(cellText=[["a fairly long cell text that overflows", "b"]])
+    for fmt in ("svg", "png"):
+        with pytest.raises(
+            _native.StaticDocumentRejected, match="XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX"
+        ):
+            fig.savefig(io.BytesIO(), format=fmt)
 
     # Text in coordinate spaces the Scene does not project fails with one
     # stable reason (never silently placed in data coordinates).
@@ -389,6 +465,54 @@ def _has_matplotlib_311() -> bool:
         return False
     version = tuple(int(part) for part in matplotlib.__version__.split(".")[:2])
     return version >= (3, 11) and hasattr(Axes, "grouped_bar")
+
+
+@pytest.mark.skipif(not _has_matplotlib_311(), reason="requires the Matplotlib 3.11 reference")
+def test_pinned_tall_and_row_label_references_match_live_matplotlib() -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as mpl
+
+    def extents(fig: Any, table: Any) -> dict[str, tuple[float, ...]]:
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        height = fig.bbox.height
+        out = {}
+        for cell in table.get_celld().values():
+            box = cell.get_window_extent(renderer)
+            out[cell.get_text().get_text()] = (box.x0, height - box.y1, box.x1, height - box.y0)
+        return out
+
+    fig, ax = mpl.subplots(figsize=(6.4, 4.8))
+    try:
+        ax.bar([0, 1, 2], [3, 1, 2])
+        rows = [[f"r{row}c{col}" for col in range(4)] for row in range(8)]
+        table = ax.table(
+            cellText=rows, colLabels=[f"h{col}" for col in range(4)], rowLabels=list("ABCDEFGH")
+        )
+        assert ax.bbox.height == pytest.approx(TALL_REFERENCE["initial_axes_height"], abs=0.01)
+        fig.tight_layout()
+        found = extents(fig, table)
+        box = ax.bbox
+        height = fig.bbox.height
+        assert (box.x0, height - box.y1, box.x1, height - box.y0) == pytest.approx(
+            TALL_REFERENCE["axes"], abs=0.01
+        )
+        for name in ("h0", "H"):
+            assert found[name] == pytest.approx(TALL_REFERENCE[name], abs=0.01)
+    finally:
+        mpl.close(fig)
+    fig, ax = mpl.subplots(figsize=(6.4, 4.8))
+    try:
+        table = ax.table(
+            cellText=[["1", "2"]], rowLabels=["a very long row label here"], colLabels=["x", "y"]
+        )
+        assert extents(fig, table)["a very long row label here"] == pytest.approx(
+            ROW_LABEL_REFERENCE, abs=0.01
+        )
+    finally:
+        mpl.close(fig)
 
 
 @pytest.mark.skipif(not _has_matplotlib_311(), reason="requires the Matplotlib 3.11 reference")

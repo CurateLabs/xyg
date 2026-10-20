@@ -186,7 +186,11 @@ FAILURES = {
     ),
     "cell_off_canvas": (
         [_cell(0.5, 0, "cell", "middle", box_width=40, box_height=160, dy=20)],
-        "XYG_STATIC_DOCUMENT_PANEL",
+        "XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX",
+    ),
+    "cell_text_overflow": (
+        [_cell(0.5, 0.5, "far too long for its cell", "start", box_width=60, box_height=16)],
+        "XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX",
     ),
 }
 

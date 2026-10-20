@@ -18,8 +18,15 @@ which covers user-visible releases across the whole package.
   annotations do not encode ['coordinate_space']`; figure-fraction and blended
   transforms keep failing closed, now with "Scene text annotations support
   coordinate_space 'data' or 'axes_fraction' only".
-- Known difference: after `tight_layout`, Matplotlib rescales table rows with
-  the final axes height; xyg keeps the 12 pt row (exact for the default layout).
+- Known differences: after `tight_layout`, Matplotlib rescales table rows with
+  the final axes height while xyg keeps the 12 pt row — each row is off by
+  `16.67 · |1 − H_final / H_initial|` px and the error accumulates (28.2 px at the
+  bottom of an 8-row table with a header in a 640×480 figure; exact for the
+  default layout). Cell text wider than its cell fails closed with
+  `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX` where Matplotlib shrinks the font. A
+  row-label column wider than the default left margin moves the axes right
+  where Matplotlib lets it run off the canvas; its width now uses the Rust text
+  metrics with Matplotlib's `width · (1 + 2 · Cell.PAD)` rule.
 
 ## Per-annotation static style and boxes — 2026-10-20 (Matplotlib 3.11.0 reference)
 

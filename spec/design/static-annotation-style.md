@@ -166,10 +166,16 @@ rectangle (`width·(right − left)`, `height·(bottom − top)`, inset
 text keeps the horizontal inset from the edge it is anchored to (start:
 `x − inset`; end: `x − width + inset`; middle: centered) and the box is centered
 on the measured text block, so the center alignment that follows centers both
-on the anchor. The inset must lie in [0, width], the label must be upright,
-and the placed box must lie inside the panel viewport (sub-pixel slack only);
-otherwise the panel fails with `XYG_STATIC_DOCUMENT_PANEL` rather than being
-clipped or moved.
+on the anchor. The inset must lie in [0, width] and the label must be upright
+(malformed facts fail with `XYG_STATIC_DOCUMENT_PANEL`). Two geometric rules
+are stable unsupported-authoring rejections,
+`XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX` (`StaticDocumentError::AnnotationCell`):
+the text must fit its cell in Rust text metrics (`textblock::measure` width at
+the label's final size ≤ `width − inset` for a start/end anchor, ≤ `width` for
+a centered one — Matplotlib's `auto_set_font_size` would shrink such text
+instead; xyg never draws past the cell edge), and the placed box must lie
+inside the panel viewport (sub-pixel slack only) rather than being clipped or
+moved.
 
 Existing product failures retain the mathtext/custom-font/annotation-typography/
 vertical-align/bbox reasons and add `XYG_STATIC_UNSUPPORTED_ANNOTATION_BOXSTYLE`.
@@ -207,4 +213,8 @@ SVG/PNG/PDF/JPEG/WebP and identical stable rejection reasons; its
 rectangle on both hosts). `tests/pyplot/test_corpus_annotations_1006.py` covers
 the Matplotlib 3.11 corpus cases 25 and 53 annotation surface through pyplot,
 and `tests/pyplot/test_table_static_export.py` pins `ax.table` cell
-rectangles against Matplotlib 3.11.
+rectangles against Matplotlib 3.11. `tests/test_annotation_cells_browser.py`
+(headless Chromium) pins the browser half: the fixed px/percentage box, forced
+vertical centering, the border-inclusive padding inset, drawing axes-fraction
+text outside the plot while figure-fraction text there stays culled, and DOM
+cell rectangles equal to the Rust static cells within 0.05 px.

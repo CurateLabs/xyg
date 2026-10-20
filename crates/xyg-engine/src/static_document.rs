@@ -13,7 +13,7 @@ use crate::png_encode;
 use crate::raster;
 use crate::scene::{
     legend_marker_geometry, push_legend_marker_svg, SceneDocument, StaticLabelCell,
-    StaticLabelStyle,
+    StaticLabelRejection, StaticLabelStyle,
 };
 use crate::scene_static::{flatten_rgba_over_white, scene_static_export, SceneStaticFormat};
 use crate::textblock;
@@ -94,6 +94,9 @@ pub enum StaticDocumentError {
     Encode,
     /// A legend box does not fit, or leaves the document canvas.
     LegendBounds,
+    /// An explicit annotation cell box (#1006) does not hold its text, or
+    /// leaves the panel canvas once Rust places it.
+    AnnotationCell,
 }
 
 impl StaticDocumentError {
@@ -116,6 +119,10 @@ impl StaticDocumentError {
             Self::LegendBounds => {
                 "XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_BOUNDS: a legend box does not fit inside \
                  the document canvas"
+            }
+            Self::AnnotationCell => {
+                "XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX: an explicit annotation cell box does not \
+                 hold its text or leaves the panel canvas"
             }
         }
     }
@@ -804,7 +811,10 @@ impl StaticDocument {
             };
             scene
                 .apply_static_annotation_labels(label_styles.as_deref())
-                .map_err(|_| StaticDocumentError::Panel)?;
+                .map_err(|rejection| match rejection {
+                    StaticLabelRejection::Cell => StaticDocumentError::AnnotationCell,
+                    StaticLabelRejection::Malformed => StaticDocumentError::Panel,
+                })?;
             scene
                 .apply_static_arrow_metrics(
                     (record.metric_flags & PANEL_FLAG_ARROW_METRICS != 0)
@@ -2004,6 +2014,27 @@ mod tests {
                 "{} bytes",
                 bad.len()
             );
+        }
+    }
+
+    #[test]
+    fn annotation_cells_that_do_not_fit_reject_with_the_bbox_reason() {
+        // Labels 0 and 1 plain; label 2 ("gamma", boxed) an explicit cell.
+        let table = |cell: (f32, f32)| {
+            let mut table = label_entry(1, 12.0, 0.0, 0.0, 0, 0);
+            table.extend(label_entry(1, 12.0, 0.0, 0.0, 0, 0));
+            table.extend(boxed_label_entry(7, 10.0, 4.0, 4.0, 0, 3, cell, 0));
+            table
+        };
+        assert!(StaticDocument::decode(&labelled_document(Some(&table((60.0, 16.0))))).is_ok());
+        for overflow in [(20.0, 16.0), (500.0, 16.0)] {
+            let error = StaticDocument::decode(&labelled_document(Some(&table(overflow))))
+                .err()
+                .unwrap();
+            assert_eq!(error, StaticDocumentError::AnnotationCell, "{overflow:?}");
+            assert!(error
+                .reason()
+                .starts_with("XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX:"));
         }
     }
 

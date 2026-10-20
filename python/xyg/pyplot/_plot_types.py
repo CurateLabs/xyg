@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
+from .. import _textblock
 from .._typing import ArrayLike, ColorLike, ColorsLike, TableLike
 from ._artists import (
     Artist,
@@ -411,6 +412,9 @@ _DASH_SEGMENT_PATTERNS: dict[str, tuple[tuple[float, float], ...]] = {
     ":": ((0.0, 0.18), (0.5, 0.68)),
 }
 
+# Matplotlib ``Cell.PAD``: cell text sits this fraction of the cell width
+# inside its aligned (left/right) edge.
+TABLE_CELL_PAD = 0.1
 _LINESTYLE_TO_FMT_TOKEN = {"solid": "-", "dashed": "--", "dashdot": "-.", "dotted": ":"}
 
 
@@ -5844,12 +5848,23 @@ class PlotTypeMixin:
                 getattr(self, "_table_bottom_points", 0.0),
                 total_rows * row_height_points + 1.0,
             )
-        row_label_width_points = (
-            max((len(label) for label in (row_labels or ())), default=0) * fontsize * 0.6 + 6.0
+        # Matplotlib ``auto_set_column_width(-1)``: the row-label column is
+        # the widest label's text width * (1 + 2 * Cell.PAD), measured here in
+        # the Rust text metrics (points in, points out) that also decide
+        # whether static-export text fits its cell.
+        row_label_width_points = max(
+            (
+                _textblock.measure(label, fontsize).width * (1.0 + 2.0 * TABLE_CELL_PAD)
+                for label in (row_labels or ())
+            ),
+            default=0.0,
         )
         if natural_layout and row_labels is not None:
             # The row-label column hangs left of the axes; reserve it so the
-            # cells stay on the canvas.
+            # cells stay on the canvas. Known difference: Matplotlib leaves
+            # the axes in place and lets a wide column run off the canvas.
+            # TODO(#1006 follow-up): clip-to-canvas semantics for off-canvas
+            # table cells instead of moving the axes.
             self._table_left_points = max(
                 getattr(self, "_table_left_points", 0.0), row_label_width_points + 1.0
             )
