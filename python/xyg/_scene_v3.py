@@ -39,6 +39,7 @@ from ._scene_errors import (
 from ._scene_errors import (
     raise_trace_sidecars as _raise_trace_sidecars,
 )
+from ._scene_marshal import Y2Chrome
 from ._scene_marshal import pack_public_export_support as _pack_public_export_support
 
 # Re-export observation helpers for existing imports (tests, scripts).
@@ -146,6 +147,7 @@ def _pack_chrome_facts(
     height: int,
     margins: tuple[float, float, float, float] | None,
     colorbar_ok: bool,
+    y2_chrome: Y2Chrome | None = None,
 ) -> bytes:
     """Marshal chrome observations and bulk-pack XYCF via Rust (ABI 321)."""
     from ._scene_marshal import pack_chrome_facts
@@ -156,6 +158,7 @@ def _pack_chrome_facts(
         height=height,
         margins=margins,
         colorbar_ok=colorbar_ok,
+        y2_chrome=y2_chrome,
     )
 
 
@@ -209,6 +212,7 @@ def figure_scene(
     width: int | None = None,
     height: int | None = None,
     margins: tuple[float, float, float, float] | None = None,
+    y2_chrome: Y2Chrome | None = None,
 ) -> bytes:
     """Compile migrated cartesian marks plus x/y axes to Scene v12."""
     annotations = list(getattr(figure, "annotations", None) or [])
@@ -249,6 +253,7 @@ def figure_scene(
                 height=h,
                 margins=margins,
                 colorbar_ok=not colorbar_unsupported,
+                y2_chrome=y2_chrome,
             ),
             polar=_pack_polar_scene_input(figure) if attach_plan["attach_xypl"] else b"",
             figure_support=_pack_figure_support(figure, annotations, colorbar_unsupported),
@@ -356,6 +361,7 @@ def _public_scene_or_reason(
     *,
     width: int | None = None,
     height: int | None = None,
+    y2_chrome: Y2Chrome | None = None,
 ) -> tuple[str | None, bytes | None]:
     """Compile the public Scene once, or return the support diagnostic.
 
@@ -367,7 +373,7 @@ def _public_scene_or_reason(
     if reason:
         return reason, None
     try:
-        scene = figure_scene(figure, width=width, height=height)
+        scene = figure_scene(figure, width=width, height=height, y2_chrome=y2_chrome)
     except UnsupportedSceneV3 as unsupported:
         if str(unsupported) == "invalid canonical scene plot layout":
             return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None

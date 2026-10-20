@@ -15,7 +15,7 @@ const MAX_XYFS_AXES: usize = 8;
 const MAX_XYFS_TRACES: usize = 256;
 const MAX_XYFS_KEY_BYTES: usize = 256;
 
-const OBS_MASK: u32 = (1 << 11) - 1;
+const OBS_MASK: u32 = (1 << 12) - 1;
 const TRACE_FLAG_MASK: u16 = (1 << 14) - 1;
 
 /// Authored axis side carried in the second axis-header byte, using the same

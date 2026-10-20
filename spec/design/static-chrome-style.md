@@ -79,7 +79,9 @@ and the record ends with the y2 tick paint, y2 title paint, the y2
 `chrome_text` word then also carries the y2 title flags (bits 14..15), y2 tick
 flags (16..17) and the y2 tick / title paint-present bits (18, 19). Those facts
 travel in the Scene `XYY2` block (see `scene-ir.md`), never in an XYST panel record,
-whose `chrome_text` mask stays `0x3fff`.
+whose `chrome_text` mask stays `0x3fff`. Python and Node set XYCS flag bit 2 when
+`axis_options` carries `y2`, mask the returned word to `0x3fff` before it reaches the
+panel record, and copy the y2 tail into the sidecar (twinx PRs 2+3).
 
 ## XYST consumption
 

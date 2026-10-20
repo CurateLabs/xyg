@@ -12,6 +12,7 @@ from typing import Any, Optional, Union
 import numpy as np
 
 from . import _native
+from ._scene_marshal import Y2Chrome
 
 _HEADER = struct.Struct("<4s6I4B4BfffBB2xIII")
 _PANEL = struct.Struct("<2i6I12fII2f4B2II16B")
@@ -34,6 +35,12 @@ _ANNOTATION_STYLE_OUTPUT = struct.Struct("<4s3I")
 _ANNOTATION_STYLE_LABEL_ENTRY = 20
 _CHROME_STYLE_HEADER = struct.Struct("<4s3I")
 _CHROME_STYLE_OUTPUT = struct.Struct("<4s2II16Bd4B6d")
+#: XYCO ``chrome_text`` bits 0..13 are the XYST panel facts; bits 14..19 are the
+#: y2 title flags, y2 tick flags, and y2 tick / title paint-present bits, which
+#: feed the Scene ``XYY2`` block instead.
+_XYST_CHROME_TEXT_MASK = 0x3FFF
+_Y2_TICK_PAINT = 1 << 18
+_Y2_TITLE_PAINT = 1 << 19
 _MAX_U32 = (1 << 32) - 1
 #: XYST layout version; 2 widened the panel record to 128 bytes (#1004).
 XYST_VERSION = 3
@@ -610,6 +617,8 @@ class ResolvedChromeStyle:
     chrome_text: Optional[tuple[int, tuple[tuple[int, int, int, int], ...]]]
     # axis id -> (keys to drop from ``style``, keys to drop from ``minor_style``)
     consumed: dict[str, tuple[tuple[str, ...], tuple[str, ...]]]
+    # Secondary-y facts for the Scene ``XYY2`` block; never an XYST panel field.
+    y2: Optional[Y2Chrome] = None
 
 
 def resolve_chrome_style(
@@ -621,8 +630,14 @@ def resolve_chrome_style(
     admit_legend_slot: bool = False,
 ) -> ResolvedChromeStyle:
     """Marshal authored chrome style facts; Rust owns admission and precedence."""
+    axis_ids = ("x", "y", "y2") if "y2" in axis_options else ("x", "y")
     request = bytearray(
-        _CHROME_STYLE_HEADER.pack(b"XYCS", 1, int(has_title) | (int(admit_legend_slot) << 1), 0)
+        _CHROME_STYLE_HEADER.pack(
+            b"XYCS",
+            1,
+            int(has_title) | (int(admit_legend_slot) << 1) | (int(len(axis_ids) == 3) << 2),
+            0,
+        )
     )
     _put_entries(request, root_style)
     slots = sorted(chrome_styles.items())
@@ -630,7 +645,7 @@ def resolve_chrome_style(
     for name, slot_style in slots:
         _put_text(request, name)
         _put_entries(request, slot_style)
-    for axis_id in ("x", "y"):
+    for axis_id in axis_ids:
         options = axis_options.get(axis_id) or {}
         _put_entries(request, options.get("style"))
         _put_entries(request, options.get("minor_style"))
@@ -644,7 +659,7 @@ def resolve_chrome_style(
     if len(output) < _CHROME_STYLE_OUTPUT.size:
         raise RuntimeError("invalid XYCO output")
     magic, version, flags, chrome_text, *rest = _CHROME_STYLE_OUTPUT.unpack_from(output)
-    if magic != b"XYCO" or version != 1 or flags & ~1:
+    if magic != b"XYCO" or version != 1 or flags & ~0b11 or bool(flags & 2) != (len(axis_ids) == 3):
         raise RuntimeError("invalid XYCO output")
     paints = tuple(tuple(rest[4 * index : 4 * index + 4]) for index in range(4))
     title_size = rest[16]
@@ -664,13 +679,29 @@ def resolve_chrome_style(
         return tuple(keys)
 
     consumed = {axis_id: (take_keys(), take_keys()) for axis_id in ("x", "y")}
+    y2 = None
+    if flags & 2:
+        tick_paint, title_paint = struct.unpack_from("<4s4s", output, at)
+        tick_size, title_size_y2, padding = struct.unpack_from("<3d", output, at + 8)
+        at += 32
+        consumed["y2"] = (take_keys(), take_keys())
+        y2 = Y2Chrome(
+            tick_size,
+            title_size_y2,
+            padding,
+            (chrome_text >> 16 & 3) | ((chrome_text >> 14 & 3) << 2),
+            tuple(tick_paint) if chrome_text & _Y2_TICK_PAINT else None,
+            tuple(title_paint) if chrome_text & _Y2_TITLE_PAINT else None,
+        )
     if at != len(output):
         raise RuntimeError("invalid XYCO output")
+    chrome_text &= _XYST_CHROME_TEXT_MASK
     return ResolvedChromeStyle(
         title_style=(title_size, title_rgba) if flags & 1 else None,
         chrome_metrics=metrics,
         chrome_text=(chrome_text, paints) if chrome_text else None,
         consumed=consumed,
+        y2=y2,
     )
 
 
@@ -1306,7 +1337,9 @@ def project_figure(
     projected.show_legend = False
     projected.legend_options = {}
     projected.extra_legends = []
-    reason, scene = _scene_v3._public_scene_or_reason(projected, width=width, height=height)
+    reason, scene = _scene_v3._public_scene_or_reason(
+        projected, width=width, height=height, y2_chrome=chrome.y2
+    )
     if reason is not None or scene is None:
         raise UnsupportedStaticExport(reason or "XYG_STATIC_UNSUPPORTED_PANEL")
     if graph_planes is not None:

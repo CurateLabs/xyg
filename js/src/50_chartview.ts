@@ -7561,7 +7561,9 @@ export class ChartView {
     const x = (inside ? xInside : xOutside) +
       (side === "right" ? (inside ? -offset : offset) : (inside ? offset : -offset));
     const y = p.y + p.h * (1 - anchorFrac);
-    const angle = hasAngle ? Number(axis.label_angle) : (side === "right" ? 90 : -90);
+    // Both titles read bottom to top, as Matplotlib's twinx label and the static
+    // SVG/PDF/raster path do.
+    const angle = hasAngle ? Number(axis.label_angle) : -90;
     return {
       css:
         `left:${x}px;top:${y}px;` +
@@ -8291,7 +8293,7 @@ export class ChartView {
       return { title, left: currentLeft + delta + correction };
     };
     const renderYTitle = (axis, text, onRight) => {
-      const angle = onRight ? 90 : -90;
+      const angle = -90;
       const fallbackCss =
         `left:${onRight ? p.x + p.w : p.x}px;top:${p.y + p.h / 2}px;` +
         `transform:translate(-50%,-50%) rotate(${angle}deg);` +

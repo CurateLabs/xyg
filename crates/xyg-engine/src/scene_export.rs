@@ -396,8 +396,9 @@ fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
             "rotation",
             "style",
             "class_name",
+            "y_axis",
         ],
-        2 => &["kind", "axis", "value", "text", "style", "class_name"],
+        2 => &["kind", "axis", "value", "text", "style", "class_name", "y_axis"],
         3 => &[
             "kind",
             "axis",
@@ -406,6 +407,7 @@ fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
             "text",
             "style",
             "class_name",
+            "y_axis",
         ],
         4 => &[
             "kind",
@@ -420,6 +422,7 @@ fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
             "rotation",
             "style",
             "class_name",
+            "y_axis",
         ],
         5 => &[
             "kind",
@@ -430,6 +433,7 @@ fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
             "text",
             "style",
             "class_name",
+            "y_axis",
         ],
         6 => &[
             "kind",
@@ -442,6 +446,7 @@ fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
             "wrap",
             "style",
             "class_name",
+            "y_axis",
         ],
         _ => return None,
     })
@@ -1499,7 +1504,9 @@ const OBS_ANNOTATION_MARKUP: u32 = 1 << 9;
 /// The figure carries a (supported or unsupported) colorbar: a literal
 /// observation, so Rust can refuse the colorbar + secondary-y combination.
 const OBS_HAS_COLORBAR: u32 = 1 << 10;
-const OBS_MASK: u32 = (1 << 11) - 1;
+/// An annotation bound to the secondary y axis whose coordinate space reads y data.
+const OBS_ANNOTATION_Y2: u32 = 1 << 11;
+const OBS_MASK: u32 = (1 << 12) - 1;
 
 const ANNOTATION_HTML_REASON: &str =
     "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML: Scene does not encode annotation html";
@@ -1519,6 +1526,8 @@ const FIGURE_Y2_TICK_ONLY_REASON: &str =
     "XYG_SCENE_UNSUPPORTED_Y2_TICK_ONLY: Scene encodes a secondary y axis only when a trace is plotted against it";
 const FIGURE_Y2_POLAR_REASON: &str =
     "XYG_SCENE_UNSUPPORTED_Y2_POLAR: Scene does not combine a secondary y axis with polar coordinates";
+const FIGURE_Y2_ANNOTATION_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION: Scene does not project annotations onto a secondary y axis";
 const FIGURE_Y2_COLORBAR_REASON: &str =
     "XYG_SCENE_UNSUPPORTED_Y2_COLORBAR: Scene does not combine a secondary y axis with a colorbar";
 
@@ -1655,7 +1664,13 @@ pub fn scene_figure_support_reason_with_attach(
     let mut has_y2 = false;
     match extra_axes.as_slice() {
         [] => {}
-        [(XYFS_AXIS_Y2, crate::scene_figure_support_pack::AXIS_SIDE_RIGHT)] => has_y2 = true,
+        // The secondary y axis is right-hand by default: an unobserved (unauthored)
+        // side is the right side, so hosts pass an absent side through as 0.
+        [(
+            XYFS_AXIS_Y2,
+            crate::scene_figure_support_pack::AXIS_SIDE_RIGHT
+            | crate::scene_figure_support_pack::AXIS_SIDE_UNOBSERVED,
+        )] => has_y2 = true,
         [(XYFS_AXIS_Y2, _)] => return Ok(FIGURE_Y2_SIDE_REASON.to_string()),
         [(XYFS_AXIS_X2, _)] => return Ok(FIGURE_X2_REASON.to_string()),
         [_] => return Ok(FIGURE_AXIS_SET_REASON.to_string()),
@@ -1696,6 +1711,9 @@ pub fn scene_figure_support_reason_with_attach(
         if flags & (OBS_COLORBAR | OBS_HAS_COLORBAR) != 0 {
             return Ok(FIGURE_Y2_COLORBAR_REASON.to_string());
         }
+    }
+    if flags & OBS_ANNOTATION_Y2 != 0 {
+        return Ok(FIGURE_Y2_ANNOTATION_REASON.to_string());
     }
     let y2_traces = traces
         .iter()

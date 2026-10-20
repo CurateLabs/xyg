@@ -7,7 +7,10 @@
 use crate::css;
 use crate::kernels::{scene_tick_anchor, scene_tick_label_strategy};
 use crate::scene_pack_orchestrate::{scene_xycf_figure_plan, XycfFigurePlan};
+use crate::scene::tick_label_table;
+use crate::scene_style;
 use crate::scene_xycf_pack::{scene_xycf_pack, XycfPackHeader, XycfPackSidecars, SCENE_XYCF_PACK_MAX};
+use crate::scene_y2::{SceneY2Metrics, SceneY2Wire};
 
 pub const SCENE_CHROME_PACK_MAX: usize = SCENE_XYCF_PACK_MAX;
 
@@ -50,6 +53,14 @@ const CH_WIDTH_MINOR_TICK: u8 = 1 << 5;
 const CH_WIDTH_MINOR_TICK_LENGTH: u8 = 1 << 6;
 const DEFAULT_PAINTS: [&str; 6] = ["#202020", "#202020", "#202020", "transparent", "#202020", "#202020"];
 const DEFAULT_WIDTHS: [f64; 7] = [1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0];
+/// Minimum gap between y (and y2) tick labels when none is authored.
+const DEFAULT_Y_MIN_GAP: f64 = 4.0;
+/// Constant of a log/symlog axis when none is authored.
+const DEFAULT_SCALE_CONSTANT: f64 = 1.0;
+/// Side code (1 = high/right) of a secondary y axis whose side is not authored.
+const Y2_DEFAULT_SIDE_CODE: u8 = 1;
+/// Byte range of the y axis record inside the 200-byte resolved Scene style.
+const SCENE_STYLE_Y_AXIS: std::ops::Range<usize> = 112..200;
 const MAX_TICK_LABELS: usize = 256;
 const MAX_COLORBAR_STOPS: usize = 16;
 const MAX_COLORBAR_TICKS: usize = 32;
@@ -122,6 +133,43 @@ pub struct ChromeCollisionAxisInput<'a> {
     pub tick_kind_category: i32,
 }
 
+/// Resolved XYCO typography/paint facts copied into the `XYY2` metrics block.
+#[derive(Clone, Copy, Debug)]
+pub struct ChromeY2Metrics {
+    pub tick_size: f64,
+    pub title_size: f64,
+    pub padding: f64,
+    pub text_flags: u32,
+    pub tick_rgba: Option<[u8; 4]>,
+    pub title_rgba: Option<[u8; 4]>,
+}
+
+/// Authored secondary right-hand y axis. Hosts marshal presence and authored
+/// values only; scale constant, tick policy defaults, the axis chrome record and
+/// the `XYY2` layout are Rust's, and the same collision code serves y and y2.
+#[derive(Clone, Debug)]
+pub struct ChromeY2Input<'a> {
+    pub scale_kind: u32,
+    pub lo: f64,
+    pub hi: f64,
+    pub constant: Option<f64>,
+    pub nonpositive_mask: u8,
+    /// The chrome axis observation. Its side code and tick/label side masks only
+    /// count where the matching `*_authored` flag is set: an unauthored y2 side is
+    /// the right side, and an unauthored mask is that side, decided here.
+    pub axis: ChromeAxisInput<'a>,
+    pub side_authored: bool,
+    pub tick_sides_authored: bool,
+    pub label_sides_authored: bool,
+    pub collision: ChromeCollisionAxisInput<'a>,
+    pub major: Option<&'a [f64]>,
+    pub minor: &'a [f64],
+    pub tick_labels: Option<&'a [&'a str]>,
+    pub title: Option<&'a str>,
+    pub format: Option<&'a str>,
+    pub metrics: Option<ChromeY2Metrics>,
+}
+
 #[derive(Clone, Debug)]
 pub struct SceneChromePackInput<'a> {
     pub width: f64,
@@ -170,8 +218,8 @@ pub struct SceneChromePackInput<'a> {
     pub plot_background: Option<&'a str>,
     pub legend: ChromeLegendInput<'a>,
     pub colorbar: Option<ChromeColorbarInput<'a>>,
-    /// Optional `XYY2` secondary-y facts appended to the packed `XYCF`.
-    pub y2: &'a [u8],
+    /// Optional secondary right-hand y axis, appended as an `XYY2` sidecar.
+    pub y2: Option<ChromeY2Input<'a>>,
 }
 
 fn tick_strategy_code(axis: &ChromeCollisionAxisInput<'_>) -> u8 {
@@ -219,7 +267,7 @@ fn pack_tick_collision(xa: &ChromeCollisionAxisInput<'_>, ya: &ChromeCollisionAx
         let mut buf = [0u8; 32];
         for (i, value) in [
             xa.min_gap.unwrap_or(8.0),
-            ya.min_gap.unwrap_or(4.0),
+            ya.min_gap.unwrap_or(DEFAULT_Y_MIN_GAP),
             xa.angle.unwrap_or(f64::NAN),
             ya.angle.unwrap_or(f64::NAN),
         ]
@@ -332,7 +380,7 @@ fn pack_chrome_axis(axis: &ChromeAxisInput<'_>) -> Vec<u8> {
     out
 }
 
-fn pack_xych(input: &SceneChromePackInput<'_>) -> Vec<u8> {
+fn pack_xych(input: &SceneChromePackInput<'_>, y_axis: &ChromeAxisInput<'_>) -> Vec<u8> {
     let mut flags = 2u32 << 8;
     let mut chart_b = b"".as_ref();
     let mut plot_b = b"".as_ref();
@@ -345,7 +393,7 @@ fn pack_xych(input: &SceneChromePackInput<'_>) -> Vec<u8> {
         plot_b = bg.as_bytes();
     }
     let x_rec = pack_chrome_axis(&input.x_axis);
-    let y_rec = pack_chrome_axis(&input.y_axis);
+    let y_rec = pack_chrome_axis(y_axis);
     let mut out = Vec::with_capacity(16 + chart_b.len() + plot_b.len() + x_rec.len() + y_rec.len());
     out.extend_from_slice(b"XYCH");
     out.extend_from_slice(&1u32.to_le_bytes());
@@ -357,6 +405,59 @@ fn pack_xych(input: &SceneChromePackInput<'_>) -> Vec<u8> {
     out.extend_from_slice(&x_rec);
     out.extend_from_slice(&y_rec);
     out
+}
+
+/// Build the `XYY2` sidecar (data-valued domain) from authored y2 facts. The axis
+/// chrome record is the y record of the Scene style resolved from the y2 style,
+/// exactly as the primary y style resolves; nothing is validated here, so the
+/// Scene encoder rejects invalid values identically for every host.
+fn pack_y2_sidecar(input: &SceneChromePackInput<'_>, y2: &ChromeY2Input<'_>) -> Result<Vec<u8>, i32> {
+    let mut axis = y2.axis.clone();
+    if !y2.side_authored {
+        axis.side_code = Y2_DEFAULT_SIDE_CODE;
+    }
+    if !y2.tick_sides_authored {
+        axis.tick_sides_mask = 1 << axis.side_code;
+    }
+    if !y2.label_sides_authored {
+        axis.label_sides_mask = 1 << axis.side_code;
+    }
+    let style = scene_style::resolve_chrome_style(&pack_xych(input, &axis)).map_err(|_| -1)?;
+    let authored_anchor = y2.collision.anchor_raw.is_some();
+    let labels = y2.tick_labels.map(|labels| tick_label_table(labels.iter().copied()));
+    let metrics = y2.metrics;
+    Ok(SceneY2Wire {
+        kind: y2.scale_kind,
+        lo: y2.lo,
+        hi: y2.hi,
+        constant: y2.constant.unwrap_or(DEFAULT_SCALE_CONSTANT),
+        mask: y2.nonpositive_mask != 0,
+        chrome: &style[SCENE_STYLE_Y_AXIS],
+        metrics: metrics.map(|m| SceneY2Metrics {
+            tick_size: m.tick_size,
+            title_size: m.title_size,
+            padding: m.padding,
+        }),
+        text_flags: metrics.map_or(0, |m| m.text_flags),
+        tick_rgba: metrics.and_then(|m| m.tick_rgba),
+        title_rgba: metrics.and_then(|m| m.title_rgba),
+        tick_strategy: tick_strategy_code(&y2.collision),
+        tick_anchor: if authored_anchor {
+            tick_anchor_nibble(&y2.collision)
+        } else {
+            0
+        },
+        tick_anchor_authored: authored_anchor,
+        tick_category: y2.collision.tick_kind_category != 0,
+        tick_min_gap: y2.collision.min_gap.unwrap_or(DEFAULT_Y_MIN_GAP),
+        tick_angle: y2.collision.angle,
+        major_ticks: y2.major,
+        minor_ticks: y2.minor,
+        labels: labels.as_deref().unwrap_or(&[]),
+        title: y2.title.unwrap_or(""),
+        format: y2.format.unwrap_or(""),
+    }
+    .write())
 }
 
 fn put_tick_labels(labels: &[&str]) -> Result<Vec<u8>, i32> {
@@ -421,7 +522,13 @@ pub fn scene_chrome_pack(input: &SceneChromePackInput<'_>) -> Result<Vec<u8>, i3
     }
     let (collision_header, collision_extra) =
         pack_tick_collision(&input.x_collision, &input.y_collision);
-    let chrome = pack_xych(input);
+    let chrome = pack_xych(input, &input.y_axis);
+    let y2_sidecar = input
+        .y2
+        .as_ref()
+        .map(|y2| pack_y2_sidecar(input, y2))
+        .transpose()?
+        .unwrap_or_default();
     let mut legend_loc = b"".as_ref();
     let mut legend_title = b"".as_ref();
     let mut legend_ncols = 1u32;
@@ -592,7 +699,7 @@ pub fn scene_chrome_pack(input: &SceneChromePackInput<'_>) -> Result<Vec<u8>, i3
         colorbar_ticks: &cb_ticks,
         colorbar_title: cb_title,
         collision_extra: &collision_extra,
-        y2: input.y2,
+        y2: &y2_sidecar,
     };
     scene_xycf_pack(&header, &sidecars)
 }
@@ -611,9 +718,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn packs_minimal_chrome() {
-        let input = SceneChromePackInput {
+    fn minimal_input(y2: Option<ChromeY2Input<'static>>) -> SceneChromePackInput<'static> {
+        SceneChromePackInput {
             width: 400.0,
             height: 300.0,
             show_legend: 0,
@@ -660,9 +766,132 @@ mod tests {
             plot_background: None,
             legend: ChromeLegendInput::default(),
             colorbar: None,
-            y2: &[],
-        };
-        let packed = scene_chrome_pack(&input).unwrap();
+            y2,
+        }
+    }
+
+    #[test]
+    fn packs_minimal_chrome() {
+        let packed = scene_chrome_pack(&minimal_input(None)).unwrap();
         assert_eq!(&packed[..4], b"XYCF");
+        assert!(crate::scene_chrome::xycf_y2_sidecar(&packed).unwrap().is_none());
+    }
+
+    fn y2_input() -> ChromeY2Input<'static> {
+        ChromeY2Input {
+            scale_kind: 0,
+            lo: 0.0,
+            hi: 100.0,
+            constant: None,
+            nonpositive_mask: 0,
+            axis: ChromeAxisInput {
+                side_code: 1,
+                tick_sides_mask: 2,
+                label_sides_mask: 2,
+                style: ChromeAxisStyleInput::default(),
+                minor_style: ChromeAxisStyleInput::default(),
+            },
+            side_authored: true,
+            tick_sides_authored: true,
+            label_sides_authored: true,
+            collision: ChromeCollisionAxisInput::default(),
+            major: None,
+            minor: &[],
+            tick_labels: None,
+            title: None,
+            format: None,
+            metrics: None,
+        }
+    }
+
+    fn decoded_y2(y2: ChromeY2Input<'static>) -> Result<crate::scene_y2::SceneY2Axis, crate::scene::SceneError> {
+        let packed = scene_chrome_pack(&minimal_input(Some(y2))).unwrap();
+        let sidecar = crate::scene_chrome::xycf_y2_sidecar(&packed).unwrap().unwrap();
+        crate::scene_y2::SceneY2Axis::decode(sidecar, crate::scene_y2::SceneY2Domain::Data, 300.0, 0.0)
+    }
+
+    #[test]
+    fn y2_defaults_are_rust_owned_and_match_the_primary_axis_policy() {
+        let axis = decoded_y2(y2_input()).unwrap();
+        // Unauthored facts resolve here, never in a host.
+        assert_eq!(axis.tick_min_gap, DEFAULT_Y_MIN_GAP);
+        assert_eq!(axis.tick_strategy, 0);
+        assert!(!axis.tick_anchor_authored);
+        assert_eq!(axis.tick_angle, None);
+        assert!(axis.major_ticks.is_none() && axis.tick_labels.is_none());
+        assert_eq!(axis.scale.wire_scale(true).3, DEFAULT_SCALE_CONSTANT);
+        // The same strategy code serves y and y2: `strategy` wins over `collision`.
+        let collision = ChromeCollisionAxisInput {
+            collision_raw: Some("hide"),
+            ..Default::default()
+        };
+        let mut y2 = y2_input();
+        y2.collision = collision.clone();
+        assert_eq!(decoded_y2(y2).unwrap().tick_strategy, tick_strategy_code(&collision));
+        let mut both = collision.clone();
+        both.strategy_raw = Some("rotate");
+        let mut y2 = y2_input();
+        y2.collision = both.clone();
+        let strategy = decoded_y2(y2).unwrap().tick_strategy;
+        assert_eq!(strategy, tick_strategy_code(&both));
+        assert_ne!(strategy, tick_strategy_code(&collision));
+        // Authored values pass through untouched.
+        let authored = ChromeCollisionAxisInput {
+            min_gap: Some(9.0),
+            angle: Some(30.0),
+            anchor_raw: Some("end"),
+            ..Default::default()
+        };
+        let mut y2 = y2_input();
+        y2.collision = authored;
+        let axis = decoded_y2(y2).unwrap();
+        assert_eq!(axis.tick_min_gap, 9.0);
+        assert_eq!(axis.tick_angle, Some(30.0));
+        assert!(axis.tick_anchor_authored);
+    }
+
+    #[test]
+    fn an_unauthored_y2_side_is_the_right_side_and_masks_follow_it() {
+        // Hosts pass absent facts with placeholder codes; Rust ignores them.
+        let mut y2 = y2_input();
+        y2.axis.side_code = 0;
+        y2.axis.tick_sides_mask = 0b01;
+        y2.axis.label_sides_mask = 0b01;
+        y2.side_authored = false;
+        y2.tick_sides_authored = false;
+        y2.label_sides_authored = false;
+        let axis = decoded_y2(y2.clone()).expect("an unauthored side is admitted as right");
+        assert_eq!(axis.axis.side, crate::scene::AxisSide::High);
+        assert_eq!((axis.axis.tick_sides, axis.axis.tick_label_sides), (0b10, 0b10));
+        // The explicit right side resolves to the identical axis record.
+        let explicit = decoded_y2(y2_input()).unwrap();
+        assert_eq!(
+            (axis.axis.side, axis.axis.tick_sides, axis.axis.tick_label_sides),
+            (explicit.axis.side, explicit.axis.tick_sides, explicit.axis.tick_label_sides)
+        );
+        // An authored left side is not overridden: the Scene refuses it.
+        y2.side_authored = true;
+        y2.tick_sides_authored = true;
+        y2.label_sides_authored = true;
+        assert!(decoded_y2(y2).is_err());
+    }
+
+    #[test]
+    fn y2_invalid_authored_values_are_rejected_by_the_scene_not_defaulted() {
+        use crate::scene::SceneError;
+        let with = |mutate: &dyn Fn(&mut ChromeY2Input<'static>)| {
+            let mut y2 = y2_input();
+            mutate(&mut y2);
+            decoded_y2(y2).err()
+        };
+        assert!(decoded_y2(y2_input()).is_ok());
+        // An authored zero constant is passed through, not turned into the default.
+        assert!(with(&|y2| y2.constant = Some(0.0)).is_some());
+        assert!(with(&|y2| y2.constant = Some(-2.0)).is_some());
+        assert!(with(&|y2| y2.hi = f64::INFINITY).is_some());
+        assert!(matches!(
+            with(&|y2| y2.collision.angle = Some(f64::INFINITY)),
+            Some(SceneError::NonFinite)
+        ));
     }
 }

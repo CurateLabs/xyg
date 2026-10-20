@@ -46,7 +46,14 @@
 // v12: polar angular axes carry `sector`/`grid_shape`, and radial axes carry
 // `hole`/`r_origin`. A v11 client would accept those fields but silently draw
 // full circular, centre-origin geometry.
-export const PROTOCOL = 13;
+// v13: semantic hover rows as typed `tooltip_columns`, and host-only graph
+// identity planes move into typed `{column}` references.
+// v14: annotations may bind their y coordinates to the secondary right-hand y
+// axis (`annotations[].y_axis: "y2"`), and a dual-axis chart's `axes`/`view.ranges`
+// carry the y2 axis the hosts admit. A cached v13 client ignores the binding
+// and projects the annotation through the primary scale — silently misplaced —
+// so v14 rejects that stale bundle before rendering.
+export const PROTOCOL = 14;
 
 // Every GL buffer field a built trace — or a drill / sample-overlay clone of
 // one — can own. Teardown reads this list instead of a hand-kept subset: the

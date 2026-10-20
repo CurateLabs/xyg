@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import struct
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -62,6 +63,7 @@ def pack_chrome_facts(
     height: int,
     margins: tuple[float, float, float, float] | None,
     colorbar_ok: bool,
+    y2_chrome: Y2Chrome | None = None,
 ) -> bytes:
     """Marshal figure chrome observations and bulk-pack XYCF via Rust (ABI 321)."""
     from xyg._scene_observations import _SCENE_AXIS_STYLE_KEYS, UnsupportedSceneV3, _scene_side_mask
@@ -167,13 +169,19 @@ def pack_chrome_facts(
                 raise UnsupportedSceneV3(
                     f"Scene v12 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
                 )
-        side = options.get("side", "bottom" if axis_id == "x" else "left")
+        # An unauthored y2 side is passed through as absent (code 0 is ignored
+        # without `side_authored`): Rust defaults the secondary axis to the right.
+        side = (
+            None
+            if axis_id == "y2" and options.get("side") is None
+            else options.get("side", "bottom" if axis_id == "x" else "left")
+        )
         allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
-        if side not in allowed:
+        if side is not None and side not in allowed:
             raise UnsupportedSceneV3(
                 f"Scene v12 {axis_id} axis side must be one of {list(allowed)!r}"
             )
-        side_code = 0 if side in {"bottom", "left"} else 1
+        side_code = 0 if side in {None, "bottom", "left"} else 1
         return {
             "side_code": side_code,
             "tick_sides_mask": _scene_side_mask(
@@ -186,7 +194,7 @@ def pack_chrome_facts(
             "minor_style": marshal_axis_style(minor),
         }
 
-    return _native.scene_chrome_pack(
+    facts: dict[str, Any] = dict(
         width=float(width),
         height=float(height),
         show_legend=bool(getattr(figure, "show_legend", True)),
@@ -268,6 +276,81 @@ def pack_chrome_facts(
         },
         colorbar=colorbar_payload,
     )
+    if "y2" in figure.axis_options:
+        facts["y2"] = _marshal_y2(
+            figure, marshal_chrome_axis("y2", figure.axis_options["y2"]), y2_chrome
+        )
+    return _native.scene_chrome_pack(**facts)
+
+
+@dataclass(frozen=True)
+class Y2Chrome:
+    """Rust-resolved XYCO facts for the secondary y axis (the ``XYY2`` metrics block)."""
+
+    tick_size: float
+    title_size: float
+    padding: float
+    # Two-bit italic/bold flags: bits 0..1 tick labels, bits 2..3 title.
+    text_flags: int
+    tick_rgba: tuple[int, int, int, int] | None
+    title_rgba: tuple[int, int, int, int] | None
+
+
+# XYFS / XYEF axis ids: Rust decides which secondary axes it admits.
+_AXIS_CODES = {"x": 0, "y": 1, "y2": 2, "x2": 3}
+
+
+def _marshal_y2(figure: Any, y2_axis: dict[str, Any], y2_chrome: Y2Chrome | None) -> dict[str, Any]:
+    """Marshal the authored secondary y axis: presence and authored values only.
+
+    Rust owns every default (scale constant, tick strategy and anchor, minimum
+    label gap), the axis chrome record, validation and the ``XYY2`` layout.
+    """
+    options = figure.axis_options["y2"]
+    lo, hi = (float(v) for v in figure._range("y2"))
+    constant = options.get("constant")
+    return {
+        "scale_kind": {"linear": 0, "log": 1, "symlog": 2}[figure._axis_scale("y2")],
+        "lo": lo,
+        "hi": hi,
+        "constant": None if constant is None else float(constant),
+        "nonpositive_mask": 1 if options.get("nonpositive") == "mask" else 0,
+        "axis": y2_axis,
+        "side_authored": options.get("side") is not None,
+        "tick_sides_authored": options.get("tick_sides") is not None,
+        "label_sides_authored": options.get("tick_label_sides") is not None,
+        "collision": {
+            "strategy": _optional_str(options.get("tick_label_strategy")),
+            "collision": _optional_str(options.get("collision")),
+            "anchor": _optional_str(options.get("tick_label_anchor")),
+            "min_gap": None
+            if options.get("tick_label_min_gap") is None
+            else float(options["tick_label_min_gap"]),
+            "angle": None
+            if options.get("tick_label_angle") is None
+            else float(options["tick_label_angle"]),
+            "tick_kind_category": figure._axis_kind("y2") == "category",
+        },
+        "major": None
+        if options.get("tick_values") is None
+        else [float(v) for v in options["tick_values"]],
+        "minor": [float(v) for v in (options.get("minor_tick_values") or ())],
+        "tick_labels": None
+        if options.get("tick_labels") is None
+        else [str(v) for v in options["tick_labels"]],
+        "title": _optional_str(options.get("label")),
+        "format": _optional_str(options.get("format")),
+        "metrics": None
+        if y2_chrome is None
+        else {
+            "tick_size": y2_chrome.tick_size,
+            "title_size": y2_chrome.title_size,
+            "padding": y2_chrome.padding,
+            "text_flags": y2_chrome.text_flags,
+            "tick_rgba": y2_chrome.tick_rgba,
+            "title_rgba": y2_chrome.title_rgba,
+        },
+    }
 
 
 def _optional_str(value: Any) -> str | None:
@@ -776,11 +859,15 @@ def pack_figure_support(
                 "has_class_name": annotation.get("class_name") not in (None, ""),
                 "kind_is_supported_text": kind in {"callout", "arrow", "text"},
                 "has_text": annotation.get("text") not in (None, ""),
+                "y2": annotation.get("y_axis") == "y2",
+                "coordinate_space": _optional_str(
+                    (annotation.get("style") or {}).get("coordinate_space")
+                ),
             }
         )
     axes = []
     for axis_id, options in figure.axis_options.items():
-        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        axis_code = _AXIS_CODES.get(axis_id, 255)
         axes.append(
             {
                 "axis_code": axis_code,
@@ -967,7 +1054,7 @@ def pack_public_export_support(
     _xyep_put_keys(payload, legend_keys)
     _xyep_put_keys(payload, colorbar_keys)
     for axis_id, options in figure.axis_options.items():
-        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        axis_code = _AXIS_CODES.get(axis_id, 255)
         resolved = figure._axis_kind(axis_id)
         resolved_code = {"linear": 0, "time": 1, "category": 2}.get(resolved, 255)
         authored = options.get("type")

@@ -518,6 +518,11 @@ exports this plain Scene first; `xyg_graph_composed_scene` then decodes it
 chrome, and text, and re-emits the records, labels, and explicit legend from the
 graph's resolved per-item planes (graph-mark.md §8). The flag is a new bit in the
 unchanged XYEP v1 envelope (no C-signature change).
+Secondary y (#1006, ABI 391): hosts set XYCL prefix byte 3 bit 1 (`XYCL_Y2`) on
+every trace bound to the `y2` axis; Rust stamps the record y selector (byte 3 bit
+`0x40`, see *Secondary right-hand y axis*) on every row packed from it. Other bits
+of that byte stay rejected, and the flag is meaningless without an `XYY2` block
+(`EncodeAssembledCode::Payload`).
 Graph edge ends (#33): hosts set XYCL prefix byte 3 bit 0
 (`XYCL_EDGE_ENDS`) on a cartesian `segments` trace and ship its `base`
 column as `edge_route::EDGE_ENDS_STRIDE` (7) values per segment (node
@@ -2014,8 +2019,10 @@ before every annotation-tag comparison. A selector without a y2 block is
 `EncodeAssembledCode::Payload`. One trace never straddles both y scales.
 
 **Layout and drawing.** The `XYCF` header's reserved word (284..288) is the byte
-length of a trailing `XYY2` sidecar (0 = none; `xyg_scene_xycf_pack` and
-`xyg_scene_chrome_pack` gain `y2` pointer/length arguments). Gutter widening in
+length of a trailing `XYY2` sidecar (0 = none). `xyg_scene_xycf_pack` takes the
+payload as bytes; `xyg_scene_chrome_pack` takes the authored y2 observation
+(`XygChromeY2In` plus `y2_major`/`y2_minor`/`y2_tick_labels`) and Rust builds the
+payload, owning every default and the axis chrome record. Gutter widening in
 `encode_assembled` measures the y2 labels — styled automatic ticks via the same
 `resolved_axis_ticks` ladder as y (no copy), authored/explicit labels, outward
 ticks, padding, and the rotated title — and takes `margin_right = max(chrome
@@ -2023,7 +2030,11 @@ margin, 8 + tick_out + padding + widest label + title room)`; the chrome margin
 already carries the `compat_layout::right_y_room()` floor for `RIGHT_SECONDARY`.
 SVG, raster, PDF and the browser painter draw the axis through the one axis
 loop shared with x and y (spine and ticks at the right edge, labels anchored
-start, title quarter-turned clockwise in the right gutter). There is no y2 grid
+start, title rotated 90° counter-clockwise in the right gutter, reading bottom to
+top like the left title). The browser client's default title rotation is a
+TypeScript default (XYPB carries no title-angle fact) and is −90° for both the y
+and y2 titles, so every surface agrees; `tests/browser/wasm_foundation_page.mjs`
+asserts the rendered y2 title transform. There is no y2 grid
 (Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
 
 **XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are
@@ -2043,7 +2054,10 @@ header byte is the authored side (the `XYEP` codes: 1 bottom, 2 left, 3 top, 4
 right, 255 other). Trace flag bit 13 marks a trace plotted against y2. Rust
 admits y2 only when `side == right`, and returns the stable reasons
 `XYG_SCENE_UNSUPPORTED_Y2_SIDE`, `_X2`, `_EXTRA_AXES`, `_Y2_TICK_ONLY` (no trace
-on the axis), `_Y2_POLAR`, and `_Y2_COLORBAR`. XYFS observation bit 10 reports that the
+on the axis), `_Y2_POLAR`, and `_Y2_COLORBAR`. XYFS observation bit 11 flags an annotation bound to y2 (`y_axis == "y2"`) whose coordinate
+space reads the y data scale (`data`, `yaxis_transform`; the space vocabulary stays
+owned by `coordinate_space_code`), refused as `_Y2_ANNOTATION`; annotation rows
+may carry `y_axis`. XYFS observation bit 10 reports that the
 figure carries any colorbar (supported or not; `xyg_scene_figure_support_materialize`
 takes a separate `has_colorbar`), so a valid colorbar cannot hide from the y2
 prohibition; `SceneBatch::with_y2` also refuses a colorbar, and the gutter

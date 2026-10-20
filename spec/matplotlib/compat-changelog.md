@@ -76,6 +76,56 @@ differently styled `text`) passes on the Matplotlib 3.11.0 lane. With cases 47
 (hexbin groups, #1023) and 53 already passing on main, the corpus is 54/55; the only
 remaining case is 26 (`twinx`, PRs 2 and 3, #1037).
 
+## Secondary y axis (`twinx`) on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+Corpus case `26_twinx_dual_axis` passes on the 3.11 lane; the reference corpus is
+53/55 with case 53 from #1039; the two remaining cases (25, 47) are the named gaps in
+`compat.md` (unrelated Scene gaps tracked in #1006). Design: `spec/design/twinx-secondary-y-axis.md`.
+
+- `twinx()` exports through Scene v33's `XYY2` block. Python and Node marshal only
+  facts: the axis id/side, scale, ticks, title and format, the XYCO-resolved y2
+  chrome (tick/title size, padding, paints, italic/bold flags), the per-trace y
+  selector (`XYCL` column flag bit 1, ABI 391), and `has_colorbar` presence. They
+  add no admission or layout policy and no default for any y2-specific wire field
+  (Rust builds the `XYY2` block from the authored observation; the shared chrome-axis
+  marshalling still resolves side/mask defaults, as before); Rust returns the stable
+  `XYG_SCENE_UNSUPPORTED_Y2_*` / `_X2` / `_EXTRA_AXES` reasons identically to both.
+- pyplot seeds the twin's right axis the way it seeds the left y axis, onto the
+  public `y2` axis options: `ytick.major.size/pad/width`, `ytick.color`,
+  `ytick.labelcolor`, `ytick.labelsize`, `ytick.minor.size/width/pad`,
+  `axes.linewidth`, `axes.labelcolor`, `axes.labelsize`, `axes.labelweight`,
+  `grid.*` and `font.size`. `ytick.direction` is not seeded (pyplot does not
+  support it on the left axis either). Titles keep their authored colours while
+  tick labels keep the rc colour.
+- Static output of the y2 axis is byte-identical between Python and Node
+  (XYST/SVG/PNG/PDF) for the same public dual-axis chart
+  (`tests/test_static_dual_axis_cross_host.py`).
+- The right-hand title reads bottom to top like the left title and Matplotlib's
+  `twinx` label (rotation 90°) in SVG, PDF, PNG and the interactive browser
+  client; PR 1 had drawn it clockwise.
+- An omitted y2 `side` means right (Rust owns the default); `side="left"` is still
+  refused as `XYG_SCENE_UNSUPPORTED_Y2_SIDE`.
+- An authored empty `tick_values` on y2 means automatic ticks, as it already did
+  for x and y.
+- Known gap: annotations on a twin's y2 scale (`twin.text`, `twin.annotate`,
+  `twin.axhline`, ...) are not projected. They were silently drawn through the
+  primary y scale (e.g. `y="-18052.8"`); pyplot now binds them to y2 and Rust
+  refuses them with `XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION`. Axes-fraction text on a
+  twin (`transform=twin.transAxes`) never reads the y scale and still exports.
+  The static-only scope is explicit: the live client projects a y2-bound
+  annotation onto the y2 scale (both hosts marshal `y_axis: "y2"` on the live
+  wire, protocol 14, and refuse the binding when no y2 axis is declared).
+- The browser's default y-title rotation (-90°) now applies to every right-placed
+  y title, not only y2.
+- Invalid authored y2 values (zero or negative scale constant, non-finite domain or
+  tick-label angle) are not defaulted by the y2 marshalling in either host: they
+  reach the Scene encoder, which refuses them, and both hosts surface the same
+  generic malformed-scene message (`invalid canonical scene batch`, not a stable
+  `XYG_SCENE_UNSUPPORTED_*` reason). A category y2 gets
+  `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`.
+- `secondary_xaxis()`/`secondary_yaxis()` and `twiny` remain interactive-only or
+  fail closed (no x2).
+
 ## Reference corpus restore on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 
 Repairs for the pinned 3.11 reference lane after the static-export cutover.

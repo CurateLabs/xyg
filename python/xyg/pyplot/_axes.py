@@ -1389,6 +1389,10 @@ class Axes(PlotTypeMixin):
         self.xaxis = _AxisProxy(self, "x")
         self.yaxis = _AxisProxy(self, "y")
         self.spines = _SpineProxy(self)
+        self._seed_rc_axis_styles()
+
+    def _seed_rc_axis_styles(self) -> None:
+        """Seed the x/y axes (and a twin's host y2) from the active rc tick styling."""
         dpi = float(self.figure._dpi if self.figure._dpi is not None else rcParams["figure.dpi"])
         for axis in ("x", "y"):
             style = _rc_axis_style(axis, dpi)
@@ -1396,6 +1400,12 @@ class Axes(PlotTypeMixin):
                 self._axis[axis]["style"] = style
                 self._tick_lengths[axis] = float(style["tick_length"])
             self._axis[axis]["minor_style"] = _rc_minor_axis_style(axis, dpi)
+        if self._y2_of is not None:
+            # Matplotlib's twinx right axis is a y axis: it takes the ytick rc
+            # and axes.* label/edge defaults, exactly as the left y axis does.
+            y2 = self._y2_of._axis["y2"]
+            y2["style"] = _rc_axis_style("y", dpi)
+            y2["minor_style"] = _rc_minor_axis_style("y", dpi)
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -1709,13 +1719,7 @@ class Axes(PlotTypeMixin):
         self.xaxis = _AxisProxy(self, "x")
         self.yaxis = _AxisProxy(self, "y")
         self.spines = _SpineProxy(self)
-        dpi = float(self.figure._dpi if self.figure._dpi is not None else rcParams["figure.dpi"])
-        for axis in ("x", "y"):
-            self._axis[axis]["minor_style"] = _rc_minor_axis_style(axis, dpi)
-            style = _rc_axis_style(axis, dpi)
-            if style:
-                self._axis[axis]["style"] = style
-                self._tick_lengths[axis] = float(style["tick_length"])
+        self._seed_rc_axis_styles()
         self._invalidate()
 
     cla = clear
@@ -7269,9 +7273,11 @@ class Axes(PlotTypeMixin):
         resolved_domains: Optional[Mapping[str, tuple[float, float]]] = None,
     ) -> list[Any]:
         children: list[Any] = []
+        entry_starts: list[tuple[int, dict[str, Any]]] = []
         for e in self._entries:
             if e.get("_superseded_by_segments"):
                 continue
+            entry_starts.append((len(children), e))
             kind = e["kind"]
             axis_kw = {"y_axis": e["y_axis"]} if e["y_axis"] != "y" else {}
             kw = e.get("kwargs", {})
@@ -7659,6 +7665,15 @@ class Axes(PlotTypeMixin):
                         **(text_kw.get("style") or {}),
                     }
                     children.append(xyg.text(x, y, *e["args"][2:], **text_kw))
+        # A twin's annotations are authored against its own (secondary) y scale,
+        # and its entries live on the host. Bind them to y2 so Scene admission
+        # sees the binding and refuses to project them through the primary scale.
+        bounds = [start for start, _entry in entry_starts] + [len(children)]
+        for (start, entry), end in zip(entry_starts, bounds[1:], strict=True):
+            if entry["y_axis"] == "y2":
+                for child in children[start:end]:
+                    if isinstance(child, xyg.components.Annotation):
+                        child.y_axis = "y2"
         return children
 
     def _apply_legend_handle_styles(

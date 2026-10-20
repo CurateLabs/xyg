@@ -22,6 +22,11 @@ pub const XYCL_PREFIX_BYTES: usize = 48;
 /// edge ends (`edge_route::EDGE_ENDS_STRIDE` values per segment) (#33). Rust
 /// routes them into `PACK_EDGE_SEGMENT`.
 pub const XYCL_EDGE_ENDS: u8 = 1 << 0;
+/// XYCL prefix byte 3 bit: the trace is plotted against the secondary right
+/// y axis, so every row packed from it carries the record y2 selector. Rust
+/// admission (`XYG_SCENE_UNSUPPORTED_Y2_*`) decides whether the figure may
+/// carry y2 at all; the selector alone does nothing without an `XYY2` block.
+pub const XYCL_Y2: u8 = 1 << 1;
 
 const MAX_TRACES: usize = 4_096;
 const MAX_KIND: usize = 32;
@@ -74,6 +79,7 @@ struct ColumnInput {
     kind: String,
     coords: u8,
     edge_ends: bool,
+    y2: bool,
     trace_id: u64,
     x: Vec<f64>,
     y: Vec<f64>,
@@ -239,7 +245,7 @@ fn parse_column(bytes: &[u8], at: &mut usize, index: usize) -> Result<ColumnInpu
         return Err(TraceRowsError::new(TraceRowsCode::Coords, index));
     }
     let column_flags = prefix[3];
-    if column_flags & !XYCL_EDGE_ENDS != 0 {
+    if column_flags & !(XYCL_EDGE_ENDS | XYCL_Y2) != 0 {
         return Err(TraceRowsError::new(TraceRowsCode::Length, index));
     }
     let trace_id = u64::from_le_bytes(prefix[8..16].try_into().unwrap());
@@ -275,6 +281,7 @@ fn parse_column(bytes: &[u8], at: &mut usize, index: usize) -> Result<ColumnInpu
         kind,
         coords,
         edge_ends: column_flags & XYCL_EDGE_ENDS != 0,
+        y2: column_flags & XYCL_Y2 != 0,
         trace_id,
         x: decode_f64s(x, index)?,
         y: decode_f64s(y, index)?,
@@ -390,7 +397,10 @@ pub fn pack_trace_rows(
             &facts, &x, &y, &input.x0, &input.y0, &input.x1, &input.y1, &base,
         )
         .map_err(|error| pack_error(error, index))?;
-        rows.extend(packed);
+        rows.extend(packed.into_iter().map(|row| PackedSceneRow {
+            y2: input.y2,
+            ..row
+        }));
     }
     if at != columns.len() {
         return Err(TraceRowsError::new(TraceRowsCode::Length, 0));
@@ -557,6 +567,23 @@ mod tests {
         assert_eq!(rows[0].y0, 2.0);
         assert_eq!(rows[1].x0, 1.0);
         assert_eq!(rows[1].y0, 3.0);
+    }
+
+    #[test]
+    fn y2_flag_selects_the_secondary_scale_for_that_trace_only() {
+        let attached = empty_attach(&compile_kind("scatter"), 1);
+        let pack = |flags: u8| {
+            let mut columns = xycl_header(1);
+            let mut trace = xycl_trace("scatter", 0, 7, &[0.0], &[1.0], &[], &[], &[], &[], &[]);
+            trace[3] = flags;
+            columns.extend_from_slice(&trace);
+            pack_trace_rows(&attached, &columns)
+        };
+        assert!(pack(0).unwrap().iter().all(|row| !row.y2));
+        let rows = pack(XYCL_Y2).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert!(rows.iter().all(|row| row.y2 && row.stable_id == 7));
+        assert!(pack(1 << 2).is_err());
     }
 
     #[test]

@@ -15,6 +15,7 @@ use crate::scene_figure_support_pack::{
     scene_figure_support_pack, FigureSupportAxisInput, FigureSupportTraceInput,
 };
 use crate::scene_pack_orchestrate::scene_figure_support_figure_plan;
+use crate::scene_xyaf_bulk_pack::coordinate_space_uses_y_scale;
 
 pub use crate::scene_figure_support_pack::SCENE_FIGURE_SUPPORT_PACK_MAX
     as SCENE_FIGURE_SUPPORT_MATERIALIZE_MAX;
@@ -30,6 +31,7 @@ const OBS_ANNOTATION_TEXT: u32 = 1 << 7;
 const OBS_ANNOTATION_HTML: u32 = 1 << 8;
 const OBS_ANNOTATION_MARKUP: u32 = 1 << 9;
 const OBS_HAS_COLORBAR: u32 = 1 << 10;
+const OBS_ANNOTATION_Y2: u32 = 1 << 11;
 
 const TRACE_UNSUPPORTED_KIND: u16 = 1 << 0;
 const TRACE_NON_PRIMARY_AXIS: u16 = 1 << 1;
@@ -53,7 +55,7 @@ const POLAR_COLLISION_KEYS: &[&str] = &[
 
 /// One annotation observation row.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct FigureSupportAnnotationObs {
+pub struct FigureSupportAnnotationObs<'a> {
     pub has_html: i32,
     pub has_collision: i32,
     pub has_markup: i32,
@@ -61,6 +63,10 @@ pub struct FigureSupportAnnotationObs {
     pub has_class_name: i32,
     pub kind_is_supported_text: i32,
     pub has_text: i32,
+    /// The annotation is bound to the secondary y axis (`y_axis == "y2"`).
+    pub y2: i32,
+    /// Authored `coordinate_space` (`None` = data).
+    pub coordinate_space: Option<&'a str>,
 }
 
 /// One trace observation row for allowlist assembly.
@@ -122,7 +128,7 @@ pub struct SceneFigureSupportMaterializeIn<'a> {
     pub has_custom_font: i32,
     pub has_browser_css: i32,
     pub has_extra_legends: i32,
-    pub annotations: &'a [FigureSupportAnnotationObs],
+    pub annotations: &'a [FigureSupportAnnotationObs<'a>],
     pub axes: &'a [FigureSupportAxisObs<'a>],
     pub traces: &'a [FigureSupportTraceObs<'a>],
 }
@@ -283,6 +289,15 @@ fn figure_level_flags(input: &SceneFigureSupportMaterializeIn<'_>) -> Result<u32
     if input.annotations.iter().any(|a| a.has_markup != 0) {
         flags |= OBS_ANNOTATION_MARKUP;
     }
+    // Scene projects annotations through the primary y scale only: a y2-bound
+    // annotation whose coordinate space reads y data is refused (Rust decides).
+    if input
+        .annotations
+        .iter()
+        .any(|a| a.y2 != 0 && coordinate_space_uses_y_scale(a.coordinate_space))
+    {
+        flags |= OBS_ANNOTATION_Y2;
+    }
     let polar = plan_polar != 0;
     if input.traces.iter().any(|trace| {
         trace.ribbon_color2_fail != 0
@@ -370,5 +385,67 @@ mod tests {
         };
         let packed = scene_figure_support_materialize(&input).unwrap();
         assert_eq!(&packed[..4], b"XYFS");
+    }
+
+    fn twin_reason(annotation: Option<FigureSupportAnnotationObs<'_>>) -> String {
+        let axis = |axis_code: u8, side: u8| FigureSupportAxisObs {
+            axis_code,
+            side,
+            keys: vec!["label".to_string(), "side".to_string()],
+            tick_label_strategy: None,
+            collision: None,
+        };
+        let axes = [axis(0, 1), axis(1, 2), axis(2, 4)];
+        let trace = |y_axis| FigureSupportTraceObs {
+            kind: "scatter",
+            x_axis: "x",
+            y_axis,
+            ..Default::default()
+        };
+        let traces = [trace("y"), trace("y2")];
+        let annotations: Vec<_> = annotation.into_iter().collect();
+        let input = SceneFigureSupportMaterializeIn {
+            polar: 0,
+            colorbar_unsupported: 0,
+            has_colorbar: 0,
+            has_custom_font: 0,
+            has_browser_css: 0,
+            has_extra_legends: 0,
+            annotations: &annotations,
+            axes: &axes,
+            traces: &traces,
+        };
+        let packed = scene_figure_support_materialize(&input).unwrap();
+        crate::scene_figure_support_reason(&packed).unwrap()
+    }
+
+    #[test]
+    fn y2_bound_annotations_that_read_y_data_are_refused_with_a_stable_reason() {
+        let bound = |space| FigureSupportAnnotationObs {
+            y2: 1,
+            coordinate_space: space,
+            kind_is_supported_text: 1,
+            has_text: 1,
+            ..Default::default()
+        };
+        assert_eq!(twin_reason(None), "");
+        for space in [None, Some("data"), Some("yaxis_transform")] {
+            assert!(
+                twin_reason(Some(bound(space)))
+                    .starts_with("XYG_SCENE_UNSUPPORTED_Y2_ANNOTATION:"),
+                "{space:?}"
+            );
+        }
+        // Spaces that never read the y scale project identically on y2.
+        for space in ["axes_fraction", "xaxis_transform"] {
+            assert_eq!(twin_reason(Some(bound(Some(space)))), "", "{space}");
+        }
+        // Annotations on the primary y axis are unchanged.
+        let primary = FigureSupportAnnotationObs {
+            kind_is_supported_text: 1,
+            has_text: 1,
+            ..Default::default()
+        };
+        assert_eq!(twin_reason(Some(primary)), "");
     }
 }

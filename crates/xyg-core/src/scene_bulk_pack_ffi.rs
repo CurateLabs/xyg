@@ -118,6 +118,41 @@ pub struct XygChromeColorbarIn {
     pub tick_count: u32,
 }
 
+/// Authored secondary right-hand y axis for ``xyg_scene_chrome_pack`` (ABI 391).
+///
+/// Presence flags plus authored values only: the scale constant, tick-policy
+/// defaults, axis chrome record and `XYY2` layout are Rust's. The XYCO metrics
+/// are resolved typography/paint facts copied from the chrome-style projection.
+#[repr(C)]
+pub struct XygChromeY2In {
+    pub present: i32,
+    pub scale_kind: u32,
+    pub lo: f64,
+    pub hi: f64,
+    pub constant_present: i32,
+    pub constant: f64,
+    pub nonpositive_mask: u8,
+    pub axis: XygChromeAxisIn,
+    pub side_authored: i32,
+    pub tick_sides_authored: i32,
+    pub label_sides_authored: i32,
+    pub collision: XygChromeCollisionAxisIn,
+    pub major_len: usize,
+    pub minor_len: usize,
+    pub tick_label_count: u32,
+    pub title: XygStringRef,
+    pub format: XygStringRef,
+    pub metrics_present: i32,
+    pub tick_size: f64,
+    pub title_size: f64,
+    pub padding: f64,
+    pub text_flags: u32,
+    pub tick_rgba_present: i32,
+    pub tick_rgba: [u8; 4],
+    pub title_rgba_present: i32,
+    pub title_rgba: [u8; 4],
+}
+
 /// Host-marshaled chrome pack header for ``xyg_scene_chrome_pack`` (ABI 321).
 #[repr(C)]
 pub struct XygSceneChromePackIn {
@@ -168,6 +203,7 @@ pub struct XygSceneChromePackIn {
     pub legend: XygChromeLegendIn,
     pub colorbar_present: i32,
     pub colorbar: XygChromeColorbarIn,
+    pub y2: XygChromeY2In,
 }
 
 unsafe fn string_ref_opt<'a>(value: &XygStringRef) -> Option<&'a str> {
@@ -291,8 +327,9 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
     y_tick_labels: *const XygStringRef,
     colorbar_stops: *const u8,
     colorbar_ticks: *const f64,
-    y2: *const u8,
-    y2_len: usize,
+    y2_major: *const f64,
+    y2_minor: *const f64,
+    y2_tick_labels: *const XygStringRef,
     out: *mut u8,
     out_cap: usize,
     out_len: *mut usize,
@@ -304,9 +341,6 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
     if out_cap > 0 && out.is_null() {
         return -1;
     }
-    let Some(y2_bytes) = scene_optional_bytes(y2, y2_len) else {
-        return -1;
-    };
     let Some(title) = string_ref_opt(&input.title) else {
         return -1;
     };
@@ -421,6 +455,44 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
             Some(owned.ticks.as_slice())
         },
     });
+    let y2_in = &input.y2;
+    let (Some(y2_major_b), Some(y2_minor_b)) = (
+        scene_optional_f64(y2_major, y2_in.major_len),
+        scene_optional_f64(y2_minor, y2_in.minor_len),
+    ) else {
+        return -1;
+    };
+    let y2_tick_label_vec = abi!(read_tick_labels(y2_tick_labels, y2_in.tick_label_count));
+    let y2_tick_refs: Vec<&str> = y2_tick_label_vec.iter().map(String::as_str).collect();
+    let y2 = if y2_in.present != 0 {
+        Some(scene_chrome_pack::ChromeY2Input {
+            scale_kind: y2_in.scale_kind,
+            lo: y2_in.lo,
+            hi: y2_in.hi,
+            constant: (y2_in.constant_present != 0).then_some(y2_in.constant),
+            nonpositive_mask: y2_in.nonpositive_mask,
+            axis: abi!(chrome_axis_from_c(&y2_in.axis)),
+            side_authored: y2_in.side_authored != 0,
+            tick_sides_authored: y2_in.tick_sides_authored != 0,
+            label_sides_authored: y2_in.label_sides_authored != 0,
+            collision: abi!(collision_from_c(&y2_in.collision)),
+            major: (y2_in.major_len != 0).then_some(y2_major_b),
+            minor: y2_minor_b,
+            tick_labels: (!y2_tick_refs.is_empty()).then_some(y2_tick_refs.as_slice()),
+            title: abi!(opt_str(&y2_in.title)),
+            format: abi!(opt_str(&y2_in.format)),
+            metrics: (y2_in.metrics_present != 0).then_some(scene_chrome_pack::ChromeY2Metrics {
+                tick_size: y2_in.tick_size,
+                title_size: y2_in.title_size,
+                padding: y2_in.padding,
+                text_flags: y2_in.text_flags,
+                tick_rgba: (y2_in.tick_rgba_present != 0).then_some(y2_in.tick_rgba),
+                title_rgba: (y2_in.title_rgba_present != 0).then_some(y2_in.title_rgba),
+            }),
+        })
+    } else {
+        None
+    };
     let pack_input = scene_chrome_pack::SceneChromePackInput {
         width: input.width,
         height: input.height,
@@ -484,7 +556,7 @@ pub unsafe extern "C" fn xyg_scene_chrome_pack(
         plot_background: abi!(opt_str(&input.plot_background)),
         legend,
         colorbar,
-        y2: y2_bytes,
+        y2,
     };
     match scene_chrome_pack::scene_chrome_pack(&pack_input) {
         Ok(packed) => {
@@ -512,6 +584,8 @@ pub struct XygFigureSupportAnnotationObs {
     pub has_class_name: i32,
     pub kind_is_supported_text: i32,
     pub has_text: i32,
+    pub y2: i32,
+    pub coordinate_space: XygStringRef,
 }
 
 /// Axis observation for ``xyg_scene_figure_support_materialize`` (ABI 322).
@@ -611,6 +685,8 @@ pub unsafe extern "C" fn xyg_scene_figure_support_materialize(
                 has_class_name: row.has_class_name,
                 kind_is_supported_text: row.kind_is_supported_text,
                 has_text: row.has_text,
+                y2: row.y2,
+                coordinate_space: abi!(opt_str(&row.coordinate_space)),
             });
         }
     }

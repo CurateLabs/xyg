@@ -16,6 +16,7 @@ import {
   hydrateWasmPainter,
   layoutWasmCose,
   planWasmDashboardResources,
+  PROTOCOL,
   watchWasmDashboardResourceBudget,
   renderWasmChart,
   renderWasmColumns,
@@ -41,7 +42,7 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
   const grid = new Float32Array(width * height);
   grid[0] = 1;
   const spec = {
-    protocol: 13, width: 320, height: 240, title: null,
+    protocol: PROTOCOL, width: 320, height: 240, title: null,
     x_axis: { id: "x", kind: "linear", label: null, range: [0, 1], side: "bottom" },
     y_axis: { id: "y", kind: "linear", label: null, range: [0, 1], side: "left" },
     axes: {
@@ -962,6 +963,26 @@ async function run() {
     throw new Error("destroyed ChartView retained its owned WASM tick attachment");
   }
   chartTickHost.remove();
+
+  // A primary y axis placed on the right reads bottom to top too: the browser
+  // default is -90deg for every y title (left, right-placed, and y2), matching
+  // the static SVG/PDF/raster path.
+  foundationStage = "right-placed primary y title rotation";
+  const rightYHost = document.createElement("div");
+  rightYHost.style.cssText = "width:320px;height:240px";
+  document.body.append(rightYHost);
+  const rightYView = directDensityFixture(rightYHost);
+  Object.assign(rightYView.axes.y, { side: "right", label: "Right-placed title" });
+  rightYView.draw();
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const rightYTitle = rightYView.root.querySelector('[data-xy-label-kind="label"][data-xy-axis="y"]');
+  const rightYMatrix = (rightYTitle ? getComputedStyle(rightYTitle).transform : "")
+    .match(/^matrix\(([^)]*)\)$/)?.[1].split(",").map(Number);
+  if (!rightYTitle || !rightYMatrix || Math.abs(rightYMatrix[0]) > 1e-6 || Math.abs(rightYMatrix[1] + 1) > 1e-6) {
+    throw new Error(`a right-placed primary y title must rotate -90deg: ${rightYTitle && getComputedStyle(rightYTitle).transform}`);
+  }
+  rightYView.destroy();
+  rightYHost.remove();
 
   foundationStage = "primary Cartesian ChartView category and UTC-time ticks use Rust/WASM";
   const familyTickHost = document.createElement("div");
@@ -3313,6 +3334,7 @@ async function run() {
       titleStyle: y2Title && getComputedStyle(y2Title).fontStyle,
       titleColor: y2Title && getComputedStyle(y2Title).color,
       titleSize: y2Title && getComputedStyle(y2Title).fontSize,
+      titleTransform: y2Title && getComputedStyle(y2Title).transform,
       tickLeft: Math.min(...y2Labels.map((node) => node.getBoundingClientRect().left)) - host.getBoundingClientRect().left,
       count: y2Labels.length,
     };
@@ -3333,6 +3355,12 @@ async function run() {
       || roomy.tickSizes.some((size) => size !== "20px") || tight.tickSizes.some((size) => size !== "12px")
       || !(roomy.tickLeft >= tight.tickLeft + 7)) {
     throw new Error(`Scene v33 y2 chrome lost its resolved typography or paints: ${detail}`);
+  }
+  // The right-hand title reads bottom to top (rotate -90deg), like the left title,
+  // Matplotlib's twinx label and the static SVG/PDF/raster path.
+  const titleMatrix = (roomy.titleTransform ?? "").match(/^matrix\(([^)]*)\)$/)?.[1].split(",").map(Number);
+  if (!titleMatrix || Math.abs(titleMatrix[0]) > 1e-6 || Math.abs(titleMatrix[1] + 1) > 1e-6) {
+    throw new Error(`the y2 title must rotate -90deg like the y title: ${roomy.titleTransform}`);
   }
   // Non-zero typography flags: tick labels bold+italic, title italic only (and the
   // reverse), resolved by Rust and applied by the client per slot.

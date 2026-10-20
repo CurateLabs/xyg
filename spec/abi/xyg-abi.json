@@ -1,9 +1,9 @@
 {
-  "abi_version": 390,
+  "abi_version": 391,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "82f7c1ecd100c1e7d454c058ab2ab3efbeba444a2a78063e526440e02faa1a96",
+  "signature_sha256": "52890d626bf8d1062c222559fda5d1a8b23a0f796f1844420f94381cdb4c3510",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -43551,7 +43551,7 @@
     {
       "name": "xyg_scene_chrome_pack",
       "node_name": "xySceneChromePack",
-      "nargs": 14,
+      "nargs": 15,
       "arguments": [
         {
           "name": "input",
@@ -43698,12 +43698,12 @@
           }
         },
         {
-          "name": "y2",
+          "name": "y2_major",
           "type": {
-            "rust": "*const u8",
-            "c": "const uint8_t *",
+            "rust": "*const f64",
+            "c": "const double *",
             "ctypes": "ctypes.c_void_p",
-            "koffi": "const uint8_t *",
+            "koffi": "const double *",
             "kind": "pointer",
             "bits": "pointer",
             "signed": null,
@@ -43714,18 +43714,35 @@
           }
         },
         {
-          "name": "y2_len",
+          "name": "y2_minor",
           "type": {
-            "rust": "usize",
-            "c": "size_t",
-            "ctypes": "ctypes.c_size_t",
-            "koffi": "size_t",
-            "kind": "scalar",
+            "rust": "*const f64",
+            "c": "const double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const double *",
+            "kind": "pointer",
             "bits": "pointer",
-            "signed": false,
-            "pointer_depth": 0,
-            "direction": "value",
-            "nullable": false
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "y2_tick_labels",
+          "type": {
+            "rust": "*const XygStringRef",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
           }
         },
         {
@@ -43788,7 +43805,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_scene_chrome_pack(const void * input, const double * x_major, const double * y_major, const double * x_minor, const double * y_minor, const void * x_tick_labels, const void * y_tick_labels, const uint8_t * colorbar_stops, const double * colorbar_ticks, const uint8_t * y2, size_t y2_len, uint8_t * out, size_t out_cap, size_t * out_len)"
+      "c_signature": "int32_t xyg_scene_chrome_pack(const void * input, const double * x_major, const double * y_major, const double * x_minor, const double * y_minor, const void * x_tick_labels, const void * y_tick_labels, const uint8_t * colorbar_stops, const double * colorbar_ticks, const double * y2_major, const double * y2_minor, const void * y2_tick_labels, uint8_t * out, size_t out_cap, size_t * out_len)"
     },
     {
       "name": "xyg_scene_constant_color_admit",

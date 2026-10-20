@@ -38,6 +38,15 @@ const XY_ANNOTATION_SHAPE_STYLE_KEYS = new Set([
   "coordinate_space",
 ]);
 
+// The y axis a data-space annotation coordinate reads: the secondary axis when
+// the annotation is bound to it (`y_axis: "y2"`; hosts refuse the binding when
+// the chart never declared a y2 axis), else the primary. Coordinate spaces that
+// never read the y data scale (axes/figure/xaxis fraction) ignore the binding,
+// matching Rust `coordinate_space_uses_y_scale` admission.
+function xyAnnotationYAxisId(ann: any): string {
+  return ann && ann.y_axis === "y2" ? "y2" : "y";
+}
+
 // Arrow path geometry: ChartView keeps this copy until WASM. Canonical
 // policy is ABI 217 `xyg_arrow_geometry` (python/xyg/_arrowgeom.py and
 // Node `arrowGeometry` call the kernel). Keep the two in sync:
@@ -599,15 +608,22 @@ Object.assign(ChartView.prototype, {
     if (!annotations.length) return;
     const p = this.plot;
     const polarGeom = this._polarGeometry();
+    // Annotations bound to the secondary y axis (`y_axis: "y2"`) project
+    // through that axis wherever the coordinate space reads the y data scale
+    // (the same rule as Rust `coordinate_space_uses_y_scale`; axes-fraction and
+    // xaxis-transform annotations never read it). The loop updates the mutable
+    // binding so the shared `project` closure below stays per-annotation.
+    let projectYAxis = "y";
     const project = (x, y) => this._projectDataPoint(
       "x",
-      "y",
+      projectYAxis,
       Number(x),
       Number(y),
       polarGeom,
     );
     for (const [annotationIndex, ann] of annotations.entries()) {
       ctx.save();
+      projectYAxis = xyAnnotationYAxisId(ann);
       let targetX = NaN;
       let targetY = NaN;
       if (ann.kind === "arrow") {
@@ -631,8 +647,9 @@ Object.assign(ChartView.prototype, {
       const style = ann && typeof ann.style === "object" ? ann.style : {};
       if (ann.kind === "band") {
         const vertical = ann.axis === "x";
-        const a = vertical ? this._dataPxX(Number(ann.start)) : this._dataPxY(Number(ann.start));
-        const b = vertical ? this._dataPxX(Number(ann.end)) : this._dataPxY(Number(ann.end));
+        const bandAxis = vertical ? "x" : projectYAxis;
+        const a = this._dataPx(bandAxis, Number(ann.start));
+        const b = this._dataPx(bandAxis, Number(ann.end));
         if (!Number.isFinite(a) || !Number.isFinite(b)) {
           ctx.restore();
           continue;
@@ -654,7 +671,7 @@ Object.assign(ChartView.prototype, {
         ctx.restore();
       } else if (ann.kind === "rule") {
         const vertical = ann.axis === "x";
-        const pos = vertical ? this._dataPxX(Number(ann.value)) : this._dataPxY(Number(ann.value));
+        const pos = this._dataPx(vertical ? "x" : projectYAxis, Number(ann.value));
         if (!Number.isFinite(pos)) {
           ctx.restore();
           continue;
@@ -688,8 +705,8 @@ Object.assign(ChartView.prototype, {
         ctx.stroke();
         ctx.restore();
       } else if (ann.kind === "arrow") {
-        const [arrowX0, arrowY0] = this._dataPxPoint(Number(ann.x0), Number(ann.y0));
-        const [arrowX1, arrowY1] = this._dataPxPoint(Number(ann.x1), Number(ann.y1));
+        const [arrowX0, arrowY0] = this._dataPxPoint(Number(ann.x0), Number(ann.y0), "x", projectYAxis);
+        const [arrowX1, arrowY1] = this._dataPxPoint(Number(ann.x1), Number(ann.y1), "x", projectYAxis);
         this._drawArrowLine(ctx, arrowX0, arrowY0, arrowX1, arrowY1, style);
       } else if (ann.kind === "callout") {
         const [px, py] = project(ann.x, ann.y);
@@ -703,7 +720,7 @@ Object.assign(ChartView.prototype, {
         const labelY = resolved?.y ?? py + dy;
         this._drawArrowLine(ctx, labelX, labelY, px, py, style);
       } else if (ann.kind === "marker") {
-        const [markerX, markerY] = this._dataPxPoint(Number(ann.x), Number(ann.y));
+        const [markerX, markerY] = this._dataPxPoint(Number(ann.x), Number(ann.y), "x", projectYAxis);
         this._drawAnnotationMarker(ctx, markerX, markerY, style, ann);
       }
       ctx.restore();
@@ -729,6 +746,10 @@ Object.assign(ChartView.prototype, {
       }
       if (!text) continue;
       const style = ann && typeof ann.style === "object" ? ann.style : {};
+      // Same binding rule as the shape pass: y coordinates on a y2-bound
+      // annotation read the secondary axis, but only in the coordinate spaces
+      // that read the y data scale at all.
+      const yAxis = xyAnnotationYAxisId(ann);
       let px = null;
       let py = null;
       let lift = null;
@@ -741,12 +762,12 @@ Object.assign(ChartView.prototype, {
           py = (1 - Number(ann.y)) * this.size.h;
         } else if (style.coordinate_space === "yaxis_transform") {
           px = p.x + Number(ann.x) * p.w;
-          py = this._dataPxY(Number(ann.y));
+          py = this._dataPx(yAxis, Number(ann.y));
         } else if (style.coordinate_space === "xaxis_transform") {
           px = this._dataPxX(Number(ann.x));
           py = p.y + (1 - Number(ann.y)) * p.h;
         } else {
-          [px, py] = this._dataPxPoint(Number(ann.x), Number(ann.y));
+          [px, py] = this._dataPxPoint(Number(ann.x), Number(ann.y), "x", yAxis);
         }
       } else if (ann.kind === "rule") {
         if (ann.axis === "x") {
@@ -754,7 +775,7 @@ Object.assign(ChartView.prototype, {
           py = p.y + 6;
         } else {
           px = p.x + p.w - 6;
-          py = this._dataPxY(Number(ann.value));
+          py = this._dataPx(yAxis, Number(ann.value));
         }
       } else if (ann.kind === "band") {
         if (ann.axis === "x") {
@@ -762,11 +783,11 @@ Object.assign(ChartView.prototype, {
           py = p.y + 6;
         } else {
           px = p.x + p.w - 6;
-          py = (this._dataPxY(Number(ann.start)) + this._dataPxY(Number(ann.end))) / 2;
+          py = (this._dataPx(yAxis, Number(ann.start)) + this._dataPx(yAxis, Number(ann.end))) / 2;
         }
       } else if (ann.kind === "arrow") {
-        const [ax0, ay0] = this._dataPxPoint(Number(ann.x0), Number(ann.y0));
-        const [ax1, ay1] = this._dataPxPoint(Number(ann.x1), Number(ann.y1));
+        const [ax0, ay0] = this._dataPxPoint(Number(ann.x0), Number(ann.y0), "x", yAxis);
+        const [ax1, ay1] = this._dataPxPoint(Number(ann.x1), Number(ann.y1), "x", yAxis);
         px = (ax0 + ax1) / 2;
         py = (ay0 + ay1) / 2;
         // Upward unit normal of the shaft: the label lifts along it (after
@@ -777,7 +798,7 @@ Object.assign(ChartView.prototype, {
           if (lift[1] > 0) lift = [-lift[0], -lift[1]];
         }
       } else if (ann.kind === "callout" || ann.kind === "marker") {
-        [px, py] = this._dataPxPoint(Number(ann.x), Number(ann.y));
+        [px, py] = this._dataPxPoint(Number(ann.x), Number(ann.y), "x", yAxis);
       }
       if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
       if (px < p.x - 24 || px > p.x + p.w + 24 || py < p.y - 24 || py > p.y + p.h + 24) {

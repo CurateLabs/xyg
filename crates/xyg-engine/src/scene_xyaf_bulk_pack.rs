@@ -273,6 +273,13 @@ fn coordinate_space_code(name: Option<&str>, kind: &str, index: usize) -> Result
     Ok(code)
 }
 
+/// Whether a text row's coordinate space reads the Scene's y data scale (so a
+/// row bound to a secondary y axis would need that axis's scale). The space
+/// vocabulary is owned by [`coordinate_space_code`]; unknown spaces fail there.
+pub(crate) fn coordinate_space_uses_y_scale(name: Option<&str>) -> bool {
+    matches!(name, None | Some("data") | Some("yaxis_transform"))
+}
+
 fn parse_dash_text(text: &str) -> Result<Option<Vec<f32>>, XyafBulkPackError> {
     match scene_dash_admit(text, &[], false) {
         Some(SceneDash::Solid) => Ok(None),
