@@ -229,7 +229,7 @@ fn coordinate_space_code(name: Option<&str>, kind: &str, index: usize) -> Result
         Some("yaxis_transform") => 3,
         Some(_) => return Err(XyafBulkPackError::new(XyafBulkError::CoordinateSpace, index)),
     };
-    if code != 0 && kind != "text" {
+    if name.is_some() && kind != "text" {
         return Err(XyafBulkPackError::new(XyafBulkError::CoordinateSpace, index));
     }
     Ok(code)
@@ -666,11 +666,14 @@ mod tests {
             let error = scene_xyaf_bulk_pack(&[spaced(Some(space))]).unwrap_err();
             assert_eq!(error.code, XyafBulkError::CoordinateSpace, "{space:?}");
         }
-        let mut callout = spaced(Some("axes_fraction"));
-        callout.kind = "callout";
-        callout.dx = Some(10.0);
-        callout.dy = Some(-10.0);
-        let error = scene_xyaf_bulk_pack(&[callout]).unwrap_err();
-        assert_eq!(error.code, XyafBulkError::CoordinateSpace);
+        // Any authored space on a non-text kind is rejected, `data` included.
+        for space in ["axes_fraction", "data"] {
+            let mut callout = spaced(Some(space));
+            callout.kind = "callout";
+            callout.dx = Some(10.0);
+            callout.dy = Some(-10.0);
+            let error = scene_xyaf_bulk_pack(&[callout]).unwrap_err();
+            assert_eq!(error.code, XyafBulkError::CoordinateSpace, "{space}");
+        }
     }
 }
