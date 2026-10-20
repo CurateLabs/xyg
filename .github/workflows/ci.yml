@@ -162,7 +162,7 @@ jobs:
       - name: GraphForge native/WASM equivalence
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
-          node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
+          node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
           node scripts/gen_geo_hierarchy_node.mjs --check
           node scripts/gen_geo_overview_hosts.mjs --check
