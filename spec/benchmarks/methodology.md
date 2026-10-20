@@ -164,6 +164,26 @@ reported).
    site-packages, transitive distribution count, install time, and cold import.
 9. `public_workflows`: `benchmarks/bench_workflows.py` tracks ingestion shapes,
    streaming refresh/incremental pyramid update, and HTML/SVG/native-PNG/Chromium-PNG export independently.
+   Every export row, native SVG/PNG included, runs the profile's full-size line
+   (10k smoke, 1M standard): native static export takes the browser's
+   first-paint Rust LOD tier (M4 at the figure width, dossier §28,
+   `spec/design/scene-ir.md` "Public static LOD tiers"), so the native SVG and
+   PNG rows measure decimation plus serialization of the same rows the HTML row
+   ships rather than a reduced `n`.
+
+The static-export rows in `benchmarks/test_codspeed_kernels.py` and
+`benchmarks/test_codspeed_pyplot.py` (100k scatter, categorical scatter, and
+line SVG/native PNG) likewise run at full size on those tiers: a 100k scatter
+is a direct tier (one marker per point up to `DIRECT_SOFT_CEILING`), and a
+100k line is M4-decimated in Rust before Scene packing. Layered warm-ups
+(scatter + line) and polar figures consume the shared Rust autorange, so they
+need no authored domains. Rows whose kind still has a hard static budget keep
+it and say so: the stroked triangle-mesh row must stay within the
+1,024-triangle public mesh budget with authored domains (hexbin and mesh
+density tiers are tracked separately). The polar rose rows in
+`benchmarks/test_codspeed_polar.py` run unmarked: native SVG writes exact `A`
+arcs from the Scene's `XYWA` sidecar (scene-ir.md "Polar wedge SVG arcs") and
+is the control for the flattening native-PNG row.
 
 ## 6. Remaining implementation plan
 
@@ -678,7 +698,8 @@ screen-bounded large-data path) rather than to one arbitrary N. Seventeen rows
 are `first_payload_*`, one per chart kind, which makes this the per-kind guard
 that §7's scatter-only gate does not provide. Its module docstring carries the same backend rule the workflow
 asserts: fallback timings are correctness smoke data, not production
-performance data. The 100k `test_svg_export_scatter` row tracks the first
+performance data. The 100k `test_svg_export_scatter` row (direct static LOD
+tier, one marker per point) tracks the first
 versioned canonical-scene slice (#58), including host paint resolution, the
 typed Rust scene call, built-in marker geometry, and SVG fragment assembly.
 The 100k `test_scene_scale_map_100k` row isolates the vectorized Rust-owned
