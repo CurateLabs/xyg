@@ -343,7 +343,11 @@ geometry (theming stays on the `--chart-*` token path).
 4. ★ Done. Named secondary scales ship as `xyg.y_axis(id="y2", …)` +
    `mark(..., y_axis="y2")`, with the loud opt-in enforced by the
    no-matching-axis build error (§5.1 G2). The `secondary=True` spelling was
-   dropped in favor of axis ids.
+   dropped in favor of axis ids. A right-hand `y2` is no longer interactive-only:
+   the Rust Scene/XYST path measures, lays out and draws it in static output
+   (SVG/PNG/PDF) and the Python and Node hosts export it byte-identically
+   (`spec/design/twinx-secondary-y-axis.md`). One right-hand `y2` per panel; left-side
+   y2, `x2`, y2 + colorbar and y2 + polar return stable Rust reasons.
 5. ★ Done, with a different shape than planned: `xyg.facet_chart(by=…)`
    (§5.2), not `facet(col=…)`, and it composes N independent figures in a
    `FacetGrid` rather than compiling to a panel grid. Folding it onto the

@@ -2555,7 +2555,7 @@ function defaultChromeStyle() {
   return resolveChromeStyle(envelope);
 }
 
-function packXyCh(figure) {
+function packXyCh(figure, yAxisId = "y") {
   const figureStyle = figure.style ?? {};
   let flags = 2 << 8;
   let chart = new Uint8Array(0);
@@ -2570,7 +2570,7 @@ function packXyCh(figure) {
   }
   const axes = figureAxisOptions(figure) ?? {};
   const x = packChromeAxis("x", axes.x ?? {}, ["bottom", "top"]);
-  const y = packChromeAxis("y", axes.y ?? {}, ["left", "right"]);
+  const y = packChromeAxis(yAxisId, axes[yAxisId] ?? {}, ["left", "right"]);
   const header = new Uint8Array(16);
   const view = new DataView(header.buffer);
   header.set(encodeUtf8("XYCH").slice(0, 4), 0);
@@ -3463,9 +3463,9 @@ export function figureStaticDocument(figure, {
   projected.show_legend = false;
   projected.legend_options = {};
   projected.extra_legends = Array.isArray(figure.extra_legends) ? [] : null;
-  const reason = sceneExportSupportReason(projected);
+  const reason = sceneExportSupportReason(projected, { y2Chrome: chrome.y2 });
   if (reason) throw new RangeError(reason);
-  let scene = figureSceneV3(projected);
+  let scene = figureSceneV3(projected, { y2Chrome: chrome.y2 });
   if (graphPlanes != null) {
     try {
       scene = graphComposedScene(scene, graphPlanes);
@@ -3727,11 +3727,18 @@ function styleFrame() {
   return { chunks, pushU32, pushText, pushValue, pushEntries };
 }
 
+/** XYCO `chrome_text` bits 0..13 are the XYST panel facts; bits 14..19 are the y2
+ * title/tick flags and tick/title paint-present bits, which feed the Scene `XYY2` block. */
+const XYST_CHROME_TEXT_MASK = 0x3fff;
+const Y2_TICK_PAINT = 1 << 18;
+const Y2_TITLE_PAINT = 1 << 19;
+
 /** Marshal authored chrome style facts; Rust owns admission and precedence. */
 function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptions }) {
+  const axisIds = axisOptions.y2 != null ? ["x", "y", "y2"] : ["x", "y"];
   const frame = styleFrame();
   frame.pushU32(1);
-  frame.pushU32(hasTitle ? 1 : 0);
+  frame.pushU32((hasTitle ? 1 : 0) | (axisIds.length === 3 ? 4 : 0));
   frame.pushU32(0);
   frame.pushEntries(rootStyle);
   const slots = Object.keys(chromeStyles).sort();
@@ -3740,7 +3747,7 @@ function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptio
     frame.pushText(slot);
     frame.pushEntries(chromeStyles[slot]);
   }
-  for (const axisId of ["x", "y"]) {
+  for (const axisId of axisIds) {
     frame.pushEntries(axisOptions[axisId]?.style);
     frame.pushEntries(axisOptions[axisId]?.minor_style);
   }
@@ -3748,7 +3755,8 @@ function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptio
   const view = new DataView(output.buffer, output.byteOffset, output.byteLength);
   const fixed = 4 + 12 + 16 + 8 + 4 + 48;
   if (output.length < fixed || String.fromCharCode(...output.subarray(0, 4)) !== "XYCO"
-    || view.getUint32(4, true) !== 1 || view.getUint32(8, true) & ~1) {
+    || view.getUint32(4, true) !== 1 || view.getUint32(8, true) & ~3
+    || ((view.getUint32(8, true) & 2) !== 0) !== (axisIds.length === 3)) {
     throw new Error("invalid XYCO output");
   }
   const hasTitleStyle = (view.getUint32(8, true) & 1) !== 0;
@@ -3770,12 +3778,29 @@ function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptio
     return keys;
   };
   const consumed = { x: [takeKeys(), takeKeys()], y: [takeKeys(), takeKeys()] };
+  let y2 = null;
+  if (view.getUint32(8, true) & 2) {
+    const tickPaint = Array.from(output.subarray(at, at + 4));
+    const titlePaint = Array.from(output.subarray(at + 4, at + 8));
+    y2 = {
+      tickSize: view.getFloat64(at + 8, true),
+      titleSize: view.getFloat64(at + 16, true),
+      padding: view.getFloat64(at + 24, true),
+      textFlags: ((chromeText >>> 16) & 3) | (((chromeText >>> 14) & 3) << 2),
+      tickRgba: chromeText & Y2_TICK_PAINT ? tickPaint : null,
+      titleRgba: chromeText & Y2_TITLE_PAINT ? titlePaint : null,
+    };
+    at += 32;
+    consumed.y2 = [takeKeys(), takeKeys()];
+  }
   if (at !== output.length) throw new Error("invalid XYCO output");
+  const xystChromeText = chromeText & XYST_CHROME_TEXT_MASK;
   return {
     titleStyle: hasTitleStyle ? [titleSize, titleRgba] : null,
     chromeMetrics,
-    chromeText: chromeText ? [chromeText, paints] : null,
+    chromeText: xystChromeText ? [xystChromeText, paints] : null,
     consumed,
+    y2,
   };
 }
 
@@ -3996,6 +4021,9 @@ export function sceneSupportReason(features, requestVersion = 1) {
   return new TextDecoder("utf-8", { fatal: true }).decode(output);
 }
 
+/** XYFS / XYEF axis ids: Rust decides which secondary axes it admits. */
+const AXIS_CODES = { x: 0, y: 1, y2: 2, x2: 3 };
+
 const SCENE_TICK_STRATEGY_NAMES = ["auto", "hide", "rotate", "stagger", "preserve", "none", "off"];
 
 function sceneTickStrategy(options) {
@@ -4137,7 +4165,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   const axes = [];
   for (const [axisId, options] of Object.entries(figureAxisOptions(figure) ?? {})) {
     axes.push({
-      axis_code: axisId === "x" ? 0 : axisId === "y" ? 1 : 255,
+      axis_code: AXIS_CODES[axisId] ?? 255,
       side: options.side == null ? 0 : ({ bottom: 1, left: 2, top: 3, right: 4 })[options.side] ?? 255,
       keys: significantSceneAxisKeys(options, polar),
       tick_label_strategy: optionalStr(options.tick_label_strategy),
@@ -5714,7 +5742,7 @@ function packXyCl(figure) {
     const view = new DataView(prefix.buffer);
     view.setUint16(0, kind.length, true);
     prefix[2] = coords;
-    prefix[3] = edgeEnds ? 1 : 0;
+    prefix[3] = (edgeEnds ? 1 : 0) | (String(trace.y_axis ?? "y") === "y2" ? 2 : 0);
     view.setBigUint64(8, asU64(Number(trace.id), "stableIds value"), true);
     view.setUint32(16, cols[0].length / 8, true);
     view.setUint32(20, cols[1].length / 8, true);
@@ -6371,7 +6399,7 @@ function marshalChromeAxis(axisId, options) {
   };
 }
 
-function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
+function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true, y2Chrome = null } = {}) {
   const axes = figureAxisOptions(figure) ?? {};
   const xa = axes.x ?? {};
   const ya = axes.y ?? {};
@@ -6428,7 +6456,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
       ticks: tickCount ? ticks : null,
     };
   }
-  return sceneChromePack({
+  const facts = {
     width: Number(width),
     height: Number(height),
     show_legend: figureShowLegend(figure) !== false,
@@ -6495,7 +6523,80 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
       background: optionalStr(legendStyle.background),
     },
     colorbar: colorbarPayload,
-  });
+  };
+  if (axes.y2 != null) facts.y2 = packY2Sidecar(figure, y2Chrome);
+  return sceneChromePack(facts);
+}
+
+/** Pack the `XYY2` secondary-y facts (scene_y2.rs); Rust validates and admits them. The
+ * 88-byte axis chrome record is resolved by Rust from the authored y2 style, exactly as
+ * for y, by resolving the chrome facts with y2 in the y slot. */
+function packY2Sidecar(figure, y2Chrome) {
+  const options = figureAxisOptions(figure).y2;
+  const record = resolveChromeStyle(packXyCh(figure, "y2")).subarray(112, 200);
+  const [lo, hi] = figure._range("y2");
+  const major = axisTickValues(options);
+  const minor = Array.from(axisMinorTickValues(options) ?? [], Number);
+  const labels = axisTickLabels(options);
+  const encoder = new TextEncoder();
+  const labelChunks = [];
+  if (labels != null) {
+    const header = new DataView(new ArrayBuffer(12));
+    new Uint8Array(header.buffer).set(encoder.encode("XYTL"), 0);
+    header.setUint32(4, 1, true);
+    header.setUint32(8, labels.length, true);
+    labelChunks.push(new Uint8Array(header.buffer));
+    for (const label of labels) {
+      const raw = encoder.encode(String(label));
+      const length = new DataView(new ArrayBuffer(4));
+      length.setUint32(0, raw.length, true);
+      labelChunks.push(new Uint8Array(length.buffer), raw);
+    }
+  }
+  const labelsBlob = concatBytes(labelChunks);
+  const anchorRaw = optionalStr(options.tick_label_anchor);
+  const anchor = anchorRaw == null ? null : sceneTickAnchor(anchorRaw);
+  const strategy = sceneTickLabelStrategy(
+    optionalStr(options.tick_label_strategy) ?? optionalStr(options.collision) ?? "auto",
+  );
+  const title = encoder.encode(optionalStr(options.label) ?? "");
+  const numberFormat = encoder.encode(optionalStr(options.format) ?? "");
+  const present = y2Chrome == null ? 0 : 1 | (y2Chrome.tickRgba ? 2 : 0) | (y2Chrome.titleRgba ? 4 : 0);
+  const head = new Uint8Array(204);
+  const view = new DataView(head.buffer);
+  head.set(encoder.encode("XYY2"), 0);
+  view.setUint32(4, { linear: 0, log: 1, symlog: 2 }[axisScaleName(options)] ?? 0, true);
+  view.setFloat64(8, Number(lo), true);
+  view.setFloat64(16, Number(hi), true);
+  view.setFloat64(24, Number(options.constant ?? 1), true);
+  head[32] = (options.nonpositive ?? "clip") === "mask" ? 1 : 0;
+  head.set(record, 36);
+  view.setFloat64(124, y2Chrome?.tickSize ?? 0, true);
+  view.setFloat64(132, y2Chrome?.titleSize ?? 0, true);
+  view.setFloat64(140, y2Chrome?.padding ?? 0, true);
+  view.setUint32(148, y2Chrome == null ? 0 : y2Chrome.textFlags & 0xf, true);
+  head.set(y2Chrome?.tickRgba ?? [0, 0, 0, 0], 152);
+  head.set(y2Chrome?.titleRgba ?? [0, 0, 0, 0], 156);
+  head[160] = present;
+  head[164] = strategy;
+  head[165] = anchorRaw == null ? 0 : anchor ?? 0;
+  head[166] = anchorRaw == null ? 0 : 1;
+  head[167] = figure._axisKind("y2") === "category" ? 1 : 0;
+  view.setFloat64(168, options.tick_label_min_gap == null ? 4 : Number(options.tick_label_min_gap), true);
+  view.setFloat64(176, options.tick_label_angle == null ? Number.NaN : Number(options.tick_label_angle), true);
+  view.setUint32(184, major == null ? 0xffffffff : major.length, true);
+  view.setUint32(188, minor.length, true);
+  view.setUint32(192, labelsBlob.length, true);
+  view.setUint32(196, title.length, true);
+  view.setUint32(200, numberFormat.length, true);
+  const values = new Float64Array([...Array.from(major ?? [], Number), ...minor]);
+  return concatBytes([
+    head,
+    new Uint8Array(values.buffer, values.byteOffset, values.byteLength),
+    labelsBlob,
+    title,
+    numberFormat,
+  ]);
 }
 
 /** XYEF resolved axis kind. Python `_pack_public_export_support` uses `figure._axis_kind(axis_id)`. */
@@ -6608,7 +6709,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   for (const key of colorbarKeys) parts.push(encodeExportKey(key));
 
   for (const [axisId, options] of axisEntries) {
-    const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
+    const axisCode = AXIS_CODES[axisId] ?? 255;
     const authored = options.type;
     const authoredCode = authored == null ? 0 : authored === "linear" ? 1 : authored === "log" ? 2 : authored === "symlog" ? 3 : 255;
     const resolvedCode = xyEfResolvedKind(figure, axisId);
@@ -6770,7 +6871,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
 }
 
 /** Return Rust's public-export diagnostic, or null when the Scene route applies. */
-export function sceneExportSupportReason(figure, { width = null, height = null } = {}) {
+export function sceneExportSupportReason(figure, { width = null, height = null, y2Chrome = null } = {}) {
   const envelope = packPublicExportSupport(figure, { width, height });
   const requiredRaw = xyScenePublicExportReason(u8Ptr(envelope), BigInt(envelope.length), 0, 0n);
   if (requiredRaw === USIZE_MAX_64) throw new RangeError("invalid scene public export support envelope");
@@ -6784,7 +6885,7 @@ export function sceneExportSupportReason(figure, { width = null, height = null }
   }
   if (reason) return reason;
   try {
-    figureSceneV3(figure);
+    figureSceneV3(figure, { y2Chrome });
   } catch (err) {
     if (err instanceof RangeError) {
       if (err.message === "invalid canonical scene plot layout") return "XYG_SCENE_UNSUPPORTED_VIEWPORT";
@@ -7488,7 +7589,7 @@ export function packFigureXyTc(figure) {
   return packXyTc(figure);
 }
 
-export function figureSceneV3(figure, { margins = null } = {}) {
+export function figureSceneV3(figure, { margins = null, y2Chrome = null } = {}) {
   let colorbarUnsupported = false;
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figureColorbarOptions(figure)); }
   const attachPlan = sceneEncodeProductAttachPlan({ polar: figure.coords === "polar" });
@@ -7506,7 +7607,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       xDomain,
       yDomain,
       packChromeFacts(figure, {
-        width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
+        width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported, y2Chrome,
       }),
       attachPlan.attachXypl ? packPolarSceneInput(figure) : new Uint8Array(),
       packFigureSupport(figure, { colorbarUnsupported }),

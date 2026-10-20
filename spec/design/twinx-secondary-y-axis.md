@@ -1,8 +1,9 @@
 # Native secondary y axis (`y2`, twinx) in the Rust Scene/static path
 
 Authoritative design (r2 plus the final addendum, which overrides conflicting
-text). Part of #1006 (twinx PR 1 of 3). The *PR 1 implementation record* at the
-end states where the shipped format refines this text.
+text). Part of #1006 (twinx PRs 1–3). The *PR 1 implementation record* and the
+*PRs 2+3 implementation record* at the end state where the shipped work refines
+this text.
 
 Closes Matplotlib corpus case 26 (`tests/pyplot/corpus/26_twinx_dual_axis.py`)
 for #1006. Supersedes r1 (`.m4/design-twinx.md`); r1 §0 facts still hold unless
@@ -296,3 +297,49 @@ right-hand y axis). Where the implementation refines this document:
   serve to browsers and so cannot import native bindings, carry the same value as a
   generated constant that `--check` regeneration keeps current; Python
   `scene_version()`), enforced by `tests/test_scene_version_literals.py`.
+
+## PRs 2+3 implementation record (Python and Node hosts)
+
+PRs 2 and 3 shipped as one host PR at `ABI_VERSION` 388. Hosts marshal facts and
+surface Rust's reasons; no host adds admission or layout policy.
+
+- **Per-trace selector needs a wire carrier (ABI 388).** PR 1 stamped the record
+  selector (`0x40`) in XYGS records and XYAS rows, but the product pipeline
+  (XYTC → XYTT → XYCL rows) had no way to say which trace is on y2, so every row
+  was packed `y2 = false`. `XYCL` prefix byte 3 gains bit 1, `XYCL_Y2`
+  (`scene_trace_rows.rs`): Rust stamps `PackedSceneRow.y2` on every row of a
+  flagged trace; undefined bits stay rejected. Python (`_scene_sidecars.py`) and
+  Node (`scene.js` `packXyCl`) set the bit from `trace.y_axis == "y2"`. This is
+  the only Rust change; admission still reads the `XYFS` trace flag.
+- **XYY2 sidecar.** Both hosts hand-pack the 204-byte head plus variable data of
+  `scene_y2.rs` and pass it through `xyg_scene_chrome_pack` (`y2` pointer/length).
+  Domains are data values; tick policy codes come from the existing native
+  admits (`scene_tick_label_strategy`, `scene_tick_anchor`); the 88-byte chrome
+  record is resolved by Rust from the authored y2 style by resolving the chrome
+  facts with y2 in the y slot (`scene_resolve_chrome_style`, bytes 112..200), so
+  colour/width resolution has one owner. Python: `_scene_marshal._pack_y2_sidecar`;
+  Node: `scene.js packY2Sidecar`.
+- **XYCS/XYCO.** `resolve_chrome_style` / `resolveStaticChromeStyle` set XYCS flag
+  bit 2 when `axis_options` carries `y2`, send the third `(style, minor_style)`
+  pair, parse the y2 tail of XYCO, drop the consumed y2 style keys, and carry
+  `Y2Chrome` (sizes, padding, flags, paints) to the sidecar. The XYST
+  `chrome_text` word is masked to `0x3fff` so y2 bits (14..19) never reach a panel
+  record. pyplot's own panel path (`pyplot/_grid.py`) threads the same `Y2Chrome`.
+- **Axis codes.** `XYFS`/`XYEF` axis ids: `x` 0, `y` 1, `y2` 2, `x2` 3, else 255;
+  the authored side was already marshalled. Rust returns `_Y2_SIDE`, `_X2`,
+  `_EXTRA_AXES`, `_Y2_TICK_ONLY`, `_Y2_POLAR` and `_Y2_COLORBAR` to both hosts.
+- **pyplot.** `Axes._seed_rc_axis_styles` seeds a twin's host `_axis["y2"]` with
+  `_rc_axis_style("y")` / `_rc_minor_axis_style("y")` (the `ytick.*` and `axes.*`
+  rc keys), the same function that seeds the left axis, on construction and on
+  `clear()`.
+- **Node surface.** `Figure.setAxis` accepts `"y2"`; traces bind with `yAxis: "y2"`.
+- **Tests.** `tests/test_static_dual_axis.py`, `tests/pyplot/test_twinx.py`,
+  `tests/test_static_dual_axis_cross_host.py` with
+  `packages/xy-node/scripts/static_dual_axis_cross_host.mjs`,
+  `packages/xy-node/test/static-dual-axis.test.mjs`, and the Rust test
+  `scene_trace_rows::y2_flag_selects_the_secondary_scale_for_that_trace_only`.
+  Corpus case 26 passes (52/55 overall; the three open cases are the named
+  annotation/hexbin gaps in `spec/matplotlib/compat.md`).
+- **Open.** The right-hand title is drawn clockwise; Matplotlib's `twinx` label
+  reads bottom to top (see the PR 1 "Title direction" note). The corpus
+  comparison does not distinguish them.

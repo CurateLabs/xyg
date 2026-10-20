@@ -1507,7 +1507,7 @@ export class Figure {
 
   /** Bounded Cartesian Scene axis authoring; Rust resolves layout and chrome. */
   setAxis(axisId, options = {}) {
-    if (axisId !== "x" && axisId !== "y") throw new RangeError("axisId must be x or y");
+    if (axisId !== "x" && axisId !== "y" && axisId !== "y2") throw new RangeError("axisId must be x, y or y2");
     options = copySceneOptions(options, `Scene ${axisId} axis options`);
     this.axis_options = this.axis_options ?? { x: {}, y: {} };
     this.axis_options[axisId] = { ...(this.axis_options[axisId] ?? {}), ...options };

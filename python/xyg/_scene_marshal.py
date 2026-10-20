@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import struct
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -62,6 +63,7 @@ def pack_chrome_facts(
     height: int,
     margins: tuple[float, float, float, float] | None,
     colorbar_ok: bool,
+    y2_chrome: Y2Chrome | None = None,
 ) -> bytes:
     """Marshal figure chrome observations and bulk-pack XYCF via Rust (ABI 321)."""
     from xyg._scene_observations import _SCENE_AXIS_STYLE_KEYS, UnsupportedSceneV3, _scene_side_mask
@@ -186,7 +188,7 @@ def pack_chrome_facts(
             "minor_style": marshal_axis_style(minor),
         }
 
-    return _native.scene_chrome_pack(
+    facts: dict[str, Any] = dict(
         width=float(width),
         height=float(height),
         show_legend=bool(getattr(figure, "show_legend", True)),
@@ -268,6 +270,116 @@ def pack_chrome_facts(
         },
         colorbar=colorbar_payload,
     )
+    if "y2" in figure.axis_options:
+        facts["y2"] = _pack_y2_sidecar(
+            figure, facts, marshal_chrome_axis(" y2".strip(), figure.axis_options["y2"]), y2_chrome
+        )
+    return _native.scene_chrome_pack(**facts)
+
+
+@dataclass(frozen=True)
+class Y2Chrome:
+    """Rust-resolved XYCO facts for the secondary y axis (the ``XYY2`` metrics block)."""
+
+    tick_size: float
+    title_size: float
+    padding: float
+    # Two-bit italic/bold flags: bits 0..1 tick labels, bits 2..3 title.
+    text_flags: int
+    tick_rgba: tuple[int, int, int, int] | None
+    title_rgba: tuple[int, int, int, int] | None
+
+
+# XYFS / XYEF axis ids: Rust decides which secondary axes it admits.
+_AXIS_CODES = {"x": 0, "y": 1, "y2": 2, "x2": 3}
+
+# The y record inside the 200-byte resolved Scene chrome style.
+_SCENE_STYLE_Y_AXIS = slice(112, 200)
+
+
+def _pack_y2_sidecar(
+    figure: Any,
+    facts: dict[str, Any],
+    y2_axis: dict[str, Any],
+    y2_chrome: Y2Chrome | None,
+) -> bytes:
+    """Marshal the ``XYY2`` secondary-y facts; Rust validates and admits them.
+
+    The 88-byte axis chrome record is resolved by Rust from the authored y2
+    style, by resolving the same chrome facts with the y2 axis in the y slot, so
+    colour and width resolution stays in one place.
+    """
+    options = figure.axis_options["y2"]
+    record_facts = {key: value for key, value in facts.items() if key != "y2"}
+    record_facts["y_axis"] = y2_axis
+    record = _native.scene_resolve_chrome_style(
+        xych_from_xycf(_native.scene_chrome_pack(**record_facts))
+    )[_SCENE_STYLE_Y_AXIS]
+    lo, hi = (float(v) for v in figure._range("y2"))
+    major = options.get("tick_values")
+    minor = [float(v) for v in (options.get("minor_tick_values") or ())]
+    labels = options.get("tick_labels")
+    labels_blob = b""
+    if labels is not None:
+        encoded = [str(label).encode("utf-8") for label in labels]
+        labels_blob = struct.pack("<4sII", b"XYTL", 1, len(encoded)) + b"".join(
+            struct.pack("<I", len(raw)) + raw for raw in encoded
+        )
+    anchor_raw = _optional_str(options.get("tick_label_anchor"))
+    anchor = _native.scene_tick_anchor(anchor_raw) if anchor_raw is not None else None
+    strategy = _native.scene_tick_label_strategy(
+        _optional_str(options.get("tick_label_strategy"))
+        or _optional_str(options.get("collision"))
+        or "auto"
+    )
+    min_gap = options.get("tick_label_min_gap")
+    angle = options.get("tick_label_angle")
+    title = (_optional_str(options.get("label")) or "").encode("utf-8")
+    number_format = (_optional_str(options.get("format")) or "").encode("utf-8")
+    chrome = y2_chrome
+    present = 0
+    if chrome is not None:
+        present = 1 | (2 if chrome.tick_rgba else 0) | (4 if chrome.title_rgba else 0)
+    out = bytearray(b"XYY2")
+    out += struct.pack(
+        "<I3dB3x",
+        {"linear": 0, "log": 1, "symlog": 2}[figure._axis_scale("y2")],
+        lo,
+        hi,
+        float(options.get("constant") or 1.0),
+        1 if options.get("nonpositive", "clip") == "mask" else 0,
+    )
+    out += record
+    out += struct.pack(
+        "<3dI4s4sB3x",
+        chrome.tick_size if chrome else 0.0,
+        chrome.title_size if chrome else 0.0,
+        chrome.padding if chrome else 0.0,
+        (chrome.text_flags & 0xF) if chrome else 0,
+        bytes(chrome.tick_rgba or (0, 0, 0, 0)) if chrome else bytes(4),
+        bytes(chrome.title_rgba or (0, 0, 0, 0)) if chrome else bytes(4),
+        present,
+    )
+    out += struct.pack(
+        "<4B2d",
+        strategy,
+        (anchor or 0) if anchor_raw is not None else 0,
+        1 if anchor_raw is not None else 0,
+        1 if figure._axis_kind("y2") == "category" else 0,
+        4.0 if min_gap is None else float(min_gap),
+        math.nan if angle is None else float(angle),
+    )
+    out += struct.pack(
+        "<5I",
+        0xFFFFFFFF if major is None else len(major),
+        len(minor),
+        len(labels_blob),
+        len(title),
+        len(number_format),
+    )
+    for value in [*(major or ()), *minor]:
+        out += struct.pack("<d", float(value))
+    return bytes(out + labels_blob + title + number_format)
 
 
 def _optional_str(value: Any) -> str | None:
@@ -780,7 +892,7 @@ def pack_figure_support(
         )
     axes = []
     for axis_id, options in figure.axis_options.items():
-        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        axis_code = _AXIS_CODES.get(axis_id, 255)
         axes.append(
             {
                 "axis_code": axis_code,
@@ -967,7 +1079,7 @@ def pack_public_export_support(
     _xyep_put_keys(payload, legend_keys)
     _xyep_put_keys(payload, colorbar_keys)
     for axis_id, options in figure.axis_options.items():
-        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        axis_code = _AXIS_CODES.get(axis_id, 255)
         resolved = figure._axis_kind(axis_id)
         resolved_code = {"linear": 0, "time": 1, "category": 2}.get(resolved, 255)
         authored = options.get("type")

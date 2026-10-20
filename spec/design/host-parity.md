@@ -708,7 +708,11 @@ pads already fit; overflowing compact pads stay
 fail-closed. Invalid ABI 96 grammar still falls
 back. Only the right-hand secondary y axis (Scene v33) is admitted, and only by
 Rust's XYFS admission; `x2`, left y2, extra axes and tick-only secondary axes stay
-fail-closed.
+fail-closed. Python and Node marshal that axis identically (twinx PRs 2+3,
+`spec/design/twinx-secondary-y-axis.md`): the `XYY2` sidecar, XYCO y2 outputs,
+`XYFS` axis codes (`y2` = 2, `x2` = 3) and the `XYCL` y2 column flag (ABI 388);
+`tests/test_static_dual_axis_cross_host.py` pins byte-identical XYST/SVG/PNG/PDF
+and identical Rust reasons.
 Hosts still choose tick families and
 map values to pixels on the compatibility `_svg` path. ChartView JS
 `_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.

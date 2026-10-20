@@ -1389,6 +1389,10 @@ class Axes(PlotTypeMixin):
         self.xaxis = _AxisProxy(self, "x")
         self.yaxis = _AxisProxy(self, "y")
         self.spines = _SpineProxy(self)
+        self._seed_rc_axis_styles()
+
+    def _seed_rc_axis_styles(self) -> None:
+        """Seed the x/y axes (and a twin's host y2) from the active rc tick styling."""
         dpi = float(self.figure._dpi if self.figure._dpi is not None else rcParams["figure.dpi"])
         for axis in ("x", "y"):
             style = _rc_axis_style(axis, dpi)
@@ -1396,6 +1400,12 @@ class Axes(PlotTypeMixin):
                 self._axis[axis]["style"] = style
                 self._tick_lengths[axis] = float(style["tick_length"])
             self._axis[axis]["minor_style"] = _rc_minor_axis_style(axis, dpi)
+        if self._y2_of is not None:
+            # Matplotlib's twinx right axis is a y axis: it takes the ytick rc
+            # and axes.* label/edge defaults, exactly as the left y axis does.
+            y2 = self._y2_of._axis["y2"]
+            y2["style"] = _rc_axis_style("y", dpi)
+            y2["minor_style"] = _rc_minor_axis_style("y", dpi)
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -1709,13 +1719,7 @@ class Axes(PlotTypeMixin):
         self.xaxis = _AxisProxy(self, "x")
         self.yaxis = _AxisProxy(self, "y")
         self.spines = _SpineProxy(self)
-        dpi = float(self.figure._dpi if self.figure._dpi is not None else rcParams["figure.dpi"])
-        for axis in ("x", "y"):
-            self._axis[axis]["minor_style"] = _rc_minor_axis_style(axis, dpi)
-            style = _rc_axis_style(axis, dpi)
-            if style:
-                self._axis[axis]["style"] = style
-                self._tick_lengths[axis] = float(style["tick_length"])
+        self._seed_rc_axis_styles()
         self._invalidate()
 
     cla = clear

@@ -21,6 +21,15 @@ in the README).
   (v1 `XYAF` is rejected), and unsupported styles fail closed with
   `XYG_SCENE_UNSUPPORTED_ARROW_STYLE`. `annotate(arrowprops=)` maps `arrowstyle`,
   `shrinkA` and `shrinkB` onto it, and the browser painter hydrates the new runs.
+- ABI 388: Python and Node marshal the native secondary right-hand y axis
+  (`twinx`, #1006 PRs 2+3 of 3). Hosts pack the `XYY2` sidecar (scale, resolved
+  chrome record, XYCO y2 metrics/paints/flags, tick policy, ticks, title, format),
+  translate axis ids (`y2` = 2, `x2` = 3) into the `XYFS` observation, and set the
+  new `XYCL` column flag bit 1 (`XYCL_Y2`) so Rust stamps the record y selector on
+  every row of a y2 trace. Rust alone admits or rejects and returns the same
+  stable reasons to both hosts. pyplot `twinx()` seeds the twin's rc tick styling
+  from `ytick.*`. Corpus case 26 passes; Python and Node export byte-identical
+  XYST/SVG/PNG/PDF for the same public dual-axis chart.
 - ABI 387 / Scene v33 / XYPB v16 / WASM ABI 34: native secondary right-hand y axis
   (`twinx`, #1006 PR 1 of 3). Scene v33 carries one optional length-prefixed
   `XYY2` block (scale, axis chrome record, resolved typography and paints, tick
