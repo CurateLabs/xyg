@@ -1455,6 +1455,32 @@ head geometry, dash patterns, custom caps/joins, gradients, CSS, custom fonts,
 markup, collision, rotation, wrapping, or boxes. Those forms remain loud
 unsupported boundaries.
 
+## Annotation coordinate spaces (XYAW v3, ABI 389)
+
+Unwrapped `text` annotations may carry `style.coordinate_space`, one of `data`
+(default), `axes_fraction`, `xaxis_transform` (x data, y axes fraction) or
+`yaxis_transform` (x axes fraction, y data). Hosts marshal that string only
+(`XygXyafBulkStyleIn.coordinate_space`); `scene_xyaf_bulk_pack` maps it to a
+code (0..=3) in XYAF v1 byte 26 (formerly reserved zero, so zero stays `data`)
+and routes any non-data text to the laid-out `XYAW` path. `figure_fraction`,
+unknown values and any non-text kind (callout, arrow, marker, rule, band) fail
+closed with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE` /
+the existing kind-specific rejection. The Rust pack
+(`scene_annotations.rs`) emits `XYAW` **v3** only when a row has a non-data
+space, so every existing XYAW v1/v2 byte stream and fixture hash is unchanged;
+v3 keeps the v2 72-byte row meta (rotation at 64) and gives byte 62 the space
+code (byte 63 stays zero; v1/v2 keep both reserved). `decode_xyaw` projects the
+point: an axes fraction runs from the plot's left/bottom edge
+(`left + f*(right-left)`, `bottom - f*(bottom-top)`), and the data component of
+a mixed space uses the Scene's own axis scale (linear, log, symlog, category),
+never a host conversion. Text is not clamped to the plot rectangle (table rows
+hang below the axes); non-finite values and the existing label-coordinate
+magnitude limit still reject. The browser painter label table is unchanged
+(XYLB records carry resolved pixels), and `to_browser_painter` now rejects a
+label anchored outside the canvas rather than emit geometry the TS client
+(`48_wasm_scene.ts`) rejects. `figure_fraction` is a known gap: a pyplot panel
+Scene does not own the figure rectangle.
+
 ## Version 18 bounded Cartesian callouts
 
 Scene v18 adds a Rust-owned, bounded Cartesian callout seam. `XYAD` v2 has a

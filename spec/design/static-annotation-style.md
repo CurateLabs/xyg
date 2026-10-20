@@ -160,3 +160,15 @@ composition API and the public Node `Figure`, requiring byte-identical
 SVG/PNG/PDF/JPEG/WebP and identical stable rejection reasons.
 `tests/pyplot/test_corpus_annotations_1006.py` covers the Matplotlib 3.11
 corpus cases 25 and 53 annotation surface through pyplot.
+
+### Coordinate-space text (ABI 389)
+
+A `text` row whose `coordinate_space` style entry is a non-`data` string takes the
+laid-out (`XYAW`) label slot, exactly as the Scene annotation pack routes it, so
+the label-table order needs no host layout flag. The projection query does not
+validate the value (unknown values and `figure_fraction` fail in the Scene pack
+with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE`). See
+[scene-ir.md](scene-ir.md) *Annotation coordinate spaces*.
+`tests/test_static_annotation_space_cross_host.py` with
+`packages/xy-node/scripts/static_annotation_space_cross_host.mjs` requires
+byte-identical XYAF bulk packs, SVG/PNG/PDF/JPEG/WebP and rejection reasons.

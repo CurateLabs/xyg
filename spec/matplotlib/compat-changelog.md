@@ -4,6 +4,28 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## Annotation coordinate spaces and `table()` — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+- Static export (SVG/PNG/PDF/JPEG/WebP, Python and Node) places text in
+  `axes_fraction`, `xaxis_transform` and `yaxis_transform` coordinates. Before,
+  every text with a `coordinate_space` style failed closed with
+  `Scene wrapped annotations do not encode ['coordinate_space']`, including a
+  plain `ax.text(..., transform=ax.transAxes)`. Hosts marshal the
+  `coordinate_space` string only; Rust maps it to a code, routes the text to the
+  laid-out `XYAW` path as v3 (emitted only when a row uses a non-data space) and
+  projects it against the plot rectangle and the Scene axis scales (ABI 389).
+- Reference-corpus case 53 (`table()` with `cellText`, `colLabels`,
+  `cellColours`) passes. Table cells no longer carry the `xy-mpl-table-cell`
+  `class_name` (Scene treats a class as browser CSS and fails closed; nothing
+  styled it); tests identify cells by their `axes_fraction` space.
+- `figure_fraction` text (`fig.text`, `transform=fig.transFigure`) stays
+  fail-closed with the stable `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE`
+  reason: pyplot compiles panels separately, so a panel Scene does not own the
+  figure rectangle. Known gap.
+- The browser painter now rejects (Rust, stable `Length` admission error) a label
+  anchored outside the canvas instead of publishing a label table the TS client
+  rejects.
+
 ## Per-annotation static style and boxes — 2026-10-20 (Matplotlib 3.11.0 reference)
 
 - Static export (SVG/PNG/PDF/JPEG/WebP, Python and Node) no longer carries one

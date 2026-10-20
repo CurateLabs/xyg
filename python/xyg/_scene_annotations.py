@@ -184,8 +184,9 @@ def _xyaf_dispatch(annotation: dict[str, Any]) -> tuple[str, dict[str, Any], boo
     kind = str(annotation.get("kind", ""))
     style = dict(annotation.get("style") or {})
     authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
-    layout_text = kind == "text" and any(
-        key in annotation for key in ("dx", "dy", "anchor", "rotation")
+    layout_text = kind == "text" and (
+        any(key in annotation for key in ("dx", "dy", "anchor", "rotation"))
+        or style.get("coordinate_space") is not None
     )
     dispatch = _native.scene_xyaf_annotation_dispatch_plan(
         kind=kind,
@@ -201,7 +202,7 @@ def _xyaf_dispatch(annotation: dict[str, Any]) -> tuple[str, dict[str, Any], boo
 def _validate_xyaf_annotation_style(annotation: dict[str, Any]) -> None:
     """Fail closed on style keys the Scene admit table rejects (matches legacy _pack_xyaf)."""
     kind, style, wrapped, labelled, _kind_label = _xyaf_dispatch(annotation)
-    skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
+    skip_style = {"markup", "coordinate_space"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
     if kind in {"text", "marker"}:
         skip_style = skip_style | {"rotation"}
     unsupported = sorted(
@@ -369,6 +370,10 @@ def _raise_xyaf_bulk_error(error: _native.SceneXyafBulkPackError, annotations: l
         raise UnsupportedSceneV3("Scene v23 label border requires color and width")
     if code == -13:
         raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
+    if code == -14:
+        raise UnsupportedSceneV3(
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE: Scene text annotations support data, axes_fraction, xaxis_transform and yaxis_transform coordinates only; figure_fraction needs the figure rectangle a panel Scene does not own"
+        )
     if code == -6:
         style = dict(annotation.get("style") or {})
         if "label_opacity" in style:

@@ -1478,7 +1478,7 @@ export function scenePolarInputPack(kwargs) {
 
 const ADMITTED_XYAF_STYLE_KEYS = new Set([
   "color", "stroke_color", "label_color", "label_background", "label_border_color",
-  "dash", "linecap", "opacity", "width", "stroke_width", "label_opacity", "label_border_width", "rotation",
+  "dash", "linecap", "coordinate_space", "opacity", "width", "stroke_width", "label_opacity", "label_border_width", "rotation",
 ]);
 
 const XyafBulkStyleIn = koffi.struct("XygXyafBulkStyleIn", {
@@ -1489,6 +1489,7 @@ const XyafBulkStyleIn = koffi.struct("XygXyafBulkStyleIn", {
   label_border_color: StringRef,
   dash: StringRef,
   linecap: StringRef,
+  coordinate_space: StringRef,
   opacity_present: "int32_t",
   opacity: "double",
   width_present: "int32_t",
@@ -1578,6 +1579,7 @@ function marshalXyafStyle(style, keep, { skipRotation = false } = {}) {
       label_border_color: stringRef(typeof style.label_border_color === "string" ? style.label_border_color : null, keep),
       dash: stringRef(typeof style.dash === "string" ? style.dash : null, keep),
       linecap: stringRef(style.linecap != null ? String(style.linecap) : null, keep),
+      coordinate_space: stringRef(style.coordinate_space != null ? String(style.coordinate_space) : null, keep),
       opacity_present: opacityPresent,
       opacity,
       width_present: widthPresent,

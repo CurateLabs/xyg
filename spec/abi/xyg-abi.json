@@ -1,5 +1,5 @@
 {
-  "abi_version": 388,
+  "abi_version": 389,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",

@@ -23,7 +23,12 @@ Python composition API and the public Node `Figure` with independent literals an
 requires byte-identical SVG/PNG/PDF/JPEG/WebP plus identical stable rejection
 reasons for round box styles, three-value padding and custom fonts.
 
+`tests/test_static_annotation_space_cross_host.py` does the same for annotation
+coordinate spaces (`axes_fraction`, `xaxis_transform`, `yaxis_transform` over a
+log x axis): byte-identical XYAF bulk packs and exports, axes-fraction text equal
+to the equivalent data point, and identical stable rejections for
+`figure_fraction`, unknown spaces and a non-text kind.
+
 This focused corpus does not prove every pyplot journey or the retired renderer's
-deletion. The Matplotlib 3.11 reference cases 25 and 53 clear the annotation-style
-gate but still stop at separate Scene gaps (arrow head vocabulary, `axes_fraction`
-table cells, zero-point `bxp` fliers); see `spec/matplotlib/compat-changelog.md`.
+deletion. Matplotlib 3.11 reference case 53 now passes; case 25 still stops at a separate
+Scene gap (arrow head vocabulary); see `spec/matplotlib/compat-changelog.md`.

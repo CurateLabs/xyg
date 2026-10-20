@@ -21,6 +21,9 @@ pub struct XyafPackInput<'a> {
     pub style_bits: u32,
     pub linecap: u8,
     pub dash_count: u8,
+    /// Coordinate-space code of a text row (`0` data, `1` axes fraction,
+    /// `2` x data + y axes fraction, `3` x axes fraction + y data).
+    pub space: u8,
     pub nums: [f64; 18],
     pub color: [u8; 4],
     pub stroke: [u8; 4],
@@ -36,6 +39,7 @@ pub fn scene_xyaf_pack(input: &XyafPackInput<'_>) -> Result<Vec<u8>, i32> {
     if input.kind_code > 5
         || input.axis_code > 2
         || input.dash_count > 8
+        || input.space > 3
         || (input.linecap != 255 && input.linecap != 0 && input.linecap != 2)
         || (input.anchor != 255 && input.anchor > 2)
         || input.text.len() > 4096
@@ -61,7 +65,7 @@ pub fn scene_xyaf_pack(input: &XyafPackInput<'_>) -> Result<Vec<u8>, i32> {
     out[20..24].copy_from_slice(&input.style_bits.to_le_bytes());
     out[24] = input.linecap;
     out[25] = input.dash_count;
-    out[26] = 0;
+    out[26] = input.space;
     out[27] = 0;
     out[28..32].copy_from_slice(&(input.text.len() as u32).to_le_bytes());
     for (i, value) in input.nums.iter().enumerate() {
@@ -101,6 +105,7 @@ mod tests {
             style_bits: 1,
             linecap: 255,
             dash_count: 0,
+            space: 0,
             nums,
             color: [102, 112, 133, 255],
             stroke: [0; 4],

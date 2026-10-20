@@ -2846,10 +2846,34 @@ struct AnnotationEnvelope {
     callouts: Vec<CartesianCallout>,
 }
 
+/// Project an authored annotation point. Space `0` is data/data, `1` axes
+/// fraction on both axes, `2` x data + y axes fraction (`xaxis_transform`),
+/// `3` x axes fraction + y data (`yaxis_transform`). Axes fractions run from
+/// the plot's left/bottom edge; data components use the Scene's own axis scale
+/// (linear, log, symlog, category), never a host conversion.
+fn project_annotation_point(
+    space: u8,
+    x: f64,
+    y: f64,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    layout: PlotLayout,
+) -> (f64, f64) {
+    let axes_x = |fraction: f64| layout.left + fraction * (layout.right - layout.left);
+    let axes_y = |fraction: f64| layout.bottom - fraction * (layout.bottom - layout.top);
+    match space {
+        1 => (axes_x(x), axes_y(y)),
+        2 => (x_scale.pixel(x), axes_y(y)),
+        3 => (axes_x(x), y_scale.pixel(y)),
+        _ => (x_scale.pixel(x), y_scale.pixel(y)),
+    }
+}
+
 /// Decode the v24 bounded wrapped-label seam.  Hosts contribute only literal
 /// text, a width constraint, and author offsets; line breaking, metrics,
 /// projection, boxes, and callout geometry remain Rust-owned. ABI 187/188
 /// accept XYAW v2 when any row carries a nonzero rotation; v1 stays 64-byte meta.
+/// XYAW v3 keeps the v2 layout and gives byte 62 the row's coordinate space.
 fn decode_xyaw(
     bytes: &[u8],
     x_scale: AxisScale,
@@ -2863,7 +2887,7 @@ fn decode_xyaw(
         return Err(SceneError::Length);
     }
     let version = batch_u32(bytes, 4)?;
-    if version != 1 && version != 2 {
+    if !(1..=3).contains(&version) {
         return Err(SceneError::Length);
     }
     let meta_bytes = if version == 1 { 64 } else { 72 };
@@ -2892,12 +2916,21 @@ fn decode_xyaw(
         let border_width = batch_f64(fixed, 52)?;
         let kind = fixed[60];
         let anchor = fixed[61];
-        let rotation = if version == 2 {
+        let rotation = if version >= 2 {
             batch_f64(fixed, 64)?
         } else {
             0.0
         };
-        if fixed[62..64] != [0; 2]
+        // XYAW v3 byte 62 is the coordinate space; v1/v2 keep it reserved.
+        let space = if version == 3 { fixed[62] } else { 0 };
+        let reserved_clear = if version == 3 {
+            fixed[63] == 0
+        } else {
+            fixed[62..64] == [0; 2]
+        };
+        if !reserved_clear
+            || space > 3
+            || (space != 0 && kind != 0)
             || kind > 1
             || anchor > 2
             || ![x, y, dx, dy, wrap, border_width, rotation]
@@ -2957,8 +2990,7 @@ fn decode_xyaw(
             return Err(SceneError::Limit);
         }
         let text = lines.join("\n");
-        let px = x_scale.pixel(x);
-        let py = y_scale.pixel(y);
+        let (px, py) = project_annotation_point(space, x, y, x_scale, y_scale, layout);
         let lx = px + dx;
         let ly = py + dy;
         if ![px, py, lx, ly].into_iter().all(f64::is_finite)
@@ -12989,6 +13021,17 @@ impl SceneDocument {
         {
             return Err(SceneError::Limit);
         }
+        // The browser client rejects a label anchored outside the canvas, and
+        // text in a non-data coordinate space may be authored anywhere, so the
+        // painter fails closed here instead of publishing a table it rejects.
+        let (width, height) = (self.layout.viewport_width, self.layout.viewport_height);
+        if self
+            .labels
+            .iter()
+            .any(|label| !(0.0..=width).contains(&label.x) || !(0.0..=height).contains(&label.y))
+        {
+            return Err(SceneError::Length);
+        }
         let mut labels = self.labels.clone();
         let mut backgrounds = self.label_backgrounds.clone();
         for record in &self.records {
@@ -20870,6 +20913,32 @@ pub(crate) mod tests {
         assert!(painter.windows(1).any(|window| window == b"A"));
     }
 
+    /// Text in a non-data coordinate space may be authored outside the canvas;
+    /// the painter table must not carry a label the TS client rejects
+    /// (`48_wasm_scene.ts` bounds label anchors to the canvas).
+    #[test]
+    fn painter_rejects_labels_anchored_outside_the_canvas() {
+        let mut document = admission_document(1, false);
+        let label = |x: f64, y: f64| SceneLabel {
+            stable_id: 0x5859_0700_0000_0000,
+            x,
+            y,
+            font_size: 12.0,
+            rgba: [0, 0, 0, 255],
+            anchor: 1,
+            rotation: 0.0,
+            text: "cell".into(),
+            annotation: true,
+        };
+        document.labels = vec![label(10.0, 10.0)];
+        document.label_backgrounds = vec![None];
+        assert!(document.to_browser_painter(1 << 20).is_ok());
+        for (x, y) in [(-1.0, 10.0), (10.0, -0.5), (1.0e6, 10.0), (10.0, 1.0e6)] {
+            document.labels = vec![label(x, y)];
+            assert!(document.to_browser_painter(1 << 20).is_err(), "({x}, {y})");
+        }
+    }
+
     #[test]
     fn glyph_marker_labels_are_bounded_before_label_allocation() {
         let mut document = admission_document(MAX_SCENE_LABELS, false);
@@ -24335,6 +24404,66 @@ pub(crate) mod tests {
         assert!(callouts.is_empty());
         frame[12 + 32..12 + 40].copy_from_slice(&1.0f64.to_le_bytes());
         assert!(decode_xyaw(&frame, x, y, layout).is_err());
+    }
+
+    fn xyaw_v3_text_frame(space: u8, x: f64, y: f64, kind: u8) -> Vec<u8> {
+        let text = b"cell";
+        let mut frame = b"XYAW\x03\0\0\0\x01\0\0\0".to_vec();
+        for value in [x, y, 0.0, 0.0, 0.0] {
+            frame.extend_from_slice(&value.to_le_bytes());
+        }
+        frame.extend_from_slice(&[102, 112, 133, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
+        frame.extend_from_slice(&0.0f64.to_le_bytes());
+        frame.extend_from_slice(&[kind, 1, space, 0]);
+        frame.extend_from_slice(&0.0f64.to_le_bytes());
+        frame.extend_from_slice(&(text.len() as u32).to_le_bytes());
+        frame.extend_from_slice(text);
+        frame
+    }
+
+    #[test]
+    fn xyaw_v3_projects_axes_and_mixed_spaces_through_the_axis_scale() {
+        // Plot rectangle x 20..220, y 20..140; log x over 1..1000, linear y 0..4.
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Log, 1.0, 1000.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 4.0, 140.0, 20.0, 1.0, false).unwrap();
+        let at = |space: u8, px: f64, py: f64| {
+            let (labels, _, _) = decode_xyaw(&xyaw_v3_text_frame(space, px, py, 0), x, y, layout)
+                .unwrap_or_else(|error| panic!("space {space}: {error:?}"));
+            (labels[0].x, labels[0].y)
+        };
+        let close = |a: (f64, f64), b: (f64, f64)| {
+            assert!((a.0 - b.0).abs() < 1e-9 && (a.1 - b.1).abs() < 1e-9, "{a:?} != {b:?}");
+        };
+        // Data space stays the default projection.
+        close(at(0, 10.0, 1.0), (x.pixel(10.0), y.pixel(1.0)));
+        // Axes fraction: (0, 0) is the bottom-left corner, (1, 1) the top-right.
+        close(at(1, 0.0, 0.0), (20.0, 140.0));
+        close(at(1, 1.0, 1.0), (220.0, 20.0));
+        // Outside the plot rectangle is allowed for text (table rows hang below).
+        close(at(1, 0.5, -0.25), (120.0, 170.0));
+        // xaxis_transform: x is data (log), y is an axes fraction.
+        close(at(2, 10.0, 0.5), (x.pixel(10.0), 80.0));
+        // yaxis_transform: x is an axes fraction, y is data.
+        close(at(3, 0.25, 3.0), (70.0, y.pixel(3.0)));
+        // The log data component is not a host conversion: 10 is a third of the way.
+        close(at(2, 10.0, 0.0), (20.0 + 200.0 / 3.0, 140.0));
+    }
+
+    #[test]
+    fn xyaw_v3_rejects_unknown_spaces_nonfinite_values_and_callout_spaces() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        assert!(decode_xyaw(&xyaw_v3_text_frame(4, 0.5, 0.5, 0), x, y, layout).is_err());
+        assert!(decode_xyaw(&xyaw_v3_text_frame(1, 0.5, 0.5, 1), x, y, layout).is_err());
+        assert!(decode_xyaw(&xyaw_v3_text_frame(1, f64::NAN, 0.5, 0), x, y, layout).is_err());
+        // Beyond the label coordinate magnitude limit.
+        assert!(decode_xyaw(&xyaw_v3_text_frame(1, 1.0e12, 0.5, 0), x, y, layout).is_err());
+        // v1/v2 keep byte 62 reserved: a space byte there is not a coordinate space.
+        let mut v2 = xyaw_v3_text_frame(1, 0.5, 0.5, 0);
+        v2[4] = 2;
+        assert!(decode_xyaw(&v2, x, y, layout).is_err());
     }
 
     #[test]

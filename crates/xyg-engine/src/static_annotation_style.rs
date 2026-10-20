@@ -401,10 +401,18 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         }
         let kind_name = kind.unwrap_or("");
         let layout_key = row_flags & ROW_LAYOUT != 0;
+        // Non-data text routes through the laid-out (XYAW) label slot, like
+        // the Scene annotation pack does; the Scene pack validates the value.
+        let non_data_space = matches!(
+            style.get("coordinate_space").copied(),
+            Some(Value::Text(space)) if space != "data"
+        );
         slot_rows.push(LabelSlotRow {
             kind: kind_name,
             authored_wrap: row_flags & ROW_WRAP != 0,
-            layout: layout_key || (matches!(kind_name, "text" | "marker") && rotation.is_some()),
+            layout: layout_key
+                || (matches!(kind_name, "text" | "marker") && rotation.is_some())
+                || (kind_name == "text" && non_data_space),
             labelled: text.is_some_and(|text| !text.is_empty()),
         });
         pending.push(entry);
@@ -695,6 +703,27 @@ mod tests {
                 "{padding}"
             );
         }
+    }
+    #[test]
+    fn non_data_coordinate_space_text_takes_the_laid_out_label_slot() {
+        let sized = |size: f64, space: Option<&'static str>| {
+            let mut entries = vec![("font_size", Value::Number(size))];
+            if let Some(space) = space {
+                entries.push(("coordinate_space", Value::Text(space)));
+            }
+            entries
+        };
+        // No host layout flag: the style value alone routes the text row to
+        // the XYAW slot, after the XYAT rows, as the Scene annotation pack does.
+        let rows = [
+            (0, (Some("a"), Some("text"), sized(21.0, Some("axes_fraction")))),
+            (0, (Some("b"), Some("text"), sized(22.0, None))),
+            (0, (Some("c"), Some("text"), sized(23.0, Some("data")))),
+            (0, (Some("d"), Some("text"), sized(24.0, Some("yaxis_transform")))),
+        ];
+        let table = parse(&resolve_packed(&frame_flags(&rows)).unwrap()).1;
+        let sizes: Vec<_> = table.iter().map(|raw| entry(raw).1).collect();
+        assert_eq!(sizes, vec![22.0, 23.0, 21.0, 24.0]);
     }
     #[test]
     fn label_table_follows_scene_label_order() {
