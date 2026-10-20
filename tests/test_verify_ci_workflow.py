@@ -915,6 +915,7 @@ def test_reference_gate_commands_cannot_hide_in_inline_comments(tmp_path: Path) 
     commands = (
         ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
+        ".venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py",
         ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
     )
     for command in commands:
