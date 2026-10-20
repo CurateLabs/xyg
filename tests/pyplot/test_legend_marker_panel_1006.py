@@ -135,3 +135,19 @@ def test_polar_panel_legends_stay_inside_the_canvas():
     assert len(frames) == 1
     for x, y, w, h in frames:
         assert x >= 0 and x + w <= width / 2 and y >= 0 and y + h <= height, (x, y, w, h)
+
+
+def test_marker_legend_alpha_matches_the_plotted_data_alpha():
+    """``plot(marker=..., alpha=0.5)``: line and marker swatch carry the data alpha."""
+    x = np.arange(5)
+    plt.plot(x, x, marker="s", color="m", alpha=0.5, label="a")
+    plt.legend()
+    svg = _svg(plt.gcf())
+    legend = _legends(svg)[0]
+    line_alpha = float(re.search(r'<line[^>]*stroke="rgba\([\d,]+,([\d.]+)\)"', legend).group(1))
+    marker = re.search(r'<rect[^>]*fill-opacity="([\d.]+)"', legend)
+    assert marker is not None
+    assert line_alpha == pytest.approx(0.5, abs=5e-3)
+    assert float(marker.group(1)) == pytest.approx(0.5, abs=5e-3)
+    # The plotted series uses the same alpha.
+    assert 'stroke-opacity="0.5"' in svg.split("data-xy-static-legend", 1)[0]
