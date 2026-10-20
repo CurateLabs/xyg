@@ -225,7 +225,7 @@ def test_arrow_beside_styled_annotation_labels_keeps_the_painter_label_table_bel
 @pytest.mark.parametrize("space", SPACES)
 def test_arrows_keep_rejecting_non_data_coordinate_spaces(space, node_results):
     """#1039: only unwrapped text may leave data coordinates; arrows stay data-only."""
-    with pytest.raises(ValueError, match="coordinate_space|COORDINATE_SPACE|does not encode"):
+    with pytest.raises(ValueError, match=r"coordinate_space|COORDINATE_SPACE|does not encode"):
         _scene({"coordinate_space": space})
     assert "coordinate_space" in node_results[space].get("error", "") or (
         "COORDINATE_SPACE" in node_results[space].get("error", "")
