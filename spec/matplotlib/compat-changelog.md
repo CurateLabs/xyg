@@ -4,6 +4,44 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## Reference corpus restore on the Rust static route — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
+
+Repairs for the pinned 3.11 reference lane after the static-export cutover.
+Each is regression-tested in `tests/pyplot/test_corpus_regressions_1006.py`.
+
+- `tight_layout()` measured *intrinsic* chrome by round-tripping the probe
+  chart's frame padding (derived from the axes' current figure rectangle), so
+  every panel reserved its whole allocation as margin and collapsed to a
+  sliver. The Scene-rooms measurement now strips that padding like the
+  fallback measurement always did.
+- Empty line/scatter artists (a boxplot without fliers, a legend proxy
+  `plot([], [], label=...)`) draw nothing, as in Matplotlib. The static
+  projection lifts their legend entry and drops the zero-point trace before
+  Scene compile, which rejects it.
+- A scalar `alpha=` replaces the intrinsic paint alpha. Constant paints carry
+  it as the literal CSS alpha of fill and stroke; per-item paints get a
+  constant `artist_alpha` style channel that Rust's per-item paint path already
+  composes (replace, then multiply).
+- Polar axes no longer author the Cartesian `tick_label_strategy="preserve"`
+  for explicit `set_thetagrids`/`set_rticks`; rim labels are never culled, so
+  the setting is inert there and the polar axis components refuse it.
+- Pyplot axes show a legend only when `legend()` asks for one. Labels (including
+  pie wedge labels) name artists for a later legend instead of creating an
+  automatic one.
+- The public Scene admits `side="top"` (x) / `side="right"` (y) for heatmaps
+  (`matshow`, `spy`); other literal geometry keeps the default-side contract.
+  `spy` now places row 0 at the top through its extent (`(-0.5, cols-0.5,
+  rows-0.5, -0.5)`, as Matplotlib does) instead of flipping the image twice.
+- Colormapped `contour`/`tricontour` strokes are lowered by the pyplot static
+  adapter to one literal-colored trace per distinct level color, resolved
+  through Rust's native colormap tables. A fully transparent `contour` trace
+  (the browser's colormap carrier) is dropped from the static projection.
+
+Still open on this lane (named gaps, all fail closed with stable diagnostics):
+per-item scatter sizes (`s=array`), secondary y axes (`twinx`), heterogeneous
+annotation styles and annotation `bbox=`, line+marker legend swatches, more
+than 1,024 hexbin cells (#887), and a panel legend in a multi-panel document.
+
 ## Patch bodies and geometry — 2026-07-30 (Matplotlib 3.11.1 reference)
 
 - `xyg.pyplot.Axes.add_patch` now fills a patch instead of drawing only its

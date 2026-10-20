@@ -133,6 +133,25 @@ outlines and skips the fill, since hole support is not implemented and filling
 every ring would paint the hole solid; and a ring that is self-intersecting or
 past the triangulator's 10,000-vertex cap draws its outline and warns.
 
+## Static-export gaps on the Matplotlib 3.11 reference lane
+
+The dual-engine corpus (`tests/pyplot/test_reference_corpus.py`) is the gate for
+the pinned released `matplotlib==3.11.0`. Programs the canonical Rust Scene/XYST
+route does not yet express fail closed with a stable diagnostic rather than
+falling back to a second renderer. Currently open (tracked under #1006):
+
+| Corpus case | Gap | Diagnostic |
+|---|---|---|
+| `12_scatter_size_array` | per-item scatter sizes (`s=array`) | `Scene v12 does not yet encode hidden or per-item styled marks` |
+| `25_annotate_text`, `53_matplotlib_311_plotting` | mixed annotation text styles in one panel; annotation `bbox=` | `XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ANNOTATION_STYLE`, `XYG_STATIC_UNSUPPORTED_ANNOTATION_BBOX` |
+| `26_twinx_dual_axis` | secondary y axis | `Scene v12 figure compilation currently supports exactly x/y axes` |
+| `41_line_kwargs` | line+marker legend swatch (`legend_marker`) | `XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE` |
+| `47_statistical_families` | default-gridsize `hexbin` lattice above the 1,024 PolyFill-group ceiling ([#887](https://github.com/CurateLabs/xyg/issues/887)) | `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
+| `55_polar_projection` | a panel legend in a multi-panel document | `XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS` |
+
+Matplotlib's legend placement relative to the axes is also not yet reproduced in
+static output: the document legend lays out against the document rectangle.
+
 ## Sharp edges
 
 - Custom Matplotlib marker paths, arbitrary clipping graphs, and unsupported
