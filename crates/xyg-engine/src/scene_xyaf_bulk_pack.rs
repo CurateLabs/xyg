@@ -722,7 +722,7 @@ mod tests {
         ] {
             assert_eq!(reject(style), XyafBulkError::ArrowStyle);
         }
-        assert_eq!(XyafBulkPackError::new(XyafBulkError::ArrowStyle, 0).abi_code(), -14);
+        assert_eq!(XyafBulkPackError::new(XyafBulkError::ArrowStyle, 0).abi_code(), -15);
         // Arrow facts on any other kind are an unsupported style, not ignored.
         let mut text = text_obs("hi", 0.0, 0.0, "#000");
         text.style.head_style = Some("v");

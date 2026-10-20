@@ -84,11 +84,20 @@ def _scene(style: dict) -> bytes:
     return figure_scene(chart.figure())
 
 
+SPACES = ["axes_fraction", "xaxis_transform", "yaxis_transform", "figure_fraction"]
+
+
 @pytest.fixture(scope="module")
 def node_results():
     if not shutil.which("node") or not (ROOT / "packages/xy-node/node_modules/koffi").exists():
         pytest.skip("Node/koffi unavailable")
-    cases = {**ADMITTED, **VOCABULARY_REJECTED, **KEY_REJECTED, **GEOMETRY_REJECTED}
+    cases = {
+        **ADMITTED,
+        **VOCABULARY_REJECTED,
+        **KEY_REJECTED,
+        **GEOMETRY_REJECTED,
+        **{space: {"coordinate_space": space} for space in SPACES},
+    }
     process = subprocess.run(
         ["node", str(ROOT / "packages/xy-node/scripts/arrow_style_cross_host.mjs")],
         cwd=ROOT,
@@ -211,3 +220,13 @@ def test_arrow_beside_styled_annotation_labels_keeps_the_painter_label_table_bel
     assert at >= 0 and b"styled note" in painter
     assert int.from_bytes(painter[at + 4 : at + 8], "little") <= 5
     assert _native.scene_svg(scene).count("<polyline") >= 2
+
+
+@pytest.mark.parametrize("space", SPACES)
+def test_arrows_keep_rejecting_non_data_coordinate_spaces(space, node_results):
+    """#1039: only unwrapped text may leave data coordinates; arrows stay data-only."""
+    with pytest.raises(ValueError, match="coordinate_space|COORDINATE_SPACE|does not encode"):
+        _scene({"coordinate_space": space})
+    assert "coordinate_space" in node_results[space].get("error", "") or (
+        "COORDINATE_SPACE" in node_results[space].get("error", "")
+    ), node_results[space]
