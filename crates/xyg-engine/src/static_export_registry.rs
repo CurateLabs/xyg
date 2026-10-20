@@ -243,6 +243,10 @@ pub const REQUIRED_EDGE_CONCERNS: &[&str] = &[
     "temporal-axis",
     "empty",
     "linear-scale",
+    // #1006: sources above the public record budget take the browser
+    // payload's LOD tiers (line M4, scatter density) in static export.
+    "browser-lod-tier",
+    "large-source",
 ];
 
 pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
@@ -308,6 +312,23 @@ pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
         axis_mode: "temporal-x-log-y",
         concerns: &["temporal-axis", "log-scale"],
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
+    },
+    StaticExportEdgeCase {
+        // #1006: a 20,001-point line exports the browser's M4 rows.
+        name: "line_m4_decimated",
+        shape: "line",
+        axis_mode: "linear-x-linear-y",
+        concerns: &["browser-lod-tier", "large-source"],
+        reason_prefix: "",
+    },
+    StaticExportEdgeCase {
+        // #1006: a 270,000-point scatter is one density Image binned from
+        // its canonical columns (its source exceeds the XYTA record budget).
+        name: "scatter_density_large",
+        shape: "scatter",
+        axis_mode: "authored-linear-xy",
+        concerns: &["browser-lod-tier", "large-source"],
+        reason_prefix: "",
     },
 ];
 
@@ -377,6 +398,8 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR",
     },
     StaticExportFailClose {
+        // #1006: beyond the browser tiers — a polar line ships direct in the
+        // browser, so 10,001 points exceed the static record budget.
         name: "lod_limit",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
     },

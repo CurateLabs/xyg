@@ -65,9 +65,20 @@
 //! stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
+//! #1006 admits traces above the 10,000-record budget only on the browser
+//! payload tiers the Scene reproduces: Cartesian lines on the M4 tier (the
+//! row packer decimates them), direct scatters up to `DIRECT_SOFT_CEILING`
+//! summed per figure, and density-blit scatters (`public_lod_tier_admits`).
 
-use crate::scene::{SceneError, MAX_SCENE_IMAGE_PIXELS};
+use crate::lod_plan::{
+    payload_tier, DIRECT_SOFT_CEILING, PAYLOAD_KIND_LINE, PAYLOAD_TIER_DECIMATED,
+};
+use crate::scene::{SceneError, MAX_SCENE_IMAGE_PIXELS, MAX_SCENE_MARKS};
 use crate::static_export_registry::PUBLIC_EXPORT_KINDS;
+
+// #1006: the browser's per-item direct scatter ceiling is the Scene's mark
+// ceiling, so an admitted direct scatter always fits one Scene.
+const _: () = assert!(DIRECT_SOFT_CEILING as usize == MAX_SCENE_MARKS);
 
 const XYEP_MAGIC: &[u8; 4] = b"XYEP";
 const XYEP_VERSION: u32 = 1;
@@ -393,6 +404,49 @@ fn kind_segment(kind: u8) -> bool {
 
 fn kind_band(kind: u8) -> bool {
     matches!(kind, KIND_AREA | KIND_ERROR_BAND)
+}
+
+/// Whether a trace above the public record budget rides a browser payload
+/// tier the static Scene reproduces (#1006, dossier §28).
+///
+/// - A cartesian `line` above `DECIMATION_THRESHOLD` is the browser's M4
+///   decimated tier (`payload_tier`); the Scene row packer applies the same
+///   `payload_m4_indices` before packing. Polar lines ship direct in the
+///   browser, so they keep the record budget.
+/// - A density-blit scatter is one bounded Image record.
+/// - A plain scatter the host's `payload_tier` call left direct (at most
+///   `SCATTER_DENSITY_THRESHOLD` points, `DIRECT_SOFT_CEILING` with per-item
+///   channels, or forced direct) draws one record per point up to
+///   `DIRECT_SOFT_CEILING`, which is also `MAX_SCENE_MARKS`. Graph node and
+///   companion-role scatters keep their own budgets.
+///
+/// Every other kind keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
+fn public_lod_tier_admits(
+    kind: u8,
+    n_x: u32,
+    trace_flags: u32,
+    role: &str,
+    figure_flags: u32,
+) -> bool {
+    match kind {
+        KIND_LINE => {
+            payload_tier(
+                PAYLOAD_KIND_LINE,
+                u64::from(n_x),
+                figure_flags & FLAG_POLAR != 0,
+                -1,
+                false,
+                false,
+            ) == Some(PAYLOAD_TIER_DECIMATED)
+        }
+        KIND_SCATTER if trace_flags & TRACE_DENSITY_BLIT != 0 => true,
+        KIND_SCATTER => {
+            figure_flags & FLAG_GRAPH_MARKS == 0
+                && role.is_empty()
+                && u64::from(n_x) <= DIRECT_SOFT_CEILING
+        }
+        _ => false,
+    }
 }
 
 fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
@@ -1303,6 +1357,7 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     }
 
     let mut public_triangle_mesh_count = 0usize;
+    let mut direct_scatter_points = 0usize;
     for trace in &traces {
         let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {
             MAX_PUBLIC_STEP_POINTS
@@ -1311,9 +1366,19 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         };
         if trace.flags & TRACE_HAS_X != 0
             && trace.n_x as usize > point_limit
-            && (trace.kind != KIND_SCATTER || trace.flags & TRACE_DENSITY_BLIT == 0)
+            && !public_lod_tier_admits(trace.kind, trace.n_x, trace.flags, trace.role, flags)
         {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        }
+        // #1006: every direct scatter record is one Scene mark, so the
+        // figure's direct scatters share the Scene's mark ceiling.
+        if trace.kind == KIND_SCATTER && trace.flags & TRACE_DENSITY_BLIT == 0 {
+            direct_scatter_points = direct_scatter_points
+                .checked_add(trace.n_x as usize)
+                .ok_or(SceneError::Limit)?;
+            if direct_scatter_points > MAX_SCENE_MARKS {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+            }
         }
         if kind_band(trace.kind) && (trace.flags & TRACE_HAS_X == 0 || trace.n_x < 2) {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_BAND");
@@ -1977,6 +2042,126 @@ mod tests {
         assert_eq!(
             scene_public_export_reason(&figure(&[], &["dash"])),
             Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
+        );
+    }
+
+    #[test]
+    fn public_lod_admits_exactly_the_browser_payload_tiers() {
+        // #1006: lines above DECIMATION_THRESHOLD take the browser's M4 tier
+        // (cartesian only), direct scatters are admitted up to the
+        // per-item direct ceiling (= MAX_SCENE_MARKS), density scatters are
+        // one Image record, and everything beyond keeps the LOD reason.
+        fn put_axis(buf: &mut Vec<u8>, axis_id: u8) {
+            buf.extend_from_slice(&[axis_id, 0, 0, 0, 0, 0]);
+            buf.extend_from_slice(&0u16.to_le_bytes());
+        }
+        fn figure(figure_flags: u32, traces: &[(u8, u8, u32, u32, &str)]) -> Vec<u8> {
+            let mut buf = header(figure_flags, 0, 0, 0, 2, 0, traces.len() as u32);
+            put_axis(&mut buf, 0);
+            put_axis(&mut buf, 1);
+            for &(kind, step, flags, n, role) in traces {
+                buf.extend_from_slice(&[kind, step, 255, 255, 255, 0, 0, 0]);
+                buf.extend_from_slice(&(flags | TRACE_HAS_X | TRACE_HAS_Y).to_le_bytes());
+                buf.extend_from_slice(&n.to_le_bytes());
+                buf.extend_from_slice(&n.to_le_bytes());
+                buf.extend_from_slice(&[0u8; 28]);
+                buf.extend_from_slice(&0u16.to_le_bytes());
+                buf.extend_from_slice(&(role.len() as u16).to_le_bytes());
+                buf.extend_from_slice(&[0u8; 4]);
+                buf.extend_from_slice(&f64::NAN.to_le_bytes());
+                buf.extend_from_slice(&f64::NAN.to_le_bytes());
+                buf.extend_from_slice(role.as_bytes());
+            }
+            buf
+        }
+        let lod = Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        let ceiling = DIRECT_SOFT_CEILING as u32;
+        let threshold = crate::lod_plan::DECIMATION_THRESHOLD as u32;
+        let density = crate::lod_plan::SCATTER_DENSITY_THRESHOLD as u32;
+        for n in [threshold, threshold + 1, 1_000_000, 100_000_000] {
+            assert_eq!(
+                scene_public_export_reason(&figure(0, &[(KIND_LINE, 0, 0, n, "")])),
+                Ok(""),
+                "line {n}"
+            );
+            assert_eq!(
+                scene_public_export_reason(&figure(0, &[(KIND_LINE, 1, 0, n, "")])),
+                Ok(""),
+                "step line {n}"
+            );
+        }
+        // Polar lines ship direct in the browser, so the record budget holds.
+        assert_eq!(
+            scene_public_export_reason(&figure(FLAG_POLAR, &[(KIND_LINE, 0, 0, threshold, "")])),
+            Ok("")
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                FLAG_POLAR,
+                &[(KIND_LINE, 0, 0, threshold + 1, "")]
+            )),
+            lod
+        );
+        // Other M4-eligible kinds keep the record budget in static export.
+        assert_eq!(
+            scene_public_export_reason(&figure(0, &[(KIND_AREA, 0, 0, threshold + 1, "")])),
+            lod
+        );
+        for n in [threshold + 1, density, density + 1, ceiling] {
+            assert_eq!(
+                scene_public_export_reason(&figure(0, &[(KIND_SCATTER, 0, 0, n, "")])),
+                Ok(""),
+                "direct scatter {n}"
+            );
+        }
+        assert_eq!(
+            scene_public_export_reason(&figure(0, &[(KIND_SCATTER, 0, 0, ceiling + 1, "")])),
+            lod
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[(KIND_SCATTER, 0, TRACE_DENSITY_BLIT, 100_000_000, "")]
+            )),
+            Ok("")
+        );
+        // Direct scatters share the Scene mark ceiling across the figure;
+        // density blits do not count toward it.
+        let half = ceiling / 2 + 1;
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[
+                    (KIND_SCATTER, 0, 0, half, ""),
+                    (KIND_SCATTER, 0, 0, half, "")
+                ]
+            )),
+            lod
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[
+                    (KIND_SCATTER, 0, 0, half, ""),
+                    (KIND_SCATTER, 0, TRACE_DENSITY_BLIT, half, ""),
+                ]
+            )),
+            Ok("")
+        );
+        // Graph node scatters keep the graph's own record budget.
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                FLAG_GRAPH_MARKS,
+                &[(KIND_SCATTER, 0, 0, threshold + 1, "")]
+            )),
+            lod
+        );
+        assert_eq!(
+            scene_public_export_reason(&figure(
+                0,
+                &[(KIND_SCATTER, 0, 0, threshold + 1, "box-outlier")]
+            )),
+            lod
         );
     }
 

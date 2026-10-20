@@ -2054,7 +2054,8 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
             setattr(figure, "coords", "polar"),
             figure.stem([1.0], [1.5], base=0.25),
         ),
-        lambda figure: figure.scatter(range(10_001), range(10_001)),
+        # #1006: a forced-direct scatter beyond the Scene mark ceiling.
+        lambda figure: figure.scatter(np.zeros(2_000_001), np.zeros(2_000_001), density=False),
     ],
 )
 def test_builtin_symbol_cutover_keeps_nonliteral_scatter_fail_closed(
@@ -2379,7 +2380,8 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
 @pytest.mark.parametrize(
     "factory",
     [
-        lambda: _supported().scatter(range(10_001), range(10_001)),
+        # #1006: a forced-direct scatter beyond the Scene mark ceiling.
+        lambda: _supported().scatter(np.zeros(2_000_001), np.zeros(2_000_001), density=False),
     ],
 )
 def test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior(factory) -> None:
@@ -2574,7 +2576,7 @@ def test_graph_segment_overflow_and_point_overflow_share_lod_reason_cross_host()
     assert scene_export_support_reason(seg_fig) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
-def test_compact_step_allows_only_the_binned_ecdf_anchor_above_ten_thousand() -> None:
+def test_compact_step_above_ten_thousand_takes_the_browser_m4_tier() -> None:
     maximum_values = np.concatenate(
         (np.arange(10_000, dtype=np.float64) + 0.5, np.array([0.0, 10_000.0]))
     )
@@ -2593,12 +2595,19 @@ def test_compact_step_allows_only_the_binned_ecdf_anchor_above_ten_thousand() ->
     assert scene_export_support_reason(accepted) is None
     assert accepted.to_scene()
 
-    rejected = Figure(width=320, height=240).step(
+    # #1006: above DECIMATION_THRESHOLD a cartesian step line is the browser's
+    # M4 tier (decimated before step expansion), not a record-budget refusal.
+    decimated = Figure(width=320, height=240).step(
         np.arange(10_002, dtype=np.float64), np.arange(10_002, dtype=np.float64)
     )
-    rejected.axis_options["x"]["domain"] = (0.0, 10_002.0)
-    rejected.axis_options["y"]["domain"] = (0.0, 10_002.0)
-    assert scene_export_support_reason(rejected) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+    decimated.axis_options["x"]["domain"] = (0.0, 10_002.0)
+    decimated.axis_options["y"]["domain"] = (0.0, 10_002.0)
+    assert scene_export_support_reason(decimated) is None
+    assert decimated.to_scene()
+    polar = Figure(width=320, height=240)
+    polar.coords = "polar"
+    polar.step(np.linspace(0.0, 1.0, 10_002), np.arange(10_002, dtype=np.float64))
+    assert scene_export_support_reason(polar) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
 def test_public_stem_marker_must_immediately_follow_its_exact_stem_geometry() -> None:

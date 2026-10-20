@@ -57,6 +57,15 @@ real marks with real channels — never a sample, never an aggregate.
 | histogram/bar | rects | re-bin at viewport resolution | — (bins are already aggregates) | re-bin visible window (finer bins = more truth, never less) |
 | candlestick (when restored) | body+wick | OHLC bucket (first/max/min/last) | — | re-bucket window |
 
+Static export (#1006) takes the same compile-time first-paint tier rather
+than its own reduction: a Cartesian line above `DECIMATION_THRESHOLD` exports
+the browser's M4 rows (buckets = figure CSS width via `screen_shape`, window =
+resolved x domain), a direct-tier scatter exports every point up to
+`DIRECT_SOFT_CEILING`, and a density-tier scatter exports one Rust-binned
+density Image; beyond those tiers the export fails closed with
+`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (`spec/design/scene-ir.md`, "Public static
+LOD tiers (#1006)").
+
 Key asymmetry to respect: **histogram/heatmap are born aggregated** — their
 Tier-1 is "re-aggregate at the right resolution," and truthfulness means the
 *bin math* is exact, not that raw rows are drawn. Scatter is the only kind

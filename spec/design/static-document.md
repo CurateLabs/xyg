@@ -148,6 +148,18 @@ call raises the listed stable `XYG_*` reason.
   document fact. Scene-rejected custom fonts, browser-only CSS/classes,
   unresolved gradients, and unmodeled mark/style/data combinations fail closed
   with the predicate's exact stable reason.
+- Large data takes the browser's first-paint LOD tier, never a silent
+  host-side reduction (#1006; [scene-ir.md](scene-ir.md#public-static-lod-tiers-1006),
+  dossier §28): a Cartesian line above `DECIMATION_THRESHOLD` (10,000) exports
+  the browser's M4 rows (`payload_m4_indices`, buckets = figure CSS width
+  clamped to 16–4,096, window = resolved x domain) in SVG, PNG, PDF, JPEG, and
+  WebP alike; a scatter the browser draws direct exports one marker per point
+  up to `DIRECT_SOFT_CEILING` (2,000,000 summed over the figure's direct
+  scatters); a density-tier scatter exports one density Image binned in Rust
+  from the canonical columns. Polar lines, areas, and other kinds above their
+  record budgets, forced-direct scatters beyond the ceiling, and lines whose
+  x cannot be M4-binned fail closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`;
+  non-finite large lines keep the shared non-finite row reason.
 - `to_html()` and Chromium image/PDF capture retain live CSS, custom fonts, and
   `custom_css`; they remain browser journeys and never silently substitute for
   an explicitly requested native engine.

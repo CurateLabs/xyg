@@ -14,6 +14,7 @@ import zlib
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
 from xyg import _native
@@ -200,6 +201,21 @@ def _edge_figure(name: str) -> Figure:
         figure.set_axis("x", type_="time")
         figure.set_axis("y", type_="log")
         figure.step([1000, 2000], [1, 10], where="mid", color="#ef4444")
+    elif name == "line_m4_decimated":
+        index = np.arange(20_001, dtype=np.float64)
+        figure.line(
+            index * 0.25,
+            ((index * 7919.0) % 1009.0) / 10.0 - (index % 97.0),
+            color="#ef4444",
+            width=1,
+        )
+    elif name == "scatter_density_large":
+        index = np.arange(270_000, dtype=np.float64)
+        _fixed_domains(figure).scatter(
+            ((index * 7919.0) % 1009.0) / 1009.0 * 8.0 - 2.0,
+            ((index * 104729.0) % 997.0) / 997.0 * 8.0 - 2.0,
+            color="#3987e5",
+        )
     else:  # pragma: no cover - registry drift reports the missing builder
         raise AssertionError(f"missing Python static-export edge builder for {name}")
     return _normalize_ids(figure)
@@ -246,9 +262,12 @@ def _fail_close_figure(name: str) -> Figure:
     elif name == "colorbar_option":
         figure.colorbar_options = {"bogus": True}
     elif name == "lod_limit":
+        # #1006: a cartesian line this size is the M4 tier; a polar line
+        # ships direct in the browser, so it stays beyond the static tiers.
         values = list(range(10_001))
         figure.traces.clear()
-        figure.line(values, values)
+        figure.coords = "polar"
+        figure.line([value / 10_001 for value in values], values)
     elif name == "band_shape":
         figure.traces.clear()
         figure.area([0], [1])

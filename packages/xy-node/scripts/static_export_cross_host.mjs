@@ -92,6 +92,18 @@ function edgeFigure(name) {
     case "step_temporal_log":
       f.setAxis("x", { type: "time" }); f.setAxis("y", { type: "log" }); f.step([1000, 2000], [1, 10], { where: "mid", color: "#ef4444" });
       break;
+    case "line_m4_decimated": {
+      const x = Float64Array.from({ length: 20001 }, (_, i) => i * 0.25);
+      const y = Float64Array.from({ length: 20001 }, (_, i) => ((i * 7919) % 1009) / 10 - (i % 97));
+      f.line(x, y, { color: "#ef4444", width: 1 });
+      break;
+    }
+    case "scatter_density_large": {
+      const x = Float64Array.from({ length: 270000 }, (_, i) => ((i * 7919) % 1009) / 1009 * 8 - 2);
+      const y = Float64Array.from({ length: 270000 }, (_, i) => ((i * 104729) % 997) / 997 * 8 - 2);
+      fixedDomains(f).scatter(x, y, { style: { color: "#3987e5" } });
+      break;
+    }
     default: throw new Error(`missing Node static-export edge builder for Rust registry case ${name}`);
   }
   return normalizeIds(f);
@@ -115,7 +127,12 @@ function failCloseFigure(name) {
     case "annotation_markup": f.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "x", markup: "markdown" }]; break;
     case "invalid_annotation": f.annotations = [{ kind: "bogus" }]; break;
     case "colorbar_option": f.colorbar_options = { bogus: true }; break;
-    case "lod_limit": { const values = Float64Array.from({ length: 10001 }, (_, index) => index); f.traces = []; f.line(values, values); break; }
+    case "lod_limit": {
+      // #1006: a cartesian line this size is the M4 tier; a polar line ships
+      // direct in the browser, so it stays beyond the static tiers.
+      const values = Float64Array.from({ length: 10001 }, (_, index) => index);
+      f.traces = []; f.coords = "polar"; f.line(values.map((value) => value / 10001), values); break;
+    }
     case "band_shape": f.traces = []; f.area([0], [1]); break;
     case "segment_shape": fixedDomains(f); f.traces = []; f.segments([0, 1], [0, 1], [1, 2], [1, 2]); f.traces[0].x1 = Float64Array.of(1); break;
     case "triangle_mesh_limit": { const values = new Float64Array(1025); fixedDomains(f); f.traces = []; f.triangleMesh(values, values, values, values, values, values); break; }

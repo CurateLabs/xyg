@@ -9,7 +9,9 @@
     "categorical-axis",
     "temporal-axis",
     "empty",
-    "linear-scale"
+    "linear-scale",
+    "browser-lod-tier",
+    "large-source"
   ],
   "shapes": [
     {
@@ -261,6 +263,26 @@
         "log-scale"
       ],
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    },
+    {
+      "name": "line_m4_decimated",
+      "shape": "line",
+      "axis_mode": "linear-x-linear-y",
+      "concerns": [
+        "browser-lod-tier",
+        "large-source"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "scatter_density_large",
+      "shape": "scatter",
+      "axis_mode": "authored-linear-xy",
+      "concerns": [
+        "browser-lod-tier",
+        "large-source"
+      ],
+      "reason_prefix": ""
     }
   ],
   "fail_close": [

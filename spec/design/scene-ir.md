@@ -1585,6 +1585,73 @@ representations—Cartesian versus polar coordinates, kebab/camel font keys,
 root/chrome/annotation CSS classes and object-valued fills—before any older
 host-local unsupported branch can run. Cross-host tests
 pin the identical Rust diagnostic for each representable case.
+
+### Public static LOD tiers (#1006)
+
+The public static predicate (`scene_export.rs`) keeps a 10,000-record
+authored-column budget per trace (10,001 for compact step lines). A trace above
+it is admitted only when it rides a browser payload tier (`lod_plan.rs`
+`payload_tier`, dossier §28) that the Scene reproduces exactly; anything else
+keeps `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. Charts at or below the budget are
+byte-identical to before.
+
+| Trace above the budget | Browser first-paint tier | Static Scene |
+|---|---|---|
+| Cartesian `line` (step, stairs, ECDF, smooth included), n > `DECIMATION_THRESHOLD` (10,000) | M4 decimated | the same M4 rows, decimated in Rust (below) |
+| Polar `line` | direct | `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
+| Scatter the host's `payload_tier` call marks density (n > `SCATTER_DENSITY_THRESHOLD` 200,000, or > `DIRECT_SOFT_CEILING` with per-item channels, or `density=True`) | density | one `DensityBlit` Image record (`MAX_SCENE_IMAGE_PIXELS`) |
+| Scatter `payload_tier` leaves direct (≤ 200,000 plain, ≤ 2,000,000 with per-item channels, or `density=False`) | direct | one Scatter record per point while the figure's direct scatters total ≤ `DIRECT_SOFT_CEILING` = `MAX_SCENE_MARKS` = 2,000,000; above, `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
+| Graph node scatter (`FLAG_GRAPH_MARKS`), `box-outlier` / `stem-marker` companions, `area` / `error_band`, segments, every other kind | own budgets | unchanged record budgets (graph-mark.md §8) |
+
+**Line M4 rule.** `encode_product` reads a `LineLodFrame` from the Scene's own
+XYCF and `scene_trace_rows::pack_trace_rows_with_lod` applies it to each
+Cartesian `line` row set in canonical f64, before Scene packing and before
+step/curve expansion (the browser client likewise steps the decimated arrays):
+
+- tier: `payload_tier(LINE, n, polar=false)`; at or below 10,000 points every
+  row packs unchanged;
+- kernel: `payload_m4_indices` (`kernels::m4_indices`, first/min/max/last per
+  bucket, closed window `hi + f64::EPSILON`), then `payload_visible_indices`
+  with the decimated prefilter (log axes drop non-positive rows) — the
+  browser's `PAYLOAD_GATHER_M4` branch;
+- bucket count: the figure's CSS viewport width truncated to an integer and
+  clamped by `screen_shape` to 16–4,096 — the browser's first-paint
+  `_resolve_px_width`. It is the viewport, not the plot-rectangle, width, so
+  (up to the 4,096 clamp) every plot pixel column holds at least one bucket. PNG `scale` and the
+  output format do not change it: SVG, PNG, PDF, JPEG, and WebP of one figure
+  draw one decimated Scene, and that Scene paints exactly like a direct line
+  of the kept rows (`tests/test_static_lod_tiers.py`);
+- window: the resolved primary x domain (`min`, `max`); log and symlog x bin
+  in axis coordinates (`log10`, `sign·log1p(|v|/constant)`) exactly like the
+  browser's `binning_coords`, falling back to raw x when that window is not
+  finite and increasing;
+- bound: at most `4 × buckets` (≤ 16,384) rows per decimated trace, far under
+  `MAX_SCENE_MARKS`; the transient cost is the host's f64 XYCL ingress
+  (16 B/point) plus one Rust decode copy.
+
+Static export fails closed where the browser kernel's own preconditions do not
+hold instead of drawing an arbitrary subset: non-finite x/y keep the shared
+row reason "Scene v12 does not yet encode missing-data breaks or nonfinite
+coordinates" (the Scene encodes no gaps and §19 forbids bridging a hole,
+whereas the browser kernel skips non-finite y), and binning coordinates that
+are not finite and ascending (a mutated unsorted trace; non-positive x on a
+log axis) return `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` through the encoder's
+support reason (`-801`). Line marks sort x at ingest (§28), so authored lines
+always satisfy the ascending precondition. `TraceRowsCode::Lod = 10` is
+internal to the product encoder; the stepwise `xyg_scene_pack_trace_rows`
+never decimates.
+
+**Density source.** An XYTA record carries a density scatter's x/y only while
+the record fits the 4 MiB `SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES` budget
+(about 262,000 points). Above that, `pack_trace_attach_with_columns` bins the
+same trace's canonical XYCL columns. Before #1006 such a scatter silently
+packed one Scatter record per point.
+
+**Bytes.** A direct Scatter record is one 56-byte packed row (≤ 112 MB at the
+2,000,000 ceiling) and about 80 bytes of SVG per circle; a density scatter is
+one bounded Image; a decimated line is ≤ 16,384 rows. No extern signature,
+XYEP/XYEF/XYCL/XYTA layout, or Scene version changed.
+
 ## Version 12 bounded semantic graph labels
 
 The chrome trailer uses bytes 232–235 for an appended label-block length and
@@ -1652,8 +1719,11 @@ metadata, short capacity, overlapping output planes, overflow, and over-budget r
 option; Node preserves its existing optional authored range. Both submit the
 result as the existing `post` Step. The authored-column preflight remains
 10,000 for ordinary traces but admits 10,001 points only for compact Step lines
-(the ABI100 anchor plus 10,000 occupied bins); 10,002 still fails closed, and
-canonical Scene expansion budgets remain independent.
+(the ABI100 anchor plus 10,000 occupied bins), and canonical Scene expansion
+budgets remain independent. Since #1006 a Cartesian line or step above
+`DECIMATION_THRESHOLD` (including a 10,001-point ECDF) takes the browser's M4
+tier instead ([public static LOD tiers](#public-static-lod-tiers-1006)); a
+polar step above the budget still fails closed.
 
 Omitted-bin composition histograms in Python and Node resolve their uniform
 edges with the existing synchronous Rust `xyg_histogram_edges` auto estimator.

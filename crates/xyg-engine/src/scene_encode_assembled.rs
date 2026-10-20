@@ -65,9 +65,9 @@ use crate::scene_extras::{pack_scene_extras_from_sidecars, ExtrasError};
 use crate::scene_pack::{PackedSceneRow, PACKED_SCENE_ROW_BYTES};
 use crate::scene_style_sidecars::pack_style_sidecars;
 use crate::scene_y2::{SceneY2Axis, SceneY2Domain};
-use crate::scene_trace_attach::pack_trace_attach;
+use crate::scene_trace_attach::pack_trace_attach_with_columns;
 use crate::scene_trace_compile::pack_trace_compile;
-use crate::scene_trace_rows::pack_trace_rows;
+use crate::scene_trace_rows::{pack_trace_rows_with_lod, LineLodFrame, TraceRowsCode};
 use crate::scene_trace_sidecars::{pack_trace_sidecars, parse_xysd_records};
 use crate::tick_layout;
 
@@ -1010,6 +1010,26 @@ fn corner_radii_from_xysd(
         .collect())
 }
 
+/// Stable reason for a line the browser decimates but whose columns the
+/// static M4 tier cannot bin faithfully (#1006, dossier §28).
+pub const PUBLIC_LOD_REASON: &str = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
+
+/// The browser payload's line M4 inputs, read from the Scene's own XYCF
+/// (viewport width, primary x axis, primary y scale kind) (#1006). Malformed
+/// chrome facts skip decimation; the encoder rejects them with its own
+/// envelope error later.
+fn line_lod_frame(xycf: &[u8]) -> Option<LineLodFrame> {
+    let (viewport_width, _, x_axis, y_axis) = axes_from_chrome_facts(xycf).ok()?;
+    Some(LineLodFrame::new(
+        viewport_width,
+        x_axis.kind,
+        x_axis.lo,
+        x_axis.hi,
+        x_axis.constant,
+        y_axis.kind,
+    ))
+}
+
 /// Encode a product Scene from packed authored blobs.
 ///
 /// Rust owns compile, attach, sidecar, row, annotation, style-sidecar, splice,
@@ -1053,12 +1073,23 @@ pub fn encode_product(
     }
     let compiled = pack_trace_compile(xytc)
         .map_err(|error| map_stage(PRODUCT_STAGE_COMPILE, error.code as i32, error.index))?;
-    let attached = pack_trace_attach(&compiled, xyta)
+    let attached = pack_trace_attach_with_columns(&compiled, xyta, xycl)
         .map_err(|error| map_stage(PRODUCT_STAGE_ATTACH, error.code as i32, error.index))?;
     let sidecars = pack_trace_sidecars(&attached, xynm)
         .map_err(|error| map_stage(PRODUCT_STAGE_SIDECARS, error.code as i32, error.index))?;
-    let packed_rows = pack_trace_rows(&attached, xycl)
-        .map_err(|error| map_stage(PRODUCT_STAGE_ROWS, error.code as i32, error.index))?;
+    let line_lod = line_lod_frame(xycf);
+    let packed_rows =
+        pack_trace_rows_with_lod(&attached, xycl, line_lod.as_ref()).map_err(|error| {
+            if error.code == TraceRowsCode::Lod {
+                ProductEncodeError {
+                    code: PRODUCT_SUPPORT_UNSUPPORTED,
+                    index: error.index,
+                    reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+                }
+            } else {
+                map_stage(PRODUCT_STAGE_ROWS, error.code as i32, error.index)
+            }
+        })?;
     let mut row_bytes = Vec::with_capacity(packed_rows.len() * PACKED_SCENE_ROW_BYTES);
     for row in packed_rows {
         row_bytes.extend_from_slice(&row.to_bytes());
@@ -1305,9 +1336,9 @@ mod tests {
         let xynm = empty_header(XYNM_MAGIC, XYNM_VERSION, XYNM_HEADER_BYTES);
         let xycl = empty_header(XYCL_MAGIC, XYCL_VERSION, XYCL_HEADER_BYTES);
         let compiled = pack_trace_compile(&xytc).unwrap();
-        let attached = pack_trace_attach(&compiled, &xyta).unwrap();
+        let attached = crate::scene_trace_attach::pack_trace_attach(&compiled, &xyta).unwrap();
         let sidecars = pack_trace_sidecars(&attached, &xynm).unwrap();
-        let packed_rows = pack_trace_rows(&attached, &xycl).unwrap();
+        let packed_rows = crate::scene_trace_rows::pack_trace_rows(&attached, &xycl).unwrap();
         let mut row_bytes = Vec::new();
         for row in packed_rows {
             row_bytes.extend_from_slice(&row.to_bytes());

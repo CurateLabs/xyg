@@ -25,6 +25,13 @@ and very large density traces can build a lazy multiresolution pyramid for
 viewport queries. These are pre-1.0 policy thresholds, not API guarantees;
 write code against the behavior and recorded `tier`, not a hard-coded count.
 
+Native SVG, PNG, and PDF export make the same first-paint choice the browser
+does: a line above the decimation threshold exports the same M4 rows at the
+figure's width, a scatter on the direct tier exports every point (up to
+2,000,000 markers per figure), and a density-tier scatter exports its density
+surface. Anything outside those tiers raises
+`XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead of drawing a reduced chart.
+
 Polar traces are an explicit exception to this ladder. They always use the
 direct tier because Cartesian M4 and density reductions do not preserve cyclic
 polar geometry. Polar `line`, `scatter`, and `area` traces have a hard
