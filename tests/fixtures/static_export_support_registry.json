@@ -369,6 +369,11 @@
         "code": 16384
       },
       {
+        "name": "panel.chrome-text",
+        "family": "panel-flag",
+        "code": 32768
+      },
+      {
         "name": "annotation.baseline",
         "family": "annotation-vertical-align",
         "code": 0
@@ -804,6 +809,19 @@
         "name": "document_grid_dash",
         "vocabulary": [
           "panel.grid-dash"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_chrome_text",
+        "vocabulary": [
+          "panel.chrome-text"
         ],
         "formats": [
           "svg",
@@ -1255,6 +1273,7 @@
       "centered_title_x_nonzero",
       "header_truncated",
       "version_unknown",
+      "version_legacy_layout",
       "header_flags_unknown",
       "header_reserved_nonzero",
       "panels_empty",

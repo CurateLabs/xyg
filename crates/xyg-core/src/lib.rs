@@ -89,6 +89,7 @@ use xyg_engine::scene_static_export;
 use xyg_engine::scene_style::{self, MarkStyleError};
 use xyg_engine::splice_annotations;
 use xyg_engine::static_annotation_style;
+use xyg_engine::static_chrome_style;
 use xyg_engine::static_document_export;
 use xyg_engine::static_document_labels;
 use xyg_engine::static_document_layout;
@@ -198,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 383;
+pub const ABI_VERSION: u32 = 384;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4039,7 +4040,19 @@ pub unsafe extern "C" fn xyg_scene_static_export(
 /// SVG/PNG/PDF/JPEG/WebP kernel. `format` uses the Scene static format codes;
 /// raster formats honor positive finite `scale`, and JPEG honors `quality`.
 /// Returns required bytes or `usize::MAX` on malformed documents or consumer
-/// failure. A short output buffer is never written.
+/// failure. A short output buffer is never written on success.
+///
+/// Rejection diagnostic: when a decoded document is rejected the return value
+/// is the unchanged `usize::MAX` sentinel and, only if `out` is non-null and
+/// `out_cap` is strictly greater than the diagnostic length, `out` receives the
+/// stable ASCII diagnostic (`XYG_STATIC_DOCUMENT_<CODE>`, optionally followed by
+/// `: guidance`, e.g. an unsupported XYST version) plus one NUL terminator.
+/// The diagnostic length is never reported, so a caller that needs it must
+/// supply a buffer larger than the diagnostic (hosts use at least 256 bytes);
+/// with a null `out`, `out_cap` of at most the diagnostic length, or no room for
+/// the NUL, `out` is left untouched. No diagnostic is produced for a null or
+/// empty `encoded`, an unknown `format` code, or an internal panic: those return
+/// `usize::MAX` with `out` untouched.
 ///
 /// # Safety
 /// Pointer contracts match `xyg_scene_svg`.
@@ -4059,16 +4072,29 @@ pub unsafe extern "C" fn xyg_static_document_export(
     let Some(kind) = SceneStaticFormat::from_code(format) else {
         return usize::MAX;
     };
-    let Some(bytes) = ffi_guard(None, || {
-        static_document_export(
+    let Some(result) = ffi_guard(None, || {
+        Some(static_document_export(
             std::slice::from_raw_parts(encoded, encoded_len),
             kind,
             scale,
             quality,
-        )
-        .ok()
+        ))
     }) else {
         return usize::MAX;
+    };
+    let bytes = match result {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            // Rejection: `usize::MAX` plus a stable ASCII diagnostic in `out`
+            // when it fits (hosts that ignore it still see a plain failure).
+            let reason = error.reason().as_bytes();
+            if !out.is_null() && out_cap > reason.len() {
+                let slot = std::slice::from_raw_parts_mut(out, out_cap);
+                slot[..reason.len()].copy_from_slice(reason);
+                slot[reason.len()] = 0;
+            }
+            return usize::MAX;
+        }
     };
     let required = bytes.len();
     if out_cap < required {
@@ -4135,6 +4161,43 @@ pub unsafe extern "C" fn xyg_static_annotation_style(
             encoded,
             encoded_len,
         )) {
+            Ok(bytes) => Some(bytes),
+            Err(error) => Some(error.reason().as_bytes().to_vec()),
+        }
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
+    required
+}
+
+/// Resolve one bounded XYCS v1 chrome-style frame (title / axis-title /
+/// tick-label slots, root theme, axis overrides) into the Rust-owned XYCO v1
+/// resolved text decisions. Stable validation reasons are returned as ASCII so
+/// every host observes the same failure classification.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_static_chrome_style(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(bytes) = ffi_guard(None, || {
+        match static_chrome_style::resolve_packed(std::slice::from_raw_parts(encoded, encoded_len))
+        {
             Ok(bytes) => Some(bytes),
             Err(error) => Some(error.reason().as_bytes().to_vec()),
         }
@@ -27887,6 +27950,93 @@ pub unsafe extern "C" fn xyg_geo_column_copy(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// An XYST header with an unsupported layout version: always rejected as
+    /// `StaticDocumentError::Version` before any panel is read.
+    fn rejected_static_document() -> Vec<u8> {
+        let mut document = vec![0u8; 64];
+        document[..4].copy_from_slice(b"XYST");
+        document[4..8].copy_from_slice(&1u32.to_le_bytes());
+        document
+    }
+
+    fn export_static_document(
+        document: &[u8],
+        format: u32,
+        out: &mut [u8],
+        out_ptr_null: bool,
+    ) -> usize {
+        let ptr = if out_ptr_null {
+            std::ptr::null_mut()
+        } else {
+            out.as_mut_ptr()
+        };
+        unsafe {
+            xyg_static_document_export(
+                document.as_ptr(),
+                document.len(),
+                format,
+                1.0,
+                90,
+                ptr,
+                out.len(),
+            )
+        }
+    }
+
+    #[test]
+    fn static_document_rejection_diagnostic_buffer_contract() {
+        let document = rejected_static_document();
+        let reason = xyg_engine::StaticDocumentError::Version.reason().as_bytes();
+        assert!(reason.starts_with(b"XYG_STATIC_DOCUMENT_VERSION"));
+        let len = reason.len();
+
+        // Null `out`: sentinel only, nothing to write.
+        let mut none: [u8; 0] = [];
+        assert_eq!(export_static_document(&document, 0, &mut none, true), usize::MAX);
+
+        // Insufficient capacity and exact length (no room for the NUL):
+        // sentinel, buffer untouched.
+        for cap in [0, 1, len - 1, len] {
+            let mut out = vec![0xa5u8; cap];
+            assert_eq!(export_static_document(&document, 0, &mut out, false), usize::MAX);
+            assert!(out.iter().all(|byte| *byte == 0xa5), "cap {cap}");
+        }
+
+        // `len + 1`: the diagnostic plus its NUL terminator, nothing past it.
+        let mut out = vec![0xa5u8; len + 1];
+        assert_eq!(export_static_document(&document, 0, &mut out, false), usize::MAX);
+        assert_eq!(&out[..len], reason);
+        assert_eq!(out[len], 0);
+
+        // Larger buffers: same bytes, the tail stays untouched.
+        let mut out = vec![0xa5u8; len + 8];
+        assert_eq!(export_static_document(&document, 4, &mut out, false), usize::MAX);
+        assert_eq!(&out[..len], reason);
+        assert_eq!(out[len], 0);
+        assert!(out[len + 1..].iter().all(|byte| *byte == 0xa5));
+    }
+
+    #[test]
+    fn static_document_failures_without_a_diagnostic_leave_out_untouched() {
+        let document = rejected_static_document();
+        let mut out = vec![0xa5u8; 512];
+        // Unknown format code, null/empty encoded input: no diagnostic.
+        assert_eq!(export_static_document(&document, 99, &mut out, false), usize::MAX);
+        assert_eq!(
+            unsafe {
+                xyg_static_document_export(std::ptr::null(), 0, 0, 1.0, 90, out.as_mut_ptr(), out.len())
+            },
+            usize::MAX
+        );
+        assert_eq!(
+            unsafe {
+                xyg_static_document_export(document.as_ptr(), 0, 0, 1.0, 90, out.as_mut_ptr(), out.len())
+            },
+            usize::MAX
+        );
+        assert!(out.iter().all(|byte| *byte == 0xa5));
+    }
 
     #[test]
     fn default_palette_abi_is_versioned_bounded_and_atomic() {

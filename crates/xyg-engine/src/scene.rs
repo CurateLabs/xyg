@@ -1004,6 +1004,19 @@ pub struct SceneAxisChromeStyle {
     pub static_grid_dash: Option<u8>,
     /// Minor-grid counterpart of `static_grid_dash`.
     pub static_minor_grid_dash: Option<u8>,
+    /// XYST-only resolved tick-label / axis-title paint and typography from
+    /// the Rust chrome-style projection (`static_chrome_style`).
+    pub static_text: StaticAxisText,
+}
+
+/// Resolved XYST-only text facts for one axis. Paint overrides replace the
+/// canonical single `label_rgba`; flag bit 0 is italic, bit 1 is bold.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct StaticAxisText {
+    pub tick_label_rgba: Option<[u8; 4]>,
+    pub title_rgba: Option<[u8; 4]>,
+    pub tick_label_flags: u8,
+    pub title_flags: u8,
 }
 
 /// Dash on/off lengths, in px, for the XYST-only pyplot grid compatibility
@@ -1036,11 +1049,19 @@ impl SceneAxisChromeStyle {
                 && Self::visible_stroke(self.tick_rgba, self.tick_width))
             || (self.minor_tick_length > 0.0
                 && Self::visible_stroke(self.minor_tick_rgba, self.minor_tick_width))
-            || (self.tick_label_sides != 0 && self.label_rgba[3] != 0)
+            || (self.tick_label_sides != 0 && self.tick_label_paint()[3] != 0)
     }
 
     fn tick_label_size(self, fallback: f64) -> f64 {
         self.static_tick_label_size.unwrap_or(fallback)
+    }
+
+    fn tick_label_paint(self) -> [u8; 4] {
+        self.static_text.tick_label_rgba.unwrap_or(self.label_rgba)
+    }
+
+    fn title_paint(self) -> [u8; 4] {
+        self.static_text.title_rgba.unwrap_or(self.label_rgba)
     }
 
     fn label_size(self, fallback: f64) -> f64 {
@@ -1098,6 +1119,7 @@ impl SceneAxisChromeStyle {
             static_axis_sides: None,
             static_grid_dash: None,
             static_minor_grid_dash: None,
+            static_text: StaticAxisText::default(),
         }
     }
 
@@ -1393,6 +1415,7 @@ fn read_axis_chrome_style(bytes: &[u8], offset: usize) -> Result<SceneAxisChrome
         static_axis_sides: None,
         static_grid_dash: None,
         static_minor_grid_dash: None,
+        static_text: StaticAxisText::default(),
     }
     .validated()
 }
@@ -3079,6 +3102,7 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
             static_axis_sides: None,
             static_grid_dash: None,
             static_minor_grid_dash: None,
+            static_text: StaticAxisText::default(),
         }
         .validated()
     };
@@ -10672,6 +10696,17 @@ fn tick_span(direction: TickDirection, length: f64) -> (f64, f64) {
     }
 }
 
+/// Append the italic/bold attributes of one XYST text-flag pair (bit 0
+/// italic, bit 1 bold) to an SVG `<text>` open tag.
+fn push_svg_text_flags(out: &mut String, flags: u8) {
+    if flags & 1 != 0 {
+        out.push_str(" font-style=\"italic\"");
+    }
+    if flags & 2 != 0 {
+        out.push_str(" font-weight=\"700\"");
+    }
+}
+
 fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
     let chrome = &document.chrome;
     let text = &document.text;
@@ -10688,7 +10723,12 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         out.push_str(&rgba_css(title_rgba));
         out.push_str("\" font-size=\"");
         push_num(out, title_size);
-        out.push_str("\" font-weight=\"400\" text-anchor=\"middle\">");
+        out.push('"');
+        if document.static_title_flags & 2 == 0 {
+            out.push_str(" font-weight=\"400\"");
+        }
+        push_svg_text_flags(out, document.static_title_flags);
+        out.push_str(" text-anchor=\"middle\">");
         push_escaped_attribute(out, &text.title);
         out.push_str("</text></g>");
     }
@@ -10699,10 +10739,12 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         out.push_str("\" y=\"");
         push_num(out, layout.viewport_height - 6.0);
         out.push_str("\" fill=\"");
-        out.push_str(&rgba_css(chrome.x_axis.label_rgba));
+        out.push_str(&rgba_css(chrome.x_axis.title_paint()));
         out.push_str("\" font-size=\"");
         push_num(out, label_size);
-        out.push_str("\" text-anchor=\"middle\">");
+        out.push('"');
+        push_svg_text_flags(out, chrome.x_axis.static_text.title_flags);
+        out.push_str(" text-anchor=\"middle\">");
         push_escaped_attribute(out, &text.x_label);
         out.push_str("</text></g>");
     }
@@ -10715,10 +10757,12 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         out.push_str("\" y=\"");
         push_num(out, y);
         out.push_str("\" fill=\"");
-        out.push_str(&rgba_css(chrome.y_axis.label_rgba));
+        out.push_str(&rgba_css(chrome.y_axis.title_paint()));
         out.push_str("\" font-size=\"");
         push_num(out, label_size);
-        out.push_str("\" text-anchor=\"middle\" transform=\"rotate(-90 ");
+        out.push('"');
+        push_svg_text_flags(out, chrome.y_axis.static_text.title_flags);
+        out.push_str(" text-anchor=\"middle\" transform=\"rotate(-90 ");
         push_num(out, x);
         out.push(' ');
         push_num(out, y);
@@ -10742,6 +10786,7 @@ pub struct SceneDocument {
     label_backgrounds: Vec<Option<SceneLabelBox>>,
     static_label_text_flags: u8,
     static_title_style: Option<(f64, [u8; 4])>,
+    static_title_flags: u8,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
@@ -11217,6 +11262,44 @@ impl SceneDocument {
             axis.static_tick_label_size = Some(tick_label_size);
             axis.static_label_size = Some(label_size);
             axis.static_tick_padding = Some(tick_padding);
+        }
+        Ok(())
+    }
+
+    /// Apply the resolved XYST chrome-text facts (Rust `static_chrome_style`
+    /// projection) after Scene decoding. `bits` packs two-bit italic/bold
+    /// flags for the title, x/y axis titles and x/y tick labels (bits 0..10)
+    /// and four paint-present bits (10..14); `colors` are the matching
+    /// x tick, y tick, x title and y title paints.
+    pub(crate) fn apply_static_chrome_text(
+        &mut self,
+        bits: u32,
+        colors: [[u8; 4]; 4],
+    ) -> Result<(), SceneError> {
+        if bits & !0x3fff != 0 {
+            return Err(SceneError::Length);
+        }
+        for (index, color) in colors.iter().enumerate() {
+            if bits & (1 << (10 + index)) == 0 && *color != [0; 4] {
+                return Err(SceneError::Length);
+            }
+        }
+        let flags = |slot: u32| ((bits >> (2 * slot)) & 3) as u8;
+        if flags(0) != 0 && self.text.title.is_empty() {
+            return Err(SceneError::Length);
+        }
+        let paint = |index: usize| (bits & (1 << (10 + index)) != 0).then_some(colors[index]);
+        self.static_title_flags = flags(0);
+        for (axis, title, tick, tick_paint, title_paint) in [
+            (&mut self.chrome.x_axis, flags(1), flags(3), paint(0), paint(2)),
+            (&mut self.chrome.y_axis, flags(2), flags(4), paint(1), paint(3)),
+        ] {
+            axis.static_text = StaticAxisText {
+                tick_label_rgba: tick_paint,
+                title_rgba: title_paint,
+                tick_label_flags: tick,
+                title_flags: title,
+            };
         }
         Ok(())
     }
@@ -12237,6 +12320,7 @@ impl SceneDocument {
             label_backgrounds,
             static_label_text_flags: 0,
             static_title_style: None,
+            static_title_flags: 0,
             styles,
             records,
             raster_mark_capacity,
@@ -13750,7 +13834,7 @@ impl SceneDocument {
                             );
                         }
                     }
-                    if style.tick_label_sides & (1 << side_code) != 0 && style.label_rgba[3] != 0 {
+                    if style.tick_label_sides & (1 << side_code) != 0 && style.tick_label_paint()[3] != 0 {
                         for item in self.axis_tick_collision_items(is_x, ticks, scale, side_code) {
                             let p = scale.pixel(item.value);
                             let font_size = style.tick_label_size(self.chrome.label_font_size);
@@ -13786,10 +13870,12 @@ impl SceneDocument {
                             out.push_str("\" y=\"");
                             push_num(&mut out, y);
                             out.push_str("\" fill=\"");
-                            out.push_str(&rgba_css(style.label_rgba));
+                            out.push_str(&rgba_css(style.tick_label_paint()));
                             out.push_str("\" font-size=\"");
                             push_num(&mut out, font_size);
-                            out.push_str("\" text-anchor=\"");
+                            out.push('"');
+                            push_svg_text_flags(&mut out, style.static_text.tick_label_flags);
+                            out.push_str(" text-anchor=\"");
                             // Matplotlib right-aligns horizontal y tick
                             // labels against the spine; rotated keep center.
                             let y_aligned = if is_x || item.angle != 0.0 {
@@ -14270,7 +14356,7 @@ impl SceneDocument {
                 }
             }
             for side_code in 0..2 {
-                if style.tick_label_sides & (1 << side_code) == 0 || style.label_rgba[3] == 0 {
+                if style.tick_label_sides & (1 << side_code) == 0 || style.tick_label_paint()[3] == 0 {
                     continue;
                 }
                 for item in self.axis_tick_collision_items(is_x, ticks, axis_scale, side_code) {
@@ -14303,36 +14389,36 @@ impl SceneDocument {
                             p + style.tick_label_baseline_shift(self.chrome.label_font_size),
                         )
                     };
-                    if item.angle != 0.0 {
+                    let y_aligned = if is_x || item.angle != 0.0 {
+                        item.anchor
+                    } else if side_code == 0 {
+                        tick_layout::ANCHOR_END as u8
+                    } else {
+                        tick_layout::ANCHOR_START as u8
+                    };
+                    if item.angle != 0.0 || style.static_text.tick_label_flags != 0 {
                         out.push(17);
                         push_raster_f32(out, x, scale)?;
                         push_raster_f32(out, y, scale)?;
-                        out.push(item.anchor);
+                        out.push(y_aligned);
                         push_raster_f32(out, font_size, scale)?;
                         let angle = item.angle as f32;
                         if !angle.is_finite() {
                             return Err(SceneError::NonFinite);
                         }
                         out.extend_from_slice(&angle.to_le_bytes());
-                        out.push(0);
+                        out.push(style.static_text.tick_label_flags);
                         out.extend_from_slice(&0u32.to_le_bytes());
-                        out.extend_from_slice(&style.label_rgba);
+                        out.extend_from_slice(&style.tick_label_paint());
                         out.extend_from_slice(&(item.text.len() as u32).to_le_bytes());
                         out.extend_from_slice(item.text.as_bytes());
                     } else {
                         out.push(6);
                         push_raster_f32(out, x, scale)?;
                         push_raster_f32(out, y, scale)?;
-                        let y_aligned = if is_x || item.angle != 0.0 {
-                            item.anchor
-                        } else if side_code == 0 {
-                            tick_layout::ANCHOR_END as u8
-                        } else {
-                            tick_layout::ANCHOR_START as u8
-                        };
                         out.push(y_aligned);
                         push_raster_f32(out, font_size, scale)?;
-                        out.extend_from_slice(&style.label_rgba);
+                        out.extend_from_slice(&style.tick_label_paint());
                         out.extend_from_slice(&(item.text.len() as u32).to_le_bytes());
                         out.extend_from_slice(item.text.as_bytes());
                     }
@@ -14351,9 +14437,27 @@ impl SceneDocument {
                           anchor: u8,
                           size: f64,
                           rgba: [u8; 4],
-                          label: &str|
+                          label: &str,
+                          flags: u8,
+                          angle: f32|
          -> Result<(), SceneError> {
             if label.is_empty() {
+                return Ok(());
+            }
+            if flags != 0 {
+                // Styled text carries italic/bold; the 0x80 rotation bit of a
+                // plain-text anchor becomes the explicit angle.
+                out.push(17);
+                push_raster_f32(out, x, scale)?;
+                push_raster_f32(out, y, scale)?;
+                out.push(anchor & 3);
+                push_raster_f32(out, size, scale)?;
+                out.extend_from_slice(&angle.to_le_bytes());
+                out.push(flags);
+                out.extend_from_slice(&0u32.to_le_bytes());
+                out.extend_from_slice(&rgba);
+                out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+                out.extend_from_slice(label.as_bytes());
                 return Ok(());
             }
             out.push(6);
@@ -14379,6 +14483,8 @@ impl SceneDocument {
             self.static_title_style
                 .map_or(self.chrome.label_rgba, |style| style.1),
             &self.text.title,
+            self.static_title_flags,
+            0.0,
         )?;
         push_label(
             out,
@@ -14386,8 +14492,10 @@ impl SceneDocument {
             self.layout.viewport_height - 6.0,
             1,
             self.chrome.x_axis.label_size(self.chrome.label_font_size),
-            self.chrome.x_axis.label_rgba,
+            self.chrome.x_axis.title_paint(),
             &self.text.x_label,
+            self.chrome.x_axis.static_text.title_flags,
+            0.0,
         )?;
         // Anchor 0x81 = middle + 90° CCW for y-axis titles.
         push_label(
@@ -14397,8 +14505,10 @@ impl SceneDocument {
             0.5 * (self.layout.top + self.layout.bottom),
             0x81,
             self.chrome.y_axis.label_size(self.chrome.label_font_size),
-            self.chrome.y_axis.label_rgba,
+            self.chrome.y_axis.title_paint(),
             &self.text.y_label,
+            self.chrome.y_axis.static_text.title_flags,
+            -90.0,
         )?;
         Ok(())
     }

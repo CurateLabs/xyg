@@ -54,6 +54,13 @@ def _pdf_content(pdf: bytes) -> bytes:
     return zlib.decompress(stream.rsplit(b"\nendstream", 1)[0])
 
 
+# Literal XYCO facts (title bold, x title italic, y title bold, x tick bold
+# italic, y tick italic, four paints), not a host-side renderer.
+CHROME_TEXT = (
+    2 | (1 << 2) | (2 << 4) | (3 << 6) | (1 << 8) | (0xF << 10),
+    ((255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255), (10, 20, 30, 255)),
+)
+
 # Literal envelope facts, not a host-side renderer or layout implementation.
 OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_title_x_center": ({}, {}),
@@ -71,6 +78,7 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_axis_sides_high": ({"axis_sides": (2, 2)}, {}),
     "document_axis_sides_both": ({"axis_sides": (3, 3)}, {}),
     "document_grid_dash": ({"grid_dash": (1, 0, 0, 2)}, {}),
+    "document_chrome_text": ({"chrome_text": CHROME_TEXT}, {}),
     "document_defaults": ({}, {}),
     "document_background": ({}, {"background": "#ddeeff80"}),
     "document_optimized_png": ({}, {"optimize_png": True}),
@@ -230,6 +238,7 @@ def _build(name: str) -> tuple[bytes, list[bytes], float, int]:
 REJECTIONS = {
     "header_truncated",
     "version_unknown",
+    "version_legacy_layout",
     "header_flags_unknown",
     "header_reserved_nonzero",
     "panels_empty",
@@ -266,19 +275,20 @@ def _reject(name: str) -> bytes:
     )
     data = bytearray(_build(seed)[0])
     count, title_len = struct.unpack_from("<2I", data, 20)
-    decorations = 64 + count * 108 + title_len
+    decorations = 64 + count * 128 + title_len
     scene_at = decorations + struct.unpack_from("<I", data, 52)[0]
     if name == "header_truncated":
         return bytes(data[:63])
     offsets = {
         "version_unknown": (4, 99),
+        "version_legacy_layout": (4, 1),
         "header_flags_unknown": (16, 16),
         "header_reserved_nonzero": (60, 1),
         "panels_empty": (20, 0),
         "dimensions_zero": (8, 0),
-        "panel_flags_unknown": (88, 1 << 15),
+        "panel_flags_unknown": (88, 1 << 16),
         "panel_inactive_nonzero": (96, 1),
-        "panel_ranges_overlap": (64 + 108 + 16, 0),
+        "panel_ranges_overlap": (64 + 128 + 16, 0),
     }
     if name in offsets:
         struct.pack_into("<I", data, *offsets[name])
@@ -288,7 +298,7 @@ def _reject(name: str) -> bytes:
     elif name == "panel_scene_corrupt":
         data[scene_at] = 0
     elif name in {"title_invalid_utf8", "title_nul"}:
-        data[64 + count * 108] = 255 if name.endswith("utf8") else 0
+        data[64 + count * 128] = 255 if name.endswith("utf8") else 0
     elif name == "title_anchor_unknown":
         data[48] = 3
     elif name == "text_flags_unknown":

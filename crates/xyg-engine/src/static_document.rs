@@ -17,9 +17,11 @@ use crate::textblock;
 use crate::webp;
 
 const MAGIC: &[u8; 4] = b"XYST";
-const VERSION: u32 = 1;
+/// XYST layout version. Version 2 widened the panel record to 128 bytes
+/// (chrome-text fact, #1004); version 1 documents are rejected, never decoded.
+const VERSION: u32 = 2;
 const HEADER_BYTES: usize = 64;
-const PANEL_BYTES: usize = 108;
+const PANEL_BYTES: usize = 128;
 const FLAG_BACKGROUND: u32 = 1 << 0;
 const FLAG_OPTIMIZE_PNG: u32 = 1 << 1;
 const FLAG_TIGHT_CROP: u32 = 1 << 2;
@@ -41,6 +43,7 @@ const PANEL_FLAG_COLORBAR_EXTEND_MIN: u32 = 1 << 11;
 const PANEL_FLAG_COLORBAR_EXTEND_MAX: u32 = 1 << 12;
 const PANEL_FLAG_COLORBAR_PYPLOT_LABEL: u32 = 1 << 13;
 const PANEL_FLAG_GRID_DASH: u32 = 1 << 14;
+const PANEL_FLAG_CHROME_TEXT: u32 = 1 << 15;
 const PANEL_FLAG_COLORBAR_FILL_PLOT: u32 = 1 << 24;
 const PANEL_FLAGS: u32 = PANEL_FLAG_X_CHROME_METRICS
     | PANEL_FLAG_Y_CHROME_METRICS
@@ -57,6 +60,7 @@ const PANEL_FLAGS: u32 = PANEL_FLAG_X_CHROME_METRICS
     | PANEL_FLAG_COLORBAR_EXTEND_MAX
     | PANEL_FLAG_COLORBAR_PYPLOT_LABEL
     | PANEL_FLAG_GRID_DASH
+    | PANEL_FLAG_CHROME_TEXT
     | PANEL_FLAG_COLORBAR_FILL_PLOT;
 const MAX_PANELS: usize = 256;
 const MAX_TITLE_BYTES: usize = 4096;
@@ -77,6 +81,27 @@ pub enum StaticDocumentError {
     Scene,
     Raster,
     Encode,
+}
+
+impl StaticDocumentError {
+    /// Stable ASCII diagnostic reported through the C ABI; text after the
+    /// colon is guidance, the code before it is the contract.
+    pub fn reason(&self) -> &'static str {
+        match self {
+            Self::Header => "XYG_STATIC_DOCUMENT_HEADER",
+            Self::Version => {
+                "XYG_STATIC_DOCUMENT_VERSION: unsupported XYST version (this build reads \
+                 version 2); re-encode the document with the current encoder"
+            }
+            Self::Flags => "XYG_STATIC_DOCUMENT_FLAGS",
+            Self::Limit => "XYG_STATIC_DOCUMENT_LIMIT",
+            Self::Panel => "XYG_STATIC_DOCUMENT_PANEL",
+            Self::Title => "XYG_STATIC_DOCUMENT_TITLE",
+            Self::Scene => "XYG_STATIC_DOCUMENT_SCENE",
+            Self::Raster => "XYG_STATIC_DOCUMENT_RASTER",
+            Self::Encode => "XYG_STATIC_DOCUMENT_ENCODE",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -100,6 +125,8 @@ struct PanelRecord {
     title_rgba: [u8; 4],
     annotation_vertical_align: u32,
     grid_dash: u32,
+    chrome_text: u32,
+    chrome_text_rgba: [[u8; 4]; 4],
 }
 
 #[derive(Clone, Debug)]
@@ -510,6 +537,13 @@ impl StaticDocument {
                 title_rgba: bytes[at + 96..at + 100].try_into().unwrap(),
                 annotation_vertical_align: u32_at(bytes, at + 100)?,
                 grid_dash: u32_at(bytes, at + 104)?,
+                chrome_text: u32_at(bytes, at + 108)?,
+                chrome_text_rgba: [
+                    bytes[at + 112..at + 116].try_into().unwrap(),
+                    bytes[at + 116..at + 120].try_into().unwrap(),
+                    bytes[at + 120..at + 124].try_into().unwrap(),
+                    bytes[at + 124..at + 128].try_into().unwrap(),
+                ],
             };
             if record.width == 0
                 || record.height == 0
@@ -544,6 +578,8 @@ impl StaticDocument {
                     && record.annotation_vertical_align != 0)
                 || record.grid_dash & !0x3333_3333 != 0
                 || (record.metric_flags & PANEL_FLAG_GRID_DASH == 0 && record.grid_dash != 0)
+                || (record.metric_flags & PANEL_FLAG_CHROME_TEXT == 0
+                    && bytes[at + 108..at + 128] != [0; 20])
             {
                 return Err(StaticDocumentError::Panel);
             }
@@ -649,6 +685,16 @@ impl StaticDocument {
                         .then_some(((record.grid_dash >> 16) & 0xf) as u8),
                     (record.metric_flags & PANEL_FLAG_GRID_DASH != 0)
                         .then_some(((record.grid_dash >> 24) & 0xf) as u8),
+                )
+                .map_err(|_| StaticDocumentError::Panel)?;
+            scene
+                .apply_static_chrome_text(
+                    if record.metric_flags & PANEL_FLAG_CHROME_TEXT != 0 {
+                        record.chrome_text
+                    } else {
+                        0
+                    },
+                    record.chrome_text_rgba,
                 )
                 .map_err(|_| StaticDocumentError::Panel)?;
             if flags & FLAG_BACKGROUND != 0 {
@@ -1530,11 +1576,13 @@ mod tests {
     fn rejects_unknown_version_and_empty_panels() {
         let mut bytes = vec![0u8; HEADER_BYTES];
         bytes[..4].copy_from_slice(MAGIC);
-        bytes[4..8].copy_from_slice(&2u32.to_le_bytes());
-        assert!(matches!(
-            StaticDocument::decode(&bytes),
-            Err(StaticDocumentError::Version)
-        ));
+        for unsupported in [0u32, 1, 3] {
+            bytes[4..8].copy_from_slice(&unsupported.to_le_bytes());
+            assert!(matches!(
+                StaticDocument::decode(&bytes),
+                Err(StaticDocumentError::Version)
+            ));
+        }
         bytes[4..8].copy_from_slice(&VERSION.to_le_bytes());
         bytes[8..12].copy_from_slice(&10u32.to_le_bytes());
         bytes[12..16].copy_from_slice(&10u32.to_le_bytes());

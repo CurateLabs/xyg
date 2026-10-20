@@ -512,3 +512,64 @@ def test_low_level_signatures_exist_only_in_generated_modules() -> None:
     assert ".argtypes" in generated_python and ".restype" in generated_python
     assert "lib.func(" in generated_node
     assert node_host.index("bindAbiVersion(lib)") < node_host.index("bindGeneratedAbi(lib)")
+
+
+def test_rejection_diagnostic_contract_is_carried_from_the_rust_doc_comment() -> None:
+    manifest = gen_abi_manifest.load_manifest()
+    carried = {
+        symbol["name"]: symbol["rejection_diagnostic"]
+        for symbol in manifest["symbols"]
+        if "rejection_diagnostic" in symbol
+    }
+    assert set(carried) == {"xyg_static_document_export"}
+    text = carried["xyg_static_document_export"]
+    for fact in ("usize::MAX", "NUL", "non-null", "strictly greater", "never reported", "panic"):
+        assert fact in text
+    header = (ROOT / "spec" / "abi" / "xyg.h").read_text(encoding="utf-8")
+    assert f"/* {text} */\nsize_t xyg_static_document_export(" in header
+
+
+def test_rejection_diagnostic_is_never_borrowed_from_an_earlier_symbol() -> None:
+    source = (
+        "/// Exports a document.\n"
+        "///\n"
+        "/// Rejection diagnostic: writes a NUL-terminated reason.\n"
+        "#[no_mangle]\n"
+        'pub extern "C" fn documented() -> i32 {\n'
+        "    0\n"
+        "}\n"
+        "\n"
+        "#[no_mangle]\n"
+        'pub extern "C" fn undocumented() -> i32 {\n'
+        "    0\n"
+        "}\n"
+    )
+    documented = source.index('pub extern "C" fn documented')
+    undocumented = source.index('pub extern "C" fn undocumented')
+    assert gen_abi_manifest._rejection_diagnostic(source, documented) == (
+        "Rejection diagnostic: writes a NUL-terminated reason."
+    )
+    assert gen_abi_manifest._rejection_diagnostic(source, undocumented) is None
+
+
+def test_rejection_diagnostic_keeps_prose_spacing_and_cannot_close_the_header_comment() -> None:
+    source = (
+        "pub const ABI_VERSION: u32 = 1;\n"
+        "/// Exports a document.\n"
+        "///\n"
+        "/// Rejection diagnostic: first.  Second sentence with `*/` in it.\n"
+        "/// Continues on a second line.\n"
+        "///\n"
+        "/// Trailing paragraph.\n"
+        "#[no_mangle]\n"
+        'pub extern "C" fn xyg_doc(value: u32) -> i32 { 0 }\n'
+    )
+    manifest = gen_abi_manifest.parse_rust_abi(source)
+    diagnostic = manifest["symbols"][0]["rejection_diagnostic"]
+    assert diagnostic == (
+        "Rejection diagnostic: first. Second sentence with `*/` in it. Continues on a second line."
+    )
+    header = gen_abi_manifest.render_c_header(manifest)
+    comment = next(line for line in header.splitlines() if "Rejection diagnostic" in line)
+    assert comment.startswith("/* ") and comment.endswith(" */")
+    assert "*/" not in comment[3:-3]

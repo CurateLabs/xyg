@@ -64,6 +64,7 @@ import {
   xySceneRasterCommands,
   xySceneStaticExport,
   xyStaticAnnotationStyle,
+  xyStaticChromeStyle,
   xyStaticDocumentExport,
   xyStaticDocumentLabels,
   xyStaticDocumentLayout,
@@ -3011,6 +3012,31 @@ function staticLabelBytes(labels, encoder) {
   return staticDocumentLabels(request);
 }
 
+/** XYST layout version; 2 widened the panel record to 128 bytes (#1004). */
+const XYST_VERSION = 2;
+
+/**
+ * A static paint: a CSS color string (converted by the native color
+ * conversion, not a JS parser) or resolved RGBA8 channels. Anything else is
+ * rejected explicitly.
+ */
+function staticPaint(value, label) {
+  if (typeof value === "string") return Array.from(cssColorRgba8(value));
+  if ((Array.isArray(value) || ArrayBuffer.isView(value)) && !(value instanceof DataView)
+    && value.length === 4
+    && Array.from(value).every((c) => Number.isInteger(c) && c >= 0 && c <= 255)) {
+    return Array.from(value);
+  }
+  throw new RangeError(`${label} paint must be a CSS color string or four 0..255 integers`);
+}
+
+function staticTitleStyle(value, index) {
+  if (!Array.isArray(value) || value.length !== 2) {
+    throw new RangeError(`StaticDocument panel ${index} title style needs size/color`);
+  }
+  return [Number(value[0]), staticPaint(value[1], `StaticDocument panel ${index} title`)];
+}
+
 export function staticDocumentEncode({
   panels,
   width,
@@ -3068,7 +3094,7 @@ export function staticDocumentEncode({
       axisSides: panel.axisSides == null ? null : Array.from(panel.axisSides, Number),
       annotationTextFlags: panel.annotationTextFlags == null ? null : Number(panel.annotationTextFlags),
       annotationPadding: panel.annotationPadding == null ? null : Number(panel.annotationPadding),
-      titleStyle: panel.titleStyle == null ? null : Array.from(panel.titleStyle),
+      titleStyle: panel.titleStyle == null ? null : staticTitleStyle(panel.titleStyle, index),
       annotationVerticalAlign: panel.annotationVerticalAlign == null
         ? null : Number(panel.annotationVerticalAlign),
       colorbarScale: panel.colorbarScale == null ? null : String(panel.colorbarScale),
@@ -3076,6 +3102,13 @@ export function staticDocumentEncode({
       colorbarPyplotLabel: Boolean(panel.colorbarPyplotLabel),
       colorbarFillPlot: Boolean(panel.colorbarFillPlot),
       gridDash: panel.gridDash == null ? null : Array.from(panel.gridDash, Number),
+      chromeText: panel.chromeText == null ? null : {
+        bits: Number(panel.chromeText[0]),
+        paints: Array.from(panel.chromeText[1], (paint) => {
+          if (typeof paint === "string") throw new RangeError(`StaticDocument panel ${index} chrome text paints are resolved RGBA8`);
+          return staticPaint(paint, `StaticDocument panel ${index} chrome text`);
+        }),
+      },
     };
     if (record.chromeMetrics != null && record.chromeMetrics.length !== 6) {
       throw new RangeError(`StaticDocument panel ${index} chrome metrics must contain six numbers`);
@@ -3095,8 +3128,10 @@ export function staticDocumentEncode({
         || record.annotationTextFlags > 3)) {
       throw new RangeError(`StaticDocument panel ${index} annotation text flags use only italic/bold bits`);
     }
-    if (record.titleStyle != null && record.titleStyle.length !== 2) {
-      throw new RangeError(`StaticDocument panel ${index} title style needs size/color`);
+    if (record.chromeText != null
+      && (!Number.isInteger(record.chromeText.bits) || record.chromeText.bits < 0
+        || record.chromeText.paints.length !== 4)) {
+      throw new RangeError(`StaticDocument panel ${index} chrome text needs a word and four RGBA paints`);
     }
     if (record.annotationVerticalAlign != null
       && (!Number.isInteger(record.annotationVerticalAlign)
@@ -3146,10 +3181,10 @@ export function staticDocumentEncode({
     decorationAt += legendBytes.length;
     decorations.set(colorbarBytes, decorationAt);
   }
-  const out = new Uint8Array(64 + panels.length * 108 + titleBytes.length + decorations.length + sceneBytes);
+  const out = new Uint8Array(64 + panels.length * 128 + titleBytes.length + decorations.length + sceneBytes);
   const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
   out.set([88, 89, 83, 84], 0);
-  view.setUint32(4, 1, true);
+  view.setUint32(4, XYST_VERSION, true);
   view.setUint32(8, documentWidth, true);
   view.setUint32(12, documentHeight, true);
   view.setUint32(16, (background != null ? 1 : 0) | (optimizePng ? 2 : 0)
@@ -3188,6 +3223,7 @@ export function staticDocumentEncode({
       | (["max", "both"].includes(panel.colorbarExtend) ? 1 << 12 : 0)
       | (panel.colorbarPyplotLabel ? 1 << 13 : 0)
       | (panel.gridDash == null ? 0 : 1 << 14)
+      | (panel.chromeText == null ? 0 : 1 << 15)
       | (panel.colorbarFillPlot ? 1 << 24 : 0), true);
     view.setFloat32(at + 4, panel.annotationFontSize ?? 0, true);
     at += 8;
@@ -3211,7 +3247,7 @@ export function staticDocumentEncode({
     at += 4;
     view.setFloat32(at, Number(panel.titleStyle?.[0] ?? 0), true);
     at += 4;
-    out.set(panel.titleStyle == null ? [0, 0, 0, 0] : cssColorRgba8(String(panel.titleStyle[1])), at);
+    out.set(panel.titleStyle == null ? [0, 0, 0, 0] : panel.titleStyle[1], at);
     at += 4;
     view.setUint32(at, panel.annotationVerticalAlign ?? 0, true);
     at += 4;
@@ -3222,6 +3258,12 @@ export function staticDocumentEncode({
       true,
     );
     at += 4;
+    view.setUint32(at, panel.chromeText?.bits ?? 0, true);
+    at += 4;
+    for (const paint of panel.chromeText?.paints ?? [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]) {
+      out.set(paint, at);
+      at += 4;
+    }
   }
   out.set(titleBytes, at);
   at += titleBytes.length;
@@ -3234,23 +3276,6 @@ export function staticDocumentEncode({
   return out;
 }
 
-const STATIC_ROOT_STYLE_KEYS = new Set([
-  "background",
-  "--chart-bg",
-  "--chart-grid",
-  "--chart-axis",
-  "--chart-text",
-  "font-family",
-  "font-size",
-]);
-const STATIC_CHROME_SLOTS = new Set(["title", "axis_title", "tick_label"]);
-const STATIC_CHROME_STYLE_KEYS = new Set(["font-size", "color", "font-weight", "font-family"]);
-const STATIC_ROOT_FAMILIES = new Set([
-  "dejavusans,sans-serif",
-  "system-ui,sans-serif",
-  "sans-serif",
-]);
-const STATIC_CHROME_FAMILIES = new Set(["dejavu sans", "dejavusans", "sans-serif"]);
 
 const GRID_DASH_CODES = { solid: 0, dashed: 1, dotted: 2, dashdot: 3 };
 
@@ -3281,42 +3306,29 @@ export function figureStaticDocument(figure, {
     }
   }
   const rootStyle = { ...(figure.style ?? {}) };
-  for (const key of Object.keys(rootStyle)) {
-    if (!STATIC_ROOT_STYLE_KEYS.has(key)) throw new RangeError("XYG_STATIC_UNSUPPORTED_BROWSER_CSS");
-  }
-  const rootFamily = String(rootStyle["font-family"] ?? "DejaVu Sans, sans-serif").toLowerCase().replaceAll(" ", "");
-  if (!STATIC_ROOT_FAMILIES.has(rootFamily)) throw new RangeError("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT");
-  const chromeStyles = {};
-  for (const [slot, chromeStyle] of Object.entries(figure.chrome_styles ?? {})) {
-    const keys = Object.keys(chromeStyle ?? {});
-    if (!STATIC_CHROME_SLOTS.has(slot) || keys.some((key) => !STATIC_CHROME_STYLE_KEYS.has(key))) {
-      throw new RangeError("XYG_STATIC_UNSUPPORTED_CHROME_STYLE");
-    }
-    const chromeFamily = String(chromeStyle["font-family"] ?? "DejaVu Sans").toLowerCase();
-    if (!STATIC_CHROME_FAMILIES.has(chromeFamily)) throw new RangeError("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT");
-    chromeStyles[slot] = { ...chromeStyle };
-  }
+  const chrome = resolveStaticChromeStyle({
+    hasTitle: Boolean(figure.title),
+    rootStyle,
+    chromeStyles: figure.chrome_styles ?? {},
+    axisOptions: figure.axis_options ?? {},
+  });
   const projectedStyle = {};
   for (const key of ["background", "--chart-bg"]) {
     if (key in rootStyle) projectedStyle[key] = rootStyle[key];
   }
   const axisOptions = {};
-  const chromeMetrics = {};
   const gridDash = { x: null, y: null };
   const gridDashMinor = { x: null, y: null };
   for (const [axisId, options] of Object.entries(figure.axis_options ?? {})) {
     const next = { ...options };
-    const style = { ...(options.style ?? {}) };
-    const minor = { ...(options.minor_style ?? {}) };
+    const [consumedStyle, consumedMinor] = chrome.consumed[axisId] ?? [[], []];
+    const style = Object.fromEntries(
+      Object.entries(options.style ?? {}).filter(([key]) => !consumedStyle.includes(key)),
+    );
+    const minor = Object.fromEntries(
+      Object.entries(options.minor_style ?? {}).filter(([key]) => !consumedMinor.includes(key)),
+    );
     if (axisId === "x" || axisId === "y") {
-      const tickLabel = "tick_label_size" in style ? style["tick_label_size"] : ("tick_size" in style ? style["tick_size"] : 12.0);
-      delete style["tick_label_size"];
-      delete style["tick_size"];
-      const labelSize = "label_size" in style ? style["label_size"] : 12.0;
-      delete style["label_size"];
-      const tickPadding = "tick_padding" in style ? style["tick_padding"] : 4.0;
-      delete style["tick_padding"];
-      chromeMetrics[axisId] = [Number(tickLabel), Number(labelSize), Number(tickPadding)];
       const rawDash = "grid_dash" in style ? style["grid_dash"] : null;
       delete style["grid_dash"];
       if (rawDash != null) {
@@ -3329,7 +3341,6 @@ export function figureStaticDocument(figure, {
         if (!(rawMinorDash in GRID_DASH_CODES)) throw new RangeError("XYG_STATIC_UNSUPPORTED_GRID_DASH");
         gridDashMinor[axisId] = GRID_DASH_CODES[rawMinorDash];
       }
-      for (const key of ["tick_label_size", "tick_size", "label_size", "tick_padding"]) delete minor[key];
     }
     if (rootStyle["--chart-grid"] != null) {
       style.grid_color = rootStyle["--chart-grid"];
@@ -3339,10 +3350,6 @@ export function figureStaticDocument(figure, {
       style.axis_color = rootStyle["--chart-axis"];
       style.tick_color = rootStyle["--chart-axis"];
       minor.tick_color = rootStyle["--chart-axis"];
-    }
-    if (rootStyle["--chart-text"] != null) {
-      if (style.label_color == null) style.label_color = rootStyle["--chart-text"];
-      if (style.tick_label_color == null) style.tick_label_color = rootStyle["--chart-text"];
     }
     if (Object.keys(style).length) next.style = style;
     else delete next.style;
@@ -3408,16 +3415,6 @@ export function figureStaticDocument(figure, {
     (sides.has("bottom") ? 1 : 0) | (sides.has("top") ? 2 : 0),
     (sides.has("left") ? 1 : 0) | (sides.has("right") ? 2 : 0),
   ];
-  let titleStyle = null;
-  if (figure.title) {
-    const authored = chromeStyles.title ?? {};
-    const rawSize = String(authored["font-size"] ?? "14px");
-    if (!rawSize.endsWith("px")) throw new RangeError("XYG_STATIC_UNSUPPORTED_TITLE_STYLE");
-    titleStyle = [
-      Number(rawSize.slice(0, -2)),
-      String(authored["color"] ?? rootStyle["--chart-text"] ?? "#262626"),
-    ];
-  }
   return staticDocumentEncode({
     panels: [{
       scene,
@@ -3425,14 +3422,15 @@ export function figureStaticDocument(figure, {
       y: 0,
       width: documentWidth,
       height: documentHeight,
-      chromeMetrics: [...chromeMetrics.x, ...chromeMetrics.y],
+      chromeMetrics: chrome.chromeMetrics,
       annotationFontSize: annotationFacts.fontSize,
       axisSides,
       annotationTextFlags: annotationFacts.textFlags,
       annotationPadding: annotationFacts.padding,
-      titleStyle,
+      titleStyle: chrome.titleStyle,
       annotationVerticalAlign: annotationFacts.verticalAlign,
       gridDash: staticGridDashFact(gridDash, gridDashMinor),
+      chromeText: chrome.chromeText,
     }],
     width: documentWidth,
     height: documentHeight,
@@ -3630,7 +3628,8 @@ function plainGraphTraces(figure, traces) {
 }
 
 /** Marshal authored annotations through the Rust XYAS/XYAO style contract. */
-function staticAnnotationStyleFacts(sources) {
+/** Little-endian XYCS/XYAS frame writer shared by the style-fact marshals. */
+function styleFrame() {
   const encoder = new TextEncoder();
   const chunks = [];
   const pushU32 = (value) => {
@@ -3648,6 +3647,78 @@ function staticAnnotationStyleFacts(sources) {
     pushU32(bytes.length);
     chunks.push(bytes);
   };
+  const pushValue = (value) => {
+    if (value == null) pushU32(0);
+    else if (typeof value === "string") { pushU32(1); pushText(value); }
+    else if (typeof value === "boolean") { pushU32(3); pushU32(value ? 1 : 0); }
+    else if (typeof value === "number" && Number.isFinite(value)) { pushU32(2); pushF64(value); }
+    else pushU32(4);
+  };
+  const pushEntries = (mapping) => {
+    const keys = Object.keys(mapping ?? {}).sort();
+    pushU32(keys.length);
+    for (const key of keys) {
+      pushText(key);
+      pushValue(mapping[key]);
+    }
+  };
+  return { chunks, pushU32, pushText, pushValue, pushEntries };
+}
+
+/** Marshal authored chrome style facts; Rust owns admission and precedence. */
+function resolveStaticChromeStyle({ hasTitle, rootStyle, chromeStyles, axisOptions }) {
+  const frame = styleFrame();
+  frame.pushU32(1);
+  frame.pushU32(hasTitle ? 1 : 0);
+  frame.pushU32(0);
+  frame.pushEntries(rootStyle);
+  const slots = Object.keys(chromeStyles).sort();
+  frame.pushU32(slots.length);
+  for (const slot of slots) {
+    frame.pushText(slot);
+    frame.pushEntries(chromeStyles[slot]);
+  }
+  for (const axisId of ["x", "y"]) {
+    frame.pushEntries(axisOptions[axisId]?.style);
+    frame.pushEntries(axisOptions[axisId]?.minor_style);
+  }
+  const output = staticChromeStyle(concatBytes([new Uint8Array([88, 89, 67, 83]), ...frame.chunks]));
+  const view = new DataView(output.buffer, output.byteOffset, output.byteLength);
+  const fixed = 4 + 12 + 16 + 8 + 4 + 48;
+  if (output.length < fixed || String.fromCharCode(...output.subarray(0, 4)) !== "XYCO"
+    || view.getUint32(4, true) !== 1 || view.getUint32(8, true) & ~1) {
+    throw new Error("invalid XYCO output");
+  }
+  const hasTitleStyle = (view.getUint32(8, true) & 1) !== 0;
+  const chromeText = view.getUint32(12, true);
+  const paints = [0, 1, 2, 3].map((index) => Array.from(output.subarray(16 + 4 * index, 20 + 4 * index)));
+  const titleSize = view.getFloat64(32, true);
+  const titleRgba = Array.from(output.subarray(40, 44));
+  const chromeMetrics = [0, 1, 2, 3, 4, 5].map((index) => view.getFloat64(44 + 8 * index, true));
+  let at = fixed;
+  const takeKeys = () => {
+    const count = view.getUint32(at, true);
+    at += 4;
+    const keys = [];
+    for (let index = 0; index < count; index += 1) {
+      const length = view.getUint32(at, true);
+      keys.push(new TextDecoder("utf-8", { fatal: true }).decode(output.subarray(at + 4, at + 4 + length)));
+      at += 4 + length;
+    }
+    return keys;
+  };
+  const consumed = { x: [takeKeys(), takeKeys()], y: [takeKeys(), takeKeys()] };
+  if (at !== output.length) throw new Error("invalid XYCO output");
+  return {
+    titleStyle: hasTitleStyle ? [titleSize, titleRgba] : null,
+    chromeMetrics,
+    chromeText: chromeText ? [chromeText, paints] : null,
+    consumed,
+  };
+}
+
+function staticAnnotationStyleFacts(sources) {
+  const { chunks, pushU32, pushText, pushValue } = styleFrame();
   const pushOptionalText = (value) => {
     if (value == null) pushU32(0xffffffff);
     else pushText(value);
@@ -3665,12 +3736,7 @@ function staticAnnotationStyleFacts(sources) {
     pushOptionalText(annotation.kind);
     for (const key of keys) {
       pushText(key);
-      const value = style[key];
-      if (value == null) pushU32(0);
-      else if (typeof value === "string") { pushU32(1); pushText(value); }
-      else if (typeof value === "boolean") { pushU32(3); pushU32(value ? 1 : 0); }
-      else if (typeof value === "number" && Number.isFinite(value)) { pushU32(2); pushF64(value); }
-      else pushU32(4);
+      pushValue(style[key]);
     }
   }
   const request = concatBytes([new Uint8Array([88, 89, 65, 83]), ...chunks]);
@@ -3746,7 +3812,7 @@ export function staticDocumentExport(encoded, format, { scale = DEFAULT_PNG_EXPO
   }
   const q = Number(quality);
   if (!Number.isInteger(q) || q < 1 || q > 100) throw new RangeError("quality must be an int in 1..100");
-  return sceneOutput(encoded, xyStaticDocumentExport, "StaticDocument export", [code, factor, q]);
+  return sceneOutput(encoded, xyStaticDocumentExport, "StaticDocument export", [code, factor, q], true);
 }
 
 export function staticDocumentLayout(encoded) {
@@ -3755,6 +3821,14 @@ export function staticDocumentLayout(encoded) {
 
 export function staticAnnotationStyle(encoded) {
   const output = sceneOutput(encoded, xyStaticAnnotationStyle, "StaticDocument annotation style");
+  if (output.length >= 4 && new TextDecoder().decode(output.slice(0, 4)) === "XYG_") {
+    throw new RangeError(new TextDecoder().decode(output));
+  }
+  return output;
+}
+
+export function staticChromeStyle(encoded) {
+  const output = sceneOutput(encoded, xyStaticChromeStyle, "StaticDocument chrome style");
   if (output.length >= 4 && new TextDecoder().decode(output.slice(0, 4)) === "XYG_") {
     throw new RangeError(new TextDecoder().decode(output));
   }

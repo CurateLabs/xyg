@@ -179,6 +179,7 @@ for(const p of panels){{
                     title_style=panel.title_style,
                     annotation_vertical_align=panel.annotation_vertical_align,
                     grid_dash=panel.grid_dash,
+                    chrome_text=panel.chrome_text,
                 )
             )
         return _static_document.encode(

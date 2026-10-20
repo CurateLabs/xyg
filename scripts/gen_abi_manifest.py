@@ -345,6 +345,41 @@ _DEFAULT_PALETTE_OUTPUT_CONTRACTS = {
 }
 
 
+_DIAGNOSTIC_MARKER = "Rejection diagnostic:"
+
+
+def _rejection_diagnostic(text: str, fn_start: int) -> Optional[str]:
+    """The `Rejection diagnostic:` paragraph of the doc comment above a symbol.
+
+    The Rust doc comment is the single source of truth for this contract; it is
+    carried into the manifest and C header verbatim (whitespace-normalized).
+    """
+    doc: list[str] = []
+    for line in reversed(text[:fn_start].splitlines()):
+        stripped = line.strip()
+        if stripped.startswith("///"):
+            doc.append(stripped[3:].strip())
+            continue
+        # Only attributes may sit between a symbol and its own doc comment;
+        # anything else means the symbol is undocumented, so never borrow the
+        # doc comment of an earlier item.
+        if not doc and (stripped.startswith("#[") or not stripped):
+            continue
+        break
+    # Paragraphs are separated by empty `///` lines, never by spacing in prose.
+    paragraphs: list[list[str]] = [[]]
+    for line in reversed(doc):
+        if line:
+            paragraphs[-1].append(line)
+        elif paragraphs[-1]:
+            paragraphs.append([])
+    for paragraph in paragraphs:
+        joined = " ".join(" ".join(paragraph).split())
+        if joined.startswith(_DIAGNOSTIC_MARKER):
+            return joined
+    return None
+
+
 def parse_rust_abi(text: str) -> dict[str, Any]:
     version_match = _ABI_CONST_RS.search(text)
     if version_match is None:
@@ -472,16 +507,18 @@ def parse_rust_abi(text: str) -> dict[str, Any]:
             }
         else:
             returns = _type_contract(rust_return, argument=False)
-        symbols.append(
-            {
-                "name": name,
-                "node_name": _node_name(name),
-                "nargs": len(arguments),
-                "arguments": arguments,
-                "returns": returns,
-                "c_signature": _c_signature(name, returns, arguments),
-            }
-        )
+        symbol = {
+            "name": name,
+            "node_name": _node_name(name),
+            "nargs": len(arguments),
+            "arguments": arguments,
+            "returns": returns,
+            "c_signature": _c_signature(name, returns, arguments),
+        }
+        diagnostic = _rejection_diagnostic(text, match_fn.start())
+        if diagnostic is not None:
+            symbol["rejection_diagnostic"] = diagnostic
+        symbols.append(symbol)
     symbols.sort(key=lambda item: item["name"])
     signature_source = "\n".join(item["c_signature"] for item in symbols) + "\n"
     return {
@@ -903,6 +940,10 @@ def render_c_header(manifest: dict[str, Any]) -> str:
     for symbol in manifest["symbols"]:
         for contract_comment in _length_contract_comments(symbol):
             lines.append(f"/* Buffer contract: {contract_comment}. */")
+        if "rejection_diagnostic" in symbol:
+            # Doc text must never close the C comment early.
+            diagnostic = symbol["rejection_diagnostic"].replace("*/", "* /")
+            lines.append(f"/* {diagnostic} */")
         lines.append(f"{symbol['c_signature']};")
     lines.extend(
         [

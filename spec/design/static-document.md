@@ -15,7 +15,7 @@ marshal the envelope, invoke the generated ABI, and translate stable errors.
 They must not retry a host renderer after the Rust support predicate or
 consumer has been selected.
 
-The v1 envelope is `XYST`: a fixed header, fixed-size panel table, optional
+The v2 envelope is `XYST` (see §1.1 for the layout version): a fixed header, fixed-size panel table, optional
 bounded UTF-8 document title, and concatenated canonical Scene bytes. Numeric
 facts are little-endian integers; no JSON numeric array crosses the boundary.
 The decoder rejects unknown versions/flags, empty or oversized panels,
@@ -27,12 +27,23 @@ The companion Rust-owned marshal contracts are
 [best-legend placement](static-legend-fit.md), and
 [document-label](static-document-labels.md) and
 [document-legend](static-document-legend.md) authoring, plus
-[annotation-style projection](static-annotation-style.md). Hosts may carry their
+[annotation-style projection](static-annotation-style.md), and the
+[chrome-style projection](static-chrome-style.md). Hosts may carry their
 literal facts but do not repeat those contracts' defaults or policy.
 
-### 1.1 XYST v1 framing
+### 1.1 XYST v2 framing
 
-The header is 64 bytes. It begins with `XYST`, version `1`, width, height,
+Version 2 (#1004) widened the panel record from 108 to 128 bytes. The version
+is the only layout discriminator: a version `1` document (108-byte panels) is
+rejected with `XYG_STATIC_DOCUMENT_VERSION` and guidance to re-encode, never
+decoded with the new table boundaries. Rejections carry a stable
+`XYG_STATIC_DOCUMENT_*` code through the C ABI (`HEADER`, `VERSION`, `FLAGS`,
+`LIMIT`, `PANEL`, `TITLE`, `SCENE`, `RASTER`, `ENCODE`), surfaced as
+`StaticDocumentRejected.code` in Python and a `RangeError` with `.code` in Node.
+Encoders accept panel title paints as a CSS color string (converted by the
+native color conversion) or resolved RGBA8 bytes; anything else is rejected.
+
+The header is 64 bytes. It begins with `XYST`, version `2`, width, height,
 document flags, panel count, and title byte count as little-endian `u32`.
 Header flags are `BACKGROUND=1`, `OPTIMIZE_PNG=2`, `TIGHT_CROP=4`, and
 `TITLE_X_CENTER=8`; every other bit is rejected. The center flag requires
@@ -42,8 +53,9 @@ bytes 36–47 are title size/x/y `f32`, bytes 48–49 are title anchor and
 italic/bold flags, bytes 52–59 are decoration byte count and crop padding, and
 all reserved bytes must be zero.
 
-Each panel record is 108 bytes (`<2i6I12fII2f4B2I>`; the trailing `u32`
-carries the grid dash nibbles). The first 24 bytes carry
+Each panel record is 128 bytes (`<2i6I12fII2f4B2II16B>`; the `u32` at offset
+104 carries the grid dash nibbles and the final 20 bytes the chrome-text word
+plus four RGBA8 paints). The first 24 bytes carry
 signed x/y, width/height, Scene offset/length; byte offset 24 is the panel flag
 mask. Optional floats and integers are canonical zero when their flag is
 inactive. The admitted flags are:
@@ -63,6 +75,7 @@ inactive. The admitted flags are:
 | 11–12 | pyplot colorbar minimum/maximum endpoint extends |
 | 13 | pyplot colorbar label/orientation compatibility |
 | 14 | uniform grid dash codes for (x major, y major, x minor, y minor) |
+| 15 | Rust-resolved chrome text: italic/bold flags for the title, axis titles, and tick labels plus separate tick-label and axis-title RGBA8 paints ([chrome-style projection](static-chrome-style.md)) |
 | 24 | explicit pyplot `cax` fills the panel Scene plot rectangle |
 
 Bit 14 packs four nibble codes (`0=solid, 1=dashed, 2=dotted, 3=dashdot`)

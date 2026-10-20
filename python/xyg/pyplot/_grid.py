@@ -341,6 +341,7 @@ def _pyplot_static_document(
                 figure._static_document_colorbar_pyplot_label,
                 figure._static_document_colorbar_fill_plot,
                 grid_dash=getattr(figure, "_static_document_grid_dash", None),
+                chrome_text=getattr(figure, "_static_document_chrome_text", None),
             )
         )
     panel_legends = [
@@ -462,63 +463,25 @@ def _pyplot_scene_figure(figure: Any) -> Any:
         raise _static_document.UnsupportedStaticExport(
             "XYG_STATIC_UNSUPPORTED_HETEROGENEOUS_ARROW_METRICS"
         )
-    metrics: dict[str, tuple[float, float, float]] = {}
     grid_dash: dict[str, Optional[int]] = {"x": None, "y": None}
     grid_dash_minor: dict[str, Optional[int]] = {"x": None, "y": None}
     root = dict(getattr(figure, "style", None) or {})
     if getattr(figure, "_pyplot_static_mathtext", False):
         raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_MATHTEXT_STYLE")
-    allowed_root = {
-        "background",
-        "--chart-bg",
-        "--chart-grid",
-        "--chart-axis",
-        "--chart-text",
-        "font-family",
-        "font-size",
-    }
-    if set(root) - allowed_root:
-        raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_BROWSER_CSS")
-    family = str(root.get("font-family", "DejaVu Sans, sans-serif")).lower().replace(" ", "")
-    if family not in {"dejavusans,sans-serif", "system-ui,sans-serif", "sans-serif"}:
-        raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT")
-    title_style = dict((getattr(figure, "chrome_styles", None) or {}).get("title") or {})
-    for slot, chrome_style in (getattr(figure, "chrome_styles", None) or {}).items():
-        allowed = (
-            {
-                "fontSize",
-                "background",
-                "borderColor",
-                "borderStyle",
-                "borderWidth",
-                "--xy-legend-frame-alpha",
-                "padding",
-                "rowGap",
-            }
-            if slot == "legend"
-            else {"font-size", "color", "font-weight", "font-family"}
-            if slot in {"title", "axis_title", "tick_label"}
-            else set()
-        )
-        if not allowed or set(chrome_style) - allowed:
-            raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CHROME_STYLE")
-        if slot == "legend":
-            continue
-        chrome_family = str(chrome_style.get("font-family", "DejaVu Sans")).lower()
-        if chrome_family not in {"dejavu sans", "dejavusans", "sans-serif"}:
-            raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_CUSTOM_FONT")
+    chrome = _static_document.resolve_chrome_style(
+        has_title=bool(getattr(figure, "title", None)),
+        root_style=root,
+        chrome_styles=dict(getattr(figure, "chrome_styles", None) or {}),
+        axis_options=projected.axis_options,
+        admit_legend_slot=True,
+    )
+    _static_document.apply_chrome_style_consumption(projected.axis_options, chrome)
     grid = root.get("--chart-grid")
     axis = root.get("--chart-axis")
-    text = root.get("--chart-text")
     for axis_id, options in projected.axis_options.items():
         style = dict(options.get("style") or {})
         minor = dict(options.get("minor_style") or {})
         if axis_id in {"x", "y"}:
-            metrics[axis_id] = (
-                float(style.pop("tick_label_size", style.pop("tick_size", 12.0))),
-                float(style.pop("label_size", 12.0)),
-                float(style.pop("tick_padding", 4.0)),
-            )
             raw_dash = style.pop("grid_dash", None)
             if raw_dash is not None:
                 if raw_dash not in _GRID_DASH_CODES:
@@ -533,8 +496,6 @@ def _pyplot_scene_figure(figure: Any) -> Any:
                         "XYG_STATIC_UNSUPPORTED_GRID_DASH"
                     )
                 grid_dash_minor[axis_id] = _GRID_DASH_CODES[raw_minor_dash]
-        for key in ("tick_label_size", "tick_size", "label_size", "tick_padding"):
-            minor.pop(key, None)
         if grid is not None:
             style["grid_color"] = grid
             minor["grid_color"] = grid
@@ -542,9 +503,6 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             style["axis_color"] = axis
             style["tick_color"] = axis
             minor["tick_color"] = axis
-        if text is not None:
-            style.setdefault("label_color", text)
-            style.setdefault("tick_label_color", text)
         if style:
             options["style"] = style
         else:
@@ -562,15 +520,8 @@ def _pyplot_scene_figure(figure: Any) -> Any:
         key: value for key, value in root.items() if key in {"background", "--chart-bg"}
     }
     projected.chrome_styles = {}
-    projected._static_document_title_style = None
-    if getattr(figure, "title", None):
-        raw_size = str(title_style.get("font-size", "14px"))
-        if not raw_size.endswith("px"):
-            raise _static_document.UnsupportedStaticExport("XYG_STATIC_UNSUPPORTED_TITLE_STYLE")
-        projected._static_document_title_style = (
-            float(raw_size[:-2]),
-            str(title_style.get("color", text or "#262626")),
-        )
+    projected._static_document_title_style = chrome.title_style
+    projected._static_document_chrome_text = chrome.chrome_text
     projected.title_options = []
     panel_legend = None
     if projected.show_legend:
@@ -648,7 +599,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
         projected._static_document_colorbar_extend = str(colorbar.get("extend", "neither"))
         projected._static_document_colorbar_pyplot_label = True
         projected._static_document_colorbar_fill_plot = colorbar.get("placement") == "axes"
-    projected._static_document_chrome_metrics = (*metrics["x"], *metrics["y"])
+    projected._static_document_chrome_metrics = chrome.chrome_metrics
     projected._static_document_grid_dash = (
         None
         if all(value is None for value in grid_dash.values())
