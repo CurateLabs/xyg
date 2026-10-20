@@ -688,8 +688,11 @@ def _pyplot_scene_figure(figure: Any) -> Any:
                 cap("under_color", extend in ("min", "both")),
                 cap("over_color", extend in ("max", "both")),
             )
-        elif colorbar.keys() & {"under_color", "over_color"}:
-            # Continuous ramps have no literal cap paints to hand to Rust.
+        elif colorbar.keys() & {"spacing", "under_color", "over_color"}:
+            # Spacing and cap paints are facts of the discrete (banded) path
+            # only. A ramp, including a contour colorbar that has boundaries but
+            # no band colors, has nothing to apply them to; admitting them would
+            # export a smooth gradient where Matplotlib draws solid bands.
             raise _static_document.UnsupportedStaticExport(
                 "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE"
             )

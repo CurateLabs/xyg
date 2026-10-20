@@ -24,6 +24,12 @@ which covers user-visible releases across the whole package.
   discrete region; a cap is never painted with an interior band color. `format=` tick labels are re-derived from
   the live ticks at every chart build, so `Colorbar.set_ticks()` after
   `colorbar(format=...)` relabels the new positions.
+- `spacing`, cap paints and `format=` labels are admitted only on the banded
+  path. A contourf colorbar with explicit levels but no band colors is still a
+  continuous ramp: `spacing="proportional"` on it keeps the
+  `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rejection and its default export
+  is byte-identical to main. Drawing such colorbars as solid bands is a
+  follow-up.
 - `format=` on a continuous ramp now fails closed with the stable
   `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS` reason, and a banded bar
   beyond 15 bands reports `XYG_SCENE_UNSUPPORTED_COLORBAR`. Both are known gaps.

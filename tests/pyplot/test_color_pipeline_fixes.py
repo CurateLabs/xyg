@@ -377,6 +377,37 @@ def test_boundary_norm_colorbar_labels_follow_set_ticks(new_ticks, expected):
     assert re.findall(r">([\d.]+ u)<", _svg()) == expected
 
 
+def _contourf_with_explicit_levels():
+    grid = np.linspace(0, 1, 12)
+    fig, ax = plt.subplots()
+    return fig, ax.contourf(np.add.outer(grid, grid * 3) * 3, levels=[0, 1, 3, 10], cmap="viridis")
+
+
+def test_contourf_colorbar_without_band_colors_rejects_spacing_and_keeps_main_output():
+    """Spacing belongs to the discrete path; a boundary-only ramp must not gain it.
+
+    A contourf colorbar with explicit levels has boundaries but no band colors, so
+    it is drawn as a continuous ramp. Admitting ``spacing="proportional"`` there
+    would export a smooth gradient where Matplotlib draws solid bands; it keeps
+    the pre-#1035 ``XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE`` rejection.
+    Default and explicit-uniform spacing export byte-identically to main
+    (golden SHA-256 of the SVG captured from main ``be0270f8``).
+    """
+    import hashlib
+
+    fig, contour = _contourf_with_explicit_levels()
+    fig.colorbar(contour, spacing="proportional")
+    with pytest.raises(RuntimeError, match="XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE"):
+        _svg()
+    plt.close("all")
+    for options in ({}, {"spacing": "uniform"}):
+        fig, contour = _contourf_with_explicit_levels()
+        fig.colorbar(contour, **options)
+        digest = hashlib.sha256(_svg().encode()).hexdigest()
+        assert digest == "6a216c5347041c0bfd1d75318b909c76a796f3e493fcfcddb7374ccba0d944bf"
+        plt.close("all")
+
+
 def test_continuous_colorbar_with_formatted_ticks_is_rejected_with_a_stable_reason():
     """Authored tick labels need literal bands; a ramp has none, so it fails closed."""
     plt.imshow(np.arange(6.0).reshape(2, 3))

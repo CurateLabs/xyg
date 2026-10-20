@@ -95,7 +95,11 @@ invalid UTF-8 are rejected. It adds three facts:
 for a logarithmic scale, minor ticks, fewer than two stops, or authored labels
 without authored ticks or of the wrong count. pyplot admits `band_colors`,
 `boundaries`, `spacing` and `tick_labels` on the panel colorbar and marshals
-them as literal Scene stops plus this blob; `tick_labels` without bands (a
+them as literal Scene stops plus this blob; `spacing` and the cap paints are likewise discrete-only: a colorbar with
+boundaries but no `band_colors` (for example `contourf(levels=..., cmap=...)`)
+is a continuous ramp, so `spacing="proportional"` on it stays rejected with the
+pre-existing `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rather than exporting
+a smooth gradient, and its default-spacing export is unchanged. `tick_labels` without bands (a
 formatted continuous ramp) stays rejected with the stable
 `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS` reason because the named
 ramp has no literal bands to label. A discrete colormap without `BoundaryNorm`
