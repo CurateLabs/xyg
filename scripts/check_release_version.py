@@ -12,11 +12,13 @@ release).
 The ``xyg`` distribution uses `xyg-vX.Y.Z` tags and `CHANGELOG.md`. Its bundled
 Reflex integration and `reflex` extra ship on the same version line.
 
-Tags accept an optional PEP 440 pre-release suffix in its canonical spelling
-(`a1`/`b2`/`rc3`). PyPI accepts pre-releases but does not serve them to default
-`pip install`. Only the canonical spelling passes: `-alpha1`-style tags would
-be normalized by the derivation (`0.0.1a1`) and could never match their own
-artifacts. A pre-release still needs its own dated changelog entry.
+Tags use the canonical semver spelling `xyg-vX.Y.Z` or `xyg-vX.Y.Z-rc.N` (also
+`-alpha.N` / `-beta.N`); the legacy PEP 440 tag spelling (`xyg-v0.6.0rc5`) is
+still accepted for already-cut tags. Both name the same release: npm
+`0.6.0-rc.5`, Python/PyPI `0.6.0rc5` (see `scripts/release_version.py`, the
+single conversion authority). PyPI accepts pre-releases but does not serve them
+to default `pip install`. A pre-release needs its own dated changelog entry,
+written with either the Python or the npm spelling of its version.
 
 Docs-deploy CalVer tags (2026.WW.N) do not match the release shape.
 Dev/post/local shapes stay rejected: dev versions are the between-tags marker
@@ -32,46 +34,36 @@ import sys
 from pathlib import Path
 from typing import NamedTuple, Optional
 
+try:
+    from release_version import TAG_SHAPE, parse_tag
+except ModuleNotFoundError:
+    from scripts.release_version import TAG_SHAPE, parse_tag
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class _Package(NamedTuple):
-    # The release tag shape uv-dynamic-versioning derives this package's
-    # distribution version from: prefix + `v` + a PEP 440 release number,
-    # optionally a canonical pre-release suffix (aN/bN/rcN), nothing else.
-    tag_re: re.Pattern[str]
     tag_shape: str
     changelog: Path
 
 
-# Canonical PEP 440 spellings only: the derivation would normalize `alpha1`
-# to `a1`, so a non-canonical tag can never equal its own built version.
-_NUM = r"(?:0|[1-9][0-9]*)"
-_RELEASE = rf"{_NUM}\.{_NUM}\.{_NUM}(?:(?:a|b|rc){_NUM})?"
-_SHAPE = "xyg-vX.Y.Z with an optional aN/bN/rcN pre-release suffix"
-
 PACKAGES = {
-    "xy": _Package(
-        tag_re=re.compile(rf"^xyg-v(?P<version>{_RELEASE})$"),
-        tag_shape=_SHAPE,
-        changelog=ROOT / "CHANGELOG.md",
-    ),
+    "xy": _Package(tag_shape=TAG_SHAPE, changelog=ROOT / "CHANGELOG.md"),
 }
 DEFAULT_CHANGELOG = PACKAGES["xy"].changelog
-# Backward-compatible alias for the pre-adapter, xy-only gate.
-TAG_RE = PACKAGES["xy"].tag_re
 
 
 def check_release(tag: str, changelog: Path, package: str = "xy") -> list[str]:
     errors: list[str] = []
     spec = PACKAGES[package]
-    match = spec.tag_re.match(tag)
-    if match is None:
+    try:
+        release = parse_tag(tag)
+    except ValueError as exc:
         return [
             f"tag {tag!r} is not a release tag for {package} — expected "
-            f"{spec.tag_shape!r}, the shape the distribution version is derived from"
+            f"{spec.tag_shape!r}, the shape the distribution version is derived from "
+            f"({exc})"
         ]
-    version = match.group("version")
     try:
         text = changelog.read_text(encoding="utf-8")
     except OSError as exc:
@@ -81,16 +73,18 @@ def check_release(tag: str, changelog: Path, package: str = "xy") -> list[str]:
     # dated notes), not heading style: both spellings used in this repo pass —
     # Keep-a-Changelog brackets (`## [0.0.2] — 2026-07-24`) and the plain
     # v-prefixed form v0.0.2 was actually documented with
-    # (`## v0.0.2 - 2026-07-24`); em dash or hyphen either way.
+    # (`## v0.0.2 - 2026-07-24`); em dash or hyphen either way. A pre-release
+    # heading may use the Python (`0.6.0rc5`) or npm (`0.6.0-rc.5`) spelling.
+    spellings = "|".join(re.escape(v) for v in dict.fromkeys((release.python, release.npm)))
     dated = re.compile(
-        rf"^## (?:\[{re.escape(version)}\]|v?{re.escape(version)}) [—-] "
+        rf"^## (?:\[(?:{spellings})\]|v?(?:{spellings})) [—-] "
         rf"\d{{4}}-\d{{2}}-\d{{2}}\s*$",
         re.M,
     )
     if not dated.search(text):
         errors.append(
-            f"{changelog.name} has no dated '## [{version}]' entry — date the "
-            "release section before tagging"
+            f"{changelog.name} has no dated '## [{release.npm}]' (or '[{release.python}]') "
+            "entry — date the release section before tagging"
         )
     return errors
 

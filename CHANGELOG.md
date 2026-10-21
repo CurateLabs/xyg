@@ -13,6 +13,13 @@ in the README).
 
 ## [Unreleased]
 
+### Changed
+- Release candidates use the canonical tag `xyg-vX.Y.Z-rc.N` (also `-alpha.N`/
+  `-beta.N`), with npm `X.Y.Z-rc.N` and Python/PyPI `X.Y.ZrcN` produced from one
+  conversion authority (`scripts/release_version.py`) shared by the release
+  gate, npm staging, and the release-cohort check (#884). The legacy PEP 440 tag
+  spelling still passes for already-cut tags.
+
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing
