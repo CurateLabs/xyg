@@ -119,6 +119,12 @@ pub const STATIC_EXPORT_SHAPES: &[StaticExportShape] = &[
         trace_kinds: &["line"],
         autorange: true,
     },
+    // #1006 / #889 family 4: layered ordinary kinds consume Rust autorange.
+    StaticExportShape {
+        name: "layered_line_bar",
+        trace_kinds: &["line", "bar"],
+        autorange: true,
+    },
     StaticExportShape {
         name: "stairs",
         trace_kinds: &["line"],
@@ -237,6 +243,13 @@ pub const REQUIRED_EDGE_CONCERNS: &[&str] = &[
     "temporal-axis",
     "empty",
     "linear-scale",
+    // #1006: sources above the public record budget take the browser
+    // payload's LOD tiers (line M4, scatter density) in static export.
+    "browser-lod-tier",
+    "large-source",
+    // #1006: data rasterized in Rust to one Image record (density blit,
+    // dense triangle mesh above the 1,024 PolyFill-group budget).
+    "image-tier",
 ];
 
 pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
@@ -303,6 +316,33 @@ pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
         concerns: &["temporal-axis", "log-scale"],
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
     },
+    StaticExportEdgeCase {
+        // #1006: a 20,001-point line exports the browser's M4 rows.
+        name: "line_m4_decimated",
+        shape: "line",
+        axis_mode: "linear-x-linear-y",
+        concerns: &["browser-lod-tier", "large-source"],
+        reason_prefix: "",
+    },
+    StaticExportEdgeCase {
+        // #1006: a 270,000-point scatter is one density Image binned from
+        // its canonical columns (its source exceeds the XYTA record budget).
+        name: "scatter_density_large",
+        shape: "scatter",
+        axis_mode: "authored-linear-xy",
+        concerns: &["browser-lod-tier", "image-tier"],
+        reason_prefix: "",
+    },
+    StaticExportEdgeCase {
+        // #1006: a stroked 51,200-face mesh on the shared Rust autorange is
+        // above the 50,000-face vector ceiling: SVG/PDF embed one dense-fill
+        // raster of its faces; raster formats paint every face.
+        name: "triangle_mesh_dense_fill",
+        shape: "triangle_mesh",
+        axis_mode: "autorange-linear-xy",
+        concerns: &["image-tier", "large-source"],
+        reason_prefix: "",
+    },
 ];
 
 /// Fail-closed feature families deliberately outside the current shared Scene
@@ -351,10 +391,6 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE",
     },
     StaticExportFailClose {
-        name: "layered_autorange",
-        reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
-    },
-    StaticExportFailClose {
         name: "annotation_html",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML",
     },
@@ -375,6 +411,8 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR",
     },
     StaticExportFailClose {
+        // #1006: beyond the browser tiers — a polar line ships direct in the
+        // browser, so 10,001 points exceed the static record budget.
         name: "lod_limit",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
     },
@@ -387,6 +425,8 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS",
     },
     StaticExportFailClose {
+        // A joined-fill mesh of 1,025 faces: joined fills keep the shared
+        // 1,024 PolyFill-group budget (#1006 lifts it only for plain meshes).
         name: "triangle_mesh_limit",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH",
     },

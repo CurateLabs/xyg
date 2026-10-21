@@ -1307,13 +1307,20 @@ impl Converter {
         name
     }
 
-    fn image_xobject(&mut self, w: u32, h: u32, rgb: &[u8], alpha: Option<&[u8]>) -> String {
+    fn image_xobject(
+        &mut self,
+        w: u32,
+        h: u32,
+        rgb: &[u8],
+        alpha: Option<&[u8]>,
+        interpolate: bool,
+    ) -> String {
         let smask_ref = if let Some(alpha) = alpha {
             let smask_num = self.pdf.reserve();
             self.pdf.put_stream(
                 smask_num,
                 &format!(
-                    "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceGray /BitsPerComponent 8 /Interpolate false "
+                    "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceGray /BitsPerComponent 8 /Interpolate {interpolate} "
                 ),
                 alpha,
             );
@@ -1325,7 +1332,7 @@ impl Converter {
         self.pdf.put_stream(
             num,
             &format!(
-                "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Interpolate false {smask_ref}"
+                "/Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Interpolate {interpolate} {smask_ref}"
             ),
             rgb,
         );
@@ -1783,7 +1790,10 @@ impl Converter {
         }
         let href = el.attr("href").unwrap_or("");
         let (w_px, h_px, rgb, alpha) = decode_data_url_png(href)?;
-        let name = self.image_xobject(w_px, h_px, &rgb, alpha.as_deref());
+        // Scene emits `pixelated` for cell images; the unstyled #1006
+        // dense-fill raster is anti-aliased device pixels and interpolates.
+        let interpolate = style.is_empty();
+        let name = self.image_xobject(w_px, h_px, &rgb, alpha.as_deref(), interpolate);
         let x = parse_float(el.attr("x"), 0.0, "x")?;
         let y = parse_float(el.attr("y"), 0.0, "y")?;
         let w = parse_float(el.attr("width"), 0.0, "width")?;
@@ -2285,6 +2295,49 @@ mod tests {
         assert_eq!(fmt_num(1.0), "1");
         assert_eq!(fmt_num(-0.0), "0");
         assert_eq!(fmt_num(675.0), "675");
+    }
+
+    #[test]
+    fn svg_arcs_convert_to_deterministic_cubics() {
+        let kappa = 4.0 / 3.0 * (std::f64::consts::PI / 8.0).tan();
+        let close = |left: f64, right: f64| (left - right).abs() < 1e-12;
+        // Quarter circle about the origin: one cubic with the standard kappa.
+        let segs = parse_path("M 10 0 A 10 10 0 0 1 0 10").unwrap();
+        assert_eq!(segs.len(), 2);
+        match segs[1] {
+            Seg::C(x1, y1, x2, y2, x, y) => {
+                assert!(close(x1, 10.0) && close(y1, 10.0 * kappa));
+                assert!(close(x2, 10.0 * kappa) && close(y2, 10.0));
+                assert!(close(x, 0.0) && close(y, 10.0));
+            }
+            _ => panic!("arc must become a cubic"),
+        }
+        // A polar wedge path (outer arc, line, reversed inner arc): one cubic
+        // per quarter turn, ending exactly on each written endpoint.
+        let wedge = "M 300 200 A 100 100 0 0 0 200 100 L 200 150 A 50 50 0 0 1 250 200 Z";
+        let segs = parse_path(wedge).unwrap();
+        let ends: Vec<(f64, f64)> = segs
+            .iter()
+            .filter_map(|seg| match *seg {
+                Seg::C(_, _, _, _, x, y) => Some((x, y)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(ends, vec![(200.0, 100.0), (250.0, 200.0)]);
+        // Two half-turn arcs draw a full circle as four quarter cubics.
+        let circle = parse_path("M 110 0 A 10 10 0 0 0 90 0 A 10 10 0 0 0 110 0 Z").unwrap();
+        assert_eq!(
+            circle
+                .iter()
+                .filter(|seg| matches!(seg, Seg::C(..)))
+                .count(),
+            4
+        );
+        let pdf = svg_to_pdf(&format!(
+            "<svg width=\"400\" height=\"400\"><path d=\"{wedge}\" fill=\"rgb(0,0,0)\"/></svg>"
+        ))
+        .unwrap();
+        assert!(pdf.starts_with(b"%PDF-1.4"));
     }
 
     #[test]

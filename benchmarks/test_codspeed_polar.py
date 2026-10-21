@@ -64,19 +64,9 @@ def require_native_backend() -> None:
     )
 
 
-# Rich polar configs are rejected by the public Scene predicate and the compatibility
-# polar renderer is retired (#889), so the polar SVG/PNG rows xfail exactly like the
-# polar static-export tests in tests/test_polar_charts.py; the warm-up stays on the
-# payload path until #889 admits polar static export.
-POLAR_STATIC_EXPORT_XFAIL = (
-    "Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889."
-)
-
-
 @pytest.fixture(scope="session", autouse=True)
 def warm_lazy_modules() -> None:
-    """Warm the polar build stack before any measured region.
+    """Warm the polar build and export stacks before any measured region.
 
     Same phantom-regression guard the other modules carry: without it the first
     row pays lazy submodule import for the payload and export stacks and tracks
@@ -93,6 +83,13 @@ def warm_lazy_modules() -> None:
         height=240,
     ).figure()
     figure.build_payload_split(N_BUCKETS)
+    figure.to_svg(width=240, height=240)
+    xyg.polar_bar_chart(
+        xyg.bar(theta, radius, width=22.5),
+        xyg.theta_axis(unit="degrees"),
+        width=240,
+        height=240,
+    ).figure().to_png(engine=xyg.Engine.default, scale=1.0)
 
 
 @pytest.fixture(scope="module")
@@ -180,7 +177,6 @@ def test_first_payload_pie(benchmark, polar_data):
     assert payload_bytes > 0
 
 
-@pytest.mark.xfail(reason=POLAR_STATIC_EXPORT_XFAIL, strict=False)
 def test_svg_export_polar_wedges(benchmark, polar_data):
     """Static SVG export of a dense rose: exact compatibility arc paths."""
     directions = polar_data["directions"]
@@ -189,14 +185,15 @@ def test_svg_export_polar_wedges(benchmark, polar_data):
     document = benchmark(figure.to_svg, width=720, height=720)
     assert document.startswith("<svg")
     # Four stacked speed bands across sixteen sectors produce 64 closed wedge
-    # paths.  This figure is outside #856's Cartesian autorange slice, so SVG
-    # remains the exact-arc control for the raster row's polygon flattening.
+    # paths. The rose consumes the shared Rust autorange, and the Rust SVG
+    # writer draws each plain wedge as exact `A` arcs from the Scene's XYWA
+    # sidecar, so SVG is the exact-arc control for the raster row's polygon
+    # flattening.
     paths = document.split("<path d=")[1:]
     assert len(paths) == ROSE_SECTORS * 4
     assert all(" A " in path and " L " in path and " Z" in path for path in paths)
 
 
-@pytest.mark.xfail(reason=POLAR_STATIC_EXPORT_XFAIL, strict=False)
 def test_native_png_export_polar_wedges(benchmark, polar_data):
     """Native PNG export of a dense rose: the flattening path.
 

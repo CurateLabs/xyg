@@ -976,10 +976,14 @@ function xytaPalettePtrs(palette, keep) {
   const ptrBuf = Buffer.alloc(palette.length * 8);
   const lenBuf = Buffer.alloc(palette.length * 8);
   for (let index = 0; index < palette.length; index += 1) {
-    const encoded = new TextEncoder().encode(String(palette[index]));
+    const utf8 = new TextEncoder().encode(String(palette[index]));
+    // An ArrayBuffer-backed copy has a stable off-heap address for the call;
+    // `koffi.address` reads it (a pointer wrapper is not a number, #1006).
+    const encoded = new Uint8Array(new ArrayBuffer(Math.max(utf8.length, 1)));
+    encoded.set(utf8);
     keep.push(encoded);
-    ptrBuf.writeBigUInt64LE(BigInt(u8Ptr(encoded)), index * 8);
-    lenBuf.writeBigUInt64LE(BigInt(encoded.length), index * 8);
+    ptrBuf.writeBigUInt64LE(koffi.address(encoded), index * 8);
+    lenBuf.writeBigUInt64LE(BigInt(utf8.length), index * 8);
   }
   return {
     ptrs: koffi.as(ptrBuf, "const uint8_t *const *"),
@@ -1189,6 +1193,8 @@ export function sceneXytaTraceObservationsMaterialize(obs) {
     BigInt(out.length),
     pointer(outLen, "size_t *"),
   ));
+  // Rust's XYTA record budget (#1006): the stable public LOD reason.
+  if (code === -3) throw new RangeError("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
   if (code === -2) throw new RangeError("sceneXytaTraceObservationsMaterialize output buffer too small");
   if (code !== 0) throw new RangeError("invalid sceneXytaTraceObservationsMaterialize arguments");
   const summary = koffi.decode(summaryBuf, SceneXytaTraceObservationsOut);

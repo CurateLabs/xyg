@@ -194,10 +194,10 @@
   "public_constant_density_sha256": "7ec3098e1859859295c49421da679b4b678302d817b7fbdb14f678ec95c23a17",
   "public_heatmap_sha256": "b8d8f3b5a0eb973b3b2e774b4e4a413a37be2f35dbf77e2c4ac2440c77836456",
   "public_polar_hexbin_sha256": "d163d60d049fd1abef83dacb22da8846ed5852cb1d084cb37eb0c2a25c3886d2",
-  "public_polar_bar_sha256": "7f69bf40e460289a17187af4e7a8cb132a04a5552f5ccb3a327026d9ab1d6722",
+  "public_polar_bar_sha256": "02be36b9b097f5254d2ded00563389b9f328f525794c072bba678b92400b8d20",
   "public_polar_line_sha256": "0c0dbc4b8d4a04742c81a4910b1fab38f44aba4a74c1eb0fa4b9bd28636defb6",
   "public_polar_scatter_sha256": "287237f1aa0630770a3438381d48c910bfb4081612aa7d5ad02644bb62e25237",
-  "public_polar_heatmap_sha256": "ff0037c0e2b13fbd5414de36976274e99398e28a1dcaf0340b04a2219ebd5668",
+  "public_polar_heatmap_sha256": "046e67bcc2e25bb268667fdc06235e83200b0a10777016ac0a5a6b4acacdb050",
   "band_outlines": {
     "top": {
       "sha256": "f51b77188ef15f6397ffb0b94becfebd19376f38c67a84ba5092a2fe48168eea",

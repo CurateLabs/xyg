@@ -6,7 +6,16 @@
 //! symbol/diameter, density domain-endpoint column rewrite, and
 //! `pack_product_facts` so Python and Node cannot drift. Encoded Scene v31
 //! is unchanged.
+//!
+//! #1006 / #1009: the product encoder passes a [`LineLodFrame`] read from the
+//! Scene's own XYCF, and a cartesian `line` above `DECIMATION_THRESHOLD`
+//! takes the browser payload's M4 tier here, in canonical f64 before
+//! packing and step/curve expansion (dossier §28).
 
+use crate::lod_plan::{
+    payload_m4_indices, payload_tier, payload_visible_indices, screen_shape, PayloadIndexSel,
+    MIN_SCREEN_DIM, PAYLOAD_KIND_LINE, PAYLOAD_TIER_DECIMATED,
+};
 use crate::scene::MAX_SCENE_MARKS;
 use crate::scene_pack::{
     pack_product_facts, PackError, PackedSceneRow, XYPK_MAGIC, XYPK_V1_HEADER_BYTES, XYPK_VERSION,
@@ -45,6 +54,11 @@ pub enum TraceRowsCode {
     TraceCount = 7,
     Kind = 8,
     Coords = 9,
+    /// A line above the decimation threshold cannot take the browser's M4
+    /// tier (x not sorted ascending, or outside its axis binning space)
+    /// (#1006). Only the product encoder decimates, so the stepwise C ABI
+    /// never returns this code.
+    Lod = 10,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -293,6 +307,207 @@ fn parse_column(bytes: &[u8], at: &mut usize, index: usize) -> Result<ColumnInpu
     })
 }
 
+/// Axis scale codes shared with XYCF (`0` linear, `1` log, `2` symlog).
+const SCALE_LOG: u32 = 1;
+const SCALE_SYMLOG: u32 = 2;
+
+/// Static line M4 inputs (#1006), resolved from the Scene's own XYCF so a
+/// decimated static line takes exactly the browser payload's first-paint
+/// tier: the same `payload_tier`, the same `payload_m4_indices` kernel, the
+/// same bucket count (the figure's CSS width clamped by `screen_shape`, the
+/// browser's `_resolve_px_width`), and the same x window (the resolved x
+/// axis domain, binned in axis coordinates on log/symlog axes).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LineLodFrame {
+    pub buckets: usize,
+    pub x_kind: u32,
+    pub x_lo: f64,
+    pub x_hi: f64,
+    pub x_constant: f64,
+    pub y_log: bool,
+    /// The secondary right-hand y axis's log flag when the Scene's XYCF
+    /// carries an `XYY2` sidecar (#1037), else `None`. A line on `y2`
+    /// (XYCL `XYCL_Y2`) applies the browser's decimated log prefilter with
+    /// this scale; without a sidecar it fails closed as `Lod` (#1006).
+    pub y2_log: Option<bool>,
+}
+
+impl LineLodFrame {
+    pub fn new(
+        viewport_width: f64,
+        x_kind: u32,
+        x_lo: f64,
+        x_hi: f64,
+        x_constant: f64,
+        y_kind: u32,
+    ) -> Self {
+        // `as` truncates like Python `int(width)` and saturates non-finite
+        // widths; `screen_shape` then clamps to [16, 4096].
+        let width = if viewport_width.is_finite() {
+            viewport_width as i32
+        } else {
+            0
+        };
+        let (buckets, _) = screen_shape(width, MIN_SCREEN_DIM);
+        Self {
+            buckets: buckets as usize,
+            x_kind,
+            x_lo: x_lo.min(x_hi),
+            x_hi: x_lo.max(x_hi),
+            x_constant,
+            y_log: y_kind == SCALE_LOG,
+            y2_log: None,
+        }
+    }
+
+    /// [`LineLodFrame::new`] for a Scene whose XYCF carries a `y2` sidecar
+    /// with scale code `y2_kind` (`0` linear, `1` log, `2` symlog).
+    pub fn with_y2(mut self, y2_kind: Option<u32>) -> Self {
+        self.y2_log = y2_kind.map(|kind| kind == SCALE_LOG);
+        self
+    }
+
+    /// The browser's `_axis_coord` for the x axis (`binning_coords`).
+    fn x_coord(&self, value: f64) -> f64 {
+        match self.x_kind {
+            SCALE_LOG => {
+                if value > 0.0 {
+                    value.log10()
+                } else {
+                    f64::NAN
+                }
+            }
+            SCALE_SYMLOG => {
+                let constant = if self.x_constant != 0.0 && !self.x_constant.is_nan() {
+                    self.x_constant
+                } else {
+                    1.0
+                };
+                value.signum() * (value.abs() / constant).ln_1p()
+            }
+            _ => value,
+        }
+    }
+}
+
+/// Source rows a static `line` keeps under the browser's M4 tier, or `None`
+/// when the browser ships it direct (at most `DECIMATION_THRESHOLD` points,
+/// polar, or not a line) (#1006).
+///
+/// Mirrors `payload_trace_emit_materialize`'s `PAYLOAD_GATHER_M4` branch:
+/// `payload_m4_indices` over the x window, then `payload_visible_indices`
+/// with the decimated prefilter (log axes drop non-positive rows). Static
+/// export additionally fails closed where the browser kernel's own
+/// preconditions do not hold, instead of drawing an arbitrary subset:
+/// non-finite x/y keep the shared `NonFinite` row reason (Scene encodes no
+/// missing-data breaks and §19 forbids bridging a hole), and binning
+/// coordinates that are not ascending fail as `Lod`.
+fn line_m4_rows(
+    input: &ColumnInput,
+    attached_planes: bool,
+    lod: &LineLodFrame,
+    index: usize,
+) -> Result<Option<Vec<u32>>, TraceRowsError> {
+    let n = input.x.len();
+    if input.kind != "line"
+        || input.coords == COORDS_POLAR
+        || payload_tier(PAYLOAD_KIND_LINE, n as u64, false, -1, false, false)
+            != Some(PAYLOAD_TIER_DECIMATED)
+    {
+        return Ok(None);
+    }
+    if input.y.len() != n {
+        return Err(TraceRowsError::new(TraceRowsCode::Length, index));
+    }
+    // Decimation gathers exactly the row-aligned columns below; any other
+    // per-row column or attached per-row plane would lose its alignment, so
+    // such a line fails closed instead of drawing misaligned rows.
+    if [&input.x0, &input.y0, &input.x1, &input.y1, &input.base]
+        .iter()
+        .any(|column| !column.is_empty() && column.len() != n)
+        || attached_planes
+    {
+        return Err(TraceRowsError::new(TraceRowsCode::Lod, index));
+    }
+    if !input
+        .x
+        .iter()
+        .chain(&input.y)
+        .all(|value| value.is_finite())
+    {
+        return Err(TraceRowsError::new(TraceRowsCode::NonFinite, index));
+    }
+    let lod_error = TraceRowsError::new(TraceRowsCode::Lod, index);
+    let (lo, hi) = (lod.x_lo, lod.x_hi);
+    let mut bin_x = None;
+    let (mut b0, mut b1) = (lo, hi);
+    if lod.x_kind == SCALE_LOG || lod.x_kind == SCALE_SYMLOG {
+        let (c0, c1) = (lod.x_coord(lo), lod.x_coord(hi));
+        if c0.is_finite() && c1.is_finite() && c1 > c0 {
+            bin_x = Some(
+                input
+                    .x
+                    .iter()
+                    .map(|&v| lod.x_coord(v))
+                    .collect::<Vec<f64>>(),
+            );
+            (b0, b1) = (c0, c1);
+        }
+    }
+    let keys = bin_x.as_deref().unwrap_or(&input.x);
+    if !keys.iter().all(|value| value.is_finite()) || keys.windows(2).any(|w| w[1] < w[0]) {
+        return Err(lod_error);
+    }
+    let (tier, mut keep) = payload_m4_indices(
+        n as u64,
+        false,
+        &input.x,
+        &input.y,
+        lo,
+        hi,
+        lod.buckets,
+        bin_x.as_deref(),
+        b0,
+        b1,
+    )
+    .ok_or(lod_error)?;
+    if tier != PAYLOAD_TIER_DECIMATED {
+        return Ok(None);
+    }
+    let x_log = lod.x_kind == SCALE_LOG;
+    // A `y2` line (#1037) is filtered against the secondary scale, exactly
+    // like the browser payload for that trace; the x window is shared.
+    let y_log = if input.y2 {
+        lod.y2_log.ok_or(lod_error)?
+    } else {
+        lod.y_log
+    };
+    if x_log || y_log {
+        let xg: Vec<f64> = keep.iter().map(|&i| input.x[i as usize]).collect();
+        let yg: Vec<f64> = keep.iter().map(|&i| input.y[i as usize]).collect();
+        match payload_visible_indices(
+            &xg, &yg, x_log, y_log, None, true, false, false, false, false,
+        )
+        .ok_or(lod_error)?
+        {
+            PayloadIndexSel::KeepAll => {}
+            PayloadIndexSel::Indices(visible) => {
+                keep = visible.iter().map(|&i| keep[i as usize]).collect();
+            }
+        }
+    }
+    Ok(Some(keep))
+}
+
+/// Gather one row-aligned column (`line_m4_rows` already refused any
+/// non-empty column whose length is not the row count).
+fn gather_rows(column: &mut Vec<f64>, n: usize, keep: &[u32]) {
+    debug_assert!(column.is_empty() || column.len() == n);
+    if column.len() == n {
+        *column = keep.iter().map(|&i| column[i as usize]).collect();
+    }
+}
+
 fn write_xypk(
     kind: &str,
     style_ref: u32,
@@ -326,9 +541,23 @@ fn write_xypk(
 }
 
 /// Pack attached `XYTT` v1 plus authored `XYCL` v1 columns into Scene rows.
+///
+/// The stepwise C ABI packs every authored row; only the product encoder
+/// decimates ([`pack_trace_rows_with_lod`]).
 pub fn pack_trace_rows(
     attached: &[u8],
     columns: &[u8],
+) -> Result<Vec<PackedSceneRow>, TraceRowsError> {
+    pack_trace_rows_with_lod(attached, columns, None)
+}
+
+/// [`pack_trace_rows`] that also applies the browser's line M4 tier when the
+/// product encoder supplies the Scene's [`LineLodFrame`] (#1006, dossier
+/// §28). Lines at or below `DECIMATION_THRESHOLD` pack unchanged.
+pub fn pack_trace_rows_with_lod(
+    attached: &[u8],
+    columns: &[u8],
+    lod: Option<&LineLodFrame>,
 ) -> Result<Vec<PackedSceneRow>, TraceRowsError> {
     let traces = parse_xytt(attached)?;
     if columns.len() < XYCL_HEADER_BYTES || columns.get(..4) != Some(&XYCL_MAGIC[..]) {
@@ -347,7 +576,28 @@ pub fn pack_trace_rows(
     let mut at = XYCL_HEADER_BYTES;
     let mut rows = Vec::new();
     for (index, attached) in traces.iter().enumerate() {
-        let input = parse_column(columns, &mut at, index)?;
+        let mut input = parse_column(columns, &mut at, index)?;
+        if let Some(keep) = lod
+            .map(|lod| {
+                let planes = attached.density_len > 0 || attached.grid_rows > 0 || attached.grid_cols > 0;
+                line_m4_rows(&input, planes, lod, index)
+            })
+            .transpose()?
+            .flatten()
+        {
+            let n = input.x.len();
+            for column in [
+                &mut input.x,
+                &mut input.y,
+                &mut input.x0,
+                &mut input.y0,
+                &mut input.x1,
+                &mut input.y1,
+                &mut input.base,
+            ] {
+                gather_rows(column, n, &keep);
+            }
+        }
         let mut symbol = attached.symbol as u8;
         let mut diameter = attached.diameter;
         if input.kind != "scatter" {
@@ -534,6 +784,193 @@ mod tests {
         out
     }
 
+    fn line_columns(coords: u8, x: &[f64], y: &[f64]) -> Vec<u8> {
+        let mut columns = xycl_header(1);
+        columns.extend_from_slice(&xycl_trace(
+            "line",
+            coords,
+            5,
+            x,
+            y,
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        ));
+        columns
+    }
+
+    #[test]
+    fn static_line_lod_is_the_browser_payload_m4_tier() {
+        // #1006: the static row packer keeps exactly the rows the browser
+        // payload's `payload_m4_indices` keeps for the same x window and
+        // bucket count, in source order, before any expansion.
+        let attached = empty_attach(&compile_kind("line"), 1);
+        let n = 50_000usize;
+        let x: Vec<f64> = (0..n).map(|i| i as f64 * 0.5).collect();
+        let y: Vec<f64> = (0..n)
+            .map(|i| ((i * 7_919) % 1_009) as f64 - (i % 97) as f64)
+            .collect();
+        let lod = LineLodFrame::new(720.0, 0, x[n - 1], 0.0, 1.0, 0);
+        assert_eq!(lod.buckets, 720);
+        assert_eq!((lod.x_lo, lod.x_hi), (0.0, x[n - 1]));
+        let columns = line_columns(0, &x, &y);
+        let rows = pack_trace_rows_with_lod(&attached, &columns, Some(&lod)).unwrap();
+        let (tier, idx) =
+            payload_m4_indices(n as u64, false, &x, &y, 0.0, x[n - 1], 720, None, 0.0, 0.0)
+                .unwrap();
+        assert_eq!(tier, PAYLOAD_TIER_DECIMATED);
+        assert!(idx.len() <= 4 * 720 && idx.len() > 720);
+        assert_eq!(rows.len(), idx.len());
+        for (row, &i) in rows.iter().zip(&idx) {
+            assert_eq!((row.x0, row.y0), (x[i as usize], y[i as usize]));
+            assert_eq!(row.stable_id, 5);
+        }
+
+        // Without a frame (stepwise ABI), at or below the threshold, and on
+        // polar coordinates every row packs unchanged.
+        let full = pack_trace_rows(&attached, &columns).unwrap();
+        assert_eq!(full.len(), n);
+        let small = line_columns(0, &x[..10_000], &y[..10_000]);
+        assert_eq!(
+            pack_trace_rows_with_lod(&attached, &small, Some(&lod)).unwrap(),
+            pack_trace_rows(&attached, &small).unwrap()
+        );
+        let radians: Vec<f64> = (0..n).map(|i| i as f64 / n as f64).collect();
+        let polar = line_columns(COORDS_POLAR, &radians, &radians);
+        let rows = pack_trace_rows_with_lod(&attached, &polar, Some(&lod)).unwrap();
+        assert_eq!(rows.len(), n);
+
+        // Wider viewports clamp like the browser's `screen_shape`.
+        assert_eq!(
+            LineLodFrame::new(9_000.0, 0, 0.0, 1.0, 1.0, 0).buckets,
+            4_096
+        );
+        assert_eq!(LineLodFrame::new(4.0, 0, 0.0, 1.0, 1.0, 0).buckets, 16);
+    }
+
+    #[test]
+    fn static_line_lod_bins_log_x_in_axis_coordinates() {
+        let attached = empty_attach(&compile_kind("line"), 1);
+        let n = 20_000usize;
+        let x: Vec<f64> = (0..n).map(|i| 1.0 + i as f64).collect();
+        let y: Vec<f64> = (0..n).map(|i| ((i * 31) % 211) as f64 + 1.0).collect();
+        let lod = LineLodFrame::new(400.0, SCALE_LOG, 1.0, n as f64, 1.0, 0);
+        let rows =
+            pack_trace_rows_with_lod(&attached, &line_columns(0, &x, &y), Some(&lod)).unwrap();
+        let bin: Vec<f64> = x.iter().map(|v| v.log10()).collect();
+        let (_, idx) = payload_m4_indices(
+            n as u64,
+            false,
+            &x,
+            &y,
+            1.0,
+            n as f64,
+            400,
+            Some(&bin),
+            0.0,
+            (n as f64).log10(),
+        )
+        .unwrap();
+        assert_eq!(rows.len(), idx.len());
+        assert!(rows
+            .iter()
+            .zip(&idx)
+            .all(|(row, &i)| row.x0 == x[i as usize] && row.y0 == y[i as usize]));
+    }
+
+    #[test]
+    fn static_line_lod_fails_closed_outside_the_kernel_contract() {
+        let attached = empty_attach(&compile_kind("line"), 1);
+        let n = 10_001usize;
+        let lod = LineLodFrame::new(320.0, 0, 0.0, n as f64, 1.0, 0);
+        let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
+        let mut y = x.clone();
+        y[17] = f64::NAN;
+        let error =
+            pack_trace_rows_with_lod(&attached, &line_columns(0, &x, &y), Some(&lod)).unwrap_err();
+        assert_eq!(error.code, TraceRowsCode::NonFinite);
+        let mut unsorted = x.clone();
+        unsorted.swap(3, 4);
+        let error =
+            pack_trace_rows_with_lod(&attached, &line_columns(0, &unsorted, &x), Some(&lod))
+                .unwrap_err();
+        assert_eq!(error.code, TraceRowsCode::Lod);
+        // A log x axis cannot bin non-positive x.
+        let log = LineLodFrame::new(320.0, SCALE_LOG, 1.0, n as f64, 1.0, 0);
+        let error =
+            pack_trace_rows_with_lod(&attached, &line_columns(0, &x, &x), Some(&log)).unwrap_err();
+        assert_eq!(error.code, TraceRowsCode::Lod);
+    }
+
+    #[test]
+    fn static_line_lod_filters_a_y2_line_against_the_secondary_scale() {
+        // #1006/#1037: a line on y2 decimates with the browser's M4 rows and
+        // applies the log prefilter of the y2 scale, not the primary one.
+        let attached = empty_attach(&compile_kind("line"), 1);
+        let n = 20_000usize;
+        let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
+        let y: Vec<f64> = (0..n).map(|i| if i % 3 == 0 { -1.0 } else { 1.0 + i as f64 }).collect();
+        let y2_columns = |y: &[f64]| {
+            let mut columns = line_columns(0, &x, y);
+            columns[XYCL_HEADER_BYTES + 3] = XYCL_Y2;
+            columns
+        };
+        let primary = LineLodFrame::new(320.0, 0, 0.0, n as f64, 1.0, 0);
+        let y2_log = primary.with_y2(Some(SCALE_LOG));
+        let rows = pack_trace_rows_with_lod(&attached, &y2_columns(&y), Some(&y2_log)).unwrap();
+        assert!(rows.iter().all(|row| row.y2 && row.y0 > 0.0));
+        // A linear y2 keeps the non-positive M4 rows.
+        let y2_linear = primary.with_y2(Some(0));
+        let linear = pack_trace_rows_with_lod(&attached, &y2_columns(&y), Some(&y2_linear)).unwrap();
+        assert!(linear.iter().any(|row| row.y0 < 0.0) && linear.len() > rows.len());
+        // A y2 line without a y2 axis cannot be filtered: it fails closed.
+        let error =
+            pack_trace_rows_with_lod(&attached, &y2_columns(&y), Some(&primary)).unwrap_err();
+        assert_eq!(error.code, TraceRowsCode::Lod);
+    }
+
+    #[test]
+    fn static_line_lod_refuses_columns_it_cannot_reindex() {
+        // #1006: a decimated line gathers only row-aligned columns; a column
+        // of another length would lose its alignment, so it fails closed.
+        let attached = empty_attach(&compile_kind("line"), 1);
+        let n = 20_000usize;
+        let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
+        let lod = LineLodFrame::new(320.0, 0, 0.0, n as f64, 1.0, 0);
+        let mut columns = xycl_header(1);
+        columns.extend_from_slice(&xycl_trace(
+            "line",
+            0,
+            5,
+            &x,
+            &x,
+            &[],
+            &[],
+            &[],
+            &[],
+            &[0.5],
+        ));
+        let error = pack_trace_rows_with_lod(&attached, &columns, Some(&lod)).unwrap_err();
+        assert_eq!(error.code, TraceRowsCode::Lod);
+        // A row-aligned base column is gathered with the kept rows.
+        let mut aligned = xycl_header(1);
+        aligned.extend_from_slice(&xycl_trace(
+            "line",
+            0,
+            5,
+            &x,
+            &x,
+            &[],
+            &[],
+            &[],
+            &[],
+            &x,
+        ));
+        assert!(pack_trace_rows_with_lod(&attached, &aligned, Some(&lod)).is_ok());
+    }
+
     #[test]
     fn empty_rows_emit_no_marks() {
         let attached = empty_attach(&empty_compile(), 0);
@@ -654,6 +1091,48 @@ mod tests {
         assert_eq!(rows[0].x1, 1.0);
         assert_eq!(rows[0].y1, 1.0);
         assert_eq!(rows[0].symbol, 0);
+        assert_eq!(rows[0].expansion_mode, 10);
+    }
+
+    #[test]
+    fn density_source_above_the_xyta_budget_bins_canonical_columns() {
+        // #1006: a density scatter whose XYTA record omitted the x/y source
+        // (over the 4 MiB record budget) still takes the density tier from
+        // its canonical XYCL columns instead of one record per point.
+        let mut attach = vec![0u8; scene_trace_attach::XYTA_HEADER_BYTES];
+        attach[..4].copy_from_slice(scene_trace_attach::XYTA_MAGIC);
+        attach[4..8].copy_from_slice(&scene_trace_attach::XYTA_VERSION.to_le_bytes());
+        attach[8..12].copy_from_slice(&1u32.to_le_bytes());
+        let mut prefix = vec![0u8; scene_trace_attach::XYTA_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(&FLAG_DENSITY.to_le_bytes());
+        prefix[56..64].copy_from_slice(&0.0f64.to_le_bytes());
+        prefix[64..72].copy_from_slice(&1.0f64.to_le_bytes());
+        prefix[72..80].copy_from_slice(&0.0f64.to_le_bytes());
+        prefix[80..88].copy_from_slice(&1.0f64.to_le_bytes());
+        attach.extend_from_slice(&prefix);
+        let mut columns = xycl_header(1);
+        columns.extend_from_slice(&xycl_trace(
+            "scatter",
+            0,
+            9,
+            &[0.25, 0.75, 0.5],
+            &[0.25, 0.75, 0.5],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        ));
+        let stepwise = pack_trace_attach(&compile_kind("scatter"), &attach).unwrap();
+        assert_eq!(pack_trace_rows(&stepwise, &columns).unwrap().len(), 3);
+        let attached = scene_trace_attach::pack_trace_attach_with_columns(
+            &compile_kind("scatter"),
+            &attach,
+            &columns,
+        )
+        .unwrap();
+        let rows = pack_trace_rows(&attached, &columns).unwrap();
+        assert_eq!(rows.len(), 2);
         assert_eq!(rows[0].expansion_mode, 10);
     }
 

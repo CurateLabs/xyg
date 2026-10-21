@@ -6641,6 +6641,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   const OBS_COMPANION_AXES_MATCH = 1 << 22;
   const OBS_SYMBOL_NON_STRING = 1 << 23;
   const OBS_DENSITY_BLIT = 1 << 24;
+  const OBS_ITEM_PAINT_PLANE = 1 << 25;
   let flags = 0;
   if (width == null && !Number.isInteger(figure.width)) flags |= 1 << 0;
   if (height == null && !Number.isInteger(figure.height)) flags |= 1 << 1;
@@ -6796,6 +6797,10 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     }
     if (exportDispatch.packDensityBlit) {
       obs |= OBS_DENSITY_BLIT;
+    }
+    // Same facts the XYTA dispatch plan receives; Rust bounds the plane (#1006).
+    if (scatterPacksPaintPlane(trace) || meshPacksPaintPlane(trace)) {
+      obs |= OBS_ITEM_PAINT_PLANE;
     }
     const role = style.role == null ? "" : String(style.role);
     const reduce = style.reduce == null ? "" : String(style.reduce);

@@ -42,8 +42,7 @@ HIST_N = 100_000
 HIST_BINS = 200
 BAR_N = 1_000
 PANEL_N = 5_000
-# Static export admission refuses lines above 10,000 points (XYG_SCENE_UNSUPPORTED_PUBLIC_LOD).
-EXPORT_N = 10_000
+EXPORT_N = 100_000
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -372,7 +371,7 @@ def test_build_styled_panel_pyplot(benchmark, panel_data):
 
 
 def test_png_export_line_raw(benchmark, export_data):
-    """Native PNG export of a warm 10k line figure through the raw API.
+    """Native PNG export of a warm 100k line figure through the raw API.
 
     scale=2.0 matches savefig's fixed 2x supersampling so both arms emit the
     same 1280x960 pixel canvas — a smaller raw canvas would overstate the

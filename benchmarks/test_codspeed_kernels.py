@@ -46,10 +46,6 @@ def test_scene_scale_map_100k(benchmark):
 HEATMAP_W, HEATMAP_H = 160, 120
 HEXBIN_GRIDSIZE = 128
 EXPORT_N = 100_000
-# The Rust static-export admission refuses lines and scatters above 10,000 points as
-# XYG_SCENE_UNSUPPORTED_PUBLIC_LOD (spec/design/static-document.md), so SVG and
-# native-PNG rows run at that ceiling; the HTML row keeps the full EXPORT_N.
-STATIC_EXPORT_N = 10_000
 APPEND_N = 100_000
 APPEND_BATCH = 1_000
 STACK_ROWS = 8
@@ -79,12 +75,7 @@ def warm_lazy_modules() -> None:
     """
     x = np.array([0.0, 1.0, 2.0, 3.0])
     y = np.array([0.0, 1.0, 0.0, 1.0])
-    fig = xyg.chart(
-        xyg.scatter(x=x, y=y),
-        xyg.line(x=x, y=y),
-        xyg.x_axis(domain=(0.0, 3.0)),
-        xyg.y_axis(domain=(0.0, 1.0)),
-    ).figure()
+    fig = xyg.chart(xyg.scatter(x=x, y=y), xyg.line(x=x, y=y)).figure()
     fig.build_payload(N_BUCKETS)
     fig.build_payload_split(N_BUCKETS)
     fig.to_svg(width=64, height=48)
@@ -122,12 +113,6 @@ def export_data() -> tuple[np.ndarray, np.ndarray]:
     x = np.arange(EXPORT_N, dtype=np.float64)
     y = (np.sin(x * 0.001) + rng.normal(0.0, 0.08, EXPORT_N)).astype(np.float64, copy=False)
     return x, y
-
-
-@pytest.fixture(scope="module")
-def static_export_data(export_data) -> tuple[np.ndarray, np.ndarray]:
-    x, y = export_data
-    return x[:STATIC_EXPORT_N], y[:STATIC_EXPORT_N]
 
 
 @pytest.fixture(scope="module")
@@ -1046,34 +1031,30 @@ def test_marching_squares(benchmark, core_2d_data):
     assert len(result) == 5
 
 
-def test_native_png_export_scatter(benchmark, static_export_data):
+def test_native_png_export_scatter(benchmark, export_data):
     """Native raster export after screen-bounded payload preparation."""
-    x, y = static_export_data
+    x, y = export_data
     fig = xyg.chart(xyg.scatter(x=x, y=y)).figure()
     png = benchmark(fig.to_png, engine=xyg.Engine.default, scale=1.0)
     assert png.startswith(b"\x89PNG")
 
 
-def test_native_png_export_categorical_scatter(benchmark, static_export_data):
+def test_native_png_export_categorical_scatter(benchmark, export_data):
     """Borrowed u8 palette codes stay on the affine Rust export path."""
-    x, y = static_export_data
+    x, y = export_data
     categories = np.asarray([f"group-{i % 24:02d}" for i in range(len(x))])
     fig = xyg.chart(xyg.scatter(x=x, y=y, color=categories)).figure()
     png = benchmark(fig.to_png, engine=xyg.Engine.default, scale=1.0)
     assert png.startswith(b"\x89PNG")
 
 
-def test_native_png_export_stroked_triangle_mesh(benchmark):
-    """Stroked scientific meshes stay in one batched Rust display command.
-
-    Static export admits at most 1,024 triangles and requires authored axis
-    domains, so the mesh is the largest admitted grid: 16 x 16 quads.
-    """
-    mesh_x, mesh_y = np.meshgrid(np.linspace(-3.0, 3.0, 17), np.linspace(-2.0, 2.0, 17))
-    mesh_x += 0.08 * np.sin(mesh_y * 2.0)
-    mesh_y += 0.05 * np.cos(mesh_x * 1.5)
-    mesh_z = np.sin(mesh_x[:-1, :-1]) * np.cos(mesh_y[:-1, :-1])
-    mesh = k.quad_mesh_triangles(mesh_x, mesh_y, mesh_z)
+def test_native_png_export_stroked_triangle_mesh(benchmark, compatibility_kernel_data):
+    """Stroked scientific meshes stay in one batched Rust display command."""
+    mesh = k.quad_mesh_triangles(
+        compatibility_kernel_data["mesh_x"],
+        compatibility_kernel_data["mesh_y"],
+        compatibility_kernel_data["mesh_z"],
+    )
     fig = xyg.chart(
         xyg.triangle_mesh(
             x0=mesh[0],
@@ -1085,12 +1066,51 @@ def test_native_png_export_stroked_triangle_mesh(benchmark):
             color=mesh[6],
             stroke="#111827",
             stroke_width=0.5,
-        ),
-        xyg.x_axis(domain=(-3.5, 3.5)),
-        xyg.y_axis(domain=(-2.5, 2.5)),
+        )
     ).figure()
     png = benchmark(fig.to_png, engine=xyg.Engine.default, scale=1.0)
     assert png.startswith(b"\x89PNG")
+
+
+def _threshold_mesh(faces: int):
+    """A stroked, per-face colored quad mesh of exactly ``faces`` triangles."""
+    cols = 128
+    rows = faces // (2 * cols)
+    mx, my = np.meshgrid(np.linspace(-3.0, 3.0, cols + 1), np.linspace(-2.0, 2.0, rows + 1))
+    mz = np.sin(mx[:-1, :-1]) * np.cos(my[:-1, :-1])
+    mesh = k.quad_mesh_triangles(mx, my, mz)
+    assert len(mesh[0]) == faces
+    return xyg.chart(
+        xyg.triangle_mesh(
+            x0=mesh[0],
+            y0=mesh[1],
+            x1=mesh[2],
+            y1=mesh[3],
+            x2=mesh[4],
+            y2=mesh[5],
+            color=mesh[6],
+            stroke="#111827",
+            stroke_width=0.5,
+        )
+    ).figure()
+
+
+@pytest.mark.parametrize(
+    "faces",
+    [
+        # #1006 mesh thresholds: the 1,024-face painter budget (overdraw is
+        # bounded above it), the last vector face count below the 50,000-face
+        # SVG/PDF ceiling, and the first dense-fill (one raster image) row.
+        1_024,
+        49_920,
+        50_176,
+    ],
+)
+def test_svg_export_triangle_mesh_tier_thresholds(benchmark, faces):
+    """SVG mesh export either side of each static tier threshold (#1006)."""
+    fig = _threshold_mesh(faces)
+    svg = benchmark(fig.to_svg, width=720, height=420)
+    assert ("data-xy-dense-fill" in svg) == (faces > 50_000)
 
 
 def test_native_png_export_heatmap(benchmark, core_2d_data):
@@ -1103,17 +1123,17 @@ def test_native_png_export_heatmap(benchmark, core_2d_data):
     assert png.startswith(b"\x89PNG")
 
 
-def test_svg_export_scatter(benchmark, static_export_data):
-    """Canonical Rust scatter scene serialization for a 10k direct view (the static-export ceiling)."""
-    x, y = static_export_data
+def test_svg_export_scatter(benchmark, export_data):
+    """Canonical Rust scatter scene serialization for a 100k direct view."""
+    x, y = export_data
     fig = xyg.chart(xyg.scatter(x=x, y=y)).figure()
     svg = benchmark(fig.to_svg, width=720, height=420)
     assert svg.startswith("<svg")
 
 
-def test_svg_export_line(benchmark, static_export_data):
+def test_svg_export_line(benchmark, export_data):
     """Static SVG export shares decimation but exercises XML serialization."""
-    x, y = static_export_data
+    x, y = export_data
     fig = xyg.chart(xyg.line(x=x, y=y)).figure()
     svg = benchmark(fig.to_svg, width=720, height=420)
     assert svg.startswith("<svg")

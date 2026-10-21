@@ -14,6 +14,7 @@ import zlib
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
 from xyg import _native
@@ -97,6 +98,9 @@ def _base_figure(name: str) -> Figure:
         figure.line([0, 1, 2], [1, 3, 2], color="#ef4444", width=2)
     elif name == "step":
         figure.step([0, 1, 2], [1, 3, 2], where="post", color="#ef4444", width=2)
+    elif name == "layered_line_bar":
+        figure.line([0, 1, 2], [1, 3, 2], color="#ef4444", width=2)
+        figure.bar([0, 1, 2], [2, 1, 4], color="#3987e5")
     elif name == "stairs":
         figure.stairs([1, 3, 2], [0, 1, 2, 3], where="post", color="#ef4444", width=2)
     elif name == "ecdf":
@@ -197,9 +201,47 @@ def _edge_figure(name: str) -> Figure:
         figure.set_axis("x", type_="time")
         figure.set_axis("y", type_="log")
         figure.step([1000, 2000], [1, 10], where="mid", color="#ef4444")
+    elif name == "line_m4_decimated":
+        index = np.arange(20_001, dtype=np.float64)
+        figure.line(
+            index * 0.25,
+            ((index * 7919.0) % 1009.0) / 10.0 - (index % 97.0),
+            color="#ef4444",
+            width=1,
+        )
+    elif name == "scatter_density_large":
+        index = np.arange(270_000, dtype=np.float64)
+        _fixed_domains(figure).scatter(
+            ((index * 7919.0) % 1009.0) / 1009.0 * 8.0 - 2.0,
+            ((index * 104729.0) % 997.0) / 997.0 * 8.0 - 2.0,
+            color="#3987e5",
+        )
+    elif name == "triangle_mesh_dense_fill":
+        # #1006: 51,200 stroked, per-face colored triangles on Rust autorange.
+        x0, y0, x1, y1, x2, y2, value = _dense_mesh_columns()
+        figure.triangle_mesh(
+            x0, y0, x1, y1, x2, y2, color=value, stroke="#111827", stroke_width=0.5
+        )
     else:  # pragma: no cover - registry drift reports the missing builder
         raise AssertionError(f"missing Python static-export edge builder for {name}")
     return _normalize_ids(figure)
+
+
+def _dense_mesh_columns() -> tuple[np.ndarray, ...]:
+    """A 160x160 quad grid as 51,200 triangles (#1006)."""
+    cols = 160
+    index = np.arange(cols * cols, dtype=np.float64)
+    step = 8.0 / cols
+    gx = (index % cols) * step - 2.0
+    gy = np.floor(index / cols) * step - 2.0
+    value = ((index * 7919.0) % 101.0) / 100.0
+    x0 = np.concatenate([gx, gx + step])
+    y0 = np.concatenate([gy, gy])
+    x1 = np.concatenate([gx + step, gx + step])
+    y1 = np.concatenate([gy, gy + step])
+    x2 = np.concatenate([gx, gx])
+    y2 = np.concatenate([gy + step, gy + step])
+    return x0, y0, x1, y1, x2, y2, np.concatenate([value, 1.0 - value])
 
 
 def _fail_close_figure(name: str) -> Figure:
@@ -228,8 +270,6 @@ def _fail_close_figure(name: str) -> Figure:
         figure.traces.clear()
         figure.violin([[1, 2, 2, 3]], bins=8)
         figure.traces[0].style["orientation"] = "diagonal"
-    elif name == "layered_autorange":
-        figure.bar([0], [1])
     elif name == "annotation_html":
         figure.annotations = [{"kind": "text", "x": 0.5, "y": 0.5, "text": "x", "html": "<b>x</b>"}]
     elif name == "annotation_collision":
@@ -245,9 +285,12 @@ def _fail_close_figure(name: str) -> Figure:
     elif name == "colorbar_option":
         figure.colorbar_options = {"bogus": True}
     elif name == "lod_limit":
+        # #1006: a cartesian line this size is the M4 tier; a polar line
+        # ships direct in the browser, so it stays beyond the static tiers.
         values = list(range(10_001))
         figure.traces.clear()
-        figure.line(values, values)
+        figure.coords = "polar"
+        figure.line([value / 10_001 for value in values], values)
     elif name == "band_shape":
         figure.traces.clear()
         figure.area([0], [1])
@@ -257,10 +300,12 @@ def _fail_close_figure(name: str) -> Figure:
         figure.segments([0, 1], [0, 1], [1, 2], [1, 2])
         figure.traces[0].x1 = figure.store.ingest([1])
     elif name == "triangle_mesh_limit":
+        # Joined fills keep the shared 1,024 PolyFill-group budget (#1006).
         values = [0.0] * 1025
         _fixed_domains(figure)
         figure.traces.clear()
         figure.triangle_mesh(values, values, values, values, values, values)
+        figure.traces[0].style["joined_fill"] = True
     else:  # pragma: no cover - registry drift reports the missing builder
         raise AssertionError(f"missing Python fail-close builder for {name}")
     return figure

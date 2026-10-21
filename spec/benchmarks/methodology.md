@@ -164,15 +164,31 @@ reported).
    site-packages, transitive distribution count, install time, and cold import.
 9. `public_workflows`: `benchmarks/bench_workflows.py` tracks ingestion shapes,
    streaming refresh/incremental pyramid update, and HTML/SVG/native-PNG/Chromium-PNG export independently.
-   The static SVG and native-PNG rows run at the largest line the Rust static-export admission
-   accepts (10,000 points; larger lines fail closed as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`,
-   `spec/design/static-document.md`), and each row records its own `n`; the HTML and Chromium-PNG
-   rows keep the profile's full-size decimated line.
-The SVG and native-PNG export rows in `benchmarks/test_codspeed_kernels.py` and
-`benchmarks/test_codspeed_pyplot.py` run at that same 10,000-point (1,024-triangle for
-meshes, authored axis domains for multi-mark scenes) ceiling, because larger static exports
-fail closed. The polar SVG/PNG-wedge rows are `xfail` with the #889 reason, exactly like the
-polar static-export tests, until #889 admits rich polar configs; the HTML row keeps 100k.
+   Every export row, native SVG/PNG included, runs the profile's full-size line
+   (10k smoke, 1M standard): native static export takes the browser's
+   first-paint Rust LOD tier (M4 at the figure width, dossier §28,
+   `spec/design/scene-ir.md` "Public static LOD tiers"), so the native SVG and
+   PNG rows measure decimation plus serialization of the same rows the HTML row
+   ships rather than a reduced `n`.
+
+The static-export rows in `benchmarks/test_codspeed_kernels.py` and
+`benchmarks/test_codspeed_pyplot.py` (100k scatter, categorical scatter, and
+line SVG/native PNG) likewise run at full size on those tiers: a 100k scatter
+is a direct tier (one marker per point up to `DIRECT_SOFT_CEILING`), and a
+100k line is M4-decimated in Rust before Scene packing. Layered warm-ups
+(scatter + line) and polar figures consume the shared Rust autorange, so they
+need no authored domains. The stroked triangle-mesh row
+(`test_native_png_export_stroked_triangle_mesh`, 163,840 per-face colored,
+stroked faces at main's full size) consumes the same autorange; the raster
+consumer paints every face (the static mesh tier keeps them all, with
+overdraw bounded above 1,024 faces), so the row measures full-size mesh
+rasterization. `test_svg_export_triangle_mesh_tier_thresholds` adds SVG rows at
+1,024, 49,920 (vector), and 50,176 (one dense-fill raster) faces either side of
+each threshold (scene-ir.md "Mesh tiers and dense-fill rule"). Hexbin keeps its own static
+budget (#1023). The polar rose rows in
+`benchmarks/test_codspeed_polar.py` run unmarked: native SVG writes exact `A`
+arcs from the Scene's `XYWA` sidecar (scene-ir.md "Polar wedge SVG arcs") and
+is the control for the flattening native-PNG row.
 
 ## 6. Remaining implementation plan
 
@@ -574,7 +590,7 @@ including heatmap after #261.
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **120 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **123 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
 
@@ -708,8 +724,10 @@ the path measured rather than the identity fast path. Browser input-to-pixel
 latency stays in `bench_interaction.py`; before this module a selection
 regression could only surface as browser wall-clock noise.
 
-**`benchmarks/test_codspeed_kernels.py` — 76 rows** (73 functions; two are
-parametrized, over 2 ingest flavors and 3 `bin_2d` thread-cap regimes). This is
+**`benchmarks/test_codspeed_kernels.py` — 80 rows** (75 functions; three are
+parametrized, over 2 ingest flavors, 3 `bin_2d` thread-cap regimes, and the 3
+#1006 triangle-mesh tier thresholds of `test_svg_export_triangle_mesh_tier_thresholds`:
+1,024, 49,920, and 50,176 faces). This is
 the bulk of the suite and covers the native compute core the rest of the engine
 sits on: decimation tiers, f32 encoding, and zone maps (`spec/design-dossier.md`
 §5, §4/§16, and §22 respectively), plus the end-to-end figure → wire-payload
@@ -719,7 +737,8 @@ screen-bounded large-data path) rather than to one arbitrary N. Seventeen rows
 are `first_payload_*`, one per chart kind, which makes this the per-kind guard
 that §7's scatter-only gate does not provide. Its module docstring carries the same backend rule the workflow
 asserts: fallback timings are correctness smoke data, not production
-performance data. The 10k `test_svg_export_scatter` row (the static-export point ceiling, `spec/design/static-document.md`) tracks the first
+performance data. The 100k `test_svg_export_scatter` row (direct static LOD
+tier, one marker per point) tracks the first
 versioned canonical-scene slice (#58), including host paint resolution, the
 typed Rust scene call, built-in marker geometry, and SVG fragment assembly.
 The 100k `test_scene_scale_map_100k` row isolates the vectorized Rust-owned

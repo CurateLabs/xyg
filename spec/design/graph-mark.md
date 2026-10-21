@@ -871,7 +871,8 @@ boundary edges retain their canonical source identity.
   `xyg.x_axis(...)` / `xyg.y_axis(...)` children, Node `xAxis` / `yAxis`;
   #909); an authored axis with a domain exports with that domain (a log x
   axis included) while the hidden axis keeps the graph autorange. Current bound: the public route admits at most 10,000
-  records per trace, so graphs over 10,000 nodes or 10,000 routed segments
+  records per graph trace (graph node scatters keep this budget even though
+  plain direct-tier scatters export up to 2,000,000 points, #1006), so graphs over 10,000 nodes or 10,000 routed segments
   (about 10,000 straight or 1,250 curved edges; each self-loop draws 3)
   fail closed;
   the interactive path is unaffected. Reason: both hosts report
