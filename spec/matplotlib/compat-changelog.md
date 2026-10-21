@@ -4,6 +4,36 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## `BoundaryNorm` colorbar static export — 2026-10-20 (Matplotlib 3.11.0 reference, #1035)
+
+- Static export (SVG/PNG/PDF/JPEG/WebP) draws a `BoundaryNorm` (or banded
+  contour) colorbar. Before, `test_boundary_norm_is_shared_by_imshow_pcolormesh_and_colorbar`
+  failed on main with `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` because the
+  pyplot admission list lacked `band_colors`, `tick_labels` and `spacing`, which
+  Rust could not draw either. XYST moves to v4 with a discrete-colorbar region
+  (panel flag 25): Rust renders the literal bands, resolves `uniform` (default)
+  and `proportional` spacing and draws the `format=` tick labels; pyplot only
+  marshals the facts. No C ABI signature changed (the ABI stays at main's number, 391).
+- Extension caps of a banded bar are painted the way Matplotlib 3.11's colorbar
+  does: `cmap(norm(value))` with the value half a unit beyond the first/last
+  boundary (`Colorbar._process_values` + `_do_extends`). The norm decides the
+  LUT index, so a cap is the colormap's under/over color only when the norm
+  returns the under/over index (`clip=True` yields the endpoint LUT colors even
+  with explicit extremes; `ncolors < cmap.N` yields a resampled color). The
+  pyplot shim resolves the two paints and carries them as explicit facts in the
+  discrete region; a cap is never painted with an interior band color. `format=` tick labels are re-derived from
+  the live ticks at every chart build, so `Colorbar.set_ticks()` after
+  `colorbar(format=...)` relabels the new positions.
+- `spacing`, cap paints and `format=` labels are admitted only on the banded
+  path. A contourf colorbar with explicit levels but no band colors is still a
+  continuous ramp: `spacing="proportional"` on it keeps the
+  `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rejection and its default export
+  is byte-identical to main. Drawing such colorbars as solid bands is a
+  follow-up.
+- `format=` on a continuous ramp now fails closed with the stable
+  `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS` reason, and a banded bar
+  beyond 15 bands reports `XYG_SCENE_UNSUPPORTED_COLORBAR`. Both are known gaps.
+
 ## Annotation coordinate spaces and `table()` — 2026-10-20 (Matplotlib 3.11.0 reference, #1006)
 
 - Static export (SVG/PNG/PDF/JPEG/WebP, Python and Node) places text in

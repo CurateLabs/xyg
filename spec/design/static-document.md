@@ -56,7 +56,13 @@ leaves the document canvas; nothing is clipped or silently dropped. (Legend
 boxes are otherwise clamped into their anchor box by `legend_box_layout`, so the
 guard only fires for authored anchors or boxes that cannot fit.)
 
-### 1.1 XYST v3 framing
+### 1.1 XYST v4 framing
+
+Version 4 (#1035) adds the per-panel discrete-colorbar region (panel flag 25,
+below); version `3` documents are rejected with `XYG_STATIC_DOCUMENT_VERSION`
+like versions `1` and `2`. The Python and Node packers and the Rust decoder
+share the one version constant per host; Node's `XYST_VERSION` and Python's
+`XYST_VERSION` are pinned to the decoder by the registry cross-host tests.
 
 Version 3 (#1006) replaced the four uniform annotation facts (panel flags 3, 6,
 7, 9) with a per-label table region (below); version `2` documents are rejected
@@ -72,7 +78,7 @@ decoded with the new table boundaries. Rejections carry a stable
 Encoders accept panel title paints as a CSS color string (converted by the
 native color conversion) or resolved RGBA8 bytes; anything else is rejected.
 
-The header is 64 bytes. It begins with `XYST`, version `3`, width, height,
+The header is 64 bytes. It begins with `XYST`, version `4`, width, height,
 document flags, panel count, and title byte count as little-endian `u32`.
 Header flags are `BACKGROUND=1`, `OPTIMIZE_PNG=2`, `TIGHT_CROP=4`, and
 `TITLE_X_CENTER=8`; every other bit is rejected. The center flag requires
@@ -82,9 +88,13 @@ bytes 36–47 are title size/x/y `f32`, bytes 48–49 are title anchor and
 italic/bold flags, bytes 52–59 are decoration byte count and crop padding, bytes 60–63 are the
 byte length of the per-label annotation table region (a multiple of 20; zero when
 no panel has the flag below), and all reserved bytes must be zero. The region sits
-between the decorations and the Scene bytes.
+between the decorations and the discrete-colorbar region, which precedes the Scene
+bytes (its total length is the sum of the panels' region lengths, not a header
+field).
 
-Each panel record is 128 bytes (`<2i6I12fII2f4B2II16B>`; the `u32` at offset
+Each panel record is 128 bytes (`<2i6I12fIIIf4B2II16B>`; the `u32`s at offsets
+88 and 100 are the discrete-colorbar blob offset and length (zero unless bit 25
+is set), the `u32` at offset
 104 carries the grid dash nibbles and the final 20 bytes the chrome-text word
 plus four RGBA8 paints). The first 24 bytes carry
 signed x/y, width/height, Scene offset/length; byte offset 24 is the panel flag
@@ -107,6 +117,7 @@ inactive. The admitted flags are:
 | 14 | uniform grid dash codes for (x major, y major, x minor, y minor) |
 | 15 | Rust-resolved chrome text: italic/bold flags for the title, axis titles, and tick labels plus separate tick-label and axis-title RGBA8 paints ([chrome-style projection](static-chrome-style.md)) |
 | 24 | explicit pyplot `cax` fills the panel Scene plot rectangle |
+| 25 | discrete colorbar (BoundaryNorm / banded contour): the `u32` at offset 88 is the blob's byte offset in the document's discrete-colorbar region and the `u32` at offset 100 its byte length; requires bit 13 (see [static colorbar style](static-colorbar-style.md#discrete-bands)) |
 
 Bit 3's table is the annotation-style projection's per-label output
 ([static-annotation-style.md](static-annotation-style.md)): 20-byte entries in

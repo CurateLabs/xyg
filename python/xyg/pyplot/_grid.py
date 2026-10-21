@@ -344,6 +344,7 @@ def _pyplot_static_document(
                 figure._static_document_colorbar_extend,
                 figure._static_document_colorbar_pyplot_label,
                 figure._static_document_colorbar_fill_plot,
+                colorbar_discrete=figure._static_document_colorbar_discrete,
                 grid_dash=getattr(figure, "_static_document_grid_dash", None),
                 chrome_text=getattr(figure, "_static_document_chrome_text", None),
             )
@@ -604,6 +605,7 @@ def _pyplot_scene_figure(figure: Any) -> Any:
     projected._static_document_colorbar_extend = None
     projected._static_document_colorbar_pyplot_label = False
     projected._static_document_colorbar_fill_plot = False
+    projected._static_document_colorbar_discrete = None
     if colorbar:
         supported = {
             "colormap",
@@ -620,6 +622,11 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             "levels",
             "boundaries",
             "placement",
+            "spacing",
+            "band_colors",
+            "tick_labels",
+            "under_color",
+            "over_color",
         }
         if set(colorbar) - supported:
             raise _static_document.UnsupportedStaticExport(
@@ -644,6 +651,55 @@ def _pyplot_scene_figure(figure: Any) -> Any:
         }
         if colorbar.get("ticks") is not None:
             projected.colorbar_options["ticks"] = [float(value) for value in colorbar["ticks"]]
+        band_colors = colorbar.get("band_colors")
+        if band_colors is not None:
+            # Discrete (BoundaryNorm / banded contour) bar: the literal Scene
+            # stops are the band edges and colors; Rust owns the spacing layout
+            # and draws the authored tick labels (XYST v4 discrete region).
+            edges = [float(value) for value in colorbar.get("boundaries") or ()]
+            if len(edges) != len(band_colors) + 1 or int(colorbar.get("levels", -1)) != len(
+                band_colors
+            ):
+                raise _static_document.UnsupportedStaticExport(
+                    "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_BANDS"
+                )
+            rgba = [[*(int(channel) for channel in row), 255] for row in band_colors]
+            projected.colorbar_options = {
+                "domain": [edges[0], edges[-1]],
+                "stops": [*zip(edges, rgba, strict=False), (edges[-1], rgba[-1])],
+                "side": "bottom" if orientation == "horizontal" else "right",
+                "title": str(colorbar.get("label", "")),
+                "minor_ticks": bool(colorbar.get("minor_ticks")),
+                **(
+                    {"ticks": projected.colorbar_options["ticks"]}
+                    if "ticks" in projected.colorbar_options
+                    else {}
+                ),
+            }
+            extend = str(colorbar.get("extend", "neither"))
+
+            def cap(key: str, extended: bool) -> Optional[tuple[int, int, int, int]]:
+                rgb = colorbar.get(key) if extended else None
+                return None if rgb is None else (int(rgb[0]), int(rgb[1]), int(rgb[2]), 255)
+
+            projected._static_document_colorbar_discrete = (
+                colorbar.get("spacing", "uniform") == "uniform",
+                tuple(str(label) for label in colorbar.get("tick_labels") or ()),
+                cap("under_color", extend in ("min", "both")),
+                cap("over_color", extend in ("max", "both")),
+            )
+        elif colorbar.keys() & {"spacing", "under_color", "over_color"}:
+            # Spacing and cap paints are facts of the discrete (banded) path
+            # only. A ramp, including a contour colorbar that has boundaries but
+            # no band colors, has nothing to apply them to; admitting them would
+            # export a smooth gradient where Matplotlib draws solid bands.
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE"
+            )
+        elif colorbar.get("tick_labels") is not None:
+            raise _static_document.UnsupportedStaticExport(
+                "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS"
+            )
         anchor = tuple(float(value) for value in colorbar.get("anchor", (0.5, 0.5)))
         if len(anchor) != 2:
             raise _static_document.UnsupportedStaticExport(

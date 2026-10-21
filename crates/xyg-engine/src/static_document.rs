@@ -22,8 +22,10 @@ const MAGIC: &[u8; 4] = b"XYST";
 /// XYST layout version. Version 2 widened the panel record to 128 bytes
 /// (chrome-text fact, #1004). Version 3 replaces the uniform annotation
 /// font-size/flags/padding/alignment facts with a per-label table region
-/// (#1006); older documents are rejected, never decoded.
-const VERSION: u32 = 3;
+/// (#1006). Version 4 adds the per-panel discrete-colorbar region (#1035,
+/// spacing + authored tick labels); older documents are rejected, never
+/// decoded.
+const VERSION: u32 = 4;
 const HEADER_BYTES: usize = 64;
 const PANEL_BYTES: usize = 128;
 const FLAG_BACKGROUND: u32 = 1 << 0;
@@ -49,6 +51,7 @@ const PANEL_FLAG_CHROME_TEXT: u32 = 1 << 15;
 /// marker block that is zero unless the item kind is 3).
 const LEGEND_ITEM_BYTES: usize = 44;
 const PANEL_FLAG_COLORBAR_FILL_PLOT: u32 = 1 << 24;
+const PANEL_FLAG_COLORBAR_DISCRETE: u32 = 1 << 25;
 pub(crate) const PANEL_FLAGS: u32 = PANEL_FLAG_X_CHROME_METRICS
     | PANEL_FLAG_Y_CHROME_METRICS
     | PANEL_FLAG_COLORBAR_LAYOUT
@@ -62,7 +65,8 @@ pub(crate) const PANEL_FLAGS: u32 = PANEL_FLAG_X_CHROME_METRICS
     | PANEL_FLAG_COLORBAR_PYPLOT_LABEL
     | PANEL_FLAG_GRID_DASH
     | PANEL_FLAG_CHROME_TEXT
-    | PANEL_FLAG_COLORBAR_FILL_PLOT;
+    | PANEL_FLAG_COLORBAR_FILL_PLOT
+    | PANEL_FLAG_COLORBAR_DISCRETE;
 const MAX_PANELS: usize = 256;
 const MAX_TITLE_BYTES: usize = 4096;
 const MAX_DECORATION_BYTES: usize = 1 << 20;
@@ -98,7 +102,7 @@ impl StaticDocumentError {
             Self::Header => "XYG_STATIC_DOCUMENT_HEADER",
             Self::Version => {
                 "XYG_STATIC_DOCUMENT_VERSION: unsupported XYST version (this build reads \
-                 version 3); re-encode the document with the current encoder"
+                 version 4); re-encode the document with the current encoder"
             }
             Self::Flags => "XYG_STATIC_DOCUMENT_FLAGS",
             Self::Limit => "XYG_STATIC_DOCUMENT_LIMIT",
@@ -130,6 +134,9 @@ struct PanelRecord {
     /// Offset and length of this panel's per-label annotation table inside the
     /// document's label-table region (bytes; multiples of `LABEL_ENTRY_BYTES`).
     label_table: (usize, usize),
+    /// Offset and length of this panel's discrete-colorbar blob inside the
+    /// document's discrete-colorbar region (empty unless the flag is set).
+    discrete: (usize, usize),
     arrow_metrics: [f64; 3],
     axis_sides: u32,
     title_size: f64,
@@ -539,6 +546,76 @@ fn decode_label_table(
         .collect()
 }
 
+/// One panel's decoded discrete-colorbar blob.
+#[derive(Debug, PartialEq)]
+struct DiscreteColorbar {
+    uniform: bool,
+    under: Option<[u8; 4]>,
+    over: Option<[u8; 4]>,
+    tick_labels: Vec<String>,
+}
+
+/// Decode one panel's discrete-colorbar blob: `u32` flags (bit 0 uniform
+/// spacing, bit 1 an under-cap RGBA8 follows, bit 2 an over-cap RGBA8
+/// follows; other bits rejected), `u32` tick-label count, the present cap
+/// paints (under, then over), then each label as `u32` byte length plus UTF-8
+/// bytes. Panels consume the region sequentially.
+fn decode_discrete_colorbar(
+    region: &[u8],
+    (offset, len): (usize, usize),
+    expected_offset: &mut usize,
+) -> Result<DiscreteColorbar, StaticDocumentError> {
+    if offset != *expected_offset {
+        return Err(StaticDocumentError::Panel);
+    }
+    let end = offset.checked_add(len).ok_or(StaticDocumentError::Limit)?;
+    let blob = region.get(offset..end).ok_or(StaticDocumentError::Panel)?;
+    *expected_offset = end;
+    let flags = u32_at(blob, 0)?;
+    let count = u32_at(blob, 4)? as usize;
+    if flags > 0b111 || count > crate::scene::MAX_SCENE_COLORBAR_TICKS {
+        return Err(StaticDocumentError::Panel);
+    }
+    let mut at = 8usize;
+    let mut paint = |present: bool| -> Result<Option<[u8; 4]>, StaticDocumentError> {
+        if !present {
+            return Ok(None);
+        }
+        let rgba = blob
+            .get(at..at + 4)
+            .ok_or(StaticDocumentError::Panel)?
+            .try_into()
+            .unwrap();
+        at += 4;
+        Ok(Some(rgba))
+    };
+    let under = paint(flags & 2 != 0)?;
+    let over = paint(flags & 4 != 0)?;
+    let mut labels = Vec::with_capacity(count);
+    for _ in 0..count {
+        let label_len = u32_at(blob, at)? as usize;
+        let start = at + 4;
+        at = start
+            .checked_add(label_len)
+            .ok_or(StaticDocumentError::Limit)?;
+        let label = std::str::from_utf8(blob.get(start..at).ok_or(StaticDocumentError::Panel)?)
+            .map_err(|_| StaticDocumentError::Panel)?;
+        if label.bytes().any(|byte| byte == 0) {
+            return Err(StaticDocumentError::Panel);
+        }
+        labels.push(label.to_owned());
+    }
+    if at != blob.len() {
+        return Err(StaticDocumentError::Panel);
+    }
+    Ok(DiscreteColorbar {
+        uniform: flags & 1 != 0,
+        under,
+        over,
+        tick_labels: labels,
+    })
+}
+
 impl StaticDocument {
     pub fn decode(bytes: &[u8]) -> Result<Self, StaticDocumentError> {
         if bytes.len() < HEADER_BYTES || bytes.len() > MAX_DOCUMENT_BYTES || &bytes[..4] != MAGIC {
@@ -585,8 +662,18 @@ impl StaticDocument {
         let label_table_at = decorations_at
             .checked_add(decorations_len)
             .ok_or(StaticDocumentError::Limit)?;
-        let scenes_at = label_table_at
+        let discrete_at = label_table_at
             .checked_add(label_table_len)
+            .ok_or(StaticDocumentError::Limit)?;
+        let mut discrete_len = 0usize;
+        for index in 0..panel_count {
+            discrete_len = discrete_len
+                .checked_add(u32_at(bytes, HEADER_BYTES + index * PANEL_BYTES + 100)? as usize)
+                .filter(|len| *len <= MAX_DECORATION_BYTES)
+                .ok_or(StaticDocumentError::Limit)?;
+        }
+        let scenes_at = discrete_at
+            .checked_add(discrete_len)
             .ok_or(StaticDocumentError::Limit)?;
         if scenes_at > bytes.len() {
             return Err(StaticDocumentError::Header);
@@ -633,6 +720,7 @@ impl StaticDocument {
         let mut panels = Vec::with_capacity(panel_count);
         let mut expected_offset = 0usize;
         let mut expected_label_offset = 0usize;
+        let mut expected_discrete_offset = 0usize;
         for index in 0..panel_count {
             let at = HEADER_BYTES + index * PANEL_BYTES;
             let record = PanelRecord {
@@ -646,6 +734,10 @@ impl StaticDocument {
                 label_table: (
                     u32_at(bytes, at + 28)? as usize,
                     u32_at(bytes, at + 84)? as usize,
+                ),
+                discrete: (
+                    u32_at(bytes, at + 88)? as usize,
+                    u32_at(bytes, at + 100)? as usize,
                 ),
                 x_metrics: [
                     f64::from(f32_at(bytes, at + 32)?),
@@ -696,8 +788,10 @@ impl StaticDocument {
                     && bytes[at + 56..at + 68] != [0; 12])
                 || (record.metric_flags & PANEL_FLAG_ANNOTATION_LABELS == 0
                     && record.label_table != (0, 0))
-                || bytes[at + 88..at + 92] != [0; 4]
-                || bytes[at + 100..at + 104] != [0; 4]
+                || (record.metric_flags & PANEL_FLAG_COLORBAR_DISCRETE == 0
+                    && record.discrete != (0, 0))
+                || (record.metric_flags & PANEL_FLAG_COLORBAR_DISCRETE != 0
+                    && record.metric_flags & PANEL_FLAG_COLORBAR_PYPLOT_LABEL == 0)
                 || (record.metric_flags & PANEL_FLAG_ARROW_METRICS == 0
                     && bytes[at + 68..at + 80] != [0; 12])
                 || (record.metric_flags & PANEL_FLAG_AXIS_SIDES == 0 && record.axis_sides != 0)
@@ -761,13 +855,28 @@ impl StaticDocument {
             }
             let label_styles = if record.metric_flags & PANEL_FLAG_ANNOTATION_LABELS != 0 {
                 Some(decode_label_table(
-                    &bytes[label_table_at..scenes_at],
+                    &bytes[label_table_at..discrete_at],
                     record.label_table,
                     &mut expected_label_offset,
                 )?)
             } else {
                 None
             };
+            if record.metric_flags & PANEL_FLAG_COLORBAR_DISCRETE != 0 {
+                let discrete = decode_discrete_colorbar(
+                    &bytes[discrete_at..scenes_at],
+                    record.discrete,
+                    &mut expected_discrete_offset,
+                )?;
+                scene
+                    .apply_static_colorbar_discrete(
+                        discrete.uniform,
+                        discrete.under,
+                        discrete.over,
+                        discrete.tick_labels,
+                    )
+                    .map_err(|_| StaticDocumentError::Panel)?;
+            }
             scene
                 .apply_static_annotation_labels(label_styles.as_deref())
                 .map_err(|_| StaticDocumentError::Panel)?;
@@ -824,6 +933,7 @@ impl StaticDocument {
         }
         if scenes_at.checked_add(expected_offset) != Some(bytes.len())
             || expected_label_offset != label_table_len
+            || expected_discrete_offset != discrete_len
         {
             return Err(StaticDocumentError::Panel);
         }
@@ -1775,7 +1885,7 @@ mod tests {
     fn rejects_unknown_version_and_empty_panels() {
         let mut bytes = vec![0u8; HEADER_BYTES];
         bytes[..4].copy_from_slice(MAGIC);
-        for unsupported in [0u32, 1, 2, 4] {
+        for unsupported in [0u32, 1, 2, 3, 5] {
             bytes[4..8].copy_from_slice(&unsupported.to_le_bytes());
             assert!(matches!(
                 StaticDocument::decode(&bytes),
@@ -1903,6 +2013,107 @@ mod tests {
                 bad.len()
             );
         }
+    }
+
+    fn discrete_blob(spacing: u32, labels: &[&[u8]]) -> Vec<u8> {
+        let mut blob = spacing.to_le_bytes().to_vec();
+        blob.extend((labels.len() as u32).to_le_bytes());
+        for label in labels {
+            blob.extend((label.len() as u32).to_le_bytes());
+            blob.extend(*label);
+        }
+        blob
+    }
+
+    #[test]
+    fn discrete_colorbar_blob_is_exact_and_sequential() {
+        let good = discrete_blob(1, &[b"a", "\u{2212}1".as_bytes()]);
+        let mut next = 0;
+        assert_eq!(
+            decode_discrete_colorbar(&good, (0, good.len()), &mut next),
+            Ok(DiscreteColorbar {
+                uniform: true,
+                under: None,
+                over: None,
+                tick_labels: vec!["a".into(), "\u{2212}1".into()],
+            })
+        );
+        assert_eq!(next, good.len());
+        // Panels consume the region in order: a replayed offset is rejected.
+        assert!(decode_discrete_colorbar(&good, (0, good.len()), &mut next).is_err());
+        let proportional = discrete_blob(0, &[]);
+        let mut next = 0;
+        assert_eq!(
+            decode_discrete_colorbar(&proportional, (0, 8), &mut next),
+            Ok(DiscreteColorbar {
+                uniform: false,
+                under: None,
+                over: None,
+                tick_labels: Vec::new(),
+            })
+        );
+        let mut trailing = good.clone();
+        trailing.push(0);
+        for bad in [
+            discrete_blob(8, &[]),
+            discrete_blob(0, &[b"a\0b"]),
+            discrete_blob(0, &[&[0xff, 0xfe]]),
+            trailing,
+            good[..good.len() - 1].to_vec(),
+            discrete_blob(0, &vec![&b"x"[..]; 33]),
+            // Flagged cap paints must be present in full.
+            discrete_blob(2, &[]),
+        ] {
+            let mut next = 0;
+            assert!(decode_discrete_colorbar(&bad, (0, bad.len()), &mut next).is_err());
+        }
+    }
+
+    #[test]
+    fn discrete_colorbar_blob_carries_cap_paints_in_under_over_order() {
+        // flags: uniform | under | over, no labels, then under and over RGBA8.
+        let mut blob = discrete_blob(1 | 2 | 4, &[]);
+        blob.splice(8..8, [68, 1, 84, 255, 253, 231, 37, 255]);
+        let mut next = 0;
+        assert_eq!(
+            decode_discrete_colorbar(&blob, (0, blob.len()), &mut next),
+            Ok(DiscreteColorbar {
+                uniform: true,
+                under: Some([68, 1, 84, 255]),
+                over: Some([253, 231, 37, 255]),
+                tick_labels: Vec::new(),
+            })
+        );
+        // Only the over paint: it is the first (and only) paint after the header.
+        let mut over_only = discrete_blob(4, &[]);
+        over_only.splice(8..8, [1, 2, 3, 255]);
+        let mut next = 0;
+        assert_eq!(
+            decode_discrete_colorbar(&over_only, (0, over_only.len()), &mut next)
+                .unwrap()
+                .over,
+            Some([1, 2, 3, 255])
+        );
+    }
+
+    #[test]
+    fn discrete_facts_require_the_flag_and_the_pyplot_label_bit() {
+        let mut document = labelled_document(None);
+        assert!(StaticDocument::decode(&document).is_ok());
+        let panel_at = HEADER_BYTES;
+        // An absent discrete flag must carry canonical-zero region facts.
+        for at in [88, 100] {
+            let mut bad = document.clone();
+            bad[panel_at + at..panel_at + at + 4].copy_from_slice(&1u32.to_le_bytes());
+            assert!(StaticDocument::decode(&bad).is_err());
+        }
+        // The flag requires the pyplot label bit (and a colorbar to apply to).
+        document[panel_at + 24..panel_at + 28]
+            .copy_from_slice(&PANEL_FLAG_COLORBAR_DISCRETE.to_le_bytes());
+        assert_eq!(
+            StaticDocument::decode(&document).err(),
+            Some(StaticDocumentError::Panel)
+        );
     }
 
     #[test]

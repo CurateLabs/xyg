@@ -182,15 +182,17 @@ function legacyV1Document(document) {
   return Buffer.concat(parts);
 }
 
-test("XYST is version 3 and v1/v2 documents are rejected actionably", () => {
+test("XYST is version 4 and v1/v2/v3 documents are rejected actionably", () => {
   const document = Buffer.from(chart({ styles: TYPOGRAPHY }).toStaticDocument());
-  assert.equal(document.readUInt32LE(4), 3);
+  assert.equal(document.readUInt32LE(4), 4);
   assert.ok(staticDocumentExport(document, "svg").length > 0);
   const v2 = Buffer.from(document);
   v2.writeUInt32LE(2, 4);
+  const v3 = Buffer.from(document);
+  v3.writeUInt32LE(3, 4);
   const legacyV1 = legacyV1Document(document);
   assert.equal(legacyV1.readUInt32LE(4), 1);
-  for (const legacy of [legacyV1, v2]) {
+  for (const legacy of [legacyV1, v2, v3]) {
     for (const format of ["svg", "png", "pdf", "jpeg", "webp"]) {
       assert.throws(
         () => staticDocumentExport(legacy, format),
