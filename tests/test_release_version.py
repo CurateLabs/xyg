@@ -35,7 +35,6 @@ def test_canonical_tag_round_trips_across_ecosystems(tag: str, npm: str, python:
     assert (release.npm, release.python, release.tag) == (npm, python, tag)
     assert rv.parse_npm(npm) == release
     assert rv.parse_python(python) == release
-    assert rv.require_cohort(tag=tag, python=python, npm=npm) == release
 
 
 @pytest.mark.parametrize(("tag", "npm", "python"), CASES)
@@ -96,17 +95,3 @@ def test_python_spelling_rejects_other_ecosystems_forms(version: str) -> None:
 def test_npm_spelling_rejects_other_forms(version: str) -> None:
     with pytest.raises(ValueError, match="invalid XYG npm version"):
         rv.parse_npm(version)
-
-
-@pytest.mark.parametrize(
-    ("python", "npm", "which"),
-    [
-        ("0.6.0rc4", "0.6.0-rc.5", "Python"),
-        ("0.6.0rc5", "0.6.0-rc.4", "npm"),
-        ("0.6.0", "0.6.0-rc.5", "Python"),
-        ("0.6.0rc5", "0.6.0", "npm"),
-    ],
-)
-def test_cohort_mismatch_is_named(python: str, npm: str, which: str) -> None:
-    with pytest.raises(ValueError, match=f"{which} version .* does not match tag"):
-        rv.require_cohort(tag="xyg-v0.6.0-rc.5", python=python, npm=npm)

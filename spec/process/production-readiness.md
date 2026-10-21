@@ -603,9 +603,10 @@ publishable trees from the release tag: five exact-platform packages reuse the
 byte-identical cdylibs already verified inside the Python wheels and require a
 valid ELF64, Mach-O 64-bit, or PE architecture header, while the
 facade pins every optional to the mapped npm semver and embeds the exact built
-standalone paint client for offline `toHtml()` use. The PEP 440 tag suffixes
-`aN`, `bN`, and `rcN` map deterministically to npm `alpha.N`, `beta.N`, and
-`rc.N`; stable versions are identical.
+standalone paint client for offline `toHtml()` use. The canonical tag
+suffixes `-alpha.N`, `-beta.N`, and `-rc.N` map to npm unchanged (and to Python
+`aN`, `bN`, `rcN`); the legacy PEP 440 tag suffixes `aN`, `bN`, and `rcN` map to
+the same npm versions; stable versions are identical.
 
 Every run packs and dry-publishes all six Node tarballs. A real npm upload is
 additionally gated by an `xyg-v*` ref, non-dry dispatch, repository identity,

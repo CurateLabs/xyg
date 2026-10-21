@@ -35,35 +35,29 @@ from pathlib import Path
 from typing import NamedTuple, Optional
 
 try:
-    from release_version import TAG_SHAPE, parse_tag
+    from release_version import parse_tag
 except ModuleNotFoundError:
-    from scripts.release_version import TAG_SHAPE, parse_tag
+    from scripts.release_version import parse_tag
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class _Package(NamedTuple):
-    tag_shape: str
     changelog: Path
 
 
 PACKAGES = {
-    "xy": _Package(tag_shape=TAG_SHAPE, changelog=ROOT / "CHANGELOG.md"),
+    "xy": _Package(changelog=ROOT / "CHANGELOG.md"),
 }
 DEFAULT_CHANGELOG = PACKAGES["xy"].changelog
 
 
 def check_release(tag: str, changelog: Path, package: str = "xy") -> list[str]:
     errors: list[str] = []
-    spec = PACKAGES[package]
     try:
         release = parse_tag(tag)
     except ValueError as exc:
-        return [
-            f"tag {tag!r} is not a release tag for {package} — expected "
-            f"{spec.tag_shape!r}, the shape the distribution version is derived from "
-            f"({exc})"
-        ]
+        return [f"{exc} (this is not a release tag for {package})"]
     try:
         text = changelog.read_text(encoding="utf-8")
     except OSError as exc:

@@ -111,18 +111,3 @@ def parse_npm(version: str) -> ReleaseVersion:
             "(-alpha.N/-beta.N/-rc.N, no leading zeros, no build metadata)"
         )
     return _build(match, "label")
-
-
-def require_cohort(*, tag: str, python: str, npm: str) -> ReleaseVersion:
-    """Fail unless tag, Python, and npm versions all name the same release."""
-
-    release = parse_tag(tag)
-    for what, found, expected in (
-        ("Python", python, release.python),
-        ("npm", npm, release.npm),
-    ):
-        if found != expected:
-            raise ValueError(
-                f"{what} version {found!r} does not match tag {tag!r} (expected {expected!r})"
-            )
-    return release

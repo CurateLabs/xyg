@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _load_module():
     path = Path(__file__).resolve().parents[1] / "scripts" / "check_release_version.py"
@@ -16,6 +18,7 @@ def _load_module():
 
 
 check_release_version = _load_module()
+parse_tag = check_release_version.parse_tag
 
 
 def _changelog(tmp_path: Path, changelog_heading: str) -> Path:
@@ -196,3 +199,27 @@ def test_main_accepts_the_semver_rc_tag(tmp_path: Path) -> None:
     assert (
         check_release_version.main(["--tag", "xyg-v0.6.0-rc.5", "--changelog", str(changelog)]) == 0
     )
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "xyg-v0.6.0",
+        "xyg-v0.6.0-rc.5",
+        "xyg-v0.6.0-alpha.1",
+        "xyg-v0.6.0-beta.12",
+        "xyg-v0.6.0rc5",
+        "xyg-v0.0.1a1",
+    ],
+)
+def test_python_version_matches_the_dunamai_derivation(tag: str) -> None:
+    dunamai = pytest.importorskip("dunamai")
+    derived = dunamai.Version.parse("v" + tag.removeprefix("xyg-v")).serialize(
+        style=dunamai.Style.Pep440
+    )
+    assert derived == parse_tag(tag).python
+
+
+def test_pyproject_keeps_the_pep440_derivation_style() -> None:
+    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'style = "pep440"' in pyproject
