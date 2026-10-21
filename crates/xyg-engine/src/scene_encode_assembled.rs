@@ -46,7 +46,7 @@
 use crate::scene::{
     decode_tick_labels, expand_scene_records_with_y2, merge_dash_gradients,
     resolve_numeric_tick_formats, resolve_y2_tick_format, scene_text_advance, split_scene_extras,
-    AxisScale, PlotLayout, PolarSceneError,
+    resolved_legend_bounds, AxisScale, PlotLayout, PolarSceneError,
     ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius,
     SceneError, SceneExpansionInput, SceneLegend, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS,
     MAX_SCENE_AXIS_FORMAT_BYTES, MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_LABEL_TEXT_BYTES,
@@ -899,6 +899,19 @@ fn encode_assembled_with_radii(
     )
     .map_err(map_scene)?;
     let style = style.validated().map_err(map_scene)?;
+    // #1041: a legend taller or wider than the whole cartesian plot cannot fit
+    // the (smaller) recut polar legend box either; report it as the same stable
+    // polar-legend rejection instead of the constructor's opaque `Limit`.
+    if !polar_bytes.is_empty() {
+        if let Some(value) = &legend {
+            if resolved_legend_bounds(layout, value, None).is_err() {
+                return Err(EncodeAssembledError::new(
+                    EncodeAssembledCode::PolarLegend,
+                    0,
+                ));
+            }
+        }
+    }
     let batch = SceneBatch::new_with_decorations_colorbar(
         layout,
         x_axis.id,
