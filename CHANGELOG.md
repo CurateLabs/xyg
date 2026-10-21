@@ -14,6 +14,11 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- Node `contour` accepts `colormap` (built-in name, `linear-gradient(...)`,
+  CSS-color list, or RGB stops) and per-level `color` arrays like Python, and
+  defaults to the `viridis` per-level colormap instead of a single stroke
+  (#1025). Rust owns the lowering; Python and Node static exports are
+  byte-identical. Exports `resolveColormap`.
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing
   with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` above 10,000 points: Cartesian lines

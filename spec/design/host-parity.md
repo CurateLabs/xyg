@@ -168,6 +168,20 @@ Node. PNG is additionally decoded and checked for `(320, 240)` RGB metadata
 and an exact RGBA pixel hash, keeping the encoded-format and visible-pixel
 contracts separate.
 
+Node `contour` carries the same authoring facts as Python `contour` (#1025):
+`colormap` (a built-in name, a `linear-gradient(...)` string, a sequence of
+2-256 CSS colors or `[position, color]` pairs, or canonical RGB stops; default
+`viridis`) drives a continuous per-segment color channel over the segment
+levels, a string `color` is one constant stroke, and a color array is one RGB(A)
+row per level. The host only admits the input through the shared Rust colormap
+resolvers (ABI 349) and forwards the facts; Rust lowers level to stroke.
+`tests/test_static_export_noop_paint_cross_host.py` pins Python/Node
+byte identity for the default, named, gradient, listed, and per-level-color
+cases. Custom (gradient/list/stops) colormaps are admitted identically on both
+hosts but the Scene color channel carries only built-in names today, so both
+hosts paint them with the default map in static export. `filled`, `dash_negative`, `extend`, and per-level widths remain
+Python-only on Node.
+
 Nine bounded pairwise rows cross authored/autorange domains, empty/single/NaN
 inputs, categorical/time axes, style, and linear/log scale. Rust pins that exact
 concern vocabulary and requires each concern's two rows to use distinct public

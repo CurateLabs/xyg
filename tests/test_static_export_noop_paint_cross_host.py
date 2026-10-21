@@ -42,6 +42,16 @@ def node_exports() -> dict[str, Any]:
     return json.loads(proc.stdout)
 
 
+# Same authored facts as the Node script (#1025): Rust lowers every one.
+_CONTOURS: dict[str, dict[str, Any]] = {
+    "contour_default_colormap": {},
+    "contour_named_colormap": {"colormap": "magma"},
+    "contour_gradient_colormap": {"colormap": "linear-gradient(#ff0000, #0000ff)"},
+    "contour_listed_colormap": {"colormap": ["#ff0000", "#00ff00", "#0000ff"]},
+    "contour_level_colors": {"color": [[1, 0, 0], [1, 1, 0], [0, 0, 1]]},
+}
+
+
 def _figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 3.0)
@@ -50,6 +60,13 @@ def _figure(name: str) -> Figure:
         figure.line([0, 1, 2], [0, 2, 1], color="#ef4444")
         figure.line([], [], color="#22c55e", name="proxy")
         figure.scatter([], [], color="#3987e5", size=6)
+    elif name in _CONTOURS:
+        figure.contour(
+            [[0, 1, 0], [1, 2, 1], [0, 1, 0]],
+            levels=[0.25, 1.0, 1.75],
+            corner_mask=False,
+            **_CONTOURS[name],
+        )
     else:
         figure.segments([0, 1, 2, 0], [0, 1, 2, 2], [1, 2, 3, 1], [1, 0, 3, 3], color=[0, 0, 1, 1])
     for index, trace in enumerate(figure.traces):
@@ -57,7 +74,7 @@ def _figure(name: str) -> Figure:
     return figure
 
 
-@pytest.mark.parametrize("name", ["empty_traces", "colormapped_segments"])
+@pytest.mark.parametrize("name", ["empty_traces", "colormapped_segments", *_CONTOURS])
 def test_python_and_node_export_identical_bytes(name: str, node_exports: dict[str, Any]) -> None:
     figure = _figure(name)
     assert scene_export_support_reason(figure) is None
@@ -82,6 +99,17 @@ def test_empty_traces_add_no_marks() -> None:
     figure = _figure("empty_traces")
     figure.traces = figure.traces[:1]
     assert _native.scene_svg(figure_scene(with_empty)) == _native.scene_svg(figure_scene(figure))
+
+
+def test_contour_colormaps_change_the_painted_strokes(node_exports: dict[str, Any]) -> None:
+    # Custom (gradient/list) stops are not yet carried on the Scene color
+    # channel by either host, so they paint like the default; that shared
+    # limitation is pinned here by byte identity above, not hidden.
+    svgs = {
+        n: base64.b64decode(node_exports[n]["svg_b64"])
+        for n in ("contour_default_colormap", "contour_named_colormap", "contour_level_colors")
+    }
+    assert len(set(svgs.values())) == 3
 
 
 def test_public_colormapped_contour_paints_one_literal_stroke_per_level() -> None:

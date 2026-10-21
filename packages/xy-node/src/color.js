@@ -531,6 +531,58 @@ export function colormapResolvedStopsAdmit(stops) {
   return Number(xyColormapResolvedStopsAdmit(u8Ptr(flat), BigInt(flat.length / 3)));
 }
 
+/**
+ * Resolve a colormap authoring input (Python `channels.resolve_colormap`
+ * parity): a built-in name (kept as the name), a `linear-gradient(...)`
+ * string, a sequence of 2-256 CSS colors (optionally `[position, color]`
+ * pairs), or canonical RGB stop rows. Rust (ABI 349) owns every admission and
+ * resampling decision; this only dispatches to it.
+ *
+ * @param {string|Array} value
+ * @param {string} [label]
+ * @returns {string|number[][]}
+ */
+export function resolveColormap(value, label = "colormap") {
+  if (typeof value === "string" && colormapIsBuiltin(value)) return value;
+  if (typeof value === "string") {
+    if (!value.trim().toLowerCase().startsWith("linear-gradient(")) {
+      throw new RangeError(
+        `unknown colormap ${JSON.stringify(value)}; expected a built-in name, a 'linear-gradient(...)' string, or a sequence of CSS colors`,
+      );
+    }
+    return colormapCustomStopsResolveGradient(value);
+  }
+  if (!Array.isArray(value) && !ArrayBuffer.isView(value)) {
+    throw new RangeError(
+      `${label} must be a built-in name, a 'linear-gradient(...)' string, or a sequence of CSS colors`,
+    );
+  }
+  const items = [...value];
+  const numericRows = items.length > 0
+    && items.every((row) => (Array.isArray(row) || ArrayBuffer.isView(row))
+      && row.length === 3 && [...row].every((c) => typeof c === "number"));
+  if (numericRows) {
+    const flat = Uint8Array.from(items.flat());
+    if (colormapResolvedStopsAdmit(flat) > 0) return items.map((row) => [...row].map(Number));
+  }
+  if (items.length < 2 || items.length > 256) {
+    throw new RangeError(`${label} must have between 2 and 256 color stops, got ${items.length}`);
+  }
+  const colors = [];
+  const positions = [];
+  for (const item of items) {
+    if (Array.isArray(item)) {
+      if (item.length !== 2) throw new RangeError(`${label} stops must be a color or [position, color]`);
+      positions.push(item[0]);
+      colors.push(item[1]);
+    } else {
+      positions.push(null);
+      colors.push(item);
+    }
+  }
+  return colormapCustomStopsResolveList(colors, positions);
+}
+
 function flattenRgbRows(raw, n) {
   if (raw.length !== n) return null;
   const first = raw[0];

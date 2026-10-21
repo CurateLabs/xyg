@@ -18,6 +18,16 @@ function normalizeIds(figure) {
   return figure;
 }
 
+const CONTOUR_Z = [[0, 1, 0], [1, 2, 1], [0, 1, 0]];
+// Same authored facts as tests/test_static_export_noop_paint_cross_host.py (#1025).
+const CONTOURS = {
+  contour_default_colormap: {},
+  contour_named_colormap: { colormap: "magma" },
+  contour_gradient_colormap: { colormap: "linear-gradient(#ff0000, #0000ff)" },
+  contour_listed_colormap: { colormap: ["#ff0000", "#00ff00", "#0000ff"] },
+  contour_level_colors: { color: [[1, 0, 0], [1, 1, 0], [0, 0, 1]] },
+};
+
 function figureFor(name) {
   const f = fixedDomains(new Figure({ width: 320, height: 240 }));
   if (name === "empty_traces") {
@@ -26,6 +36,8 @@ function figureFor(name) {
     f.scatter([], [], { style: { color: "#3987e5", size: 6 } });
   } else if (name === "colormapped_segments") {
     f.segments([0, 1, 2, 0], [0, 1, 2, 2], [1, 2, 3, 1], [1, 0, 3, 3], { color: [0, 0, 1, 1] });
+  } else if (name in CONTOURS) {
+    f.contour(CONTOUR_Z, { levels: [0.25, 1.0, 1.75], cornerMask: false, ...CONTOURS[name] });
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -33,7 +45,7 @@ function figureFor(name) {
 }
 
 const out = {};
-for (const name of ["empty_traces", "colormapped_segments"]) {
+for (const name of ["empty_traces", "colormapped_segments", ...Object.keys(CONTOURS)]) {
   const figure = figureFor(name);
   const reason = sceneExportSupportReason(figure);
   if (reason !== null) throw new Error(`${name} failed public preflight: ${reason}`);
