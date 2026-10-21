@@ -179,6 +179,7 @@ in the README).
   silently leave a stale row in the CodSpeed dashboard.
 
 ### Fixed
+- `benchmarks/bench_line.py --sizes 1e4` no longer fails its own extrema oracle (#1027). The product was correct: below the LOD budget a line is shipped in the lossless `direct` tier, which the oracle wrongly rejected as "not decimated". The oracle now accepts `direct` when every row is present and runs the same per-column comparison; the CI methodology contract step covers `1e4,1e5`.
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
   while a cache-isolated coreless build must still import `reflex_xy`, report
