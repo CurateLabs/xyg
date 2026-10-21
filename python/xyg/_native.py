@@ -9948,6 +9948,16 @@ def quantize_unit_u8(
     return out
 
 
+def default_text_annotation_dx() -> float:
+    """Default text-annotation ``dx`` in pixels, sourced from Rust (ABI 392)."""
+    return float(_lib.xyg_default_text_annotation_dx())
+
+
+def default_text_annotation_dy() -> float:
+    """Default text-annotation ``dy`` in pixels, sourced from Rust (ABI 392)."""
+    return float(_lib.xyg_default_text_annotation_dy())
+
+
 def default_png_export_scale() -> float:
     """Default device-pixel ratio for raster PNG export, sourced from Rust (ABI 370)."""
     return float(_lib.xyg_default_png_export_scale())

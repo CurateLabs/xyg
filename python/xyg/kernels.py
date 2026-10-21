@@ -37,6 +37,8 @@ css_is_functional = _impl.css_is_functional
 clip_quantize_u8 = _impl.clip_quantize_u8
 quantize_unit_u8 = _impl.quantize_unit_u8
 default_png_export_scale = _impl.default_png_export_scale
+default_text_annotation_dx = _impl.default_text_annotation_dx
+default_text_annotation_dy = _impl.default_text_annotation_dy
 #: Default device-pixel ratio for raster export; sourced from Rust (ABI 370).
 DEFAULT_PNG_EXPORT_SCALE: float = _impl.default_png_export_scale()
 default_palette_contract = _impl.default_palette_contract

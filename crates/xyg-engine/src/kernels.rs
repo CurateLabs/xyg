@@ -8917,6 +8917,15 @@ pub fn quantize_unit_u8_into(values: &[f64], lo: f64, hi: f64, out: &mut [u8]) -
 /// Both Python and Node hosts read this through the ABI; neither hardcodes it.
 pub const DEFAULT_PNG_EXPORT_SCALE: f64 = 2.0;
 
+/// Default horizontal pixel offset of a text annotation whose `dx` is unset (ABI 392).
+///
+/// Hosts read this through the ABI and never copy it; the Rust annotation
+/// packer applies the same constant when the `dx` fact is absent.
+pub const DEFAULT_TEXT_ANNOTATION_DX: f64 = 6.0;
+
+/// Default vertical pixel offset of a text annotation whose `dy` is unset (ABI 392).
+pub const DEFAULT_TEXT_ANNOTATION_DY: f64 = -6.0;
+
 /// Versioned built-in categorical palette (design dossier §20/§36).
 ///
 /// This is the sole product definition. Native and direct-WASM hosts read it

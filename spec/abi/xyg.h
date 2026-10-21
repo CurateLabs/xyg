@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 391
-#define XYG_ABI_SIGNATURE_SHA256 "52890d626bf8d1062c222559fda5d1a8b23a0f796f1844420f94381cdb4c3510"
+#define XYG_ABI_VERSION 392
+#define XYG_ABI_SIGNATURE_SHA256 "f93130f15b5667e0e68abef8927403063ac18bf1c47dd651224fb702abfb8c6e"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,6 +87,8 @@ size_t xyg_default_palette_rows();
 size_t xyg_default_palette_utf8(uint8_t * out, size_t out_cap);
 uint32_t xyg_default_palette_version();
 double xyg_default_png_export_scale();
+double xyg_default_text_annotation_dx();
+double xyg_default_text_annotation_dy();
 size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity);
 int32_t xyg_density_bin_coord_endpoints(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, double * out_x_c0, double * out_x_c1, double * out_y_c0, double * out_y_c1);
 size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out);

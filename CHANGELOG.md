@@ -137,6 +137,13 @@ in the README).
   `publish.yaml` match the pending PyPI trusted publisher.
 
 ### Changed
+- ABI 392: an unset text-annotation `dx`/`dy` now resolves to one Rust-owned
+  default (`xyg_default_text_annotation_dx()` = 6, `_dy()` = -6) that Python and
+  Node read through the ABI instead of carrying their own (#1024). Node
+  previously defaulted to `0, 0` while Python used `6, -6`, so the same chart
+  exported with different label placement; the documented Python value wins.
+  Node text annotations that omit `dx`/`dy` now sit 6 px right and 6 px above
+  their anchor, and `xyg.text`/`xyg.label` default to `None` (unset).
 - Repository branding and all owned documentation, support, CI, security, and
   source pointers now target `CurateLabs/xyg`; inherited benchmark records keep
   their original repository field as provenance (#14).

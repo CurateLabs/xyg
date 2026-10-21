@@ -1163,7 +1163,11 @@ pub fn pack_annotation_facts(
             let (dx_default, dy_default, css) = if row.kind == XYAF_KIND_CALLOUT {
                 (36.0, -30.0, COLOR_CALLOUT)
             } else {
-                (0.0, 0.0, COLOR_RULE)
+                (
+                    crate::kernels::DEFAULT_TEXT_ANNOTATION_DX,
+                    crate::kernels::DEFAULT_TEXT_ANNOTATION_DY,
+                    COLOR_RULE,
+                )
             };
             let dx = or_default(row, FACT_HAS_DX, 6, dx_default)?;
             let dy = or_default(row, FACT_HAS_DY, 7, dy_default)?;

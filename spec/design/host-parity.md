@@ -1442,6 +1442,20 @@ The exhaustive per-file application of these rules is
 
 ---
 
+#### Text-annotation default offset (#1024, ABI 392)
+
+An authored text annotation that leaves `dx`/`dy` unset is placed at the
+Rust-owned default offset `(6, -6)` pixels (`kernels::DEFAULT_TEXT_ANNOTATION_DX` /
+`_DY`). Hosts read it through `xyg_default_text_annotation_dx()` /
+`xyg_default_text_annotation_dy()` (as the PNG export scale is read) and carry
+no copy of the value: Python `Figure.text`/`label`, `_annotation_specs` and Node
+`annotate()`/`annotationSpecs` substitute the ABI value for an unset offset, and
+the Rust XYAF packer applies the same constant when a laid-out text row carries no
+`dx`/`dy` fact. An explicit `dx`/`dy` (including `0`) is never replaced. Equivalent
+public calls from both hosts therefore export byte-identical SVG/PNG/PDF/JPEG/WebP
+(`tests/test_text_annotation_default_offset_cross_host.py`). Callout, marker and
+other annotation kinds keep their own per-kind defaults.
+
 ## 1. Goal
 
 | Layer | Shared across Python and Node |
