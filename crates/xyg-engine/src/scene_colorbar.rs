@@ -377,7 +377,10 @@ mod tests {
         assert_eq!(values.len(), colormap::colormap_named_stops(name).len());
         assert_eq!(values[0], lo);
         assert_eq!(*values.last().unwrap(), hi);
-        assert!(values.windows(2).all(|pair| pair[0] < pair[1]), "{values:?}");
+        assert!(
+            values.windows(2).all(|pair| pair[0] < pair[1]),
+            "{values:?}"
+        );
     }
 
     #[test]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import itertools
 import json
 import struct
 from datetime import UTC, datetime
@@ -1147,7 +1148,7 @@ def test_scene_named_colorbar_extreme_finite_domains_keep_full_palette(domain: l
     values = _xycb_stop_values(scene)
     assert len(values) == 11
     assert values[0] == domain[0] and values[-1] == domain[1]
-    assert all(a < b for a, b in zip(values, values[1:], strict=False))
+    assert all(a < b for a, b in itertools.pairwise(values))
     assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
     assert _native.scene_raster_commands(scene)
 
