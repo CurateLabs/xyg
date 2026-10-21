@@ -249,16 +249,16 @@ mod tests {
 
     const PINNED_BITS: [u64; 11] = [
         0xbfffe94e3e6304db,
-        0xbff7b194274b7b5a,
-        0xbfeef3b42067e3b2,
-        0xbfdd087fe471a160,
-        0x3faeb343bf642520,
-        0x3fe25aa86a255556,
-        0x3ff1650e4c2a342b,
-        0x3ff99cc86341bdaf,
-        0x4000ea413d2ca396,
-        0x4005061e48b86856,
-        0x400921fb54442d18,
+        0xbff77abbdebceb3a,
+        0xbfee1852fe2da332,
+        0xbfda765c7dc2dfe0,
+        0x3fbd0fb403561a90,
+        0x3fe47f1b3fb6f696,
+        0x3ff2ae1fff8194eb,
+        0x3ffb1cb25f27ae8f,
+        0x4001c5a25f66e416,
+        0x4005fceb8f39f0e6,
+        0x400a3434bf0cfdb9,
     ];
 
     #[test]
@@ -462,7 +462,7 @@ mod tests {
     fn named_colorbar_pins_ordinary_non_unit_domain_bit_patterns() {
         // Captured from the pre-#888 formula `lo + (hi - lo) * i / n`.
         let values =
-            named_values(-1.994_459_384_630_593_8, 3.141_592_653_589_793, "viridis").unwrap();
+            named_values(-1.994_459_384_630_593_8, 3.275_491_230_567_891, "viridis").unwrap();
         let bits: Vec<u64> = values.iter().map(|v| v.to_bits()).collect();
         assert_eq!(bits, PINNED_BITS);
     }
