@@ -5372,6 +5372,17 @@ function xytaHexbinPlaneObservations(trace) {
   return { hexbinColormapPlane, hexbinRgbaPlaneReady };
 }
 
+const CONTOUR_CUSTOM_COLORMAP_REASON = "XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP";
+
+/** The contour color channel; custom colormaps fail closed in Scene export (#1025). */
+function contourColorChannel(trace) {
+  const channel = trace.color_ch;
+  if (trace.kind === "contour" && channel?.colormap != null && typeof channel.colormap !== "string") {
+    throw new RangeError(CONTOUR_CUSTOM_COLORMAP_REASON);
+  }
+  return channel;
+}
+
 function marshalXytaColorChannel(channel) {
   if (channel == null || typeof channel === "string") {
     return {
@@ -5558,7 +5569,7 @@ export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
     rgba_grid_f64: rgbaGridF64,
     x_values: xValues,
     y_values: yValues,
-    color_ch: marshalXytaColorChannel(trace.color_ch),
+    color_ch: marshalXytaColorChannel(contourColorChannel(trace)),
     stroke_ch: marshalXytaColorChannel(trace.stroke_ch),
     color2_ch: marshalXytaColorChannel(trace.color2_ch),
     opacity_ch: marshalXytaStyleChannel(styleChannels.opacity),

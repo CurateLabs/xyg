@@ -2,7 +2,7 @@
  * Contour isolines — marching-squares segments matching Python `marks.contour`.
  */
 
-import { resolveColorChannel, resolveColormap } from "../color.js";
+import { cssColorAdmit, resolveColorChannel, resolveColormap } from "../color.js";
 import { asF64Array, contourLevels, marchingSquares } from "../encode.js";
 import { pointer, xyAutoDomain } from "../native.js";
 
@@ -149,6 +149,9 @@ export function composeContour(z, opts = {}) {
   // drives a continuous per-segment channel over the segment levels. Rust owns
   // the level -> stroke lowering; the host only forwards the authored facts.
   const colormap = resolveColormap(opts.colormap ?? DEFAULT_COLORMAP);
+  if (opts.style?.color != null && typeof opts.style.color !== "string") {
+    throw new RangeError("contour style color must be a CSS color string");
+  }
   const authored = opts.style?.color ?? opts.color;
   let colorCh = null;
   let constant = null;
@@ -167,7 +170,7 @@ export function composeContour(z, opts = {}) {
       colormap,
     };
   } else if (typeof authored === "string") {
-    constant = authored;
+    constant = cssColorAdmit(authored, "contour color");
   } else {
     const table = resolveColorChannel(authored, levelValues.length);
     if (table.mode !== "direct_rgba" || table.rgba == null) {

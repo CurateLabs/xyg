@@ -142,6 +142,10 @@ in the README).
   `publish.yaml` match the pending PyPI trusted publisher.
 
 ### Changed
+- Node `contour` without `color` now paints the per-level `viridis` colormap
+  (Python parity) instead of a single stroke; pass `color` for the old look
+  (#1025). Custom gradient/list/stop contour colormaps are refused by static
+  Scene export on both hosts with `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP`.
 - Repository branding and all owned documentation, support, CI, security, and
   source pointers now target `CurateLabs/xyg`; inherited benchmark records keep
   their original repository field as provenance (#14).

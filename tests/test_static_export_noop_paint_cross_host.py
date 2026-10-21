@@ -46,10 +46,18 @@ def node_exports() -> dict[str, Any]:
 _CONTOURS: dict[str, dict[str, Any]] = {
     "contour_default_colormap": {},
     "contour_named_colormap": {"colormap": "magma"},
-    "contour_gradient_colormap": {"colormap": "linear-gradient(#ff0000, #0000ff)"},
-    "contour_listed_colormap": {"colormap": ["#ff0000", "#00ff00", "#0000ff"]},
+    "contour_constant_color": {"color": "#ef4444"},
     "contour_level_colors": {"color": [[1, 0, 0], [1, 1, 0], [0, 0, 1]]},
 }
+
+
+# Custom colormaps fail closed in Scene export on both hosts (#1025).
+_REJECTED_CONTOURS: dict[str, dict[str, Any]] = {
+    "contour_gradient_colormap": {"colormap": "linear-gradient(#ff0000, #0000ff)"},
+    "contour_listed_colormap": {"colormap": ["#ff0000", "#00ff00", "#0000ff"]},
+    "contour_stops_colormap": {"colormap": [[255, 0, 0], [0, 0, 255]]},
+}
+CONTOUR_REASON = "XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP"
 
 
 def _figure(name: str) -> Figure:
@@ -60,12 +68,12 @@ def _figure(name: str) -> Figure:
         figure.line([0, 1, 2], [0, 2, 1], color="#ef4444")
         figure.line([], [], color="#22c55e", name="proxy")
         figure.scatter([], [], color="#3987e5", size=6)
-    elif name in _CONTOURS:
+    elif name in _CONTOURS or name in _REJECTED_CONTOURS:
         figure.contour(
             [[0, 1, 0], [1, 2, 1], [0, 1, 0]],
             levels=[0.25, 1.0, 1.75],
             corner_mask=False,
-            **_CONTOURS[name],
+            **_CONTOURS.get(name, _REJECTED_CONTOURS.get(name, {})),
         )
     else:
         figure.segments([0, 1, 2, 0], [0, 1, 2, 2], [1, 2, 3, 1], [1, 0, 3, 3], color=[0, 0, 1, 1])
@@ -101,15 +109,36 @@ def test_empty_traces_add_no_marks() -> None:
     assert _native.scene_svg(figure_scene(with_empty)) == _native.scene_svg(figure_scene(figure))
 
 
-def test_contour_colormaps_change_the_painted_strokes(node_exports: dict[str, Any]) -> None:
-    # Custom (gradient/list) stops are not yet carried on the Scene color
-    # channel by either host, so they paint like the default; that shared
-    # limitation is pinned here by byte identity above, not hidden.
-    svgs = {
-        n: base64.b64decode(node_exports[n]["svg_b64"])
-        for n in ("contour_default_colormap", "contour_named_colormap", "contour_level_colors")
-    }
-    assert len(set(svgs.values())) == 3
+@pytest.mark.parametrize("name", list(_REJECTED_CONTOURS))
+def test_custom_contour_colormaps_fail_closed_on_both_hosts(
+    name: str, node_exports: dict[str, Any]
+) -> None:
+    assert scene_export_support_reason(_figure(name)) == CONTOUR_REASON
+    assert node_exports[name]["reason"] == CONTOUR_REASON
+
+
+def _strokes(node_exports: dict[str, Any], name: str) -> list[str]:
+    svg = base64.b64decode(node_exports[name]["svg_b64"]).decode()
+    return list(dict.fromkeys(re.findall(r'stroke="(rgb\([^"]+\))"', svg)))
+
+
+def test_contour_colormaps_paint_the_authored_strokes(node_exports: dict[str, Any]) -> None:
+    assert _strokes(node_exports, "contour_default_colormap") == [
+        "rgb(68,1,84)",
+        "rgb(33,145,140)",
+        "rgb(253,231,37)",
+    ]
+    assert _strokes(node_exports, "contour_named_colormap") == [
+        "rgb(0,0,4)",
+        "rgb(183,55,121)",
+        "rgb(252,253,191)",
+    ]
+    assert _strokes(node_exports, "contour_level_colors") == [
+        "rgb(255,0,0)",
+        "rgb(255,255,0)",
+        "rgb(0,0,255)",
+    ]
+    assert _strokes(node_exports, "contour_constant_color") == ["rgb(239,68,68)"]
 
 
 def test_public_colormapped_contour_paints_one_literal_stroke_per_level() -> None:

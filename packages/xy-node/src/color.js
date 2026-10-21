@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xySceneArtistAlphaCss, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit, xyArrayIsCategorical, xyRealNumericDtypeAdmit } from "./native.js";
+import { pointer, xyCssCheck, xyCssColorRgba, xySceneArtistAlphaCss, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8, xyQuantizeUnitU8, xyPaletteRowsRgba8, xyLiteralColorRgbaF64, xyCategoricalPalette, xyCategoricalPaletteMapResolve, xyColorChannelDirectRgbaF64Continuous, xyColorChannelDirectRgbaF64Categorical, xyColormapIsBuiltin, xyColormapResolvedStopsAdmit, xyColormapCustomStopsResolveGradient, xyColormapCustomStopsResolveList, xySizeRangeAdmit, xyArrayIsCategorical, xyRealNumericDtypeAdmit } from "./native.js";
 import { DEFAULT_MARK_COLOR, DEFAULT_PALETTE, colormapNamedStops } from "./encode.js";
 import { factorizeCategories } from "./factorize.js";
 
@@ -531,6 +531,37 @@ export function colormapResolvedStopsAdmit(stops) {
   return Number(xyColormapResolvedStopsAdmit(u8Ptr(flat), BigInt(flat.length / 3)));
 }
 
+export const CSS_ERROR_REASONS = {
+  [-1]: "is empty",
+  [-2]: "contains an unsafe character (';', '{', '}', '</', or a control character)",
+  [-3]: "has unbalanced quotes or parentheses",
+  [-4]: "is not a valid hex color (use #rgb, #rgba, #rrggbb, or #rrggbbaa)",
+  [-5]: "is not valid color syntax",
+  [-6]: "is not a recognized CSS color name",
+  [-7]: "has an invalid number",
+  [-8]: "has an unknown unit",
+  [-9]: "uses an unknown function",
+  [-10]: "is not a valid CSS property name",
+};
+
+const CSS_KIND_COLOR = 1;
+
+/**
+ * Strictly admit one CSS `<color>` through the shared native grammar (Python
+ * `_validate.css_color` parity, same wording). Returns the trimmed string.
+ */
+export function cssColorAdmit(value, label) {
+  if (typeof value !== "string") throw new RangeError(`${label} must be a CSS color string`);
+  const bytes = new TextEncoder().encode(value);
+  const status = Number(
+    xyCssCheck(CSS_KIND_COLOR, 0, 0n, bytes.length ? u8Ptr(bytes) : 0, BigInt(bytes.length), new Float32Array(4)),
+  );
+  if (status <= 0) {
+    throw new RangeError(`${label} '${value}' ${CSS_ERROR_REASONS[status] ?? "is not valid CSS"}`);
+  }
+  return value.trim();
+}
+
 /**
  * Resolve a colormap authoring input (Python `channels.resolve_colormap`
  * parity): a built-in name (kept as the name), a `linear-gradient(...)`
@@ -562,6 +593,12 @@ export function resolveColormap(value, label = "colormap") {
     && items.every((row) => (Array.isArray(row) || ArrayBuffer.isView(row))
       && row.length === 3 && [...row].every((c) => typeof c === "number"));
   if (numericRows) {
+    // Reject before packing: Uint8Array.from would wrap 256 -> 0 or 1.5 -> 1.
+    for (const c of items.flat()) {
+      if (!Number.isInteger(c) || c < 0 || c > 255) {
+        throw new RangeError(`${label} stops must be integers in 0..255, got ${c}`);
+      }
+    }
     const flat = Uint8Array.from(items.flat());
     if (colormapResolvedStopsAdmit(flat) > 0) return items.map((row) => [...row].map(Number));
   }

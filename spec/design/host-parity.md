@@ -176,10 +176,13 @@ levels, a string `color` is one constant stroke, and a color array is one RGB(A)
 row per level. The host only admits the input through the shared Rust colormap
 resolvers (ABI 349) and forwards the facts; Rust lowers level to stroke.
 `tests/test_static_export_noop_paint_cross_host.py` pins Python/Node
-byte identity for the default, named, gradient, listed, and per-level-color
-cases. Custom (gradient/list/stops) colormaps are admitted identically on both
-hosts but the Scene color channel carries only built-in names today, so both
-hosts paint them with the default map in static export. `filled`, `dash_negative`, `extend`, and per-level widths remain
+byte identity (and the painted stroke colors) for the default, named,
+constant-color, and per-level-color cases. The Scene color channel carries only
+built-in colormap names, so a custom (gradient, CSS-color list, or RGB-stop)
+contour colormap is rejected by static/Scene export on both hosts with the one
+stable reason `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP` (fail closed,
+`static-document.md`); live rendering keeps it. The same gap exists for
+`segments` color channels and is left as is. `filled`, `dash_negative`, `extend`, and per-level widths remain
 Python-only on Node.
 
 Nine bounded pairwise rows cross authored/autorange domains, empty/single/NaN
