@@ -37,8 +37,9 @@ for extreme ratios. Domain endpoints pin to exactly zero and one. Every
 returned label position must be finite before a renderer consumes it.
 
 XYCB v2 still stores stop positions in data space. Named-colorbar packing for
-adjacent-representable or extreme finite domains can therefore fail before the
-renderer receives a valid Scene; it must not approximate or discard palette
+domains with fewer representable values than palette stops (adjacent domains)
+can therefore fail before the renderer receives a valid Scene; extreme finite
+domains keep the full palette; it must not approximate or discard palette
 stops. [Issue #888](https://github.com/CurateLabs/xyg/issues/888) tracks the
 versioned fraction-space XYCB contract and every downstream consumer update.
 

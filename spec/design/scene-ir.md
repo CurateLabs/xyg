@@ -2261,12 +2261,6 @@ occupancy so hosts settle a concrete location before XYLG packing. ABI 110 does 
 paints, title, and entry meta. ABI 111 does not change Scene records either;
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing from domain, stops,
 ticks, title, and text RGBA. ABI 112 does not change Scene records either;
-`xyg_scene_pack_named_colorbar` derives its stop values with overflow-safe
-arithmetic (single-rounding `lo + (hi - lo) * i / n` while the span is finite,
-`lo * (1 - t) + hi * t` otherwise), bit-exact `lo`/`hi`, and a next-representable
-lift when rounding repeats a value, so extreme finite domains keep the whole
-palette. A domain with fewer representable values than palette samples is
-rejected `Order` (never thinned); v2 requires strictly increasing stops (#888);
 `xyg_scene_pack_annotations` owns primary XYAD framing from typed row meta
 and concatenated labels. ABI 113 does not change Scene records either;
 `xyg_svg_to_pdf` owns closed-subset SVG→PDF so public static PDF no longer
@@ -2280,6 +2274,14 @@ hexbin, custom reducers, and categorical / `direct_rgba` hexbin on Scene.
 ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 LOD and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
+
+`xyg_scene_pack_named_colorbar` derives its stop values with overflow-safe
+arithmetic: single-rounding `lo + (hi - lo) * i / n` while `(hi - lo) * i` is
+finite, `lo * (1 - t) + hi * t` otherwise, bit-exact `lo`/`hi`, and a
+next-representable lift only when rounding leaves a value at or below its
+predecessor. Extreme finite domains therefore keep the whole palette. A domain
+with fewer representable values than palette samples is rejected `Order`
+(never thinned); XYCB v2 requires strictly increasing stops (#888).
 
 Constant-style Cartesian heatmap expands a regular rows×cols lattice onto
 existing Scene v25 Rect records (one rectangle per cell) for

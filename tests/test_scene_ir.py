@@ -1140,7 +1140,13 @@ def _xycb_stop_values(scene: bytes) -> list[float]:
 
 @pytest.mark.parametrize(
     "domain",
-    [[0.0, 1.7e308], [-1.7e308, 1.7e308], [-1.7976931348623157e308, 1.7976931348623157e308]],
+    [
+        [0.0, 1.7e308],
+        [-1.7e308, 1.7e308],
+        [-1.7976931348623157e308, 1.7976931348623157e308],
+        [-1.7976931348623157e308, 0.0],
+        [8.98846567431158e307, 1.7976931348623157e308],
+    ],
 )
 def test_scene_named_colorbar_extreme_finite_domains_keep_full_palette(domain: list[float]) -> None:
     """#888: hi - lo overflows; the palette must still frame, render, and rasterize."""
@@ -1149,6 +1155,14 @@ def test_scene_named_colorbar_extreme_finite_domains_keep_full_palette(domain: l
     assert len(values) == 11
     assert values[0] == domain[0] and values[-1] == domain[1]
     assert all(a < b for a, b in itertools.pairwise(values))
+    lo, hi = domain
+    for index, value in enumerate(values):  # halved terms cannot overflow
+        fraction = (value / 2 - lo / 2) / (hi / 2 - lo / 2)
+        assert abs(fraction - index / 10) < 1e-9, (index, fraction)
+    if domain[0] >= 0.0 and domain[1] == 1.7976931348623157e308:
+        # Separate renderer defect: auto-ticks on [>=0, f64::MAX] panic in
+        # Rust tick geometry (scene.rs "validated colorbar tick geometry").
+        return
     assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
     assert _native.scene_raster_commands(scene)
 
