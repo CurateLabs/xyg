@@ -338,7 +338,7 @@ export function compilePainter(painter: ArrayBuffer, detachedColors = false) {
           throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label box is noncanonical");
         }
       }
-      if (version === 4) {
+      if (version >= 4) {
         const borderFlags = bytes[record + 84], border = bytes.subarray(record + 88, record + 92), borderWidth = f64(record + 92);
         if (borderFlags > 1 || bytes.subarray(record + 85, record + 88).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label border flags are invalid");
         if (borderFlags) { if (!box || !(Number.isFinite(borderWidth) && borderWidth > 0 && border[3] > 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label border is invalid"); box.border = {color: rgba(border), width: borderWidth}; }

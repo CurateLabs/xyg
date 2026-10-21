@@ -115,7 +115,6 @@ const SCENE_LABEL_WRAPPED_RECORD_BYTES: usize = 104;
 const SCENE_LABEL_ROTATED_RECORD_BYTES: usize = 112;
 /// Highest XYLB version the browser painter may carry (the TypeScript client
 /// in `js/src/48_wasm_scene.ts` decodes v1..=this). v7 is Scene-wire only.
-#[cfg(test)]
 const BROWSER_PAINTER_XYLB_MAX_VERSION: u32 = 6;
 /// XYLB v7 = the v6 record plus `u32` flags (bit 0 = annotation label) and a
 /// zero reserved `u32`. It is emitted only when the provenance flag disagrees
@@ -16902,6 +16901,13 @@ impl SceneDocument {
         let colorbar_bytes = self.painter_colorbar_bytes()?;
         let (paint_labels, paint_backgrounds) = self.painter_glyph_labels()?;
         let label_bytes = encode_scene_labels(&paint_labels, &paint_backgrounds)?;
+        // Fail closed rather than publish a label version the client rejects.
+        if label_bytes.len() >= 8
+            && u32::from_le_bytes([label_bytes[4], label_bytes[5], label_bytes[6], label_bytes[7]])
+                > BROWSER_PAINTER_XYLB_MAX_VERSION
+        {
+            return Err(SceneError::Length);
+        }
         required = required
             .checked_add(legend_bytes.len())
             .and_then(|value| value.checked_add(colorbar_bytes.len()))
@@ -24277,6 +24283,27 @@ pub(crate) mod tests {
             u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap())
                 <= BROWSER_PAINTER_XYLB_MAX_VERSION
         );
+        // Every feature at once: rotation, wrap, border, box, anchor.
+        let mut all = per_label_style_scene();
+        all.labels[0].rotation = -20.0;
+        all.labels[0].anchor = 2;
+        all.labels[0].text = "al\npha".to_owned();
+        all.label_backgrounds[0] = Some(SceneLabelBox {
+            x: 10.0,
+            y: 10.0,
+            width: 40.0,
+            height: 30.0,
+            rgba: [255, 255, 0, 255],
+            border: Some(SceneLabelBorder {
+                rgba: [255, 0, 0, 255],
+                width: 2.0,
+            }),
+        });
+        let painter = all.to_browser_painter(1 << 20).unwrap();
+        let at = painter.windows(4).position(|w| w == b"XYLB").unwrap();
+        let version = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap());
+        assert!((1..=BROWSER_PAINTER_XYLB_MAX_VERSION).contains(&version));
+        assert_eq!(version, 6);
     }
 
     /// The shape a composed graph with authored annotations produces: the

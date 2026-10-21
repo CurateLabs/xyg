@@ -36,9 +36,46 @@ function figure(rotation, extra = {}) {
 
 const ab = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 
-test("client accepts exactly the XYLB versions Rust's painter may emit (v1-v6)", { skip }, async () => {
-  const { XYLB_PAINTER_VERSIONS } = await hydrator();
-  assert.deepEqual([...XYLB_PAINTER_VERSIONS], [1, 2, 3, 4, 5, 6]);
+const FEATURES = { rotation: 30, label_background: "#ffff00", label_border_color: "#ff0000", label_border_width: 2 };
+const xylbVersion = (painter) => new DataView(painter.buffer, painter.byteOffset).getUint32(Buffer.from(painter).indexOf("XYLB") + 4, true);
+
+test("client accepts the XYLB version of a painter payload carrying every label feature", { skip }, async () => {
+  const { XYLB_PAINTER_VERSIONS, compilePainter } = await hydrator();
+  const fig = figure(30);
+  fig.annotate({ kind: "text", x: 0.5, y: 1, text: "boxed", style: FEATURES });
+  const painter = sceneBrowserPainter(fig.toScene());
+  const version = xylbVersion(painter);
+  assert.ok(XYLB_PAINTER_VERSIONS.includes(version), `client rejects emitted XYLB v${version}`);
+  assert.equal(version, Math.max(...XYLB_PAINTER_VERSIONS), "client ceiling is exactly what Rust emits");
+  assert.ok(compilePainter(ab(painter)).sceneLabels.length >= 2);
+});
+
+test("rotated bordered callout box keeps its border (v6) and matches the SVG stroke", { skip }, async () => {
+  const { compilePainter } = await hydrator();
+  for (const rotation of [0, 30]) {
+    const fig = figure(0);
+    fig.annotate({ kind: "text", x: 0.5, y: 1, text: "boxed", style: { ...FEATURES, rotation } });
+    const scene = fig.toScene();
+    const painter = sceneBrowserPainter(scene);
+    assert.equal(xylbVersion(painter), rotation ? 6 : 4);
+    const label = compilePainter(ab(painter)).sceneLabels.find((l) => l.text === "boxed");
+    assert.equal(label.rotation, rotation);
+    assert.deepEqual(label.box.border, { color: "rgba(255 0 0 / 1)", width: 2 });
+    assert.match(Buffer.from(sceneSvg(scene)).toString("utf8"), /annotation_label_box[^>]*stroke=/);
+  }
+});
+
+test("rotated wrapped bordered label decodes (v5 fields inside v6)", { skip }, async () => {
+  const { compilePainter } = await hydrator();
+  const fig = figure(0);
+  fig.annotate({ kind: "text", x: 0.5, y: 1, text: "one\ntwo", style: FEATURES });
+  const scene = fig.toScene();
+  const painter = sceneBrowserPainter(scene);
+  const label = compilePainter(ab(painter)).sceneLabels.find((l) => l.text === "one\ntwo");
+  assert.equal(xylbVersion(painter), 6);
+  assert.equal(label.rotation, 30);
+  assert.equal(label.box.border.width, 2);
+  assert.match(Buffer.from(sceneSvg(scene)).toString("utf8"), /annotation_label_box[^>]*stroke=/);
 });
 
 for (const rotation of [30, -45, 90]) {
