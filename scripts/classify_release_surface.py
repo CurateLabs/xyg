@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Classify whether changed paths require the complete release-surface matrix."""
+"""Classify whether changed paths require the complete release-surface matrix.
+
+Fail-closed: a path is a release surface unless it is explicitly recognized prose
+(root Markdown, LICENSE, ``docs/``, ``spec/`` outside ``spec/abi/`` and ``spec/wasm/``).
+Unknown paths therefore require the full matrix; they never skip it.
+"""
 
 from __future__ import annotations
 
@@ -7,36 +12,25 @@ import argparse
 import os
 from pathlib import Path
 
-RELEASE_PREFIXES = (
-    ".github/",
-    ".codspeed/",
-    "benchmarks/",
-    "crates/",
-    "js/",
-    "packages/",
-    "python/",
-    "scripts/",
-    "spec/abi/",
-    "spec/wasm/",
-    "tests/",
-)
-RELEASE_FILES = {
-    ".github/CODEOWNERS",
-    "Cargo.lock",
-    "Cargo.toml",
-    "Makefile",
-    "hatch_build.py",
-    "package-lock.json",
-    "package.json",
-    "pyproject.toml",
-    "rust-toolchain.toml",
-    "uv.lock",
-}
+# Prose that no hard job reads. Everything else - including any path this list has never
+# heard of, such as a new root tsconfig.json - is a release surface, so the classifier
+# fails toward the complete matrix instead of silently skipping it (#1008).
+# spec/abi/ and spec/wasm/ are generated-contract inputs to the native and WASM jobs.
+PROSE_PREFIXES = ("docs/", "spec/")
+CONTRACT_PREFIXES = ("spec/abi/", "spec/wasm/")
+PROSE_ROOT_FILES = {"LICENSE"}
+PROSE_ROOT_SUFFIXES = (".md",)
 
 
 def is_release_surface(path: str) -> bool:
     normalized = path.strip().replace("\\", "/").removeprefix("./")
-    return normalized in RELEASE_FILES or normalized.startswith(RELEASE_PREFIXES)
+    if "/" not in normalized:
+        prose = normalized in PROSE_ROOT_FILES or normalized.endswith(PROSE_ROOT_SUFFIXES)
+    else:
+        prose = normalized.startswith(PROSE_PREFIXES) and not normalized.startswith(
+            CONTRACT_PREFIXES
+        )
+    return not prose
 
 
 def classify(paths: list[str]) -> bool:

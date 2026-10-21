@@ -152,7 +152,8 @@ Legend placement relative to the axes is reproduced in static output (#1026):
 coordinates matches Matplotlib 3.11's `Legend.get_window_extent` within **0.01
 axes fraction per edge** (measured spread below 0.005, from differing font
 metrics); `tests/pyplot/test_legend_reference_1026.py` runs in the Matplotlib
-3.11 lane.
+3.11 lane, which runs the whole `tests/pyplot` suite against the released
+`matplotlib==3.11.0` wheel (#1035), so every matplotlib-dependent pyplot test gates merges.
 
 ## Sharp edges
 

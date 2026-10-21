@@ -12,11 +12,20 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
+import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
+try:
+    import verify_release_surface_results as release_inventory
+except ModuleNotFoundError:  # imported by tests from the repository root
+    from scripts import verify_release_surface_results as release_inventory
+
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_RULESET = ROOT / ".github" / "merge-queue-ruleset.json"
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
 DEFAULT_DENSITY_WORKFLOW = ROOT / ".github" / "workflows" / "density-100m.yml"
@@ -27,44 +36,22 @@ DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 DEFAULT_CONTRIBUTOR_SPEC = ROOT / "spec" / "process" / "contributing.md"
+# Single source of truth: scripts/verify_release_surface_results.py. The workflow is
+# checked against it below, so the hard/advisory boundary cannot drift silently.
 REQUIRED_CI_JOBS = {
-    "authored_scene",
-    "browser_conformance",
-    "release_surface_changes",
-    "release_surfaces",
-    "matplotlib_reference",
-    "test",
-    "python_floor",
-    "benchmark_vs",
-    "benchmark_methodology",
-    "benchmark",
-    "sdist",
-    "wheels",
-    "install_without_rust",
-    "wasm_foundation",
+    *release_inventory.HARD_JOBS,
+    *release_inventory.ADVISORY_CI_JOBS,
+    *release_inventory.SUPPORT_JOBS,
 }
-PR_REQUIRED_CI_JOBS = {"test", "wasm_foundation", "python_floor"}
-RELEASE_SURFACE_CONDITIONAL_JOBS = {
-    "authored_scene",
-    "browser_conformance",
-    "install_without_rust",
-    "sdist",
-    "wheels",
-}
-MAIN_ONLY_CI_JOBS = (
-    REQUIRED_CI_JOBS
-    - PR_REQUIRED_CI_JOBS
-    - RELEASE_SURFACE_CONDITIONAL_JOBS
-    - {
-        "release_surface_changes",
-        "release_surfaces",
-    }
-)
+PR_REQUIRED_CI_JOBS = set(release_inventory.ALWAYS_HARD_JOBS)
+RELEASE_SURFACE_CONDITIONAL_JOBS = set(release_inventory.RELEASE_SURFACE_JOBS)
+MAIN_ONLY_CI_JOBS = set(release_inventory.MAIN_EVIDENCE_JOBS)
 REQUIRED_CODSPEED_JOBS = {"detect", "benchmarks"}
 REQUIRED_RELEASE_JOBS = {
     "wheels",
     "sdist",
     "wasm",
+    "wasm-assets",
     "browser-package",
     "node-native-packages",
     "node-facade",
@@ -777,6 +764,20 @@ def _step_run_lines(step_block: str) -> list[str]:
     return []
 
 
+HARD_PRODUCER_JOBS = frozenset({"wasm_assets"})
+
+
+def _needs_only_hard_producers(job_text: str) -> bool:
+    """True when a job has no ``needs`` or depends only on the single WASM producer."""
+    values, unsafe = _direct_yaml_key_values(job_text, "needs", indent=4)
+    if unsafe or len(values) > 1:
+        return False
+    if not values:
+        return True
+    names = {item.strip() for item in values[0].strip("[]").split(",") if item.strip()}
+    return bool(names) and names <= HARD_PRODUCER_JOBS
+
+
 def _require_step_runs_exactly(
     errors: list[str],
     job_text: str,
@@ -818,7 +819,11 @@ def _require_step_runs_exactly(
             ["github.event_name == 'push' || github.event_name == 'workflow_dispatch'"],
         ):
             forbidden_job_keys += ("if",)
-        forbidden_job_keys += ("needs",)
+        # `needs` may name only the single WASM producer: a skipped or failed producer
+        # skips the consumer, and the Release surfaces aggregate treats an applicable
+        # skip as a failure, so this dependency cannot hide a missing prerequisite.
+        if not _needs_only_hard_producers(job_text):
+            forbidden_job_keys += ("needs",)
     has_forbidden_job_key = any(
         _has_yaml_key(job_text, key, indent=4) for key in forbidden_job_keys
     )
@@ -1123,6 +1128,684 @@ def _require_docs_spec_pr_paths_ignored(errors: list[str], text: str, workflow_l
         )
 
 
+WASM_CONSUMER_JOBS = (
+    "test",
+    "wasm_foundation",
+    "python_floor",
+    "matplotlib_reference",
+    "benchmark_methodology",
+    "wheels",
+    "sdist",
+)
+WASM_ARTIFACT = "wasm-assets"
+WASM_DOWNLOAD_STEP = "Fetch packaged WASM assets from the wasm_assets producer"
+WASM_VERIFY_STEP = "Verify packaged WASM assets (missing or stale fails here)"
+# Release workflow (publish.yaml): same contract, hyphenated job ids.
+RELEASE_WASM_PRODUCER = "wasm-assets"
+RELEASE_WASM_CONSUMER_JOBS = ("wheels", "wasm", "browser-package", "sdist")
+RELEASE_WASM_DOWNLOAD_STEP = "Fetch packaged WASM assets from the wasm-assets producer"
+
+
+# Anything that compiles or packages xyg-wasm outside the producer is a second,
+# unverified producer whose output a consumer could mistake for the real one.
+def _runs_wasm_producer(line: str) -> Optional[str]:
+    """Name the producer command a shell line runs, whatever the flag order or spelling.
+
+    Parses the arguments instead of matching one exact string, so reordered, abbreviated,
+    or package-manager-spelled invocations cannot slip a second, unverified producer past
+    the single-producer rule. Callers join backslash-continued lines first.
+    """
+    try:
+        words = shlex.split(line, comments=True)
+    except ValueError:
+        words = line.split()
+    managers = {"npm", "pnpm", "yarn", "bun"}
+    if "build:wasm" in words and managers & set(words):
+        return "npm run build:wasm"
+    if any(word.endswith("package-wasm.mjs") for word in words):
+        return "node js/package-wasm.mjs"
+    if "cargo" in words and "build" in words:
+
+        def flag_value(*flags: str) -> list[str]:
+            values: list[str] = []
+            for index, word in enumerate(words):
+                if word in flags and index + 1 < len(words):
+                    values.append(words[index + 1])
+                for flag in flags:
+                    if flag.startswith("--") and word.startswith(flag + "="):
+                        values.append(word[len(flag) + 1 :])
+                if word.startswith("-p") and not word.startswith("--") and "-p" in flags:
+                    values.append(word[2:])
+            return values
+
+        package = "xyg-wasm" in flag_value("-p", "--package") or any(
+            value.replace("\\", "/").rstrip("/").endswith("xyg-wasm/Cargo.toml")
+            for value in flag_value("--manifest-path")
+        )
+        if package and WASM_TARGET in flag_value("--target"):
+            return "cargo build -p xyg-wasm --target wasm32-unknown-unknown"
+    return None
+
+
+WASM_TARGET = "wasm32-unknown-unknown"
+
+
+def _require_wasm_asset_contract(
+    errors: list[str],
+    jobs: dict[str, str],
+    *,
+    label: str = "CI",
+    producer_name: str = "wasm_assets",
+    consumers: tuple[str, ...] = WASM_CONSUMER_JOBS,
+    download_step: str = WASM_DOWNLOAD_STEP,
+    # job -> must also build with XYG_REQUIRE_WASM=1 (every artifact must verify with
+    # --require-wasm; the Pyodide wheel's build happens inside cibuildwheel).
+    distributions: Optional[dict[str, bool]] = None,
+) -> None:
+    """One producer, explicit consumers, early verification (#1005, §33)."""
+    if distributions is None:
+        distributions = {"wheels": True, "sdist": True}
+    producer = jobs.get(producer_name)
+    if producer is None:
+        errors.append(f"{label} workflow missing the single WASM producer job {producer_name}")
+        return
+    for needle in (
+        "npm run build:wasm",
+        "node js/build.mjs",
+        "scripts/verify_wasm_assets.py",
+        "actions/upload-artifact@",
+        f"name: {WASM_ARTIFACT}",
+        "if-no-files-found: error",
+        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown",
+        "packages/xy-client/dist/xyg-wasm.wasm",
+        "python/xyg/static/xyg-wasm.manifest.json",
+    ):
+        if needle not in producer:
+            errors.append(f"{label} {producer_name} producer missing {needle!r}")
+    _require_step_runs_exactly(
+        errors,
+        producer,
+        "Build raw browser adapter without raster or PNG",
+        "exact fail-closed wasm32 build and dependency evidence commands",
+        "set -euo pipefail",
+        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt",
+        "test -s wasm-tree.txt",
+        "if grep -Eq '(^| )png v' wasm-tree.txt; then",
+        'echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"',
+        "exit 1",
+        "fi",
+    )
+    _require_step_runs_exactly(
+        errors,
+        producer,
+        "Build static worker and package WASM artifact",
+        "worker build, packaging contract tests, then the single packaging command",
+        "npm ci",
+        "node js/build.mjs",
+        "node --test js/test/package-wasm-contract.test.mjs js/test/package-wasm-manifest.test.mjs",
+        "npm run build:wasm",
+    )
+    for key in ("if", "needs", "continue-on-error"):
+        if _has_yaml_key(producer, key, indent=4):
+            errors.append(f"{label} {producer_name} producer must not use job-level {key!r}")
+    if any(
+        _has_yaml_key(block, "continue-on-error", indent=8)
+        for block in _step_sequence_blocks(producer)
+    ):
+        errors.append(f"{label} {producer_name} producer steps must not use continue-on-error")
+    for name, block in sorted(jobs.items()):
+        if name == producer_name:
+            continue
+        for command in sorted(
+            {c for c in map(_runs_wasm_producer, _active_run_lines(block)) if c is not None}
+        ):
+            errors.append(f"{label} job {name!r} must consume wasm-assets, not run {command!r}")
+    for name in consumers:
+        block = jobs.get(name, "")
+        values, unsafe = _direct_yaml_key_values(block, "needs", indent=4)
+        needed = {item.strip() for item in (values[0] if values else "").strip("[]").split(",")}
+        if unsafe or producer_name not in needed:
+            errors.append(f"{label} WASM consumer {name!r} must list {producer_name} in needs")
+        steps = _named_step_blocks(block)
+        order = list(steps)
+        download = steps.get(download_step)
+        verify = steps.get(WASM_VERIFY_STEP)
+        if download is None or verify is None:
+            errors.append(
+                f"{label} WASM consumer {name!r} must download then verify the packaged WASM assets"
+            )
+            continue
+        if order.index(download_step) > order.index(WASM_VERIFY_STEP):
+            errors.append(f"{label} WASM consumer {name!r} must download before it verifies")
+        # wasm-worker.js is not in the artifact; only the client build creates it, so the
+        # build must run before the verifier (a clean checkout would otherwise fail every
+        # time: tests/test_verify_wasm_assets.py reconstructs this per consumer).
+        built = any(
+            "node js/build.mjs" in line
+            for step_name in order[: order.index(WASM_VERIFY_STEP)]
+            for line in _step_run_lines(steps[step_name])
+        )
+        if not built:
+            errors.append(
+                f"{label} WASM consumer {name!r} must run node js/build.mjs before verifying "
+                "(wasm-worker.js is built, not downloaded)"
+            )
+        for needle in ("actions/download-artifact@", f"name: {WASM_ARTIFACT}"):
+            if needle not in download:
+                errors.append(f"{label} WASM consumer {name!r} download step missing {needle!r}")
+        if "verify_wasm_assets.py" not in verify:
+            errors.append(
+                f"{label} WASM consumer {name!r} verify step must run verify_wasm_assets.py"
+            )
+        if any(
+            _has_yaml_key(step, key, indent=8)
+            for step in (download, verify)
+            for key in ("if", "continue-on-error")
+        ):
+            errors.append(f"{label} WASM consumer {name!r} asset steps must be unconditional")
+    for name, needs_env in distributions.items():
+        block = jobs.get(name, "")
+        if (needs_env and 'XYG_REQUIRE_WASM: "1"' not in block) or "--require-wasm" not in block:
+            errors.append(
+                f"{label} {name} job must build with XYG_REQUIRE_WASM and verify --require-wasm"
+                if needs_env
+                else f"{label} {name} job must verify --require-wasm"
+            )
+
+
+def _active_run_lines(job_text: str) -> list[str]:
+    """Every shell command of every ``run:`` step in a job.
+
+    Backslash-continued lines are joined and a folded ``run: >`` scalar becomes one
+    command, so the single-producer guard sees what the shell sees.
+    """
+    lines: list[str] = []
+    for step in _step_sequence_blocks(job_text):
+        commands, analyzable = _step_run_commands(step)
+        lines.extend(commands if analyzable else [" ".join(commands)])
+    return lines
+
+
+RELEASE_CONDITION = (
+    "github.event_name != 'pull_request' || "
+    "needs.release_surface_changes.outputs.required == 'true'"
+)
+CI_CONCURRENCY_GROUP = (
+    "ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}"
+)
+MAIN_EVIDENCE_CONDITION = "github.event_name == 'push' || github.event_name == 'workflow_dispatch'"
+AGGREGATE_STATUS_NAME = "Release surfaces"
+# (event, classifier result) combinations CI can produce. Non-PR events always classify
+# as required (the classifier step short-circuits), so there is no (push, False) case.
+AGGREGATE_SCENARIOS = (
+    ("pull_request", False),
+    ("pull_request", True),
+    ("merge_group", True),
+    ("push", True),
+    ("workflow_dispatch", True),
+)
+
+
+def _job_runs(if_values: list[str], *, event: str, required: bool) -> Optional[bool]:
+    """Evaluate the only ``if`` forms the contract permits; None for anything else."""
+    if not if_values:
+        return True
+    expression = if_values[0]
+    if expression == RELEASE_CONDITION:
+        return event != "pull_request" or required
+    if expression in (MAIN_EVIDENCE_CONDITION, f"always() && ({MAIN_EVIDENCE_CONDITION})"):
+        return event in release_inventory.MAIN_EVIDENCE_EVENTS
+    return None
+
+
+def _aggregate_arguments(job_text: str) -> tuple[dict[str, str], list[str], list[str]]:
+    """Parse the aggregate step: (job -> needs reference, event refs, required refs)."""
+    run = "\n".join(
+        line
+        for step in _step_sequence_blocks(job_text)
+        for line in _step_run_lines(step)
+        if "verify_release_surface_results.py" in " ".join(_step_run_lines(step))
+    )
+    jobs = {
+        name: ref
+        for name, ref in re.findall(
+            r'--job "([a-z_0-9]+)=\$\{\{ needs\.([a-z_0-9]+)\.result \}\}"', run
+        )
+    }
+    events = re.findall(r'--event "\$\{\{ (github\.event_name) \}\}"', run)
+    required = re.findall(
+        r'--required "\$\{\{ (needs\.release_surface_changes\.outputs\.required) \}\}"', run
+    )
+    return jobs, events, required
+
+
+def _require_release_aggregate_contract(errors: list[str], jobs: dict[str, str], text: str) -> None:
+    """The hard/advisory boundary: one aggregate observes exactly the applicable hard jobs."""
+    inventory = release_inventory
+    # 1. Classification is total: a job is hard, support, or explicitly advisory.
+    known = set(inventory.HARD_JOBS) | set(inventory.SUPPORT_JOBS) | set(inventory.ADVISORY_CI_JOBS)
+    for name in sorted(set(jobs) - known):
+        errors.append(
+            f"CI job {name!r} is neither a hard release gate nor listed advisory; classify it in "
+            "scripts/verify_release_surface_results.py"
+        )
+    # 2. Advisory work cannot hide inside a hard workflow: no continue-on-error anywhere.
+    if any(re.match(r"\s*(?:- )?continue-on-error\s*:", line) for line in _yaml_code_lines(text)):
+        errors.append("CI workflow must not use continue-on-error; advisory work is scheduled")
+    # 3. The aggregate depends on exactly the classifier plus every hard job.
+    aggregate = jobs.get("release_surfaces", "")
+    values, unsafe = _direct_yaml_key_values(aggregate, "needs", indent=4)
+    needs = _yaml_list_items(aggregate, "needs")
+    expected = {"release_surface_changes", *inventory.HARD_JOBS}
+    if unsafe or needs is None or set(needs) != expected or len(needs) != len(set(needs)):
+        errors.append(
+            "CI Release surfaces must need exactly the classifier and every hard job: "
+            f"expected {sorted(expected)}, found {sorted(needs or [])}"
+        )
+    # 4. The aggregate command passes each hard job's own result, the event, and the classifier.
+    passed, events, required_refs = _aggregate_arguments(aggregate)
+    if set(passed) != set(inventory.HARD_JOBS) or any(name != ref for name, ref in passed.items()):
+        errors.append(
+            "CI Release surfaces must pass --job NAME=${{ needs.NAME.result }} for every hard job: "
+            f"expected {sorted(inventory.HARD_JOBS)}, found {sorted(passed)}"
+        )
+    if events != ["github.event_name"] or required_refs != [
+        "needs.release_surface_changes.outputs.required"
+    ]:
+        errors.append("CI Release surfaces must pass --event and the classifier --required output")
+    # 5. Applicability in the aggregate equals what the workflow actually runs.
+    for event, required in AGGREGATE_SCENARIOS:
+        runs: set[str] = set()
+        for name in inventory.HARD_JOBS:
+            if_values, if_unsafe = _direct_yaml_key_values(jobs.get(name, ""), "if", indent=4)
+            outcome = None if if_unsafe else _job_runs(if_values, event=event, required=required)
+            if outcome is None:
+                errors.append(f"CI hard job {name!r} uses an unrecognized if condition")
+                break
+            if outcome:
+                runs.add(name)
+        else:
+            applicable = inventory.applicable_jobs(event=event, required=required)
+            if runs != applicable:
+                errors.append(
+                    f"CI aggregate applicability for {event} (required={required}) differs from "
+                    f"the jobs the workflow runs: aggregate-only {sorted(applicable - runs)}, "
+                    f"workflow-only {sorted(runs - applicable)}"
+                )
+    # 6. Propagation self-test: an injected failure in the real job set fails the aggregate.
+    if set(passed) == set(inventory.HARD_JOBS):
+        errors.extend(_aggregate_propagation_errors(passed))
+
+
+def _yaml_list_items(job_text: str, key: str) -> Optional[list[str]]:
+    """Items of a job-level ``key:`` given as an inline ``[a, b]`` or a block sequence."""
+    lines = job_text.splitlines()
+    for index, line in enumerate(lines):
+        match = re.fullmatch(rf"    {re.escape(key)}:\s*(.*?)\s*", line)
+        if match is None:
+            continue
+        value = match.group(1)
+        if value.startswith("["):
+            return [item.strip() for item in value.strip("[]").split(",") if item.strip()]
+        if value:
+            return [value]
+        items: list[str] = []
+        for following in lines[index + 1 :]:
+            item = re.fullmatch(r"      - ([a-z_0-9]+)\s*", following)
+            if item is None:
+                break
+            items.append(item.group(1))
+        return items
+    return None
+
+
+def _aggregate_propagation_errors(passed: dict[str, str]) -> list[str]:
+    """Drive the real aggregate script logic with injected failures for every job class."""
+    errors: list[str] = []
+    verify = release_inventory.verify
+    for event, required in AGGREGATE_SCENARIOS:
+        applicable = release_inventory.applicable_jobs(event=event, required=required)
+        green = {name: ("success" if name in applicable else "skipped") for name in passed}
+        label = f"{event} required={required}"
+        if verify(required=required, results=green, event=event):
+            errors.append(f"CI aggregate rejects a fully green {label} run")
+        for name in sorted(passed):
+            for result in ("failure", "cancelled") + (("skipped",) if name in applicable else ()):
+                if not verify(required=required, results={**green, name: result}, event=event):
+                    errors.append(
+                        f"CI aggregate accepts {name}={result} on {label}; injected "
+                        "failures must fail Release surfaces"
+                    )
+        for name in sorted(passed):
+            if (
+                verify(
+                    required=required,
+                    results={k: v for k, v in green.items() if k != name},
+                    event=event,
+                )
+                == []
+            ):
+                errors.append(f"CI aggregate accepts a missing result for {name} on {label}")
+    return errors
+
+
+def validate_merge_queue_ruleset(path: Path = DEFAULT_RULESET) -> list[str]:
+    """The checked-in ruleset must keep the lean one-aggregate queue contract."""
+    try:
+        ruleset = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [f"cannot read merge-queue ruleset {path}: {exc}"]
+    errors: list[str] = []
+    if ruleset.get("target") != "branch" or ruleset.get("enforcement") != "active":
+        errors.append("merge-queue ruleset must be an active branch ruleset")
+    ref_name = (ruleset.get("conditions") or {}).get("ref_name") or {}
+    if ref_name.get("include") != ["refs/heads/main"] or ref_name.get("exclude") != []:
+        errors.append("merge-queue ruleset must target exactly refs/heads/main")
+    rules = ruleset.get("rules") or []
+    queues = [rule for rule in rules if rule.get("type") == "merge_queue"]
+    if len(queues) != 1:
+        errors.append("merge-queue ruleset must define exactly one merge_queue rule")
+    elif queues[0].get("parameters") != MERGE_QUEUE_PARAMETERS:
+        errors.append(
+            f"merge-queue ruleset parameters must be {MERGE_QUEUE_PARAMETERS}, "
+            f"found {queues[0].get('parameters')}"
+        )
+    for rule in rules:
+        if rule.get("type") == "merge_queue":
+            continue
+        # One lean required aggregate, no duplicate required statuses.
+        contexts = [
+            check.get("context")
+            for check in (rule.get("parameters") or {}).get("required_status_checks", [])
+        ]
+        if rule.get("type") != "required_status_checks" or contexts != [AGGREGATE_STATUS_NAME]:
+            errors.append(
+                f"merge-queue ruleset may only add the single {AGGREGATE_STATUS_NAME!r} "
+                f"required status; found {rule.get('type')} {contexts}"
+            )
+    return errors
+
+
+MERGE_QUEUE_PARAMETERS = {
+    "check_response_timeout_minutes": 240,
+    "grouping_strategy": "ALLGREEN",
+    "max_entries_to_build": 1,
+    "max_entries_to_merge": 1,
+    "merge_method": "SQUASH",
+    "min_entries_to_merge": 1,
+    "min_entries_to_merge_wait_minutes": 5,
+}
+
+
+def validate_live_readback(
+    fetch: Callable[[str], object], ruleset_path: Path = DEFAULT_RULESET
+) -> list[str]:
+    """Compare live GitHub ruleset and branch protection with the checked-in contract.
+
+    ``fetch`` maps a ``repos/{owner}/{repo}``-relative API path to decoded JSON; it is
+    injected so the comparison is testable offline (``--live-readback`` wires ``gh api``).
+    """
+    errors: list[str] = []
+    local = json.loads(ruleset_path.read_text(encoding="utf-8"))
+    summaries = fetch("rulesets")
+    matches = [
+        item
+        for item in summaries
+        if isinstance(item, dict) and item.get("name") == local.get("name")
+    ]
+    if len(matches) != 1:
+        return [f"live repository must have exactly one ruleset named {local.get('name')!r}"]
+    live = fetch(f"rulesets/{matches[0]['id']}")
+    if not isinstance(live, dict):
+        return ["live ruleset read-back is not an object"]
+    for key in ("name", "target", "enforcement", "conditions"):
+        if live.get(key) != local.get(key):
+            errors.append(f"live ruleset {key} {live.get(key)!r} differs from checked-in file")
+    if live.get("rules") != local.get("rules"):
+        errors.append("live ruleset rules differ from .github/merge-queue-ruleset.json")
+    protection = fetch("branches/main/protection")
+    contexts = (
+        (protection.get("required_status_checks") or {}).get("contexts")
+        if isinstance(protection, dict)
+        else None
+    )
+    if contexts != [AGGREGATE_STATUS_NAME]:
+        errors.append(
+            f"live branch protection must require only {AGGREGATE_STATUS_NAME!r}, found {contexts}"
+        )
+    return errors
+
+
+def _gh_api_fetch(repo: str) -> Callable[[str], object]:
+    def fetch(path: str) -> object:
+        result = subprocess.run(
+            ["gh", "api", f"repos/{repo}/{path}"], capture_output=True, text=True, check=True
+        )
+        return json.loads(result.stdout)
+
+    return fetch
+
+
+def _code_outside_literals(command: str) -> str:
+    """Shell code with quoted literals and comments removed.
+
+    Single-quoted text is literal; double-quoted text is literal except for ``$(...)``
+    command substitutions, whose pipes are real (``x="$(a | b)"`` pipes ``a`` into ``b``).
+    """
+    out: list[str] = []
+    i, n = 0, len(command)
+    while i < n:
+        char = command[i]
+        if char == "\\":
+            i += 2
+        elif char == "'":
+            end = command.find("'", i + 1)
+            i = n if end < 0 else end + 1
+        elif char == '"':
+            i += 1
+            while i < n and command[i] != '"':
+                if command[i] == "\\":
+                    i += 2
+                elif command.startswith("$(", i):
+                    depth, j = 1, i + 2
+                    while j < n and depth:
+                        depth += (command[j] == "(") - (command[j] == ")")
+                        j += 1
+                    out.append(" " + command[i + 2 : j - 1] + " ")
+                    i = j
+                else:
+                    i += 1
+            i += 1
+        elif char == "#" and (i == 0 or command[i - 1].isspace()):
+            break
+        else:
+            out.append(char)
+            i += 1
+    return "".join(out)
+
+
+_HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_]\w*)\1")
+_PIPE = re.compile(r"(?<!\|)\|(?!\|)")
+_PIPEFAIL_ON = re.compile(r"set\s+(?:-[A-Za-z]+\s+)*-[A-Za-z]*o\s+pipefail\b")
+_PIPEFAIL_OFF = re.compile(r"set\s+(?:-[A-Za-z]+\s+)*\+[A-Za-z]*o\s+pipefail\b")
+
+
+def _step_label(step: str) -> str:
+    """A step's name, or its first line for an unnamed (``- run:``/``- uses:``) step."""
+    first = _strip_yaml_comment(step.splitlines()[0])
+    match = re.match(r"^      - name:\s*(.+?)\s*$", first)
+    return match.group(1) if match is not None else first.strip()
+
+
+def _heredoc_delimiter(command: str) -> Optional[str]:
+    """The terminator of a heredoc this command opens, if any.
+
+    Only a ``<<`` in plain shell code opens one: not inside quotes (``echo "use <<EOF"``,
+    ``python -c 'print(1<<n)'``), not a ``<<<`` here-string, and not inside an arithmetic
+    context (``$((x << n))``, ``((x << n))``).
+    """
+    i, n = 0, len(command)
+    while i < n:
+        char = command[i]
+        if char == "\\":
+            i += 2
+        elif char in "'\"":
+            j = i + 1
+            while j < n and command[j] != char:
+                j += 2 if char == '"' and command[j] == "\\" else 1
+            i = j + 1
+        elif char == "#" and (i == 0 or command[i - 1].isspace()):
+            return None
+        elif command.startswith("$((", i) or (
+            command.startswith("((", i) and (i == 0 or command[i - 1] in " \t;&|(")
+        ):
+            depth, j = 0, i + (command[i] == "$")
+            while j < n:
+                depth += (command[j] == "(") - (command[j] == ")")
+                j += 1
+                if depth == 0:
+                    break
+            i = j
+        elif command.startswith("<<", i) and not command.startswith("<<<", i):
+            if i > 0 and command[i - 1] == "<":
+                i += 2
+                continue
+            match = _HEREDOC.match(command, i)
+            if match is not None:
+                return match.group(2)
+            i += 2
+        else:
+            i += 1
+    return None
+
+
+def _step_run_commands(step: str) -> tuple[list[str], bool]:
+    """Logical shell commands of one step's ``run`` plus whether they could be analyzed.
+
+    Handles the named form (``run`` at indent 8) and the unnamed ``- run:`` form (indent 6),
+    literal blocks (``|``, ``|-``, ``|+``, indentation indicators), and joins
+    backslash-continued lines. A folded scalar (``>``/``>-``) is returned unanalyzable
+    because folding rewrites line structure.
+    """
+    lines = step.splitlines()
+    for index, line in enumerate(lines):
+        match = re.fullmatch(r"(?:        |      - )run:\s*(.*?)\s*", line)
+        if match is None:
+            continue
+        value = match.group(1)
+        block = re.fullmatch(r"([|>])[+-]?\d*[+-]?", value)
+        if block is None:
+            # A quoted YAML scalar is parsed (escapes, folding) before the shell sees it,
+            # so fail closed rather than guess what the shell receives.
+            if value[:1] in ("'", '"'):
+                return [value], False
+            return ([value] if value and not value.startswith("#") else []), True
+        body: list[str] = []
+        for following in lines[index + 1 :]:
+            if following.strip() and len(following) - len(following.lstrip()) <= 8:
+                break
+            body.append(following.strip())
+        if block.group(1) == ">":
+            return body, False
+        logical: list[str] = []
+        pending = ""
+        for command in body:
+            if not command or command.startswith("#"):
+                continue
+            if command.endswith("\\"):
+                pending += command[:-1] + " "
+                continue
+            logical.append(pending + command)
+            pending = ""
+        if pending:
+            logical.append(pending)
+        return logical, True
+    return [], True
+
+
+def _pipe_lines(commands: list[str]) -> list[str]:
+    """Commands that contain a shell pipe (outside quotes, heredoc bodies, and ``||``)."""
+    piped: list[str] = []
+    heredoc_end: Optional[str] = None
+    for command in commands:
+        if heredoc_end is not None:
+            if command.strip() == heredoc_end:
+                heredoc_end = None
+            continue
+        if _PIPE.search(_code_outside_literals(command)):
+            piped.append(command)
+        heredoc_end = _heredoc_delimiter(command)
+    return piped
+
+
+def _default_shell(text: str, job: str) -> Optional[str]:
+    """The shell inherited from ``defaults.run.shell`` (job first, then workflow)."""
+    for source, indent in ((job, "    "), (text, "")):
+        match = re.search(
+            rf"^{indent}defaults:\n{indent}  run:\n(?:{indent}    [^\n]*\n)*?{indent}    shell:[ \t]*([^\n]*)",
+            source,
+            re.M,
+        )
+        if match is not None:
+            # Whole value (comment stripped): `bash -e {0}` is not `bash`.
+            return re.sub(r"\s+#.*$", "", match.group(1)).strip().strip("'\"")
+    return None
+
+
+def _require_pipefail_for_piped_steps(errors: list[str], text: str, label: str) -> None:
+    """A piped ``run`` step must fail when its first command fails (#1008).
+
+    GitHub's default ``bash -e`` has no ``pipefail``, so ``bench.py | tee report.md`` would
+    report tee's success and mask a crashing benchmark. The effective shell must be ``bash``
+    (GitHub runs it as ``bash -eo pipefail``) or the step must enable ``set -o pipefail`` as
+    a statement before the pipe; ``set +o pipefail`` turns it off again. Folded ``run: >``
+    scalars containing a pipe cannot be analyzed and fail closed.
+    """
+    for job_name, job in _job_blocks(text).items():
+        for step in _step_sequence_blocks(job):
+            commands, analyzable = _step_run_commands(step)
+            name = step.splitlines()[0].strip()
+            if not analyzable:
+                if any("|" in command for command in commands):
+                    errors.append(
+                        f"{label} job {job_name!r} step {name!r} pipes inside a folded or quoted "
+                        "`run` scalar the pipefail check cannot analyze; use a literal "
+                        "`run: |` block"
+                    )
+                continue
+            shell_values, shell_unsafe = _step_direct_key_values(step, "shell")
+            shell = (
+                None
+                if shell_unsafe
+                else (shell_values[0] if shell_values else _default_shell(text, job))
+            )
+            enabled = shell == "bash"
+            heredoc_end: Optional[str] = None
+            for command in commands:
+                if heredoc_end is not None:
+                    if command.strip() == heredoc_end:
+                        heredoc_end = None
+                    continue
+                stripped = command.strip()
+                if _PIPEFAIL_ON.match(stripped):
+                    enabled = True
+                elif _PIPEFAIL_OFF.match(stripped):
+                    enabled = False
+                if _pipe_lines([command]) and not enabled:
+                    errors.append(
+                        f"{label} job {job_name!r} step {name!r} pipes a command without pipefail; "
+                        f"add `shell: bash` or `set -o pipefail` before it ({stripped!r})"
+                    )
+                    break
+                heredoc_end = _heredoc_delimiter(command)
+            if heredoc_end is not None:
+                errors.append(
+                    f"{label} job {job_name!r} step {name!r} ends inside a heredoc "
+                    f"(missing terminator {heredoc_end!r}); the pipefail check cannot analyze it"
+                )
+
+
 def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -1132,6 +1815,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     jobs = _job_blocks(text)
     errors: list[str] = validate_milestone_governance()
     _require_unique_workflow_structure(errors, text, "CI", REQUIRED_CI_JOBS)
+    _require_pipefail_for_piped_steps(errors, text, "CI")
     if _has_yaml_key(text, "defaults", indent=0):
         errors.append("CI workflow must not override the shell for hard-gate run steps")
     if _has_yaml_key(text, "env", indent=0):
@@ -1157,8 +1841,18 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     cancel_values, cancel_unsafe = _direct_yaml_key_values(
         concurrency or "", "cancel-in-progress", indent=2
     )
-    if cancel_unsafe or cancel_values != ["${{ github.event_name != 'merge_group' }}"]:
-        errors.append("CI must not cancel in-flight required merge_group checks")
+    if cancel_unsafe or cancel_values != ["${{ github.event_name == 'pull_request' }}"]:
+        errors.append(
+            "CI must cancel only superseded pull_request runs: in-flight required "
+            "merge_group checks and push runs on main must complete"
+        )
+    group_values, group_unsafe = _direct_yaml_key_values(concurrency or "", "group", indent=2)
+    if group_unsafe or group_values != [CI_CONCURRENCY_GROUP]:
+        errors.append(
+            "CI concurrency group must be per run for every event except pull_request "
+            f"({CI_CONCURRENCY_GROUP}): GitHub replaces an older pending run in a shared "
+            "group even when cancel-in-progress is false, dropping a main push or merge-group run"
+        )
     _require_unshallow_checkouts(errors, text, "CI")
     missing_jobs = sorted(REQUIRED_CI_JOBS - set(jobs))
     if missing_jobs:
@@ -1262,6 +1956,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "needs.authored_scene.result",
         "needs.browser_conformance.result",
     )
+    _require_release_aggregate_contract(errors, jobs, text)
 
     _require_job_contains(
         errors,
@@ -1272,9 +1967,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "matplotlib==3.11.0",
         "matplotlib.__version__ == '3.11.0'",
         "scripts/sync_matplotlib_compat.py --check",
-        "tests/pyplot/test_launch_compat.py",
-        "tests/pyplot/test_reference_corpus.py",
-        "tests/pyplot/test_reference_semantics.py",
         "MPLBACKEND: Agg",
     )
     reference = jobs.get("matplotlib_reference", "")
@@ -1300,13 +1992,9 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         reference,
-        "Run optional-interoperability and dual-engine corpus tests",
+        "Run the full tests/pyplot suite against matplotlib 3.11.0",
         "reference test commands",
-        ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py",
-        ".venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py",
-        ".venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
+        ".venv/bin/pytest -q -rs tests/pyplot",
         allow_job_gate=True,
     )
 
@@ -1426,16 +2114,59 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "CI",
         "real packaged Rust/WASM tick assets for the full browser corpus",
         "toolchain: 1.96.0",
-        "targets: wasm32-unknown-unknown",
-        "npm run build:wasm",
+        "needs: wasm_assets",
+        "scripts/verify_wasm_assets.py",
+        "node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
     )
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "Benchmark methodology contract (smallest sizes, report verified)",
+        "pre-merge execution of the methodology producers and their report verifier",
+        'mkdir -p "$RUNNER_TEMP/bench-contract"',
+        ".venv/bin/python benchmarks/bench_workflows.py --profile smoke --reps 1 "
+        '--json "$RUNNER_TEMP/bench-contract/workflows.json"',
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/workflows.json" '
+        "--kind workflow-native",
+        '.venv/bin/python benchmarks/bench_line.py --sizes 1e5 --json "$RUNNER_TEMP/bench-contract/line.json"',
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/line.json" '
+        "--kind line-decimation",
+        '.venv/bin/python benchmarks/bench_install.py --packages xyg --json "$RUNNER_TEMP/bench-contract/install.json"',
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/install.json" '
+        "--kind install-footprint",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Native benchmark oracles (divan --test, no timing)",
+        "pull-request execution of every Rust benchmark body and its assertions",
+        "cargo bench -p xyg-engine --bench kernels -- --test",
+        "cargo bench -p xyg-wasm --bench aggregate -- --test",
+        "cargo bench -p xyg-wasm --bench typed_series -- --test",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "CodSpeed benchmark oracles (pytest, no timing)",
+        "pull-request execution of every CodSpeed pytest body without --codspeed",
+        ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q",
+    )
+    # Hard but last: a stale oracle must not skip every other `test` result behind it.
+    final_steps = [_step_label(block) for block in _step_sequence_blocks(jobs.get("test", ""))][-2:]
+    if final_steps != [
+        "Native benchmark oracles (divan --test, no timing)",
+        "CodSpeed benchmark oracles (pytest, no timing)",
+    ]:
+        errors.append(
+            "CI test job benchmark oracles must be its final two steps so a stale oracle "
+            "cannot hide the other test results"
+        )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "Build JS client",
-        "ordered JS Worker then Rust/WASM payload build for the full browser corpus",
+        "JS Worker build ahead of the verified packaged WASM payload for the full browser corpus",
         "node js/build.mjs",
-        "npm run build:wasm",
     )
     _require_job_contains(
         errors,
@@ -1448,9 +2179,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "persist-credentials: false",
         "python3 scripts/gen_wasm_abi.py --check",
         "cargo test -p xyg-wasm",
-        "native PNG",
         "node js/build.mjs",
-        "node js/package-wasm.mjs",
+        "needs: wasm_assets",
         "npx playwright install chromium",
         "node scripts/wasm_foundation_smoke.mjs",
         "direct-browser-wasm-foundation",
@@ -1458,20 +2188,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "packages/xy-client/dist/wasm-worker.js",
     )
     wasm_job = jobs.get("wasm_foundation", "")
-    _require_step_runs_exactly(
-        errors,
-        wasm_job,
-        "Build raw browser adapter without raster or PNG",
-        "exact fail-closed wasm32 build and dependency evidence commands",
-        "set -euo pipefail",
-        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
-        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt",
-        "test -s wasm-tree.txt",
-        "if grep -Eq '(^| )png v' wasm-tree.txt; then",
-        'echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"',
-        "exit 1",
-        "fi",
-    )
     _require_step_runs_exactly(
         errors,
         wasm_job,
@@ -1548,8 +2264,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         errors,
         test_job,
         "Install package + dev deps",
-        "locked Reflex development environment",
-        "uv sync --locked --extra reflex --group dev",
+        "locked Reflex development environment carrying the pytest-codspeed plugin",
+        "uv sync --locked --extra reflex --group dev --group codspeed",
     )
     _require_step_contains(
         errors,
@@ -1642,26 +2358,25 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "scripts/check_public_api.py",
         "npm ci --prefix packages/xy-node",
         "toolchain: 1.96.0",
-        "targets: wasm32-unknown-unknown",
-        "npm run build:wasm",
+        "needs: wasm_assets",
+        "scripts/verify_wasm_assets.py",
     )
     _require_step_runs_exactly(
         errors,
         jobs.get("python_floor", ""),
         "Build render client",
-        "ordered JS Worker then Rust/WASM payload build on the Python floor",
+        "JS Worker build ahead of the verified packaged WASM payload on the Python floor",
         "npm ci",
         "npm ci --prefix packages/xy-node",
         "node js/build.mjs",
-        "npm run build:wasm",
     )
+    _require_wasm_asset_contract(errors, jobs)
     _require_job_contains(
         errors,
         jobs,
         "benchmark_vs",
         "CI",
         "parallel cross-library benchmark matrix",
-        "continue-on-error: true",
         "timeout-minutes: 10",
         "fail-fast: false",
         "matrix:",
@@ -1778,8 +2493,31 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     timeout_values, timeout_unsafe = _direct_yaml_key_values(
         benchmark_vs, "timeout-minutes", indent=4
     )
-    if timeout_unsafe or timeout_values != ["10"]:
-        errors.append("CI benchmark_vs job must define exactly one direct timeout-minutes: 10")
+    if timeout_unsafe or timeout_values != ["25"]:
+        errors.append("CI benchmark_vs job must define exactly one direct timeout-minutes: 25")
+    methodology_timeout, methodology_unsafe = _direct_yaml_key_values(
+        jobs.get("benchmark_methodology", ""), "timeout-minutes", indent=4
+    )
+    if methodology_unsafe or methodology_timeout != ["45"]:
+        errors.append(
+            "CI benchmark_methodology job must define exactly one direct timeout-minutes: 45"
+        )
+    # Hard post-merge evidence must survive transient registry/CDN failures (#1008).
+    for job, step, needle in (
+        ("benchmark_vs", "Install selected competitors", "scripts/ci_retry.sh 3 uv pip install"),
+        ("benchmark_vs", "Install XYG", "scripts/ci_retry.sh 3 uv pip install"),
+        ("benchmark_vs", "Install Chromium (Playwright)", "scripts/ci_retry.sh 3 npx playwright"),
+        ("benchmark_methodology", "Install JS build toolchain", "scripts/ci_retry.sh 3 npm ci"),
+        ("benchmark_methodology", "Install XYG + competitors", "scripts/ci_retry.sh 3 uv pip"),
+        (
+            "benchmark_methodology",
+            "Install Chromium (Playwright)",
+            "scripts/ci_retry.sh 3 npx playwright",
+        ),
+    ):
+        _require_step_contains(
+            errors, jobs.get(job, ""), step, f"{job} install retry ({needle})", needle
+        )
     _require_step_contains(
         errors,
         cross_library,
@@ -1814,8 +2552,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         jobs,
         "benchmark_methodology",
         "CI",
-        "non-blocking methodology benchmark artifact path",
-        "continue-on-error: true",
+        "post-merge hard methodology benchmark artifact path",
         "benchmarks/requirements-ci.lock",
         "Verify native benchmark backend",
         "XYG_REQUIRE_CARGO",
@@ -1848,7 +2585,6 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "benchmark",
         "CI",
         "merged benchmark artifact path",
-        "continue-on-error: true",
         "needs: [benchmark_vs, benchmark_methodology]",
         "if: always()",
         "actions/download-artifact@",
@@ -2050,6 +2786,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     jobs = _job_blocks(text)
     errors: list[str] = []
     _require_unique_workflow_structure(errors, text, "CodSpeed", REQUIRED_CODSPEED_JOBS)
+    _require_pipefail_for_piped_steps(errors, text, "CodSpeed")
     on_block = _unique_mapping_block(text, "on", indent=0) or ""
     trigger_keys = [
         key for indent, key, unsafe in _yaml_mapping_keys(on_block) if indent == 2 and not unsafe
@@ -2273,6 +3010,7 @@ def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str
 
     errors: list[str] = []
     _require_unique_workflow_structure(errors, text, "density authority", {"density"})
+    _require_pipefail_for_piped_steps(errors, text, "density authority")
     top_keys = [
         key for indent, key, unsafe in _yaml_mapping_keys(text) if indent == 0 and not unsafe
     ]
@@ -2552,6 +3290,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
             "publishing is bound to publish.yaml and a second workflow would drift"
         )
     _require_unique_workflow_structure(errors, text, "release", REQUIRED_RELEASE_JOBS)
+    _require_pipefail_for_piped_steps(errors, text, "release")
     _require_trigger_with_direct_option(
         errors,
         text,
@@ -2646,6 +3385,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         'CIBW_PYODIDE_VERSION: "314.0.0"',
         "CIBW_BEFORE_BUILD_PYODIDE",
         "CIBW_ENVIRONMENT_PYODIDE",
+        "XYG_REQUIRE_WASM=1",
         "pyemscripten_2026_0_wasm32",
         "pyodide@314.0.0",
         "scripts/pyodide_load_smoke.py",
@@ -2653,6 +3393,15 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "--expect-native",
         "wheelhouse/*.whl",
         "name: dist-pyemscripten",
+    )
+    _require_wasm_asset_contract(
+        errors,
+        jobs,
+        label="release",
+        producer_name=RELEASE_WASM_PRODUCER,
+        consumers=RELEASE_WASM_CONSUMER_JOBS,
+        download_step=RELEASE_WASM_DOWNLOAD_STEP,
+        distributions={"wheels": True, "sdist": True, "wasm": False},
     )
     wasm_job = jobs.get("wasm", "")
     if "continue-on-error:" in wasm_job:
@@ -2666,9 +3415,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "toolchain: 1.96.0",
         "wasm32-unknown-unknown",
         'node-version: "24"',
-        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
         "node js/build.mjs",
-        "node js/package-wasm.mjs",
+        "needs: wasm-assets",
         "scripts/stage_browser_package.py",
         "--dist packages/xy-client/dist",
         "npm pack ./staged/xyg-browser",
@@ -2921,9 +3669,11 @@ def validate_all_workflows(
     final_review_path: Path = DEFAULT_FINAL_REVIEW_WORKFLOW,
     coderabbit_config_path: Path = DEFAULT_CODERABBIT_CONFIG,
     density_path: Path = DEFAULT_DENSITY_WORKFLOW,
+    ruleset_path: Path = DEFAULT_RULESET,
 ) -> list[str]:
     return [
         *validate_workflow_hosting_policy(),
+        *validate_merge_queue_ruleset(ruleset_path),
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
         *validate_density_workflow(density_path),
@@ -3076,6 +3826,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--ci-workflow", type=Path, default=DEFAULT_CI_WORKFLOW)
     parser.add_argument("--codspeed-workflow", type=Path, default=DEFAULT_CODSPEED_WORKFLOW)
     parser.add_argument("--release-workflow", type=Path, default=DEFAULT_RELEASE_WORKFLOW)
+    parser.add_argument("--ruleset", type=Path, default=DEFAULT_RULESET)
+    parser.add_argument(
+        "--live-readback",
+        metavar="OWNER/REPO",
+        help="also compare the live ruleset and branch protection (read-only `gh api`) "
+        "with the checked-in contract",
+    )
     parser.add_argument("--ci-only", action="store_true")
     parser.add_argument("--codspeed-only", action="store_true")
     parser.add_argument("--release-only", action="store_true")
@@ -3102,12 +3859,25 @@ def main(argv: Optional[list[str]] = None) -> int:
             args.ci_workflow,
             args.codspeed_workflow,
             args.release_workflow,
+            ruleset_path=args.ruleset,
         )
         checked = [
             args.ci_workflow,
             args.codspeed_workflow,
+            DEFAULT_DENSITY_WORKFLOW,
+            DEFAULT_FINAL_REVIEW_WORKFLOW,
             args.release_workflow,
+            args.ruleset,
         ]
+
+    if args.live_readback:
+        try:
+            errors = [
+                *errors,
+                *validate_live_readback(_gh_api_fetch(args.live_readback), args.ruleset),
+            ]
+        except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+            errors = [*errors, f"live read-back of {args.live_readback} failed: {exc}"]
 
     if errors:
         print(

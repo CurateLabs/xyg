@@ -23,7 +23,11 @@ matrix three consecutive times.
 
 ## Release-surface classifier
 
-`scripts/classify_release_surface.py` is deliberately conservative. For pull
+`scripts/classify_release_surface.py` is deliberately conservative and is an exemption list,
+not an allowlist: only root Markdown files, `LICENSE`, and paths under `docs/` or `spec/` (other
+than `spec/abi/` and `spec/wasm/`, which feed the native and WASM jobs) are prose-exempt; every
+other path, including one the classifier has never seen such as a new root `tsconfig.json`, is a
+release surface and requires the complete matrix. A mixed change is required. For pull
 requests, CI feeds the base/head path diff to the classifier loaded from the
 trusted base revision; if that revision predates the classifier, the complete
 matrix is required. Rust,
@@ -39,7 +43,10 @@ unusual changed path. A comment
 decoy, extra step, detached output, or PR-head copy cannot substitute for the
 trusted-base `git show` before execution.
 Prose-only `docs/` and non-ABI `spec/` changes may skip the expensive artifact
-jobs, but the aggregate itself still runs and rejects failures. Classifier and
+jobs, but the aggregate itself still runs and rejects failures. The complete hard/advisory
+inventory (including the Matplotlib reference, packaged-WASM producer, and post-merge
+benchmark evidence added by #1005/#1008) is in
+[`production-readiness.md`](production-readiness.md#hard-and-advisory-boundary-1008). Classifier and
 aggregate behavior are executable contracts in
 `tests/test_release_surface_gate.py` and workflow structure is protected by
 `scripts/verify_ci_workflow.py`.

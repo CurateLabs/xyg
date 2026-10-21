@@ -14,11 +14,16 @@ permissions:
 
 # Multiple sessions push to two branches in bursts; without this the runner
 # pool drowns in runs for superseded commits and fresh tips queue for ~30 min.
-# Only the newest run per ref carries signal — cancel the rest.
+# Only the newest pull-request run per ref carries signal — cancel the rest.
 concurrency:
-  group: ci-${{ github.ref }}
-  # A newer merge-group request must not cancel an in-flight required check.
-  cancel-in-progress: ${{ github.event_name != 'merge_group' }}
+  # Pull requests share one group per ref so a newer push supersedes the older run.
+  # Every other event gets a group of its own (the run id): GitHub keeps only one
+  # running and one pending run per group and silently replaces an older pending one,
+  # so even cancel-in-progress: false could drop a main push or merge-group run. Each
+  # main commit needs a complete aggregate (including the post-merge benchmark
+  # evidence) and a merge-group check must never be cancelled or replaced.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   release_surface_changes:
@@ -54,8 +59,10 @@ jobs:
 
   matplotlib_reference:
     name: Matplotlib 3.11 reference compatibility
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [release_surface_changes, wasm_assets]
+    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,6 +80,19 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+      - name: Install JS build toolchain
+        run: npm ci
+      # The pyplot browser probes need the packaged WASM tick assets (§33). wasm-worker.js is
+      # built by the client build, not carried in the artifact, so build it before verifying.
+      - name: Build render client
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python3 scripts/verify_wasm_assets.py
       - name: Install XYG and released reference wheel
         run: |
           uv venv .venv
@@ -82,18 +102,18 @@ jobs:
         run: |
           .venv/bin/python -c "import matplotlib; assert matplotlib.__version__ == '3.11.0'"
           .venv/bin/python scripts/sync_matplotlib_compat.py --check
-      - name: Run optional-interoperability and dual-engine corpus tests
+      # The whole pyplot suite, not only the corpus: with matplotlib installed it runs the
+      # optional-interoperability, dual-engine and reference tests that the `test` job
+      # (no matplotlib) skips, so a failing matplotlib-dependent test blocks the merge (#1035).
+      # Measured ~3.5 minutes serial; -rs lists every skip so absence stays visible.
+      - name: Run the full tests/pyplot suite against matplotlib 3.11.0
         env:
           MPLBACKEND: Agg
-        run: |
-          .venv/bin/pytest -q tests/pyplot/test_launch_compat.py
-          .venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py
-          .venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py
-          .venv/bin/pytest -q tests/pyplot/test_reference_corpus.py
-          .venv/bin/pytest -q tests/pyplot/test_reference_semantics.py
+        run: .venv/bin/pytest -q -rs tests/pyplot
 
   test:
     name: Test (Rust + Python + JS)
+    needs: wasm_assets
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -104,7 +124,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
           toolchain: 1.96.0
-          targets: wasm32-unknown-unknown
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           enable-cache: false
@@ -152,11 +171,16 @@ jobs:
 
 
       - name: Build JS client
-        run: |
-          # Browser probes exercise the real fail-closed Rust tick attachment;
-          # the Worker without its paired WASM payload is deliberately invalid.
-          node js/build.mjs
-          npm run build:wasm
+        # Browser probes exercise the real fail-closed Rust tick attachment;
+        # the Worker without its paired WASM payload is deliberately invalid.
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python3 scripts/verify_wasm_assets.py
 
       # GraphForge compositions: the same XYGQ bytes through the native C
       # ABI and the real wasm32 artifact must yield byte-identical XYGF
@@ -165,6 +189,7 @@ jobs:
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs
+          node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
           node scripts/gen_geo_hierarchy_node.mjs --check
           node scripts/gen_geo_overview_hosts.mjs --check
@@ -254,7 +279,7 @@ jobs:
 
       - name: Install package + dev deps
         run: |
-          uv sync --locked --extra reflex --group dev
+          uv sync --locked --extra reflex --group dev --group codspeed
 
       - name: Verify bundled Reflex integration import
         run: |
@@ -403,8 +428,94 @@ jobs:
       - name: Benchmark smoke (1e5/1e6 — §12 harness runs every phase)
         run: .venv/bin/python scripts/bench.py --sizes 1e5,1e6
 
+      # The methodology suites and their report verifier otherwise run only after merge
+      # (benchmark_methodology / benchmark are push-and-dispatch evidence), so a broken
+      # bench script or report shape could land and fail main. Run the same producers at
+      # the smallest CI sizes - correctness and report contract only, no timing comparison
+      # - inside the already-required `test` job, so merge_group and pull requests gate it.
+      - name: Benchmark methodology contract (smallest sizes, report verified)
+        run: |
+          mkdir -p "$RUNNER_TEMP/bench-contract"
+          .venv/bin/python benchmarks/bench_workflows.py --profile smoke --reps 1 --json "$RUNNER_TEMP/bench-contract/workflows.json"
+          .venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/workflows.json" --kind workflow-native
+          .venv/bin/python benchmarks/bench_line.py --sizes 1e5 --json "$RUNNER_TEMP/bench-contract/line.json"
+          .venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/line.json" --kind line-decimation
+          .venv/bin/python benchmarks/bench_install.py --packages xyg --json "$RUNNER_TEMP/bench-contract/install.json"
+          .venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/install.json" --kind install-footprint
+
+      # Benchmark bodies carry correctness assertions (policy oracles) but only the
+      # scheduled CodSpeed run executed them, so intentional policy changes left stale
+      # oracles with green PR CI. `--test` runs every divan body exactly once, with its
+      # assertions and no timing. These two steps are deliberately LAST: they stay hard,
+      # but a stale oracle must not hide every other `test` result behind its failure.
+      - name: Native benchmark oracles (divan --test, no timing)
+        run: |
+          cargo bench -p xyg-engine --bench kernels -- --test
+          cargo bench -p xyg-wasm --bench aggregate -- --test
+          cargo bench -p xyg-wasm --bench typed_series -- --test
+
+      # Same intent for the pytest benchmarks: without --codspeed pytest-codspeed runs
+      # each body once, so their assertions gate pull requests (no instrumentation).
+      - name: CodSpeed benchmark oracles (pytest, no timing)
+        run: .venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q
+
+  # The ONE producer of the packaged WASM tick assets (§33, #1005). They are
+  # generated, never committed: this job compiles xyg-wasm, packages the exact
+  # optimized bytes + version/hash manifest, verifies them, and uploads them as
+  # `wasm-assets`. Every consumer lists this job in `needs` and verifies the
+  # downloaded files before use, so a clean checkout can never reach a consumer
+  # with missing or stale assets, and a failed/skipped producer fails the aggregate.
+  wasm_assets:
+    name: Packaged WASM assets (single producer)
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Packaging derives the version from the latest xyg-v* tag.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Build raw browser adapter without raster or PNG
+        run: |
+          set -euo pipefail
+          cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+          cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt
+          test -s wasm-tree.txt
+          if grep -Eq '(^| )png v' wasm-tree.txt; then
+            echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"
+            exit 1
+          fi
+      - name: Build static worker and package WASM artifact
+        run: |
+          npm ci
+          node js/build.mjs
+          node --test js/test/package-wasm-contract.test.mjs js/test/package-wasm-manifest.test.mjs
+          npm run build:wasm
+      - name: Verify packaged WASM assets
+        run: python3 scripts/verify_wasm_assets.py
+      - name: Upload packaged WASM assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wasm-assets
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            packages/xy-client/dist/xyg-wasm.wasm
+            packages/xy-client/dist/xyg-wasm-inline.js
+            packages/xy-client/dist/xyg-wasm.manifest.json
+            python/xyg/static/xyg-wasm.wasm
+            python/xyg/static/xyg-wasm-inline.js
+            python/xyg/static/xyg-wasm.manifest.json
+
   wasm_foundation:
     name: Direct browser Rust/WASM foundation (wasm32-unknown-unknown)
+    needs: wasm_assets
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -433,22 +544,17 @@ jobs:
           cargo run -p xyg-wasm --bin xyts_conformance -- --check
       - name: Test raw lifecycle adapter natively
         run: cargo test -p xyg-wasm
-      - name: Build raw browser adapter without raster or PNG
-        run: |
-          set -euo pipefail
-          cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
-          cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt
-          test -s wasm-tree.txt
-          if grep -Eq '(^| )png v' wasm-tree.txt; then
-            echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"
-            exit 1
-          fi
-      - name: Build static worker and package WASM artifact
+      - name: Build static worker
         run: |
           npm ci
           node js/build.mjs
-          node --test js/test/package-wasm-contract.test.mjs
-          node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python3 scripts/verify_wasm_assets.py
       - name: Retained frame and typed overview native/WASM conformance
         run: |
           cargo build --release -p xyg-core
@@ -614,6 +720,7 @@ jobs:
         # Cached .debs seed apt's archive, so only packages the mirror has
         # changed download; autoclean drops versions the mirror no longer
         # serves before the archive is copied back for the cache.
+        shell: bash
         run: |
           if [ -d /etc/needrestart/conf.d ]; then
             echo "\$nrconf{restart} = 'l';" | sudo tee /etc/needrestart/conf.d/99-ci-list-only.conf >/dev/null
@@ -623,10 +730,11 @@ jobs:
           if compgen -G "$HOME/.cache/xyg-webkit-debs/*.deb" >/dev/null; then
             sudo cp "$HOME"/.cache/xyg-webkit-debs/*.deb /var/cache/apt/archives/
           fi
-          before=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum)
+          # pipefail is on: an empty archive (no .debs yet) must not abort the step.
+          before=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum || true)
           npx playwright install-deps webkit
           sudo apt-get autoclean -y >/dev/null
-          after=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum)
+          after=$(ls /var/cache/apt/archives/*.deb 2>/dev/null | sort | sha256sum || true)
           rm -f ~/.cache/xyg-webkit-debs/*.deb
           if compgen -G "/var/cache/apt/archives/*.deb" >/dev/null; then
             cp /var/cache/apt/archives/*.deb ~/.cache/xyg-webkit-debs/
@@ -653,6 +761,7 @@ jobs:
 
   python_floor:
     name: Python 3.11 floor
+    needs: wasm_assets
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -663,7 +772,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
           toolchain: 1.96.0
-          targets: wasm32-unknown-unknown
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
@@ -687,10 +795,16 @@ jobs:
         run: |
           npm ci
           npm ci --prefix packages/xy-node
-          # The Python-floor browser corpus must exercise the same real Rust
-          # tick asset pair shipped in wheels, not an absent/fallback payload.
           node js/build.mjs
-          npm run build:wasm
+      # The Python-floor browser corpus must exercise the same real Rust
+      # tick asset pair shipped in wheels, not an absent/fallback payload.
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python3 scripts/verify_wasm_assets.py
 
       - name: Install package for Python 3.11
         run: |
@@ -713,8 +827,9 @@ jobs:
     name: Cross-library benchmark (${{ matrix.name }})
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 10
-    continue-on-error: true
+    # The slowest group (native-and-webgl) takes about 5 minutes when installs are
+    # healthy; leave room for install retries and a slow runner, not a hang.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -790,7 +905,7 @@ jobs:
           key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Install JS build toolchain
         if: matrix.build_js
-        run: npm ci
+        run: scripts/ci_retry.sh 3 npm ci
       - name: Build native core
         if: matrix.xy
         run: cargo build --release
@@ -804,11 +919,11 @@ jobs:
         env:
           XYG_REQUIRE_CARGO: "1"
         run: |
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock -e .
       - name: Install selected competitors
         run: |
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock ${{ matrix.packages }}
       - name: Verify native benchmark backend
         if: matrix.xy
@@ -821,8 +936,8 @@ jobs:
         if: matrix.browser
         timeout-minutes: 10
         run: |
-          npm ci
-          npx playwright install chromium
+          scripts/ci_retry.sh 3 npm ci
+          scripts/ci_retry.sh 3 npx playwright install chromium
       - name: Run cross-library benchmark group
         run: |
           CHROMIUM_ARGS=()
@@ -849,9 +964,10 @@ jobs:
   # Other benchmark suites run concurrently with the cross-library matrix.
   benchmark_methodology:
     name: Benchmark methodology suites
+    needs: wasm_assets
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    continue-on-error: true
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -871,19 +987,26 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Install JS build toolchain
-        run: npm ci
+        run: scripts/ci_retry.sh 3 npm ci
       - name: Build core + JS client
         run: |
           node js/build.mjs
           cargo build --release
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python3 scripts/verify_wasm_assets.py
       - name: Install XYG + competitors
         env:
           XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv .venv
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock -e .
-          uv pip install -p .venv/bin/python \
+          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock \
             matplotlib seaborn plotly kaleido bokeh altair datashader hvplot \
             plotly-resampler psutil
@@ -897,32 +1020,38 @@ jobs:
       - name: Install Chromium (Playwright)
         timeout-minutes: 10
         run: |
-          npm ci
-          npx playwright install chromium
+          scripts/ci_retry.sh 3 npm ci
+          scripts/ci_retry.sh 3 npx playwright install chromium
       - name: Line decimation vs plotly-resampler (methodology line_10M)
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_line.py --sizes 1e5,1e6,1e7 \
             --ttfr --ttfr-max-n 1e5 --chromium "$CHROME" --json line.json \
             | tee -a docs/benchmark_ci.md
       - name: Install footprint & cold import (methodology §1)
+        shell: bash
         run: .venv/bin/python benchmarks/bench_install.py --json install.json | tee -a docs/benchmark_ci.md
       - name: Fresh-environment footprint (XYG vs Plotly)
+        shell: bash
         run: |
           .venv/bin/python benchmarks/bench_install.py --packages xyg,plotly \
             --repeat 3 --fresh-venv --json install-fresh.json | tee -a docs/benchmark_ci.md
       - name: Ingestion, streaming, and export workflows
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_workflows.py --profile standard --reps 5 \
             --chromium "$CHROME" --json workflows.json | tee -a docs/benchmark_ci.md
       - name: Browser interaction latency (methodology interaction_smoothness)
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_interaction.py \
             --sizes 1e4,2.5e5 --reps 24 --chromium "$CHROME" --retries 2 \
             --json interaction.json | tee -a docs/benchmark_ci.md
       - name: Many-chart dashboard startup (methodology dashboard_scale)
+        shell: bash
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           .venv/bin/python benchmarks/bench_dashboard.py \
@@ -958,7 +1087,6 @@ jobs:
     if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [benchmark_vs, benchmark_methodology]
-    continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1045,7 +1173,7 @@ jobs:
 
   sdist:
     name: Source distribution
-    needs: release_surface_changes
+    needs: [release_surface_changes, wasm_assets]
     if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
@@ -1064,18 +1192,32 @@ jobs:
 
       - name: Install JS build toolchain
         run: npm ci
+      # wasm-worker.js comes from the client build, not the wasm-assets artifact, and the
+      # verifier checks the Worker/WASM pair, so build the client before verifying.
+      - name: Build render client
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python3 scripts/verify_wasm_assets.py
 
       - name: Build sdist
         # The hatch build hook builds the render client (node) and the artifacts
         # config carries it into the sdist. The client is required by default, so
-        # a client-less sdist fails the build here rather than shipping broken.
+        # a client-less sdist fails the build here rather than shipping broken;
+        # REQUIRE_WASM does the same for the packaged WASM tick assets.
+        env:
+          XYG_REQUIRE_WASM: "1"
         run: uv build --sdist
 
       - name: Verify sdist contents
         shell: bash
         run: |
           sdist=$(ls dist/*.tar.gz)
-          python scripts/verify_sdist.py "$sdist"
+          python scripts/verify_sdist.py "$sdist" --require-wasm
 
       - name: Build and load native core from sdist
         shell: bash
@@ -1131,13 +1273,18 @@ jobs:
     needs:
       - release_surface_changes
       - test
+      - wasm_assets
       - wasm_foundation
       - python_floor
       - browser_conformance
       - authored_scene
+      - matplotlib_reference
       - sdist
       - wheels
       - install_without_rust
+      - benchmark_vs
+      - benchmark_methodology
+      - benchmark
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1147,14 +1294,20 @@ jobs:
         run: |
           python3 scripts/verify_release_surface_results.py \
             --required "${{ needs.release_surface_changes.outputs.required }}" \
+            --event "${{ github.event_name }}" \
             --job "test=${{ needs.test.result }}" \
+            --job "wasm_assets=${{ needs.wasm_assets.result }}" \
             --job "wasm_foundation=${{ needs.wasm_foundation.result }}" \
             --job "python_floor=${{ needs.python_floor.result }}" \
             --job "browser_conformance=${{ needs.browser_conformance.result }}" \
             --job "authored_scene=${{ needs.authored_scene.result }}" \
+            --job "matplotlib_reference=${{ needs.matplotlib_reference.result }}" \
             --job "sdist=${{ needs.sdist.result }}" \
             --job "wheels=${{ needs.wheels.result }}" \
-            --job "install_without_rust=${{ needs.install_without_rust.result }}"
+            --job "install_without_rust=${{ needs.install_without_rust.result }}" \
+            --job "benchmark_vs=${{ needs.benchmark_vs.result }}" \
+            --job "benchmark_methodology=${{ needs.benchmark_methodology.result }}" \
+            --job "benchmark=${{ needs.benchmark.result }}"
 
   # Linux and Windows wheel smoke matrix (§33). macOS wheels are built only by
   # publish.yaml so pull requests do not consume macOS runners; release coverage
@@ -1162,7 +1315,7 @@ jobs:
   wheels:
     name: Wheel ${{ matrix.os }}
     if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'
-    needs: [release_surface_changes, test]
+    needs: [release_surface_changes, test, wasm_assets]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -1187,13 +1340,26 @@ jobs:
 
       - name: Install JS build toolchain
         run: npm ci
+      # wasm-worker.js comes from the client build, not the wasm-assets artifact, and the
+      # verifier checks the Worker/WASM pair, so build the client before verifying.
+      - name: Build render client
+        run: node js/build.mjs
+      - name: Fetch packaged WASM assets from the wasm_assets producer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-assets
+          path: .
+      - name: Verify packaged WASM assets (missing or stale fails here)
+        run: python scripts/verify_wasm_assets.py
 
       - name: Build wheel
         # The hatch build hook builds both artifacts. The render client is
         # required by default; REQUIRE_CARGO additionally forbids the native core
-        # from silently falling back to a pure-Python wheel here.
+        # from silently falling back to a pure-Python wheel here, and
+        # REQUIRE_WASM forbids shipping without the packaged WASM tick assets.
         env:
           XYG_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_WASM: "1"
         run: uv build --wheel
 
       # A raw linux_x86_64 tag is not installable off this machine and PyPI
@@ -1214,7 +1380,7 @@ jobs:
         shell: bash
         run: |
           whl=$(ls dist/*.whl)
-          python scripts/verify_wheel.py "$whl" --expect-native
+          python scripts/verify_wheel.py "$whl" --expect-native --require-wasm
 
       - name: Install-size budget (≤ 15 MB, §33)
         shell: bash

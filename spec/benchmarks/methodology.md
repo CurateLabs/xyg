@@ -268,6 +268,38 @@ and tier discipline applies to them rather than a threshold.
 
 ## 8. CodSpeed simulation modules
 
+**Benchmark assertions gate pull requests (#1008).** Benchmark bodies carry correctness
+assertions and policy oracles (for example the painter fragment limit in
+`crates/xyg-engine/benches/kernels.rs`), but the CodSpeed workflow below is scheduled, so an
+intentional policy change (#945, #897, #901) could leave a stale oracle with green PR CI until the
+next nightly run (#1007). The hard `test` job therefore also executes every benchmark body once,
+without timing or instrumentation: `cargo bench -p xyg-engine --bench kernels -- --test`,
+`cargo bench -p xyg-wasm --bench aggregate -- --test`, and
+`cargo bench -p xyg-wasm --bench typed_series -- --test` (divan `--test` runs each body once with its
+assertions), then `pytest benchmarks/test_codspeed_*.py -q` WITHOUT `--codspeed` (pytest-codspeed
+runs each body once; the locked environment includes the `codspeed` group). `scripts/verify_ci_workflow.py`
+fails when any of these four commands is missing, commented, echoed, or failure-suppressed.
+These are the final two steps of the `test` job: they stay hard, but a stale oracle fails visibly
+without skipping the other `test` results ahead of them (the checker enforces the position).
+`make check-bench-oracles` runs the same four commands locally (needs
+`uv sync --extra reflex --group dev --group codspeed`). Timings stay scheduled; only the
+assertions run before merge.
+
+**Methodology producers and report contract gate merge groups and pull requests (#1005/#1008).**
+`benchmark_methodology` and `benchmark` are post-merge evidence (push/dispatch), so a broken
+`bench_workflows.py`, `bench_line.py`, `bench_install.py`, or report shape could otherwise land and
+fail only on `main`. The hard `test` job therefore runs the step `Benchmark methodology contract
+(smallest sizes, report verified)`: `bench_workflows.py --profile smoke --reps 1`, `bench_line.py
+--sizes 1e5`, and `bench_install.py --packages xyg`, each followed by `scripts/verify_benchmark_report.py`
+with its `--kind` (`workflow-native`, `line-decimation`, `install-footprint`). No timing is compared and no
+competitor is installed. Merge and cross-library verification of fixtures stays in
+`tests/test_merge_benchmark_reports.py` and `tests/test_verify_benchmark_report.py` (run by the
+`test` job's full pytest); the browser-driven interaction and dashboard reports, the cross-library
+matrix, and every timing comparison remain post-merge. The step is verifier-enforced and
+`tests/test_release_surface_gate.py::test_broken_benchmark_report_fails_the_aggregate_before_merge`
+executes it with a tampered report to show `test` and therefore `Release surfaces` fail on
+`merge_group` and `pull_request`.
+
 `.github/workflows/codspeed.yml` runs nightly on the latest `main` commit and
 allows an on-demand manual run from `main`; it does not run for pull requests
 or pushes. A
@@ -763,9 +795,17 @@ evidence column names exactly the job's two halves,
 `python scripts/sync_matplotlib_compat.py --check` and `pytest tests/pyplot`.
 What the job adds beyond that row's wording is the pin and the environment — it
 installs `matplotlib==3.11.0` into a fresh uv venv and asserts the resolved
-version before checking the reviewed snapshot, then runs
-`test_launch_compat.py`, `test_reference_corpus.py`, and
-`test_reference_semantics.py` under `MPLBACKEND=Agg`.
+version before checking the reviewed snapshot, then runs the **entire**
+`tests/pyplot` suite (`pytest -q -rs tests/pyplot`, `MPLBACKEND=Agg`) rather than a file
+list (#1035). The `Test (Rust + Python + JS)` job installs no matplotlib and skips every
+matplotlib-dependent pyplot test, so this lane is the only gate for them: a failing or
+newly added matplotlib-dependent pyplot test blocks the merge through `Release surfaces`.
+Measured runtime is about 3.5 minutes serial (1,240 passed, `-rs` lists the skips), so the job has
+a 30-minute ceiling and no parallelization. Skips are optional-dependency skips (pandas) and
+browser probes when no Chromium is present. The lane is also a `wasm_assets` consumer
+(`needs`, download, build the client, verify): the pyplot browser probes need the packaged WASM tick
+assets, and running without them failed `test_browser_keeps_connector_outside_axes_when_target_is_inside`
+with `missing packaged tick asset ... xyg-wasm.wasm`.
 
 The real coverage gap is narrower and is on the speed side: no workflow invokes
 `bench_pyplot_vs_matplotlib.py`. The per-family 10x PNG target is therefore

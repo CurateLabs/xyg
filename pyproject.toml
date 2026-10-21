@@ -54,8 +54,11 @@ dev = [
     "pyyaml>=6",
 ]
 # CodSpeed's pytest plugin is intentionally separate from the normal dev
-# environment: it is useful for performance runs, but is not needed for unit
-# tests or static analysis.
+# environment: it is not needed for unit tests (tests/) or static analysis. It IS
+# needed to run benchmarks/test_codspeed_*.py, whose `benchmark` fixture it
+# provides: the scheduled CodSpeed run uses it for timing, and the hard CI `test`
+# job and `make check-bench-oracles` run each body once, without --codspeed, so
+# the benchmark assertions gate pull requests (spec/benchmarks/methodology.md §8).
 codspeed = [
     "pytest-codspeed>=5,<6",
 ]
@@ -100,6 +103,15 @@ artifacts = [
     "python/xyg/static/index.js",
     "python/xyg/static/standalone.js",
     "python/xyg/static/wasm-worker.js",
+    # Packaged direct-browser WASM tick assets (§33): produced by the single
+    # `npm run build:wasm` step, never committed; carried when present, and
+    # required when XYG_REQUIRE_WASM=1 (CI and release distribution builds).
+    "packages/xy-client/dist/xyg-wasm.wasm",
+    "packages/xy-client/dist/xyg-wasm-inline.js",
+    "packages/xy-client/dist/xyg-wasm.manifest.json",
+    "python/xyg/static/xyg-wasm.wasm",
+    "python/xyg/static/xyg-wasm-inline.js",
+    "python/xyg/static/xyg-wasm.manifest.json",
 ]
 
 [tool.hatch.build.targets.wheel]

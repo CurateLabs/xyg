@@ -330,7 +330,7 @@ def test_ci_workflow_requires_locked_reflex_environment(tmp_path: Path) -> None:
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
-            "uv sync --locked --extra reflex --group dev",
+            "uv sync --locked --extra reflex --group dev --group codspeed",
             "uv sync --extra reflex --group dev",
         ),
         encoding="utf-8",
@@ -338,12 +338,14 @@ def test_ci_workflow_requires_locked_reflex_environment(tmp_path: Path) -> None:
 
     errors = verify_ci_workflow.validate_ci_workflow(path)
 
-    assert any("uv sync --locked --extra reflex --group dev" in error for error in errors)
+    assert any(
+        "uv sync --locked --extra reflex --group dev --group codspeed" in error for error in errors
+    )
 
 
 def test_locked_reflex_environment_must_be_in_named_install_step(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev"
+    required = "          uv sync --locked --extra reflex --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -362,7 +364,7 @@ def test_locked_reflex_environment_must_be_in_named_install_step(tmp_path: Path)
 
 def test_locked_reflex_environment_cannot_be_commented_out(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev"
+    required = "          uv sync --locked --extra reflex --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(workflow.replace(required, f"          # {required.strip()}"), encoding="utf-8")
 
@@ -373,7 +375,7 @@ def test_locked_reflex_environment_cannot_be_commented_out(tmp_path: Path) -> No
 
 def test_locked_reflex_environment_cannot_hide_in_step_env(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev"
+    required = "uv sync --locked --extra reflex --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -392,7 +394,7 @@ def test_locked_reflex_environment_cannot_hide_in_step_env(tmp_path: Path) -> No
 
 def test_locked_reflex_environment_requires_an_exact_command_line(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev"
+    required = "uv sync --locked --extra reflex --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(f"          {required}", f"          echo '{required}'"),
@@ -406,7 +408,7 @@ def test_locked_reflex_environment_requires_an_exact_command_line(tmp_path: Path
 
 def test_locked_reflex_environment_cannot_be_heredoc_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev"
+    required = "uv sync --locked --extra reflex --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -426,7 +428,7 @@ def test_locked_reflex_environment_cannot_be_heredoc_data(tmp_path: Path) -> Non
 
 def test_locked_reflex_environment_cannot_be_folded_echo_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev"
+    required = "uv sync --locked --extra reflex --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -444,7 +446,7 @@ def test_locked_reflex_environment_cannot_be_folded_echo_data(tmp_path: Path) ->
 
 def test_locked_reflex_environment_cannot_be_folded_comment_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev"
+    required = "uv sync --locked --extra reflex --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -683,7 +685,7 @@ def test_multiline_quoted_env_value_does_not_create_a_sibling_key() -> None:
 
 def test_protected_step_requires_exactly_one_direct_run_key(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev\n"
+    required = "          uv sync --locked --extra reflex --group dev --group codspeed\n"
     duplicate_run_keys = (
         "        run: echo bypassed\n",
         '        "run": echo bypassed\n',
@@ -820,7 +822,7 @@ def test_url_like_scalar_values_are_not_mapping_keys() -> None:
 
 def test_plain_scalar_continuation_cannot_hide_duplicate_run(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev\n"
+    required = "          uv sync --locked --extra reflex --group dev --group codspeed\n"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -883,7 +885,7 @@ def test_job_scalar_cannot_replace_the_real_named_step(tmp_path: Path) -> None:
 
 def test_reference_gate_commands_must_be_in_the_named_step(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    command = "          .venv/bin/pytest -q tests/pyplot/test_reference_semantics.py\n"
+    command = "        run: .venv/bin/pytest -q -rs tests/pyplot\n"
     # Leaving the old verifier's needle elsewhere in the job must not satisfy
     # the structural step-local check.
     path = tmp_path / "ci.yml"
@@ -912,15 +914,8 @@ def test_generated_abi_check_must_execute_in_its_named_step(tmp_path: Path) -> N
 
 def test_reference_gate_commands_cannot_hide_in_inline_comments(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    commands = (
-        ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_corpus.py",
-        ".venv/bin/pytest -q tests/pyplot/test_corpus_regressions_1006.py",
-        ".venv/bin/pytest -q tests/pyplot/test_legend_reference_1026.py",
-        ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py",
-    )
-    for command in commands:
-        workflow = workflow.replace(f"          {command}", f"          echo ignored # {command}")
+    command = ".venv/bin/pytest -q -rs tests/pyplot"
+    workflow = workflow.replace(f"run: {command}", f"run: echo ignored # {command}")
     path = tmp_path / "ci.yml"
     path.write_text(workflow, encoding="utf-8")
 
@@ -931,16 +926,12 @@ def test_reference_gate_commands_cannot_hide_in_inline_comments(tmp_path: Path) 
 
 def test_reference_gate_commands_cannot_be_heredoc_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    first = ".venv/bin/pytest -q tests/pyplot/test_launch_compat.py"
-    last = ".venv/bin/pytest -q tests/pyplot/test_reference_semantics.py"
+    command = ".venv/bin/pytest -q -rs tests/pyplot"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
-            f"          {first}",
-            "          cat <<'EOF'",
-        ).replace(
-            f"          {last}",
-            f"          {last}\n          EOF",
+            f"        run: {command}\n",
+            f"        run: |\n          cat <<'EOF'\n          {command}\n          EOF\n",
         ),
         encoding="utf-8",
     )
@@ -950,27 +941,42 @@ def test_reference_gate_commands_cannot_be_heredoc_data(tmp_path: Path) -> None:
     assert any("reference test commands" in error for error in errors)
 
 
+def test_reference_job_runs_the_whole_pyplot_suite_not_a_file_list(tmp_path: Path) -> None:
+    """#1035: matplotlib-dependent pyplot tests outside the corpus must gate merges."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "matplotlib_reference")
+    assert "timeout-minutes: 30" in workflow[start:end]
+    narrowed = workflow.replace(
+        "run: .venv/bin/pytest -q -rs tests/pyplot\n",
+        "run: .venv/bin/pytest -q -rs tests/pyplot/test_reference_corpus.py\n",
+        1,
+    )
+    assert narrowed != workflow
+    errors = _wasm_errors(tmp_path, narrowed)
+    assert any("reference test commands" in error for error in errors), errors
+
+
 def test_reference_job_and_steps_must_be_hard_gates(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     mutations = (
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        if: false\n",
         ),
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        continue-on-error: true\n",
         ),
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        shell: echo {0}\n",
         ),
         (
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n",
-            "      - name: Run optional-interoperability and dual-engine corpus tests\n"
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n",
+            "      - name: Run the full tests/pyplot suite against matplotlib 3.11.0\n"
             "        working-directory: decoy\n",
         ),
         ("  matplotlib_reference:\n", "  matplotlib_reference:\n    if: false\n"),
@@ -993,7 +999,7 @@ def test_reference_job_and_steps_must_be_hard_gates(tmp_path: Path) -> None:
         if index == 4:
             assert any("matplotlib_reference" in error for error in errors)
         else:
-            assert any("Run optional-interoperability" in error for error in errors)
+            assert any("Run the full tests/pyplot suite" in error for error in errors)
 
 
 def test_codspeed_workflow_accepts_current_gates() -> None:
@@ -1017,8 +1023,16 @@ def test_ci_pr_lane_policy_rejects_filters_required_skips_and_breadth_prs(
         ),
         (
             "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
+            "    needs: [release_surface_changes, wasm_assets]\n"
+            "    if: github.event_name != 'pull_request' || "
+            "needs.release_surface_changes.outputs.required == 'true'\n",
+            "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
             "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
-            "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n",
+        ),
+        (
+            "  benchmark_methodology:\n    name: Benchmark methodology suites\n    needs: wasm_assets\n"
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
+            "  benchmark_methodology:\n    name: Benchmark methodology suites\n    needs: wasm_assets\n",
         ),
     )
     for index, (old, new) in enumerate(mutations):
@@ -1035,7 +1049,7 @@ def test_ci_merge_queue_policy_rejects_missing_trigger_and_canceling_runs(
 ) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     trigger = "  merge_group:\n    types: [checks_requested]\n"
-    cancel = "  cancel-in-progress: ${{ github.event_name != 'merge_group' }}\n"
+    cancel = "  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\n"
     assert trigger in workflow and cancel in workflow
     mutations = (
         (trigger, "", "must report required checks for merge_group"),
@@ -1045,7 +1059,12 @@ def test_ci_merge_queue_policy_rejects_missing_trigger_and_canceling_runs(
             "  merge_group:\n    types: [checks_requested]\n    types: [destroyed]\n",
             "must handle checks_requested",
         ),
-        (cancel, "  cancel-in-progress: true\n", "must not cancel in-flight"),
+        (cancel, "  cancel-in-progress: true\n", "must cancel only superseded pull_request"),
+        (
+            cancel,
+            "  cancel-in-progress: ${{ github.event_name != 'merge_group' }}\n",
+            "push runs on main must complete",
+        ),
     )
     for index, (old, new, message) in enumerate(mutations):
         path = tmp_path / f"ci-merge-queue-{index}.yml"
@@ -1463,14 +1482,25 @@ def test_setup_uv_cache_is_only_enabled_intentionally() -> None:
             assert "enable-cache:" in setting, f"{path}:{index + 1} relies on auto cache mode"
 
 
-def test_ci_workflow_rejects_blocking_benchmark_job(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "job",
+    ["benchmark_vs", "benchmark_methodology", "benchmark", "matplotlib_reference", "test"],
+)
+def test_ci_workflow_rejects_advisory_continue_on_error_on_any_job(
+    tmp_path: Path, job: str
+) -> None:
+    """The main benchmark evidence is hard (#1008); only scheduled workflows are advisory."""
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "continue-on-error" not in workflow
+    start = workflow.index(f"\n  {job}:\n") + 1
+    header_end = workflow.index("\n", workflow.index("    name:", start)) + 1
+    mutated = workflow[:header_end] + "    continue-on-error: true\n" + workflow[header_end:]
     path = tmp_path / "ci.yml"
-    path.write_text(workflow.replace("    continue-on-error: true\n", ""), encoding="utf-8")
+    path.write_text(mutated, encoding="utf-8")
 
     errors = verify_ci_workflow.validate_workflow(path)
 
-    assert any("benchmark" in error and "continue-on-error" in error for error in errors)
+    assert any("must not use continue-on-error" in error for error in errors)
 
 
 def test_ci_workflow_rejects_regrouped_expensive_cross_library_adapters(
@@ -1561,7 +1591,9 @@ def test_ci_workflow_rejects_missing_cross_library_job_timeout(tmp_path: Path) -
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
             "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n"
             "    runs-on: blacksmith-4vcpu-ubuntu-2404\n"
-            "    timeout-minutes: 10\n",
+            "    # The slowest group (native-and-webgl) takes about 5 minutes when installs are\n"
+            "    # healthy; leave room for install retries and a slow runner, not a hang.\n"
+            "    timeout-minutes: 25\n",
             "  benchmark_vs:\n"
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
             "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n"
@@ -1573,7 +1605,7 @@ def test_ci_workflow_rejects_missing_cross_library_job_timeout(tmp_path: Path) -
 
     errors = verify_ci_workflow.validate_ci_workflow(path)
 
-    assert any("benchmark_vs" in error and "timeout-minutes: 10" in error for error in errors)
+    assert any("benchmark_vs" in error and "timeout-minutes: 25" in error for error in errors)
 
 
 def test_ci_workflow_rejects_unlocked_competitor_install(tmp_path: Path) -> None:
@@ -1694,10 +1726,10 @@ def test_ci_workflow_rejects_benchmark_job_without_required_native_install(
         workflow.replace(
             '        env:\n          XYG_REQUIRE_CARGO: "1"\n'
             "        run: |\n          uv venv .venv\n"
-            "          uv pip install -p .venv/bin/python \\\n"
+            "          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \\\n"
             "            --constraint benchmarks/requirements-ci.lock -e .\n",
             "        run: |\n          uv venv .venv\n"
-            "          uv pip install -p .venv/bin/python \\\n"
+            "          scripts/ci_retry.sh 3 uv pip install -p .venv/bin/python \\\n"
             "            --constraint benchmarks/requirements-ci.lock -e .\n",
         ),
         encoding="utf-8",
@@ -2044,53 +2076,211 @@ def test_ci_workflow_binds_exact_wasm_target_build(tmp_path: Path) -> None:
     assert any("exact fail-closed wasm32 build" in error for error in errors)
 
 
-def test_ci_workflow_requires_real_wasm_ticks_in_full_browser_corpora(
-    tmp_path: Path,
+def _job_span(workflow: str, job: str) -> tuple[int, int]:
+    start = workflow.index(f"\n  {job}:\n") + 1
+    following = re.search(r"\n  [a-z_]+:\n", workflow[start:])
+    return start, start + following.start() + 1 if following else len(workflow)
+
+
+def _mutate_job(workflow: str, job: str, old: str, new: str) -> str:
+    start, end = _job_span(workflow, job)
+    block = workflow[start:end]
+    assert old in block, f"{old!r} not in job {job}"
+    return workflow[:start] + block.replace(old, new, 1) + workflow[end:]
+
+
+_WASM_FETCH_STEP = (
+    "      - name: Fetch packaged WASM assets from the wasm_assets producer\n"
+    "        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1\n"
+    "        with:\n"
+    "          name: wasm-assets\n"
+    "          path: .\n"
+)
+_WASM_VERIFY_STEP = (
+    "      - name: Verify packaged WASM assets (missing or stale fails here)\n"
+    "        run: python3 scripts/verify_wasm_assets.py\n"
+)
+_WASM_CONSUMERS = (
+    "test",
+    "wasm_foundation",
+    "python_floor",
+    "matplotlib_reference",
+    "benchmark_methodology",
+    "wheels",
+    "sdist",
+)
+
+
+def _verify_step(job: str) -> str:
+    # The Windows wheel leg has no `python3` shim; every other consumer uses it.
+    return _WASM_VERIFY_STEP.replace("python3 ", "python " if job == "wheels" else "python3 ")
+
+
+def _wasm_errors(tmp_path: Path, workflow: str) -> list[str]:
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow, encoding="utf-8")
+    return verify_ci_workflow.validate_ci_workflow(path)
+
+
+def test_ci_workflow_accepts_single_wasm_producer_with_every_consumer_wired() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    for job in _WASM_CONSUMERS:
+        start, end = _job_span(workflow, job)
+        block = workflow[start:end]
+        assert "needs:" in block and "wasm_assets" in block, job
+        assert "name: wasm-assets" in block, job
+
+
+@pytest.mark.parametrize("job", _WASM_CONSUMERS)
+def test_ci_workflow_requires_every_wasm_consumer_to_depend_on_the_producer(
+    tmp_path: Path, job: str
+) -> None:
+    """BDD: a consumer whose producer was skipped/failed cannot start (#1005)."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, job)
+    block = workflow[start:end]
+    needs = re.search(r"\n    needs: .*\n", block)
+    assert needs is not None
+    # Drop the dependency (keeping other needs, e.g. the release-surface classifier).
+    replacement = (
+        "\n    needs: release_surface_changes\n"
+        if "release_surface_changes" in needs.group(0)
+        else "\n"
+    )
+    mutated = workflow[:start] + block.replace(needs.group(0), replacement, 1) + workflow[end:]
+    if job == "wheels":
+        mutated = mutated.replace("needs: [release_surface_changes, test]", "")
+    errors = _wasm_errors(tmp_path, mutated)
+    assert any(f"WASM consumer {job!r} must list wasm_assets in needs" in e for e in errors)
+
+
+@pytest.mark.parametrize("job", _WASM_CONSUMERS)
+@pytest.mark.parametrize("which", ["fetch", "verify"])
+def test_ci_workflow_requires_wasm_consumers_to_download_and_verify(
+    tmp_path: Path, job: str, which: str
 ) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    path = tmp_path / "ci.yml"
-    path.write_text(
-        workflow.replace("          npm run build:wasm\n", "", 1),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_ci_workflow(path)
-
-    assert any("full browser corpus" in error and "npm run build:wasm" in error for error in errors)
-
-
-def test_ci_workflow_requires_real_wasm_ticks_on_python_floor(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    path = tmp_path / "ci.yml"
-    first = workflow.index("          npm run build:wasm\n")
-    second = workflow.index("          npm run build:wasm\n", first + 1)
-    path.write_text(
-        workflow[:second] + workflow[second:].replace("          npm run build:wasm\n", "", 1),
-        encoding="utf-8",
-    )
-
-    errors = verify_ci_workflow.validate_ci_workflow(path)
-
+    step = _WASM_FETCH_STEP if which == "fetch" else _verify_step(job)
+    errors = _wasm_errors(tmp_path, _mutate_job(workflow, job, step, ""))
     assert any(
-        "Python 3.11 floor gate" in error and "npm run build:wasm" in error for error in errors
+        f"WASM consumer {job!r} must download then verify the packaged WASM assets" in e
+        for e in errors
     )
+
+
+@pytest.mark.parametrize("job", _WASM_CONSUMERS)
+def test_ci_workflow_rejects_verify_before_download_and_hidden_asset_steps(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    swapped = _mutate_job(
+        workflow,
+        job,
+        _WASM_FETCH_STEP + _verify_step(job),
+        _verify_step(job) + _WASM_FETCH_STEP,
+    )
+    assert any("must download before it verifies" in e for e in _wasm_errors(tmp_path, swapped))
+
+    hidden = _mutate_job(
+        workflow,
+        job,
+        "        run: "
+        + ("python " if job == "wheels" else "python3 ")
+        + "scripts/verify_wasm_assets.py\n",
+        "        continue-on-error: true\n        run: "
+        + ("python " if job == "wheels" else "python3 ")
+        + "scripts/verify_wasm_assets.py\n",
+    )
+    assert any("asset steps must be unconditional" in e for e in _wasm_errors(tmp_path, hidden))
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "npm run build:wasm",
+        "node js/package-wasm.mjs",
+        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+    ],
+)
+def test_ci_workflow_rejects_a_second_wasm_producer(tmp_path: Path, command: str) -> None:
+    """Hand-rolled packaging in a consumer could ship stale residue as the real artifact."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    mutated = _mutate_job(
+        workflow,
+        "benchmark_methodology",
+        "      - name: Install JS build toolchain\n        run: scripts/ci_retry.sh 3 npm ci\n",
+        "      - name: Install JS build toolchain\n        run: |\n"
+        f"          scripts/ci_retry.sh 3 npm ci\n          {command}\n",
+    )
+    errors = _wasm_errors(tmp_path, mutated)
+    label = (
+        "cargo build -p xyg-wasm --target wasm32-unknown-unknown"
+        if command.startswith("cargo")
+        else command
+    )
+    assert any("must consume wasm-assets" in e and label in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        (
+            "          if-no-files-found: error\n          retention-days: 7\n",
+            "          retention-days: 7\n",
+            "if-no-files-found",
+        ),
+        (
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n",
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n    continue-on-error: true\n",
+            "job-level 'continue-on-error'",
+        ),
+        (
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n",
+            "  wasm_assets:\n    name: Packaged WASM assets (single producer)\n    if: false\n",
+            "job-level 'if'",
+        ),
+        (
+            "        run: python3 scripts/verify_wasm_assets.py\n      - name: Upload packaged WASM assets\n",
+            "        run: echo skipped\n      - name: Upload packaged WASM assets\n",
+            "verify_wasm_assets.py",
+        ),
+        (
+            "          npm run build:wasm\n      - name: Verify packaged WASM assets\n",
+            "          echo packaged\n      - name: Verify packaged WASM assets\n",
+            "single packaging command",
+        ),
+    ],
+)
+def test_ci_workflow_rejects_weakened_wasm_producer(
+    tmp_path: Path, old: str, new: str, message: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    errors = _wasm_errors(tmp_path, _mutate_job(workflow, "wasm_assets", old, new))
+    assert any("wasm_assets" in e or "packaging command" in e for e in errors), errors
+    assert any(message in e for e in errors), errors
+
+
+@pytest.mark.parametrize("job", ["wheels", "sdist"])
+def test_ci_workflow_requires_distribution_builds_to_require_wasm(tmp_path: Path, job: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    errors = _wasm_errors(
+        tmp_path, _mutate_job(workflow, job, '          XYG_REQUIRE_WASM: "1"\n', "")
+    )
+    assert any(f"{job} job must build with XYG_REQUIRE_WASM" in e for e in errors)
 
 
 def test_ci_workflow_requires_worker_before_wasm_payload(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    path = tmp_path / "ci.yml"
-    path.write_text(
-        workflow.replace(
-            "          node js/build.mjs\n          npm run build:wasm\n",
+    errors = _wasm_errors(
+        tmp_path,
+        _mutate_job(
+            workflow,
+            "python_floor",
+            "          node js/build.mjs\n",
             "          npm run build:wasm\n          node js/build.mjs\n",
-            1,
         ),
-        encoding="utf-8",
     )
-
-    errors = verify_ci_workflow.validate_ci_workflow(path)
-
-    assert any("ordered JS Worker then Rust/WASM payload" in error for error in errors)
+    assert any("must consume wasm-assets" in error for error in errors)
 
 
 def test_ci_workflow_rejects_commented_wasm_chromium_install(tmp_path: Path) -> None:
@@ -3067,13 +3257,13 @@ def test_release_workflow_requires_browser_package_gate(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
     path.write_text(
-        workflow.replace("          node js/package-wasm.mjs\n", "", 1),
+        workflow.replace("          npm run build:wasm\n", "", 1),
         encoding="utf-8",
     )
 
     errors = verify_ci_workflow.validate_release_workflow(path)
 
-    assert any("browser package" in error and "package-wasm.mjs" in error for error in errors)
+    assert any("single packaging command" in error for error in errors)
 
 
 def test_github_release_flattens_downloaded_wheel_for_attachment(tmp_path: Path) -> None:
@@ -3112,7 +3302,9 @@ def test_release_workflow_rejects_missing_native_wheel_verifier(tmp_path: Path) 
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
     path.write_text(
-        workflow.replace('          python scripts/verify_wheel.py "$whl" --expect-native\n', ""),
+        workflow.replace(
+            '          python scripts/verify_wheel.py "$whl" --expect-native --require-wasm\n', ""
+        ),
         encoding="utf-8",
     )
 
@@ -3577,3 +3769,967 @@ def test_release_workflow_rejects_always_conditioned_pypi_publish(tmp_path: Path
     errors = verify_ci_workflow.validate_release_workflow(path)
 
     assert any("is not gated by the dry-run predicate" in error for error in errors)
+
+
+# ---------------------------------------------------------------------------
+# Release surfaces aggregate: hard/advisory inventory, applicability, ruleset (#1008)
+# ---------------------------------------------------------------------------
+
+_HARD_JOBS = (
+    "test",
+    "wasm_assets",
+    "wasm_foundation",
+    "python_floor",
+    "browser_conformance",
+    "sdist",
+    "wheels",
+    "install_without_rust",
+    "authored_scene",
+    "matplotlib_reference",
+    "benchmark_vs",
+    "benchmark_methodology",
+    "benchmark",
+)
+
+
+def test_release_inventory_matches_the_workflow_contract_constants() -> None:
+    inventory = verify_ci_workflow.release_inventory
+    assert tuple(sorted(inventory.HARD_JOBS)) == tuple(sorted(_HARD_JOBS))
+    assert {
+        *_HARD_JOBS,
+        "release_surface_changes",
+        "release_surfaces",
+    } == verify_ci_workflow.REQUIRED_CI_JOBS
+
+
+def test_ci_workflow_requires_every_job_to_be_classified(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    extra = "  unclassified_extra:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps:\n      - run: true\n\n"
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace("  release_surfaces:\n", extra + "  release_surfaces:\n", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        "'unclassified_extra' is neither a hard release gate nor listed advisory" in e
+        for e in errors
+    )
+
+
+@pytest.mark.parametrize("job", _HARD_JOBS)
+def test_ci_workflow_requires_aggregate_to_depend_on_every_hard_job(
+    tmp_path: Path, job: str
+) -> None:
+    """A hard job that is not an aggregate input could fail while Release surfaces passes."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    needs_line = f"      - {job}\n"
+    start = workflow.index("  release_surfaces:\n")
+    block_end = workflow.index("    runs-on:", start)
+    block = workflow[start:block_end]
+    assert needs_line in block
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow[:start] + block.replace(needs_line, "", 1) + workflow[block_end:], encoding="utf-8"
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        "Release surfaces must need exactly the classifier and every hard job" in e for e in errors
+    )
+
+
+@pytest.mark.parametrize("job", _HARD_JOBS)
+def test_ci_workflow_requires_aggregate_command_to_pass_every_hard_result(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    line = re.search(
+        rf'            --job "{job}=\$\{{\{{ needs\.{job}\.result \}}\}}"( \\)?\n', workflow
+    )
+    assert line is not None
+    mutated = workflow.replace(line.group(0), "", 1)
+    if job == "benchmark":  # last argument: keep the previous line's continuation valid
+        mutated = mutated.replace(
+            '--job "benchmark_methodology=${{ needs.benchmark_methodology.result }}" \\\n',
+            '--job "benchmark_methodology=${{ needs.benchmark_methodology.result }}"\n',
+            1,
+        )
+    path = tmp_path / "ci.yml"
+    path.write_text(mutated, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        "must pass --job NAME=${{ needs.NAME.result }} for every hard job" in e for e in errors
+    )
+
+
+def test_ci_workflow_rejects_aggregate_passing_another_jobs_result(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            '"wheels=${{ needs.wheels.result }}"', '"wheels=${{ needs.sdist.result }}"', 1
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("must pass --job NAME=${{ needs.NAME.result }}" in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ('            --event "${{ github.event_name }}" \\\n', ""),
+        ('            --required "${{ needs.release_surface_changes.outputs.required }}" \\\n', ""),
+    ],
+)
+def test_ci_workflow_requires_aggregate_to_receive_event_and_classifier(
+    tmp_path: Path, old: str, new: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert old in workflow
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow.replace(old, new, 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("--event and the classifier --required output" in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("job", "old", "new", "scenario"),
+    [
+        # Applicable but not run: the aggregate would wait for a skipped job (or, worse, a
+        # future edit could drop the job from the workflow and keep the aggregate green).
+        (
+            "matplotlib_reference",
+            "    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'\n",
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
+            "merge_group",
+        ),
+        (
+            "benchmark_vs",
+            "    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'\n",
+            "    if: github.event_name != 'pull_request'\n",
+            "merge_group",
+        ),
+        (
+            "sdist",
+            "    if: github.event_name != 'pull_request' || needs.release_surface_changes.outputs.required == 'true'\n",
+            "    if: github.event_name == 'push'\n",
+            "merge_group",
+        ),
+    ],
+)
+def test_ci_workflow_applicability_must_match_what_the_workflow_runs(
+    tmp_path: Path, job: str, old: str, new: str, scenario: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(_mutate_job(workflow, job, old, new), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any(
+        (scenario in e and "differs from the jobs the workflow runs" in e)
+        or f"hard job {job!r} uses an unrecognized if condition" in e
+        for e in errors
+    ), errors
+
+
+def test_aggregate_propagation_self_test_rejects_a_weakened_aggregate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The self-test itself must go red when the aggregate swallows a failure."""
+    inventory = verify_ci_workflow.release_inventory
+    real = inventory.verify
+
+    def lenient(*, required: bool, results: dict[str, str], event: str = "pull_request"):
+        return [
+            e
+            for e in real(required=required, results=results, event=event)
+            if "matplotlib" not in e and "benchmark_vs" not in e
+        ]
+
+    monkeypatch.setattr(inventory, "verify", lenient)
+    errors = verify_ci_workflow._aggregate_propagation_errors({name: name for name in _HARD_JOBS})
+
+    assert any("matplotlib_reference=failure" in e for e in errors)
+    assert any("benchmark_vs=failure" in e for e in errors)
+
+
+def test_aggregate_propagation_self_test_accepts_the_real_aggregate() -> None:
+    assert (
+        verify_ci_workflow._aggregate_propagation_errors({name: name for name in _HARD_JOBS}) == []
+    )
+
+
+def _ruleset() -> dict:
+    import json
+
+    return json.loads(Path(".github/merge-queue-ruleset.json").read_text(encoding="utf-8"))
+
+
+def _write_ruleset(path: Path, ruleset: dict) -> Path:
+    import json
+
+    path.write_text(json.dumps(ruleset), encoding="utf-8")
+    return path
+
+
+def test_merge_queue_ruleset_accepts_the_checked_in_contract() -> None:
+    assert verify_ci_workflow.validate_merge_queue_ruleset() == []
+
+
+def test_merge_queue_ruleset_rejects_drift_and_duplicate_required_statuses(tmp_path: Path) -> None:
+    def mutate(fn) -> list[str]:
+        ruleset = _ruleset()
+        fn(ruleset)
+        return verify_ci_workflow.validate_merge_queue_ruleset(
+            _write_ruleset(tmp_path / "r.json", ruleset)
+        )
+
+    assert mutate(lambda r: r.update(enforcement="evaluate"))
+    assert mutate(lambda r: r.update(target="tag"))
+    assert mutate(lambda r: r["conditions"]["ref_name"].update(include=["refs/heads/*"]))
+    assert mutate(lambda r: r["conditions"]["ref_name"].update(exclude=["refs/heads/main"]))
+    assert mutate(lambda r: r["rules"][0]["parameters"].update(merge_method="MERGE"))
+    assert mutate(lambda r: r["rules"][0]["parameters"].update(max_entries_to_build=5))
+    assert mutate(lambda r: r["rules"].clear())
+    assert mutate(lambda r: r["rules"].append(r["rules"][0]))
+    assert mutate(lambda r: r["rules"].append({"type": "deletion"}))
+    duplicate = {
+        "type": "required_status_checks",
+        "parameters": {
+            "required_status_checks": [{"context": "Release surfaces"}, {"context": "Test"}]
+        },
+    }
+    assert mutate(lambda r: r["rules"].append(duplicate))
+    single = {
+        "type": "required_status_checks",
+        "parameters": {"required_status_checks": [{"context": "Release surfaces"}]},
+    }
+    assert mutate(lambda r: r["rules"].append(single)) == []
+    assert verify_ci_workflow.validate_merge_queue_ruleset(tmp_path / "missing.json")
+
+
+def test_live_readback_compares_ruleset_and_branch_protection() -> None:
+    local = _ruleset()
+    protection = {"required_status_checks": {"contexts": ["Release surfaces"]}}
+
+    def fetcher(live: dict, protected: dict):
+        def fetch(path: str):
+            if path == "rulesets":
+                return [{"id": 7, "name": local["name"]}]
+            if path == "rulesets/7":
+                return live
+            assert path == "branches/main/protection"
+            return protected
+
+        return fetch
+
+    assert verify_ci_workflow.validate_live_readback(fetcher(local, protection)) == []
+    drifted = {**local, "enforcement": "disabled"}
+    assert any(
+        "enforcement" in e
+        for e in verify_ci_workflow.validate_live_readback(fetcher(drifted, protection))
+    )
+    extra = {"required_status_checks": {"contexts": ["Release surfaces", "Test"]}}
+    assert any(
+        "branch protection" in e
+        for e in verify_ci_workflow.validate_live_readback(fetcher(local, extra))
+    )
+    assert verify_ci_workflow.validate_live_readback(lambda path: [] if path == "rulesets" else {})
+
+
+# ---------------------------------------------------------------------------
+# Release workflow carries the same packaged-WASM contract (#1005) and the hardened
+# post-merge benchmark jobs (#1008)
+# ---------------------------------------------------------------------------
+
+_RELEASE_WASM_CONSUMERS = ("wheels", "wasm", "browser-package", "sdist")
+_RELEASE_FETCH = (
+    "      - name: Fetch packaged WASM assets from the wasm-assets producer\n"
+    "        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1\n"
+    "        with:\n"
+    "          name: wasm-assets\n"
+    "          path: .\n"
+)
+_RELEASE_VERIFY = (
+    "      - name: Verify packaged WASM assets (missing or stale fails here)\n"
+    "        run: python scripts/verify_wasm_assets.py\n"
+)
+
+
+def _release_errors(tmp_path: Path, workflow: str) -> list[str]:
+    path = tmp_path / "publish.yaml"
+    path.write_text(workflow, encoding="utf-8")
+    return verify_ci_workflow.validate_release_workflow(path)
+
+
+def _release_job_span(workflow: str, job: str) -> tuple[int, int]:
+    start = workflow.index(f"\n  {job}:\n") + 1
+    following = re.search(r"\n  [a-z-]+:\n", workflow[start:])
+    return start, start + following.start() + 1 if following else len(workflow)
+
+
+def _mutate_release_job(workflow: str, job: str, old: str, new: str) -> str:
+    start, end = _release_job_span(workflow, job)
+    block = workflow[start:end]
+    assert old in block, f"{old!r} not in release job {job}"
+    return workflow[:start] + block.replace(old, new, 1) + workflow[end:]
+
+
+@pytest.mark.parametrize("job", _RELEASE_WASM_CONSUMERS)
+def test_release_workflow_requires_wasm_consumers_to_need_the_producer(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    errors = _release_errors(
+        tmp_path, _mutate_release_job(workflow, job, "    needs: wasm-assets\n", "")
+    )
+    assert any(f"WASM consumer {job!r} must list wasm-assets in needs" in e for e in errors)
+
+
+@pytest.mark.parametrize("job", _RELEASE_WASM_CONSUMERS)
+@pytest.mark.parametrize("step", [_RELEASE_FETCH, _RELEASE_VERIFY])
+def test_release_workflow_requires_wasm_consumers_to_download_and_verify(
+    tmp_path: Path, job: str, step: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    errors = _release_errors(tmp_path, _mutate_release_job(workflow, job, step, ""))
+    assert any(f"WASM consumer {job!r} must download then verify" in e for e in errors)
+
+
+@pytest.mark.parametrize("job", ["wheels", "sdist", "browser-package", "wasm"])
+def test_release_workflow_requires_client_build_before_wasm_verification(
+    tmp_path: Path, job: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    start, end = _release_job_span(workflow, job)
+    block = workflow[start:end]
+    build = re.search(
+        r"      - name: Build (?:render|browser) client\n        run: .*?(?=\n      - )",
+        block,
+        re.S,
+    )
+    assert build is not None
+    mutated = workflow[:start] + block.replace(build.group(0) + "\n", "", 1) + workflow[end:]
+    errors = _release_errors(tmp_path, mutated)
+    assert any(f"{job!r} must run node js/build.mjs before verifying" in e for e in errors)
+
+
+@pytest.mark.parametrize(
+    ("job", "old", "message"),
+    [
+        (
+            "wheels",
+            '          XYG_REQUIRE_WASM: "1"\n',
+            "wheels job must build with XYG_REQUIRE_WASM",
+        ),
+        (
+            "sdist",
+            '          XYG_REQUIRE_WASM: "1"\n',
+            "sdist job must build with XYG_REQUIRE_WASM",
+        ),
+        (
+            "wheels",
+            " --expect-native --require-wasm",
+            "wheels job must build with XYG_REQUIRE_WASM",
+        ),
+        ("sdist", " --require-wasm", "sdist job must build with XYG_REQUIRE_WASM"),
+        ("wasm", " --expect-native --require-wasm", "wasm job must verify --require-wasm"),
+    ],
+)
+def test_release_workflow_requires_distributions_to_enforce_wasm(
+    tmp_path: Path, job: str, old: str, message: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    new = " --expect-native" if "expect-native" in old else ""
+    errors = _release_errors(tmp_path, _mutate_release_job(workflow, job, old, new))
+    assert any(message in e for e in errors), errors
+
+
+def test_release_workflow_rejects_second_producer_and_weakened_producer(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    second = _mutate_release_job(
+        workflow,
+        "browser-package",
+        "      - name: Build browser client\n        run: |\n          npm ci\n",
+        "      - name: Build browser client\n        run: |\n          npm ci\n          npm run build:wasm\n",
+    )
+    assert any("must consume wasm-assets" in e for e in _release_errors(tmp_path, second))
+    weak = _mutate_release_job(workflow, "wasm-assets", "          if-no-files-found: error\n", "")
+    assert any("if-no-files-found" in e for e in _release_errors(tmp_path, weak))
+    missing = workflow.replace("  wasm-assets:\n", "  wasm-assets-renamed:\n", 1)
+    assert any("wasm-assets" in e for e in _release_errors(tmp_path, missing))
+
+
+@pytest.mark.parametrize(
+    ("job", "step", "needle"),
+    [
+        ("benchmark_vs", "Install selected competitors", "scripts/ci_retry.sh 3 "),
+        ("benchmark_vs", "Install XYG", "scripts/ci_retry.sh 3 "),
+        ("benchmark_vs", "Install Chromium (Playwright)", "scripts/ci_retry.sh 3 npx playwright"),
+        ("benchmark_methodology", "Install JS build toolchain", "scripts/ci_retry.sh 3 "),
+        ("benchmark_methodology", "Install XYG + competitors", "scripts/ci_retry.sh 3 "),
+        ("benchmark_methodology", "Install Chromium (Playwright)", "scripts/ci_retry.sh 3 npx"),
+    ],
+)
+def test_ci_workflow_requires_install_retries_in_hard_benchmark_jobs(
+    tmp_path: Path, job: str, step: str, needle: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, job)
+    block = workflow[start:end]
+    step_at = block.index(f"      - name: {step}\n")
+    step_end = block.index("\n      - ", step_at + 1)
+    mutated_step = block[step_at:step_end].replace("scripts/ci_retry.sh 3 ", "")
+    assert mutated_step != block[step_at:step_end]
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow[:start] + block[:step_at] + mutated_step + block[step_end:] + workflow[end:],
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("install retry" in e for e in errors), errors
+
+
+@pytest.mark.parametrize(
+    ("job", "old", "new"),
+    [
+        ("benchmark_vs", "    timeout-minutes: 25\n", "    timeout-minutes: 10\n"),
+        ("benchmark_vs", "    timeout-minutes: 25\n", ""),
+        ("benchmark_methodology", "    timeout-minutes: 45\n", ""),
+    ],
+)
+def test_ci_workflow_requires_realistic_benchmark_timeouts(
+    tmp_path: Path, job: str, old: str, new: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    errors = _wasm_errors(tmp_path, _mutate_job(workflow, job, old, new))
+    assert any("timeout-minutes" in e for e in errors), errors
+
+
+def test_ci_workflow_runs_the_painter_admission_wasm_parity_gate(tmp_path: Path) -> None:
+    """Hard gate for the #1007 test; the file lands with that PR, so merge this after it."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    line = "          node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs\n"
+    assert line in workflow
+    errors = _wasm_errors(tmp_path, workflow.replace(line, "", 1))
+    assert any("painter-admission-wasm-parity" in e for e in errors)
+
+
+def test_ci_retry_script_retries_then_succeeds_or_returns_the_last_status(tmp_path: Path) -> None:
+    import os
+    import subprocess
+
+    script = Path("scripts/ci_retry.sh").resolve()
+    counter = tmp_path / "count"
+
+    def run(*argv: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["bash", str(script), *argv],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "CI_RETRY_DELAY": "0", "COUNTER": str(counter)},
+        )
+
+    flaky = 'n=$(cat "$COUNTER" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "$COUNTER"; [ "$n" -ge 3 ]'
+    ok = run("3", "bash", "-c", flaky)
+    assert ok.returncode == 0 and counter.read_text().strip() == "3"
+    counter.unlink()
+    failed = run("2", "bash", "-c", flaky)
+    assert failed.returncode == 1 and counter.read_text().strip() == "2"
+    assert "failed after 2 attempt(s)" in failed.stderr
+    assert run("0", "true").returncode == 2
+    assert run("x", "true").returncode == 2
+    assert run("3").returncode == 2
+
+
+# ---------------------------------------------------------------------------
+# Round-3 gates: PR-visible benchmark oracles, per-run concurrency, pipefail, Pyodide env,
+# flag-order-tolerant producer guard
+# ---------------------------------------------------------------------------
+
+_ORACLE_COMMANDS = (
+    "cargo bench -p xyg-engine --bench kernels -- --test",
+    "cargo bench -p xyg-wasm --bench aggregate -- --test",
+    "cargo bench -p xyg-wasm --bench typed_series -- --test",
+)
+_PYTEST_ORACLE = ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py -q"
+
+
+@pytest.mark.parametrize("command", [*_ORACLE_COMMANDS, _PYTEST_ORACLE])
+@pytest.mark.parametrize("replacement", ["# {command}", "echo {command}", "{command} || true", ""])
+def test_ci_workflow_requires_benchmark_oracles_on_pull_requests(
+    tmp_path: Path, command: str, replacement: str
+) -> None:
+    """The stale-oracle root cause of #1007: assertions only ran in scheduled CodSpeed."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    line = f"          {command}\n" if command in _ORACLE_COMMANDS else f"        run: {command}\n"
+    assert line in workflow
+    prefix = "          " if command in _ORACLE_COMMANDS else "        run: "
+    new = prefix + replacement.format(command=command) + "\n" if replacement else ""
+    errors = _wasm_errors(tmp_path, workflow.replace(line, new, 1))
+    assert any("benchmark oracles" in e for e in errors), errors
+
+
+def test_ci_workflow_requires_the_codspeed_plugin_group_for_the_pytest_oracles(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    errors = _wasm_errors(
+        tmp_path, workflow.replace(" --group dev --group codspeed", " --group dev", 1)
+    )
+    assert any("pytest-codspeed plugin" in e for e in errors)
+
+
+@pytest.mark.parametrize("job", ["test", "python_floor"])
+def test_unused_wasm32_toolchain_targets_stay_removed(job: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, job)
+    assert "targets: wasm32" not in workflow[start:end]
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        "ci-${{ github.ref }}",
+        "ci-${{ github.event_name == 'push' && github.sha || github.ref }}",
+        "ci-${{ github.workflow }}",
+    ],
+)
+def test_ci_concurrency_group_must_be_per_run_outside_pull_requests(
+    tmp_path: Path, group: str
+) -> None:
+    """A shared group lets GitHub replace an older pending main/merge-group run."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    current = (
+        "  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}\n"
+    )
+    assert current in workflow
+    errors = _wasm_errors(tmp_path, workflow.replace(current, f"  group: {group}\n", 1))
+    assert any("concurrency group must be per run" in e for e in errors)
+
+
+PIPED_STEPS = (
+    "Line decimation vs plotly-resampler (methodology line_10M)",
+    "Install footprint & cold import (methodology §1)",
+    "Fresh-environment footprint (XYG vs Plotly)",
+    "Ingestion, streaming, and export workflows",
+    "Browser interaction latency (methodology interaction_smoothness)",
+    "Many-chart dashboard startup (methodology dashboard_scale)",
+)
+
+
+@pytest.mark.parametrize("step", PIPED_STEPS)
+def test_ci_workflow_requires_pipefail_on_benchmark_pipes(tmp_path: Path, step: str) -> None:
+    """`bench.py | tee report` without pipefail reports tee's success and hides a crash."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start = workflow.index(f"      - name: {step}\n")
+    shell = workflow.index("        shell: bash\n", start)
+    assert shell - start < 200
+    mutated = workflow[:shell] + workflow[shell + len("        shell: bash\n") :]
+    errors = _wasm_errors(tmp_path, mutated)
+    assert any("pipes a command without pipefail" in e and step in e for e in errors), errors
+
+
+def test_pipefail_rule_accepts_explicit_pipefail_and_ignores_non_pipes() -> None:
+    pipe_lines = verify_ci_workflow._pipe_lines
+    assert pipe_lines(["python bench.py | tee out.md"]) == ["python bench.py | tee out.md"]
+    assert pipe_lines(["a || b", "grep -Eq '(^| )png v' f", 'echo "a | b"']) == []
+    assert pipe_lines(["python - <<'PY'", "x = a | b", "PY", "echo done"]) == []
+    assert pipe_lines(["cat f # a | b"]) == []
+
+
+@pytest.mark.parametrize(
+    ("name", "workflow", "validate"),
+    [
+        ("CI", "ci.yml", "validate_ci_workflow"),
+        ("release", "publish.yaml", "validate_release_workflow"),
+        ("CodSpeed", "codspeed.yml", "validate_codspeed_workflow"),
+        ("density authority", "density-100m.yml", "validate_density_workflow"),
+    ],
+)
+def test_every_validated_workflow_rejects_a_piped_step_without_pipefail(
+    tmp_path: Path, name: str, workflow: str, validate: str
+) -> None:
+    text = Path(f".github/workflows/{workflow}").read_text(encoding="utf-8")
+    bad = "      - name: Unsafe pipe\n        run: python bench.py | tee report.md\n"
+    good = (
+        "      - name: Safe pipe\n        shell: bash\n        run: python bench.py | tee report.md\n"
+        "      - name: Explicit pipefail\n        run: |\n"
+        "          set -o pipefail\n          python bench.py | tee report.md\n"
+    )
+    first_steps = text.index("    steps:\n") + len("    steps:\n")
+    path = tmp_path / workflow
+    path.write_text(text[:first_steps] + bad + text[first_steps:], encoding="utf-8")
+    errors = getattr(verify_ci_workflow, validate)(path)
+    assert any(f"{name} job" in e and "Unsafe pipe" in e and "pipefail" in e for e in errors), (
+        errors
+    )
+    path.write_text(text[:first_steps] + good + text[first_steps:], encoding="utf-8")
+    assert not any(
+        "Safe pipe" in e or "Explicit pipefail" in e
+        for e in getattr(verify_ci_workflow, validate)(path)
+    )
+
+
+def test_release_workflow_requires_wasm_enforcement_inside_cibuildwheel(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    line = "            XYG_REQUIRE_WASM=1\n"
+    assert line in workflow
+    errors = _release_errors(tmp_path, workflow.replace(line, "", 1))
+    assert any("XYG_REQUIRE_WASM=1" in e for e in errors), errors
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cargo build --release --target wasm32-unknown-unknown -p xyg-wasm",
+        "cargo build --target=wasm32-unknown-unknown --package xyg-wasm --release",
+        "cargo build -pxyg-wasm --target wasm32-unknown-unknown",
+        "npm  run   build:wasm",
+        "node ./js/package-wasm.mjs target/x.wasm",
+    ],
+)
+def test_single_producer_guard_tolerates_reordered_flags(tmp_path: Path, command: str) -> None:
+    assert verify_ci_workflow._runs_wasm_producer(command) is not None
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    mutated = _mutate_job(
+        workflow,
+        "benchmark_methodology",
+        "      - name: Install JS build toolchain\n        run: scripts/ci_retry.sh 3 npm ci\n",
+        f"      - name: Install JS build toolchain\n        run: |\n          scripts/ci_retry.sh 3 npm ci\n          {command}\n",
+    )
+    assert any("must consume wasm-assets" in e for e in _wasm_errors(tmp_path, mutated))
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cargo build -p xyg-wasm --bin geo_scene_conformance",
+        "cargo build --release -p xyg-core",
+        "cargo build --release --target wasm32-unknown-emscripten",
+        "cargo build --target wasm32-unknown-unknown",
+        "cargo test -p xyg-wasm",
+        "npm run build",
+        "echo 'npm run build:wasm' # not a command",
+    ],
+)
+def test_single_producer_guard_ignores_non_producers(command: str) -> None:
+    assert verify_ci_workflow._runs_wasm_producer(command) is None
+
+
+# ---------------------------------------------------------------------------
+# Round-4: oracle position, hardened pipefail rule, argument-parsing producer guard
+# ---------------------------------------------------------------------------
+
+_DIVAN_STEP = "Native benchmark oracles (divan --test, no timing)"
+_PYTEST_STEP = "CodSpeed benchmark oracles (pytest, no timing)"
+
+
+def test_benchmark_oracles_are_the_final_two_steps_of_the_test_job(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "test")
+    steps = [m.group(1) for m in re.finditer(r"^      - name: (.+)$", workflow[start:end], re.M)]
+    assert steps[-2:] == [_DIVAN_STEP, _PYTEST_STEP]
+    assert steps.index("Python tests (native core)") < steps.index(_DIVAN_STEP)
+
+    # Moving an oracle step before the native build (the pre-fix placement) is rejected.
+    block = workflow[start:end]
+    divan_at = block.index("      # Benchmark bodies carry correctness assertions")
+    divan_end = block.index("      # Same intent for the pytest benchmarks")
+    divan = block[divan_at:divan_end]
+    moved = block.replace(divan, "", 1).replace(
+        "      - name: Build native core\n", divan + "      - name: Build native core\n", 1
+    )
+    errors = _wasm_errors(tmp_path, workflow[:start] + moved + workflow[end:])
+    assert any("must be its final two steps" in e for e in errors), errors
+
+
+def _sub(root: Path, name: str) -> Path:
+    (root / name).mkdir()
+    return root / name
+
+
+def test_benchmark_methodology_contract_cannot_be_dropped_from_the_test_job(
+    tmp_path: Path,
+) -> None:
+    """The pre-merge producer + report-verifier step is verifier-enforced (#1005/#1008)."""
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "test")
+    block = workflow[start:end]
+    step = "      - name: Benchmark methodology contract (smallest sizes, report verified)\n"
+    at = block.index(step)
+    after = block.index("\n      # Benchmark bodies carry correctness assertions")
+    assert _wasm_errors(_sub(tmp_path, "ok"), workflow) == []
+
+    dropped = _wasm_errors(
+        _sub(tmp_path, "dropped"), workflow[:start] + block[:at] + block[after:] + workflow[end:]
+    )
+    assert any("Benchmark methodology contract" in e for e in dropped), dropped
+
+    weakened = block.replace(
+        '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/workflows.json" --kind workflow-native\n',
+        "",
+        1,
+    )
+    errors = _wasm_errors(_sub(tmp_path, "weak"), workflow[:start] + weakened + workflow[end:])
+    assert any("Benchmark methodology contract" in e for e in errors), errors
+
+
+def test_makefile_check_bench_oracles_runs_the_same_commands_as_ci() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    recipe = makefile.split("check-bench-oracles:\n", 1)[1].split("\n\n", 1)[0]
+    commands = [line.strip() for line in recipe.splitlines()]
+    assert commands == [*_ORACLE_COMMANDS, "$(PYTHON) -m pytest benchmarks/test_codspeed_*.py -q"]
+    assert "check-bench-oracles" in makefile.split(".PHONY:", 1)[1].split("\n", 1)[0]
+    assert "--group codspeed" in makefile.split("setup:\n", 1)[1].split("\n\n", 1)[0]
+
+
+def test_docs_and_dependency_comment_describe_the_oracle_gate() -> None:
+    build_ci = Path("spec/design/build-ci.md").read_text(encoding="utf-8")
+    block = build_ci.split("## Local reproduction", 1)[1].split("```", 2)[1]
+    assert "--group dev --group codspeed" in block and "make check-bench-oracles" in block
+    pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
+    assert "not needed for unit tests or static analysis" not in pyproject
+    assert "check-bench-oracles" in pyproject
+
+
+def test_checker_ok_line_lists_every_validated_workflow(capsys: pytest.CaptureFixture[str]) -> None:
+    assert verify_ci_workflow.main([]) == 0
+    out = capsys.readouterr().out
+    for name in (
+        "ci.yml",
+        "codspeed.yml",
+        "density-100m.yml",
+        "final-coderabbit.yml",
+        "publish.yaml",
+        "merge-queue-ruleset.json",
+    ):
+        assert name in out
+
+
+def _pipefail_errors(tmp_path: Path, step_yaml: str, *, header: str = "") -> list[str]:
+    text = (
+        "name: T\non: push\n"
+        + header
+        + "jobs:\n  j:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps:\n"
+        + step_yaml
+    )
+    errors: list[str] = []
+    verify_ci_workflow._require_pipefail_for_piped_steps(errors, text, "T")
+    return errors
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        # folded scalar: line structure is rewritten, so a pipe cannot be analyzed
+        "      - name: Folded\n        run: >-\n          python bench.py | tee out.md\n",
+        # unnamed step whose first key is run (indent 6)
+        "      - run: python bench.py | tee out.md\n",
+        "      - run: |\n          python bench.py | tee out.md\n",
+        # pipe inside a command substitution inside double quotes is still a pipe
+        '      - name: Subst\n        run: |\n          x="$(python bench.py | tail -1)"\n',
+        # a `<<` that is arithmetic is not a heredoc, so the pipe after it still counts
+        "      - name: Shift\n        run: |\n          n=$((1 << 3))\n          bench | tee out\n",
+        # here-string is not a heredoc terminator either
+        "      - name: Herestring\n        run: |\n          cat <<<word\n          bench | tee out\n",
+        # only bash implies pipefail
+        "      - name: Sh\n        shell: sh\n        run: bench | tee out\n",
+        "      - name: Pwsh\n        shell: pwsh\n        run: bench | tee out\n",
+        "      - name: Custom\n        shell: bash -e {0}\n        run: bench | tee out\n",
+        # a mention in an echo is not a statement
+        '      - name: Echo\n        run: |\n          echo "set -o pipefail"\n          bench | tee out\n',
+        # turning it off again
+        "      - name: Off\n        shell: bash\n        run: |\n          set +o pipefail\n          bench | tee out\n",
+        "      - name: Off2\n        run: |\n          set -o pipefail\n          set +o pipefail\n          bench | tee out\n",
+        # enabling after the pipe is too late
+        "      - name: Late\n        run: |\n          bench | tee out\n          set -o pipefail\n",
+    ],
+)
+def test_pipefail_rule_rejects_each_false_negative(tmp_path: Path, step: str) -> None:
+    errors = _pipefail_errors(tmp_path, step)
+    assert any("pipefail" in e for e in errors), (step, errors)
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        "      - name: Bash\n        shell: bash\n        run: bench | tee out\n",
+        "      - run: |\n          set -euo pipefail\n          bench | tee out\n",
+        "      - name: Stmt\n        run: |\n          set -o pipefail\n          bench | tee out\n",
+        "      - name: Continued\n        shell: bash\n        run: |\n          bench \\\n            | tee out\n",
+        "      - name: Quoted\n        run: |\n          echo 'a | b'\n          grep -Eq '(^| )x' f\n          a || b\n",
+        "      - name: Heredoc\n        run: |\n          python - <<'PY'\n          x = a | b\n          PY\n",
+        "      - name: Folded no pipe\n        run: >-\n          echo one\n          two\n",
+        "      - name: Comment\n        run: |\n          echo hi # a | b\n",
+    ],
+)
+def test_pipefail_rule_accepts_safe_or_pipe_free_steps(tmp_path: Path, step: str) -> None:
+    assert _pipefail_errors(tmp_path, step) == []
+
+
+def test_pipefail_rule_honors_job_and_workflow_default_shell(tmp_path: Path) -> None:
+    step = "      - name: P\n        run: bench | tee out\n"
+    workflow_default = "defaults:\n  run:\n    shell: bash\n"
+    assert _pipefail_errors(tmp_path, step, header=workflow_default) == []
+    wrong_default = "defaults:\n  run:\n    shell: sh\n"
+    assert _pipefail_errors(tmp_path, step, header=wrong_default)
+    job_default = (
+        "name: T\non: push\njobs:\n  j:\n    runs-on: x\n    defaults:\n      run:\n"
+        "        shell: bash\n    steps:\n" + step
+    )
+    errors: list[str] = []
+    verify_ci_workflow._require_pipefail_for_piped_steps(errors, job_default, "T")
+    assert errors == []
+
+
+def test_pipe_scanner_unit_cases() -> None:
+    pipes = verify_ci_workflow._pipe_lines
+    assert pipes(["n=$((1 << 3))", "a | b"]) == ["a | b"]
+    assert pipes(['x="$(a | b)"']) == ['x="$(a | b)"']
+    assert pipes(["x=$(a | b)"]) == ["x=$(a | b)"]
+    assert pipes(["echo 'a | b' \"c | d\""]) == []
+    assert pipes(["cat <<EOF", "a | b", "EOF", "c | d"]) == ["c | d"]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cargo build -p xyg-wasm \\\n    --release \\\n    --target wasm32-unknown-unknown",
+        "cargo build --manifest-path crates/xyg-wasm/Cargo.toml --target wasm32-unknown-unknown",
+        "cargo build --manifest-path=crates/xyg-wasm/Cargo.toml --release --target=wasm32-unknown-unknown",
+        "npm run-script build:wasm",
+        "pnpm run build:wasm",
+        "yarn build:wasm",
+    ],
+)
+def test_single_producer_guard_catches_continuations_manifest_paths_and_managers(
+    tmp_path: Path, command: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    body = "\n".join(f"          {line}" for line in command.splitlines())
+    mutated = _mutate_job(
+        workflow,
+        "benchmark_methodology",
+        "      - name: Install JS build toolchain\n        run: scripts/ci_retry.sh 3 npm ci\n",
+        "      - name: Install JS build toolchain\n        run: |\n"
+        f"          scripts/ci_retry.sh 3 npm ci\n{body}\n",
+    )
+    assert any("must consume wasm-assets" in e for e in _wasm_errors(tmp_path, mutated)), command
+
+
+def test_single_producer_guard_sees_folded_and_continued_commands() -> None:
+    step = (
+        "      - name: Hidden\n        run: >-\n          cargo build -p xyg-wasm\n"
+        "          --target wasm32-unknown-unknown\n"
+    )
+    job = "  j:\n    steps:\n" + step
+    lines = verify_ci_workflow._active_run_lines(job)
+    assert [verify_ci_workflow._runs_wasm_producer(line) for line in lines] == [
+        "cargo build -p xyg-wasm --target wasm32-unknown-unknown"
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Round-5: heredoc detection in code only, whole-value default shell, quoted run scalars,
+# unnamed trailing steps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "opener",
+    [
+        'echo "use <<EOF"',
+        "python -c 'print(1<<n)'",
+        "n=$((x << shift))",
+        "((x << shift))",
+        "cat <<<word",
+        "echo hi # <<EOF",
+    ],
+)
+def test_heredoc_is_opened_only_by_plain_shell_code(tmp_path: Path, opener: str) -> None:
+    """A quoted/arithmetic/commented `<<` must not swallow the pipe that follows."""
+    assert verify_ci_workflow._heredoc_delimiter(opener) is None
+    step = f"      - name: H\n        run: |\n          {opener}\n          bench | tee out\n"
+    assert any("pipefail" in e for e in _pipefail_errors(tmp_path, step))
+
+
+@pytest.mark.parametrize(
+    ("command", "delimiter"),
+    [
+        ("cat <<EOF", "EOF"),
+        ("python - <<'PY'", "PY"),
+        ('python - <<"PY"', "PY"),
+        ("cat <<-EOF", "EOF"),
+        ("cat > f <<EOF && echo x", "EOF"),
+    ],
+)
+def test_real_heredocs_still_open_one(command: str, delimiter: str) -> None:
+    assert verify_ci_workflow._heredoc_delimiter(command) == delimiter
+
+
+def test_step_ending_inside_a_heredoc_fails_closed(tmp_path: Path) -> None:
+    unterminated = "      - name: H\n        run: |\n          cat <<EOF\n          a | b\n"
+    errors = _pipefail_errors(tmp_path, unterminated)
+    assert any("ends inside a heredoc" in e and "'EOF'" in e for e in errors), errors
+    terminated = (
+        "      - name: H\n        run: |\n          cat <<EOF\n          a | b\n          EOF\n"
+    )
+    assert _pipefail_errors(tmp_path, terminated) == []
+
+
+@pytest.mark.parametrize("value", ["bash -e {0}", "sh", "pwsh", "bash {0}"])
+def test_default_shell_must_be_exactly_bash(tmp_path: Path, value: str) -> None:
+    step = "      - name: P\n        run: bench | tee out\n"
+    assert _pipefail_errors(tmp_path, step, header=f"defaults:\n  run:\n    shell: {value}\n")
+    job_default = (
+        "name: T\non: push\njobs:\n  j:\n    runs-on: x\n    defaults:\n      run:\n"
+        f"        shell: {value}\n    steps:\n" + step
+    )
+    errors: list[str] = []
+    verify_ci_workflow._require_pipefail_for_piped_steps(errors, job_default, "T")
+    assert errors
+
+
+def test_default_shell_value_comment_is_ignored(tmp_path: Path) -> None:
+    step = "      - name: P\n        run: bench | tee out\n"
+    header = "defaults:\n  run:\n    shell: bash # pipefail\n"
+    assert _pipefail_errors(tmp_path, step, header=header) == []
+
+
+@pytest.mark.parametrize("quote", ["'", '"'])
+def test_quoted_one_line_run_scalar_with_a_pipe_fails_closed(tmp_path: Path, quote: str) -> None:
+    step = f"      - name: Q\n        run: {quote}bench | tee out{quote}\n"
+    errors = _pipefail_errors(tmp_path, step)
+    assert any("folded or quoted" in e for e in errors), errors
+    assert (
+        _pipefail_errors(tmp_path, f"      - name: Q\n        run: {quote}echo hi{quote}\n") == []
+    )
+    # Quoted scalars with a pipe stay acceptable when the shell is explicitly bash? No:
+    # the YAML scalar is rewritten before the shell sees it, so it still fails closed.
+    shelled = f"      - name: Q\n        shell: bash\n        run: {quote}bench | tee out{quote}\n"
+    assert any("folded or quoted" in e for e in _pipefail_errors(tmp_path, shelled))
+
+
+@pytest.mark.parametrize("trailer", ["      - run: echo done\n", "      - uses: ./local\n"])
+def test_unnamed_trailing_step_after_the_oracles_is_caught(tmp_path: Path, trailer: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    start, end = _job_span(workflow, "test")
+    block = workflow[start:end].rstrip("\n") + "\n" + trailer + "\n"
+    errors = _wasm_errors(tmp_path, workflow[:start] + block + workflow[end:])
+    assert any("must be its final two steps" in e for e in errors), errors

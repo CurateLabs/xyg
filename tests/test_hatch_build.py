@@ -99,3 +99,36 @@ def test_resolve_accepts_every_cdylib_suffix(tmp_path: Path, suffix: str) -> Non
     lib = rel / f"libxyg_core{suffix}"
     lib.write_bytes(b"x")
     assert hb._resolve_built(rel / "libxyg_core.so", "some-cross-triple") == lib
+
+
+def test_require_wasm_build_fails_early_when_packaged_assets_are_withheld(tmp_path: Path) -> None:
+    """XYG_REQUIRE_WASM=1 builds name the missing asset and the producer step (#1005)."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "spec" / "wasm").mkdir(parents=True)
+    (tmp_path / "scripts" / "verify_wasm_assets.py").write_text(
+        (ROOT / "scripts" / "verify_wasm_assets.py").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tmp_path / "spec" / "wasm" / "abi.json").write_text(
+        (ROOT / "spec" / "wasm" / "abi.json").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+
+    with pytest.raises(RuntimeError) as excinfo:
+        hb.CustomBuildHook._require_packaged_wasm(tmp_path)
+
+    message = str(excinfo.value)
+    assert "XYG_REQUIRE_WASM=1" in message
+    assert "python/xyg/static: missing xyg-wasm.wasm" in message
+    assert "node js/build.mjs && npm run build:wasm" in message
+
+
+def test_require_wasm_build_refuses_a_tree_without_the_verifier(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match=r"verify_wasm_assets\.py"):
+        hb.CustomBuildHook._require_packaged_wasm(tmp_path)
+
+
+def test_wasm_manifest_ships_beside_the_wasm_bytes() -> None:
+    assert "xyg-wasm.manifest.json" in hb._OPTIONAL_STATIC_ASSETS
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    for location in ("packages/xy-client/dist", "python/xyg/static"):
+        for name in ("xyg-wasm.wasm", "xyg-wasm-inline.js", "xyg-wasm.manifest.json"):
+            assert f'"{location}/{name}"' in pyproject

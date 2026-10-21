@@ -2679,6 +2679,31 @@ requiring a Rust toolchain — an instant adoption cliff.
   renders wrong. Requests and replies carry no version of their own — the handshake
   happens once, at first paint, before any request is possible
   (`spec/design/wire-protocol.md` §7).
+- **Packaged WASM tick assets have one producer and fail early (#1005).** The direct-browser
+  module (`xyg-wasm.wasm`), its inline classic-worker copy (`xyg-wasm-inline.js`), and the
+  version/hash manifest (`xyg-wasm.manifest.json`: `sha256`, `bytes`, ABI/Scene/painter
+  versions from `spec/wasm/abi.json`) are **generated, never committed**. The single
+  producer step is `node js/build.mjs` then `npm run build:wasm` (compile `xyg-wasm`, run
+  `js/package-wasm.mjs`, which validates exports/signatures/size budget and writes both
+  `packages/xy-client/dist/` and `python/xyg/static/` before publishing anything). Every
+  consumer runs `scripts/verify_wasm_assets.py` before trusting the files: absent assets,
+  a hash/size that disagrees with the manifest, ABI/Scene/painter versions older than
+  `spec/wasm/abi.json`, an inline copy of a different module or a stale classic worker, or
+  diverging dist/static copies produce one diagnostic naming the files and the producer
+  command, not an opaque `FileNotFoundError` mid-benchmark. "Stale" means inconsistent with
+  the manifest, `spec/wasm/abi.json`, or the client build; the verifier cannot prove the wasm
+  was compiled from the current Rust source (the producer rebuilds every run, so that is the
+  producer's guarantee, not the verifier's). Distribution builds set
+  `XYG_REQUIRE_WASM=1` (the hatch hook then refuses to build without verified assets) and
+  `verify_wheel.py` / `verify_sdist.py --require-wasm` re-verify the bytes and manifest
+  inside the finished artifact; the npm package already carries `ASSET-MANIFEST.json`.
+  Python consumers stay Node-free after packaging and the Node/browser path stays
+  Python-free (`npm run build:wasm` never invokes Python). In CI the one producer job is
+  `wasm_assets` (`wasm-assets` in `publish.yaml`, which carries the same contract for every
+  wheel including the PyEmscripten wheel, the sdist, and the browser package); every consumer
+  lists it in `needs`, runs `node js/build.mjs` (the Worker is built, not downloaded),
+  downloads the `wasm-assets` artifact and runs the verifier (`scripts/verify_ci_workflow.py` enforces the wiring), so a
+  skipped or failed producer skips the consumers and fails `Release surfaces`.
 - **No-wheel behavior is defined:** the native Rust core is required and there is no
   pure-Python fallback. A source install compiles the core (Rust toolchain required);
   if the core cannot be loaded — an unsupported platform with no wheel and no local

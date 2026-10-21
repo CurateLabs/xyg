@@ -33,7 +33,11 @@ ASSETS = ("index.js", "standalone.js", "wasm-worker.js", "xyg-wasm.wasm")
 # `js/package-wasm.mjs` also writes the self-contained HTML inline worker into
 # dist; Python static exports consume it (hatch_build.py), the npm browser
 # package does not, so staging leaves it out rather than rejecting the build.
-PYTHON_ONLY_ARTIFACTS = ("wasm-inline-worker.js", "xyg-wasm-inline.js")
+PYTHON_ONLY_ARTIFACTS = (
+    "wasm-inline-worker.js",
+    "xyg-wasm-inline.js",
+    "xyg-wasm.manifest.json",
+)
 EXPECTED_EXPORTS = {
     ".": "./dist/index.js",
     "./standalone": "./dist/standalone.js",

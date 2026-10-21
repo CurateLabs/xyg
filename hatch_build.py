@@ -145,7 +145,13 @@ _JS_BUNDLES = ("index.js", "standalone.js")
 _INLINE_WASM_BUNDLE = "xyg-wasm-inline.js"
 _WASM_TICK_WORKER = "wasm-worker.js"
 _WASM_TICK_WASM = "xyg-wasm.wasm"
-_OPTIONAL_STATIC_ASSETS = (_INLINE_WASM_BUNDLE, _WASM_TICK_WORKER, _WASM_TICK_WASM)
+_WASM_MANIFEST = "xyg-wasm.manifest.json"
+_OPTIONAL_STATIC_ASSETS = (
+    _INLINE_WASM_BUNDLE,
+    _WASM_TICK_WORKER,
+    _WASM_TICK_WASM,
+    _WASM_MANIFEST,
+)
 
 
 def _static_dir(root: Path) -> Path:
@@ -193,6 +199,12 @@ class CustomBuildHook(BuildHookInterface):
         # module. Release/direct-browser jobs prepackage it with
         # `js/package-wasm.mjs`; a docs editable build intentionally does not
         # require Rust or that target merely to build the ordinary client.
+        if os.environ.get("XYG_REQUIRE_WASM") == "1":
+            # Release/CI distribution builds must carry the packaged WASM bytes and
+            # their version/hash manifest; a missing or stale set fails here with
+            # the producer command instead of shipping a distribution whose tick
+            # path raises at first use (#1005, §33).
+            self._require_packaged_wasm(root)
         if static_dir is not None:
             force_include = build_data.setdefault("force_include", {})
             if self.target_name == "wheel":
@@ -235,6 +247,27 @@ class CustomBuildHook(BuildHookInterface):
             )
             build_data["pure_python"] = True
             build_data["tag"] = "py3-none-any"
+
+    @staticmethod
+    def _require_packaged_wasm(root: Path) -> None:
+        """Fail the build unless the one WASM producer step's output verifies."""
+        verifier = root / "scripts" / "verify_wasm_assets.py"
+        if not verifier.is_file():
+            raise RuntimeError(
+                "XYG_REQUIRE_WASM=1 needs scripts/verify_wasm_assets.py, which is not in "
+                "this tree; build from a source checkout or unset XYG_REQUIRE_WASM."
+            )
+        result = subprocess.run(
+            [sys.executable, "-I", str(verifier), "--root", str(root)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                "XYG_REQUIRE_WASM=1 but the packaged WASM assets are missing or stale.\n"
+                + result.stderr.strip()
+            )
 
     def _provision_js(self, root: Path, require: bool) -> Optional[Path]:
         """Return the Python-copy directory holding the render-client bundles.
