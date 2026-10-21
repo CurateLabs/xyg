@@ -1539,6 +1539,15 @@ export class Figure {
   setAxis(axisId, options = {}) {
     if (axisId !== "x" && axisId !== "y" && axisId !== "y2") throw new RangeError("axisId must be x, y or y2");
     options = copySceneOptions(options, `Scene ${axisId} axis options`);
+    // Same admission and messages as Python `set_axis`.
+    if (options.side != null) {
+      if (axisId === "x" && options.side !== "top" && options.side !== "bottom") {
+        throw new RangeError("x axis side must be 'top' or 'bottom'");
+      }
+      if (axisId !== "x" && options.side !== "left" && options.side !== "right") {
+        throw new RangeError("y axis side must be 'left' or 'right'");
+      }
+    }
     this.axis_options = this.axis_options ?? { x: {}, y: {} };
     this.axis_options[axisId] = { ...(this.axis_options[axisId] ?? {}), ...options };
     // No y2 side default here: an omitted side stays unobserved so Rust alone

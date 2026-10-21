@@ -438,7 +438,7 @@ fn pack_xych(input: &SceneChromePackInput<'_>, y_axis: &ChromeAxisInput<'_>) -> 
 fn pack_y2_sidecar(input: &SceneChromePackInput<'_>, y2: &ChromeY2Input<'_>) -> Result<Vec<u8>, i32> {
     let mut axis = y2.axis.clone();
     if !y2.side_authored {
-        axis.side_code = resolve_axis_side_code(AXIS_SIDE_ROLE_Y2, None).unwrap_or(Y2_DEFAULT_SIDE_CODE);
+        axis.side_code = resolve_axis_side_code(AXIS_SIDE_ROLE_Y2, None).expect("y2 role always has a default side");
     }
     if !y2.tick_sides_authored {
         axis.tick_sides_mask = 1 << axis.side_code;

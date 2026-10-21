@@ -429,6 +429,8 @@ surface Rust's reasons; no host adds admission or layout policy.
     client derives both masks from the resolved `side`, which is the
     same default Rust applies (`1 << side`) in the static sidecar. Live y2 still
     accepts `side="left"`; static export refuses it (`XYG_SCENE_UNSUPPORTED_Y2_SIDE`).
+    Follow-up (not required by #1044): ship Rust-resolved masks on the live wire
+    instead of client derivation from `side`.
   - A y2-bound annotation keeps `y_axis: "y2"` on the live wire (Python
     `_annotation_common`, Node `annotationCommon`); the key is emitted only when
     bound, so unbound payloads stay byte-identical. Both hosts refuse the

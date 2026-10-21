@@ -19,6 +19,9 @@ in the README).
   with static Scene export (x bottom, y left, unauthored y2 right); Python and
   Node marshal only the authored side and the `_Y2_LIVE_SIDE` / `Y2_LIVE_SIDE`
   host constants are removed. Live y2 still accepts `side="left"`.
+- Node `setAxis` now rejects an invalid `side` up front with Python's messages
+  (`x axis side must be 'top' or 'bottom'`, `y axis side must be 'left' or
+  'right'`); previously it failed later with a generic error (#1044).
 
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
