@@ -59,6 +59,30 @@ const DEFAULT_Y_MIN_GAP: f64 = 4.0;
 const DEFAULT_SCALE_CONSTANT: f64 = 1.0;
 /// Side code (1 = high/right) of a secondary y axis whose side is not authored.
 const Y2_DEFAULT_SIDE_CODE: u8 = 1;
+
+/// Axis role for [`resolve_axis_side_code`]: bottom/top x axis.
+pub const AXIS_SIDE_ROLE_X: i32 = 0;
+/// Axis role for [`resolve_axis_side_code`]: primary y axis (left/right).
+pub const AXIS_SIDE_ROLE_Y: i32 = 1;
+/// Axis role for [`resolve_axis_side_code`]: secondary y axis (left/right).
+pub const AXIS_SIDE_ROLE_Y2: i32 = 2;
+
+/// Resolve an axis side code (0 = low: bottom/left, 1 = high: top/right) from
+/// the authored side (`None` = unauthored). This is the single owner of the
+/// default-side policy: x is bottom, the primary y is left, and an unauthored
+/// y2 is the right side. Static Scene export (`pack_y2_sidecar`) and the live
+/// payload (via `xyg_payload_axis_side_resolve`) both read it. `None` is
+/// returned for an unknown role or an authored code outside 0/1.
+pub fn resolve_axis_side_code(role: i32, authored: Option<u8>) -> Option<u8> {
+    if let Some(code) = authored {
+        return (code <= 1 && (AXIS_SIDE_ROLE_X..=AXIS_SIDE_ROLE_Y2).contains(&role)).then_some(code);
+    }
+    match role {
+        AXIS_SIDE_ROLE_X | AXIS_SIDE_ROLE_Y => Some(0),
+        AXIS_SIDE_ROLE_Y2 => Some(Y2_DEFAULT_SIDE_CODE),
+        _ => None,
+    }
+}
 /// Byte range of the y axis record inside the 200-byte resolved Scene style.
 const SCENE_STYLE_Y_AXIS: std::ops::Range<usize> = 112..200;
 const MAX_TICK_LABELS: usize = 256;
@@ -414,7 +438,7 @@ fn pack_xych(input: &SceneChromePackInput<'_>, y_axis: &ChromeAxisInput<'_>) -> 
 fn pack_y2_sidecar(input: &SceneChromePackInput<'_>, y2: &ChromeY2Input<'_>) -> Result<Vec<u8>, i32> {
     let mut axis = y2.axis.clone();
     if !y2.side_authored {
-        axis.side_code = Y2_DEFAULT_SIDE_CODE;
+        axis.side_code = resolve_axis_side_code(AXIS_SIDE_ROLE_Y2, None).unwrap_or(Y2_DEFAULT_SIDE_CODE);
     }
     if !y2.tick_sides_authored {
         axis.tick_sides_mask = 1 << axis.side_code;
@@ -707,6 +731,17 @@ pub fn scene_chrome_pack(input: &SceneChromePackInput<'_>) -> Result<Vec<u8>, i3
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn axis_side_resolution_owns_the_default_policy() {
+        assert_eq!(resolve_axis_side_code(AXIS_SIDE_ROLE_X, None), Some(0));
+        assert_eq!(resolve_axis_side_code(AXIS_SIDE_ROLE_Y, None), Some(0));
+        assert_eq!(resolve_axis_side_code(AXIS_SIDE_ROLE_Y2, None), Some(1));
+        assert_eq!(resolve_axis_side_code(AXIS_SIDE_ROLE_Y2, Some(0)), Some(0));
+        assert_eq!(resolve_axis_side_code(AXIS_SIDE_ROLE_Y2, Some(1)), Some(1));
+        assert_eq!(resolve_axis_side_code(AXIS_SIDE_ROLE_Y2, Some(2)), None);
+        assert_eq!(resolve_axis_side_code(3, None), None);
+    }
 
     fn default_axis() -> ChromeAxisInput<'static> {
         ChromeAxisInput {

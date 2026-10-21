@@ -13,6 +13,13 @@ in the README).
 
 ## [Unreleased]
 
+### Changed
+- The live payload's secondary y axis (y2) side is resolved by Rust (#1044).
+  New ABI 392 `xyg_payload_axis_side_resolve` shares `resolve_axis_side_code`
+  with static Scene export (x bottom, y left, unauthored y2 right); Python and
+  Node marshal only the authored side and the `_Y2_LIVE_SIDE` / `Y2_LIVE_SIDE`
+  host constants are removed. Live y2 still accepts `side="left"`.
+
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing

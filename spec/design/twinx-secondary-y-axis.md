@@ -417,10 +417,18 @@ surface Rust's reasons; no host adds admission or layout policy.
     the omission reaches Rust unobserved on the static path and Rust resolves it
     to the right edge. It also syncs the authored x/y `label` into
     `x_label`/`y_label`, exactly like Python `set_axis`, so the same authored
-    chart produces the same live spec in both hosts. The live path resolves an
-    absent non-primary y side to the right edge with host mirror constants
-    (`_Y2_LIVE_SIDE` / `Y2_LIVE_SIDE`); those predate this PR as host defaults and
-    are tracked for replacement by a Rust-owned resolution in #1044.
+    chart produces the same live spec in both hosts. The live path reads the
+    same Rust resolution (#1044): `resolve_axis_side_code` in
+    `scene_chrome_pack.rs` owns the default (x bottom, primary y left, an
+    unauthored y2 right) and serves both `pack_y2_sidecar` (static) and the C ABI
+    `xyg_payload_axis_side_resolve` (ABI 392) that Python
+    `kernels.payload_axis_side_resolve` and Node `payloadAxisSideResolve` call
+    when building the live axis spec. The hosts marshal only the authored side;
+    the mirror constants `_Y2_LIVE_SIDE` / `Y2_LIVE_SIDE` are gone. The live
+    wire carries no `tick_sides`/`tick_label_sides` for an unauthored y2; the
+    client derives both masks from the resolved `side`, which is the
+    same default Rust applies (`1 << side`) in the static sidecar. Live y2 still
+    accepts `side="left"`; static export refuses it (`XYG_SCENE_UNSUPPORTED_Y2_SIDE`).
   - A y2-bound annotation keeps `y_axis: "y2"` on the live wire (Python
     `_annotation_common`, Node `annotationCommon`); the key is emitted only when
     bound, so unbound payloads stay byte-identical. Both hosts refuse the
