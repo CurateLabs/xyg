@@ -1123,3 +1123,48 @@ def test_scene_rejects_malformed_host_arrays() -> None:
             [0.0],
             [0],
         )
+
+
+def _named_colorbar_figure(domain: list[float]) -> Figure:
+    figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
+    figure.colorbar_options = {"domain": domain, "colormap": "viridis"}
+    return figure
+
+
+def _xycb_stop_values(scene: bytes) -> list[float]:
+    at = scene.index(b"XYCB")
+    (count,) = struct.unpack_from("<I", scene, at + 12)
+    return [struct.unpack_from("<d", scene, at + 56 + 12 * i)[0] for i in range(count)]
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [[0.0, 1.7e308], [-1.7e308, 1.7e308], [-1.7976931348623157e308, 1.7976931348623157e308]],
+)
+def test_scene_named_colorbar_extreme_finite_domains_keep_full_palette(domain: list[float]) -> None:
+    """#888: hi - lo overflows; the palette must still frame, render, and rasterize."""
+    scene = _named_colorbar_figure(domain).to_scene()
+    values = _xycb_stop_values(scene)
+    assert len(values) == 11
+    assert values[0] == domain[0] and values[-1] == domain[1]
+    assert all(a < b for a, b in zip(values, values[1:], strict=False))
+    assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
+    assert _native.scene_raster_commands(scene)
+
+
+def test_scene_named_colorbar_adjacent_domains_keep_samples_or_fail_closed() -> None:
+    import math
+
+    lo = 1.0
+    hi = lo
+    for _ in range(10):  # exactly enough representable values for 11 samples
+        hi = math.nextafter(hi, math.inf)
+    scene = _named_colorbar_figure([lo, hi]).to_scene()
+    assert _xycb_stop_values(scene) == sorted(set(_xycb_stop_values(scene)))
+    assert len(_xycb_stop_values(scene)) == 11
+    assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
+    # Fewer representable values than samples: stable rejection, never a
+    # silently dropped palette or endpoint-only colors.
+    for domain in ([1.0, math.nextafter(1.0, math.inf)], [1.0, 1.0], [2.0, 1.0]):
+        with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_COLORBAR"):
+            _named_colorbar_figure(domain).to_scene()

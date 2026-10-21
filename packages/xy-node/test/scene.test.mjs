@@ -879,6 +879,36 @@ test("Node frames bounded Scene colorbar ticks and Rust renders shared major/min
   assert.ok(Buffer.from(sceneBrowserPainter(scene)).includes(Buffer.from("XYCT")));
 });
 
+function namedColorbarStops(scene) {
+  const offset = Buffer.from(scene).indexOf("XYCB"), view = new DataView(scene.buffer, scene.byteOffset + offset);
+  return Array.from({ length: view.getUint32(12, true) }, (_, index) => view.getFloat64(56 + 12 * index, true));
+}
+
+test("Node named colorbars keep the full palette on extreme and adjacent finite domains (#888)", () => {
+  const build = (domain) => {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.scatter([0, 1], [0, 1]);
+    figure.colorbar_options = { domain, colormap: "viridis" };
+    return figure.toScene();
+  };
+  for (const domain of [[0, 1.7e308], [-1.7e308, 1.7e308], [-Number.MAX_VALUE, Number.MAX_VALUE]]) {
+    const scene = build(domain), stops = namedColorbarStops(scene);
+    assert.equal(stops.length, 11);
+    assert.equal(stops[0], domain[0]);
+    assert.equal(stops.at(-1), domain[1]);
+    assert.ok(stops.every((value, index) => !index || value > stops[index - 1]));
+    assert.match(sceneSvg(scene), /data-xy-slot="colorbar/);
+    assert.ok(sceneRasterCommands(scene).byteLength > 0);
+  }
+  const next = (value) => { const view = new DataView(new ArrayBuffer(8)); view.setFloat64(0, value); view.setBigUint64(0, view.getBigUint64(0) + 1n); return view.getFloat64(0); };
+  let hi = 1;
+  for (let step = 0; step < 10; step += 1) hi = next(hi);
+  const adjacent = namedColorbarStops(build([1, hi]));
+  assert.equal(adjacent.length, 11);
+  assert.ok(adjacent.every((value, index) => !index || value > adjacent[index - 1]));
+  for (const domain of [[1, next(1)], [1, 1], [2, 1]]) assert.throws(() => build(domain));
+});
+
 test("Node explicit hidden Cartesian chrome omits invisible groups without implying polar", () => {
   const chrome = new Uint8Array(200);
   new DataView(chrome.buffer).setFloat64(16, 12, true);

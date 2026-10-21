@@ -179,6 +179,14 @@ in the README).
   silently leave a stale row in the CodSpeed dashboard.
 
 ### Fixed
+- Named Scene colorbars (`xyg_scene_pack_named_colorbar`) no longer fail
+  `NonFinite` on finite domains whose span overflows (`[0, 1.7e308]`,
+  `[-1.7e308, 1.7e308]`) and no longer fail `Order` when rounding collapses
+  interior stops: stop values use overflow-safe interpolation, bit-exact
+  endpoints, and the next representable value when rounding repeats one. Ordinary
+  domains frame byte-identically. Domains with fewer representable values than
+  palette samples (for example `[1, nextafter(1)]`) still fail closed with
+  `Order`; the wire representation for those is tracked on #888 (partial).
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
   while a cache-isolated coreless build must still import `reflex_xy`, report
