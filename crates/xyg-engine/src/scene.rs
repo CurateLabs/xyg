@@ -113,6 +113,10 @@ const SCENE_LABEL_RECORD_BYTES: usize = 40;
 const SCENE_LABEL_BOX_RECORD_BYTES: usize = 84;
 const SCENE_LABEL_WRAPPED_RECORD_BYTES: usize = 104;
 const SCENE_LABEL_ROTATED_RECORD_BYTES: usize = 112;
+/// Highest XYLB version the browser painter may carry (the TypeScript client
+/// in `js/src/48_wasm_scene.ts` decodes v1..=this). v7 is Scene-wire only.
+#[cfg(test)]
+const BROWSER_PAINTER_XYLB_MAX_VERSION: u32 = 6;
 /// XYLB v7 = the v6 record plus `u32` flags (bit 0 = annotation label) and a
 /// zero reserved `u32`. It is emitted only when the provenance flag disagrees
 /// with the reserved-id pattern, so every other Scene keeps its prior bytes.
@@ -24228,6 +24232,51 @@ pub(crate) mod tests {
             bad[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
             assert!(decode_scene_labels(&bad).is_err());
         }
+    }
+
+    /// #1040: the browser painter carries rotated labels as the 112-byte XYLB
+    /// v6 record the TypeScript client decodes (`js/src/48_wasm_scene.ts`), and
+    /// never a version above what the client accepts.
+    #[test]
+    fn browser_painter_rotated_label_is_xylb_v6_and_never_above_client_max() {
+        assert_eq!(SCENE_LABEL_ROTATED_RECORD_BYTES, 112);
+        assert_eq!(SCENE_LABEL_WRAPPED_RECORD_BYTES, 104);
+        let mut document = per_label_style_scene();
+        document.labels[0].rotation = 30.0;
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let at = painter
+            .windows(4)
+            .position(|window| window == b"XYLB")
+            .expect("painter carries the label block");
+        let u32_at = |offset: usize| u32::from_le_bytes(painter[offset..offset + 4].try_into().unwrap());
+        assert_eq!(u32_at(at + 4), 6);
+        let count = u32_at(at + 8) as usize;
+        let text_bytes = u32_at(at + 12) as usize;
+        assert_eq!(count, 3);
+        // header(16) + count * 112 + text fills the rest of the block.
+        let table_end = at + 16 + count * 112;
+        assert_eq!(&painter[table_end..table_end + text_bytes], b"alphabetagamma");
+        let record = |index: usize| at + 16 + index * 112;
+        let rotation = |index: usize| {
+            f64::from_le_bytes(painter[record(index) + 104..record(index) + 112].try_into().unwrap())
+        };
+        assert_eq!([rotation(0), rotation(1), rotation(2)], [30.0, 0.0, 0.0]);
+        // The block decodes back to the same rotation.
+        let block = &painter[at..table_end + text_bytes];
+        let (labels, _) = decode_scene_labels(block).unwrap();
+        assert_eq!(labels[0].rotation, 30.0);
+        // Every label feature the painter can emit stays within the client max.
+        assert!(u32_at(at + 4) <= BROWSER_PAINTER_XYLB_MAX_VERSION);
+        // An ordinary label with an annotation-looking id would be v7 on the
+        // Scene wire; the painter normalizes provenance and stays at v6.
+        document.labels[1].stable_id = 0x5859_0400_0000_0009;
+        document.labels[1].annotation = false;
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let at = painter.windows(4).position(|w| w == b"XYLB").unwrap();
+        assert!(
+            u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap())
+                <= BROWSER_PAINTER_XYLB_MAX_VERSION
+        );
     }
 
     /// The shape a composed graph with authored annotations produces: the
