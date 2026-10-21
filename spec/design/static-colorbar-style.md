@@ -102,7 +102,8 @@ boundaries but no `band_colors` is a continuous ramp, so
 gradient. A colormapped `contourf(levels=..., cmap=...)` with at most 15 bands
 supplies `band_colors` (`cmap(floor(N * t))` at each level midpoint, caps from
 the colormap under/over colors; #1046) and takes the discrete path; contours
-with more levels or a custom `norm=` keep the ramp. A `BoundaryNorm` colorbar
+with more than 15 levels or a custom `norm=` keep the ramp (a `colors=` sequence or
+`BoundaryNorm` beyond 15 bands fails closed with `XYG_SCENE_UNSUPPORTED_COLORBAR`). A `BoundaryNorm` colorbar
 inherits `norm.extend` when `extend=` is not passed. `tick_labels` without bands (a
 formatted continuous ramp) stays rejected with the stable
 `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS` reason because the named

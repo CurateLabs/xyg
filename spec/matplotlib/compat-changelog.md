@@ -14,12 +14,24 @@ which covers user-visible releases across the whole package.
   the real Matplotlib colorbar band and extension-patch facecolors. Exports of
   these colorbars change bytes versus the earlier smooth ramp (recorded in
   `CHANGELOG.md`).
-- Remaining gaps: contours with more than 15 bands (Scene stop budget of 16),
-  `norm=`-mapped contours and `colors=` sequences beyond the budget still use the
-  ramp (`spacing=` keeps the `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE`
-  rejection there); `tricontourf` is unchanged.
+- Remaining gaps (follow-up: raise the Rust Scene colorbar stop budget):
+  - Only a *colormapped* `contourf` with more than 15 bands (Scene budget of 16
+    stops) falls back to the continuous ramp. A `colors=` sequence or a
+    `BoundaryNorm` beyond the budget fails closed with
+    `XYG_SCENE_UNSUPPORTED_COLORBAR`.
+  - `norm=`-mapped contours keep the ramp (`spacing=` there keeps the
+    `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rejection); `tricontourf` is
+    unchanged.
+  - `contourf(alpha=...)`: the colorbar bands are drawn opaque; Matplotlib
+    applies the mappable's alpha to the colorbar.
+  - Known pre-existing colormap-table drift: xyg's built-in tables differ from
+    Matplotlib 3.11's (viridis by up to 14/255 at LUT indices 139-253, jet 23,
+    turbo 15, coolwarm 12, inferno 9), so bands pick the same LUT index as
+    Matplotlib but can differ in color by that much. Tests assert bands exactly
+    against xyg's own LUT and against Matplotlib within the viridis drift.
 - A colorbar of a `BoundaryNorm` image/mesh inherits `norm.extend` when
-  `extend=` is not passed (Matplotlib `Colorbar.__init__`).
+  `extend=` is not passed (Matplotlib `Colorbar.__init__`). Unsupported: `cmap.colorbar_extend`
+  precedence over the norm/contour extend.
 
 ## `BoundaryNorm` colorbar static export — 2026-10-20 (Matplotlib 3.11.0 reference, #1035)
 

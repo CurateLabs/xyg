@@ -411,6 +411,10 @@ _DASH_SEGMENT_PATTERNS: dict[str, tuple[tuple[float, float], ...]] = {
     ":": ((0.0, 0.18), (0.5, 0.68)),
 }
 
+#: Mirrors Rust's MAX_SCENE_COLORBAR_STOPS / MAX_COLORBAR_STOPS (a test compares
+#: them); the native layer does not expose the budget.
+MAX_SCENE_COLORBAR_STOPS = 16
+
 _LINESTYLE_TO_FMT_TOKEN = {"solid": "-", "dashed": "--", "dashdot": "-.", "dotted": ":"}
 
 
@@ -3707,10 +3711,15 @@ class PlotTypeMixin:
             # renderers instead of degrading it to a continuous gradient.
             entry["discrete_levels"] = max(1, len(public_levels) - 1)
             entry["discrete_boundaries"] = public_levels
-            # A Scene colorbar carries at most 16 literal stops (15 bands); a
+            # A Scene colorbar carries at most MAX_SCENE_COLORBAR_STOPS literal
+            # stops (edges = bands + 1, i.e. 15 bands); a
             # finer contour keeps the continuous ramp it always had rather than
             # failing closed (follow-up: raise the Scene stop budget).
-            if color is None and norm is None and 2 <= len(rendered_levels) <= 16:
+            if (
+                color is None
+                and norm is None
+                and 2 <= len(rendered_levels) <= MAX_SCENE_COLORBAR_STOPS
+            ):
                 # A colormapped fill paints band i with cmap(norm(midpoint)) over
                 # Normalize(levels[0], levels[-1]) (ContourSet._process_colors);
                 # the colorbar must show the same solid bands. Extension caps are

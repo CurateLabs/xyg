@@ -20,8 +20,8 @@ in the README).
   caps use the colormap under/over colors, and a `BoundaryNorm` with its own
   `extend` now gives the colorbar end triangles when `extend=` is not passed.
   Expected fixture-hash change: every static export of such a contourf colorbar
-  (SVG/PNG/PDF/JPEG/WebP) differs from before; finer contours (more than 15
-  bands) and contours with a custom `norm=` keep the ramp.
+  (SVG/PNG/PDF/JPEG/WebP) differs from before; colormapped contours with more
+  than 15 bands and contours with a custom `norm=` keep the ramp.
 
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
