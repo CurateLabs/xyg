@@ -132,13 +132,13 @@ def _extrema_ok(x, y) -> bool:
     finite = np.isfinite(x) & np.isfinite(y)
     if tier == "direct":
         # Below the LOD budget the engine ships every row (lossless), so no
-        # decimation happens and per-column extrema are preserved iff no row
-        # is dropped. Require the full row count, then run the same per-column
-        # comparison below on the finite rows.
-        if int(tr.get("n_points", -1)) != len(x) or len(xs) != len(x):
-            return False
+        # decimation happens and per-column extrema are preserved iff no finite
+        # row is dropped. Require every finite source row, then run the same
+        # per-column comparison below.
         keep = np.isfinite(xs) & np.isfinite(ys)
         xs, ys = xs[keep], ys[keep]
+        if len(xs) != int(np.count_nonzero(finite)):
+            return False
     if not bool(np.any(finite)):
         return len(xs) == 0
     source_x = x[finite]
