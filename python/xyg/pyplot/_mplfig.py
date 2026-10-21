@@ -1494,7 +1494,9 @@ class Figure:
             # A contour set owns its extend state. Matplotlib colorbars inherit
             # it unless the caller explicitly overrides ``extend=``; losing it
             # drops the triangular end caps and misstates the mapped domain.
-            extend = props.get("extend", entry.get("extend", "neither"))
+            extend = props.get(
+                "extend", entry.get("extend", entry.get("discrete_extend", "neither"))
+            )
         if extend is not None:
             if extend not in ("neither", "min", "max", "both"):
                 raise ValueError("colorbar() extend must be 'neither', 'min', 'max', or 'both'")

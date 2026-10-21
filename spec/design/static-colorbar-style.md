@@ -96,10 +96,14 @@ for a logarithmic scale, minor ticks, fewer than two stops, or authored labels
 without authored ticks or of the wrong count. pyplot admits `band_colors`,
 `boundaries`, `spacing` and `tick_labels` on the panel colorbar and marshals
 them as literal Scene stops plus this blob; `spacing` and the cap paints are likewise discrete-only: a colorbar with
-boundaries but no `band_colors` (for example `contourf(levels=..., cmap=...)`)
-is a continuous ramp, so `spacing="proportional"` on it stays rejected with the
-pre-existing `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rather than exporting
-a smooth gradient, and its default-spacing export is unchanged. `tick_labels` without bands (a
+boundaries but no `band_colors` is a continuous ramp, so
+`spacing="proportional"` on it stays rejected with the pre-existing
+`XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rather than exporting a smooth
+gradient. A colormapped `contourf(levels=..., cmap=...)` with at most 15 bands
+supplies `band_colors` (`cmap(floor(N * t))` at each level midpoint, caps from
+the colormap under/over colors; #1046) and takes the discrete path; contours
+with more levels or a custom `norm=` keep the ramp. A `BoundaryNorm` colorbar
+inherits `norm.extend` when `extend=` is not passed. `tick_labels` without bands (a
 formatted continuous ramp) stays rejected with the stable
 `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_TICK_LABELS` reason because the named
 ramp has no literal bands to label. A discrete colormap without `BoundaryNorm`

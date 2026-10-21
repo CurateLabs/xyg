@@ -13,6 +13,16 @@ in the README).
 
 ## [Unreleased]
 
+### Fixed
+- Static export draws a colormapped `contourf` colorbar (up to 15 levels) as
+  one solid band per level, as Matplotlib 3.11 does, instead of a smooth ramp
+  (#1046). `spacing="proportional"` and `format=` are admitted on it, extension
+  caps use the colormap under/over colors, and a `BoundaryNorm` with its own
+  `extend` now gives the colorbar end triangles when `extend=` is not passed.
+  Expected fixture-hash change: every static export of such a contourf colorbar
+  (SVG/PNG/PDF/JPEG/WebP) differs from before; finer contours (more than 15
+  bands) and contours with a custom `norm=` keep the ramp.
+
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing

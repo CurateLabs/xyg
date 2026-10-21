@@ -4,6 +4,23 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## Banded `contourf` colorbars — 2026-10-21 (Matplotlib 3.11.0 reference, #1046)
+
+- A colormapped `contourf` colorbar now carries one band color per level
+  (`cmap(floor(N * norm(midpoint)))` over `Normalize(levels[0], levels[-1])`,
+  `ContourSet._process_colors`) and goes through the #1035 discrete region, so
+  static export draws solid bands. `spacing="proportional"` and `format=` are
+  admitted on it; extension caps are the colormap under/over colors. Tests read
+  the real Matplotlib colorbar band and extension-patch facecolors. Exports of
+  these colorbars change bytes versus the earlier smooth ramp (recorded in
+  `CHANGELOG.md`).
+- Remaining gaps: contours with more than 15 bands (Scene stop budget of 16),
+  `norm=`-mapped contours and `colors=` sequences beyond the budget still use the
+  ramp (`spacing=` keeps the `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE`
+  rejection there); `tricontourf` is unchanged.
+- A colorbar of a `BoundaryNorm` image/mesh inherits `norm.extend` when
+  `extend=` is not passed (Matplotlib `Colorbar.__init__`).
+
 ## `BoundaryNorm` colorbar static export — 2026-10-20 (Matplotlib 3.11.0 reference, #1035)
 
 - Static export (SVG/PNG/PDF/JPEG/WebP) draws a `BoundaryNorm` (or banded
