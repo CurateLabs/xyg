@@ -46,7 +46,7 @@
 use crate::scene::{
     decode_tick_labels, expand_scene_records_with_y2, merge_dash_gradients,
     resolve_numeric_tick_formats, resolve_y2_tick_format, scene_text_advance, split_scene_extras,
-    AxisScale, PlotLayout,
+    AxisScale, PlotLayout, PolarSceneError,
     ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius,
     SceneError, SceneExpansionInput, SceneLegend, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS,
     MAX_SCENE_AXIS_FORMAT_BYTES, MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_LABEL_TEXT_BYTES,
@@ -84,6 +84,9 @@ pub enum EncodeAssembledCode {
     /// #1006: Scene record expansion (or a static image tier) exceeds the
     /// Scene mark/image budget; product encode relays `PUBLIC_LOD_REASON`.
     Lod = 7,
+    /// #1041: the in-Scene legend does not fit the recut polar viewport;
+    /// product encode relays `POLAR_LEGEND_REASON`.
+    PolarLegend = 8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -130,6 +133,8 @@ pub enum EncodeSidecarsCode {
     ExtrasPayload = 21,
     /// `EncodeAssembledCode::Lod` (#1006).
     Lod = 22,
+    /// `EncodeAssembledCode::PolarLegend` (#1041).
+    PolarLegend = 23,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -186,6 +191,7 @@ fn map_encode(error: EncodeAssembledError) -> EncodeSidecarsError {
         match error.code {
             EncodeAssembledCode::Output => EncodeSidecarsCode::Output,
             EncodeAssembledCode::Lod => EncodeSidecarsCode::Lod,
+            EncodeAssembledCode::PolarLegend => EncodeSidecarsCode::PolarLegend,
             _ => EncodeSidecarsCode::Encode,
         },
         error.index,
@@ -930,8 +936,13 @@ fn encode_assembled_with_radii(
         .map_err(map_scene)?
         .with_dashes(&dash_merged)
         .map_err(map_scene)?
-        .with_polar(polar_bytes)
-        .map_err(map_scene)?
+        .with_polar_legend_checked(polar_bytes)
+        .map_err(|error| match error {
+            PolarSceneError::LegendFit => {
+                EncodeAssembledError::new(EncodeAssembledCode::PolarLegend, 0)
+            }
+            PolarSceneError::Scene(error) => map_scene(error),
+        })?
         .with_authored_annotations(&parsed.xyad)
         // #1006: arrow/callout records past `MAX_SCENE_MARKS` (and the other
         // authored-annotation budgets) are `Limit`, relayed as the LOD reason.
@@ -1034,6 +1045,11 @@ fn corner_radii_from_xysd(
 /// Stable reason for a line the browser decimates but whose columns the
 /// static M4 tier cannot bin faithfully (#1006, dossier §28).
 pub const PUBLIC_LOD_REASON: &str = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
+
+/// Stable reason for a polar figure whose in-Scene legend does not fit the
+/// recut polar viewport (#1041): the legend box needs 16 px of margin inside
+/// the polar legend band/gutter. Static exports drop the Scene legend first.
+pub const POLAR_LEGEND_REASON: &str = "XYG_SCENE_UNSUPPORTED_POLAR_LEGEND";
 
 /// The browser payload's line M4 inputs, read from the Scene's own XYCF
 /// (viewport width, primary x axis, primary y scale kind, and whether a `y2`
@@ -1155,6 +1171,12 @@ pub fn encode_product(
                 code: PRODUCT_SUPPORT_UNSUPPORTED,
                 index: error.index,
                 reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+            }
+        } else if error.code == EncodeSidecarsCode::PolarLegend {
+            ProductEncodeError {
+                code: PRODUCT_SUPPORT_UNSUPPORTED,
+                index: error.index,
+                reason: POLAR_LEGEND_REASON.as_bytes().to_vec(),
             }
         } else {
             ProductEncodeError {

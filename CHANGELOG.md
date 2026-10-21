@@ -152,6 +152,13 @@ in the README).
   publication now creates the matching GitHub Release and attaches the
   runtime-verified PyEmscripten wheel.
 
+### Fixed
+- A polar figure whose in-Scene legend does not fit the recut polar viewport
+  (a wind rose with four bands under 520 px) now reports the stable reason
+  `XYG_SCENE_UNSUPPORTED_POLAR_LEGEND` from `to_scene` and the support
+  predicate on Python and Node, instead of the opaque `invalid canonical scene
+  batch` (-16) (#1041). Static SVG/PNG/PDF exports are unchanged.
+
 ## [0.0.5] - 2026-07-31
 
 ### Added
