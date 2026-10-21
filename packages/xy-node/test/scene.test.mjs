@@ -912,7 +912,14 @@ test("Node named colorbars keep the full palette on extreme and adjacent finite 
   const adjacent = namedColorbarStops(build([1, hi]));
   assert.equal(adjacent.length, 11);
   assert.ok(adjacent.every((value, index) => !index || value > adjacent[index - 1]));
-  for (const domain of [[1, next(1)], [1, 1], [2, 1]]) assert.throws(() => build(domain));
+  // Fail closed with the same stable reason as Python for domains too narrow
+  // for the palette (never thinned) and for empty or reversed domains.
+  let narrow = 1;
+  for (let step = 0; step < 9; step += 1) {
+    narrow = next(narrow);
+    assert.throws(() => build([1, narrow]), /^RangeError: XYG_SCENE_UNSUPPORTED_COLORBAR: /);
+  }
+  for (const domain of [[1, 1], [2, 1]]) assert.throws(() => build(domain), /^RangeError: XYG_SCENE_UNSUPPORTED_COLORBAR: /);
 });
 
 test("Node explicit hidden Cartesian chrome omits invisible groups without implying polar", () => {

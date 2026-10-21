@@ -1180,6 +1180,12 @@ def test_scene_named_colorbar_adjacent_domains_keep_samples_or_fail_closed() -> 
     assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
     # Fewer representable values than samples: stable rejection, never a
     # silently dropped palette or endpoint-only colors.
-    for domain in ([1.0, math.nextafter(1.0, math.inf)], [1.0, 1.0], [2.0, 1.0]):
-        with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_COLORBAR"):
+    for steps in (1, 2, 9):
+        narrow = 1.0
+        for _ in range(steps):
+            narrow = math.nextafter(narrow, math.inf)
+        with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
+            _named_colorbar_figure([1.0, narrow]).to_scene()
+    for domain in ([1.0, 1.0], [2.0, 1.0]):
+        with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
             _named_colorbar_figure(domain).to_scene()

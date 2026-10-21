@@ -2281,7 +2281,10 @@ finite, `lo * (1 - t) + hi * t` otherwise, bit-exact `lo`/`hi`, and a
 next-representable lift only when rounding leaves a value at or below its
 predecessor. Extreme finite domains therefore keep the whole palette. A domain
 with fewer representable values than palette samples is rejected `Order`
-(never thinned); XYCB v2 requires strictly increasing stops (#888).
+(never thinned, no endpoint-only substitute, no XYCB v3 fraction extension);
+XYCB v2 requires strictly increasing stops. Python and Node both surface the
+stable `XYG_SCENE_UNSUPPORTED_COLORBAR` reason for these domains, as for empty,
+reversed, or non-finite ones (#888).
 
 Constant-style Cartesian heatmap expands a regular rows×cols lattice onto
 existing Scene v25 Rect records (one rectangle per cell) for

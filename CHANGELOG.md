@@ -186,7 +186,9 @@ in the README).
   endpoints, and the next representable value when rounding repeats one. Ordinary
   domains frame byte-identically. Domains with fewer representable values than
   palette samples (for example `[1, nextafter(1)]`) still fail closed with
-  `Order`; the wire representation for those is tracked on #888 (partial).
+  `Order`, surfaced identically by Python and Node as
+  `XYG_SCENE_UNSUPPORTED_COLORBAR`; this is a documented decision with no XYCB
+  v3 extension (#888).
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
   while a cache-isolated coreless build must still import `reflex_xy`, report
