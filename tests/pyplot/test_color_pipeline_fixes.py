@@ -785,6 +785,7 @@ def test_contourf_colorbar_bands_follow_what_the_fill_paints_for_a_resampled_cma
     """The fill ignores ``get_cmap(name, n)``'s N; the colorbar must show the fill's colors."""
     import io
 
+    pytest.importorskip("matplotlib")
     import matplotlib.image as mpl_image
 
     grid = np.linspace(0.0, 2.0, 60)
