@@ -172,6 +172,15 @@ in the README).
   (#13 / #18). GitHub Actions environment `pypi` plus workflow
   `publish.yaml` match the pending PyPI trusted publisher.
 
+### Fixed
+- Storage guidance audit (#1014): `xyg.pyplot` `Figure.show()` now opens a valid
+  `file:` URI on every platform (it interpolated the raw path, which is
+  invalid for Windows drive paths and unescaped for spaces), and a failed
+  zone-map sidecar publish no longer strands a partial `.tmp` file beside an
+  out-of-core column. Added `spec/design/storage-and-platforms.md` recording
+  every disk path XYG writes, temp-directory resolution per platform, and
+  container or mounted-volume guidance.
+
 ### Changed
 - ABI 393: an unset text-annotation `dx`/`dy` now resolves to one Rust-owned
   default (`xyg_default_text_annotation_dx()` = 6, `_dy()` = -6) that Python and

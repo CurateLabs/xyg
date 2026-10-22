@@ -61,3 +61,32 @@ Native and WASM hosts share engine behavior on supported contracts, while
 feature coverage and resource limits remain explicit. Read
 [Rust engine and host parity](/docs/xy/core-concepts/rust-engine-and-host-parity/)
 before choosing a browser-only deployment for a native workload.
+
+## Disk use, temporary files, and mounted volumes
+
+XYG has no durable store of its own. Default figures, HTML export, notebooks,
+and the browser need no disk. A Reflex frontend build writes chart payloads
+under `assets/xy/` in the app root, so that directory must be writable at build
+time; backend-only runs (`REFLEX_BACKEND_ONLY`) skip these writes. Native hosts write only to paths you
+name, rebuildable caches beside your files, and process temporary files.
+
+- **Large density views** (memmapped or very large columns whose pyramid would exceed the resident budget) may spill their aggregate pyramid to a temporary file
+  in the operating system's temp directory (`TMPDIR` on Linux and macOS, `TMP`
+  or `TEMP` on Windows). The file is deleted when the figure is released and is
+  never reused after a crash. Set that variable before starting the process to
+  put it on a larger volume; in a container, prefer a disk-backed volume over a
+  tmpfs `/tmp`. `pyramid_spill=True` fails with an actionable error if the
+  temp directory cannot hold the file; automatic spill falls back to memory.
+- **Out-of-core columns** are plain files at the path you give. Keep them, and
+  the `.xyzones` sidecar XYG writes beside them, on a local volume that supports
+  memory mapping. A read-only volume still works; the sidecar is just not saved.
+- **Exports** write through a temporary file in the destination directory and
+  replace the target atomically, so that directory must be writable.
+- Any project or data volume may sit under a different container, VM, or drive
+  root than the code. XYG does not require a fixed root or a Linux host. Two
+  things do depend on the current directory: a Reflex app writes its chart
+  assets under `assets/xy/` in the directory it is run from (the app root), and
+  a relative development `XYG_NATIVE_LIB` is resolved against it.
+
+The audited paths, platform behavior, and caveats are listed in
+[Storage, temporary files, and mounted volumes](https://github.com/CurateLabs/xyg/blob/main/spec/design/storage-and-platforms.md).

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from os import PathLike
-from pathlib import Path
 from typing import Any, Optional
 
 from . import export
@@ -233,7 +232,7 @@ for(const p of panels){{
         else:  # `_png_engine` returns only these two internal values.
             raise AssertionError(f"unreachable PNG engine {resolved_engine!r}")
         if path is not None:
-            Path(path).write_bytes(data)
+            export._atomic_write_bytes(path, data)
         return data
 
     def to_image(

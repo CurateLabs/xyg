@@ -240,15 +240,6 @@ impl TileStore {
             .create_new(true)
             .open(&path)?;
 
-        // Header: magic, format version, base dim, level count, plane flags.
-        let mut header = vec![0u8; HEADER_BYTES as usize];
-        header[0..4].copy_from_slice(&MAGIC);
-        header[4..8].copy_from_slice(&FORMAT_VERSION.to_ne_bytes());
-        header[8..12].copy_from_slice(&(dims[0] as u32).to_ne_bytes());
-        header[12..16].copy_from_slice(&(dims.len() as u32).to_ne_bytes());
-        header[16..20].copy_from_slice(&u32::from(has_color).to_ne_bytes());
-        write_all_at(&file, &header, 0)?;
-
         let store = TileStore {
             file,
             path,
@@ -267,6 +258,17 @@ impl TileStore {
             misses: 0,
             over_budget: false,
         };
+
+        // The store (and its Drop that removes the file) exists before the
+        // first write, so an ENOSPC on the header cannot leak the file.
+        // Header: magic, format version, base dim, level count, plane flags.
+        let mut header = vec![0u8; HEADER_BYTES as usize];
+        header[0..4].copy_from_slice(&MAGIC);
+        header[4..8].copy_from_slice(&FORMAT_VERSION.to_ne_bytes());
+        header[8..12].copy_from_slice(&(store.dims[0] as u32).to_ne_bytes());
+        header[12..16].copy_from_slice(&(store.dims.len() as u32).to_ne_bytes());
+        header[16..20].copy_from_slice(&u32::from(has_color).to_ne_bytes());
+        write_all_at(&store.file, &header, 0)?;
 
         let mut count_buf = vec![0u8; COUNT_SLAB_BYTES as usize];
         let mut color_buf = vec![0u8; COLOR_SLAB_BYTES as usize];

@@ -136,3 +136,29 @@ def test_pyplot_show_displays_isolated_notebook_repr(monkeypatch):
     assert html.startswith('<iframe class="xy-notebook-frame"')
     assert "<style>" not in html
     assert "&lt;style&gt;" in html
+
+
+def test_pyplot_show_opens_valid_file_uri_from_platform_temp_dir(monkeypatch, tmp_path):
+    import tempfile
+    import webbrowser
+    from pathlib import Path
+
+    # A temp dir with a space proves the URL is built by Path.as_uri() and not
+    # by string interpolation (which is also wrong for Windows drive paths).
+    spaced = tmp_path / "temp dir"
+    spaced.mkdir()
+    monkeypatch.setenv("TMPDIR", str(spaced))
+    monkeypatch.setattr(tempfile, "tempdir", None)
+    opened = []
+    monkeypatch.setattr(webbrowser, "open", opened.append)
+
+    plt.plot([0, 1], [1, 2])
+    plt.gcf().show()
+
+    assert len(opened) == 1
+    url = opened[0]
+    assert "temp dir" not in url
+    assert url.startswith("file:///")
+    page = next(spaced.glob("*.html"))
+    assert url == page.as_uri()
+    assert "<" in Path(page).read_text(encoding="utf-8")
