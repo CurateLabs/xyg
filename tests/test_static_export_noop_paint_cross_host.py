@@ -149,3 +149,32 @@ def test_public_colormapped_contour_paints_one_literal_stroke_per_level() -> Non
     assert scene_export_support_reason(figure) is None
     svg = _native.scene_svg(figure_scene(figure))
     assert len(set(re.findall(r'stroke="(rgb\([^"]+\))"', svg))) == 3
+
+
+def _python_admission(rows: Any) -> dict[str, Any]:
+    from xyg import channels
+
+    try:
+        return {"stops": channels.resolve_colormap(rows)}
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+
+def test_colormap_stop_rows_admit_identically_on_both_hosts(node_exports: dict[str, Any]) -> None:
+    import numpy as np
+
+    cases: dict[str, Any] = {
+        "typed_rows": [
+            np.array([255, 0, 0], dtype=np.uint8),
+            np.array([0, 0, 255], dtype=np.uint8),
+        ],
+        "plain_rows": [[255, 0, 0], [0, 0, 255]],
+        "too_big": [[256, 0, 0], [0, 0, 255]],
+        "fractional": [[1.5, 0, 0], [0, 0, 255]],
+        "negative": [[-1, 0, 0], [0, 0, 255]],
+    }
+    for name, rows in cases.items():
+        assert _python_admission(rows) == node_exports["colormap_rows"][name], name
+    assert _python_admission(np.array([[255, 0, 0], [0, 0, 255]], dtype=np.uint8)) == {
+        "stops": [[255, 0, 0], [0, 0, 255]]
+    }

@@ -5,7 +5,7 @@
  * bytes.
  */
 
-import { Figure, sceneExportSupportReason, sceneStaticExport } from "../src/index.js";
+import { Figure, resolveColormap, sceneExportSupportReason, sceneStaticExport } from "../src/index.js";
 
 function fixedDomains(figure) {
   figure.setAxisDomain("x", [0, 3]);
@@ -65,4 +65,19 @@ for (const name of ["empty_traces", "colormapped_segments", ...Object.keys(CONTO
     png_b64: Buffer.from(sceneStaticExport(scene, "png", { width: 320, height: 240, scale: 1 })).toString("base64"),
   };
 }
+// Colormap stop-row admission is host-neutral (#1025): same rows, same result.
+function admission(rows) {
+  try {
+    return { stops: resolveColormap(rows) };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+out.colormap_rows = {
+  typed_rows: admission([new Uint8Array([255, 0, 0]), new Uint8Array([0, 0, 255])]),
+  plain_rows: admission([[255, 0, 0], [0, 0, 255]]),
+  too_big: admission([[256, 0, 0], [0, 0, 255]]),
+  fractional: admission([[1.5, 0, 0], [0, 0, 255]]),
+  negative: admission([[-1, 0, 0], [0, 0, 255]]),
+};
 process.stdout.write(`${JSON.stringify(out)}\n`);
