@@ -7,8 +7,9 @@ import math
 import xml.etree.ElementTree as ET
 
 import pytest
-from PIL import Image, ImageDraw
 
+Image = pytest.importorskip("PIL.Image")
+ImageDraw = pytest.importorskip("PIL.ImageDraw")
 pytest.importorskip("matplotlib")
 from scripts import compare_named_colorbar_domains as probe  # noqa: E402
 
