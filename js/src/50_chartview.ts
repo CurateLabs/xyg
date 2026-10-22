@@ -7313,6 +7313,8 @@ export class ChartView {
       ? value : "auto";
   }
 
+  // Rust owns the default-side policy (`resolve_axis_side_code`); host payloads
+  // always carry `side`, so this fallback only serves hand-built specs.
   _axisDefaultSide(axis) {
     const id = String(axis && axis.id || "x");
     if (id.startsWith("x")) return "bottom";

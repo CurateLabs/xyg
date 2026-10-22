@@ -193,6 +193,63 @@ def test_an_omitted_y2_side_flows_to_rust_and_the_live_wire_matches_static(
     )
 
 
+def _y2_side_chart(side: str | None) -> Any:
+    kwargs = {} if side is None else {"side": side}
+    figure = c.line_chart(
+        c.line(x=[1, 2, 3], y=[1, 2, 3]),
+        c.line(x=[1, 2, 3], y=[100, 200, 300], y_axis="y2"),
+        c.x_axis(domain=(0, 4)),
+        c.y_axis(domain=(0, 4), label="L"),
+        c.y_axis(id="y2", domain=(0, 400), label="R", **kwargs),
+        width=WIDTH,
+        height=HEIGHT,
+    ).figure()
+    for index, trace in enumerate(figure.traces):
+        trace.id = index
+    return figure
+
+
+def test_live_y2_side_is_resolved_by_rust_not_a_host_constant(
+    node_payload: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1044: omitted and explicit `side="right"` give identical live payloads
+    in both hosts, and the omitted side is the Rust resolution (no host
+    constant): faking the kernel changes the Python wire, and the Rust ABI
+    answers the policy directly."""
+    from xyg import kernels
+
+    omitted, omitted_blob = _y2_side_chart(None).build_payload()
+    explicit, explicit_blob = _y2_side_chart("right").build_payload()
+    assert omitted["axes"]["y2"] == explicit["axes"]["y2"]
+    assert omitted_blob == explicit_blob
+    assert omitted["axes"]["y2"]["side"] == "right"
+    # Node: omitted == explicit-right == Python, byte for byte.
+    sub = node_payload["omitted_side"]
+    assert sub["axes_y2"] == sub["explicit_right_axes_y2"] == omitted["axes"]["y2"]
+    assert sub["payload_blob_sha256"] == sub["explicit_right_payload_blob_sha256"]
+    assert hashlib.sha256(omitted_blob).hexdigest() == sub["payload_blob_sha256"]
+
+    # Rust owns the policy: x bottom, y left, unauthored y2 right, authored wins.
+    assert kernels.payload_axis_side_resolve("x", None) == "bottom"
+    assert kernels.payload_axis_side_resolve("y", None) == "left"
+    assert kernels.payload_axis_side_resolve("y2", None) == "right"
+    assert kernels.payload_axis_side_resolve("y2", "left") == "left"
+    with pytest.raises(ValueError):
+        kernels.payload_axis_side_resolve("y2", "top")
+
+    # The live wire reads the kernel: a different Rust answer moves the side.
+    real = kernels.payload_axis_side_resolve
+    monkeypatch.setattr(
+        kernels,
+        "payload_axis_side_resolve",
+        lambda role, authored: (
+            "left" if role == "y2" and authored is None else real(role, authored)
+        ),
+    )
+    faked, _ = _y2_side_chart(None).build_payload()
+    assert faked["axes"]["y2"]["side"] == "left"
+
+
 def test_a_y2_density_trace_bins_against_its_own_domain_in_both_hosts(
     node_payload: dict[str, Any],
 ) -> None:
