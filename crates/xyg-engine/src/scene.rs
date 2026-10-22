@@ -113,6 +113,9 @@ const SCENE_LABEL_RECORD_BYTES: usize = 40;
 const SCENE_LABEL_BOX_RECORD_BYTES: usize = 84;
 const SCENE_LABEL_WRAPPED_RECORD_BYTES: usize = 104;
 const SCENE_LABEL_ROTATED_RECORD_BYTES: usize = 112;
+/// Highest XYLB version the browser painter may carry (the TypeScript client
+/// in `js/src/48_wasm_scene.ts` decodes v1..=this). v7 is Scene-wire only.
+const BROWSER_PAINTER_XYLB_MAX_VERSION: u32 = 6;
 /// XYLB v7 = the v6 record plus `u32` flags (bit 0 = annotation label) and a
 /// zero reserved `u32`. It is emitted only when the provenance flag disagrees
 /// with the reserved-id pattern, so every other Scene keeps its prior bytes.
@@ -643,7 +646,7 @@ pub struct SceneLegend {
 }
 
 impl SceneLegend {
-    fn validate_constructed(&self) -> Result<(), SceneError> {
+    pub(crate) fn validate_constructed(&self) -> Result<(), SceneError> {
         if self.entries.iter().any(|entry| {
             (entry.kind == SceneRecordKind::Scatter
                 && entry.symbol > ScatterSymbol::VerticalLine as u8)
@@ -2401,6 +2404,20 @@ pub enum SceneError {
     NegativeSize,
     InvalidPaint,
     Version,
+}
+
+/// `with_polar_legend_checked` failure: the in-Scene legend cannot fit the
+/// recut polar viewport (#1041), or any other Scene error.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PolarSceneError {
+    LegendFit,
+    Scene(SceneError),
+}
+
+impl From<SceneError> for PolarSceneError {
+    fn from(error: SceneError) -> Self {
+        Self::Scene(error)
+    }
 }
 
 // The stable trace-limit diagnostic below spells the ceiling literally.
@@ -9497,7 +9514,19 @@ impl<'a> SceneBatch<'a> {
     /// Rust recuts the cartesian plot rect (`recut_polar_plot`) before
     /// `polar_layout` so the inscribed disc and optional legend gutter match
     /// compatibility static export.
-    pub fn with_polar(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
+    pub fn with_polar(self, bytes: &[u8]) -> Result<Self, SceneError> {
+        self.with_polar_legend_checked(bytes)
+            .map_err(|error| match error {
+                PolarSceneError::LegendFit => SceneError::Limit,
+                PolarSceneError::Scene(error) => error,
+            })
+    }
+
+    /// `with_polar` that reports an in-Scene legend which does not fit the
+    /// recut polar viewport as [`PolarSceneError::LegendFit`] (#1041) so the
+    /// product encode can relay the stable `XYG_SCENE_UNSUPPORTED_POLAR_LEGEND`
+    /// reason instead of an opaque encode code.
+    pub fn with_polar_legend_checked(mut self, bytes: &[u8]) -> Result<Self, PolarSceneError> {
         if bytes.is_empty() {
             return Ok(self);
         }
@@ -9506,7 +9535,7 @@ impl<'a> SceneBatch<'a> {
             || !self.labels.is_empty()
             || self.y2.is_some()
         {
-            return Err(SceneError::Length);
+            return Err(SceneError::Length.into());
         }
         let (layout, legend_box) = recut_polar_scene_layout(
             self.layout,
@@ -9514,10 +9543,12 @@ impl<'a> SceneBatch<'a> {
             &self.text,
             self.colorbar.as_ref(),
             &self.chrome,
-        )?;
+        )
+        .map_err(PolarSceneError::Scene)?;
         self.layout = layout;
         if let Some(legend) = &self.legend {
-            resolved_legend_bounds(self.layout, legend, legend_box)?;
+            resolved_legend_bounds(self.layout, legend, legend_box)
+                .map_err(|_| PolarSceneError::LegendFit)?;
         }
         let mut polar = PolarSceneState::from_xypl(bytes, self.layout)?;
         polar.legend_box = legend_box;
@@ -16898,6 +16929,13 @@ impl SceneDocument {
         let colorbar_bytes = self.painter_colorbar_bytes()?;
         let (paint_labels, paint_backgrounds) = self.painter_glyph_labels()?;
         let label_bytes = encode_scene_labels(&paint_labels, &paint_backgrounds)?;
+        // Fail closed rather than publish a label version the client rejects.
+        if label_bytes.len() >= 8
+            && u32::from_le_bytes([label_bytes[4], label_bytes[5], label_bytes[6], label_bytes[7]])
+                > BROWSER_PAINTER_XYLB_MAX_VERSION
+        {
+            return Err(SceneError::Length);
+        }
         required = required
             .checked_add(legend_bytes.len())
             .and_then(|value| value.checked_add(colorbar_bytes.len()))
@@ -24228,6 +24266,72 @@ pub(crate) mod tests {
             bad[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
             assert!(decode_scene_labels(&bad).is_err());
         }
+    }
+
+    /// #1040: the browser painter carries rotated labels as the 112-byte XYLB
+    /// v6 record the TypeScript client decodes (`js/src/48_wasm_scene.ts`), and
+    /// never a version above what the client accepts.
+    #[test]
+    fn browser_painter_rotated_label_is_xylb_v6_and_never_above_client_max() {
+        assert_eq!(SCENE_LABEL_ROTATED_RECORD_BYTES, 112);
+        assert_eq!(SCENE_LABEL_WRAPPED_RECORD_BYTES, 104);
+        let mut document = per_label_style_scene();
+        document.labels[0].rotation = 30.0;
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let at = painter
+            .windows(4)
+            .position(|window| window == b"XYLB")
+            .expect("painter carries the label block");
+        let u32_at = |offset: usize| u32::from_le_bytes(painter[offset..offset + 4].try_into().unwrap());
+        assert_eq!(u32_at(at + 4), 6);
+        let count = u32_at(at + 8) as usize;
+        let text_bytes = u32_at(at + 12) as usize;
+        assert_eq!(count, 3);
+        // header(16) + count * 112 + text fills the rest of the block.
+        let table_end = at + 16 + count * 112;
+        assert_eq!(&painter[table_end..table_end + text_bytes], b"alphabetagamma");
+        let record = |index: usize| at + 16 + index * 112;
+        let rotation = |index: usize| {
+            f64::from_le_bytes(painter[record(index) + 104..record(index) + 112].try_into().unwrap())
+        };
+        assert_eq!([rotation(0), rotation(1), rotation(2)], [30.0, 0.0, 0.0]);
+        // The block decodes back to the same rotation.
+        let block = &painter[at..table_end + text_bytes];
+        let (labels, _) = decode_scene_labels(block).unwrap();
+        assert_eq!(labels[0].rotation, 30.0);
+        // Every label feature the painter can emit stays within the client max.
+        assert!(u32_at(at + 4) <= BROWSER_PAINTER_XYLB_MAX_VERSION);
+        // An ordinary label with an annotation-looking id would be v7 on the
+        // Scene wire; the painter normalizes provenance and stays at v6.
+        document.labels[1].stable_id = 0x5859_0400_0000_0009;
+        document.labels[1].annotation = false;
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let at = painter.windows(4).position(|w| w == b"XYLB").unwrap();
+        assert!(
+            u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap())
+                <= BROWSER_PAINTER_XYLB_MAX_VERSION
+        );
+        // Every feature at once: rotation, wrap, border, box, anchor.
+        let mut all = per_label_style_scene();
+        all.labels[0].rotation = -20.0;
+        all.labels[0].anchor = 2;
+        all.labels[0].text = "al\npha".to_owned();
+        all.label_backgrounds[0] = Some(SceneLabelBox {
+            x: 10.0,
+            y: 10.0,
+            width: 40.0,
+            height: 30.0,
+            rgba: [255, 255, 0, 255],
+            border: Some(SceneLabelBorder {
+                rgba: [255, 0, 0, 255],
+                width: 2.0,
+            }),
+        });
+        let painter = all.to_browser_painter(1 << 20).unwrap();
+        let at = painter.windows(4).position(|w| w == b"XYLB").unwrap();
+        let version = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap());
+        assert!((1..=BROWSER_PAINTER_XYLB_MAX_VERSION).contains(&version));
+        assert_eq!(version, 6);
     }
 
     /// The shape a composed graph with authored annotations produces: the

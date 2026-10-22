@@ -46,7 +46,7 @@
 use crate::scene::{
     decode_tick_labels, expand_scene_records_with_y2, merge_dash_gradients,
     resolve_numeric_tick_formats, resolve_y2_tick_format, scene_text_advance, split_scene_extras,
-    AxisScale, PlotLayout,
+    resolved_legend_bounds, AxisScale, PlotLayout, PolarSceneError,
     ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius,
     SceneError, SceneExpansionInput, SceneLegend, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS,
     MAX_SCENE_AXIS_FORMAT_BYTES, MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_LABEL_TEXT_BYTES,
@@ -84,6 +84,9 @@ pub enum EncodeAssembledCode {
     /// #1006: Scene record expansion (or a static image tier) exceeds the
     /// Scene mark/image budget; product encode relays `PUBLIC_LOD_REASON`.
     Lod = 7,
+    /// #1041: the in-Scene legend does not fit the recut polar viewport;
+    /// product encode relays `POLAR_LEGEND_REASON`.
+    PolarLegend = 8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -130,6 +133,8 @@ pub enum EncodeSidecarsCode {
     ExtrasPayload = 21,
     /// `EncodeAssembledCode::Lod` (#1006).
     Lod = 22,
+    /// `EncodeAssembledCode::PolarLegend` (#1041).
+    PolarLegend = 23,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -186,6 +191,7 @@ fn map_encode(error: EncodeAssembledError) -> EncodeSidecarsError {
         match error.code {
             EncodeAssembledCode::Output => EncodeSidecarsCode::Output,
             EncodeAssembledCode::Lod => EncodeSidecarsCode::Lod,
+            EncodeAssembledCode::PolarLegend => EncodeSidecarsCode::PolarLegend,
             _ => EncodeSidecarsCode::Encode,
         },
         error.index,
@@ -893,6 +899,12 @@ fn encode_assembled_with_radii(
     )
     .map_err(map_scene)?;
     let style = style.validated().map_err(map_scene)?;
+    // #1041: a legend taller or wider than the whole cartesian plot cannot fit
+    // the (smaller) recut polar legend box either. After the legend's own
+    // validation passes, the constructor's `Limit` for it is reported as the
+    // same stable polar-legend rejection; malformed or over-limit legends keep
+    // their original errors.
+    let polar_legend = (!polar_bytes.is_empty()).then(|| legend.clone()).flatten();
     let batch = SceneBatch::new_with_decorations_colorbar(
         layout,
         x_axis.id,
@@ -917,7 +929,15 @@ fn encode_assembled_with_radii(
         &records.x1,
         &records.y1,
     )
-    .map_err(map_scene)?;
+    .map_err(|error| match (&polar_legend, error) {
+        (Some(value), SceneError::Limit)
+            if value.validate_constructed().is_ok()
+                && resolved_legend_bounds(layout, value, None).is_err() =>
+        {
+            EncodeAssembledError::new(EncodeAssembledCode::PolarLegend, 0)
+        }
+        (_, error) => map_scene(error),
+    })?;
     let batch = match y2 {
         Some(mut axis) => {
             resolve_y2_tick_format(layout, &mut axis).map_err(map_scene)?;
@@ -930,8 +950,13 @@ fn encode_assembled_with_radii(
         .map_err(map_scene)?
         .with_dashes(&dash_merged)
         .map_err(map_scene)?
-        .with_polar(polar_bytes)
-        .map_err(map_scene)?
+        .with_polar_legend_checked(polar_bytes)
+        .map_err(|error| match error {
+            PolarSceneError::LegendFit => {
+                EncodeAssembledError::new(EncodeAssembledCode::PolarLegend, 0)
+            }
+            PolarSceneError::Scene(error) => map_scene(error),
+        })?
         .with_authored_annotations(&parsed.xyad)
         // #1006: arrow/callout records past `MAX_SCENE_MARKS` (and the other
         // authored-annotation budgets) are `Limit`, relayed as the LOD reason.
@@ -1034,6 +1059,11 @@ fn corner_radii_from_xysd(
 /// Stable reason for a line the browser decimates but whose columns the
 /// static M4 tier cannot bin faithfully (#1006, dossier §28).
 pub const PUBLIC_LOD_REASON: &str = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
+
+/// Stable reason for a polar figure whose in-Scene legend does not fit the
+/// recut polar viewport (#1041): the legend box needs 16 px of margin inside
+/// the polar legend band/gutter. Static exports drop the Scene legend first.
+pub const POLAR_LEGEND_REASON: &str = "XYG_SCENE_UNSUPPORTED_POLAR_LEGEND";
 
 /// The browser payload's line M4 inputs, read from the Scene's own XYCF
 /// (viewport width, primary x axis, primary y scale kind, and whether a `y2`
@@ -1155,6 +1185,12 @@ pub fn encode_product(
                 code: PRODUCT_SUPPORT_UNSUPPORTED,
                 index: error.index,
                 reason: PUBLIC_LOD_REASON.as_bytes().to_vec(),
+            }
+        } else if error.code == EncodeSidecarsCode::PolarLegend {
+            ProductEncodeError {
+                code: PRODUCT_SUPPORT_UNSUPPORTED,
+                index: error.index,
+                reason: POLAR_LEGEND_REASON.as_bytes().to_vec(),
             }
         } else {
             ProductEncodeError {
@@ -1544,6 +1580,48 @@ mod tests {
             &xyfs_v2(0, &[(0, "scatter")]),
         )
         .unwrap();
+        assert_eq!(&encoded[..4], b"XYGS");
+    }
+
+    /// #1041: a polar figure with a three-row legend (three named bars, as
+    /// packed by the Python host; blobs in `testdata/polar_legend_product.hex`,
+    /// the 519 and 520 px XYCF differ only in viewport) overflows the 64 px
+    /// compact legend band at 519 px and fits the side gutter at 520 px.
+    #[test]
+    fn product_polar_legend_overflow_is_the_stable_support_reason() {
+        let fixture = include_str!("../testdata/polar_legend_product.hex");
+        let blob = |key: &str| -> Vec<u8> {
+            let line = fixture
+                .lines()
+                .find_map(|line| line.strip_prefix(key).and_then(|r| r.strip_prefix('=')))
+                .unwrap();
+            (0..line.len())
+                .step_by(2)
+                .map(|at| u8::from_str_radix(&line[at..at + 2], 16).unwrap())
+                .collect()
+        };
+        let encode = |xycf: Vec<u8>| {
+            encode_product(
+                &blob("compile_facts"),
+                &blob("attach_facts"),
+                &blob("names"),
+                &blob("columns"),
+                &[],
+                3,
+                0.0,
+                std::f64::consts::TAU,
+                0.0,
+                1.0,
+                &xycf,
+                &blob("polar"),
+                &blob("figure_support"),
+            )
+        };
+        let error = encode(blob("chrome_facts_519")).unwrap_err();
+        assert_eq!(error.code, PRODUCT_SUPPORT_UNSUPPORTED);
+        assert_eq!(error.code, 801);
+        assert_eq!(error.reason, POLAR_LEGEND_REASON.as_bytes());
+        let encoded = encode(blob("chrome_facts_520")).unwrap();
         assert_eq!(&encoded[..4], b"XYGS");
     }
 

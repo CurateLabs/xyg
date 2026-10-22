@@ -6109,6 +6109,8 @@ function encodeAssembledFromSidecars(xyas, chromeFacts, xysd, polar, extrasFacts
     }
     if (code === -20) throw new RangeError("Scene extras polar or paint envelope is invalid");
     if (code === -21) throw new RangeError("Scene style sidecar facts are invalid");
+    if (code === -22) throw new RangeError("Scene record expansion or mesh exceeds the static export budget");
+    if (code === -23) throw new RangeError("polar legend does not fit the recut polar viewport");
     if (code === -17 || code === -18 || code === -19) throw new RangeError("invalid scene extras packing");
     if (code < 0) throw new RangeError("invalid scene chrome packing");
     return out.subarray(0, code);

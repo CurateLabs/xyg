@@ -23,6 +23,11 @@ import sys
 import zipfile
 from pathlib import Path
 
+try:
+    from release_version import parse_tag
+except ModuleNotFoundError:
+    from scripts.release_version import parse_tag
+
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ROOT / "packages"
 
@@ -39,28 +44,15 @@ SEMVER_RE = re.compile(
     r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
     rf"(?:-{PRERELEASE_IDENTIFIER}(?:\.{PRERELEASE_IDENTIFIER})*)?$"
 )
-TAG_RE = re.compile(
-    r"^xyg-v(?P<base>(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))"
-    r"(?:(?P<pre>a|b|rc)(?P<num>0|[1-9][0-9]*))?$"
-)
 REPOSITORY = {"type": "git", "url": "git+https://github.com/CurateLabs/xyg.git"}
 PUBLISH_CONFIG = {"access": "public", "provenance": True}
 NATIVE_BUDGET_BYTES = 40 * 1024 * 1024
 
 
 def npm_version_from_tag(tag: str) -> str:
-    """Map the canonical PEP 440 release tag to its semver npm spelling."""
+    """Map a release tag (canonical ``-rc.N`` or legacy ``rcN``) to its npm semver."""
 
-    match = TAG_RE.fullmatch(tag)
-    if match is None:
-        raise ValueError(
-            f"invalid XYG release tag {tag!r}; expected xyg-vX.Y.Z with optional aN/bN/rcN"
-        )
-    version = match.group("base")
-    if match.group("pre"):
-        label = {"a": "alpha", "b": "beta", "rc": "rc"}[match.group("pre")]
-        version += f"-{label}.{match.group('num')}"
-    return version
+    return parse_tag(tag).npm
 
 
 def _require_semver(version: str) -> None:

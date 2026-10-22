@@ -61,6 +61,8 @@ def _wheel(path: Path, library: str, payload: bytes | None = None) -> Path:
         ("xyg-v0.6.0a1", "0.6.0-alpha.1"),
         ("xyg-v0.6.0b2", "0.6.0-beta.2"),
         ("xyg-v0.6.0rc3", "0.6.0-rc.3"),
+        ("xyg-v0.6.0-rc.3", "0.6.0-rc.3"),
+        ("xyg-v0.6.0-alpha.1", "0.6.0-alpha.1"),
     ],
 )
 def test_release_tag_maps_to_npm_semver(tag: str, expected: str) -> None:

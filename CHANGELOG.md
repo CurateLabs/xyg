@@ -19,6 +19,11 @@ in the README).
   integers in 0..255, got X`, identical in Node), so unit-float rows such as
   `[[0, 0.5, 1], ...]` raise instead of silently casting to near-black, and
   2-D integer ndarrays are now accepted.
+- Release candidates use the canonical tag `xyg-vX.Y.Z-rc.N` (also `-alpha.N`/
+  `-beta.N`), with npm `X.Y.Z-rc.N` and Python/PyPI `X.Y.ZrcN` produced from one
+  conversion authority (`scripts/release_version.py`) shared by the release
+  gate, npm staging, and the release-cohort check (#884). The legacy PEP 440 tag
+  spelling still passes for already-cut tags.
 - The live payload's secondary y axis (y2) side is resolved by Rust (#1044).
   New ABI 392 `xyg_payload_axis_side_resolve` shares `resolve_axis_side_code`
   with static Scene export (x bottom, y left, unauthored y2 right); Python and
@@ -27,6 +32,13 @@ in the README).
 - Node `setAxis` now rejects an invalid `side` up front with Python's messages
   (`x axis side must be 'top' or 'bottom'`, `y axis side must be 'left' or
   'right'`); previously it failed later with a generic error (#1044).
+
+### Fixed
+- Browser painter decodes and draws rotated Scene labels (#1040). The client
+  accepted XYLB v1-v5 only, so any rotated label (XYLB v6) failed the whole
+  frame with `XYG_WASM_MALFORMED_OUTPUT`; it now reads the 112-byte v6 record and
+  rotates about the anchor like the static SVG. Accepted painter label versions
+  are pinned on both the Rust and TypeScript sides.
 
 ### Added
 - Node `contour` accepts `colormap` (built-in name, `linear-gradient(...)`,
@@ -176,6 +188,13 @@ in the README).
   publication now creates the matching GitHub Release and attaches the
   runtime-verified PyEmscripten wheel.
 
+### Fixed
+- A polar figure whose in-Scene legend does not fit the recut polar viewport
+  (a wind rose with four bands under 520 px) now reports the stable reason
+  `XYG_SCENE_UNSUPPORTED_POLAR_LEGEND` from `to_scene` and the support
+  predicate on Python and Node, instead of the opaque `invalid canonical scene
+  batch` (-16) (#1041). Static SVG/PNG/PDF exports are unchanged.
+
 ## [0.0.5] - 2026-07-31
 
 ### Added
@@ -203,6 +222,7 @@ in the README).
   silently leave a stale row in the CodSpeed dashboard.
 
 ### Fixed
+- `benchmarks/bench_line.py --sizes 1e4` no longer fails its own extrema oracle (#1027). The product was correct: below the LOD budget a line is shipped in the lossless `direct` tier, which the oracle wrongly rejected as "not decimated". The oracle now accepts `direct` when every row is present and runs the same per-column comparison; the CI methodology contract step covers `1e4,1e5`.
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
   while a cache-isolated coreless build must still import `reflex_xy`, report

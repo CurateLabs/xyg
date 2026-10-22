@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from stage_node_packages import npm_version_from_tag
+    from release_version import parse_tag
 except ModuleNotFoundError:
-    from scripts.stage_node_packages import npm_version_from_tag
+    from scripts.release_version import parse_tag
 
 EXPECTED = {
     "facade": "@curatelabs/xyg-node",
@@ -73,8 +73,9 @@ def verify(
 ) -> dict[str, Any]:
     if re.fullmatch(r"[0-9a-f]{40}", commit) is None:
         raise ValueError("release commit must be a full lowercase Git SHA")
-    npm_version = npm_version_from_tag(tag)
-    python_version = tag.removeprefix("xyg-v")
+    release = parse_tag(tag)
+    npm_version = release.npm
+    python_version = release.python
     python_name, found_python, wheel_files = _wheel(wheel)
     if python_name != "xyg" or found_python != python_version:
         raise ValueError(
