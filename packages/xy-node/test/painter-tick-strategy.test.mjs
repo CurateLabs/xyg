@@ -1,8 +1,10 @@
 // XYPB v17 wire test: Rust resolves each axis's tick-label layout and the
 // decoded painter spec must carry exactly what the static SVG draws (#1036).
 //
-// Byte 5 of the x/y/y2 axis blocks is the layout mode Rust applied, bytes 6-7 an
-// i16 label angle in 1/100 degree, and dropped labels arrive blank. This bundles
+// Byte 5 packs the Rust layout mode (low 3 bits) and per-side anchors (bits 3-6);
+// bytes 6-7 carry an
+// i16 bottom/left angle in 1/100 degree; top/right angles use header 416/418/378
+// (x/y/y2). Dropped labels arrive blank. This bundles
 // the real hydrator (`js/src/48_wasm_scene.ts`) in memory and compares its
 // `compilePainter` output with `sceneSvg` for crowded axes (x, y, y2) under every
 // strategy. The browser-side drawing is covered by tests/browser.
@@ -41,18 +43,17 @@ function figure(axis, strategy, extra = {}) {
   return fig.toScene();
 }
 
-// Tick-label texts of the static SVG, per axis: x labels are middle-anchored or
-// rotated, y labels end-anchored and upright, y2 labels start-anchored.
+// Classify these fixtures by label anchor position relative to the plot, so
+// top/bottom rotated labels keep their axis even when their text anchor changes.
 function svgAxes(scene) {
   const svg = Buffer.from(sceneSvg(scene)).toString("utf8");
   const out = { x: [], y: [], y2: [] };
+  const [, left, top, width] = /data-xy-chrome="plot-background" x="([^"]+)" y="([^"]+)" width="([^"]+)"/.exec(svg).map((v, i) => i ? Number(v) : v);
+  const right = left + width;
   for (const match of svg.matchAll(/<text x="([^"]+)" y="([^"]+)"[^>]*text-anchor="(\w+)"( transform="rotate\(([-\d.]+) )?[^>]*>([^<]*)<\/text>/g)) {
     const [, x, y, anchor, , angle, text] = match;
-    const label = { text, angle: Number(angle ?? 0), y: Number(y) };
-    if (anchor === "start") out.y2.push(label);
-    else if (anchor === "middle" || angle !== undefined) out.x.push(label);
-    else out.y.push(label);
-    void x;
+    const axis = Number(x) >= left && Number(x) <= right ? "x" : Number(x) < left ? "y" : "y2";
+    out[axis].push({ text, anchor, angle: Number(angle ?? 0), y: Number(y), side: axis === "x" ? Number(y) < top ? "top" : "bottom" : axis === "y" ? "left" : "right" });
   }
   return out;
 }
@@ -89,12 +90,52 @@ test("crowded axes really thin, rotate and stagger", { skip }, async () => {
   assert.equal(spec("stagger").tick_stagger, true);
 });
 
-test("an explicit label angle round-trips", { skip }, async () => {
+for (const explicit of [false, true]) {
+  test(`two-sided x rotation ${explicit ? "explicit" : "default"} matches each SVG side`, { skip }, async () => {
+    const { compilePainter } = await hydrator();
+    const scene = figure("x", "rotate", { tick_label_sides: ["bottom", "top"], ...(explicit ? { tick_label_angle: 20 } : {}) });
+    const { spec } = compilePainter(ab(sceneBrowserPainter(scene)));
+    const labels = svgAxes(scene).x;
+    const shown = spec.axes.x.tick_labels.filter(Boolean);
+    for (const [side, angle] of Object.entries(spec.axes.x.tick_label_angles)) {
+      assert.equal(angle, explicit ? 20 : side === "bottom" ? -35 : 35);
+      const svgSide = labels.filter((label) => label.side === side);
+      assert.deepEqual(svgSide.map((label) => label.text), shown, side);
+      assert.ok(svgSide.every((label) => label.angle === angle), `${side} rotation`);
+    }
+  });
+}
+
+for (const angle of [350, -350]) {
+  for (const anchor of [null, angle > 0 ? "end" : "start"]) {
+    test(`two-sided ${angle}deg preserves SVG anchors ${anchor ?? "default"}`, { skip }, async () => {
+      const { compilePainter } = await hydrator();
+      const scene = figure("x", "preserve", { tick_label_sides: ["bottom", "top"], tick_label_angle: angle, ...(anchor ? { tick_label_anchor: anchor } : {}) });
+      const { spec } = compilePainter(ab(sceneBrowserPainter(scene)));
+      const labels = svgAxes(scene).x;
+      for (const side of ["bottom", "top"]) {
+        assert.equal(spec.axes.x.tick_label_angles[side], angle > 0 ? -10 : 10);
+        const resolvedAnchor = spec.axes.x.tick_label_anchors[side];
+        const svgSide = labels.filter((label) => label.side === side);
+        assert.ok(svgSide.length);
+        assert.ok(svgSide.every((label) => label.angle === angle && label.anchor === (resolvedAnchor === "center" ? "middle" : resolvedAnchor)), `${side} anchor from original angle`);
+      }
+    });
+  }
+}
+
+test("a large finite rotation normalizes before adding any offset", { skip }, async () => {
   const { compilePainter } = await hydrator();
-  const scene = figure("x", "rotate", { tick_label_angle: 20 });
+  const scene = figure("x", "preserve", { tick_label_sides: ["bottom", "top"], tick_label_angle: 1e18 });
   const { spec } = compilePainter(ab(sceneBrowserPainter(scene)));
-  assert.equal(spec.axes.x.tick_label_angle, 20);
-  assert.ok(svgAxes(scene).x.every((label) => label.angle === -20 || label.angle === 20));
+  assert.deepEqual(spec.axes.x.tick_label_angles, { bottom: -80, top: -80 });
+  assert.deepEqual(spec.axes.x.tick_label_anchors, { bottom: "start", top: "end" });
+});
+
+test("upright resolved labels retain the no-angle room fast path", { skip }, async () => {
+  const { compilePainter } = await hydrator();
+  const { spec } = compilePainter(ab(sceneBrowserPainter(figure("x", "preserve"))));
+  assert.equal(spec.axes.x.tick_label_angle, undefined);
 });
 
 test("a painter from an older XYPB version is rejected", { skip }, async () => {
@@ -105,9 +146,9 @@ test("a painter from an older XYPB version is rejected", { skip }, async () => {
   assert.throws(() => compilePainter(ab(painter)), /incompatible/);
 });
 
-test("an unknown axis layout mode is rejected", { skip }, async () => {
+test("unknown axis layout modes, anchors and reserved bits are rejected", { skip }, async () => {
   const { compilePainter } = await hydrator();
-  for (const mode of [0, 1, 7]) {
+  for (const mode of [0, 1, 7, 4 | (3 << 3), 4 | (3 << 5), 128 | 4]) {
     const painter = Buffer.from(sceneBrowserPainter(figure("x", "none")));
     painter[64 + 24 + 5] = mode;
     assert.throws(() => compilePainter(ab(painter)), /axis style is invalid/);

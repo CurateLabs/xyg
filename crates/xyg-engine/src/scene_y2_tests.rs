@@ -397,9 +397,9 @@ fn y2_paints_right_gutter_labels_with_equal_domain_tick_parity() {
     let painter = document.to_browser_painter(1 << 24).unwrap();
     assert_eq!(&painter[..4], b"XYPB");
     assert_eq!(u32_at(&painter, 4), crate::scene::BROWSER_PAINTER_VERSION);
-    // XYPB v17 pins the resolved per-axis strategy at axis byte 5 (auto without collisions = preserve).
+    // XYPB v17 packs preserve with bottom-center / left-end / right-start anchors at axis byte 5.
     assert_eq!(crate::scene::BROWSER_PAINTER_VERSION, 17);
-    assert_eq!([painter[93], painter[181], painter[269]], [4; 3]);
+    assert_eq!([painter[93], painter[181], painter[269]], [4 | (1 << 3), 4 | (2 << 3), 4]);
     assert_eq!(u32_at(&painter, 12) as usize, BROWSER_PAINTER_HEADER_BYTES);
     let y2_block = &painter[264..352];
     assert!(y2_block.iter().any(|byte| *byte != 0));
@@ -777,9 +777,9 @@ fn painter_carries_the_resolved_tick_label_mode_and_blanks_hidden_labels() {
         facts[12] = strategy;
         let scene = encode(&[scatter(1, 0.5, false)], &facts);
         let painter = SceneDocument::decode(&scene).unwrap().to_browser_painter(1 << 24).unwrap();
-        assert_eq!(painter[93], mode, "strategy {strategy}");
+        assert_eq!(painter[93], mode | (1 << 3), "strategy {strategy}, bottom-center anchor");
         assert_eq!(i16::from_le_bytes([painter[94], painter[95]]), 0);
-        assert_eq!(painter[181], 4, "the untouched y axis keeps preserve");
+        assert_eq!(painter[181], 4 | (2 << 3), "the untouched y axis keeps preserve and left-end anchor");
         assert_eq!(painter[76..80], [0; 4], "collision header is Rust-internal");
         let shown = labels(&painter).iter().filter(|label| !label.is_empty()).count();
         assert_eq!(shown == 0, mode >= 5, "strategy {strategy}: {shown} labels");

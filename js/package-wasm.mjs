@@ -117,9 +117,9 @@ const WASM_SIZE_BUDGET_BYTES = 1507 * 1024;
 // 1,527,867 / 630,943 after #1023/#1034/#1037, 160 bytes over the 620 KiB gate;
 // 3,936 bytes of gzip and 1,974 bytes of raw headroom remain (local build).
 // 1,507 KiB raw (gzip gate unchanged at 624 KiB): XYPB v17 (#1036) runs the Rust
-// tick-label strategy layout in the painter writer. Measured over the merge-base
-// build (local toolchain): 1,539,454 -> 1,541,488 raw (+2,034) and 635,754 ->
-// 636,670 gzip (+916); 1,680 bytes of raw headroom remain.
+// tick-label strategy layout in the painter writer, including per-side rotations.
+// After merging main 4631927, the local build is 1,542,222 raw / 636,944 gzip
+// (earlier merge-base: 1,539,454 / 635,754); raw headroom is 946 bytes.
 const WASM_GZIP_BUDGET_BYTES = 624 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);

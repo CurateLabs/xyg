@@ -14001,7 +14001,8 @@ impl SceneDocument {
     /// SVG/raster consumers. Labels attach only for AxisTicks::labeled that the
     /// strategy layout keeps (empty UTF-8 otherwise). Returns the XYPB v17 axis
     /// facts as well: resolved mode (`tick_layout::STRATEGY_*`; hide arrives as
-    /// preserve) and the kept labels' rotation in hundredths of a degree.
+    /// preserve), per-side display anchors, and normalized rotations in
+    /// hundredths of a degree.
     /// Out of line: one body serves all three axes in the size-budgeted WASM.
     #[inline(never)]
     fn painter_ticks(
@@ -14009,9 +14010,11 @@ impl SceneDocument {
         slot: AxisSlot,
         scale: AxisScale,
         axis: AxisTicks,
-    ) -> Result<(Vec<(f32, String, bool)>, [u8; 3]), SceneError> {
-        // Run the layout for the first label side the SVG draws.
-        let style = self.slot_policy(slot).style;
+    ) -> Result<(Vec<(f32, String, bool)>, [u8; 5]), SceneError> {
+        // Keep the first label side's labels, as in SVG. Resolve the other
+        // side too when both are drawn: default rotation depends on the side.
+        let policy = self.slot_policy(slot);
+        let style = policy.style;
         let side = if style.tick_label_sides == 0 {
             style.side as u8
         } else {
@@ -14024,8 +14027,32 @@ impl SceneDocument {
                 *slot = true;
             }
         }
-        let angle = items.first().map_or(0.0, |item| item.angle);
-        let angle = ((angle * 100.0).round().clamp(-32767.0, 32767.0) as i16).to_le_bytes();
+        let encode = |items: &[tick_layout::TickLabelItem], side| {
+            let angle = items.first().map_or(0.0, |item| item.angle);
+            // Preserve the original angle's anchor before reducing equivalent
+            // turns to the i16 wire range. 350deg and -10deg rotate alike, but
+            // their default anchors differ.
+            let anchor = display_tick_anchor(
+                policy.anchor_authored,
+                policy.anchor,
+                slot == AxisSlot::X,
+                side,
+                angle,
+            );
+            let normalized = angle.rem_euclid(360.0);
+            let normalized = if normalized > 180.0 { normalized - 360.0 } else { normalized };
+            ((normalized * 100.0).round() as i16, anchor)
+        };
+        let mut angles = [0_i16; 2];
+        let mut anchors = [0_u8; 2];
+        (angles[side as usize], anchors[side as usize]) = encode(&items, side);
+        if style.tick_label_sides == 3 {
+            let (_, other_items, _) = self.axis_tick_layout(slot, &axis, scale, 1 - side);
+            (angles[(1 - side) as usize], anchors[(1 - side) as usize]) =
+                encode(&other_items, 1 - side);
+        }
+        let [a0, a1] = angles[0].to_le_bytes();
+        let [b0, b1] = angles[1].to_le_bytes();
         let ticks = axis
             .ticks
             .iter()
@@ -14034,7 +14061,10 @@ impl SceneDocument {
                 if !at.is_finite() {
                     return Err(SceneError::NonFinite);
                 }
-                let index = axis.labeled.iter().position(|candidate| *candidate == value);
+                let index = axis
+                    .labeled
+                    .iter()
+                    .position(|candidate| *candidate == value);
                 let label = index
                     .filter(|index| keep.get(*index) == Some(&true))
                     .and_then(|index| texts.get(index))
@@ -14043,7 +14073,10 @@ impl SceneDocument {
                 Ok((at, label, index.is_some()))
             })
             .collect::<Result<Vec<_>, SceneError>>()?;
-        Ok((ticks, [mode as u8, angle[0], angle[1]]))
+        Ok((
+            ticks,
+            [mode as u8 | (anchors[0] << 3) | (anchors[1] << 5), a0, a1, b0, b1],
+        ))
     }
 
     fn axis_hides_chrome(&self, slot: impl Into<AxisSlot>) -> bool {
@@ -16797,7 +16830,7 @@ impl SceneDocument {
                 y2.scale,
                 self.resolved_axis_ticks(AxisSlot::Y2)?,
             )?,
-            None => (Vec::new(), [0; 3]),
+            None => (Vec::new(), [0; 5]),
         };
 
         let mut groups = Vec::new();
@@ -17263,13 +17296,18 @@ impl SceneDocument {
         // The authored collision header is Rust-internal; the painter carries
         // only the resolved per-axis strategy below.
         out[76..80].fill(0);
-        out[93..96].copy_from_slice(&x_meta);
-        out[181..184].copy_from_slice(&y_meta);
+        out[93..96].copy_from_slice(&x_meta[..3]);
+        out[181..184].copy_from_slice(&y_meta[..3]);
+        // Header tail carries top/right rotations; axis bytes 6-7 carry
+        // bottom/left rotations. No browser-side sign policy is needed.
+        out[416..418].copy_from_slice(&x_meta[3..]);
+        out[418..420].copy_from_slice(&y_meta[3..]);
         if let Some(y2) = &self.y2 {
             let mut axis = Vec::with_capacity(PAINTER_Y2_AXIS_BYTES);
             write_axis_chrome_style(&mut axis, &y2.axis);
             out[264..264 + PAINTER_Y2_AXIS_BYTES].copy_from_slice(&axis);
-            out[269..272].copy_from_slice(&y2_meta);
+            out[269..272].copy_from_slice(&y2_meta[..3]);
+            out[378..380].copy_from_slice(&y2_meta[3..]);
             // Fixed y2 chrome-text record: the resolved XYCO typography and
             // paints, so the browser applies them rather than the shared
             // label size and single paint of the primary axes.
@@ -24560,11 +24598,11 @@ pub(crate) mod tests {
         assert_eq!(&raster[37..41], &[1, 2, 3, 255]);
         assert_eq!(&raster[78..82], &[4, 5, 6, 128]);
         let painter = document.to_browser_painter(16_384).unwrap();
-        // XYPB v17 writes the resolved layout mode (preserve) into byte 5 of the
-        // x and y axis blocks; everything else is the validated style input.
+        // XYPB v17 writes preserve plus top-center / left-end anchor bits
+        // into byte 5 of the x and y axis blocks; everything else is the validated style input.
         let mut expected_input = style_input.clone();
-        expected_input[93 - 64] = 4;
-        expected_input[181 - 64] = 4;
+        expected_input[93 - 64] = 4 | (1 << 5);
+        expected_input[181 - 64] = 4 | (2 << 3);
         assert_eq!(&painter[64..264], expected_input.as_slice());
         // XYPB v16: the title/x/y/y2-title lengths follow the y2 axis block and
         // the fixed y2 text record (zero here: no secondary axis).

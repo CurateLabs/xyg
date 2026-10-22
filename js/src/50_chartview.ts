@@ -7341,6 +7341,8 @@ export class ChartView {
   }
 
   _axisTickLabelAnchor(axis) {
+    const resolved = axis?.tick_label_anchors?.[axis.side];
+    if (resolved !== undefined) return resolved;
     const raw = axis && axis.tick_label_anchor !== undefined
       ? axis.tick_label_anchor
       : this._axisStyleValue(axis, "tick_label_anchor");
@@ -7451,7 +7453,7 @@ export class ChartView {
     if (strategyValue === "none" || strategyValue === "off") return [];
     if (axis && axis.tick_resolution === "rust_scene") {
       // Rust already thinned, rotated and staggered: apply exactly that.
-      const angle = this._axisTickLabelAngle(axis) ?? 0;
+      const angle = axis.tick_label_angles?.[axis.side] ?? this._axisTickLabelAngle(axis) ?? 0;
       return labels.filter((label) => label.text !== "").map((label) => ({
         ...label, angle,
         row: axis.tick_stagger ? Math.max(0, axis.tick_values.indexOf(label.value)) & 1 : 0,
