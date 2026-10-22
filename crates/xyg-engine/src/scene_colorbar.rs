@@ -165,12 +165,6 @@ pub fn pack_colorbar(input: ColorbarFrameInput<'_>) -> Result<Vec<u8>, ColorbarE
 /// than dropping samples.
 fn uniform_stop_values(lo: f64, hi: f64, count: usize) -> Result<Vec<f64>, ColorbarError> {
     let last = count - 1;
-    // `ceilings[i]` is `hi` stepped down `last - i` representable values: the
-    // highest slot stop `i` may take while leaving room for every later stop.
-    let mut ceilings = vec![hi; count];
-    for index in (0..last).rev() {
-        ceilings[index] = ceilings[index + 1].next_down();
-    }
     let mut values = Vec::with_capacity(count);
     values.push(lo);
     for index in 1..last {
@@ -194,7 +188,7 @@ fn uniform_stop_values(lo: f64, hi: f64, count: usize) -> Result<Vec<f64>, Color
         } else {
             previous.next_up()
         }
-        .min(ceilings[index]);
+        .min((index..last).fold(hi, |ceiling, _| ceiling.next_down()));
         if value <= previous {
             return Err(ColorbarError::Order);
         }

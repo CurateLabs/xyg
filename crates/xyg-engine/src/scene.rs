@@ -1874,19 +1874,13 @@ pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneE
         (b / target as f64) - (a / target as f64)
     };
     let magnitude = 10_f64.powf(rough.abs().log10().floor());
-    // Candidates that overflow are not steps; the largest finite one wins.
+    // Overflowing candidates are skipped; `magnitude` is always finite.
     let step = [1.0, 2.0, 2.5, 5.0, 10.0]
         .into_iter()
         .map(|m| m * magnitude)
         .filter(|candidate| candidate.is_finite())
         .find(|candidate| rough <= candidate * (1.0 + 1e-12))
-        .unwrap_or_else(|| {
-            [10.0, 5.0, 2.5, 2.0, 1.0]
-                .into_iter()
-                .map(|m| m * magnitude)
-                .find(|candidate| candidate.is_finite())
-                .unwrap_or(f64::MAX)
-        });
+        .unwrap_or(magnitude);
     let mut value = (a / step).ceil() * step;
     let mut ticks = Vec::with_capacity(target.saturating_add(2).min(MAX_AXIS_TICKS));
     while value.is_finite() && value <= b + step * 1e-9 && ticks.len() < MAX_AXIS_TICKS {
@@ -4080,10 +4074,21 @@ fn resolved_colorbar_bounds(
 /// Fully resolved colorbar tick geometry. This is deliberately computed before
 /// every renderer so DOM/WASM consumers never select ticks, format labels, or
 /// subdivide minor intervals themselves.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 struct ResolvedColorbarTicks {
     majors: Vec<(f64, f64, String)>,
     minors: Vec<(f64, f64)>,
+}
+
+/// Position of `value` in `[lo, hi]`. When the span overflows (for example
+/// `[-MAX, MAX]`), halving every term keeps the fraction finite.
+#[inline(never)]
+fn linear_fraction(value: f64, lo: f64, hi: f64) -> f64 {
+    if (hi - lo).is_finite() {
+        (value - lo) / (hi - lo)
+    } else {
+        (value / 2.0 - lo / 2.0) / (hi / 2.0 - lo / 2.0)
+    }
 }
 
 fn resolved_colorbar_ticks(
@@ -4138,13 +4143,8 @@ fn resolved_colorbar_ticks(
                     (value.ln() - lo.ln()) / (colorbar.domain[1].ln() - lo.ln())
                 }
             }
-        } else if (colorbar.domain[1] - colorbar.domain[0]).is_finite() {
-            (value - colorbar.domain[0]) / (colorbar.domain[1] - colorbar.domain[0])
         } else {
-            // The span overflows (for example [-MAX, MAX]); halving every term
-            // keeps the fraction finite and exact enough for pixel placement.
-            (value / 2.0 - colorbar.domain[0] / 2.0)
-                / (colorbar.domain[1] / 2.0 - colorbar.domain[0] / 2.0)
+            linear_fraction(value, colorbar.domain[0], colorbar.domain[1])
         };
         if colorbar.horizontal {
             x + width * fraction
@@ -4216,7 +4216,6 @@ fn resolved_colorbar_ticks(
                     if scaled.is_finite() {
                         pair[0] + scaled / 5.0
                     } else {
-                        // Extreme spans overflow the product; divide first.
                         pair[0] + span / 5.0 * subdivision as f64
                     }
                 };
@@ -14202,12 +14201,7 @@ impl SceneDocument {
         // Admission validates tick geometry; if a caller still reaches here
         // with unresolvable ticks, draw the bar without them instead of
         // panicking inside the renderer.
-        let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height)).unwrap_or(
-            ResolvedColorbarTicks {
-                majors: Vec::new(),
-                minors: Vec::new(),
-            },
-        );
+        let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height)).unwrap_or_default();
         for (maximum, points, rgba) in resolved_colorbar_extensions(colorbar, (x, y, width, height))
         {
             out.push_str("<polygon data-xy-slot=\"colorbar_extend_");
