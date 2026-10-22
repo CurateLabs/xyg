@@ -2724,10 +2724,10 @@ export function sceneBatchEncode({
   }
 }
 
-function sceneOutput(encoded, call, name, extra = [], rustDiagnostic = false) {
+function sceneOutput(encoded, call, name, extra = [], rustDiagnostic = false, initialCapacity = null) {
   const source = asU8Array(encoded, "encoded scene");
   if (source.length === 0) throw new RangeError("encoded scene must not be empty");
-  let capacity = Math.max(256, source.length * 3);
+  let capacity = initialCapacity ?? Math.max(256, source.length * 3);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = call(u8Ptr(source), BigInt(source.length), ...extra, u8Ptr(output), BigInt(capacity));
@@ -2846,6 +2846,12 @@ export function sceneRasterCommands(encoded, scale = DEFAULT_PNG_EXPORT_SCALE) {
 
 const SCENE_STATIC_FORMATS = { svg: 0, png: 1, pdf: 2, jpeg: 3, webp: 4 };
 
+function sceneStaticExportReason(encoded, code) {
+  // A support diagnostic is independent of Scene size. Keep the normal
+  // required-size retry for future longer diagnostics without pre-decoding.
+  return sceneOutput(encoded, xySceneStaticExportReason, "static export support", [code], false, 256);
+}
+
 export function sceneStaticExport(encoded, format, { scale = DEFAULT_PNG_EXPORT_SCALE, width = 1, height = 1, quality = 90 } = {}) {
   const code = SCENE_STATIC_FORMATS[format];
   if (code == null) {
@@ -2863,7 +2869,7 @@ export function sceneStaticExport(encoded, format, { scale = DEFAULT_PNG_EXPORT_
   if (!Number.isInteger(w) || w <= 0) throw new RangeError("scene static width must be a positive integer");
   if (!Number.isInteger(h) || h <= 0) throw new RangeError("scene static height must be a positive integer");
   if (!Number.isInteger(q)) throw new RangeError("quality must be an int in 1..100");
-  const reason = sceneOutput(encoded, xySceneStaticExportReason, "static export support", [code]);
+  const reason = sceneStaticExportReason(encoded, code);
   if (reason.length) throw new RangeError(new TextDecoder().decode(reason));
   return sceneOutput(encoded, xySceneStaticExport, "static export", [code, factor, BigInt(w), BigInt(h), q]);
 }
@@ -6924,7 +6930,7 @@ export function sceneExportSupportReason(figure, { width = null, height = null, 
     if (format != null) {
       const code = SCENE_STATIC_FORMATS[format];
       if (code == null) throw new RangeError("invalid Scene static export format");
-      const diagnostic = sceneOutput(scene, xySceneStaticExportReason, "static export support", [code]);
+      const diagnostic = sceneStaticExportReason(scene, code);
       if (diagnostic.length) return new TextDecoder().decode(diagnostic);
     }
   } catch (err) {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { Figure, sceneExportSupportReason, staticDocumentExport } from "../src/index.js";
+import { Figure, sceneExportSupportReason, sceneStaticExport, staticDocumentExport } from "../src/index.js";
 
 const LOD = "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD";
 
@@ -47,5 +47,34 @@ test("overlap and above-ceiling dense fan keep the shared stable LOD reason", ()
   for (const format of ["svg", "pdf", "png"]) {
     assert.equal(sceneExportSupportReason(dense, { format }), LOD);
     assert.throws(() => dense.toImage(format), new RegExp(LOD));
+  }
+});
+
+test("large Scene support queries keep output scratch space bounded", () => {
+  const figure = mesh(50_000);
+  const scene = figure.toScene();
+  assert.ok(scene.length > 8_000_000);
+  const OriginalUint8Array = globalThis.Uint8Array;
+  const allocations = [];
+  globalThis.Uint8Array = new Proxy(OriginalUint8Array, {
+    construct(target, args, newTarget) {
+      const output = Reflect.construct(target, args, newTarget);
+      if (typeof args[0] === "number") allocations.push(output.byteLength);
+      return output;
+    },
+  });
+  try {
+    assert.throws(() => sceneStaticExport(scene, "png"), new RegExp(LOD));
+    // The encoded Scene already exists; only the native diagnostic needs an
+    // output buffer, and the renderer is never reached after its refusal.
+    assert.equal(allocations.length, 1);
+    assert.ok(allocations[0] <= 256, String(allocations));
+    allocations.length = 0;
+    assert.equal(sceneExportSupportReason(figure, { format: "svg" }), null);
+    // Figure compilation has its own buffers. Its final allocation belongs
+    // to the successful, empty native support diagnostic.
+    assert.ok(allocations.at(-1) <= 256, String(allocations));
+  } finally {
+    globalThis.Uint8Array = OriginalUint8Array;
   }
 });

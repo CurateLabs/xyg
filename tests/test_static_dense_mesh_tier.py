@@ -399,3 +399,46 @@ def test_format_support_query_preserves_the_c_byte_buffer_contract() -> None:
     assert query(None, 0, 0, short, 2) == sentinel
     assert query(source, len(encoded), 1, None, 1) == sentinel
     assert short.raw == b"zz\0"
+
+
+def test_large_scene_support_queries_allocate_only_diagnostic_buffers(monkeypatch) -> None:
+    import ctypes
+
+    from xyg import _native
+
+    figure = _radial_fan(50_000).figure()
+    scene = figure_scene(figure)
+    assert len(scene) > 8_000_000
+    query = _native._lib.xyg_scene_static_export_reason
+    buffers = []
+
+    def record_query(source, length, format, output, capacity):
+        buffers.append((length, ctypes.sizeof(output), capacity))
+        return query(source, length, format, output, capacity)
+
+    monkeypatch.setattr(_native._lib, "xyg_scene_static_export_reason", record_query)
+    assert _native.scene_static_export_reason(scene, "svg") == ""
+    assert _native.scene_static_export_reason(scene, "png") == _LOD
+    assert scene_export_support_reason(figure, format="svg") is None
+    with pytest.raises(ValueError, match=_LOD):
+        _native.scene_static_export(scene, "png")
+    # Both query results fit in one call; their output scratch space must not
+    # scale with the 8 MB Scene, including either caller's preflight path.
+    assert len(buffers) == 4
+    assert all(length > 8_000_000 for length, _, _ in buffers)
+    assert all(size == capacity and size <= 256 for _, size, capacity in buffers), buffers
+
+    # Keep the ABI's required-size retry if a future diagnostic exceeds the
+    # initial scratch buffer; the first call must not truncate its payload.
+    diagnostic = b"XYG_TEST_" + b"x" * 300
+    capacities = []
+
+    def long_diagnostic(source, length, format, output, capacity):
+        capacities.append(capacity)
+        if capacity >= len(diagnostic):
+            ctypes.memmove(output, diagnostic, len(diagnostic))
+        return len(diagnostic)
+
+    monkeypatch.setattr(_native._lib, "xyg_scene_static_export_reason", long_diagnostic)
+    assert _native.scene_static_export_reason(scene, "svg") == diagnostic.decode()
+    assert capacities == [256, len(diagnostic)]

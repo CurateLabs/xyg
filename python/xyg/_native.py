@@ -8861,11 +8861,12 @@ def _scene_bytes_output(
     label: str,
     *extra: Any,
     rust_diagnostic: type[ValueError] | None = None,
+    initial_capacity: int | None = None,
 ) -> bytes:
     source = np.frombuffer(encoded, dtype=np.uint8)
     if not len(source):
         raise ValueError("encoded scene must not be empty")
-    capacity = max(256, len(source) * 3)
+    capacity = initial_capacity if initial_capacity is not None else max(256, len(source) * 3)
     while True:
         out = ctypes.create_string_buffer(capacity)
         written = function(_ptr_u8(source), len(source), *extra, out, capacity)
@@ -9005,7 +9006,11 @@ def scene_static_export_reason(encoded: bytes, format: str) -> str:
     if code is None:
         raise ValueError(f"invalid Scene static export format: {format!r}")
     return _scene_bytes_output(
-        encoded, _lib.xyg_scene_static_export_reason, "static export support", code
+        encoded,
+        _lib.xyg_scene_static_export_reason,
+        "static export support",
+        code,
+        initial_capacity=256,
     ).decode("utf-8")
 
 
