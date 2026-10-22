@@ -40,11 +40,12 @@ container or mounted volumes (#1014). Related: [tier3-phase4-roadmap.md](tier3-p
 `XDG_CACHE_HOME` and other XDG variables are **not read** anywhere; XYG keeps
 no user cache directory. Setting them has no effect.
 
-The Rust spill path and the Python `tempfile` path are resolved independently;
-in one process they agree because both read the same environment, but a Python
-program that assigns `tempfile.tempdir` changes only Python-created files. To
-move the native tile spill, set `TMPDIR` (Unix) or `TMP`/`TEMP` (Windows) in
-the process environment, not `tempfile.tempdir`.
+The Rust spill path and the Python `tempfile` path are resolved independently
+and their rules differ (for example, with only `TEMP` set on Unix, Python uses
+it while Rust uses `/tmp`). A Python program that assigns `tempfile.tempdir`
+changes only Python-created files. To move the native tile spill, set `TMPDIR`
+(Unix) or `TMP`/`TEMP` (Windows) in the process environment before the first
+spill; do not rely on `tempfile.tempdir` or on `TEMP` on Unix.
 
 ## Evidence table
 

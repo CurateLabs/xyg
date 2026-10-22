@@ -65,7 +65,9 @@ before choosing a browser-only deployment for a native workload.
 ## Disk use, temporary files, and mounted volumes
 
 XYG has no durable store of its own. Default figures, HTML export, notebooks,
-Reflex apps, and the browser need no disk. Native hosts write only to paths you
+and the browser need no disk. A Reflex frontend build writes chart payloads
+under `assets/xy/` in the app root, so that directory must be writable at build
+time; backend-only runs (`REFLEX_BACKEND_ONLY`) skip these writes. Native hosts write only to paths you
 name, rebuildable caches beside your files, and process temporary files.
 
 - **Large density views** (memmapped or very large columns whose pyramid would exceed the resident budget) may spill their aggregate pyramid to a temporary file
