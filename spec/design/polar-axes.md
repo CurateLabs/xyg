@@ -151,6 +151,23 @@ Eight properties this pins down, each of which has matching coverage:
   so the SVG `clipPath` and the raster clip command cannot drift. Clipping to the
   plot rect alone is not a smaller legend but no legend: the gutter is outside it
   by construction, so the whole box falls away.
+- **An in-Scene legend that does not fit the gutter fails closed (#1041).** The
+  canonical Scene cannot ellipsize or clip a legend the way the static
+  exporters do, so Rust (`SceneBatch::with_polar_legend_checked`) requires the
+  measured legend box (`resolved_legend_bounds`: width `36 + widest label`,
+  height `12 + rows * (font + 6)`, title row included) to fit the recut legend
+  box with an 8 px margin on each side. A legend that does not fit — three
+  default-size rows overflow the 64 px compact band, so a wind rose under 520 px
+  — is rejected with the stable reason `XYG_SCENE_UNSUPPORTED_POLAR_LEGEND`
+  (`-801`, relayed by product encode; no ABI signature change), identical in
+  Python and Node, never the opaque encode code `-16`. `to_scene` and
+  `scene_export_support_reason` report it; `to_svg`/`to_png`/`to_image('pdf')`
+  and pyplot `savefig` keep working because the static document removes the
+  Scene legend before encoding, and `show_legend=False` also encodes. From 520 px
+  the legend sits in a side gutter (22% of the width, 120–200 px) and fits.
+  Cross-host proof: `tests/test_polar_legend_support_cross_host.py` and
+  `packages/xy-node/test/polar-legend-support.test.mjs` share
+  `tests/fixtures/polar_legend_support_cross_host.json`.
 - **A title reserves the lines it will wrap into.** `_title_wrap_width` — the
   canvas minus the *authored/default* horizontal gutters, mirrored by
   `_titleWrapWidth` in the client — is resolved before the title band, and both

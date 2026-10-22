@@ -1,0 +1,14 @@
+{
+  "schema": "xyg.polar-legend-support-cross-host/v1",
+  "reason": "XYG_SCENE_UNSUPPORTED_POLAR_LEGEND",
+  "cases": [
+    {"side": 240, "bands": 3, "reason": "XYG_SCENE_UNSUPPORTED_POLAR_LEGEND"},
+    {"side": 400, "bands": 3, "reason": "XYG_SCENE_UNSUPPORTED_POLAR_LEGEND"},
+    {"side": 519, "bands": 3, "reason": "XYG_SCENE_UNSUPPORTED_POLAR_LEGEND"},
+    {"side": 240, "bands": 20, "reason": "XYG_SCENE_UNSUPPORTED_POLAR_LEGEND"},
+    {"side": 240, "bands": 2, "reason": null},
+    {"side": 519, "bands": 2, "reason": null},
+    {"side": 520, "bands": 3, "reason": null},
+    {"side": 720, "bands": 3, "reason": null}
+  ]
+}

@@ -5632,6 +5632,8 @@ class SceneEncodeAssembledError(ValueError):
         self.index = int(index)
         messages = {
             -2: "invalid scene encode assembled version",
+            -7: "Scene record expansion or mesh exceeds the static export budget",
+            -8: "polar legend does not fit the recut polar viewport",
         }
         super().__init__(messages.get(self.code, "invalid canonical scene batch"))
 
@@ -5840,6 +5842,10 @@ def scene_encode_assembled_from_sidecars(
             raise ValueError("Scene extras polar or paint envelope is invalid")
         if code == -21:
             raise ValueError("Scene style sidecar facts are invalid")
+        if code == -22:
+            raise ValueError("Scene record expansion or mesh exceeds the static export budget")
+        if code == -23:
+            raise ValueError("polar legend does not fit the recut polar viewport")
         if code in {-17, -18, -19}:
             raise ValueError("invalid scene extras packing")
         if code < 0:

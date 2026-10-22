@@ -496,6 +496,107 @@ mod tests {
         batch.encode()
     }
 
+    /// A square polar Scene of `side` px carrying `entries` legend rows.
+    fn polar_legend_batch(side: f64, entries: usize) -> SceneBatch<'static> {
+        let layout = PlotLayout::new(side, side, 40.0, 40.0, 40.0, 40.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, TAU, 40.0, side - 40.0, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, side - 40.0, 40.0, 1.0, false).unwrap();
+        let legend = SceneLegend {
+            location: LegendLocation::UpperRight,
+            title: String::new(),
+            font_size: 11.0,
+            title_font_size: 12.0,
+            text_rgba: [32, 32, 32, 255],
+            frame_fill_rgba: [255, 255, 255, 230],
+            frame_stroke_rgba: [32, 32, 32, 71],
+            entries: (0..entries)
+                .map(|index| SceneLegendEntry {
+                    style_ref: 0,
+                    kind: SceneRecordKind::Rect,
+                    symbol: 0,
+                    fill_rgba: FILL,
+                    stroke_rgba: [0, 0, 0, 255],
+                    label: format!("band {index}"),
+                })
+                .collect(),
+        };
+        SceneBatch::new_with_decorations(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            Some(legend),
+            &[SceneRecordKind::Rect as u8],
+            &[1],
+            &[0],
+            &FILL,
+            &[0, 0, 0, 255],
+            &[0.0],
+            &[0.0],
+            &[0],
+            &[0.0],
+            &[0.0],
+            &[1.0],
+            &[1.0],
+        )
+        .unwrap()
+    }
+
+    fn polar_xypl() -> Vec<u8> {
+        polar::encode_xypl(&polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: TAU,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        })
+        .to_vec()
+    }
+
+    /// #1041: the in-Scene legend must fit the recut polar viewport. Compact
+    /// canvases (< 520 px) reserve a 64 px bottom band, so three rows (the
+    /// wind-rose legend) overflow it while two fit; from 520 px the legend
+    /// moves to a side gutter and fits. The overflow is a typed
+    /// `LegendFit`, which product encode relays as
+    /// `XYG_SCENE_UNSUPPORTED_POLAR_LEGEND`; `with_polar` keeps `Limit`.
+    #[test]
+    fn polar_legend_fit_boundary_is_a_typed_rejection() {
+        let xypl = polar_xypl();
+        for side in [240.0, 400.0, 519.0] {
+            assert_eq!(
+                polar_legend_batch(side, 3)
+                    .with_polar_legend_checked(&xypl)
+                    .err(),
+                Some(PolarSceneError::LegendFit),
+                "{side}px"
+            );
+            assert!(polar_legend_batch(side, 2)
+                .with_polar_legend_checked(&xypl)
+                .is_ok());
+            assert_eq!(
+                polar_legend_batch(side, 3).with_polar(&xypl).err(),
+                Some(SceneError::Limit)
+            );
+        }
+        for side in [520.0, 521.0, 720.0] {
+            assert!(polar_legend_batch(side, 3)
+                .with_polar_legend_checked(&xypl)
+                .is_ok());
+        }
+    }
+
     fn radii(corner: f64, gap: f64) -> Option<SceneCornerRadius> {
         Some(SceneCornerRadius {
             r_tip: corner,
