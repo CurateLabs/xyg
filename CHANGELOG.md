@@ -13,6 +13,14 @@ in the README).
 
 ## [Unreleased]
 
+## [0.6.0-rc.1] — 2026-10-22
+
+This candidate is being prepared for retained-artifact testing; it has not been
+published to PyPI or npm. Python artifacts use `0.6.0rc1`; npm artifacts use
+`0.6.0-rc.1`. The acceptance status, reproduction commands, and remaining
+publication gates are recorded in
+[`spec/releases/0.6.0-rc.1.md`](spec/releases/0.6.0-rc.1.md).
+
 ### Fixed
 - Static export draws a colormapped `contourf` colorbar (up to 15 levels) as
   one solid band per level, as Matplotlib 3.11 does, instead of a smooth ramp
