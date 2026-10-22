@@ -44,6 +44,12 @@ in the README).
   'right'`); previously it failed later with a generic error (#1044).
 
 ### Fixed
+- Browser painter honors each axis's tick-label strategy (#1036). XYPB is now v17:
+  Rust resolves the layout per x/y/y2 axis (thinned labels arrive blank, plus the
+  applied rotate/stagger mode and angle), and the browser applies exactly that
+  instead of rebuilding every axis as `auto`, so hidden labels and ticks no longer
+  reappear and rotated, staggered and thinned labels match the static SVG. Older
+  XYPB payloads are rejected.
 - Browser painter decodes and draws rotated Scene labels (#1040). The client
   accepted XYLB v1-v5 only, so any rotated label (XYLB v6) failed the whole
   frame with `XYG_WASM_MALFORMED_OUTPUT`; it now reads the 112-byte v6 record and
