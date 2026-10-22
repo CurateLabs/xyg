@@ -50,7 +50,7 @@ def test_compatibility_declaration_is_grounded_in_real_core_evidence(
 
 
 def test_ci_rebuilds_the_core_corpus_from_the_pinned_owner_sources() -> None:
-    import yaml
+    yaml = pytest.importorskip("yaml")
 
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     steps = workflow["jobs"]["test"]["steps"]
@@ -61,14 +61,20 @@ def test_ci_rebuilds_the_core_corpus_from_the_pinned_owner_sources() -> None:
     )
     assert checkout["with"]["repository"] == "CurateLabs/graphforge"
     assert checkout["with"]["ref"] == "${{ steps.core_contract_pin.outputs.commit }}"
+    assert checkout["with"]["path"] == "target/core-contracts"
     assert checkout["with"]["persist-credentials"] is False
     assert checkout["with"]["sparse-checkout-cone-mode"] is False
+    assert checkout["with"]["sparse-checkout"].splitlines() == [
+        "/Cargo.toml",
+        "/crates/graphforge-core/src/algorithms.rs",
+        "/crates/graphforge-api/src/invocation_descriptor.rs",
+    ]
     verify = next(
         step
         for step in steps
         if step.get("name") == "Verify the pinned Core schema and descriptor corpus"
     )
-    assert "sync_graphforge_contract_corpus.py --core-repo .core-contracts" in verify["run"]
+    assert "sync_graphforge_contract_corpus.py --core-repo target/core-contracts" in verify["run"]
     assert "--output tests/fixtures/graphforge/core/0.6.0-rc.5" in verify["run"]
     assert "--write" not in verify["run"]
 

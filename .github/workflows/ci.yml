@@ -159,18 +159,18 @@ jobs:
         with:
           repository: CurateLabs/graphforge
           ref: ${{ steps.core_contract_pin.outputs.commit }}
-          path: .core-contracts
+          path: target/core-contracts
           fetch-depth: 0
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
-            Cargo.toml
-            crates/graphforge-core/src/algorithms.rs
-            crates/graphforge-api/src/invocation_descriptor.rs
+            /Cargo.toml
+            /crates/graphforge-core/src/algorithms.rs
+            /crates/graphforge-api/src/invocation_descriptor.rs
       - name: Verify the pinned Core schema and descriptor corpus
         run: |
-          python3 scripts/sync_graphforge_contract_corpus.py --core-repo .core-contracts
-          python3 scripts/sync_graphforge_contract_corpus.py --core-repo .core-contracts --output tests/fixtures/graphforge/core/0.6.0-rc.5
+          python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts
+          python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts --output tests/fixtures/graphforge/core/0.6.0-rc.5
 
       - name: Rust unit tests
         run: cargo test --workspace
