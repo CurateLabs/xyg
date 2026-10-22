@@ -594,12 +594,13 @@ export function resolveColormap(value, label = "colormap") {
       && row.length === 3 && [...row].every((c) => typeof c === "number"));
   if (numericRows) {
     // Reject before packing: Uint8Array.from would wrap 256 -> 0 or 1.5 -> 1.
-    for (const c of items.flat()) {
+    const flatRows = items.flatMap((row) => [...row]);
+    for (const c of flatRows) {
       if (!Number.isInteger(c) || c < 0 || c > 255) {
         throw new RangeError(`${label} stops must be integers in 0..255, got ${c}`);
       }
     }
-    const flat = Uint8Array.from(items.flat());
+    const flat = Uint8Array.from(flatRows);
     if (colormapResolvedStopsAdmit(flat) > 0) return items.map((row) => [...row].map(Number));
   }
   if (items.length < 2 || items.length > 256) {

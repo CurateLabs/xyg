@@ -50,3 +50,9 @@ test("custom colormaps stay live but fail closed in Scene export", () => {
   const named = contour({ colormap: "magma" });
   assert.equal(sceneExportSupportReason(named), null);
 });
+
+test("typed-array stop rows flatten per row", () => {
+  const rows = [new Uint8Array([255, 0, 0]), new Uint8Array([0, 0, 255])];
+  assert.deepEqual(resolveColormap(rows), [[255, 0, 0], [0, 0, 255]]);
+  assert.throws(() => resolveColormap([new Float64Array([256, 0, 0]), new Float64Array([0, 0, 1])]), /integers in 0\.\.255/);
+});
