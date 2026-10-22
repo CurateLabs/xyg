@@ -24,6 +24,7 @@ and mmap cannot sit behind the first in-RAM stream handle (follow-up).
 
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import os as _os
 import struct as _struct
@@ -171,9 +172,9 @@ def _store_zone_cache(arr: Any, zm: ZoneMaps) -> None:
     if path is None or source is None:
         return
     n_chunks = len(zm.mins)
+    tmp = f"{path}.{_os.getpid()}.tmp"
     try:
         size, mtime = _zone_source_stamp(source)
-        tmp = f"{path}.{_os.getpid()}.tmp"
         with open(tmp, "wb") as f:
             f.write(_ZONE_CACHE_MAGIC)
             f.write(_struct.pack("<QQQqQ", ZONE_CHUNK, len(arr), size, mtime, n_chunks))
@@ -183,6 +184,9 @@ def _store_zone_cache(arr: Any, zm: ZoneMaps) -> None:
                 np.ascontiguousarray(getattr(zm, name), dtype=np.uint64).tofile(f)
         _os.replace(tmp, path)  # atomic: a concurrent reader sees whole-or-nothing
     except OSError:
+        # A full or failing volume can leave a partial temp file behind.
+        with contextlib.suppress(OSError):
+            _os.unlink(tmp)
         return
 
 

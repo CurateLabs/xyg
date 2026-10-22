@@ -136,6 +136,15 @@ in the README).
   (#13 / #18). GitHub Actions environment `pypi` plus workflow
   `publish.yaml` match the pending PyPI trusted publisher.
 
+### Fixed
+- Storage guidance audit (#1014): `xyg.pyplot` `Figure.show()` now opens a valid
+  `file:` URI on every platform (it interpolated the raw path, which is
+  invalid for Windows drive paths and unescaped for spaces), and a failed
+  zone-map sidecar publish no longer strands a partial `.tmp` file beside an
+  out-of-core column. Added `spec/design/storage-and-platforms.md` recording
+  every disk path XYG writes, temp-directory resolution per platform, and
+  container or mounted-volume guidance.
+
 ### Changed
 - Repository branding and all owned documentation, support, CI, security, and
   source pointers now target `CurateLabs/xyg`; inherited benchmark records keep

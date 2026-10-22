@@ -61,3 +61,28 @@ Native and WASM hosts share engine behavior on supported contracts, while
 feature coverage and resource limits remain explicit. Read
 [Rust engine and host parity](/docs/xy/core-concepts/rust-engine-and-host-parity/)
 before choosing a browser-only deployment for a native workload.
+
+## Disk use, temporary files, and mounted volumes
+
+XYG has no durable store of its own. Default figures, HTML export, notebooks,
+Reflex apps, and the browser need no disk. Native hosts write only to paths you
+name, rebuildable caches beside your files, and process temporary files.
+
+- **Large density views** may spill their aggregate pyramid to a temporary file
+  in the operating system's temp directory (`TMPDIR` on Linux and macOS, `TMP`
+  or `TEMP` on Windows). The file is deleted when the figure is released and is
+  never reused after a crash. Set that variable before starting the process to
+  put it on a larger volume; in a container, prefer a disk-backed volume over a
+  tmpfs `/tmp`. `pyramid_spill=True` fails with an actionable error if the
+  temp directory cannot hold the file; automatic spill falls back to memory.
+- **Out-of-core columns** are plain files at the path you give. Keep them, and
+  the `.xyzones` sidecar XYG writes beside them, on a local volume that supports
+  memory mapping. A read-only volume still works; the sidecar is just not saved.
+- **Exports** write through a temporary file in the destination directory and
+  replace the target atomically, so that directory must be writable.
+- Any project or data volume may sit under a different container, VM, or drive
+  root than the code. XYG does not require a fixed root, a Linux host, or the
+  current directory.
+
+The audited paths, platform behavior, and caveats are listed in
+[Storage, temporary files, and mounted volumes](https://github.com/CurateLabs/xyg/blob/main/spec/design/storage-and-platforms.md).

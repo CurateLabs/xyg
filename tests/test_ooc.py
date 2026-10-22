@@ -168,3 +168,24 @@ def test_zone_map_cache_roundtrip_and_staleness(tmp_path):
     os.utime(tmp_path / "z.f64", ns=(0, 0))
     reopened = open_f64(tmp_path / "z.f64")
     assert _load_zone_cache(reopened) is None
+
+
+def test_zone_map_cache_failure_is_silent_and_leaves_no_temp_file(tmp_path, monkeypatch):
+    """A volume that rejects the sidecar publish (full, read-only, or a mount
+    that refuses rename) must neither break ingest nor strand a partial temp
+    file beside the user's column."""
+    import os
+
+    from xyg import columns
+
+    vals = np.arange(10_000, dtype=np.float64)
+    col = _build(tmp_path, "f.f64", vals, capacity=len(vals))
+
+    def refuse(_src, _dst):
+        raise OSError("read-only file system")
+
+    monkeypatch.setattr(columns._os, "replace", refuse)
+    zm = columns._zone_maps_for(col)  # must not raise
+    assert zm.min == 0.0 and zm.max == 9_999.0
+    assert not os.path.exists(columns._zone_cache_path(col))
+    assert [p.name for p in tmp_path.iterdir()] == ["f.f64"]
