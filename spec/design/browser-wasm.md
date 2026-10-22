@@ -465,6 +465,14 @@ RGBA, UTF-8 text, and source u64 identity; v2 additionally carries a
 Rust-owned text-anchor. Version 3 additionally carries a Rust-resolved optional
 callout-label background rectangle and RGBA fill. TypeScript projects that exact
 box before its label and marks it `aria-hidden`; it does not measure or reposition it.
+Version 6 (112-byte record) adds an authored `f64` rotation at record offset 104
+(degrees, clockwise-negative, matplotlib convention; the upright 104-byte v5
+layout otherwise). TypeScript draws it as a CSS rotation about the label anchor
+point, matching the static SVG `rotate(-deg x y)`. The browser painter carries
+XYLB v1 through v6 only; v7 (annotation provenance) is Scene-wire only and Rust
+normalizes provenance before painter encoding. Both ceilings are pinned:
+`BROWSER_PAINTER_XYLB_MAX_VERSION` in `scene.rs` and `XYLB_PAINTER_VERSIONS` in
+`js/src/48_wasm_scene.ts` (#1040).
 TypeScript validates and materializes those decisions
 without positioning or collision policy. Legends whose intrinsic width or height exceeds the plot fail
 closed before encoding so SVG, raster, and browser consumers share one policy.

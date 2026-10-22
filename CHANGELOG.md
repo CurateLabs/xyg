@@ -28,6 +28,13 @@ in the README).
   (`x axis side must be 'top' or 'bottom'`, `y axis side must be 'left' or
   'right'`); previously it failed later with a generic error (#1044).
 
+### Fixed
+- Browser painter decodes and draws rotated Scene labels (#1040). The client
+  accepted XYLB v1-v5 only, so any rotated label (XYLB v6) failed the whole
+  frame with `XYG_WASM_MALFORMED_OUTPUT`; it now reads the 112-byte v6 record and
+  rotates about the anchor like the static SVG. Accepted painter label versions
+  are pinned on both the Rust and TypeScript sides.
+
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing

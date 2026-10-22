@@ -626,6 +626,7 @@ jobs:
           cargo test -p xyg-engine triangle_batch_and_image
           node tests/browser/geo_painter_test.mjs
           node tests/browser/external_gl_test.mjs
+          XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so" node tests/browser/painter_rotated_label_test.mjs
       - name: Strict-CSP GraphForge composition smoke
         timeout-minutes: 10
         run: node scripts/graphforge_wasm_smoke.mjs
