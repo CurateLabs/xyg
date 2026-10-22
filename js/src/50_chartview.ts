@@ -1158,7 +1158,7 @@ export class ChartView {
         !hasAdaptiveLayout
         && !hasMultilineTicks
         && !labelExtra
-        && strategy === "auto"
+        && (strategy === "auto" || axis.tick_resolution === "rust_scene")
         && this._axisTickLabelAngle(axis) === null
       ) {
         room = Math.max(room, titleRoom);
