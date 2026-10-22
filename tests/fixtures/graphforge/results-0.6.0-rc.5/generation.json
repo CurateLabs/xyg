@@ -1,0 +1,19 @@
+{
+  "coreVersion": "0.6.0-rc.5",
+  "coreSourceCommit": "aaa573f446bbed5b8d7577c9a9824ddd6664e840",
+  "npmPackages": {
+    "@curatelabs/graphforge": {
+      "version": "0.6.0-rc.5",
+      "integrity": "sha512-eAmS90M0/+n1R7FO/zOytb4m3jF0KjrZS/7gpBpcOGt8lT3zSw+zlpdUcoiHiauULgjtZP6jjBOK83s2kyR3Zg=="
+    },
+    "@curatelabs/graphforge-linux-x64-gnu": {
+      "version": "0.6.0-rc.5",
+      "integrity": "sha512-3DMahhAzyuJfMF2YnUc6NFfeXxSoKQRvREpz8YFmOQMZTv6hZV88h9ePBDYdtfQ7r+xwtfHV9bLDA2YybHOtxg=="
+    }
+  },
+  "generator": "scripts/gen_graphforge_result_fixtures.cjs",
+  "generatorSha256": "bdd97d7a2e5b889cf3e0b05fc1ecc2bd901a95372453c567b70bfb8db28dbf91",
+  "nodeVersion": "v24.21.0",
+  "platform": "linux-x64-gnu",
+  "manifestSha256": "5cfec9ade2ae502c05b0c041a0b316b1740283dc8ae17bd57de898af978438a0"
+}

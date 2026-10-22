@@ -5,7 +5,7 @@
 //! results with `graphforge.verb=find` and `graphforge.search_schema_version`.
 //! Nothing is inferred from column names or values for those results. Cypher
 //! results are recognized by entity struct columns (base-graph material).
-//! Codes match the GraphForge extension's ledger (`GF_RESULT_*`).
+//! Stable `GF_RESULT_*` diagnostics belong to XYG; hosts surface them verbatim.
 
 use super::ledger::{self, Kind, SchemaEntry, ALGORITHM_VERBS};
 use super::{GfError, GfResult};
@@ -75,6 +75,18 @@ fn version(schema: &Schema, key: &str) -> Option<u32> {
     schema.metadata(key)?.parse().ok()
 }
 
+fn unsupported_version(schema: &str, got: Option<u32>, expected: u32) -> GfError {
+    GfError::new(
+        "GF_RESULT_SCHEMA_VERSION",
+        format!(
+            "{schema} result schema version {} is not supported (expected {expected}); \
+             next action: use a Core release declared compatible with this XYG release, \
+             or upgrade XYG for this result schema version",
+            got.map_or("(missing or invalid)".into(), |v| v.to_string()),
+        ),
+    )
+}
+
 /// Recognize an algorithm or search result. Tables without GraphForge result
 /// metadata fail with `GF_RESULT_NOT_ALGORITHM` (Cypher/tabular results are
 /// base-graph input, not result layers).
@@ -98,14 +110,7 @@ pub fn recognize(schema: &Schema) -> GfResult<Recognized> {
             .expect("ledger lookup matched");
         let got = version(schema, "graphforge.algorithm_schema_version");
         if got != Some(entry.version) || entry.version != ledger::ALGORITHM_SCHEMA_VERSION {
-            return Err(GfError::new(
-                "GF_RESULT_SCHEMA_VERSION",
-                format!(
-                    "algorithm result schema version {} is not supported (expected {})",
-                    got.map_or("(missing)".into(), |v| v.to_string()),
-                    entry.version
-                ),
-            ));
+            return Err(unsupported_version(entry.id, got, entry.version));
         }
         check_fields(entry, schema)?;
         return Ok(Recognized {
@@ -117,14 +122,7 @@ pub fn recognize(schema: &Schema) -> GfResult<Recognized> {
     if verb == Some("find") {
         let got = version(schema, "graphforge.search_schema_version");
         if got != Some(ledger::SEARCH_SCHEMA_VERSION) {
-            return Err(GfError::new(
-                "GF_RESULT_SCHEMA_VERSION",
-                format!(
-                    "search result schema version {} is not supported (expected {})",
-                    got.map_or("(missing)".into(), |v| v.to_string()),
-                    ledger::SEARCH_SCHEMA_VERSION
-                ),
-            ));
+            return Err(unsupported_version("search", got, ledger::SEARCH_SCHEMA_VERSION));
         }
         check_fields(&ledger::SEARCH_SCHEMA, schema)?;
         return Ok(Recognized {
@@ -231,6 +229,24 @@ mod tests {
             recognize(&schema).unwrap_err().code,
             "GF_RESULT_SCHEMA_VERSION"
         );
+    }
+
+    #[test]
+    fn unsupported_versions_name_the_schema_and_action_without_echoing_untrusted_text() {
+        for (name, key, value, expected) in [
+            ("pagerank", "graphforge.algorithm_schema_version", Some("2"), "node-score result schema version 2"),
+            ("pagerank", "graphforge.algorithm_schema_version", None, "node-score result schema version (missing or invalid)"),
+            ("pagerank", "graphforge.algorithm_schema_version", Some("secret-row-value"), "node-score result schema version (missing or invalid)"),
+            ("find", "graphforge.search_schema_version", Some("9"), "search result schema version 9"),
+        ] {
+            let schema = with_metadata(name, key, value);
+            let error = recognize(&schema).unwrap_err();
+            assert_eq!(error.code, "GF_RESULT_SCHEMA_VERSION");
+            assert!(error.message.contains(expected), "{}", error.message);
+            assert!(error.message.contains("expected 1"));
+            assert!(error.message.contains("next action:"));
+            assert!(!error.message.contains("secret-row-value"));
+        }
     }
 
     #[test]

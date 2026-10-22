@@ -11,7 +11,7 @@
  * `base-<graph>-edges.arrow` = `MATCH ()-[r]->() RETURN r`). GraphForge mints
  * fresh UUIDs per run, so results and bases must come from one run.
  *
- * Usage: node scripts/gen_graphforge_result_fixtures.cjs [path/to/node_modules/@curatelabs/graphforge]
+ * Usage: node scripts/gen_graphforge_result_fixtures.cjs [path/to/node_modules/@curatelabs/graphforge] [output-directory]
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -20,7 +20,7 @@ const modulePath = process.argv[2] ?? "@curatelabs/graphforge";
 const { GraphForge } = require(modulePath);
 const packageJson = require(path.join(path.dirname(require.resolve(modulePath)), "package.json"));
 
-const outDir = path.join(__dirname, "..", "tests", "fixtures", "graphforge", "results");
+const outDir = process.argv[3] ?? path.join(__dirname, "..", "tests", "fixtures", "graphforge", "results");
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -187,7 +187,7 @@ for (const { verb, algorithm } of manifest.contracts) {
           null,
           directed,
           algorithm === "yens" ? 2 : null,
-          ["dijkstra", "astar", "bellman_ford", "delta_stepping", "yens", "min_steiner_tree", "prize_collecting_steiner_tree"].includes(algorithm)
+          ["dijkstra", "dijkstra_cost", "astar", "bellman_ford", "delta_stepping", "yens", "min_steiner_tree", "prize_collecting_steiner_tree"].includes(algorithm)
             ? "w"
             : FLOW.has(algorithm) && !algorithm.startsWith("min_cost")
               ? "capacity"

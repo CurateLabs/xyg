@@ -146,6 +146,10 @@ def stage(*, dist: Path, output: Path, version: str) -> Path:
     for name in ("README.md", "NOTICE"):
         shutil.copy2(SOURCE / name, destination / name)
     shutil.copy2(ROOT / "LICENSE", destination / "LICENSE")
+    shutil.copy2(
+        ROOT / "python/xyg/graphforge-compatibility.json",
+        destination / "graphforge-compatibility.json",
+    )
 
     manifest = json.loads((SOURCE / "package.json").read_text(encoding="utf-8"))
     if manifest.get("name") != PACKAGE_NAME:
@@ -166,7 +170,14 @@ def stage(*, dist: Path, output: Path, version: str) -> Path:
     manifest["version"] = version
     manifest["repository"] = REPOSITORY
     manifest["publishConfig"] = PUBLISH_CONFIG
-    manifest["files"] = ["dist", "ASSET-MANIFEST.json", "README.md", "NOTICE", "LICENSE"]
+    manifest["files"] = [
+        "dist",
+        "ASSET-MANIFEST.json",
+        "graphforge-compatibility.json",
+        "README.md",
+        "NOTICE",
+        "LICENSE",
+    ]
     for dependency_field in ("dependencies", "optionalDependencies", "peerDependencies"):
         if manifest.get(dependency_field):
             raise ValueError(f"{PACKAGE_NAME} must remain runtime-dependency-free")

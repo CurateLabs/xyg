@@ -19,6 +19,19 @@ source setup. Billion-scale graph visualization remains the goal; the
 [benchmark guide](/docs/xy/overview/benchmarks/) distinguishes executed graph
 capacity from policy checks and scatter-density demonstrations.
 
+## Core version support
+
+The package's `graphforge-compatibility.json` lists the exact Core releases
+qualified by real fixtures. The current declaration covers exact Core 0.5.2
+and 0.6.0-rc.5. Other releases and artifact installation pairings are not implied.
+XYG owns the result-disposition ledger, exposed by `xyg.graphforge_ledger()` / `graphforgeLedger()`.
+
+An unsupported result-schema version fails during composition with
+`GF_RESULT_SCHEMA_VERSION`, the schema name/version and a next action to use
+a compatible Core release or upgrade XYG. Python, Node and WASM surface the
+same Rust diagnostic. Hosts should display it rather than implement a
+separate compatibility check.
+
 ## Choose your input
 
 For a node-link view of canonical node and relationship projections, use

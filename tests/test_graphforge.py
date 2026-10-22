@@ -79,7 +79,7 @@ def test_python_reproduces_the_cross_host_bytes_for_every_case() -> None:
         assert hashlib.sha256(document).hexdigest() == case["document_sha256"], case["name"]
 
 
-def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
+def test_render_document_refresh_preserves_historical_scene_and_ledger_versions() -> None:
     gen = _generator()
     case = next(case for case in gen.cases() if case["name"] == "multi-layer + render + select")
     document = bytearray(compose_graphforge_request(gen.build_request(case)))
@@ -91,7 +91,11 @@ def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
             "<IIIIQQQ", document, 32 + i * 40
         )
         name = document[names + name_offset : names + name_offset + name_length].decode()
-        if name == "scene.version":
+        if name == "ledger.version":
+            assert struct.unpack_from("<I", document, offset)[0] == 2
+            struct.pack_into("<I", document, offset, 1)
+            changed.add(name)
+        elif name == "scene.version":
             assert struct.unpack_from("<I", document, offset)[0] == _native.scene_version()
             struct.pack_into("<I", document, offset, 31)
             changed.add(name)
@@ -100,7 +104,7 @@ def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
             assert struct.unpack_from("<I", document, offset + 4)[0] == _native.scene_version()
             struct.pack_into("<I", document, offset + 4, 31)
             changed.add(name)
-    assert changed == {"scene.version", "scene.canonical"}
+    assert changed == {"ledger.version", "scene.version", "scene.canonical"}
     refresh = json.loads((ROOT / "tests/fixtures/graphforge/scene32_refresh.json").read_text())
     assert (
         hashlib.sha256(document).hexdigest()
@@ -273,3 +277,70 @@ def test_large_parallel_coordinates_keep_every_segment_identity() -> None:
     assert rows[-1] == {"id": uuids[-1], "dimension": dims - 2}
     spec, blob = fig.build_payload()
     assert "tooltip_columns" in spec["traces"][0]
+
+
+@pytest.mark.parametrize(
+    "fixture,schema", [("pagerank-schema-v2", "node-score"), ("path-cost-schema-v2", "path-cost")]
+)
+@pytest.mark.parametrize("intent", ["graph", "table"])
+def test_unsupported_schema_version_names_schema_and_action_without_fallback(
+    intent: str, fixture: str, schema: str
+) -> None:
+    result = (DERIVED / f"{fixture}.arrow").read_bytes()
+    with pytest.raises(xyg.GraphForgeCompositionError) as rejected:
+        xyg.compose_graphforge(
+            base=_base("cyclic"),
+            layers=[{"result": result, "intent": intent, "generation": _gen("cyclic")}],
+        )
+    assert rejected.value.code == "GF_RESULT_SCHEMA_VERSION"
+    assert f"{schema} result schema version 2" in str(rejected.value)
+    assert "expected 1" in str(rejected.value)
+    assert "next action:" in str(rejected.value)
+    assert not UUID.search(str(rejected.value))
+
+
+def test_published_core_rc5_catalog_composes_and_path_costs_keep_only_endpoint_identity() -> None:
+    import math
+    import uuid
+
+    import pyarrow.ipc as ipc
+
+    results = ROOT / "tests/fixtures/graphforge/results-0.6.0-rc.5"
+    manifest = json.loads((results / "manifest.json").read_text())
+    registry = {a: row for row in xyg.graphforge_ledger() for a in row["algorithms"]}
+    registry["find"] = next(row for row in xyg.graphforge_ledger() if row["schema"] == "search")
+    assert len(manifest["contracts"]) == 96 and manifest["failures"] == {}
+    for contract in [*manifest["contracts"], {"algorithm": "find"}]:
+        algorithm = contract["algorithm"]
+        spec = manifest["bases"][manifest["fixtures"][algorithm]["base"]]
+        result = (results / f"{algorithm}.arrow").read_bytes()
+        intents = registry[algorithm]["intents"]
+        intent = "parallel-coordinates" if "parallel-coordinates" in intents else intents[0]
+        c = xyg.compose_graphforge(
+            base={
+                "tables": [(results / f"{spec[k]}.arrow").read_bytes() for k in ("nodes", "edges")],
+                "generation": spec["generation"],
+            },
+            layers=[{"result": result, "intent": intent, "generation": spec["generation"]}],
+        )
+        assert c.layers[0]["schema"] == registry[algorithm]["schema"]
+        if algorithm == "bfs":
+            assert c.paths and math.isnan(c.paths[0]["rank"])
+        if algorithm == "yens":
+            assert c.paths and all(
+                math.isfinite(p["rank"]) and p["rank"].is_integer() for p in c.paths
+            )
+        if algorithm in ("bfs_depth", "dijkstra_cost"):
+            rows = ipc.open_stream(result).read_all().to_pylist()
+            derived = [i for i in range(c.edges.count) if c.edges.derived[i]]
+            assert len(derived) == len(rows) == 1
+            assert c.paths == []
+            assert c.layers[0]["schema"] == "path-cost"
+            assert c.layers[0]["derived_type"] == "PATH_COST"
+            assert c.layers[0]["value_names"] == ["cost"]
+            for i, row in zip(derived, rows, strict=True):
+                assert c.edges.uuid[i] is None
+                assert c.nodes.uuid[c.edges.source[i]] == str(uuid.UUID(bytes=row["source_uuid"]))
+                assert c.nodes.uuid[c.edges.target[i]] == str(uuid.UUID(bytes=row["target_uuid"]))
+                assert c.layers[0]["edge_values"][i] == row["cost"]
+                assert row["cost"] == (1.0 if algorithm == "bfs_depth" else 4.25)

@@ -25,9 +25,9 @@ Everything is GraphForge Arrow IPC bytes exactly as the engine returned them
 | `layers[i].coordinates` | caller 2D reduction for embeddings (Arrow IPC `node_uuid`, `x`, `y`) | embeddings are never plotted from dimensions 0/1 |
 | `select` | UUIDs selected in the results table | painted in the selected state by Rust |
 
-Intent per extension disposition (the full per-schema ledger is
-`graphforgeLedger()` / `xyg_graphforge_ledger_tsv`, and agrees with
-`RESULT_SCHEMAS.md` by test):
+Intent per XYG disposition (the authoritative document is
+[the coverage ledger](../design/graphforge-compositions.md#3-recognition-and-the-coverage-ledger);
+`graphforgeLedger()` / `xyg_graphforge_ledger_tsv` expose its runtime form):
 
 | Extension disposition | XYG intent(s) | Result |
 |---|---|---|
@@ -138,15 +138,15 @@ message}`). Details: design §6.4.
 | Paint protocol | 13 | `PROTOCOL_VERSION` (typed tooltip columns) |
 | `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
-| Coverage ledger | 1 | `composition.ledgerVersion` |
-| GraphForge algorithm / search schema | 1 / 1 | ledger (GraphForge 0.5.2: 94 algorithms) |
+| Coverage ledger | 2 | `composition.ledgerVersion` |
+| GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5: 96 algorithms) |
 
 ## 6. Error codes
 
 | Family | Codes |
 |---|---|
 | Arrow bytes | `GF_ARROW_MALFORMED`, `GF_ARROW_UNSUPPORTED` (dictionary, compression, big-endian), `GF_ARROW_LIMIT` |
-| Result schema (same as the extension ledger) | `GF_RESULT_SCHEMA_UNREGISTERED`, `GF_RESULT_SCHEMA_VERSION`, `GF_RESULT_SCHEMA_MISMATCH`, `GF_RESULT_NOT_ALGORITHM`, `GF_RESULT_NULL_IDENTITY`, `GF_RESULT_UUID_INVALID`, `GF_RESULT_VALUE_RANGE` |
+| Result schema (XYG-owned ledger) | `GF_RESULT_SCHEMA_UNREGISTERED`, `GF_RESULT_SCHEMA_VERSION`, `GF_RESULT_SCHEMA_MISMATCH`, `GF_RESULT_NOT_ALGORITHM`, `GF_RESULT_NULL_IDENTITY`, `GF_RESULT_UUID_INVALID`, `GF_RESULT_VALUE_RANGE` |
 | Base graph | `GF_BASE_SCHEMA`, `GF_BASE_EMPTY`, `GF_BASE_ENDPOINT_MISSING`, `GF_BASE_EDGE_CONFLICT`, `GF_BASE_NULL_IDENTITY` |
 | Composition | `GF_COMPOSE_REQUEST_INVALID`, `GF_COMPOSE_VERSION`, `GF_COMPOSE_INTENT_REQUIRED`, `GF_COMPOSE_INTENT_INVALID`, `GF_COMPOSE_INTENT_UNSUPPORTED`, `GF_COMPOSE_INTENT_CONFLICT`, `GF_COMPOSE_BASE_REQUIRED`, `GF_COMPOSE_GENERATION_STALE`, `GF_COMPOSE_GENERATION_MISSING`, `GF_COMPOSE_EXTRA_IDS`, `GF_COMPOSE_MISSING_IDS`, `GF_COMPOSE_DUPLICATE_ID`, `GF_COMPOSE_IDENTITY_KIND`, `GF_COMPOSE_EDGE_ENDPOINT_MISMATCH`, `GF_COMPOSE_CHANNEL_CONFLICT`, `GF_COMPOSE_TOO_LARGE`, `GF_COMPOSE_COORDINATES_REQUIRED`, `GF_COMPOSE_COORDINATES_MISSING`, `GF_COMPOSE_COORDINATES_INVALID` |
 | Scene | `GF_COMPOSE_RENDER_UNSUPPORTED`, `GF_COMPOSE_SCENE_TOO_LARGE`, `GF_COMPOSE_SCENE_INVALID`, `GF_COMPOSE_SCENE_EMPTY` (every node hidden: `renderWasmGraphForge` rejects, the document records the decision) |
@@ -194,3 +194,22 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
 - Scene positions come from Rust's seeded force layout with a `libm`-free
   seed, so documents and Scene bytes are bit-identical across hosts and
   platforms.
+
+
+## 9. Core compatibility declaration
+
+Each package carries `graphforge-compatibility.json`: inside `xyg/` for
+Python and at the staged Node/browser package root. Only the listed exact
+Core versions are qualified; currently those are 0.5.2 and 0.6.0-rc.5. Neither the editor nor
+the Hub interprets result version stamps or implements a handshake.
+
+Core stamps `graphforge.algorithm` and `graphforge.algorithm_schema_version`;
+Rust validates them while composing. `GF_RESULT_SCHEMA_VERSION` names the
+XYG schema, received/expected version, and next action. Surface that message
+verbatim. A future schema version never silently becomes a generic table.
+
+Editor #90 can remove `docs/engineering/RESULT_SCHEMAS.md` after adopting this
+XYG authority and retaining its existing `graphforgeLedger()` coverage test.
+Release acceptance still needs the qualified, published XYG/Core cohort
+(#108 and editor #95); this source change does not publish that cohort or
+justify merging the held editor #85 with its old dry-run artifacts.
