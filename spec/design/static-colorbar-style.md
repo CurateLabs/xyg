@@ -152,3 +152,10 @@ rejection of invalid flags/domains. XYST
 cross-host cases must separately exercise the decoder and public host adapters.
 Retained pyplot tests must inspect native raster commands/output rather than
 requiring calls into the retired Python `_raster._Cmd` implementation.
+
+The [#888 Matplotlib 3.11.0 comparison](../benchmarks/named-colorbar-888/README.md)
+records ordinary, wide, adjacent and reversed-invalid domains, exact environment,
+normalization versus colorbar construction/export outcomes, and retained SVG/PNG
+artifacts. XYG checks canonical stop endpoints/palette retention and decoded PNG
+band pixels. Matplotlib expands adjacent/reversed colorbar domains and fails on
+the tested extreme finite bars; this does not change XYG's strict admission policy.
