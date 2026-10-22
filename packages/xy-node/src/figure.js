@@ -804,17 +804,8 @@ function optionalBoolean(value, name) {
 }
 
 function copyAnnotation(annotation) {
-  // An unset text offset takes the Rust-owned default (ABI 392), exactly as
-  // Python `Figure.text` does, so both hosts hand Rust the same facts.
-  const textOffsets = annotation.kind === "text"
-    ? {
-      dx: annotation.dx ?? _DEFAULT_TEXT_ANNOTATION_DX,
-      dy: annotation.dy ?? _DEFAULT_TEXT_ANNOTATION_DY,
-    }
-    : {};
   return {
     ...annotation,
-    ...textOffsets,
     ...(annotation.style != null && typeof annotation.style === "object" && !Array.isArray(annotation.style)
       ? { style: { ...annotation.style } }
       : {}),

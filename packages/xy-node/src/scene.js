@@ -279,9 +279,7 @@ function xyafDispatch(annotation) {
   const kind = String(annotation.kind ?? "");
   const style = { ...(annotation.style ?? {}) };
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
-  const layoutText = kind === "text"
-    && (["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key))
-      || style.coordinate_space != null);
+  const layoutText = kind === "text"; // every text row is laid out; Rust owns the default offset
   const dispatch = sceneXyafAnnotationDispatchPlan({
     kind,
     authored_wrap: authoredWrap,

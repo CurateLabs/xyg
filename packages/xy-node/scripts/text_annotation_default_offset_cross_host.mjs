@@ -11,7 +11,7 @@ import { Figure } from "../src/index.js";
 
 const formats = ["svg", "png", "pdf", "jpeg", "webp"];
 
-function figure() {
+function figure(annotation = { kind: "text", x: 1, y: 2, text: "default offset" }, annotate = true) {
   const fig = new Figure({
     width: 320,
     height: 240,
@@ -20,7 +20,8 @@ function figure() {
     yAxis: { domain: [0, 4], label: "Y" },
   });
   fig.line([0, 1, 2], [1, 3, 2], { color: "#ef4444", width: 2 });
-  fig.annotate({ kind: "text", x: 1, y: 2, text: "default offset" });
+  if (annotate) fig.annotate(annotation);
+  else fig.annotations = [annotation];
   return fig;
 }
 
@@ -32,4 +33,18 @@ for (const format of formats) {
     ? { text: bytes.toString("utf8") }
     : { sha256: createHash("sha256").update(bytes).digest("hex") };
 }
-process.stdout.write(JSON.stringify({ cases: { default_offset: out } }));
+
+// Raw annotations (no `annotate()`), anchor-only, and an explicit zero offset:
+// static output and the live payload must agree on what "unset" means.
+const text = { kind: "text", x: 1, y: 2, text: "default offset" };
+const raw = {};
+for (const [name, annotation, annotate] of [
+  ["bare", text, false],
+  ["anchor_only", { ...text, anchor: "start" }, false],
+  ["zero", { ...text, dx: 0, dy: 0 }, true],
+]) {
+  const fig = figure(annotation, annotate);
+  const spec = fig.buildPayload().spec.annotations[0];
+  raw[name] = { svg: Buffer.from(fig.toSvg()).toString("utf8"), payload: [spec.dx, spec.dy] };
+}
+process.stdout.write(JSON.stringify({ cases: { default_offset: out }, raw }));

@@ -307,12 +307,7 @@ fn pack_one(index: usize, obs: &XyafBulkAnnotationObs<'_>) -> Result<Vec<u8>, Xy
     }
     let authored_wrap = matches!(kind, "text" | "callout") && obs.wrap.is_some();
     let space = coordinate_space_code(obs.style.coordinate_space, kind, index)?;
-    let layout_text = kind == "text"
-        && (space != 0
-            || obs.dx.is_some()
-            || obs.dy.is_some()
-            || obs.anchor.is_some()
-            || rotation.is_some());
+    let layout_text = kind == "text";
     let mut dispatch = crate::scene_pack_orchestrate::XyafAnnotationDispatchPlan {
         wrapped: 0,
         pack_rule_dash: 0,
@@ -798,7 +793,7 @@ mod tests {
             let facts = u32::from_le_bytes(packed[16..20].try_into().unwrap());
             facts & FACT_HAS_ANCHOR != 0
         };
-        assert!(!has_layout(&plain));
+        assert!(has_layout(&plain), "every text row is laid out (#1024)");
         assert!(has_layout(&axes));
     }
 

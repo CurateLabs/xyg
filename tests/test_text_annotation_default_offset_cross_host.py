@@ -89,3 +89,38 @@ def test_hosts_export_identical_bytes_without_offsets(
         assert data.decode() == expected["text"]
     else:
         assert hashlib.sha256(data).hexdigest() == expected["sha256"]
+
+
+RAW = [{"kind": "text", "x": 1, "y": 2, "text": "default offset"}]
+RAW_ANCHORED = [{**RAW[0], "anchor": "start"}]
+
+
+def _raw_figure(annotations: list[dict[str, Any]]) -> Any:
+    figure = _chart(xyg.text(0, 0, "seed")).figure()
+    figure.annotations = [dict(item) for item in annotations]
+    return figure
+
+
+@pytest.mark.parametrize("raw", [RAW, RAW_ANCHORED], ids=["bare", "anchor_only"])
+def test_raw_unset_text_static_and_payload_agree(raw: list[dict[str, Any]]) -> None:
+    """Unset means the same on every path: static, payload and builder (#1024)."""
+    figure = _raw_figure(raw)
+    spec = figure._annotation_specs()[0]
+    assert (spec["dx"], spec["dy"]) == (6.0, -6.0)
+    expected = _chart(xyg.text(1, 2, "default offset")).to_svg()
+    assert figure.to_svg() == expected
+
+
+def test_node_raw_unset_text_static_and_payload_agree_and_explicit_zero_holds(
+    node_results: dict[str, Any],
+) -> None:
+    node = node_results["raw"]
+    assert node["bare"]["payload"] == [6, -6]
+    assert node["anchor_only"]["payload"] == [6, -6]
+    assert (
+        node["bare"]["svg"]
+        == node["anchor_only"]["svg"]
+        == node_results["cases"]["default_offset"]["svg"]["text"]
+    )
+    assert node["zero"]["payload"] == [0, 0]
+    assert node["zero"]["svg"] != node["bare"]["svg"]

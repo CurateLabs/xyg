@@ -332,8 +332,11 @@ pub fn scene_xyaf_annotation_dispatch_plan(
             return 0;
         }
     }
+    // Every text row is laid out (#1024): an unset `dx`/`dy` takes the one
+    // Rust-owned default, so plain and offset text never disagree. The host
+    // bits stay validated but no longer select a different placement.
     let wrapped = if kind == "text" {
-        i32::from(authored_wrap != 0 || layout_text != 0)
+        1
     } else if kind == "callout" {
         authored_wrap
     } else {
