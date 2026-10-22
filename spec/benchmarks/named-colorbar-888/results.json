@@ -18,8 +18,8 @@
       "tzdata": "2026.5"
     },
     "matplotlib_backend": "Agg",
-    "git_commit": "4631927ec508bf0211276e4ae4ecacf14d2673b1",
-    "probe_sha256": "d9b5a6136eff4532d01733e3e0e1149026eb01a6d15db4e8ee0cc83a4717f15e",
+    "git_commit": "634503e4feb06bdeec515bcbf36cc7941d45616b",
+    "probe_sha256": "69547d44b995bcbe70ca9a4c44d3d3357f21e7309554e8597ce52231e29cdac3",
     "abi_version": 393,
     "native_sha256": "a64deda8a975f269ffd19402d4d1240d7e76707e41b17d309d0bae0f65897d26"
   },

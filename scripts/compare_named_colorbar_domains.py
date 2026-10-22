@@ -108,18 +108,26 @@ def xyg_probe(domain: tuple[float, float], output: Path, name: str) -> dict:
         for node in ET.fromstring(svg).iter()
         if node.get("data-xy-slot") == "colorbar_band"
     ]
-    assert bands and all(
+    # Ordinary Scene colorbars use literal adjacent-stop intervals: the last
+    # stop closes the final interval. The 64-band pyplot interpolation override
+    # belongs to StaticDocument and is not enabled by this Scene-only probe.
+    assert len(bands) == count - 1, (
+        f"canonical XYCB requires {count - 1} literal bands, got {len(bands)}"
+    )
+    for index, (band, stop) in enumerate(zip(bands, stops[:-1], strict=True)):
+        red, green, blue, alpha = stop[1:]
+        expected = f"rgba({red},{green},{blue},{alpha / 255:.6f})"
+        assert band["fill"] == expected, f"band {index} paint differs from canonical XYCB stop"
+    assert all(
         math.isfinite(float(band[key])) for band in bands for key in ("x", "y", "width", "height")
     )
     png = _native.scene_static_export(scene, "png", scale=1.0, width=320, height=240)
     decoded = Image.open(io.BytesIO(png)).convert("RGBA")
     # Decode and inspect real palette pixels, rather than accepting only a PNG signature.
-    for band in bands:
+    for band, stop in zip(bands, stops[:-1], strict=True):
         x = int(float(band["x"]) + float(band["width"]) / 2)
         y = int(float(band["y"]) + float(band["height"]) / 2)
-        assert decoded.getpixel((x, y))[:3] == tuple(
-            int(channel) for channel in band["fill"].split("(")[1].split(")")[0].split(",")[:3]
-        )
+        assert decoded.getpixel((x, y)) == tuple(stop[1:])
     return {
         "status": "exported",
         "scene_sha256": digest(scene),

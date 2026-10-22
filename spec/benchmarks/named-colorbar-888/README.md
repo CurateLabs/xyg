@@ -25,8 +25,14 @@ witnesses, not equal-layout or equal-pixel comparisons. XYG retains its existing
 11-sample named palette; this evidence does not claim that its table is identical
 to Matplotlib's 256-entry `viridis`. It does prove that the palette is unchanged
 between admitted XYG domains, with strictly increasing stop values and bit-exact
-finite endpoints. For each rendered XYG band the decoded PNG center pixel must
-match the SVG band's RGB paint.
+finite endpoints. This probe uses ordinary Scene literal-band semantics, not
+StaticDocument's separate 64-band pyplot interpolation override: its 11 canonical
+XYCB stops require exactly 10 rendered intervals, each painted with its lower
+stop's RGBA. The SVG band count and every paint must match those canonical stops
+before the decoded PNG center pixels are checked against the same canonical
+RGBA values. Tests corrupt real exported SVG/PNG pairs by omitting a band or
+repainting every band one color; both renderers still agree at the remaining
+band centers, but the canonical checks reject each pair.
 
 This is a numeric correctness boundary, independent of source row count.
 It makes no startup, timing, memory, interaction, or massive-data performance
@@ -54,6 +60,7 @@ uv pip install matplotlib==3.11.0 numpy==2.5.1 pillow==12.3.0 \
   packaging==26.3 pyparsing==3.3.3 python-dateutil==3.0.0 six==1.17.0 tzdata==2026.5
 uv run --no-sync python scripts/compare_named_colorbar_domains.py --output /tmp/colorbar-888
 uv run --no-sync pytest tests/test_scene_ir.py -k named_colorbar -q
+uv run --no-sync pytest tests/test_named_colorbar_comparison.py -q
 ```
 
 Compare semantic fields and decoded pixel hashes with the committed report.
