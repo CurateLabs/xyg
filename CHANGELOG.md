@@ -14,6 +14,14 @@ in the README).
 ## [Unreleased]
 
 ### Fixed
+- GraphForge composition schema-version errors now name the XYG schema,
+  received/expected version and next action, retaining the stable
+  `GF_RESULT_SCHEMA_VERSION` code without echoing result values (#936).
+  XYG owns its authoritative result-disposition document and checks it
+  against a pinned Core-exported schema/algorithm corpus in CI. Release
+  packages carry one evidence-backed Core compatibility declaration;
+  exact Core 0.5.2 and 0.6.0-rc.5 are qualified with real published-binding
+  fixtures; rc.5 path-cost results reuse derived endpoint pairs.
 - Static export draws a colormapped `contourf` colorbar (up to 15 levels) as
   one solid band per level, as Matplotlib 3.11 does, instead of a smooth ramp
   (#1046). `spacing="proportional"` and `format=` are admitted on it, extension

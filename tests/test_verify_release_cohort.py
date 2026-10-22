@@ -22,6 +22,9 @@ def _tgz(path: Path, files: dict[str, bytes]) -> Path:
 
 
 def _fixtures(tmp_path: Path) -> dict[str, Path]:
+    compatibility = (
+        Path(__file__).resolve().parents[1] / "python/xyg/graphforge-compatibility.json"
+    ).read_bytes()
     native = b"ELF exact Rust core"
     client = b"export const xyg=true;"
     wheel = tmp_path / "xyg.whl"
@@ -29,6 +32,7 @@ def _fixtures(tmp_path: Path) -> dict[str, Path]:
         archive.writestr("xyg-1.2.3rc4.dist-info/METADATA", "Name: xyg\nVersion: 1.2.3rc4\n")
         archive.writestr("xyg/_native_lib/libxyg_core.so", native)
         archive.writestr("xyg/static/standalone.js", client)
+        archive.writestr("xyg/graphforge-compatibility.json", compatibility)
     facade = _tgz(
         tmp_path / "facade.tgz",
         {
@@ -36,6 +40,7 @@ def _fixtures(tmp_path: Path) -> dict[str, Path]:
                 {"name": "@curatelabs/xyg-node", "version": "1.2.3-rc.4"}
             ).encode(),
             "package/client/standalone.js": client,
+            "package/graphforge-compatibility.json": compatibility,
         },
     )
     node_native = _tgz(
@@ -65,6 +70,7 @@ def _fixtures(tmp_path: Path) -> dict[str, Path]:
             {"name": "@curatelabs/xyg", "version": "1.2.3-rc.4"}
         ).encode(),
         "package/ASSET-MANIFEST.json": json.dumps(manifest).encode(),
+        "package/graphforge-compatibility.json": compatibility,
         **{f"package/dist/{name}": payload for name, payload in assets.items()},
     }
     browser = _tgz(tmp_path / "browser.tgz", browser_files)
@@ -115,3 +121,14 @@ def test_release_cohort_rejects_malformed_manifest_entry(tmp_path: Path) -> None
     files["browser"] = _tgz(tmp_path / "browser-malformed.tgz", archive)
     with pytest.raises(ValueError, match="must be an object"):
         cohort.verify(tag="xyg-v1.2.3rc4", commit="a" * 40, **files)
+
+
+def test_release_cohort_rejects_disagreeing_core_compatibility(tmp_path: Path) -> None:
+    files = _fixtures(tmp_path)
+    archive = cohort._read_tgz(files["facade"])
+    declaration = json.loads(archive["package/graphforge-compatibility.json"])
+    declaration["supportedCoreVersions"] = ["0.6.0-rc.5"]
+    archive["package/graphforge-compatibility.json"] = json.dumps(declaration).encode()
+    files["facade"] = _tgz(tmp_path / "facade-mismatch.tgz", archive)
+    with pytest.raises(ValueError, match="different Core compatibility"):
+        cohort.verify(tag="xyg-v1.2.3-rc.4", commit="a" * 40, **files)

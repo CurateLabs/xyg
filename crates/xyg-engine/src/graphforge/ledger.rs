@@ -1,20 +1,18 @@
 //! GraphForge result-schema coverage ledger (spec/design/graphforge-compositions.md §3).
 //!
-//! Source: CurateLabs/graphforge `crates/graphforge-core/src/algorithms.rs`
-//! (`result_schema` / `path_schema` / `analyze_schema`) at algorithm schema
-//! v1, cross-checked against the extension's ledger
-//! (CurateLabs/graphforge-vscode `docs/engineering/RESULT_SCHEMAS.md`).
-//! Schema ids, canonical fields, and dispositions match that ledger exactly;
-//! the `composition` column is XYG's canonical rendering of the disposition.
+//! XYG owns the disposition/composition mapping. Core owns the Arrow schemas
+//! and algorithm catalog; the pinned Core-exported corpus in
+//! `tests/fixtures/graphforge/core` is checked against this ledger and the
+//! real engine IPC fixtures. Editors consume this ledger rather than author it.
 
 /// Algorithm result schema version this ledger understands.
 pub const ALGORITHM_SCHEMA_VERSION: u32 = 1;
 /// `find` search result schema version this ledger understands.
 pub const SEARCH_SCHEMA_VERSION: u32 = 1;
 /// Version of this ledger's contents (bumps when an entry changes).
-pub const LEDGER_VERSION: u32 = 1;
+pub const LEDGER_VERSION: u32 = 2;
 
-/// The extension's disposition vocabulary.
+/// XYG's result-disposition vocabulary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Disposition {
     EntityGraph,
@@ -327,6 +325,20 @@ pub const ALGORITHM_SCHEMAS: &[SchemaEntry] = &[
         algorithms: &["node_similarity", "knn", "filtered_knn", "filtered_node_similarity", "cosine"],
         derived_type: Some("SIMILAR"),
         note: "Similarity pairs are derived edges, not persisted relationships.",
+    },
+    SchemaEntry {
+        id: "path-cost",
+        version: 1,
+        disposition: Disposition::DerivedEdges,
+        composition: Composition::DerivedPairs { directed: true },
+        fields: &[
+            f("source_uuid", Uuid, Source),
+            f("target_uuid", Uuid, Target),
+            f("cost", Float, Cost),
+        ],
+        algorithms: &["bfs_depth", "dijkstra_cost"],
+        derived_type: Some("PATH_COST"),
+        note: "Endpoint distance/cost as a derived pair; no path or persisted edge is inferred.",
     },
     SchemaEntry {
         id: "path",
@@ -722,26 +734,109 @@ mod tests {
     }
 
     #[test]
-    fn every_graphforge_contract_has_a_disposition() {
-        let manifest = std::fs::read_to_string(format!(
-            "{}/../../tests/fixtures/graphforge/results/manifest.json",
-            env!("CARGO_MANIFEST_DIR")
-        ))
-        .unwrap();
-        // Minimal scan: every `"algorithm": "<name>"` in the contracts list.
-        let contracts = &manifest[..manifest.find("\"fixtures\"").unwrap()];
-        let mut count = 0;
-        for part in contracts.split("\"algorithm\": \"").skip(1) {
-            let name = &part[..part.find('"').unwrap()];
-            assert!(
-                schema_for_algorithm(name).is_some(),
-                "{name} has no ledger entry"
-            );
-            count += 1;
-        }
-        assert_eq!(count, 94, "GraphForge 0.5.2 registers 94 algorithms");
+    fn pinned_core_schemas_and_descriptors_match_the_runtime_ledger_and_real_ipc() {
+        check_core_corpus("core", "results", 94);
+        check_core_corpus("core/0.6.0-rc.5", "results-0.6.0-rc.5", 96);
     }
 
+    fn check_core_corpus(corpus_dir: &str, results_dir: &str, expected_count: usize) {
+        use crate::arrow_ipc::read_table;
+        let corpus = read_repo(&format!(
+            "tests/fixtures/graphforge/{corpus_dir}/contracts.tsv"
+        ));
+        let mut seen = HashSet::new();
+        for line in corpus.lines().skip(1) {
+            let row: Vec<_> = line.split('\t').collect();
+            assert_eq!(row.len(), 6);
+            let (verb, algorithm) = (row[0], row[1]);
+            assert!(
+                seen.insert(algorithm),
+                "duplicate Core algorithm {algorithm}"
+            );
+            assert!(ALGORITHM_VERBS.contains(&verb), "unknown Core verb {verb}");
+            assert_eq!(row[2], "1", "Core algorithm contract changed: {algorithm}");
+            let entry = schema_for_algorithm(algorithm)
+                .unwrap_or_else(|| panic!("unmapped Core algorithm {algorithm}"));
+            assert_eq!(row[3].parse::<u32>().unwrap(), entry.version, "{algorithm}");
+            let path = format!(
+                "{}/../../tests/fixtures/graphforge/{results_dir}/{algorithm}.arrow",
+                env!("CARGO_MANIFEST_DIR")
+            );
+            let bytes = std::fs::read(path).unwrap();
+            let table = read_table(&bytes).unwrap();
+            assert_eq!(
+                table.schema.metadata("graphforge.algorithm"),
+                Some(algorithm)
+            );
+            assert_eq!(table.schema.metadata("graphforge.verb"), Some(verb));
+            assert_eq!(
+                table.schema.metadata("graphforge.algorithm_schema_version"),
+                Some(row[3])
+            );
+            let fields: Vec<_> = row[5]
+                .split(',')
+                .map(|s| s.split(':').collect::<Vec<_>>())
+                .collect();
+            assert_eq!(
+                fields.len(),
+                entry.fields.len(),
+                "Core field count changed: {algorithm}"
+            );
+            assert!(
+                table.schema.fields.len() >= fields.len(),
+                "Core result is missing fields: {algorithm}"
+            );
+            for ((core, spec), actual) in fields.iter().zip(entry.fields).zip(&table.schema.fields) {
+                let (kind, arrow_type) = match core[1] {
+                    "Uuid" => (Kind::Uuid, "FixedSizeBinary(16)"),
+                    "UuidList" => (Kind::UuidList, "List<FixedSizeBinary(16)>"),
+                    "Float32List" => (Kind::FloatVector, "List<Float32>"),
+                    "Utf8" => (Kind::Utf8, "Utf8"),
+                    "Boolean" => (Kind::Bool, "Bool"),
+                    "UInt64" => (Kind::Int, "UInt64"),
+                    "Int64" => (Kind::Int, "Int64"),
+                    "Float64" => (Kind::Float, "Float64"),
+                    other => panic!("new Core field type {other}"),
+                };
+                assert_eq!(spec.name, core[0], "{algorithm}");
+                assert_eq!(spec.kind, kind, "{algorithm}.{}", spec.name);
+                assert_eq!(actual.name, core[0], "{algorithm}");
+                if kind == Kind::FloatVector {
+                    use crate::arrow_ipc::DataType;
+                    assert!(matches!(
+                        actual.data_type,
+                        DataType::List { large: false } | DataType::FixedSizeList(_)
+                    ));
+                    assert_eq!(
+                        actual.children[0].data_type,
+                        DataType::Float { bits: 32 },
+                        "{algorithm}.{}",
+                        spec.name
+                    );
+                } else {
+                    assert_eq!(actual.type_name(), arrow_type, "{algorithm}.{}", spec.name);
+                }
+                assert_eq!(
+                    actual.nullable,
+                    core[2] == "true",
+                    "{algorithm}.{}",
+                    spec.name
+                );
+            }
+            if row[4] == "false" {
+                assert_eq!(
+                    table.schema.fields.len(),
+                    fields.len(),
+                    "Core result has extra canonical fields: {algorithm}"
+                );
+            }
+        }
+        assert_eq!(
+            seen.len(),
+            expected_count,
+            "qualified Core catalog {corpus_dir}"
+        );
+    }
     fn read_repo(path: &str) -> String {
         std::fs::read_to_string(format!("{}/../../{path}", env!("CARGO_MANIFEST_DIR"))).unwrap()
     }
@@ -751,14 +846,6 @@ mod tests {
             .trim_matches('|')
             .split('|')
             .map(|c| c.trim().to_owned())
-            .collect()
-    }
-
-    fn backticked(text: &str) -> Vec<String> {
-        text.split('`')
-            .skip(1)
-            .step_by(2)
-            .map(str::to_owned)
             .collect()
     }
 
@@ -802,48 +889,6 @@ mod tests {
                 entry.id
             );
         }
-    }
-
-    #[test]
-    fn extension_ledger_agrees_on_ids_dispositions_and_membership() {
-        let doc = read_repo("tests/fixtures/graphforge/extension/RESULT_SCHEMAS.md");
-        let table = &doc
-            [doc.find("## Coverage ledger").unwrap()..doc.find("Non-algorithm results").unwrap()];
-        let mut checked = 0;
-        for line in table
-            .lines()
-            .filter(|l| l.starts_with("| ") && !l.starts_with("| Schema"))
-        {
-            let row = cells(line);
-            let ids = backticked(&row[0]);
-            let disposition = row[1].split_whitespace().next().unwrap();
-            for algorithm in row[3].split(',') {
-                let name = algorithm.split_whitespace().next().unwrap();
-                let entry = schema_for_algorithm(name).unwrap_or_else(|| {
-                    panic!("extension algorithm {name} is not in the XYG ledger")
-                });
-                assert_eq!(entry.disposition.name(), disposition, "{name}");
-                if !ids.is_empty() {
-                    assert!(
-                        ids.contains(&entry.id.to_owned()),
-                        "{name}: {} not in {ids:?}",
-                        entry.id
-                    );
-                }
-                checked += 1;
-            }
-            // Aliases the extension lists in parentheses are registered too.
-            if let Some(alias) = row[3].split("alias ").nth(1) {
-                let alias = &alias[..alias.find(')').unwrap()];
-                assert!(schema_for_algorithm(alias).is_some(), "alias {alias}");
-            }
-        }
-        assert!(
-            checked >= 94,
-            "checked {checked} extension ledger algorithms"
-        );
-        let search = doc.lines().find(|l| l.starts_with("| `search`")).unwrap();
-        assert_eq!(cells(search)[1], SEARCH_SCHEMA.disposition.name());
     }
 
     #[test]

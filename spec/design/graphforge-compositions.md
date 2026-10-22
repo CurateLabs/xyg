@@ -75,14 +75,58 @@ After the ledger lookup, every canonical field must exist with its Arrow kind:
 nullable node properties in rank/cluster/find results; those are carried, not
 checked.
 
-The ledger lives in `crates/xyg-engine/src/graphforge/ledger.rs`. Schema ids,
-canonical fields, and dispositions match the extension's
-`docs/engineering/RESULT_SCHEMAS.md` (vendored at
-`tests/fixtures/graphforge/extension/RESULT_SCHEMAS.md`; a Rust test fails if
-they disagree). The *composition* column is XYG's rendering of each
-disposition; the *intents* column lists the only intents a caller may request.
-A Rust test also fails if this table drifts from the code, and another if any
-GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
+The authoritative disposition/composition ledger lives in
+`crates/xyg-engine/src/graphforge/ledger.rs`, with this XYG-owned table as its
+reviewable document. Python `graphforge_ledger()`, Node `graphforgeLedger()`,
+and `xyg_graphforge_ledger_tsv` expose the runtime form; hosts do not maintain
+another registry. A Rust test requires this table to match the code.
+
+Core owns algorithm descriptors and Arrow schema facts. The pinned corpus in
+`tests/fixtures/graphforge/core` is exported from Core's own Rust registry
+and descriptor iterator at the immutable commit in `provenance.json`.
+CI retrieves those exact Core sources and regenerates the corpus in check
+mode; changed exported facts fail the build. Rust also requires every Core
+algorithm/version/canonical field to map to the ledger and agree with the
+real Core-produced IPC fixtures (including field order, nullable flags,
+integer signedness/width, and float widths). Variable embedding dimensions
+remain Core's `Float32List` family, admitting its fixed-size list encoding.
+The editor's previous vendored ledger is removed from XYG; editor issue #90
+replaces its own copy with a runtime coverage test against this authority.
+
+### Qualified Core releases and version rejection (#936)
+
+`python/xyg/graphforge-compatibility.json` is the single release declaration.
+It ships in the Python package and is copied unchanged to the Node facade
+and browser package roots. The release-cohort verifier rejects missing or
+different declarations and records its hash and exact supported Core
+versions in the release evidence. This is release metadata, not a client
+handshake or a substitute for per-result schema validation.
+
+Qualified exact releases are **Core 0.5.2** (94 algorithm results) and
+**Core 0.6.0-rc.5** (96 algorithm results), each with its own pinned Core-owned
+schema/descriptor corpus, real published-binding IPC run, `find` fixture,
+and native/Python/Node/WASM composition evidence. The rc.5 corpus lives in
+`tests/fixtures/graphforge/core/0.6.0-rc.5` and its 112 real fixtures in
+`tests/fixtures/graphforge/results-0.6.0-rc.5`; the original 0.5.2 evidence
+is preserved. Ledger contents version 2 adds `path-cost`: `bfs_depth` and
+`dijkstra_cost` draw derived endpoint pairs carrying `cost`, without inferring
+an ordered path or a persisted relationship.
+
+This declares no version interval, later release candidate, or installable
+editor pairing. #108/#884 still require the actual Core/XYG artifact cohort
+and package-level installation evidence; equal RC suffixes are not a
+compatibility rule. Editor #90 consumes a published qualified XYG package
+before deleting its copy and retaining runtime-ledger coverage.
+
+During composition, an unsupported numeric result version retains the
+stable `GF_RESULT_SCHEMA_VERSION` code and now reports, for example,
+`node-score result schema version 2 is not supported (expected 1)`, followed
+by a next action to use a declared-compatible Core or upgrade XYG. Search
+versions name the `search` schema. Missing/malformed version metadata is
+reported as `(missing or invalid)` without echoing arbitrary metadata.
+No row values, identities, or paths enter the error. All hosts surface the
+same Rust error document; requesting `table` does not bypass rejection.
+There is no ABI, request, Scene, or composition-wire version change.
 
 <!-- graphforge-ledger:begin -->
 | Schema | Disposition | Composition | Intents | Algorithms |
@@ -90,6 +134,7 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 | `node-score` | node-layer | node-score | graph | pagerank, betweenness, closeness, harmonic_closeness, degree, eigenvector, article_rank, hits_hub, hits_authority, celf, clustering_coefficient, local_clustering_coefficient, triangles, k_core, preferential_attachment, adamic_adar, common_neighbors, resource_allocation, total_neighbors |
 | `node-community` | node-layer | node-group | graph | louvain, leiden, label_propagation, speaker_listener, girvan_newman, modularity_optimization, fastgreedy, infomap, leading_eigenvector, walktrap, spinglass, hdbscan, k_means, approximate_max_k_cut, components, strongly_connected, biconnected, k_core_decomposition |
 | `similarity` | derived-edges | derived-edges | graph | node_similarity, knn, filtered_knn, filtered_node_similarity, cosine |
+| `path-cost` | derived-edges | derived-edges | graph | bfs_depth, dijkstra_cost |
 | `path` | ordered-paths | paths | graph | bfs, dijkstra, dijkstra_all_pairs, astar, bellman_ford, floyd_warshall, delta_stepping |
 | `ranked-path` | ordered-paths | paths | graph | yens |
 | `traversal` | node-layer | node-traversal | graph | dfs |

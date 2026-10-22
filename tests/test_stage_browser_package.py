@@ -26,7 +26,14 @@ def test_stage_browser_package_is_exact_versioned_offline_inventory(tmp_path: Pa
     assert package["name"] == "@curatelabs/xyg"
     assert package["version"] == "1.2.3-rc.4"
     assert "private" not in package
-    assert package["files"] == ["dist", "ASSET-MANIFEST.json", "README.md", "NOTICE", "LICENSE"]
+    assert package["files"] == [
+        "dist",
+        "ASSET-MANIFEST.json",
+        "graphforge-compatibility.json",
+        "README.md",
+        "NOTICE",
+        "LICENSE",
+    ]
     assert package["exports"] == stage_browser.EXPECTED_EXPORTS
     assert not any(
         package.get(field) for field in ("dependencies", "optionalDependencies", "peerDependencies")
@@ -38,6 +45,9 @@ def test_stage_browser_package_is_exact_versioned_offline_inventory(tmp_path: Pa
     assert assets["wasmAbiVersion"] > 0
     assert assets["sceneVersion"] > 0
     assert assets["painterVersion"] > 0
+    assert (staged / "graphforge-compatibility.json").read_bytes() == (
+        stage_browser.ROOT / "python/xyg/graphforge-compatibility.json"
+    ).read_bytes()
     assert (staged / "NOTICE").is_file()
     assert (staged / "LICENSE").is_file()
 

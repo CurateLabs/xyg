@@ -127,6 +127,28 @@ def verify(
         if len(payload) != expected.get("bytes") or _digest(payload) != expected.get("sha256"):
             raise ValueError(f"browser asset manifest mismatch for {name}")
 
+    compatibility = _only(
+        wheel_files, "xyg/graphforge-compatibility.json", "Python Core compatibility declaration"
+    )
+    for role in ("facade", "browser"):
+        other = _only(
+            archives[role],
+            "package/graphforge-compatibility.json",
+            f"{role} Core compatibility declaration",
+        )
+        if other != compatibility:
+            raise ValueError(
+                "Python, Node, and browser packages declare different Core compatibility"
+            )
+    declared = json.loads(compatibility)
+    supported = declared.get("supportedCoreVersions")
+    if declared.get("schemaVersion") != 1 or not isinstance(supported, list) or not supported:
+        raise ValueError("invalid Core compatibility declaration")
+    for version in supported:
+        if not isinstance(version, str):
+            raise ValueError("supported Core versions must be exact version strings")
+        parse_tag(f"xyg-v{version}")
+
     paths = {"python": wheel, "nodeFacade": facade, "nodeNative": native, "browser": browser}
     return {
         "schemaVersion": 1,
@@ -135,6 +157,8 @@ def verify(
         "pythonVersion": python_version,
         "npmVersion": npm_version,
         "platform": "linux-x64",
+        "supportedCoreVersions": supported,
+        "graphforgeCompatibilitySha256": _digest(compatibility),
         "sharedNativeSha256": _digest(wheel_native),
         "sharedStandaloneSha256": _digest(wheel_client),
         "artifacts": {
