@@ -306,6 +306,7 @@ payload_scatter_emit_plan = _impl.payload_scatter_emit_plan
 payload_density_trace_emit_plan = _impl.payload_density_trace_emit_plan
 payload_build_plan = _impl.payload_build_plan
 payload_axis_spec_attach_plan = _impl.payload_axis_spec_attach_plan
+payload_axis_side_resolve = _impl.payload_axis_side_resolve
 PAYLOAD_NONXY_KIND_RECT = _impl.PAYLOAD_NONXY_KIND_RECT
 PAYLOAD_NONXY_KIND_HEXBIN = _impl.PAYLOAD_NONXY_KIND_HEXBIN
 PAYLOAD_NONXY_KIND_DENSITY_SAMPLE = _impl.PAYLOAD_NONXY_KIND_DENSITY_SAMPLE
@@ -480,6 +481,7 @@ __all__ = [
     "object_rows_all_stringlike",
     "paint_effective_rgba",
     "palette_rows_rgba8",
+    "payload_axis_side_resolve",
     "payload_axis_spec_attach_plan",
     "payload_bar_compact_admit",
     "payload_bar_hist_emit_plan",

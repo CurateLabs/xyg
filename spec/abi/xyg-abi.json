@@ -1,9 +1,9 @@
 {
-  "abi_version": 391,
+  "abi_version": 392,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "52890d626bf8d1062c222559fda5d1a8b23a0f796f1844420f94381cdb4c3510",
+  "signature_sha256": "9d30b147faaf3270e98bd4f287fcd02b3f9df79021a382d65d92e39e8fe90744",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -27360,6 +27360,56 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_palette_rows_rgba8(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t rows, uint8_t * out_rgba, size_t out_cap, uint32_t * out_unresolved, uint8_t * out_entry_unresolved, size_t entry_unresolved_cap)"
+    },
+    {
+      "name": "xyg_payload_axis_side_resolve",
+      "node_name": "xyPayloadAxisSideResolve",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "role",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "authored",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_axis_side_resolve(int32_t role, int32_t authored)"
     },
     {
       "name": "xyg_payload_axis_spec_attach_plan",
