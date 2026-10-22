@@ -104,7 +104,7 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1508 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1507 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
@@ -116,9 +116,10 @@ const WASM_SIZE_BUDGET_BYTES = 1508 * 1024;
 // +10,255 raw / +4,097 gzip bytes (1,538,122 / 635,040) over main's
 // 1,527,867 / 630,943 after #1023/#1034/#1037, 160 bytes over the 620 KiB gate;
 // 3,936 bytes of gzip and 1,974 bytes of raw headroom remain (local build).
-// 1,508 KiB raw (gzip unchanged): XYPB v17 (#1036) links the Rust tick-label
-// strategy layout into the painter writer, a recorded +2,960 raw bytes (1,542,217
-// local) over a painter that skips it; ~1,400 bytes of raw headroom (after #1048) remain.
+// 1,507 KiB raw (gzip gate unchanged at 624 KiB): XYPB v17 (#1036) runs the Rust
+// tick-label strategy layout in the painter writer. Measured over the merge-base
+// build (local toolchain): 1,539,454 -> 1,541,488 raw (+2,034) and 635,754 ->
+// 636,670 gzip (+916); 1,680 bytes of raw headroom remain.
 const WASM_GZIP_BUDGET_BYTES = 624 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);

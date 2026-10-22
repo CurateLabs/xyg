@@ -1131,6 +1131,7 @@ export class ChartView {
       const c1 = this._axisCoord(axis, hi);
       const candidates = (labelsOnSide ? (ticks.labels || ticks.ticks) : []).map((value) => ({
         pos: c1 === c0 ? plotWidth / 2 : ((this._axisCoord(axis, value) - c0) / (c1 - c0)) * plotWidth,
+        value,
         text: this._axisTickText(axis, value, ticks.step),
       }));
       const items = this._layoutTickLabels(sideAxis, "x", candidates);
@@ -7448,6 +7449,14 @@ export class ChartView {
   _layoutTickLabels(axis, dim, labels) {
     const strategyValue = this._axisTickLabelStrategy(axis);
     if (strategyValue === "none" || strategyValue === "off") return [];
+    if (axis && axis.tick_resolution === "rust_scene") {
+      // Rust already thinned, rotated and staggered: apply exactly that.
+      const angle = this._axisTickLabelAngle(axis) ?? 0;
+      return labels.filter((label) => label.text !== "").map((label) => ({
+        ...label, angle,
+        row: axis.tick_stagger ? Math.max(0, axis.tick_values.indexOf(label.value)) & 1 : 0,
+      }));
+    }
     if (labels.length <= 1) {
       const angle = this._axisTickLabelAngle(axis);
       return labels.map((label) => ({ ...label, angle: angle === null ? 0 : angle, row: 0 }));
@@ -7813,13 +7822,13 @@ export class ChartView {
         }
       }
       for (const axis of extraXAxes) {
-        if (this._axisTickLabelStrategy(axis) === "none") continue;
+        if (this._axisTickLabelStrategy(axis) === "none" && axis.tick_resolution !== "rust_scene") continue; // the static SVG keeps the frame spine
         const h = Math.max(1, this._axisStyleNumber(axis, "axis_width", 1));
         const y = axis.side === "top" ? p.y : p.y + p.h - h;
         rule(axis, p.x, y, p.w, h, "axis_color", "axis_line", "", axis.side);
       }
       for (const axis of extraYAxes) {
-        if (this._axisTickLabelStrategy(axis) === "none") continue;
+        if (this._axisTickLabelStrategy(axis) === "none" && axis.tick_resolution !== "rust_scene") continue;
         const w = Math.max(1, this._axisStyleNumber(axis, "axis_width", 1));
         const x = axis.side === "left" ? p.x : p.x + p.w - w;
         rule(axis, x, p.y, w, p.h, "axis_color", "axis_line", "", axis.side);
@@ -8079,7 +8088,7 @@ export class ChartView {
       const px = this._dataPx("x", v);
       if (px < p.x - 1 || px > p.x + p.w + 1) continue;
       const text = this._axisTickText(xAxis, v, xt.step);
-      xLabelCandidates.push({ pos: px, text });
+      xLabelCandidates.push({ pos: px, value: v, text });
     }
     const tickLabelSize = this._axisStyleNumber(
       xAxis,

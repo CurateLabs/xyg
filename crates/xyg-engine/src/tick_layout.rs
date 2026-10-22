@@ -168,6 +168,37 @@ pub fn tick_label_layout(
     min_gap: f64,
     explicit_angle: Option<f64>,
 ) -> Option<Vec<TickLabelItem>> {
+    tick_label_layout_resolved(
+        positions,
+        labels,
+        strategy,
+        side,
+        anchor,
+        is_x,
+        category,
+        font_size,
+        min_gap,
+        explicit_angle,
+    )
+    .map(|(items, _)| items)
+}
+
+/// [`tick_label_layout`] plus the effective mode applied to the kept items:
+/// `STRATEGY_ROTATE` / `STRATEGY_STAGGER` only when the x axis actually
+/// rotated or staggered, `STRATEGY_NONE` / `STRATEGY_OFF` when labels are
+/// hidden, otherwise `STRATEGY_PRESERVE` (thinning included).
+pub fn tick_label_layout_resolved(
+    positions: &[f64],
+    labels: &[&str],
+    strategy: u32,
+    side: u32,
+    anchor: u32,
+    is_x: bool,
+    category: bool,
+    font_size: f64,
+    min_gap: f64,
+    explicit_angle: Option<f64>,
+) -> Option<(Vec<TickLabelItem>, u32)> {
     if positions.len() != labels.len() {
         return None;
     }
@@ -189,7 +220,7 @@ pub fn tick_label_layout(
         return None;
     }
     if strategy == STRATEGY_NONE || strategy == STRATEGY_OFF {
-        return Some(Vec::new());
+        return Some((Vec::new(), strategy));
     }
     let n = positions.len();
     let base_angle = explicit_angle.unwrap_or(0.0);
@@ -201,17 +232,14 @@ pub fn tick_label_layout(
             row: 0,
         })
         .collect();
-    if n <= 1 {
-        return Some(to_items(&items));
-    }
-    if strategy == STRATEGY_PRESERVE {
-        return Some(to_items(&items));
+    if n <= 1 || strategy == STRATEGY_PRESERVE {
+        return Some((to_items(&items), STRATEGY_PRESERVE));
     }
 
     let mut resolved = strategy;
     if resolved == STRATEGY_AUTO {
         if !collide(&items, labels, is_x, anchor, font_size, min_gap) {
-            return Some(to_items(&items));
+            return Some((to_items(&items), STRATEGY_PRESERVE));
         }
         resolved = if is_x && category && n <= AUTO_CATEGORY_ROTATE_MAX {
             STRATEGY_ROTATE
@@ -222,7 +250,9 @@ pub fn tick_label_layout(
         };
     }
 
+    let mut mode = STRATEGY_PRESERVE;
     if resolved == STRATEGY_ROTATE && is_x {
+        mode = STRATEGY_ROTATE;
         let angle = explicit_angle.unwrap_or(if side == SIDE_TOP {
             DEFAULT_ROTATE_DEG
         } else {
@@ -233,6 +263,7 @@ pub fn tick_label_layout(
             item.row = 0;
         }
     } else if resolved == STRATEGY_STAGGER && is_x {
+        mode = STRATEGY_STAGGER;
         for (index, item) in items.iter_mut().enumerate() {
             item.row = (index % 2) as u32;
         }
@@ -242,12 +273,12 @@ pub fn tick_label_layout(
         for stride in 2..=n {
             let reduced: Vec<Candidate> = items.iter().step_by(stride).copied().collect();
             if !collide(&reduced, labels, is_x, anchor, font_size, min_gap) {
-                return Some(to_items(&reduced));
+                return Some((to_items(&reduced), mode));
             }
         }
-        return Some(to_items(&items[..1]));
+        return Some((to_items(&items[..1]), mode));
     }
-    Some(to_items(&items))
+    Some((to_items(&items), mode))
 }
 
 pub const THETA_NONE: u32 = 0;

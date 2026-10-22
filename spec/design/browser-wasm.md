@@ -214,9 +214,10 @@ interactive path:
 | `opt-level = "s"` | 877 KB | 311 KB | 21.1 / 203 ms |
 | `opt-level = "z"` | 777 KB | 280 KB | 38.3 / 363 ms |
 
-The raw gate moved from 1,504 to 1,508 KiB for XYPB v17 (#1036): the painter
-writer now runs the Rust tick-label strategy layout (about +3 KB raw), measured at
-1,542,217 bytes locally; gzip is unchanged.
+The raw gate moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
+writer now runs the Rust tick-label strategy layout. Measured over the merge-base
+build, raw grew 1,539,454 -> 1,541,488 bytes (+2,034) and gzip 635,754 -> 636,670
+(+916); the gzip gate is unchanged (624 KiB).
 
 ABI 30 camera transport and closed polygon caches make the default O3 artifact
 1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
@@ -478,17 +479,20 @@ normalizes provenance before painter encoding. Both ceilings are pinned:
 `BROWSER_PAINTER_XYLB_MAX_VERSION` in `scene.rs` and `XYLB_PAINTER_VERSIONS` in
 `js/src/48_wasm_scene.ts` (#1040).
 
-XYPB v17 (#1036) carries each axis's Rust-resolved tick-label strategy in byte 5 of
-the x, y and y2 axis blocks (formerly reserved): the Scene strategy code
-(`0` auto, `1` hide, `2` rotate, `3` stagger, `4` preserve, `5` none, `6` off), except
-that `hide` arrives as `4` because Rust has already thinned the labels. Major tick
-labels the strategy layout drops (and all labels under `none`/`off`) arrive as empty
-strings. The browser maps the code to the axis `tick_label_strategy`, so `off` and
-`none` hide labels and `none` also hides ticks, exactly like the static SVG; it no
-longer rebuilds every axis as `auto`. The authored collision header at bytes 76-79
-is zeroed in the painter. The client accepts exactly one painter version, so an
-older XYPB fails closed (`Rust painter contract version is incompatible`) and the
-Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
+XYPB v17 (#1036) carries each axis's Rust-resolved tick-label layout in the x, y and y2
+axis blocks. Byte 5 (formerly reserved) is the mode Rust applied to the kept labels
+(Scene strategy codes: `2` rotate, `3` stagger, `4` preserve, `5` none, `6` off;
+auto, hide and preserve all arrive as `4` because Rust has already thinned them), and
+bytes 6-7 are an `i16` label rotation in hundredths of a degree. Labels the layout
+drops (and all labels under `none`/`off`) arrive as empty strings. The browser applies
+exactly that for `tick_resolution: "rust_scene"` axes: it skips blank labels, rotates
+by the carried angle, puts alternate labels on a second row for stagger, and never
+re-runs its own auto/downsample logic; `none` hides ticks and labels while the frame
+spines stay, like the static SVG. The layout runs for the first label side in
+`tick_label_sides`, so a two-sided axis shares that side's angle sign. The authored
+collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
+one painter version, so an older XYPB fails closed (`Rust painter contract version is
+incompatible`) and the Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
 TypeScript validates and materializes those decisions
 without positioning or collision policy. Legends whose intrinsic width or height exceeds the plot fail
 closed before encoding so SVG, raster, and browser consumers share one policy.
