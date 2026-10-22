@@ -1138,12 +1138,8 @@ pub fn pack_annotation_facts(
             return Err(AnnotationError::Order);
         }
         let has_wrap = has(row.facts, FACT_HAS_WRAP);
-        let text_layout = row.kind == XYAF_KIND_TEXT
-            && (row.space != 0
-                || has(row.facts, FACT_HAS_DX)
-                || has(row.facts, FACT_HAS_DY)
-                || has(row.facts, FACT_HAS_ANCHOR)
-                || has(row.facts, FACT_HAS_ROTATION));
+        // All text is laid out; unset offsets take the Rust default (#1024).
+        let text_layout = row.kind == XYAF_KIND_TEXT;
         let wrapped_kind = ((row.kind == XYAF_KIND_TEXT || row.kind == XYAF_KIND_CALLOUT)
             && has_wrap)
             || text_layout;
@@ -1163,7 +1159,11 @@ pub fn pack_annotation_facts(
             let (dx_default, dy_default, css) = if row.kind == XYAF_KIND_CALLOUT {
                 (36.0, -30.0, COLOR_CALLOUT)
             } else {
-                (0.0, 0.0, COLOR_RULE)
+                (
+                    crate::kernels::DEFAULT_TEXT_ANNOTATION_DX,
+                    crate::kernels::DEFAULT_TEXT_ANNOTATION_DY,
+                    COLOR_RULE,
+                )
             };
             let dx = or_default(row, FACT_HAS_DX, 6, dx_default)?;
             let dy = or_default(row, FACT_HAS_DY, 7, dy_default)?;
@@ -1924,7 +1924,7 @@ mod tests {
     }
 
     #[test]
-    fn non_data_space_text_is_xyaw_v3_and_data_text_never_is() {
+    fn non_data_space_text_is_xyaw_v3_and_data_text_is_v1_xyaw() {
         for space in 1u8..=3 {
             let packed =
                 pack_annotation_facts(&spaced_text(XYAF_KIND_TEXT, space), 0, 0.0, 1.0, 0.0, 1.0)
@@ -1935,10 +1935,60 @@ mod tests {
             let row = &section[12..];
             assert_eq!((row[60], row[62], row[63]), (0, space, 0));
         }
-        // A data-space row keeps the v1 XYAT path and emits no XYAW section.
+        // Every text row is laid out (#1024); a data-space row is not v3.
         let packed =
             pack_annotation_facts(&spaced_text(XYAF_KIND_TEXT, 0), 0, 0.0, 1.0, 0.0, 1.0).unwrap();
-        assert!(xyaw_section(&packed).is_none());
+        let section = xyaw_section(&packed).expect("data text is laid out too");
+        assert_ne!(u32::from_le_bytes(section[4..8].try_into().unwrap()), 3);
+    }
+
+    /// Unset `dx`/`dy` take the one Rust default whether or not `anchor` is
+    /// authored (#1024, y-down screen pixels: negative `dy` is up).
+    #[test]
+    fn unset_text_offsets_take_the_rust_default_with_or_without_anchor() {
+        for anchor in [false, true] {
+            let mut record = spaced_text(XYAF_KIND_TEXT, 0);
+            if anchor {
+                let facts = u32::from_le_bytes(record[16..20].try_into().unwrap());
+                record[16..20].copy_from_slice(&(facts | FACT_HAS_ANCHOR).to_le_bytes());
+                record[15] = 0;
+            }
+            let packed = pack_annotation_facts(&record, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+            let section = xyaw_section(&packed).expect("text is laid out");
+            let row = &section[12..];
+            let dx = f64::from_le_bytes(row[16..24].try_into().unwrap());
+            let dy = f64::from_le_bytes(row[24..32].try_into().unwrap());
+            assert_eq!((dx, dy), (6.0, -6.0), "anchor authored: {anchor}");
+        }
+    }
+
+    /// One missing offset takes only its own default, and an explicit zero is
+    /// never replaced (#1024).
+    #[test]
+    fn partial_and_zero_text_offsets_resolve_independently() {
+        let laid_out = |dx: Option<f64>, dy: Option<f64>| {
+            let mut record = spaced_text(XYAF_KIND_TEXT, 0);
+            let mut facts = u32::from_le_bytes(record[16..20].try_into().unwrap());
+            for (flag, slot, value) in [(FACT_HAS_DX, 6, dx), (FACT_HAS_DY, 7, dy)] {
+                if let Some(value) = value {
+                    facts |= flag;
+                    let at = 32 + slot * 8;
+                    record[at..at + 8].copy_from_slice(&value.to_le_bytes());
+                }
+            }
+            record[16..20].copy_from_slice(&facts.to_le_bytes());
+            let packed = pack_annotation_facts(&record, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+            let section = xyaw_section(&packed).expect("text is laid out");
+            let row = &section[12..];
+            (
+                f64::from_le_bytes(row[16..24].try_into().unwrap()),
+                f64::from_le_bytes(row[24..32].try_into().unwrap()),
+            )
+        };
+        assert_eq!(laid_out(Some(3.0), None), (3.0, -6.0));
+        assert_eq!(laid_out(None, Some(4.0)), (6.0, 4.0));
+        assert_eq!(laid_out(Some(0.0), Some(0.0)), (0.0, 0.0));
+        assert_eq!(laid_out(Some(0.0), None), (0.0, -6.0));
     }
 
     #[test]

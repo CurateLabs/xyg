@@ -1,9 +1,9 @@
 {
-  "abi_version": 392,
+  "abi_version": 393,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "9d30b147faaf3270e98bd4f287fcd02b3f9df79021a382d65d92e39e8fe90744",
+  "signature_sha256": "c79d7e5ba5ce00b1fb1c1afb66ae64171c61e666fbdce6601d46507dc395b5b0",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -8970,6 +8970,44 @@
         "nullable": false
       },
       "c_signature": "double xyg_default_png_export_scale()"
+    },
+    {
+      "name": "xyg_default_text_annotation_dx",
+      "node_name": "xyDefaultTextAnnotationDx",
+      "nargs": 0,
+      "arguments": [],
+      "returns": {
+        "rust": "f64",
+        "c": "double",
+        "ctypes": "ctypes.c_double",
+        "koffi": "double",
+        "kind": "scalar",
+        "bits": 64,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "double xyg_default_text_annotation_dx()"
+    },
+    {
+      "name": "xyg_default_text_annotation_dy",
+      "node_name": "xyDefaultTextAnnotationDy",
+      "nargs": 0,
+      "arguments": [],
+      "returns": {
+        "rust": "f64",
+        "c": "double",
+        "ctypes": "ctypes.c_double",
+        "koffi": "double",
+        "kind": "scalar",
+        "bits": 64,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "double xyg_default_text_annotation_dy()"
     },
     {
       "name": "xyg_delaunay_triangles",
