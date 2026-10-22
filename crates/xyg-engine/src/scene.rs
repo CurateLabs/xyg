@@ -643,7 +643,7 @@ pub struct SceneLegend {
 }
 
 impl SceneLegend {
-    fn validate_constructed(&self) -> Result<(), SceneError> {
+    pub(crate) fn validate_constructed(&self) -> Result<(), SceneError> {
         if self.entries.iter().any(|entry| {
             (entry.kind == SceneRecordKind::Scatter
                 && entry.symbol > ScatterSymbol::VerticalLine as u8)

@@ -900,18 +900,11 @@ fn encode_assembled_with_radii(
     .map_err(map_scene)?;
     let style = style.validated().map_err(map_scene)?;
     // #1041: a legend taller or wider than the whole cartesian plot cannot fit
-    // the (smaller) recut polar legend box either; report it as the same stable
-    // polar-legend rejection instead of the constructor's opaque `Limit`.
-    if !polar_bytes.is_empty() {
-        if let Some(value) = &legend {
-            if resolved_legend_bounds(layout, value, None).is_err() {
-                return Err(EncodeAssembledError::new(
-                    EncodeAssembledCode::PolarLegend,
-                    0,
-                ));
-            }
-        }
-    }
+    // the (smaller) recut polar legend box either. After the legend's own
+    // validation passes, the constructor's `Limit` for it is reported as the
+    // same stable polar-legend rejection; malformed or over-limit legends keep
+    // their original errors.
+    let polar_legend = (!polar_bytes.is_empty()).then(|| legend.clone()).flatten();
     let batch = SceneBatch::new_with_decorations_colorbar(
         layout,
         x_axis.id,
@@ -936,7 +929,15 @@ fn encode_assembled_with_radii(
         &records.x1,
         &records.y1,
     )
-    .map_err(map_scene)?;
+    .map_err(|error| match (&polar_legend, error) {
+        (Some(value), SceneError::Limit)
+            if value.validate_constructed().is_ok()
+                && resolved_legend_bounds(layout, value, None).is_err() =>
+        {
+            EncodeAssembledError::new(EncodeAssembledCode::PolarLegend, 0)
+        }
+        (_, error) => map_scene(error),
+    })?;
     let batch = match y2 {
         Some(mut axis) => {
             resolve_y2_tick_format(layout, &mut axis).map_err(map_scene)?;
@@ -1579,6 +1580,48 @@ mod tests {
             &xyfs_v2(0, &[(0, "scatter")]),
         )
         .unwrap();
+        assert_eq!(&encoded[..4], b"XYGS");
+    }
+
+    /// #1041: a polar figure with a three-row legend (three named bars, as
+    /// packed by the Python host; blobs in `testdata/polar_legend_product.hex`,
+    /// the 519 and 520 px XYCF differ only in viewport) overflows the 64 px
+    /// compact legend band at 519 px and fits the side gutter at 520 px.
+    #[test]
+    fn product_polar_legend_overflow_is_the_stable_support_reason() {
+        let fixture = include_str!("../testdata/polar_legend_product.hex");
+        let blob = |key: &str| -> Vec<u8> {
+            let line = fixture
+                .lines()
+                .find_map(|line| line.strip_prefix(key).and_then(|r| r.strip_prefix('=')))
+                .unwrap();
+            (0..line.len())
+                .step_by(2)
+                .map(|at| u8::from_str_radix(&line[at..at + 2], 16).unwrap())
+                .collect()
+        };
+        let encode = |xycf: Vec<u8>| {
+            encode_product(
+                &blob("compile_facts"),
+                &blob("attach_facts"),
+                &blob("names"),
+                &blob("columns"),
+                &[],
+                3,
+                0.0,
+                std::f64::consts::TAU,
+                0.0,
+                1.0,
+                &xycf,
+                &blob("polar"),
+                &blob("figure_support"),
+            )
+        };
+        let error = encode(blob("chrome_facts_519")).unwrap_err();
+        assert_eq!(error.code, PRODUCT_SUPPORT_UNSUPPORTED);
+        assert_eq!(error.code, 801);
+        assert_eq!(error.reason, POLAR_LEGEND_REASON.as_bytes());
+        let encoded = encode(blob("chrome_facts_520")).unwrap();
         assert_eq!(&encoded[..4], b"XYGS");
     }
 
