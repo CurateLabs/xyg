@@ -440,8 +440,8 @@ split connected line/area geometry. Painter v14 retains only the annotation tag
 in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
-Painter contract v16 begins with `XYPB`, independent painter version 16, canonical
-Scene v34 (`SCENE_VERSION = 34`), a 420-byte header (v16 inserts the 88-byte y2 axis
+Painter contract v17 begins with `XYPB`, independent painter version 17, canonical
+Scene v34 (`SCENE_VERSION = 34`), a 420-byte header (v16 inserted the 88-byte y2 axis
 block at 264, a 32-byte y2 chrome-text record at 352, and moves the length words to 384;
 see `scene-ir.md` for the full map), 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
@@ -473,6 +473,18 @@ XYLB v1 through v6 only; v7 (annotation provenance) is Scene-wire only and Rust
 normalizes provenance before painter encoding. Both ceilings are pinned:
 `BROWSER_PAINTER_XYLB_MAX_VERSION` in `scene.rs` and `XYLB_PAINTER_VERSIONS` in
 `js/src/48_wasm_scene.ts` (#1040).
+
+XYPB v17 (#1036) carries each axis's Rust-resolved tick-label strategy in byte 5 of
+the x, y and y2 axis blocks (formerly reserved): the Scene strategy code
+(`0` auto, `1` hide, `2` rotate, `3` stagger, `4` preserve, `5` none, `6` off), except
+that `hide` arrives as `4` because Rust has already thinned the labels. Major tick
+labels the strategy layout drops (and all labels under `none`/`off`) arrive as empty
+strings. The browser maps the code to the axis `tick_label_strategy`, so `off` and
+`none` hide labels and `none` also hides ticks, exactly like the static SVG; it no
+longer rebuilds every axis as `auto`. The authored collision header at bytes 76-79
+is zeroed in the painter. The client accepts exactly one painter version, so an
+older XYPB fails closed (`Rust painter contract version is incompatible`) and the
+Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
 TypeScript validates and materializes those decisions
 without positioning or collision policy. Legends whose intrinsic width or height exceeds the plot fail
 closed before encoding so SVG, raster, and browser consumers share one policy.
@@ -1132,5 +1144,5 @@ raised to **620 KiB (634,880 bytes)**; the raw gate is unchanged (the #1006
 static-export decision under "Artifact size" later raised gzip to 624 KiB). Duplicate paint
 projection was folded into one out-of-line function and the paint buffer is a fixed
 array to keep the addition at that size; the browser consumes the same Rust vertices
-rather than a second arrow renderer. The painter contract is unchanged (XYPB v16,
+rather than a second arrow renderer. The painter contract is unchanged (XYPB v17,
 WASM ABI 34): arrow runs are ordinary line and triangle traces.

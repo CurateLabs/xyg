@@ -2372,6 +2372,11 @@ and y2 titles, so every surface agrees; `tests/browser/wasm_foundation_page.mjs`
 asserts the rendered y2 title transform. There is no y2 grid
 (Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
 
+**XYPB v17.** Adds the Rust-resolved tick-label strategy in byte 5 of each
+x/y/y2 axis block (Scene strategy code; `hide` is sent as `preserve` after Rust
+thins the labels) and zeroes the authored collision header at 76–79; see
+`browser-wasm.md` (#1036). Version 16 layout follows.
+
 **XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are
 the y2 axis block (88 bytes, zero without y2), 352–383 the fixed y2 chrome-text
 record (`tick_label_size`, `label_size`, `tick_padding` f32; `text_flags u32`;

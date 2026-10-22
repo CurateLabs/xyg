@@ -51,9 +51,13 @@ pub const SCENE_RECORD_Y2_BIT: u8 = 0x40;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 16;
+pub const BROWSER_PAINTER_VERSION: u32 = 17;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 420;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
+/// XYPB v17 resolves each axis's tick-label strategy in Rust: byte 5 of the
+/// x/y/y2 axis blocks is the browser strategy code (`painter_strategy_code`)
+/// and labels the layout drops arrive blank, so the browser applies no
+/// strategy policy of its own for hidden labels, thinned labels or spines.
 /// XYPB v16 header map beyond the v15 prefix: the y2 axis block (same 88-byte
 /// record as x/y) follows the chrome input at 264, then the fixed y2 text
 /// record, the text/legend/colorbar/label lengths, and the y2 tick count.
@@ -13958,6 +13962,26 @@ impl SceneDocument {
         format_tick(value, ticks.step, policy.scale.kind)
     }
 
+    /// Values whose label the strategy layout keeps, for the XYPB writer.
+    #[inline(never)]
+    fn painter_kept_labels(&self, slot: AxisSlot, ticks: &AxisTicks, scale: AxisScale) -> Vec<u64> {
+        let side = self.slot_policy(slot).style.side as u8;
+        self.axis_tick_collision_items(slot, ticks, scale, side)
+            .iter()
+            .map(|item| item.value.to_bits())
+            .collect()
+    }
+
+    /// XYPB v17 axis strategy code: the authored code, except `hide` (thinned
+    /// by Rust, so the browser must not thin again) which becomes `preserve`.
+    #[inline(never)]
+    fn painter_strategy_code(&self, slot: AxisSlot) -> u8 {
+        match self.slot_policy(slot).strategy {
+            1 => 4,
+            code => code,
+        }
+    }
+
     fn axis_hides_chrome(&self, slot: impl Into<AxisSlot>) -> bool {
         self.slot_policy(slot.into()).strategy == tick_layout::STRATEGY_NONE as u8
     }
@@ -16689,12 +16713,13 @@ impl SceneDocument {
         // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
         // (empty UTF-8 for unlabeled minor ticks).
         let browser_ticks = |slot: AxisSlot, scale: AxisScale, axis: AxisTicks| {
+            let kept = self.painter_kept_labels(slot, &axis, scale);
             axis.ticks
                 .iter()
                 .copied()
                 .map(|value| {
                     let major = axis.labeled.contains(&value);
-                    let label = if major {
+                    let label = if major && kept.contains(&value.to_bits()) {
                         let index = axis
                             .labeled
                             .iter()
@@ -17179,10 +17204,17 @@ impl SceneDocument {
         write_chrome_style_input(&mut chrome_input, &self.chrome);
         debug_assert_eq!(chrome_input.len(), SCENE_CHROME_STYLE_INPUT_BYTES);
         out[64..264].copy_from_slice(&chrome_input);
+        // The authored collision header is Rust-internal; the painter carries
+        // only the resolved per-axis strategy below.
+        out[76..80].fill(0);
+        for (at, slot) in [(93, AxisSlot::X), (181, AxisSlot::Y)] {
+            out[at] = self.painter_strategy_code(slot);
+        }
         if let Some(y2) = &self.y2 {
             let mut axis = Vec::with_capacity(PAINTER_Y2_AXIS_BYTES);
             write_axis_chrome_style(&mut axis, &y2.axis);
             out[264..264 + PAINTER_Y2_AXIS_BYTES].copy_from_slice(&axis);
+            out[264 + 5] = self.painter_strategy_code(AxisSlot::Y2);
             // Fixed y2 chrome-text record: the resolved XYCO typography and
             // paints, so the browser applies them rather than the shared
             // label size and single paint of the primary axes.

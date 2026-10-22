@@ -393,10 +393,13 @@ fn y2_paints_right_gutter_labels_with_equal_domain_tick_parity() {
     let commands = document.to_raster_commands(1.0).unwrap();
     assert!(commands.windows(4).any(|w| w == b"Righ"));
 
-    // XYPB v16: the y2 axis block, its fixed text record and the y2 ticks.
+    // XYPB v16+: the y2 axis block, its fixed text record and the y2 ticks.
     let painter = document.to_browser_painter(1 << 24).unwrap();
     assert_eq!(&painter[..4], b"XYPB");
     assert_eq!(u32_at(&painter, 4), crate::scene::BROWSER_PAINTER_VERSION);
+    // XYPB v17 pins the resolved per-axis strategy at axis byte 5 (auto = 0).
+    assert_eq!(crate::scene::BROWSER_PAINTER_VERSION, 17);
+    assert_eq!([painter[93], painter[181], painter[269]], [0; 3]);
     assert_eq!(u32_at(&painter, 12) as usize, BROWSER_PAINTER_HEADER_BYTES);
     let y2_block = &painter[264..352];
     assert!(y2_block.iter().any(|byte| *byte != 0));
