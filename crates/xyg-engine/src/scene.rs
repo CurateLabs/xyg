@@ -13962,6 +13962,37 @@ impl SceneDocument {
         format_tick(value, ticks.step, policy.scale.kind)
     }
 
+    /// Serialize every AxisTicks::ticks position so log minor grid lines match
+    /// SVG/raster consumers. Labels attach only for AxisTicks::labeled that the
+    /// strategy layout keeps (empty UTF-8 otherwise). Out of line: one body
+    /// serves all three axes in the size-budgeted WASM module.
+    #[inline(never)]
+    fn painter_ticks(
+        &self,
+        slot: AxisSlot,
+        scale: AxisScale,
+        axis: AxisTicks,
+    ) -> Result<Vec<(f32, String, bool)>, SceneError> {
+        let kept = self.painter_kept_labels(slot, &axis, scale);
+        axis.ticks
+            .iter()
+            .map(|&value| {
+                let at = scale.pixel(value) as f32;
+                if !at.is_finite() {
+                    return Err(SceneError::NonFinite);
+                }
+                let index = axis.labeled.iter().position(|candidate| *candidate == value);
+                let label = match index {
+                    Some(index) if kept.contains(&value.to_bits()) => {
+                        self.axis_tick_label(slot, index, value, &axis)
+                    }
+                    _ => String::new(),
+                };
+                Ok((at, label, index.is_some()))
+            })
+            .collect()
+    }
+
     /// Values whose label the strategy layout keeps, for the XYPB writer.
     #[inline(never)]
     fn painter_kept_labels(&self, slot: AxisSlot, ticks: &AxisTicks, scale: AxisScale) -> Vec<u64> {
@@ -13991,6 +14022,7 @@ impl SceneDocument {
         strategy == tick_layout::STRATEGY_NONE as u8 || strategy == tick_layout::STRATEGY_OFF as u8
     }
 
+    #[inline(never)]
     fn axis_tick_collision_items(
         &self,
         slot: impl Into<AxisSlot>,
@@ -16709,34 +16741,10 @@ impl SceneDocument {
                 .then_some(value)
                 .ok_or(SceneError::NonFinite)
         };
-        // Serialize every AxisTicks::ticks position so log minor grid lines
-        // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
-        // (empty UTF-8 for unlabeled minor ticks).
-        let browser_ticks = |slot: AxisSlot, scale: AxisScale, axis: AxisTicks| {
-            let kept = self.painter_kept_labels(slot, &axis, scale);
-            axis.ticks
-                .iter()
-                .copied()
-                .map(|value| {
-                    let major = axis.labeled.contains(&value);
-                    let label = if major && kept.contains(&value.to_bits()) {
-                        let index = axis
-                            .labeled
-                            .iter()
-                            .position(|candidate| *candidate == value)
-                            .ok_or(SceneError::Length)?;
-                        self.axis_tick_label(slot, index, value, &axis)
-                    } else {
-                        String::new()
-                    };
-                    Ok((f32_value(scale.pixel(value))?, label, major))
-                })
-                .collect::<Result<Vec<_>, SceneError>>()
-        };
-        let x_ticks = browser_ticks(AxisSlot::X, self.x_scale, self.resolved_axis_ticks(true)?)?;
-        let y_ticks = browser_ticks(AxisSlot::Y, self.y_scale, self.resolved_axis_ticks(false)?)?;
+        let x_ticks = self.painter_ticks(AxisSlot::X, self.x_scale, self.resolved_axis_ticks(true)?)?;
+        let y_ticks = self.painter_ticks(AxisSlot::Y, self.y_scale, self.resolved_axis_ticks(false)?)?;
         let y2_ticks = match &self.y2 {
-            Some(y2) => browser_ticks(
+            Some(y2) => self.painter_ticks(
                 AxisSlot::Y2,
                 y2.scale,
                 self.resolved_axis_ticks(AxisSlot::Y2)?,

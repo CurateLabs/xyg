@@ -214,6 +214,10 @@ interactive path:
 | `opt-level = "s"` | 877 KB | 311 KB | 21.1 / 203 ms |
 | `opt-level = "z"` | 777 KB | 280 KB | 38.3 / 363 ms |
 
+The raw gate moved from 1,504 to 1,508 KiB for XYPB v17 (#1036): the painter
+writer now runs the Rust tick-label strategy layout (about +3 KB raw), measured at
+1,542,217 bytes locally; gzip is unchanged.
+
 ABI 30 camera transport and closed polygon caches make the default O3 artifact
 1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
 one codegen unit and stripping; ABI30 set LLVM's inline threshold to 150.
