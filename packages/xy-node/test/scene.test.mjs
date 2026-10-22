@@ -1403,8 +1403,10 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "boxed", style: { label_background: "#ffffff" } }];
   assert.match(sceneSvg(figure.toScene()), /data-xy-slot="annotation_label_box"[^>]*fill="rgba\(255,255,255,1\.000000\)"/);
+  // Every text row is laid out (#1024), as the public builders always were, so
+  // an out-of-domain anchor is placed rather than rejected as an attached label.
   figure.annotations = [{ kind: "text", x: 2, y: 0.5, text: "outside" }];
-  assert.throws(() => figure.toScene(), /invalid canonical scene batch/);
+  assert.doesNotThrow(() => figure.toScene());
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "" }];
   assert.throws(() => figure.toScene(), /nonempty NUL-free text/);
 });

@@ -1598,6 +1598,19 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node-served pages, and VS Code webviews. `58_graph.ts` is an optional
   enhancement (neighborhood hover); all wire marks paint without it. The client draws uploaded §29 buffers and MUST NOT
   reimplement layout/LOD/encode for the product path.
+- **REQ-HOSTPARITY-3b (MUST, #1024, ABI 393).** An authored text annotation that
+  leaves `dx`/`dy` unset is placed at the one Rust-owned default offset
+  `(6, -6)` pixels (`kernels::DEFAULT_TEXT_ANNOTATION_DX` / `_DY`); screen y is
+  down, so a negative `dy` is up. "Unset" means the same on every path: the Rust
+  XYAF packer lays out every text row (a bare row, an anchor-only row and an
+  explicit-offset row differ only in the facts they carry), and the live payload
+  specs (`_annotation_specs` / `annotationSpecs`) read the same value through
+  `xyg_default_text_annotation_dx()` / `xyg_default_text_annotation_dy()`. Hosts
+  carry no copy. An explicit `dx`/`dy`, including `0`, is never replaced. Callout,
+  marker and other annotation kinds keep their per-kind defaults. Pinned by
+  `tests/test_text_annotation_default_offset_cross_host.py` (static bytes
+  identical across hosts; static and payload agree for raw unset text).
+
 - **REQ-HOSTPARITY-4 (MUST).** Graph viz is the core dual-host feature surface
   ([graph-fork-requirements.md](graph-fork-requirements.md)); other marks are
   first-class in the same MVP.

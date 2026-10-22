@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
+from . import _native
+
 if TYPE_CHECKING:
     from ._figure import Figure  # noqa: F401
     from ._hosts import FigureHost as _Host
@@ -18,8 +20,8 @@ class AnnotationsMarksMixin(_Host):
         y: Any,
         text: str,
         *,
-        dx: float = 6.0,
-        dy: float = -6.0,
+        dx: float | None = None,
+        dy: float | None = None,
         wrap: float | None = None,
         color: Optional[str] = None,
         anchor: str = "start",
@@ -27,8 +29,16 @@ class AnnotationsMarksMixin(_Host):
         class_name: Optional[str] = None,
         style: Optional[dict[str, Any]] = None,
     ) -> "Figure":
-        """Add a text annotation anchored at a data coordinate."""
+        """Add a text annotation anchored at a data coordinate.
+
+        ``dx``/``dy`` left unset take the Rust-owned default offset
+        (``kernels.default_text_annotation_dx()`` / ``_dy()``), shared with Node.
+        """
         text = self._required_text(text, "text annotation text")
+        if dx is None:
+            dx = _native.default_text_annotation_dx()
+        if dy is None:
+            dy = _native.default_text_annotation_dy()
         dx = self._finite_scalar(dx, "text annotation dx")
         dy = self._finite_scalar(dy, "text annotation dy")
         if anchor not in {"start", "middle", "end"}:
@@ -68,8 +78,8 @@ class AnnotationsMarksMixin(_Host):
         y: Any,
         text: str,
         *,
-        dx: float = 6.0,
-        dy: float = -6.0,
+        dx: float | None = None,
+        dy: float | None = None,
         color: Optional[str] = None,
         anchor: str = "start",
         rotation: float | None = None,

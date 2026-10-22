@@ -110,9 +110,10 @@ padding), f32 font size, f32 horizontal padding, f32 vertical padding, u8
 italic(1)/bold(2) flags, u8 vertical alignment, two reserved zero bytes. Absent
 facts are canonical zero. Entries are in the order of the Scene's annotation labels, which
 `scene_annotations::label_slots` owns (it reuses the XYAF dispatch plan, so a
-host never repeats the routing): unwrapped text (XYAT), attached rule/band/marker
-labels (XYAL), wrapped text and laid-out marker labels (XYAW), then callouts
-(XYAC) and wrapped callouts (XYAW). Hosts copy the table verbatim into the
+host never repeats the routing): attached rule/band/marker labels (XYAL), then
+every text row (wrapped, laid-out or offsetless, #1024) and laid-out marker labels
+(XYAW) in authored order, then callouts (XYAC) and wrapped callouts (XYAW). Text
+is never plain XYAT, so an offsetless raw text label paints after the XYAL labels. Hosts copy the table verbatim into the
 XYST panel record. Rust applies entry *i* to the *i*-th annotation label
 (`SceneDocument::apply_static_annotation_labels`), identifying annotation labels
 by an explicit **provenance flag** carried in the Scene wire (`SceneLabel::annotation`,

@@ -1144,12 +1144,21 @@ def test_python_scene_compiles_unwrapped_text_layout() -> None:
     assert ">offset<" in svg
     assert _scene_v3.figure_svg(figure) == svg
     assert _scene_v3.scene_export_support_reason(figure) is None
+    # Unset offsets take the Rust default (6, -6), the same as an explicit dx=6
+    # (#1024); an explicit zero offset stays at the anchor.
     plain = representative_figure()
     plain.annotations.append({"kind": "text", "x": 0.5, "y": 0.5, "text": "offset"})
     plain_svg = _native.scene_svg(plain.to_scene())
     plain_x = float(re.search(r'x="([^"]+)"[^>]*>offset<', plain_svg).group(1))
     offset_x = float(re.search(r'x="([^"]+)"[^>]*>offset<', svg).group(1))
-    assert offset_x == pytest.approx(plain_x + 6.0)
+    assert offset_x == pytest.approx(plain_x)
+    zero = representative_figure()
+    zero.annotations.append(
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 0, "dy": 0}
+    )
+    zero_svg = _native.scene_svg(zero.to_scene())
+    zero_x = float(re.search(r'x="([^"]+)"[^>]*>offset<', zero_svg).group(1))
+    assert plain_x == pytest.approx(zero_x + 6.0)
     anchored = representative_figure()
     anchored.annotations.append(
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"}
