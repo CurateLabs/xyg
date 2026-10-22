@@ -104,6 +104,9 @@ Internal architecture: how the engine is built and why.
 - [`browser-wasm.md`](design/browser-wasm.md) — direct-browser Rust/WASM
   taxonomy, raw adapter/toolchain, bounded copy and lifecycle contract, strict
   CSP loading, plus the M2 #59 delivery and deferred/follow-up boundaries.
+- [`storage-and-platforms.md`](design/storage-and-platforms.md) — what XYG writes
+  to disk, how temp/spill paths resolve per platform, and container or mounted
+  volume guidance (#1014).
 - [`xyg-naming.md`](design/xyg-naming.md) — the locked XYG naming matrix, the
   XY-vs-XYG usage policy, and the identity-migration order.
 - [`host-parity.md`](design/host-parity.md) — three runtime surfaces; Rust owns

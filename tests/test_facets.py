@@ -529,3 +529,38 @@ def test_stairs_tooltip_channels_are_not_mislabeled() -> None:
     assert tooltip["aliases"] == {"v": "y", "e": "x"}
     assert tooltip["sources"]["v"] == [{"trace": 0, "channel": "y"}]
     assert tooltip["sources"]["e"] == [{"trace": 0, "channel": "x"}]
+
+
+def test_png_paths_write_atomically_and_keep_old_file_on_failure(tmp_path, monkeypatch) -> None:
+    """Both PNG writers publish through a same-directory temp file, so a volume
+    that refuses the final rename leaves the previous destination intact."""
+    import os
+
+    from xyg import export
+
+    grid = xyg.facet_chart(
+        xyg.line(x="x", y="y"), by="g", data=_table(), cols=2, width=600, height=200
+    ).figure()
+    fig = xyg.scatter_chart(xyg.scatter([0.0, 1.0], [1.0, 2.0]), width=200, height=100).figure()
+
+    def refuse(_src, _dst):
+        raise OSError("read-only file system")
+
+    for name, write in (
+        ("facet.png", lambda p: grid.to_png(p, scale=1.0)),
+        ("fig.png", lambda p: export.to_png(fig, p, scale=1.0)),
+    ):
+        target = tmp_path / name
+        target.write_bytes(b"old")
+        with monkeypatch.context() as m:
+            m.setattr(os, "replace", refuse)
+            try:
+                write(target)
+            except OSError:
+                pass
+            else:
+                raise AssertionError("expected the failed rename to surface")
+        assert target.read_bytes() == b"old"
+        write(target)
+        assert target.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["facet.png", "fig.png"]

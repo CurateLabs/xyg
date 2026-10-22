@@ -2484,10 +2484,15 @@ class Figure:
     def show(self, *args: Any, **kwargs: Any) -> None:
         import tempfile
         import webbrowser
+        from pathlib import Path
 
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as f:
+        # delete=False: the browser reads the page after this call returns.
+        # The file lives in the platform temp dir (TMPDIR / TEMP / TMP).
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as f:
             f.write(self._facecolor_wrapped(self._to_html()))
-        webbrowser.open(f"file://{f.name}")
+        # as_uri() builds a valid file URL on every platform (drive letters,
+        # backslashes, spaces); f"file://{path}" is wrong on Windows.
+        webbrowser.open(Path(f.name).resolve().as_uri())
 
 
 class _FigureCanvas:
