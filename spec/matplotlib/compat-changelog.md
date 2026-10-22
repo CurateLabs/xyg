@@ -7,7 +7,7 @@ which covers user-visible releases across the whole package.
 ## Banded `contourf` colorbars — 2026-10-21 (Matplotlib 3.11.0 reference, #1046)
 
 - A colormapped `contourf` colorbar now carries one band color per level
-  (`cmap(floor(N * norm(midpoint)))` over `Normalize(levels[0], levels[-1])`,
+  (`cmap(norm(midpoint))` over `Normalize(levels[0], levels[-1])`,
   `ContourSet._process_colors`) and goes through the #1035 discrete region, so
   static export draws solid bands. `spacing="proportional"` and `format=` are
   admitted on it; extension caps are the colormap under/over colors. Tests read
@@ -24,6 +24,12 @@ which covers user-visible releases across the whole package.
     unchanged.
   - `contourf(alpha=...)`: the colorbar bands are drawn opaque; Matplotlib
     applies the mappable's alpha to the colorbar.
+  - The contour fill drops a resampled colormap's `N` (`get_cmap(name, n)`):
+    it paints the named map at the continuous band midpoint, and with a fixed
+    0.9 opacity for colormapped fills. The colorbar follows what the fill paints
+    (continuous midpoint, no `N` quantization), so both are wrong against
+    Matplotlib's resampled LUT in the same way; carrying `N` into the Rust fill
+    is the follow-up.
   - Known pre-existing colormap-table drift: xyg's built-in tables differ from
     Matplotlib 3.11's (viridis by up to 14/255 at LUT indices 139-253, jet 23,
     turbo 15, coolwarm 12, inferno 9), so bands pick the same LUT index as

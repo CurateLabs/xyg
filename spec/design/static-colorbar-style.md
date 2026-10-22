@@ -100,7 +100,7 @@ boundaries but no `band_colors` is a continuous ramp, so
 `spacing="proportional"` on it stays rejected with the pre-existing
 `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rather than exporting a smooth
 gradient. A colormapped `contourf(levels=..., cmap=...)` with at most 15 bands
-supplies `band_colors` (`cmap(floor(N * t))` at each level midpoint, caps from
+supplies `band_colors` (the named colormap at each level midpoint, as the fill paints it, caps from
 the colormap under/over colors; #1046) and takes the discrete path; contours
 with more than 15 levels or a custom `norm=` keep the ramp (a `colors=` sequence or
 `BoundaryNorm` beyond 15 bands fails closed with `XYG_SCENE_UNSUPPORTED_COLORBAR`). A `BoundaryNorm` colorbar

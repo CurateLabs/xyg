@@ -3727,13 +3727,11 @@ class PlotTypeMixin:
                 low, high = float(rendered_levels[0]), float(rendered_levels[-1])
                 if np.isfinite(low) and np.isfinite(high) and high > low:
                     layers = (rendered_levels[:-1] + rendered_levels[1:]) * 0.5
-                    # Matplotlib looks a value up in the N-entry LUT (floor(t * N)),
-                    # it does not interpolate between entries.
-                    lut_size = max(1, int(getattr(cmap, "N", 256)))
+                    # Sample exactly what the Rust fill paints: the named colormap
+                    # at the continuous normalized midpoint. The fill drops a
+                    # resampled colormap's N (get_cmap(name, n)), so quantizing
+                    # here would show colors that are not on the plot.
                     unit = (layers - low) / (high - low)
-                    unit = np.minimum(np.floor(unit * lut_size), lut_size - 1) / max(
-                        1, lut_size - 1
-                    )
                     painted = scalar_grid_rgba(
                         np.concatenate((unit, [-1.0, 2.0])),
                         cmap if cmap is not None else "viridis",

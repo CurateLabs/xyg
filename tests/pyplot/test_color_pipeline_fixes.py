@@ -639,15 +639,14 @@ def _assert_bands_close(actual, expected, tolerance=_VIRIDIS_TABLE_DRIFT):
 
 
 def _xyg_lut_bands(levels, cmap):
-    """Band colors read from xyg's own LUT at Matplotlib's index ``floor(t * N)``."""
+    """Band colors read from xyg's own colormap at the continuous midpoint the fill paints."""
     from xyg._paint import colormap_lut
     from xyg.pyplot._colors import resolve_cmap
 
     levels = np.asarray(levels, dtype=np.float64)
     midpoints = (levels[:-1] + levels[1:]) * 0.5
     unit = (midpoints - levels[0]) / (levels[-1] - levels[0])
-    index = np.minimum(np.floor(unit * 256), 255)
-    rows = colormap_lut(resolve_cmap(cmap), index / 255.0)
+    rows = colormap_lut(resolve_cmap(cmap), unit)
     return [tuple(int(channel) for channel in row) for row in rows]
 
 
@@ -780,3 +779,32 @@ def test_contourf_colorbar_beyond_the_scene_stop_budget_keeps_the_ramp():
     assert hashlib.sha256(svg).hexdigest() == (
         "a6937fcda700db3170ebc6c7c2503d9b67ddbc0759e880e5fc450c648c08f16c"
     )
+
+
+def test_contourf_colorbar_bands_follow_what_the_fill_paints_for_a_resampled_cmap():
+    """The fill ignores ``get_cmap(name, n)``'s N; the colorbar must show the fill's colors."""
+    import io
+
+    import matplotlib.image as mpl_image
+
+    grid = np.linspace(0.0, 2.0, 60)
+    values = np.add.outer(grid, grid) / 2
+    colormap = plt.get_cmap("viridis", 2)
+    fig, ax = plt.subplots()
+    ax.contourf(values, levels=[0, 1, 2], cmap=colormap)
+    plain = io.BytesIO()
+    fig.savefig(plain, format="png")
+    plt.close(fig)
+
+    fig, ax = plt.subplots()
+    fig.colorbar(ax.contourf(values, levels=[0, 1, 2], cmap=colormap))
+    bands = _band_rgb(_svg())
+    assert bands == _xyg_lut_bands([0, 1, 2], "viridis")
+    plt.close(fig)
+
+    pixels = (mpl_image.imread(io.BytesIO(plain.getvalue()))[..., :3] * 255).round().astype(int)
+    painted = np.unique(pixels.reshape(-1, 3), axis=0)
+    # Colormapped contour fills are painted at 0.9 opacity over white.
+    for band in bands:
+        blended = 0.9 * np.asarray(band) + 0.1 * 255
+        assert np.abs(painted - blended).max(axis=1).min() <= 1.5, (band, blended)
