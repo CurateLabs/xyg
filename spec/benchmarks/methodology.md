@@ -47,7 +47,10 @@ its oracle produces no number (it produces a bug):
 
 - **Extrema preservation (lines):** decimated polyline's per-pixel-column
   min/max equals NumPy oracle min/max (M4's contract). Global max/min pixels
-  are lit within ±1px column.
+  are lit within ±1px column. Below the LOD budget the line is `direct` tier
+  (every row shipped, lossless); the oracle accepts it only if all rows are
+  present and then runs the same per-column comparison, so small sizes (1e4)
+  are admitted rather than failing on tier name (#1027).
 - **Count conservation (density/histogram):** sum(grid) == in-window row
   count (already the pattern in kernel tests; promoted to the bench harness
   at 10M/100M).
@@ -290,7 +293,7 @@ assertions run before merge.
 `bench_workflows.py`, `bench_line.py`, `bench_install.py`, or report shape could otherwise land and
 fail only on `main`. The hard `test` job therefore runs the step `Benchmark methodology contract
 (smallest sizes, report verified)`: `bench_workflows.py --profile smoke --reps 1`, `bench_line.py
---sizes 1e5`, and `bench_install.py --packages xyg`, each followed by `scripts/verify_benchmark_report.py`
+--sizes 1e4,1e5`, and `bench_install.py --packages xyg`, each followed by `scripts/verify_benchmark_report.py`
 with its `--kind` (`workflow-native`, `line-decimation`, `install-footprint`). No timing is compared and no
 competitor is installed. Merge and cross-library verification of fixtures stays in
 `tests/test_merge_benchmark_reports.py` and `tests/test_verify_benchmark_report.py` (run by the

@@ -102,7 +102,11 @@ ADAPTERS = {
 
 
 def _extrema_ok(x, y) -> bool:
-    """M4 oracle: every populated pixel bucket must retain its y min and max."""
+    """M4 oracle: every populated pixel bucket must retain its y min and max.
+
+    Direct-tier traces (n under the LOD budget) ship every row; they must
+    still carry all rows and pass the same per-bucket comparison.
+    """
     try:
         from xyg import chart, line
     except ImportError:
@@ -110,7 +114,10 @@ def _extrema_ok(x, y) -> bool:
     fig = chart(line(x=x, y=y), width=900, height=420).figure()
     spec, blob = fig.build_payload(N_OUT)
     tr = spec["traces"][0]
-    if tr.get("tier") != "decimated" or not all(isinstance(tr.get(k), int) for k in ("x", "y")):
+    tier = tr.get("tier")
+    if tier not in ("decimated", "direct") or not all(
+        isinstance(tr.get(k), int) for k in ("x", "y")
+    ):
         return False
 
     def decode(ref: int) -> np.ndarray:
@@ -123,6 +130,15 @@ def _extrema_ok(x, y) -> bool:
     xs = decode(tr["x"])
     ys = decode(tr["y"])
     finite = np.isfinite(x) & np.isfinite(y)
+    if tier == "direct":
+        # Below the LOD budget the engine ships every row (lossless), so no
+        # decimation happens and per-column extrema are preserved iff no finite
+        # row is dropped. Require every finite source row, then run the same
+        # per-column comparison below.
+        keep = np.isfinite(xs) & np.isfinite(ys)
+        xs, ys = xs[keep], ys[keep]
+        if len(xs) != int(np.count_nonzero(finite)):
+            return False
     if not bool(np.any(finite)):
         return len(xs) == 0
     source_x = x[finite]
