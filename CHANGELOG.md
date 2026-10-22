@@ -188,7 +188,10 @@ in the README).
   palette samples (for example `[1, nextafter(1)]`) still fail closed with
   `Order`, surfaced identically by Python and Node as
   `XYG_SCENE_UNSUPPORTED_COLORBAR`; this is a documented decision with no XYCB
-  v3 extension (#888).
+  v3 extension (#888). Colorbar tick generation and placement on the domains
+  this admits (`[0, 1.7e308]`, `[-MAX, MAX]`, `[MAX/2, MAX]`) no longer
+  overflow or panic in the renderer; `linear_ticks` stops at the first
+  non-finite step.
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
   while a cache-isolated coreless build must still import `reflex_xy`, report

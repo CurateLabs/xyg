@@ -901,8 +901,6 @@ test("Node named colorbars keep the full palette on extreme and adjacent finite 
       const fraction = (value / 2 - domain[0] / 2) / (domain[1] / 2 - domain[0] / 2);
       assert.ok(Math.abs(fraction - index / 10) < 1e-9, `stop ${index} fraction ${fraction}`);
     });
-    // Auto-ticks on [>=0, MAX] panic in Rust tick geometry (separate defect).
-    if (domain[0] >= 0 && domain[1] === Number.MAX_VALUE) continue;
     assert.match(sceneSvg(scene), /data-xy-slot="colorbar/);
     assert.ok(sceneRasterCommands(scene).byteLength > 0);
   }
@@ -927,6 +925,23 @@ test("Node named colorbars keep the full palette on extreme and adjacent finite 
     assert.throws(() => build([1, narrow]), /^RangeError: XYG_SCENE_UNSUPPORTED_COLORBAR: /);
   }
   for (const domain of [[1, 1], [2, 1]]) assert.throws(() => build(domain), /^RangeError: XYG_SCENE_UNSUPPORTED_COLORBAR: /);
+});
+
+test("Node exports extreme named-colorbar domains to SVG and PNG without panicking (#888)", () => {
+  for (const domain of [[0, 1.7e308], [-Number.MAX_VALUE, Number.MAX_VALUE], [Number.MAX_VALUE / 2, Number.MAX_VALUE], [0, Number.MAX_VALUE]]) {
+    for (const minor_ticks of [false, true]) {
+      const figure = new Figure({ width: 320, height: 240 });
+      figure.scatter([0, 1], [0, 1]);
+      figure.colorbar_options = { domain, colormap: "viridis", minor_ticks };
+      const scene = figure.toScene(), svg = sceneSvg(scene);
+      assert.match(svg, /data-xy-slot="colorbar_band"/);
+      assert.match(svg, /data-xy-slot="colorbar_tick"/);
+      assert.doesNotMatch(svg, /\b(?:NaN|Infinity|inf)\b/i);
+      const png = sceneStaticExport(scene, "png", { scale: 1, width: 320, height: 240 });
+      assert.deepEqual(Array.from(png.subarray(0, 4)), [0x89, 0x50, 0x4e, 0x47]);
+      assert.ok(sceneStaticExport(scene, "svg", { width: 320, height: 240 }).length > 0);
+    }
+  }
 });
 
 test("Node explicit hidden Cartesian chrome omits invisible groups without implying polar", () => {

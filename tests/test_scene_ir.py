@@ -1159,10 +1159,6 @@ def test_scene_named_colorbar_extreme_finite_domains_keep_full_palette(domain: l
     for index, value in enumerate(values):  # halved terms cannot overflow
         fraction = (value / 2 - lo / 2) / (hi / 2 - lo / 2)
         assert abs(fraction - index / 10) < 1e-9, (index, fraction)
-    if domain[0] >= 0.0 and domain[1] == 1.7976931348623157e308:
-        # Separate renderer defect: auto-ticks on [>=0, f64::MAX] panic in
-        # Rust tick geometry (scene.rs "validated colorbar tick geometry").
-        return
     assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
     assert _native.scene_raster_commands(scene)
 
@@ -1203,3 +1199,30 @@ def test_scene_named_colorbar_exact_fit_domain_crossing_a_power_of_two() -> None
     assert values == expected and len(values) == 11
     with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
         _named_colorbar_figure([math.nextafter(lo, math.inf), hi]).to_scene()
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        [0.0, 1.7e308],
+        [-1.7976931348623157e308, 1.7976931348623157e308],
+        [8.98846567431158e307, 1.7976931348623157e308],
+        [0.0, 1.7976931348623157e308],
+    ],
+)
+@pytest.mark.parametrize("minor_ticks", [False, True])
+def test_scene_named_colorbar_extreme_domains_export_svg_and_png(
+    domain: list[float], minor_ticks: bool
+) -> None:
+    """#888: extreme domains reach the renderer; it must paint, never panic."""
+    figure = _named_colorbar_figure(domain)
+    figure.colorbar_options["minor_ticks"] = minor_ticks
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    assert 'data-xy-slot="colorbar_band"' in svg
+    assert 'data-xy-slot="colorbar_tick"' in svg
+    assert "inf" not in svg.lower().replace("info", "") and "nan" not in svg.lower()
+    assert _native.scene_raster_commands(scene)
+    png = _native.scene_static_export(scene, "png", scale=1.0, width=320, height=240)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert _native.scene_static_export(scene, "svg", width=320, height=240)

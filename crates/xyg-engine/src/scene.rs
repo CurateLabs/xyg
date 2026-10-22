@@ -1867,16 +1867,29 @@ pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneE
             step: 1.0,
         });
     }
-    let rough = (b - a) / target as f64;
+    // Halved terms keep the rough step finite when `b - a` overflows.
+    let rough = if (b - a).is_finite() {
+        (b - a) / target as f64
+    } else {
+        (b / target as f64) - (a / target as f64)
+    };
     let magnitude = 10_f64.powf(rough.abs().log10().floor());
+    // Candidates that overflow are not steps; the largest finite one wins.
     let step = [1.0, 2.0, 2.5, 5.0, 10.0]
         .into_iter()
         .map(|m| m * magnitude)
+        .filter(|candidate| candidate.is_finite())
         .find(|candidate| rough <= candidate * (1.0 + 1e-12))
-        .unwrap_or(10.0 * magnitude);
+        .unwrap_or_else(|| {
+            [10.0, 5.0, 2.5, 2.0, 1.0]
+                .into_iter()
+                .map(|m| m * magnitude)
+                .find(|candidate| candidate.is_finite())
+                .unwrap_or(f64::MAX)
+        });
     let mut value = (a / step).ceil() * step;
     let mut ticks = Vec::with_capacity(target.saturating_add(2).min(MAX_AXIS_TICKS));
-    while value <= b + step * 1e-9 && ticks.len() < MAX_AXIS_TICKS {
+    while value.is_finite() && value <= b + step * 1e-9 && ticks.len() < MAX_AXIS_TICKS {
         ticks.push(if value.abs() < step * 1e-9 {
             0.0
         } else {
@@ -4125,8 +4138,13 @@ fn resolved_colorbar_ticks(
                     (value.ln() - lo.ln()) / (colorbar.domain[1].ln() - lo.ln())
                 }
             }
-        } else {
+        } else if (colorbar.domain[1] - colorbar.domain[0]).is_finite() {
             (value - colorbar.domain[0]) / (colorbar.domain[1] - colorbar.domain[0])
+        } else {
+            // The span overflows (for example [-MAX, MAX]); halving every term
+            // keeps the fraction finite and exact enough for pixel placement.
+            (value / 2.0 - colorbar.domain[0] / 2.0)
+                / (colorbar.domain[1] / 2.0 - colorbar.domain[0] / 2.0)
         };
         if colorbar.horizontal {
             x + width * fraction
@@ -4193,7 +4211,14 @@ fn resolved_colorbar_ticks(
                     }
                     value
                 } else {
-                    pair[0] + (pair[1] - pair[0]) * subdivision as f64 / 5.0
+                    let span = pair[1] - pair[0];
+                    let scaled = span * subdivision as f64;
+                    if scaled.is_finite() {
+                        pair[0] + scaled / 5.0
+                    } else {
+                        // Extreme spans overflow the product; divide first.
+                        pair[0] + span / 5.0 * subdivision as f64
+                    }
                 };
                 let position = pixel(value);
                 if !value.is_finite() || !position.is_finite() {
@@ -14174,8 +14199,15 @@ impl SceneDocument {
             out.push_str(&rgba_css(paint));
             out.push_str("\"/>");
         }
-        let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height))
-            .expect("validated colorbar tick geometry");
+        // Admission validates tick geometry; if a caller still reaches here
+        // with unresolvable ticks, draw the bar without them instead of
+        // panicking inside the renderer.
+        let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height)).unwrap_or(
+            ResolvedColorbarTicks {
+                majors: Vec::new(),
+                minors: Vec::new(),
+            },
+        );
         for (maximum, points, rgba) in resolved_colorbar_extensions(colorbar, (x, y, width, height))
         {
             out.push_str("<polygon data-xy-slot=\"colorbar_extend_");
@@ -24747,6 +24779,39 @@ pub(crate) mod tests {
         );
         assert_eq!(scene_support_reason(2, 0), Err(SceneError::Version));
         assert_eq!(scene_support_reason(1, 1 << 63), Err(SceneError::Version));
+    }
+
+    #[test]
+    fn named_colorbar_extreme_domains_resolve_finite_ticks_for_every_renderer() {
+        for (lo, hi) in [
+            (0.0, 1.7e308),
+            (-f64::MAX, f64::MAX),
+            (f64::MAX / 2.0, f64::MAX),
+            (0.0, f64::MAX),
+            (-f64::MAX, 0.0),
+        ] {
+            for flags in [0u8, 1, 4, 5] {
+                for bounds in [
+                    (10.0, 20.0, 80.0, 200.0),
+                    (10.0, 20.0, 16.0, 400.0),
+                    (0.0, 0.0, 300.0, 14.0),
+                ] {
+                    let bytes = crate::scene_colorbar::pack_named_colorbar(
+                        flags, lo, hi, [32; 4], b"", "viridis", &[],
+                    )
+                    .unwrap();
+                    let colorbar = SceneColorbar::from_input(&bytes).unwrap().unwrap();
+                    let ticks = resolved_colorbar_ticks(&colorbar, bounds)
+                        .unwrap_or_else(|error| panic!("{lo:e}..{hi:e} {flags}: {error:?}"));
+                    assert!(!ticks.majors.is_empty(), "{lo:e}..{hi:e}");
+                    for (value, pixel, label) in &ticks.majors {
+                        assert!(value.is_finite() && pixel.is_finite() && label.len() <= 32);
+                        assert!(*value >= lo && *value <= hi);
+                    }
+                    assert!(ticks.minors.iter().all(|(v, p)| v.is_finite() && p.is_finite()));
+                }
+            }
+        }
     }
 
     #[test]
