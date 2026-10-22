@@ -456,6 +456,26 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
     }
 
 
+def _contour_color_channel(trace: Any) -> Any:
+    """The contour color channel, failing closed on a custom colormap (#1025).
+
+    The Scene color channel carries built-in colormap names only, so a gradient,
+    CSS-color list or RGB-stop contour colormap would silently paint as the
+    default map. Live rendering keeps it; static/Scene export refuses it.
+    """
+    channel = getattr(trace, "color_ch", None)
+    if getattr(trace, "kind", None) == "contour" and channel is not None:
+        colormap = getattr(channel, "colormap", None)
+        if colormap is not None and not isinstance(colormap, str):
+            from xyg._scene_observations import UnsupportedSceneV3
+
+            raise UnsupportedSceneV3(CONTOUR_CUSTOM_COLORMAP_REASON)
+    return channel
+
+
+CONTOUR_CUSTOM_COLORMAP_REASON = "XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP"
+
+
 def _marshal_xyta_color_channel(channel: Any) -> dict[str, Any]:
     if channel is None or isinstance(channel, str):
         return {
@@ -689,7 +709,7 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
         "rgba_grid_f64": rgba_grid_f64,
         "x_values": x_values,
         "y_values": y_values,
-        "color_ch": _marshal_xyta_color_channel(getattr(trace, "color_ch", None)),
+        "color_ch": _marshal_xyta_color_channel(_contour_color_channel(trace)),
         "stroke_ch": _marshal_xyta_color_channel(getattr(trace, "stroke_ch", None)),
         "color2_ch": _marshal_xyta_color_channel(getattr(trace, "color2_ch", None)),
         "opacity_ch": _marshal_xyta_style_channel(style_channels.get("opacity")),

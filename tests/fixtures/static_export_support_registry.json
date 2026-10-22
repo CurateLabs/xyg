@@ -366,6 +366,10 @@
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
     },
     {
+      "name": "contour_custom_colormap",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP"
+    },
+    {
       "name": "triangle_mesh_limit",
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
     }

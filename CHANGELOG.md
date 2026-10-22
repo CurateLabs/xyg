@@ -24,6 +24,11 @@ in the README).
   than 15 bands and contours with a custom `norm=` keep the ramp.
 
 ### Changed
+- `resolve_colormap` stop admission is now strict for every mark (#1025):
+  RGB stop rows must be integers in 0..255 (`ValueError: ... stops must be
+  integers in 0..255, got X`, identical in Node), so unit-float rows such as
+  `[[0, 0.5, 1], ...]` raise instead of silently casting to near-black, and
+  2-D integer ndarrays are now accepted.
 - Release candidates use the canonical tag `xyg-vX.Y.Z-rc.N` (also `-alpha.N`/
   `-beta.N`), with npm `X.Y.Z-rc.N` and Python/PyPI `X.Y.ZrcN` produced from one
   conversion authority (`scripts/release_version.py`) shared by the release
@@ -46,6 +51,11 @@ in the README).
   are pinned on both the Rust and TypeScript sides.
 
 ### Added
+- Node `contour` accepts `colormap` (built-in name, `linear-gradient(...)`,
+  CSS-color list, or RGB stops) and per-level `color` arrays like Python, and
+  defaults to the `viridis` per-level colormap instead of a single stroke
+  (#1025). Rust owns the lowering; Python and Node static exports are
+  byte-identical. Exports `resolveColormap`.
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing
   with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` above 10,000 points: Cartesian lines
@@ -178,6 +188,10 @@ in the README).
   container or mounted-volume guidance.
 
 ### Changed
+- Node `contour` without `color` now paints the per-level `viridis` colormap
+  (Python parity) instead of a single stroke; pass `color` for the old look
+  (#1025). Custom gradient/list/stop contour colormaps are refused by static
+  Scene export on both hosts with `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP`.
 - ABI 393: an unset text-annotation `dx`/`dy` now resolves to one Rust-owned
   default (`xyg_default_text_annotation_dx()` = 6, `_dy()` = -6) that Python and
   Node read through the ABI instead of carrying their own (#1024). Node

@@ -425,6 +425,14 @@ pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
         reason_prefix: "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS",
     },
     StaticExportFailClose {
+        // #1025: the Scene color channel carries built-in colormap names only,
+        // so a gradient/list/stop contour colormap would paint as viridis.
+        // Hosts raise this reason while marshalling the contour color channel
+        // (a wire change would be needed for Rust to see the distinction).
+        name: "contour_custom_colormap",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP",
+    },
+    StaticExportFailClose {
         // A joined-fill mesh of 1,025 faces: joined fills keep the shared
         // 1,024 PolyFill-group budget (#1006 lifts it only for plain meshes).
         name: "triangle_mesh_limit",

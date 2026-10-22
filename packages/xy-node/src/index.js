@@ -295,6 +295,7 @@ export {
   sceneArtistAlphaCss,
   cssColorsToRgba8,
   cssIsFunctional,
+  resolveColormap,
   clipQuantizeU8,
   quantizeUnitU8,
   continuousDomain,

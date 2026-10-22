@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Any, TypeAlias
 
@@ -50,20 +51,53 @@ def is_colormap(name: Any) -> bool:
     return isinstance(name, str) and kernels.colormap_is_builtin(name)
 
 
-def _is_resolved_stops(value: Any) -> bool:
-    if isinstance(value, str) or not isinstance(value, (list, tuple)):
-        return False
+def _stop_text(value: float) -> str:
+    """Render a rejected stop identically to the Node host (`1.5`, `256`, `inf`, `nan`)."""
+    if math.isnan(value):
+        return "nan"
+    if math.isinf(value):
+        return "inf" if value > 0 else "-inf"
+    return str(int(value)) if value == int(value) else repr(value)
+
+
+def _numeric_rgb_rows(value: Any) -> list[list[Any]] | None:
+    """`value` as RGB rows when it is a sequence (or 2-D array) of 3 numbers."""
+    if isinstance(value, str) or not isinstance(value, (list, tuple, np.ndarray)):
+        return None
     try:
-        flat = np.asarray(value, dtype=np.uint8).reshape(-1)
-    except (TypeError, ValueError):
+        rows = [list(row) for row in value]
+    except TypeError:
+        return None
+    if not rows or any(
+        len(row) != 3
+        or any(
+            isinstance(c, bool) or not isinstance(c, (int, float, np.integer, np.floating))
+            for c in row
+        )
+        for row in rows
+    ):
+        return None
+    return rows
+
+
+def _is_resolved_stops(value: Any, label: str = "colormap") -> bool:
+    rows = _numeric_rgb_rows(value)
+    if rows is None:
         return False
+    # Same admission as the Node host: integers in 0..255, rejected before
+    # any uint8 cast could wrap or raise an OverflowError.
+    for c in (c for row in rows for c in row):
+        value = float(c)
+        if not math.isfinite(value) or value != int(value) or not 0 <= int(value) <= 255:
+            raise ValueError(f"{label} stops must be integers in 0..255, got {_stop_text(value)}")
+    flat = np.asarray(rows, dtype=np.uint8).reshape(-1)
     return kernels.colormap_resolved_stops_admit(flat) > 0
 
 
 def resolve_colormap(value: ColormapLike, label: str = "colormap") -> Colormap:
     if isinstance(value, str) and is_colormap(value):
         return value
-    if _is_resolved_stops(value):
+    if _is_resolved_stops(value, label):
         return [[int(c) for c in stop] for stop in value]  # type: ignore[union-attr]
     if isinstance(value, str) and not value.strip().lower().startswith("linear-gradient("):
         raise ValueError(

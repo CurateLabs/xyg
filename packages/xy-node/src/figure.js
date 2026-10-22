@@ -81,6 +81,7 @@ import {
   directRgbaAdmit,
   quantizeUnitU8,
   resolveColorChannel,
+  CSS_ERROR_REASONS,
 } from "./color.js";
 import {
   xyAutoDomain,
@@ -812,18 +813,6 @@ function requireAnnotationObject(annotation) {
 
 const CSS_DECLARATION = 0;
 
-const CSS_ERROR_REASONS = {
-  [-1]: "is empty",
-  [-2]: "contains an unsafe character (';', '{', '}', '</', or a control character)",
-  [-3]: "has unbalanced quotes or parentheses",
-  [-4]: "is not a valid hex color (use #rgb, #rgba, #rrggbb, or #rrggbbaa)",
-  [-5]: "is not valid color syntax",
-  [-6]: "is not a recognized CSS color name",
-  [-7]: "has an invalid number",
-  [-8]: "has an unknown unit",
-  [-9]: "uses an unknown function",
-  [-10]: "is not a valid CSS property name",
-};
 
 function cssPropertyName(key) {
   if (key.startsWith("--")) {

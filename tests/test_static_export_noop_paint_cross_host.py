@@ -42,6 +42,24 @@ def node_exports() -> dict[str, Any]:
     return json.loads(proc.stdout)
 
 
+# Same authored facts as the Node script (#1025): Rust lowers every one.
+_CONTOURS: dict[str, dict[str, Any]] = {
+    "contour_default_colormap": {},
+    "contour_named_colormap": {"colormap": "magma"},
+    "contour_constant_color": {"color": "#ef4444"},
+    "contour_level_colors": {"color": [[1, 0, 0], [1, 1, 0], [0, 0, 1]]},
+}
+
+
+# Custom colormaps fail closed in Scene export on both hosts (#1025).
+_REJECTED_CONTOURS: dict[str, dict[str, Any]] = {
+    "contour_gradient_colormap": {"colormap": "linear-gradient(#ff0000, #0000ff)"},
+    "contour_listed_colormap": {"colormap": ["#ff0000", "#00ff00", "#0000ff"]},
+    "contour_stops_colormap": {"colormap": [[255, 0, 0], [0, 0, 255]]},
+}
+CONTOUR_REASON = "XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP"
+
+
 def _figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 3.0)
@@ -50,6 +68,13 @@ def _figure(name: str) -> Figure:
         figure.line([0, 1, 2], [0, 2, 1], color="#ef4444")
         figure.line([], [], color="#22c55e", name="proxy")
         figure.scatter([], [], color="#3987e5", size=6)
+    elif name in _CONTOURS or name in _REJECTED_CONTOURS:
+        figure.contour(
+            [[0, 1, 0], [1, 2, 1], [0, 1, 0]],
+            levels=[0.25, 1.0, 1.75],
+            corner_mask=False,
+            **_CONTOURS.get(name, _REJECTED_CONTOURS.get(name, {})),
+        )
     else:
         figure.segments([0, 1, 2, 0], [0, 1, 2, 2], [1, 2, 3, 1], [1, 0, 3, 3], color=[0, 0, 1, 1])
     for index, trace in enumerate(figure.traces):
@@ -57,7 +82,7 @@ def _figure(name: str) -> Figure:
     return figure
 
 
-@pytest.mark.parametrize("name", ["empty_traces", "colormapped_segments"])
+@pytest.mark.parametrize("name", ["empty_traces", "colormapped_segments", *_CONTOURS])
 def test_python_and_node_export_identical_bytes(name: str, node_exports: dict[str, Any]) -> None:
     figure = _figure(name)
     assert scene_export_support_reason(figure) is None
@@ -84,6 +109,38 @@ def test_empty_traces_add_no_marks() -> None:
     assert _native.scene_svg(figure_scene(with_empty)) == _native.scene_svg(figure_scene(figure))
 
 
+@pytest.mark.parametrize("name", list(_REJECTED_CONTOURS))
+def test_custom_contour_colormaps_fail_closed_on_both_hosts(
+    name: str, node_exports: dict[str, Any]
+) -> None:
+    assert scene_export_support_reason(_figure(name)) == CONTOUR_REASON
+    assert node_exports[name]["reason"] == CONTOUR_REASON
+
+
+def _strokes(node_exports: dict[str, Any], name: str) -> list[str]:
+    svg = base64.b64decode(node_exports[name]["svg_b64"]).decode()
+    return list(dict.fromkeys(re.findall(r'stroke="(rgb\([^"]+\))"', svg)))
+
+
+def test_contour_colormaps_paint_the_authored_strokes(node_exports: dict[str, Any]) -> None:
+    assert _strokes(node_exports, "contour_default_colormap") == [
+        "rgb(68,1,84)",
+        "rgb(33,145,140)",
+        "rgb(253,231,37)",
+    ]
+    assert _strokes(node_exports, "contour_named_colormap") == [
+        "rgb(0,0,4)",
+        "rgb(183,55,121)",
+        "rgb(252,253,191)",
+    ]
+    assert _strokes(node_exports, "contour_level_colors") == [
+        "rgb(255,0,0)",
+        "rgb(255,255,0)",
+        "rgb(0,0,255)",
+    ]
+    assert _strokes(node_exports, "contour_constant_color") == ["rgb(239,68,68)"]
+
+
 def test_public_colormapped_contour_paints_one_literal_stroke_per_level() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 3.0)
@@ -92,3 +149,35 @@ def test_public_colormapped_contour_paints_one_literal_stroke_per_level() -> Non
     assert scene_export_support_reason(figure) is None
     svg = _native.scene_svg(figure_scene(figure))
     assert len(set(re.findall(r'stroke="(rgb\([^"]+\))"', svg))) == 3
+
+
+def _python_admission(rows: Any) -> dict[str, Any]:
+    from xyg import channels
+
+    try:
+        return {"stops": channels.resolve_colormap(rows)}
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+
+def test_colormap_stop_rows_admit_identically_on_both_hosts(node_exports: dict[str, Any]) -> None:
+    import numpy as np
+
+    cases: dict[str, Any] = {
+        "typed_rows": [
+            np.array([255, 0, 0], dtype=np.uint8),
+            np.array([0, 0, 255], dtype=np.uint8),
+        ],
+        "plain_rows": [[255, 0, 0], [0, 0, 255]],
+        "too_big": [[256, 0, 0], [0, 0, 255]],
+        "fractional": [[1.5, 0, 0], [0, 0, 255]],
+        "negative": [[-1, 0, 0], [0, 0, 255]],
+        "inf": [[float("inf"), 0, 0], [0, 0, 255]],
+        "nan": [[float("nan"), 0, 0], [0, 0, 255]],
+        "integral_float": [[256.0, 0, 0], [0, 0, 255]],
+    }
+    for name, rows in cases.items():
+        assert _python_admission(rows) == node_exports["colormap_rows"][name], name
+    assert _python_admission(np.array([[255, 0, 0], [0, 0, 255]], dtype=np.uint8)) == {
+        "stops": [[255, 0, 0], [0, 0, 255]]
+    }
