@@ -2,8 +2,11 @@
  * Contour isolines — marching-squares segments matching Python `marks.contour`.
  */
 
-import { asF64Array, contourLevels, DEFAULT_MARK_COLOR, marchingSquares } from "../encode.js";
+import { cssColorAdmit, resolveColorChannel, resolveColormap } from "../color.js";
+import { asF64Array, contourLevels, marchingSquares } from "../encode.js";
+import { pointer, xyAutoDomain } from "../native.js";
 
+const DEFAULT_COLORMAP = "viridis";
 const MAX_CONTOUR_WORK = 4_000_000;
 
 /**
@@ -56,6 +59,30 @@ function axisPositions(values, n, label) {
   return pos;
 }
 
+/** Expand a possibly-degenerate scalar domain in Rust (`Figure._auto_domain`). */
+function autoDomain(bounds) {
+  const lo = new Float64Array(1);
+  const hi = new Float64Array(1);
+  const code = xyAutoDomain(
+    1, Number(bounds[0]), Number(bounds[1]),
+    pointer(lo, "double *"), pointer(hi, "double *"),
+  );
+  if (code !== 0) throw new RangeError("native auto_domain rejected the bounds");
+  return [lo[0], hi[0]];
+}
+
+/** First index whose value is >= target (numpy `searchsorted` left). */
+function lowerBound(sorted, target) {
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (sorted[mid] < target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
 function resolveLevels(levels, finiteZ) {
   if (typeof levels === "number" && Number.isFinite(levels)) {
     const nLevels = Math.trunc(levels);
@@ -81,7 +108,8 @@ function resolveLevels(levels, finiteZ) {
  *   rows?: number,
  *   cols?: number,
  *   name?: string|null,
- *   color?: string,
+ *   colormap?: string|Array,
+ *   color?: string|Array,
  *   width?: number,
  *   opacity?: number,
  *   cornerMask?: boolean,
@@ -116,13 +144,54 @@ export function composeContour(z, opts = {}) {
   if (segs.x0.length === 0) {
     throw new RangeError("contour levels do not intersect the finite grid");
   }
+  // Python `marks.contour` parity: a string color is one constant stroke; an
+  // array is one RGB(A) row per level; otherwise `colormap` (default viridis)
+  // drives a continuous per-segment channel over the segment levels. Rust owns
+  // the level -> stroke lowering; the host only forwards the authored facts.
+  const colormap = resolveColormap(opts.colormap ?? DEFAULT_COLORMAP);
+  if (opts.style?.color != null && typeof opts.style.color !== "string") {
+    throw new RangeError("contour style color must be a CSS color string");
+  }
+  const authored = opts.style?.color ?? opts.color;
+  let colorCh = null;
+  let constant = null;
+  if (authored == null) {
+    const levels = segs.levels;
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 0; i < levels.length; i += 1) {
+      if (levels[i] < lo) lo = levels[i];
+      if (levels[i] > hi) hi = levels[i];
+    }
+    colorCh = {
+      mode: "continuous",
+      values: segs.levels,
+      domain: autoDomain([lo, hi]),
+      colormap,
+    };
+  } else if (typeof authored === "string") {
+    constant = cssColorAdmit(authored, "contour color");
+  } else {
+    const table = resolveColorChannel(authored, levelValues.length);
+    if (table.mode !== "direct_rgba" || table.rgba == null) {
+      throw new RangeError("contour color arrays must contain direct RGB/RGBA rows");
+    }
+    const rgba = new Uint8Array(segs.levels.length * 4);
+    for (let i = 0; i < segs.levels.length; i += 1) {
+      let k = lowerBound(levelValues, segs.levels[i]);
+      if (k >= levelValues.length) k = levelValues.length - 1;
+      rgba.set(table.rgba.subarray(k * 4, k * 4 + 4), i * 4);
+    }
+    colorCh = { mode: "direct_rgba", rgba };
+  }
   const style = {
-    color: opts.color ?? DEFAULT_MARK_COLOR,
+    color: constant,
     width: opts.width ?? 1.1,
     opacity: opts.opacity ?? 0.9,
     role: "contour",
     ...(opts.style ?? {}),
   };
+  if (colorCh != null) style.color = null;
   return {
     traces: [
       {
@@ -135,6 +204,7 @@ export function composeContour(z, opts = {}) {
         y0: segs.y0,
         y1: segs.y1,
         levels: segs.levels,
+        ...(colorCh != null ? { color_ch: colorCh } : {}),
         style,
         count: segs.x0.length,
         x_axis: opts.xAxis ?? "x",

@@ -161,6 +161,7 @@ function failCloseFigure(name) {
     }
     case "band_shape": f.traces = []; f.area([0], [1]); break;
     case "segment_shape": fixedDomains(f); f.traces = []; f.segments([0, 1], [0, 1], [1, 2], [1, 2]); f.traces[0].x1 = Float64Array.of(1); break;
+    case "contour_custom_colormap": fixedDomains(f); f.traces = []; f.contour([[0, 1, 0], [1, 2, 1], [0, 1, 0]], { levels: [0.5, 1.5], colormap: ["#f00", "#00f"] }); break;
     case "triangle_mesh_limit": {
       // Joined fills keep the shared 1,024 PolyFill-group budget (#1006).
       const values = new Float64Array(1025); fixedDomains(f); f.traces = [];

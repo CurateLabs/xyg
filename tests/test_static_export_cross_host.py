@@ -299,6 +299,12 @@ def _fail_close_figure(name: str) -> Figure:
         figure.traces.clear()
         figure.segments([0, 1], [0, 1], [1, 2], [1, 2])
         figure.traces[0].x1 = figure.store.ingest([1])
+    elif name == "contour_custom_colormap":
+        _fixed_domains(figure)
+        figure.traces.clear()
+        figure.contour(
+            [[0, 1, 0], [1, 2, 1], [0, 1, 0]], levels=[0.5, 1.5], colormap=["#f00", "#00f"]
+        )
     elif name == "triangle_mesh_limit":
         # Joined fills keep the shared 1,024 PolyFill-group budget (#1006).
         values = [0.0] * 1025
