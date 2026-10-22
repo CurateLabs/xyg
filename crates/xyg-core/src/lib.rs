@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 392;
+pub const ABI_VERSION: u32 = 393;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -11288,7 +11288,7 @@ pub extern "C" fn xyg_default_png_export_scale() -> f64 {
     kernels::DEFAULT_PNG_EXPORT_SCALE
 }
 
-/// Default text-annotation `dx` in pixels when the author leaves it unset (ABI 392).
+/// Default text-annotation `dx` in pixels when the author leaves it unset (ABI 393).
 ///
 /// Python and Node read this through the ABI so equivalent calls place the
 /// label identically; neither host carries its own copy.
@@ -11297,7 +11297,7 @@ pub extern "C" fn xyg_default_text_annotation_dx() -> f64 {
     kernels::DEFAULT_TEXT_ANNOTATION_DX
 }
 
-/// Default text-annotation `dy` in pixels when the author leaves it unset (ABI 392).
+/// Default text-annotation `dy` in pixels when the author leaves it unset (ABI 393).
 #[no_mangle]
 pub extern "C" fn xyg_default_text_annotation_dy() -> f64 {
     kernels::DEFAULT_TEXT_ANNOTATION_DY
@@ -23724,6 +23724,25 @@ pub unsafe extern "C" fn xyg_density_wasm_density_wire_kind(
             wasm_source_count,
             has_density_tier,
         )
+    })
+}
+
+/// Resolved axis side code for the live payload axis spec (ABI 392).
+///
+/// ``role``: 0 = x, 1 = primary y, 2 = secondary y (y2). ``authored``: -1 when
+/// the side is unauthored, else 0 (bottom/left) or 1 (top/right). Returns the
+/// resolved side code, or -1 for an invalid request. An unauthored y2 resolves
+/// to the right side, the same decision static Scene export applies.
+#[no_mangle]
+pub extern "C" fn xyg_payload_axis_side_resolve(role: i32, authored: i32) -> i32 {
+    ffi_guard(-1, || {
+        let authored = match authored {
+            -1 => None,
+            0 | 1 => Some(authored as u8),
+            _ => return -1,
+        };
+        xyg_engine::scene_chrome_pack::resolve_axis_side_code(role, authored)
+            .map_or(-1, i32::from)
     })
 }
 

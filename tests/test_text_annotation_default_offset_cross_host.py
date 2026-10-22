@@ -1,6 +1,6 @@
 """Unset text-annotation ``dx``/``dy`` resolve to one Rust-owned default (#1024).
 
-Python and Node both leave the offsets unset; the Rust default (ABI 392) is the
+Python and Node both leave the offsets unset; the Rust default (ABI 393) is the
 only source, so all five static formats must match byte for byte, and the
 unset export must equal an export that authors the Rust default explicitly.
 """

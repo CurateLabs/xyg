@@ -1,7 +1,7 @@
 /**
  * Independent Node public authoring for the #1024 default-offset corpus.
  *
- * The text annotations omit `dx`/`dy`; the Rust-owned default (ABI 392) is the
+ * The text annotations omit `dx`/`dy`; the Rust-owned default (ABI 393) is the
  * only source of the offset, so the Python twin in
  * tests/test_text_annotation_default_offset_cross_host.py must match byte for byte.
  */

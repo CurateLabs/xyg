@@ -13,6 +13,16 @@ in the README).
 
 ## [Unreleased]
 
+### Changed
+- The live payload's secondary y axis (y2) side is resolved by Rust (#1044).
+  New ABI 392 `xyg_payload_axis_side_resolve` shares `resolve_axis_side_code`
+  with static Scene export (x bottom, y left, unauthored y2 right); Python and
+  Node marshal only the authored side and the `_Y2_LIVE_SIDE` / `Y2_LIVE_SIDE`
+  host constants are removed. Live y2 still accepts `side="left"`.
+- Node `setAxis` now rejects an invalid `side` up front with Python's messages
+  (`x axis side must be 'top' or 'bottom'`, `y axis side must be 'left' or
+  'right'`); previously it failed later with a generic error (#1044).
+
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing
@@ -137,7 +147,7 @@ in the README).
   `publish.yaml` match the pending PyPI trusted publisher.
 
 ### Changed
-- ABI 392: an unset text-annotation `dx`/`dy` now resolves to one Rust-owned
+- ABI 393: an unset text-annotation `dx`/`dy` now resolves to one Rust-owned
   default (`xyg_default_text_annotation_dx()` = 6, `_dy()` = -6) that Python and
   Node read through the ABI instead of carrying their own (#1024). Node
   previously defaulted to `0, 0` while Python used `6, -6`, so the same chart

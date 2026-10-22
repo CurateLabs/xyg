@@ -9949,12 +9949,12 @@ def quantize_unit_u8(
 
 
 def default_text_annotation_dx() -> float:
-    """Default text-annotation ``dx`` in pixels, sourced from Rust (ABI 392)."""
+    """Default text-annotation ``dx`` in pixels, sourced from Rust (ABI 393)."""
     return float(_lib.xyg_default_text_annotation_dx())
 
 
 def default_text_annotation_dy() -> float:
-    """Default text-annotation ``dy`` in pixels, sourced from Rust (ABI 392)."""
+    """Default text-annotation ``dy`` in pixels, sourced from Rust (ABI 393)."""
     return float(_lib.xyg_default_text_annotation_dy())
 
 
@@ -16880,6 +16880,33 @@ def payload_axis_spec_attach_plan(
     if ok != 1:
         raise ValueError("invalid payload_axis_spec_attach_plan arguments")
     return _payload_axis_spec_attach_plan_dict(out)
+
+
+_AXIS_SIDE_NAMES = {
+    "x": ("bottom", "top"),
+    "y": ("left", "right"),
+    "y2": ("left", "right"),
+}
+
+
+def payload_axis_side_resolve(axis_role: str, authored: str | None) -> str:
+    """Resolved axis side name via ``xyg_payload_axis_side_resolve`` (ABI 393).
+
+    ``axis_role`` is ``"x"``, ``"y"`` or ``"y2"``; ``authored`` is the authored
+    side or ``None``. Rust owns the default (x bottom, y left, an unauthored y2
+    right) - the same decision static Scene export applies; the host only maps
+    side names to the 0/1 code and back.
+    """
+    names = _AXIS_SIDE_NAMES.get(axis_role)
+    if names is None or (authored is not None and authored not in names):
+        raise ValueError("invalid payload_axis_side_resolve arguments")
+    code = _lib.xyg_payload_axis_side_resolve(
+        {"x": 0, "y": 1, "y2": 2}[axis_role],
+        -1 if authored is None else names.index(authored),
+    )
+    if code not in (0, 1):
+        raise ValueError("invalid payload_axis_side_resolve arguments")
+    return names[code]
 
 
 def payload_segments_emit_plan(

@@ -46,6 +46,7 @@ import {
   payloadDensityTraceEmitPlan,
   payloadDensityGridMaterialize,
   payloadBuildPlan,
+  payloadAxisSideResolve,
   payloadAxisSpecAttachPlan,
   DENSITY_WASM_DENSITY_AUTOMATIC,
   DENSITY_WASM_DENSITY_UNSUPPORTED,
@@ -137,23 +138,13 @@ import {
   xyDefaultTextAnnotationDy,
 } from "./native.js";
 const _DEFAULT_PNG_EXPORT_SCALE = Number(xyDefaultPngExportScale());
-// Text annotation offset defaults are Rust-owned (ABI 392); read, never copied.
+// Text annotation offset defaults are Rust-owned (ABI 393); read, never copied.
 const _DEFAULT_TEXT_ANNOTATION_DX = Number(xyDefaultTextAnnotationDx());
 const _DEFAULT_TEXT_ANNOTATION_DY = Number(xyDefaultTextAnnotationDy());
 
 export { PROTOCOL_VERSION };
 
 const DEFAULT_COLORMAP = "viridis";
-
-// The side of a secondary y axis (y2) whose side is not authored. Rust owns
-// the decision — `Y2_DEFAULT_SIDE_CODE` (side code 1 = high/right) in
-// crates/xyg-engine/src/scene_chrome_pack.rs, applied when the chrome
-// observation carries no authored side — and the hosts pass the absence
-// through untouched. The live payload must render the same orientation the
-// static export resolves, so this mirror exists only for the wire spec; the
-// omitted-side cross-host cases pin it equal to the static output (and to
-// Python's `_Y2_LIVE_SIDE`).
-const Y2_LIVE_SIDE = "right";
 
 function densityColorChannelMeta(trace) {
   const channel = trace.color_ch;
@@ -1555,12 +1546,21 @@ export class Figure {
   setAxis(axisId, options = {}) {
     if (axisId !== "x" && axisId !== "y" && axisId !== "y2") throw new RangeError("axisId must be x, y or y2");
     options = copySceneOptions(options, `Scene ${axisId} axis options`);
+    // Same admission and messages as Python `set_axis`.
+    if (options.side != null) {
+      if (axisId === "x" && options.side !== "top" && options.side !== "bottom") {
+        throw new RangeError("x axis side must be 'top' or 'bottom'");
+      }
+      if (axisId !== "x" && options.side !== "left" && options.side !== "right") {
+        throw new RangeError("y axis side must be 'left' or 'right'");
+      }
+    }
     this.axis_options = this.axis_options ?? { x: {}, y: {} };
     this.axis_options[axisId] = { ...(this.axis_options[axisId] ?? {}), ...options };
     // No y2 side default here: an omitted side stays unobserved so Rust alone
     // resolves it (right) on the static path, and the live marshal mirrors
-    // that decision (Y2_LIVE_SIDE). x and y keep their public defaults in
-    // `_axisSpec`, like Python `set_axis`.
+    // that decision (`payloadAxisSideResolve`) for the live wire too. x and y
+    // keep their public defaults in `_axisSpec`, like Python `set_axis`.
     this[`${axisId}Axis`] = this.axis_options[axisId];
     // x/y labels live on the figure in Python `set_axis` too, so `_axisSpec`
     // (which reads `x_label`/`y_label` like Python `_axis_spec`) reports the
@@ -2241,11 +2241,10 @@ export class Figure {
     }
     if (attach.attachRange) spec.range = [...range_];
     if (attach.attachSide) {
-      // Primary axes keep their public defaults (bottom/left). A secondary y
-      // axis resolves to Y2_LIVE_SIDE, mirroring Rust's decision for the
-      // static path — pinned equal to it by the omitted-side cross-host cases.
-      spec.side = opts.side
-        ?? (axis === "x" ? "bottom" : axisId === "y" ? "left" : Y2_LIVE_SIDE);
+      // Rust resolves the side (x bottom, y left, an unauthored y2 right) with
+      // the same function static export uses; the host marshals only the
+      // authored value.
+      spec.side = payloadAxisSideResolve(axis === "x" ? "x" : axisId === "y" ? "y" : "y2", opts.side ?? null);
     }
     if (attach.attachTickSides && opts.tick_sides != null) {
       spec.tick_sides = [...opts.tick_sides];
