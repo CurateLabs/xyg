@@ -497,14 +497,32 @@ A metadata-free source tree uses the explicit `0.0.0` fallback. Consequences:
   clone may omit the authoritative release tag and silently derive a different
   development baseline; `make check-ci` enforces full history.
 
-Pre-releases are tagged the same way with a canonical PEP 440 suffix —
-`xyg-vX.Y.ZaN` / `bN` / `rcN` (e.g. `xyg-v1.0.0rc1`) — and publish through the same
-pipeline; pip ignores them unless a pre-release is requested explicitly. Only
-the canonical spelling passes the release gate: `-alpha1`-style tags would be
-normalized by the version derivation and could never match their own built
-artifacts. Release segments and pre-release counters also reject leading zeros
-because those spellings normalize to different built versions. A pre-release
-needs its own dated changelog entry, exactly like a final release.
+Pre-releases are tagged the same way with the canonical semver suffix —
+`xyg-vX.Y.Z-alpha.N` / `-beta.N` / `-rc.N` (e.g. `xyg-v0.6.0-rc.5`) — and publish
+through the same pipeline; pip ignores them unless a pre-release is requested
+explicitly. One conversion authority, `scripts/release_version.py`, drives tag
+validation (`check_release_version.py`), npm staging
+(`stage_node_packages.py`, `stage_browser_package.py`) and the release-cohort
+check (`verify_release_cohort.py`). The same release has three spellings:
+
+| Surface | Spelling for the fifth 0.6.0 candidate |
+| --- | --- |
+| Git tag | `xyg-v0.6.0-rc.5` |
+| npm (`@curatelabs/xyg*`) | `0.6.0-rc.5` |
+| Python/PyPI (derived from the tag by uv-dynamic-versioning) | `0.6.0rc5` |
+
+The legacy PEP 440 tag spelling (`xyg-v0.0.1a1`, `xyg-v0.6.0rc5`) still passes
+for already-cut tags and normalizes to the same npm and Python versions. Dev,
+post, local, malformed, leading-zero (`-rc.05`, `rc05`, `0.06.0`), and
+spelling-mixed (`-rc5`, `-RC.5`) forms fail with an actionable error. A
+pre-release needs its own dated changelog entry (Python or npm spelling of the
+version), exactly like a final release. Version normalization covers ecosystem
+spelling only: native ABI, Scene, wire, painter, and WASM identifiers keep their
+own contracts and are never derived from the release version. XYG and
+GraphForge Core candidates need not share an RC number; the paired Core
+declaration is owned by #936. Reproduce with
+`python3 scripts/check_release_version.py --tag xyg-v0.6.0-rc.5` and
+`python3 -m pytest tests/test_release_version.py tests/test_check_release_version.py`.
 
 The repository has one release line: the `xyg` distribution, including its
 bundled `reflex_xy` integration, ships from `xyg-vX.Y.Z` tags through
@@ -585,9 +603,10 @@ publishable trees from the release tag: five exact-platform packages reuse the
 byte-identical cdylibs already verified inside the Python wheels and require a
 valid ELF64, Mach-O 64-bit, or PE architecture header, while the
 facade pins every optional to the mapped npm semver and embeds the exact built
-standalone paint client for offline `toHtml()` use. The PEP 440 tag suffixes
-`aN`, `bN`, and `rcN` map deterministically to npm `alpha.N`, `beta.N`, and
-`rc.N`; stable versions are identical.
+standalone paint client for offline `toHtml()` use. The canonical tag
+suffixes `-alpha.N`, `-beta.N`, and `-rc.N` map to npm unchanged (and to Python
+`aN`, `bN`, `rcN`); the legacy PEP 440 tag suffixes `aN`, `bN`, and `rcN` map to
+the same npm versions; stable versions are identical.
 
 Every run packs and dry-publishes all six Node tarballs. A real npm upload is
 additionally gated by an `xyg-v*` ref, non-dry dispatch, repository identity,

@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _load_module():
     path = Path(__file__).resolve().parents[1] / "scripts" / "check_release_version.py"
@@ -16,6 +18,7 @@ def _load_module():
 
 
 check_release_version = _load_module()
+parse_tag = check_release_version.parse_tag
 
 
 def _changelog(tmp_path: Path, changelog_heading: str) -> Path:
@@ -161,3 +164,62 @@ def test_version_config_uses_the_xyg_tag_prefix() -> None:
     pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
 
     assert 'pattern-prefix = "xyg-"' in pyproject
+
+
+def test_gate_passes_the_semver_rc_tag_with_either_changelog_spelling(tmp_path: Path) -> None:
+    for heading in (
+        "## [0.6.0rc5] — 2026-10-21",
+        "## [0.6.0-rc.5] - 2026-10-21",
+        "## v0.6.0-rc.5 - 2026-10-21",
+    ):
+        changelog = _changelog(tmp_path, heading)
+        assert check_release_version.check_release("xyg-v0.6.0-rc.5", changelog) == [], heading
+
+
+def test_semver_and_legacy_tags_share_one_changelog_entry(tmp_path: Path) -> None:
+    changelog = _changelog(tmp_path, "## [0.6.0rc5] — 2026-10-21")
+    assert check_release_version.check_release("xyg-v0.6.0rc5", changelog) == []
+
+
+def test_semver_rc_tag_needs_its_own_dated_entry(tmp_path: Path) -> None:
+    changelog = _changelog(tmp_path, "## [0.6.0rc4] — 2026-10-21")
+    errors = check_release_version.check_release("xyg-v0.6.0-rc.5", changelog)
+    assert any("no dated" in e for e in errors)
+
+
+def test_gate_rejects_malformed_semver_forms(tmp_path: Path) -> None:
+    changelog = _changelog(tmp_path, "## [0.6.0rc5] — 2026-10-21")
+    for tag in ("xyg-v0.6.0-rc.05", "xyg-v0.6.0-rc5", "xyg-v0.6.0-rc.5+x", "xyg-v0.6.0-rc.5.dev1"):
+        errors = check_release_version.check_release(tag, changelog)
+        assert any("is not a release tag" in e for e in errors), tag
+
+
+def test_main_accepts_the_semver_rc_tag(tmp_path: Path) -> None:
+    changelog = _changelog(tmp_path, "## [0.6.0rc5] — 2026-10-21")
+    assert (
+        check_release_version.main(["--tag", "xyg-v0.6.0-rc.5", "--changelog", str(changelog)]) == 0
+    )
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "xyg-v0.6.0",
+        "xyg-v0.6.0-rc.5",
+        "xyg-v0.6.0-alpha.1",
+        "xyg-v0.6.0-beta.12",
+        "xyg-v0.6.0rc5",
+        "xyg-v0.0.1a1",
+    ],
+)
+def test_python_version_matches_the_dunamai_derivation(tag: str) -> None:
+    dunamai = pytest.importorskip("dunamai")
+    derived = dunamai.Version.parse("v" + tag.removeprefix("xyg-v")).serialize(
+        style=dunamai.Style.Pep440
+    )
+    assert derived == parse_tag(tag).python
+
+
+def test_pyproject_keeps_the_pep440_derivation_style() -> None:
+    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'style = "pep440"' in pyproject

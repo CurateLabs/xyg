@@ -14,6 +14,11 @@ in the README).
 ## [Unreleased]
 
 ### Changed
+- Release candidates use the canonical tag `xyg-vX.Y.Z-rc.N` (also `-alpha.N`/
+  `-beta.N`), with npm `X.Y.Z-rc.N` and Python/PyPI `X.Y.ZrcN` produced from one
+  conversion authority (`scripts/release_version.py`) shared by the release
+  gate, npm staging, and the release-cohort check (#884). The legacy PEP 440 tag
+  spelling still passes for already-cut tags.
 - The live payload's secondary y axis (y2) side is resolved by Rust (#1044).
   New ABI 392 `xyg_payload_axis_side_resolve` shares `resolve_axis_side_code`
   with static Scene export (x bottom, y left, unauthored y2 right); Python and

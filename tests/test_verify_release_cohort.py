@@ -73,7 +73,7 @@ def _fixtures(tmp_path: Path) -> dict[str, Path]:
 
 def test_release_cohort_binds_exact_cross_host_bytes(tmp_path: Path) -> None:
     files = _fixtures(tmp_path)
-    ledger = cohort.verify(tag="xyg-v1.2.3rc4", commit="a" * 40, **files)
+    ledger = cohort.verify(tag="xyg-v1.2.3-rc.4", commit="a" * 40, **files)
     assert ledger["npmVersion"] == "1.2.3-rc.4"
     assert ledger["pythonVersion"] == "1.2.3rc4"
     assert ledger["platform"] == "linux-x64"

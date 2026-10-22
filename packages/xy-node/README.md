@@ -67,10 +67,10 @@ fresh publish tree with an exact tag-derived npm semver:
 
 ```bash
 python3 scripts/stage_node_packages.py \
-  --tag xyg-v0.6.0rc1 --output /tmp/xyg-node-release \
+  --tag xyg-v0.6.0-rc.1 --output /tmp/xyg-node-release \
   --platform linux-x64 --wheel dist/xyg-0.6.0rc1-*-manylinux_2_17_x86_64.whl
 python3 scripts/stage_node_packages.py \
-  --tag xyg-v0.6.0rc1 --output /tmp/xyg-node-release \
+  --tag xyg-v0.6.0-rc.1 --output /tmp/xyg-node-release \
   --facade --client packages/xy-client/dist/standalone.js
 ```
 
