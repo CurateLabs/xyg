@@ -30,10 +30,14 @@ which covers user-visible releases across the whole package.
     (continuous midpoint, no `N` quantization), so both are wrong against
     Matplotlib's resampled LUT in the same way; carrying `N` into the Rust fill
     is the follow-up.
+  - The colorbar stays opaque while colormapped `contourf` fills are capped at
+    0.9 opacity (`_marks_contour.py:195,244`), so the visible fill is up to
+    about 10% lighter than its colorbar band. The fill is what differs from
+    Matplotlib; lifting the cap is a follow-up.
   - Known pre-existing colormap-table drift: xyg's built-in tables differ from
     Matplotlib 3.11's (viridis by up to 14/255 at LUT indices 139-253, jet 23,
-    turbo 15, coolwarm 12, inferno 9), so bands pick the same LUT index as
-    Matplotlib but can differ in color by that much. Tests assert bands exactly
+    turbo 15, coolwarm 12, inferno 9), so bands sample the same normalized
+    position as Matplotlib but can differ in color by that much. Tests assert bands exactly
     against xyg's own LUT and against Matplotlib within the viridis drift.
 - A colorbar of a `BoundaryNorm` image/mesh inherits `norm.extend` when
   `extend=` is not passed (Matplotlib `Colorbar.__init__`). Unsupported: `cmap.colorbar_extend`

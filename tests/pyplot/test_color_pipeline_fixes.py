@@ -781,7 +781,8 @@ def test_contourf_colorbar_beyond_the_scene_stop_budget_keeps_the_ramp():
     )
 
 
-def test_contourf_colorbar_bands_follow_what_the_fill_paints_for_a_resampled_cmap():
+@pytest.mark.parametrize("name", ["viridis", "RdYlBu", "jet"])
+def test_contourf_colorbar_bands_follow_what_the_fill_paints_for_a_resampled_cmap(name):
     """The fill ignores ``get_cmap(name, n)``'s N; the colorbar must show the fill's colors."""
     import io
 
@@ -790,7 +791,7 @@ def test_contourf_colorbar_bands_follow_what_the_fill_paints_for_a_resampled_cma
 
     grid = np.linspace(0.0, 2.0, 60)
     values = np.add.outer(grid, grid) / 2
-    colormap = plt.get_cmap("viridis", 2)
+    colormap = plt.get_cmap(name, 2)
     fig, ax = plt.subplots()
     ax.contourf(values, levels=[0, 1, 2], cmap=colormap)
     plain = io.BytesIO()
@@ -800,7 +801,7 @@ def test_contourf_colorbar_bands_follow_what_the_fill_paints_for_a_resampled_cma
     fig, ax = plt.subplots()
     fig.colorbar(ax.contourf(values, levels=[0, 1, 2], cmap=colormap))
     bands = _band_rgb(_svg())
-    assert bands == _xyg_lut_bands([0, 1, 2], "viridis")
+    assert bands == _xyg_lut_bands([0, 1, 2], name)
     plt.close(fig)
 
     pixels = (mpl_image.imread(io.BytesIO(plain.getvalue()))[..., :3] * 255).round().astype(int)

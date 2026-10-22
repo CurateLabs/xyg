@@ -106,6 +106,7 @@ def test_abi_version_matches_native_core() -> None:
     assert "xyg_payload_density_trace_emit_plan" in names
     assert "xyg_payload_build_plan" in names
     assert "xyg_payload_axis_spec_attach_plan" in names
+    assert "xyg_payload_axis_side_resolve" in names
     assert "xyg_scene_xytc_figure_plan" in names
     assert "xyg_scene_xytc_trace_dispatch_plan" in names
     assert "xyg_scene_xyta_figure_plan" in names
