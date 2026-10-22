@@ -88,6 +88,7 @@ pub enum StaticDocumentError {
     Panel,
     Title,
     Scene,
+    Lod,
     Raster,
     Encode,
     /// A legend box does not fit, or leaves the document canvas.
@@ -109,6 +110,7 @@ impl StaticDocumentError {
             Self::Panel => "XYG_STATIC_DOCUMENT_PANEL",
             Self::Title => "XYG_STATIC_DOCUMENT_TITLE",
             Self::Scene => "XYG_STATIC_DOCUMENT_SCENE",
+            Self::Lod => "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
             Self::Raster => "XYG_STATIC_DOCUMENT_RASTER",
             Self::Encode => "XYG_STATIC_DOCUMENT_ENCODE",
             Self::LegendBounds => {
@@ -1017,6 +1019,14 @@ impl StaticDocument {
         scale: f64,
         quality: i32,
     ) -> Result<Vec<u8>, StaticDocumentError> {
+        for (_, scene, _) in &self.panels {
+            scene
+                .check_mesh_budgets(!matches!(
+                    format,
+                    SceneStaticFormat::Svg | SceneStaticFormat::Pdf
+                ))
+                .map_err(|_| StaticDocumentError::Lod)?;
+        }
         if self.flags == 0
             && self.title.is_empty()
             && self.labels.is_empty()

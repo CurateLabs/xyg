@@ -1,0 +1,393 @@
+{
+  "issue": 1042,
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "logical_cpus": 8,
+    "cpu_model": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz",
+    "native_library_sha256": "6e62dfa20eba9aa68caa820d51c8ea45591d8c082c914715a7171ac5b6adf89a",
+    "python": "3.12.15",
+    "numpy": "2.5.1",
+    "native_abi": 394,
+    "base_commit": "4631927ec508bf0211276e4ae4ecacf14d2673b1",
+    "matplotlib": "3.11.0"
+  },
+  "contract": {
+    "viewport_css_px": [
+      640,
+      420
+    ],
+    "png_scale": 1,
+    "vector_face_ceiling": 50000,
+    "raster_work_plots": 64,
+    "raster_reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+    "timing": "public export; construction excluded; no timing gate"
+  },
+  "rows": [
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 1024,
+      "format": "svg",
+      "seconds": [
+        0.004314599093049765,
+        0.0038391612470149994,
+        0.004232442006468773
+      ],
+      "reason": null,
+      "bytes": 98388,
+      "sha256": "445799799bc866878c672ab7b20f2ace1fa6879c0b56ee27241bf490e5a32145"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 1024,
+      "format": "pdf",
+      "seconds": [
+        0.01410658098757267,
+        0.015297878999263048,
+        0.01445129094645381
+      ],
+      "reason": null,
+      "bytes": 10303,
+      "sha256": "cbf83ad0c5f925485678f087eebcbd4908056c148819f701c9e82196052dd609"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 1024,
+      "format": "png",
+      "seconds": [
+        0.065471934620291,
+        0.06335127213969827,
+        0.05153983039781451
+      ],
+      "reason": null,
+      "bytes": 215732,
+      "sha256": "8e288e102953480d166a38005ceee404f6d95789c4560f29fc7a5e821b18bd89"
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 1024,
+      "format": "svg",
+      "seconds": [
+        0.39433995028957725,
+        0.08248212235048413,
+        0.08056629216298461
+      ],
+      "reason": null,
+      "bytes": 156649
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 1024,
+      "format": "pdf",
+      "seconds": [
+        5.487194993998855,
+        0.06585982907563448,
+        0.06197383999824524
+      ],
+      "reason": null,
+      "bytes": 17965
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 1024,
+      "format": "png",
+      "seconds": [
+        1.157637104857713,
+        0.08835714310407639,
+        0.0975095541216433
+      ],
+      "reason": null,
+      "bytes": 212704
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 5000,
+      "format": "svg",
+      "seconds": [
+        0.011787677649408579,
+        0.01254885084927082,
+        0.01025294791907072
+      ],
+      "reason": null,
+      "bytes": 462056,
+      "sha256": "f991ff02a9b3e2627a7a94e720862489da9cbbe89dfbab6549104578adbf429d"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 5000,
+      "format": "pdf",
+      "seconds": [
+        0.061796666122972965,
+        0.06058958079665899,
+        0.058664868120104074
+      ],
+      "reason": null,
+      "bytes": 41546,
+      "sha256": "7a6b8000b099e1de74ad0592dfd3e0d85b6280022b366531ae2ff18ea4520cf7"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 5000,
+      "format": "png",
+      "seconds": [
+        0.004304440226405859,
+        0.00455059390515089,
+        0.005269771907478571
+      ],
+      "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "bytes": 0,
+      "sha256": null
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 5000,
+      "format": "svg",
+      "seconds": [
+        0.3356275060214102,
+        0.29100634902715683,
+        0.3105738228186965
+      ],
+      "reason": null,
+      "bytes": 702893
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 5000,
+      "format": "pdf",
+      "seconds": [
+        0.19131453707814217,
+        0.17938245879486203,
+        0.19549492839723825
+      ],
+      "reason": null,
+      "bytes": 69042
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 5000,
+      "format": "png",
+      "seconds": [
+        0.15716976020485163,
+        0.14770398009568453,
+        0.15073375729843974
+      ],
+      "reason": null,
+      "bytes": 158004
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 50000,
+      "format": "svg",
+      "seconds": [
+        0.12341942405328155,
+        0.12387536466121674,
+        0.12129343627020717
+      ],
+      "reason": null,
+      "bytes": 4579144,
+      "sha256": "680f54e7b5b6776566b268b659c4eb235b27732750779d6ba7bb067152fea85e"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 50000,
+      "format": "pdf",
+      "seconds": [
+        0.7391205257736146,
+        0.6841069362126291,
+        0.8267516577616334
+      ],
+      "reason": null,
+      "bytes": 322028,
+      "sha256": "151b5d1257dd69332ede5c4c1ed793d160d2722c8dc8264c78e15b64fe49f4f6"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 50000,
+      "format": "png",
+      "seconds": [
+        0.049008388072252274,
+        0.05400347523391247,
+        0.05188200902193785
+      ],
+      "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "bytes": 0,
+      "sha256": null
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 50000,
+      "format": "svg",
+      "seconds": [
+        4.217422029003501,
+        4.290840675123036,
+        3.324136753100902
+      ],
+      "reason": null,
+      "bytes": 6886661
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 50000,
+      "format": "pdf",
+      "seconds": [
+        2.186618604697287,
+        3.250883703120053,
+        2.8136383150704205
+      ],
+      "reason": null,
+      "bytes": 586616
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "fan",
+      "faces": 50000,
+      "format": "png",
+      "seconds": [
+        1.1020691110752523,
+        0.8499710503965616,
+        0.6972955437377095
+      ],
+      "reason": null,
+      "bytes": 169554
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 50001,
+      "format": "svg",
+      "seconds": [
+        0.04671841161325574,
+        0.04988967813551426,
+        0.05291500827297568
+      ],
+      "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "bytes": 0,
+      "sha256": null
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 50001,
+      "format": "pdf",
+      "seconds": [
+        0.06107854610309005,
+        0.04809062136337161,
+        0.047642548102885485
+      ],
+      "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "bytes": 0,
+      "sha256": null
+    },
+    {
+      "engine": "xyg",
+      "fixture": "fan",
+      "faces": 50001,
+      "format": "png",
+      "seconds": [
+        0.05170265585184097,
+        0.04915662715211511,
+        0.04866955056786537
+      ],
+      "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "bytes": 0,
+      "sha256": null
+    },
+    {
+      "engine": "xyg",
+      "fixture": "overlap",
+      "faces": 1100,
+      "format": "svg",
+      "seconds": [
+        0.003954907413572073,
+        0.003977161832153797,
+        0.003972823265939951
+      ],
+      "reason": null,
+      "bytes": 92748,
+      "sha256": "468735e3f874ff30c3414c42cddd4e94fefeccdcb53b8baf12104d374e9ffe8f"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "overlap",
+      "faces": 1100,
+      "format": "pdf",
+      "seconds": [
+        0.012256952933967113,
+        0.012499717995524406,
+        0.012988074216991663
+      ],
+      "reason": null,
+      "bytes": 1699,
+      "sha256": "4613c37f628601712f6770aedd3a69fcdf1aeab6ba5798abb91801a8993fccdf"
+    },
+    {
+      "engine": "xyg",
+      "fixture": "overlap",
+      "faces": 1100,
+      "format": "png",
+      "seconds": [
+        0.002324606291949749,
+        0.0022060363553464413,
+        0.0025272397324442863
+      ],
+      "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD",
+      "bytes": 0,
+      "sha256": null
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "overlap",
+      "faces": 1100,
+      "format": "svg",
+      "seconds": [
+        0.08963497821241617,
+        0.08380284206941724,
+        0.08417409285902977
+      ],
+      "reason": null,
+      "bytes": 152347
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "overlap",
+      "faces": 1100,
+      "format": "pdf",
+      "seconds": [
+        0.05799861764535308,
+        0.05940644629299641,
+        0.05876363581046462
+      ],
+      "reason": null,
+      "bytes": 6005
+    },
+    {
+      "engine": "matplotlib",
+      "fixture": "overlap",
+      "faces": 1100,
+      "format": "png",
+      "seconds": [
+        0.06552383210510015,
+        0.06400678679347038,
+        0.06220914702862501
+      ],
+      "reason": null,
+      "bytes": 11142
+    }
+  ]
+}

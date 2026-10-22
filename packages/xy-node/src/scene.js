@@ -63,6 +63,7 @@ import {
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneStaticExport,
+  xySceneStaticExportReason,
   xyStaticAnnotationStyle,
   xyStaticChromeStyle,
   xyStaticDocumentExport,
@@ -2723,10 +2724,10 @@ export function sceneBatchEncode({
   }
 }
 
-function sceneOutput(encoded, call, name, extra = [], rustDiagnostic = false) {
+function sceneOutput(encoded, call, name, extra = [], rustDiagnostic = false, initialCapacity = null) {
   const source = asU8Array(encoded, "encoded scene");
   if (source.length === 0) throw new RangeError("encoded scene must not be empty");
-  let capacity = Math.max(256, source.length * 3);
+  let capacity = initialCapacity ?? Math.max(256, source.length * 3);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = call(u8Ptr(source), BigInt(source.length), ...extra, u8Ptr(output), BigInt(capacity));
@@ -2845,6 +2846,12 @@ export function sceneRasterCommands(encoded, scale = DEFAULT_PNG_EXPORT_SCALE) {
 
 const SCENE_STATIC_FORMATS = { svg: 0, png: 1, pdf: 2, jpeg: 3, webp: 4 };
 
+function sceneStaticExportReason(encoded, code) {
+  // A support diagnostic is independent of Scene size. Keep the normal
+  // required-size retry for future longer diagnostics without pre-decoding.
+  return sceneOutput(encoded, xySceneStaticExportReason, "static export support", [code], false, 256);
+}
+
 export function sceneStaticExport(encoded, format, { scale = DEFAULT_PNG_EXPORT_SCALE, width = 1, height = 1, quality = 90 } = {}) {
   const code = SCENE_STATIC_FORMATS[format];
   if (code == null) {
@@ -2862,6 +2869,8 @@ export function sceneStaticExport(encoded, format, { scale = DEFAULT_PNG_EXPORT_
   if (!Number.isInteger(w) || w <= 0) throw new RangeError("scene static width must be a positive integer");
   if (!Number.isInteger(h) || h <= 0) throw new RangeError("scene static height must be a positive integer");
   if (!Number.isInteger(q)) throw new RangeError("quality must be an int in 1..100");
+  const reason = sceneStaticExportReason(encoded, code);
+  if (reason.length) throw new RangeError(new TextDecoder().decode(reason));
   return sceneOutput(encoded, xySceneStaticExport, "static export", [code, factor, BigInt(w), BigInt(h), q]);
 }
 
@@ -3500,7 +3509,7 @@ export function figureStaticDocument(figure, {
   projected.show_legend = false;
   projected.legend_options = {};
   projected.extra_legends = Array.isArray(figure.extra_legends) ? [] : null;
-  const reason = sceneExportSupportReason(projected, { y2Chrome: chrome.y2 });
+  const reason = sceneExportSupportReason(projected, { y2Chrome: chrome.y2, format: null });
   if (reason) throw new RangeError(reason);
   let scene = figureSceneV3(projected, { y2Chrome: chrome.y2 });
   if (graphPlanes != null) {
@@ -6903,7 +6912,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
 }
 
 /** Return Rust's public-export diagnostic, or null when the Scene route applies. */
-export function sceneExportSupportReason(figure, { width = null, height = null, y2Chrome = null } = {}) {
+export function sceneExportSupportReason(figure, { width = null, height = null, y2Chrome = null, format = "png" } = {}) {
   const envelope = packPublicExportSupport(figure, { width, height });
   const requiredRaw = xyScenePublicExportReason(u8Ptr(envelope), BigInt(envelope.length), 0, 0n);
   if (requiredRaw === USIZE_MAX_64) throw new RangeError("invalid scene public export support envelope");
@@ -6917,7 +6926,13 @@ export function sceneExportSupportReason(figure, { width = null, height = null, 
   }
   if (reason) return reason;
   try {
-    figureSceneV3(figure, { y2Chrome });
+    const scene = figureSceneV3(figure, { y2Chrome });
+    if (format != null) {
+      const code = SCENE_STATIC_FORMATS[format];
+      if (code == null) throw new RangeError("invalid Scene static export format");
+      const diagnostic = sceneStaticExportReason(scene, code);
+      if (diagnostic.length) return new TextDecoder().decode(diagnostic);
+    }
   } catch (err) {
     if (err instanceof RangeError) {
       if (err.message === "invalid canonical scene plot layout") return "XYG_SCENE_UNSUPPORTED_VIEWPORT";

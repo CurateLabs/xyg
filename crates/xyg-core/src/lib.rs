@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 393;
+pub const ABI_VERSION: u32 = 394;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -271,6 +271,52 @@ pub unsafe extern "C" fn xyg_scene_public_export_reason(
             std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, encoded.len());
         }
         encoded.len()
+    })
+}
+
+/// Non-rendering format-aware support query for one encoded Scene (#1042).
+/// Format codes match `xyg_scene_static_export`. Returns required diagnostic
+/// bytes (zero means supported), or `usize::MAX` for malformed input/format.
+/// Writes UTF-8 without a NUL only when `out_cap` is sufficient.
+///
+/// # Safety
+/// `encoded` addresses `encoded_len` readable bytes; a nonzero `out_cap`
+/// requires `out` to address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_static_export_reason(
+    encoded: *const u8,
+    encoded_len: usize,
+    format: u32,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 || (out_cap > 0 && out.is_null()) {
+        return usize::MAX;
+    }
+    let Some(format) = SceneStaticFormat::from_code(format) else {
+        return usize::MAX;
+    };
+    ffi_guard(usize::MAX, || {
+        let Ok(document) =
+            scene::SceneDocument::decode(std::slice::from_raw_parts(encoded, encoded_len))
+        else {
+            return usize::MAX;
+        };
+        let reason: &[u8] = if document
+            .check_mesh_budgets(!matches!(
+                format,
+                SceneStaticFormat::Svg | SceneStaticFormat::Pdf
+            ))
+            .is_err()
+        {
+            b"XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+        } else {
+            b""
+        };
+        if !reason.is_empty() && out_cap >= reason.len() {
+            std::ptr::copy_nonoverlapping(reason.as_ptr(), out, reason.len());
+        }
+        reason.len()
     })
 }
 
@@ -855,8 +901,8 @@ pub unsafe extern "C" fn xyg_scene_splice_annotations(
 /// Scene v31 is unchanged.
 ///
 /// `-7` (`EncodeAssembledCode::Lod`, #1006): record expansion exceeds
-/// `MAX_SCENE_MARKS`, or a triangle mesh exceeds its static overdraw or
-/// dense-fill image budget (`SceneBatch::check_mesh_budgets`). Before #1006 an
+/// `MAX_SCENE_MARKS`. Mesh raster-work and dense-image budgets are checked
+/// after format selection (#1042), not during Scene assembly. Before #1006 an
 /// expansion overflow returned `-3` (`Limit`); `-3` now means only the other
 /// input-size limits.
 ///
@@ -3821,7 +3867,10 @@ pub unsafe extern "C" fn xyg_scene_svg(
     let Some(svg) = ffi_guard(None, || {
         scene::SceneDocument::decode(std::slice::from_raw_parts(encoded, encoded_len))
             .ok()
-            .map(|document| document.to_svg().into_bytes())
+            .and_then(|document| {
+                document.check_mesh_budgets(false).ok()?;
+                Some(document.to_svg().into_bytes())
+            })
     }) else {
         return usize::MAX;
     };
