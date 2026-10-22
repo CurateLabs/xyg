@@ -36,11 +36,18 @@ Log positions normalize `log(value / low) / log(high / low)`, evaluated with
 for extreme ratios. Domain endpoints pin to exactly zero and one. Every
 returned label position must be finite before a renderer consumes it.
 
-XYCB v2 still stores stop positions in data space. Named-colorbar packing for
-adjacent-representable or extreme finite domains can therefore fail before the
-renderer receives a valid Scene; it must not approximate or discard palette
-stops. [Issue #888](https://github.com/CurateLabs/xyg/issues/888) tracks the
-versioned fraction-space XYCB contract and every downstream consumer update.
+XYCB v2 stores stop positions in data space and requires strictly increasing
+stops. Named-colorbar packing therefore keeps the whole palette on every domain
+that has at least as many representable f64 values as palette stops, including
+extreme finite domains such as `[-1.7e308, 1.7e308]`. A domain with fewer
+representable values than stops (adjacent domains such as `[1, nextafter(1)]`)
+is a decided, documented fail-closed case: Rust returns `Order`, and both
+Python and Node surface the same stable reason
+`XYG_SCENE_UNSUPPORTED_COLORBAR` for the figure. The palette is never thinned
+and no endpoint-only colors are substituted, and there is no XYCB v3
+fraction-space extension. Empty, reversed, or non-finite domains fail closed
+the same way. [Issue #888](https://github.com/CurateLabs/xyg/issues/888)
+records the decision.
 
 The band table continues to describe normalized palette samples: its positions
 remain linear fractions of the authored domain even when tick placement is
