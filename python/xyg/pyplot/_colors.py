@@ -473,6 +473,14 @@ class BoundaryNormGrid(NamedTuple):
     #: ``cmap(norm(value))`` just outside the first/last boundary (Matplotlib's
     #: ``Colorbar._do_extends``).
     caps: np.ndarray
+    #: The norm's own ``extend`` ("neither"/"min"/"max"/"both"); a colorbar
+    #: inherits it when the caller passes no explicit ``extend=``.
+    extend: str = "neither"
+
+
+def _norm_extend(norm: object) -> str:
+    extend = getattr(norm, "extend", "neither")
+    return extend if extend in ("neither", "min", "max", "both") else "neither"
 
 
 def prepare_boundary_norm(
@@ -559,6 +567,7 @@ def prepare_boundary_norm(
         boundaries,
         band_colors,
         caps,
+        _norm_extend(norm),
     )
 
 

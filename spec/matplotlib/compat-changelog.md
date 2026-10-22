@@ -4,6 +4,45 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## Banded `contourf` colorbars — 2026-10-21 (Matplotlib 3.11.0 reference, #1046)
+
+- A colormapped `contourf` colorbar now carries one band color per level
+  (`cmap(norm(midpoint))` over `Normalize(levels[0], levels[-1])`,
+  `ContourSet._process_colors`) and goes through the #1035 discrete region, so
+  static export draws solid bands. `spacing="proportional"` and `format=` are
+  admitted on it; extension caps are the colormap under/over colors. Tests read
+  the real Matplotlib colorbar band and extension-patch facecolors. Exports of
+  these colorbars change bytes versus the earlier smooth ramp (recorded in
+  `CHANGELOG.md`).
+- Remaining gaps (follow-up: raise the Rust Scene colorbar stop budget):
+  - Only a *colormapped* `contourf` with more than 15 bands (Scene budget of 16
+    stops) falls back to the continuous ramp. A `colors=` sequence or a
+    `BoundaryNorm` beyond the budget fails closed with
+    `XYG_SCENE_UNSUPPORTED_COLORBAR`.
+  - `norm=`-mapped contours keep the ramp (`spacing=` there keeps the
+    `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` rejection); `tricontourf` is
+    unchanged.
+  - `contourf(alpha=...)`: the colorbar bands are drawn opaque; Matplotlib
+    applies the mappable's alpha to the colorbar.
+  - The contour fill drops a resampled colormap's `N` (`get_cmap(name, n)`):
+    it paints the named map at the continuous band midpoint, and with a fixed
+    0.9 opacity for colormapped fills. The colorbar follows what the fill paints
+    (continuous midpoint, no `N` quantization), so both are wrong against
+    Matplotlib's resampled LUT in the same way; carrying `N` into the Rust fill
+    is the follow-up.
+  - The colorbar stays opaque while colormapped `contourf` fills are capped at
+    0.9 opacity (`_marks_contour.py:195,244`), so the visible fill is up to
+    about 10% lighter than its colorbar band. The fill is what differs from
+    Matplotlib; lifting the cap is a follow-up.
+  - Known pre-existing colormap-table drift: xyg's built-in tables differ from
+    Matplotlib 3.11's (viridis by up to 14/255 at LUT indices 139-253, jet 23,
+    turbo 15, coolwarm 12, inferno 9), so bands sample the same normalized
+    position as Matplotlib but can differ in color by that much. Tests assert bands exactly
+    against xyg's own LUT and against Matplotlib within the viridis drift.
+- A colorbar of a `BoundaryNorm` image/mesh inherits `norm.extend` when
+  `extend=` is not passed (Matplotlib `Colorbar.__init__`). Unsupported: `cmap.colorbar_extend`
+  precedence over the norm/contour extend.
+
 ## `BoundaryNorm` colorbar static export — 2026-10-20 (Matplotlib 3.11.0 reference, #1035)
 
 - Static export (SVG/PNG/PDF/JPEG/WebP) draws a `BoundaryNorm` (or banded

@@ -411,6 +411,10 @@ _DASH_SEGMENT_PATTERNS: dict[str, tuple[tuple[float, float], ...]] = {
     ":": ((0.0, 0.18), (0.5, 0.68)),
 }
 
+#: Mirrors Rust's MAX_SCENE_COLORBAR_STOPS / MAX_COLORBAR_STOPS (a test compares
+#: them); the native layer does not expose the budget.
+MAX_SCENE_COLORBAR_STOPS = 16
+
 _LINESTYLE_TO_FMT_TOKEN = {"solid": "-", "dashed": "--", "dashdot": "-.", "dotted": ":"}
 
 
@@ -3707,6 +3711,34 @@ class PlotTypeMixin:
             # renderers instead of degrading it to a continuous gradient.
             entry["discrete_levels"] = max(1, len(public_levels) - 1)
             entry["discrete_boundaries"] = public_levels
+            # A Scene colorbar carries at most MAX_SCENE_COLORBAR_STOPS literal
+            # stops (edges = bands + 1, i.e. 15 bands); a
+            # finer contour keeps the continuous ramp it always had rather than
+            # failing closed (follow-up: raise the Scene stop budget).
+            if (
+                color is None
+                and norm is None
+                and 2 <= len(rendered_levels) <= MAX_SCENE_COLORBAR_STOPS
+            ):
+                # A colormapped fill paints band i with cmap(norm(midpoint)) over
+                # Normalize(levels[0], levels[-1]) (ContourSet._process_colors);
+                # the colorbar must show the same solid bands. Extension caps are
+                # the colormap's under/over color (normalized value outside 0..1).
+                low, high = float(rendered_levels[0]), float(rendered_levels[-1])
+                if np.isfinite(low) and np.isfinite(high) and high > low:
+                    layers = (rendered_levels[:-1] + rendered_levels[1:]) * 0.5
+                    # Sample exactly what the Rust fill paints: the named colormap
+                    # at the continuous normalized midpoint. The fill drops a
+                    # resampled colormap's N (get_cmap(name, n)), so quantizing
+                    # here would show colors that are not on the plot.
+                    unit = (layers - low) / (high - low)
+                    painted = scalar_grid_rgba(
+                        np.concatenate((unit, [-1.0, 2.0])),
+                        cmap if cmap is not None else "viridis",
+                    )
+                    rgb8 = np.rint(np.clip(painted[:, :3], 0.0, 1.0) * 255.0).astype(np.uint8)
+                    entry["discrete_colors"] = rgb8[:-2]
+                    entry["discrete_caps"] = rgb8[-2:]
         if filled and hatches:
             patterns = list(hatches)
             x_values = (
@@ -5042,6 +5074,7 @@ class PlotTypeMixin:
         boundary_boundaries: np.ndarray | None = None
         boundary_colors: np.ndarray | None = None
         boundary_caps: np.ndarray | None = None
+        boundary_extend = "neither"
         if prepared_boundary is None:
             render_z, domain, norm_scale = normalize_scalar_grid(z, norm, vmin, vmax)
             truecolor_z = scalar_grid_rgba(render_z, cmap_value) if norm_scale == "log" else None
@@ -5052,6 +5085,7 @@ class PlotTypeMixin:
             boundary_boundaries = prepared_boundary.boundaries
             boundary_colors = prepared_boundary.band_colors
             boundary_caps = prepared_boundary.caps
+            boundary_extend = prepared_boundary.extend
         regular = None if x is None else _uniform_mesh_axes(x, y, z.shape)
 
         def finish(entry: dict[str, Any]) -> PolyCollection:
@@ -5064,6 +5098,7 @@ class PlotTypeMixin:
                 entry["discrete_boundaries"] = boundary_boundaries
                 entry["discrete_colors"] = boundary_colors
                 entry["discrete_caps"] = boundary_caps
+                entry["discrete_extend"] = boundary_extend
             handle = PolyCollection(self, entry)
             handle._rasterized = bool(rasterized)
             return handle
