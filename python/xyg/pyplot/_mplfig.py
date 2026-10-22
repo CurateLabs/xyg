@@ -2490,7 +2490,7 @@ class Figure:
             f.write(self._facecolor_wrapped(self._to_html()))
         # as_uri() builds a valid file URL on every platform (drive letters,
         # backslashes, spaces); f"file://{path}" is wrong on Windows.
-        webbrowser.open(Path(f.name).as_uri())
+        webbrowser.open(Path(f.name).resolve().as_uri())
 
 
 class _FigureCanvas:

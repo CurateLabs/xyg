@@ -173,6 +173,7 @@ def _store_zone_cache(arr: Any, zm: ZoneMaps) -> None:
         return
     n_chunks = len(zm.mins)
     tmp = f"{path}.{_os.getpid()}.tmp"
+    published = False
     try:
         size, mtime = _zone_source_stamp(source)
         with open(tmp, "wb") as f:
@@ -183,11 +184,15 @@ def _store_zone_cache(arr: Any, zm: ZoneMaps) -> None:
             for name in _ZONE_U64_FIELDS:
                 np.ascontiguousarray(getattr(zm, name), dtype=np.uint64).tofile(f)
         _os.replace(tmp, path)  # atomic: a concurrent reader sees whole-or-nothing
+        published = True
     except OSError:
-        # A full or failing volume can leave a partial temp file behind.
-        with contextlib.suppress(OSError):
-            _os.unlink(tmp)
         return
+    finally:
+        # A full or failing volume (or any other error) can leave a partial
+        # temp file behind.
+        if not published:
+            with contextlib.suppress(OSError):
+                _os.unlink(tmp)
 
 
 def _zone_maps_for(arr: Any) -> ZoneMaps:

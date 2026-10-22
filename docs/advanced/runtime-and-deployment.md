@@ -68,7 +68,7 @@ XYG has no durable store of its own. Default figures, HTML export, notebooks,
 Reflex apps, and the browser need no disk. Native hosts write only to paths you
 name, rebuildable caches beside your files, and process temporary files.
 
-- **Large density views** may spill their aggregate pyramid to a temporary file
+- **Large density views** (memmapped or very large columns whose pyramid would exceed the resident budget) may spill their aggregate pyramid to a temporary file
   in the operating system's temp directory (`TMPDIR` on Linux and macOS, `TMP`
   or `TEMP` on Windows). The file is deleted when the figure is released and is
   never reused after a crash. Set that variable before starting the process to
@@ -81,8 +81,10 @@ name, rebuildable caches beside your files, and process temporary files.
 - **Exports** write through a temporary file in the destination directory and
   replace the target atomically, so that directory must be writable.
 - Any project or data volume may sit under a different container, VM, or drive
-  root than the code. XYG does not require a fixed root, a Linux host, or the
-  current directory.
+  root than the code. XYG does not require a fixed root or a Linux host. Two
+  things do depend on the current directory: a Reflex app writes its chart
+  assets under `assets/xy/` in the directory it is run from (the app root), and
+  a relative development `XYG_NATIVE_LIB` is resolved against it.
 
 The audited paths, platform behavior, and caveats are listed in
 [Storage, temporary files, and mounted volumes](https://github.com/CurateLabs/xyg/blob/main/spec/design/storage-and-platforms.md).

@@ -51,7 +51,7 @@ npm ci
 npm ci --prefix packages/xy-node
 node js/build.mjs
 node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
-XYG_NATIVE_LIB=target/release/libxyg_core.dylib node scripts/geo_allocation_recovery_conformance.mjs
+XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.dylib node scripts/geo_allocation_recovery_conformance.mjs
 XYG_GEO_OVERVIEW_WASM=packages/xy-client/dist/xyg-wasm.wasm node --test packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-members.test.mjs
 uv run pytest tests/test_geo_overview_source.py tests/test_geo_overview_members.py -q
 node scripts/geo_overview_binary_smoke.mjs
