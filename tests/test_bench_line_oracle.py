@@ -40,18 +40,34 @@ def _patch_frombuffer(monkeypatch, n: int, transform) -> None:
     monkeypatch.setattr(bench_line.np, "frombuffer", patched)
 
 
+def _interior_non_extreme_row(x, y) -> int:
+    """A row strictly between same-bucket neighbours: dropping it keeps every
+    per-column min/max intact, so only the row-count check can reject it."""
+    x0, x1 = sorted(chart(line(x=x, y=y), width=900, height=420).figure().x_range())
+    n_out = bench_line.N_OUT
+    bucket = np.clip(((x - x0) / (x1 - x0) * n_out).astype(np.int64), 0, n_out - 1)
+    for i in range(len(x) // 2, len(x) - 1):
+        if bucket[i - 1] == bucket[i] == bucket[i + 1] and y[i - 1] < y[i] < y[i + 1]:
+            return i
+    raise AssertionError("no interior non-extreme row found")
+
+
 def test_extrema_oracle_rejects_dropped_row_in_direct_tier(monkeypatch) -> None:
     n = 10_000
     x, y = bench_line._series(n)
-    # Columns decode x first, then y; shorten both by one element (a dropped row).
+    drop = _interior_non_extreme_row(x, y)
+    # Control: the row's bucket min/max is unchanged without it (strictly
+    # between same-bucket neighbours), so only the row count can fail.
+    left, right = y[drop - 1], y[drop + 1]
+    assert left < y[drop] < right
+    assert bench_line._extrema_ok(x, y)
     real = np.frombuffer
 
-    def short(*args, **kwargs):
-        if kwargs.get("count") == n:
-            kwargs["count"] = n - 1
-        return real(*args, **kwargs)
+    def drop_row(*args, **kwargs):
+        out = real(*args, **kwargs)
+        return np.delete(out, drop) if kwargs.get("count") == n else out
 
-    monkeypatch.setattr(bench_line.np, "frombuffer", short)
+    monkeypatch.setattr(bench_line.np, "frombuffer", drop_row)
     assert not bench_line._extrema_ok(x, y)
 
 
