@@ -1189,3 +1189,17 @@ def test_scene_named_colorbar_adjacent_domains_keep_samples_or_fail_closed() -> 
     for domain in ([1.0, 1.0], [2.0, 1.0]):
         with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
             _named_colorbar_figure(domain).to_scene()
+
+
+def test_scene_named_colorbar_exact_fit_domain_crossing_a_power_of_two() -> None:
+    import math
+
+    eps = 2.0**-52
+    lo, hi = 2.0 - 9 * eps, 2.0 + 2 * eps  # exactly 11 representable values
+    values = _xycb_stop_values(_named_colorbar_figure([lo, hi]).to_scene())
+    expected = [lo]
+    while expected[-1] < hi:
+        expected.append(math.nextafter(expected[-1], math.inf))
+    assert values == expected and len(values) == 11
+    with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
+        _named_colorbar_figure([math.nextafter(lo, math.inf), hi]).to_scene()

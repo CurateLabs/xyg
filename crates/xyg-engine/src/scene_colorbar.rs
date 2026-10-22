@@ -159,11 +159,18 @@ pub fn pack_colorbar(input: ColorbarFrameInput<'_>) -> Result<Vec<u8>, ColorbarE
 /// `lo * (1 - t) + hi * t` when that product overflows (domains such as
 /// `[-1.7e308, 1.7e308]`), clamps into the
 /// domain, and lifts any value that rounding left at or below its predecessor
-/// to the next representable f64. A domain with too few representable values
+/// to the next representable f64, clamping each stop so the remaining stops
+/// still fit below `hi`. A domain with too few representable values
 /// between its endpoints for `count` samples is rejected as `Order` rather
 /// than dropping samples.
 fn uniform_stop_values(lo: f64, hi: f64, count: usize) -> Result<Vec<f64>, ColorbarError> {
     let last = count - 1;
+    // `ceilings[i]` is `hi` stepped down `last - i` representable values: the
+    // highest slot stop `i` may take while leaving room for every later stop.
+    let mut ceilings = vec![hi; count];
+    for index in (0..last).rev() {
+        ceilings[index] = ceilings[index + 1].next_down();
+    }
     let mut values = Vec::with_capacity(count);
     values.push(lo);
     for index in 1..last {
@@ -176,19 +183,19 @@ fn uniform_stop_values(lo: f64, hi: f64, count: usize) -> Result<Vec<f64>, Color
         } else {
             lo * (1.0 - t) + hi * t
         };
-        let previous = *values.last().unwrap();
-        // Interpolation must land strictly inside the domain; anything else is
-        // a defect, not something to paper over by lifting.
-        if !ideal.is_finite() || ideal >= hi {
+        if !ideal.is_finite() {
             return Err(ColorbarError::Order);
         }
-        // Lift only when rounding left the value at or below its predecessor.
+        let previous = *values.last().unwrap();
+        // Lift only when rounding left the value at or below its predecessor,
+        // and never past the ceiling that reserves room for later stops.
         let value = if ideal > previous {
             ideal
         } else {
             previous.next_up()
-        };
-        if value >= hi {
+        }
+        .min(ceilings[index]);
+        if value <= previous {
             return Err(ColorbarError::Order);
         }
         values.push(value);
@@ -398,6 +405,16 @@ mod tests {
         (v / 2.0 - lo / 2.0) / (hi / 2.0 - lo / 2.0)
     }
 
+    fn assert_ordered_palette(values: &[f64], lo: f64, hi: f64, name: &str) {
+        assert_eq!(values.len(), colormap::colormap_named_stops(name).len());
+        assert_eq!(values[0], lo);
+        assert_eq!(*values.last().unwrap(), hi);
+        assert!(
+            values.windows(2).all(|pair| pair[0] < pair[1]),
+            "{values:?}"
+        );
+    }
+
     fn assert_full_palette(values: &[f64], lo: f64, hi: f64, name: &str) {
         assert_eq!(values.len(), colormap::colormap_named_stops(name).len());
         assert_eq!(values[0], lo);
@@ -502,6 +519,44 @@ mod tests {
                 Err(ColorbarError::Order),
                 "{steps} ulps"
             );
+        }
+    }
+
+    #[test]
+    fn named_colorbar_exact_fit_domains_crossing_a_power_of_two_keep_every_value() {
+        let eps = f64::EPSILON; // 2^-52: spacing just below 2.0
+        // 9 values below 2.0, 2.0 itself, and 2.0 + 2^-51: exactly 11.
+        let lo = 2.0 - 9.0 * eps;
+        let hi = 2.0 + 2.0 * eps;
+        let values = named_values(lo, hi, "viridis").unwrap();
+        assert_ordered_palette(&values, lo, hi, "viridis");
+        let mut every = vec![lo];
+        while *every.last().unwrap() < hi {
+            every.push(every.last().unwrap().next_up());
+        }
+        assert_eq!(every.len(), 11);
+        assert_eq!(values, every);
+        // The same crossing one value short stays a stable rejection.
+        assert_eq!(
+            pack_named_colorbar(0, lo.next_up(), hi, [32; 4], b"", "viridis", &[]),
+            Err(ColorbarError::Order)
+        );
+        // Exact fit with the 11 values entirely above, below, and across a
+        // binade, in both signs and for a reversed palette.
+        for start in [
+            1.0_f64,
+            0.5 - 4.0 * eps / 2.0,
+            -2.0 - 3.0 * 2.0 * eps,
+            -(2.0 + 2.0 * eps),
+        ] {
+            let mut top = start;
+            for _ in 0..10 {
+                top = top.next_up();
+            }
+            for name in ["viridis", "viridis_r"] {
+                let values = named_values(start, top, name).unwrap();
+                assert_ordered_palette(&values, start, top, name);
+            }
         }
     }
 

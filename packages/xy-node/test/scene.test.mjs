@@ -912,6 +912,13 @@ test("Node named colorbars keep the full palette on extreme and adjacent finite 
   const adjacent = namedColorbarStops(build([1, hi]));
   assert.equal(adjacent.length, 11);
   assert.ok(adjacent.every((value, index) => !index || value > adjacent[index - 1]));
+  const eps = 2 ** -52, exactLo = 2 - 9 * eps, exactHi = 2 + 2 * eps;
+  const exact = namedColorbarStops(build([exactLo, exactHi]));
+  const every = [exactLo];
+  while (every.at(-1) < exactHi) every.push(next(every.at(-1)));
+  assert.deepEqual(exact, every);
+  assert.equal(every.length, 11);
+  assert.throws(() => build([next(exactLo), exactHi]), /^RangeError: XYG_SCENE_UNSUPPORTED_COLORBAR: /);
   // Fail closed with the same stable reason as Python for domains too narrow
   // for the palette (never thinned) and for empty or reversed domains.
   let narrow = 1;
