@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import itertools
 import json
 import struct
 from datetime import UTC, datetime
@@ -1123,3 +1124,117 @@ def test_scene_rejects_malformed_host_arrays() -> None:
             [0.0],
             [0],
         )
+
+
+def _named_colorbar_figure(domain: list[float]) -> Figure:
+    figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
+    figure.colorbar_options = {"domain": domain, "colormap": "viridis"}
+    return figure
+
+
+def _xycb_stop_values(scene: bytes) -> list[float]:
+    at = scene.index(b"XYCB")
+    (count,) = struct.unpack_from("<I", scene, at + 12)
+    return [struct.unpack_from("<d", scene, at + 56 + 12 * i)[0] for i in range(count)]
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        [0.0, 1.7e308],
+        [-1.7e308, 1.7e308],
+        [-1.7976931348623157e308, 1.7976931348623157e308],
+        [-1.7976931348623157e308, 0.0],
+        [8.98846567431158e307, 1.7976931348623157e308],
+    ],
+)
+def test_scene_named_colorbar_extreme_finite_domains_keep_full_palette(domain: list[float]) -> None:
+    """#888: hi - lo overflows; the palette must still frame, render, and rasterize."""
+    scene = _named_colorbar_figure(domain).to_scene()
+    values = _xycb_stop_values(scene)
+    assert len(values) == 11
+    assert values[0] == domain[0] and values[-1] == domain[1]
+    assert all(a < b for a, b in itertools.pairwise(values))
+    lo, hi = domain
+    for index, value in enumerate(values):  # halved terms cannot overflow
+        fraction = (value / 2 - lo / 2) / (hi / 2 - lo / 2)
+        assert abs(fraction - index / 10) < 1e-9, (index, fraction)
+    assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
+    assert _native.scene_raster_commands(scene)
+
+
+def test_scene_named_colorbar_adjacent_domains_keep_samples_or_fail_closed() -> None:
+    import math
+
+    lo = 1.0
+    hi = lo
+    for _ in range(10):  # exactly enough representable values for 11 samples
+        hi = math.nextafter(hi, math.inf)
+    scene = _named_colorbar_figure([lo, hi]).to_scene()
+    assert _xycb_stop_values(scene) == sorted(set(_xycb_stop_values(scene)))
+    assert len(_xycb_stop_values(scene)) == 11
+    assert 'data-xy-slot="colorbar' in _native.scene_svg(scene)
+    # Fewer representable values than samples: stable rejection, never a
+    # silently dropped palette or endpoint-only colors.
+    for steps in (1, 2, 9):
+        narrow = 1.0
+        for _ in range(steps):
+            narrow = math.nextafter(narrow, math.inf)
+        with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
+            _named_colorbar_figure([1.0, narrow]).to_scene()
+    for domain in ([1.0, 1.0], [2.0, 1.0]):
+        with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
+            _named_colorbar_figure(domain).to_scene()
+
+
+def test_scene_named_colorbar_exact_fit_domain_crossing_a_power_of_two() -> None:
+    import math
+
+    eps = 2.0**-52
+    lo, hi = 2.0 - 9 * eps, 2.0 + 2 * eps  # exactly 11 representable values
+    values = _xycb_stop_values(_named_colorbar_figure([lo, hi]).to_scene())
+    expected = [lo]
+    while expected[-1] < hi:
+        expected.append(math.nextafter(expected[-1], math.inf))
+    assert values == expected and len(values) == 11
+    with pytest.raises(UnsupportedSceneV3, match=r"^XYG_SCENE_UNSUPPORTED_COLORBAR: "):
+        _named_colorbar_figure([math.nextafter(lo, math.inf), hi]).to_scene()
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        [0.0, 1.7e308],
+        [-1.7976931348623157e308, 1.7976931348623157e308],
+        [8.98846567431158e307, 1.7976931348623157e308],
+        [0.0, 1.7976931348623157e308],
+    ],
+)
+@pytest.mark.parametrize("minor_ticks", [False, True])
+def test_scene_named_colorbar_extreme_domains_export_svg_and_png(
+    domain: list[float], minor_ticks: bool
+) -> None:
+    """#888: extreme domains reach the renderer; it must paint, never panic."""
+    figure = _named_colorbar_figure(domain)
+    figure.colorbar_options["minor_ticks"] = minor_ticks
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    assert 'data-xy-slot="colorbar_band"' in svg
+    assert 'data-xy-slot="colorbar_tick"' in svg
+    assert "inf" not in svg.lower().replace("info", "") and "nan" not in svg.lower()
+    assert _native.scene_raster_commands(scene)
+    png = _native.scene_static_export(scene, "png", scale=1.0, width=320, height=240)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert _native.scene_static_export(scene, "svg", width=320, height=240)
+
+
+def test_scene_host_ticks_spanning_the_f64_range_behave_the_same_in_svg_and_png() -> None:
+    top = 1.7976931348623157e308
+    figure = _named_colorbar_figure([-top, top])
+    figure.colorbar_options.update({"ticks": [-top, top], "minor_ticks": True})
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    assert svg.count('data-xy-slot="colorbar_minor_tick"') == 4
+    png = _native.scene_static_export(scene, "png", scale=1.0, width=320, height=240)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert _native.scene_raster_commands(scene)

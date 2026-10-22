@@ -234,6 +234,21 @@ in the README).
   silently leave a stale row in the CodSpeed dashboard.
 
 ### Fixed
+- Named Scene colorbars (`xyg_scene_pack_named_colorbar`) no longer fail
+  `NonFinite` on finite domains whose span overflows (`[0, 1.7e308]`,
+  `[-1.7e308, 1.7e308]`) and no longer fail `Order` when rounding collapses
+  interior stops: stop values use overflow-safe interpolation, bit-exact
+  endpoints, and the next representable value when rounding repeats one. Ordinary
+  domains frame byte-identically. Domains with fewer representable values than
+  palette samples (for example `[1, nextafter(1)]`) still fail closed with
+  `Order`, surfaced identically by Python and Node as
+  `XYG_SCENE_UNSUPPORTED_COLORBAR`; this is a documented decision with no XYCB
+  v3 extension (#888). Colorbar tick generation and placement on the domains
+  this admits (`[0, 1.7e308]`, `[-MAX, MAX]`, `[MAX/2, MAX]`) no longer
+  overflow in tick generation, pixel placement, or minor-tick subdivision;
+  `linear_ticks` stops at the first non-finite step, and colorbar ticks that
+  still cannot be resolved are rejected at Scene admission in every renderer
+  rather than panicking.
 - `benchmarks/bench_line.py --sizes 1e4` no longer fails its own extrema oracle (#1027). The product was correct: below the LOD budget a line is shipped in the lossless `direct` tier, which the oracle wrongly rejected as "not decimated". The oracle now accepts `direct` when every row is present and runs the same per-column comparison; the CI methodology contract step covers `1e4,1e5`.
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
