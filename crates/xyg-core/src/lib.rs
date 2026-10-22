@@ -860,6 +860,10 @@ pub unsafe extern "C" fn xyg_scene_splice_annotations(
 /// expansion overflow returned `-3` (`Limit`); `-3` now means only the other
 /// input-size limits.
 ///
+/// `-8` (`EncodeAssembledCode::PolarLegend`, #1041): a polar figure's in-Scene
+/// legend does not fit the recut polar viewport. Before #1041 that case
+/// returned `-6` (`Encode`).
+///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many
 /// readable bytes. When `out_cap` is non-zero, `out` must address that many
@@ -977,6 +981,10 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled(
 /// (record expansion over `MAX_SCENE_MARKS`, or a triangle-mesh overdraw or
 /// dense-fill image budget). Before #1006 those cases returned `-16`
 /// (`Encode`).
+///
+/// `-23` (`EncodeSidecarsCode::PolarLegend`, #1041): the assembled encode's
+/// `PolarLegend` (in-Scene legend does not fit the recut polar viewport).
+/// Before #1041 that case returned `-16` (`Encode`).
 ///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many
@@ -1105,7 +1113,9 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// (`TraceRowsCode::Lod`/`Limit`), trace-plus-annotation rows over
 /// `MAX_SCENE_MARKS`, and the assembled encode's `Lod` (expansion over
 /// `MAX_SCENE_MARKS`, triangle-mesh budgets) are relayed as `-801` with reason
-/// `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead of a stage code.
+/// `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` instead of a stage code. Since #1041 a
+/// polar legend that does not fit the recut polar viewport is relayed as `-801`
+/// with reason `XYG_SCENE_UNSUPPORTED_POLAR_LEGEND` instead of `-16`.
 ///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many

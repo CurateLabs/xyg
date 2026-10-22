@@ -643,7 +643,7 @@ pub struct SceneLegend {
 }
 
 impl SceneLegend {
-    fn validate_constructed(&self) -> Result<(), SceneError> {
+    pub(crate) fn validate_constructed(&self) -> Result<(), SceneError> {
         if self.entries.iter().any(|entry| {
             (entry.kind == SceneRecordKind::Scatter
                 && entry.symbol > ScatterSymbol::VerticalLine as u8)
@@ -2401,6 +2401,20 @@ pub enum SceneError {
     NegativeSize,
     InvalidPaint,
     Version,
+}
+
+/// `with_polar_legend_checked` failure: the in-Scene legend cannot fit the
+/// recut polar viewport (#1041), or any other Scene error.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PolarSceneError {
+    LegendFit,
+    Scene(SceneError),
+}
+
+impl From<SceneError> for PolarSceneError {
+    fn from(error: SceneError) -> Self {
+        Self::Scene(error)
+    }
 }
 
 // The stable trace-limit diagnostic below spells the ceiling literally.
@@ -9497,7 +9511,19 @@ impl<'a> SceneBatch<'a> {
     /// Rust recuts the cartesian plot rect (`recut_polar_plot`) before
     /// `polar_layout` so the inscribed disc and optional legend gutter match
     /// compatibility static export.
-    pub fn with_polar(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
+    pub fn with_polar(self, bytes: &[u8]) -> Result<Self, SceneError> {
+        self.with_polar_legend_checked(bytes)
+            .map_err(|error| match error {
+                PolarSceneError::LegendFit => SceneError::Limit,
+                PolarSceneError::Scene(error) => error,
+            })
+    }
+
+    /// `with_polar` that reports an in-Scene legend which does not fit the
+    /// recut polar viewport as [`PolarSceneError::LegendFit`] (#1041) so the
+    /// product encode can relay the stable `XYG_SCENE_UNSUPPORTED_POLAR_LEGEND`
+    /// reason instead of an opaque encode code.
+    pub fn with_polar_legend_checked(mut self, bytes: &[u8]) -> Result<Self, PolarSceneError> {
         if bytes.is_empty() {
             return Ok(self);
         }
@@ -9506,7 +9532,7 @@ impl<'a> SceneBatch<'a> {
             || !self.labels.is_empty()
             || self.y2.is_some()
         {
-            return Err(SceneError::Length);
+            return Err(SceneError::Length.into());
         }
         let (layout, legend_box) = recut_polar_scene_layout(
             self.layout,
@@ -9514,10 +9540,12 @@ impl<'a> SceneBatch<'a> {
             &self.text,
             self.colorbar.as_ref(),
             &self.chrome,
-        )?;
+        )
+        .map_err(PolarSceneError::Scene)?;
         self.layout = layout;
         if let Some(legend) = &self.legend {
-            resolved_legend_bounds(self.layout, legend, legend_box)?;
+            resolved_legend_bounds(self.layout, legend, legend_box)
+                .map_err(|_| PolarSceneError::LegendFit)?;
         }
         let mut polar = PolarSceneState::from_xypl(bytes, self.layout)?;
         polar.legend_box = legend_box;
