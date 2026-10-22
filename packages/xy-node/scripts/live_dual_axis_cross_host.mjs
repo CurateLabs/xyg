@@ -58,11 +58,11 @@ const reversedPayload = dualReversed();
 
 // An omitted y2 side stays unobserved (Rust decides right on the static
 // path); the live/HTML wire mirrors that resolution identically.
-function dualOmittedSide() {
+function dualOmittedSide(y2Side) {
   const f = new Figure({ width: 480, height: 320 });
   f.setAxis("x", { domain: [0, 4] });
   f.setAxis("y", { domain: [0, 4], label: "L" });
-  f.setAxis("y2", { domain: [0, 400], label: "R" });
+  f.setAxis("y2", { domain: [0, 400], label: "R", ...(y2Side ? { side: y2Side } : {}) });
   f.line([1, 2, 3], [1, 2, 3]);
   f.line([1, 2, 3], [100, 200, 300], { yAxis: "y2" });
   f.annotate({ kind: "text", x: 2, y: 200, text: "secondary", y_axis: "y2", dx: 6, dy: -6, anchor: "start" });
@@ -70,6 +70,7 @@ function dualOmittedSide() {
   return f;
 }
 const omittedPayload = dualOmittedSide().buildPayload();
+const explicitRightPayload = dualOmittedSide("right").buildPayload();
 const htmlSpecOf = (figure) => {
   const document = figure.toHtml();
   const match = /;\n  const buf = xyDecodeB64\(/.exec(document);
@@ -132,6 +133,8 @@ const out = {
   omitted_side: {
     stored_side: dualOmittedSide().axis_options.y2.side ?? null,
     axes_y2: omittedPayload.spec.axes.y2,
+    explicit_right_axes_y2: explicitRightPayload.spec.axes.y2,
+    explicit_right_payload_blob_sha256: sha256(explicitRightPayload.buffers),
     html_axes_y2_side: omittedHtmlAxes.y2.side,
     payload_blob_sha256: sha256(omittedPayload.buffers),
   },

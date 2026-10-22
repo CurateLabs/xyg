@@ -1873,7 +1873,10 @@ pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneE
     } else {
         (b / target as f64) - (a / target as f64)
     };
-    let magnitude = 10_f64.powf(rough.abs().log10().floor());
+    let mut magnitude = 10_f64.powf(rough.abs().log10().floor());
+    if magnitude == 0.0 {
+        magnitude = f64::from_bits(1); // subnormal domains underflow to zero
+    }
     // Overflowing candidates are skipped; `magnitude` is always finite.
     let step = [1.0, 2.0, 2.5, 5.0, 10.0]
         .into_iter()
@@ -4215,8 +4218,13 @@ fn resolved_colorbar_ticks(
                     let scaled = span * subdivision as f64;
                     if scaled.is_finite() {
                         pair[0] + scaled / 5.0
-                    } else {
+                    } else if span.is_finite() {
                         pair[0] + span / 5.0 * subdivision as f64
+                    } else {
+                        // Even the span overflows ([-MAX, MAX]): blend the
+                        // endpoints so no intermediate leaves the range.
+                        let fraction = subdivision as f64 / 5.0;
+                        pair[0] * (1.0 - fraction) + pair[1] * fraction
                     }
                 };
                 let position = pixel(value);
@@ -9047,7 +9055,8 @@ impl<'a> SceneBatch<'a> {
         }
         if let Some(value) = &colorbar {
             value.encode()?;
-            resolved_colorbar_bounds(layout, value)?;
+            let bounds = resolved_colorbar_bounds(layout, value)?;
+            resolved_colorbar_ticks(value, bounds)?;
         }
         if [
             stable_ids.len(),
@@ -13356,7 +13365,8 @@ impl SceneDocument {
             )?;
         }
         if let Some(value) = &colorbar {
-            resolved_colorbar_bounds(layout, value)?;
+            let bounds = resolved_colorbar_bounds(layout, value)?;
+            resolved_colorbar_ticks(value, bounds)?;
         }
         if bytes[96] > ScaleKind::SymLog as u8
             || bytes[104] > ScaleKind::SymLog as u8
@@ -14198,9 +14208,9 @@ impl SceneDocument {
             out.push_str(&rgba_css(paint));
             out.push_str("\"/>");
         }
-        // Admission validates tick geometry; if a caller still reaches here
-        // with unresolvable ticks, draw the bar without them instead of
-        // panicking inside the renderer.
+        // Defensive only: Scene admission now resolves colorbar ticks, so this
+        // fallback is unreachable for admitted scenes. It draws the bar
+        // without ticks rather than panicking if that invariant ever breaks.
         let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height)).unwrap_or_default();
         for (maximum, points, rgba) in resolved_colorbar_extensions(colorbar, (x, y, width, height))
         {
@@ -24806,6 +24816,36 @@ pub(crate) mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn host_ticks_spanning_the_whole_f64_range_get_finite_minors() {
+        let ticks = [-f64::MAX, f64::MAX];
+        let bytes = crate::scene_colorbar::pack_named_colorbar(
+            4,
+            -f64::MAX,
+            f64::MAX,
+            [32; 4],
+            b"",
+            "viridis",
+            &ticks,
+        )
+        .unwrap();
+        let colorbar = SceneColorbar::from_input(&bytes).unwrap().unwrap();
+        let resolved = resolved_colorbar_ticks(&colorbar, (10.0, 20.0, 80.0, 200.0)).unwrap();
+        assert_eq!(resolved.majors.len(), 2);
+        assert_eq!(resolved.minors.len(), 4);
+        assert!(resolved
+            .minors
+            .iter()
+            .all(|(value, pixel)| value.is_finite() && pixel.is_finite()));
+    }
+
+    #[test]
+    fn subnormal_domains_still_get_linear_ticks() {
+        let ticks = linear_ticks(0.0, f64::from_bits(64), 5).unwrap();
+        assert!(ticks.labeled.len() >= 2);
+        assert!(ticks.labeled.iter().all(|value| value.is_finite()));
     }
 
     #[test]

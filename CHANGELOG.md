@@ -13,6 +13,16 @@ in the README).
 
 ## [Unreleased]
 
+### Changed
+- The live payload's secondary y axis (y2) side is resolved by Rust (#1044).
+  New ABI 392 `xyg_payload_axis_side_resolve` shares `resolve_axis_side_code`
+  with static Scene export (x bottom, y left, unauthored y2 right); Python and
+  Node marshal only the authored side and the `_Y2_LIVE_SIDE` / `Y2_LIVE_SIDE`
+  host constants are removed. Live y2 still accepts `side="left"`.
+- Node `setAxis` now rejects an invalid `side` up front with Python's messages
+  (`x axis side must be 'top' or 'bottom'`, `y axis side must be 'left' or
+  'right'`); previously it failed later with a generic error (#1044).
+
 ### Added
 - Native static export at full size (#1006, #1007, tracker #1009). SVG/PNG/PDF/
   JPEG/WebP take the browser's first-paint Rust LOD tier instead of failing
@@ -190,8 +200,11 @@ in the README).
   `XYG_SCENE_UNSUPPORTED_COLORBAR`; this is a documented decision with no XYCB
   v3 extension (#888). Colorbar tick generation and placement on the domains
   this admits (`[0, 1.7e308]`, `[-MAX, MAX]`, `[MAX/2, MAX]`) no longer
-  overflow or panic in the renderer; `linear_ticks` stops at the first
-  non-finite step.
+  overflow in tick generation, pixel placement, or minor-tick subdivision;
+  `linear_ticks` stops at the first non-finite step, and colorbar ticks that
+  still cannot be resolved are rejected at Scene admission in every renderer
+  rather than panicking.
+- `benchmarks/bench_line.py --sizes 1e4` no longer fails its own extrema oracle (#1027). The product was correct: below the LOD budget a line is shipped in the lossless `direct` tier, which the oracle wrongly rejected as "not decimated". The oracle now accepts `direct` when every row is present and runs the same per-column comparison; the CI methodology contract step covers `1e4,1e5`.
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
   while a cache-isolated coreless build must still import `reflex_xy`, report

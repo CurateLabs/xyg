@@ -1226,3 +1226,15 @@ def test_scene_named_colorbar_extreme_domains_export_svg_and_png(
     png = _native.scene_static_export(scene, "png", scale=1.0, width=320, height=240)
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
     assert _native.scene_static_export(scene, "svg", width=320, height=240)
+
+
+def test_scene_host_ticks_spanning_the_f64_range_behave_the_same_in_svg_and_png() -> None:
+    top = 1.7976931348623157e308
+    figure = _named_colorbar_figure([-top, top])
+    figure.colorbar_options.update({"ticks": [-top, top], "minor_ticks": True})
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    assert svg.count('data-xy-slot="colorbar_minor_tick"') == 4
+    png = _native.scene_static_export(scene, "png", scale=1.0, width=320, height=240)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert _native.scene_raster_commands(scene)

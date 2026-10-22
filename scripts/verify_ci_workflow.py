@@ -2128,7 +2128,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         '--json "$RUNNER_TEMP/bench-contract/workflows.json"',
         '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/workflows.json" '
         "--kind workflow-native",
-        '.venv/bin/python benchmarks/bench_line.py --sizes 1e5 --json "$RUNNER_TEMP/bench-contract/line.json"',
+        '.venv/bin/python benchmarks/bench_line.py --sizes 1e4,1e5 --json "$RUNNER_TEMP/bench-contract/line.json"',
         '.venv/bin/python scripts/verify_benchmark_report.py "$RUNNER_TEMP/bench-contract/line.json" '
         "--kind line-decimation",
         '.venv/bin/python benchmarks/bench_install.py --packages xyg --json "$RUNNER_TEMP/bench-contract/install.json"',

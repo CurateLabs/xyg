@@ -944,6 +944,16 @@ test("Node exports extreme named-colorbar domains to SVG and PNG without panicki
   }
 });
 
+test("Node host ticks spanning the f64 range draw the same minors in SVG and PNG (#888)", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.scatter([0, 1], [0, 1]);
+  figure.colorbar_options = { domain: [-Number.MAX_VALUE, Number.MAX_VALUE], colormap: "viridis", ticks: [-Number.MAX_VALUE, Number.MAX_VALUE], minor_ticks: true };
+  const scene = figure.toScene();
+  assert.equal((sceneSvg(scene).match(/data-xy-slot="colorbar_minor_tick"/g) ?? []).length, 4);
+  const png = sceneStaticExport(scene, "png", { scale: 1, width: 320, height: 240 });
+  assert.deepEqual(Array.from(png.subarray(0, 4)), [0x89, 0x50, 0x4e, 0x47]);
+});
+
 test("Node explicit hidden Cartesian chrome omits invisible groups without implying polar", () => {
   const chrome = new Uint8Array(200);
   new DataView(chrome.buffer).setFloat64(16, 12, true);

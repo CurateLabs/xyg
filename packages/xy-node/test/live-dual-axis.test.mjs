@@ -131,3 +131,29 @@ test("a y2 binding without a declared y2 axis fails closed with a stable message
     /y_axis must be 'y' or 'y2', got "y3"/,
   );
 });
+
+test("setAxis rejects an invalid side with Python's messages", () => {
+  const figure = new Figure({ width: 120, height: 90 });
+  assert.throws(() => figure.setAxis("x", { side: "left" }), /x axis side must be 'top' or 'bottom'/);
+  assert.throws(() => figure.setAxis("y", { side: "top" }), /y axis side must be 'left' or 'right'/);
+  assert.throws(() => figure.setAxis("y2", { side: "bottom" }), /y axis side must be 'left' or 'right'/);
+  figure.setAxis("y2", { side: "left" });
+  assert.equal(figure.axis_options.y2.side, "left");
+});
+
+test("no host keeps a y2 side constant (Rust owns the resolution, #1044)", async () => {
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const roots = [
+    fileURLToPath(new URL("../src/", import.meta.url)),
+    fileURLToPath(new URL("../../../python/xyg/", import.meta.url)),
+  ];
+  const hits = [];
+  for (const root of roots) {
+    for (const name of readdirSync(root)) {
+      if (!/\.(js|py)$/.test(name)) continue;
+      if (/Y2_LIVE_SIDE/.test(readFileSync(root + name, "utf8"))) hits.push(root + name);
+    }
+  }
+  assert.deepEqual(hits, []);
+});
