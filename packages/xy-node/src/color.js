@@ -597,7 +597,8 @@ export function resolveColormap(value, label = "colormap") {
     const flatRows = items.flatMap((row) => [...row]);
     for (const c of flatRows) {
       if (!Number.isInteger(c) || c < 0 || c > 255) {
-        throw new RangeError(`${label} stops must be integers in 0..255, got ${c}`);
+        const text = Number.isNaN(c) ? "nan" : !Number.isFinite(c) ? (c > 0 ? "inf" : "-inf") : String(c);
+        throw new RangeError(`${label} stops must be integers in 0..255, got ${text}`);
       }
     }
     const flat = Uint8Array.from(flatRows);

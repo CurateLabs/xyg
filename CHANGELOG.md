@@ -14,6 +14,11 @@ in the README).
 ## [Unreleased]
 
 ### Changed
+- `resolve_colormap` stop admission is now strict for every mark (#1025):
+  RGB stop rows must be integers in 0..255 (`ValueError: ... stops must be
+  integers in 0..255, got X`, identical in Node), so unit-float rows such as
+  `[[0, 0.5, 1], ...]` raise instead of silently casting to near-black, and
+  2-D integer ndarrays are now accepted.
 - The live payload's secondary y axis (y2) side is resolved by Rust (#1044).
   New ABI 392 `xyg_payload_axis_side_resolve` shares `resolve_axis_side_code`
   with static Scene export (x bottom, y left, unauthored y2 right); Python and

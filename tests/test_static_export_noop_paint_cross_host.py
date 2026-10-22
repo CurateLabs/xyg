@@ -172,6 +172,9 @@ def test_colormap_stop_rows_admit_identically_on_both_hosts(node_exports: dict[s
         "too_big": [[256, 0, 0], [0, 0, 255]],
         "fractional": [[1.5, 0, 0], [0, 0, 255]],
         "negative": [[-1, 0, 0], [0, 0, 255]],
+        "inf": [[float("inf"), 0, 0], [0, 0, 255]],
+        "nan": [[float("nan"), 0, 0], [0, 0, 255]],
+        "integral_float": [[256.0, 0, 0], [0, 0, 255]],
     }
     for name, rows in cases.items():
         assert _python_admission(rows) == node_exports["colormap_rows"][name], name

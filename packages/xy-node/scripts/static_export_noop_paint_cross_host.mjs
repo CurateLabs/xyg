@@ -79,5 +79,8 @@ out.colormap_rows = {
   too_big: admission([[256, 0, 0], [0, 0, 255]]),
   fractional: admission([[1.5, 0, 0], [0, 0, 255]]),
   negative: admission([[-1, 0, 0], [0, 0, 255]]),
+  inf: admission([[Infinity, 0, 0], [0, 0, 255]]),
+  nan: admission([[NaN, 0, 0], [0, 0, 255]]),
+  integral_float: admission([[256.0, 0, 0], [0, 0, 255]]),
 };
 process.stdout.write(`${JSON.stringify(out)}\n`);

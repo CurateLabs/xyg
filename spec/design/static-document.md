@@ -159,6 +159,14 @@ call raises the listed stable `XYG_*` reason.
   document fact. Scene-rejected custom fonts, browser-only CSS/classes,
   unresolved gradients, and unmodeled mark/style/data combinations fail closed
   with the predicate's exact stable reason.
+  A contour with a custom (gradient, CSS-color list, or RGB-stop) colormap is
+  one such family (#1025): the Scene color channel carries built-in colormap
+  names only, so both hosts fail closed with
+  `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP`, registered as the
+  `contour_custom_colormap` fail-close row in `static_export_registry.rs`. The
+  hosts raise it while marshalling the color channel; moving the decision into
+  Rust needs a wire field distinguishing "custom" from "absent" and is a
+  follow-up.
 - Large data takes the browser's first-paint LOD tier, never a silent
   host-side reduction (#1006; [scene-ir.md](scene-ir.md#public-static-lod-tiers-1006),
   dossier §28): a Cartesian line above `DECIMATION_THRESHOLD` (10,000) exports

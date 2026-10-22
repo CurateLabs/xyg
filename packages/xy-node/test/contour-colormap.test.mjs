@@ -56,3 +56,9 @@ test("typed-array stop rows flatten per row", () => {
   assert.deepEqual(resolveColormap(rows), [[255, 0, 0], [0, 0, 255]]);
   assert.throws(() => resolveColormap([new Float64Array([256, 0, 0]), new Float64Array([0, 0, 1])]), /integers in 0\.\.255/);
 });
+
+test("non-finite and integral-float stops share Python's wording", () => {
+  assert.throws(() => resolveColormap([[Infinity, 0, 0], [0, 0, 1]]), /got inf$/);
+  assert.throws(() => resolveColormap([[NaN, 0, 0], [0, 0, 1]]), /got nan$/);
+  assert.throws(() => resolveColormap([[256.0, 0, 0], [0, 0, 1]]), /got 256$/);
+});
