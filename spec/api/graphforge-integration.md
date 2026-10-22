@@ -138,7 +138,7 @@ message}`). Details: design §6.4.
 | Paint protocol | 13 | `PROTOCOL_VERSION` (typed tooltip columns) |
 | `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
-| Coverage ledger | 1 | `composition.ledgerVersion` |
+| Coverage ledger | 2 | `composition.ledgerVersion` |
 | GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5: 96 algorithms) |
 
 ## 6. Error codes
