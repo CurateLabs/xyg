@@ -64,7 +64,7 @@ test('packaged ABI34 retained source and frozen snapshot equal actual native byt
   try{await assert.rejects(bridge('snapshot').execute(encodeGeoSnapshotRequest(2,snapshot,{budget:budget.processorBytes,format:'png'})),error=>error.message==='XYG_GEO_SNAPSHOT_UNSUPPORTED_EXPORT');}
   finally{await bridge('snapshot').execute(encodeGeoSnapshotRequest(3,snapshot));}
   assert.equal(x.xyg_wasm_geo_frame_prepare(h,++sequence,frame.handle,1n),0);
-  const p=new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h));assert.equal(new TextDecoder().decode(p.subarray(0,4)),'XYPB');assert.equal(new DataView(p.buffer,p.byteOffset).getUint32(4,true),16);
+  const p=new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h));assert.equal(new TextDecoder().decode(p.subarray(0,4)),'XYPB');assert.equal(new DataView(p.buffer,p.byteOffset).getUint32(4,true),17);
  });assert.deepEqual(actual,expected);
  }finally{assert.equal(x.xyg_wasm_instance_dispose(h),0);}
 });

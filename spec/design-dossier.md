@@ -505,13 +505,13 @@ re-exports several of them as a historic import path and is not listed for those
 | `LOD_POINTS_REQUEST_BAND` | `4` | The aggregate tier never refines per view (T13, revised): a raw-view `density_view` goes out only when the estimated in-view count sits within `budget × 4` of points territory — the LOWER of an area-scaled cached-window count and the retained sample counted in-view (`lodSampleViewCount`, distribution-true where area-scaling over-estimates sparse tails). | `js/src/45_lod.ts` (`lodAggregateStands`) |
 | `LOD_AGG_STEP_FACTOR` / `LOD_AGG_STEP_MAX` / `LOD_AGG_STEP_SLACK` | `4` / `2` / `1.5` | The stepped aggregate ladder (T13): while standing, the only density request is the view snapped outward to a power-of-4 block grid over the extent (per axis), at most 2 steps below home, and only when every covering texture is coarser than the step by more than the slack. Quantized windows are pan-stable and dedupable — at most 2 smooth-to-smooth swaps before points, worst-case softness ≈ 4× stretch per axis. | `js/src/45_lod.ts` (`lodAggregateStepWindow`) |
 | `DEFAULT_PALETTE` | 8 CVD-safe hex entries | Rust-owned, versioned per-trace default color cycle and fallback categorical palette, used when the chart sets no `theme(palette=...)` (§20/§36). ABI 360 exposes bounded fixed-width `#rrggbb` bytes and RGBA8 rows; Python keeps a lazy immutable sequence proxy, Node initializes from the native contract, and direct WASM exports the same engine rows. Its ORDER is the CVD-safety mechanism — never re-order or extend without re-running the validator and bumping the palette-contract version. | `xyg-engine::kernels`; native/WASM ABI adapters; host palette proxies |
-| `MESH_OVERDRAW_PLOTS` | `64.0` | Static triangle-mesh admission (#1006), not a browser tier: above 1,024 faces, Scene compile charges each face `height × (width + 1)` of its plot-clipped pixel bounding box, plus its outline's padded stroke boxes when stroked, and fails closed with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` past 64 plot rectangles (floor `MAX_SCENE_IMAGE_PIXELS` CSS px²), bounding raster and dense-image painting. Format-agnostic: it also applies to vector SVG/PDF. | `scene.rs` (`SceneBatch::check_mesh_budgets`) |
+| `MESH_OVERDRAW_PLOTS` | `64.0` | Static triangle-mesh admission (#1006), not a browser tier: for raster consumers above 1,024 faces, the chosen consumer charges each face `height × (width + 1)` of its plot-clipped pixel bounding box, plus its outline's padded stroke boxes when stroked, and fails closed with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` past 64 plot rectangles (floor `MAX_SCENE_IMAGE_PIXELS` CSS px²), bounding raster and dense-image painting. SVG/PDF apply it only above the 50,000-face vector ceiling, when they rasterize dense images (#1042). | `scene.rs` (`SceneDocument::check_mesh_budgets`) |
 | `PYRAMID_MIN_POINTS` | `2_000_000` | Trace size at/above which a Tier-3 tile pyramid is built lazily; smaller traces never pay for one. | `interaction.py` |
 | `PYRAMID_BASE_DIM` | `2048` | Edge of the pyramid's base level in cells (`dim²` u32 counts, ~1/3 overhead for the coarser levels); sets resident pyramid bytes. | `interaction.py` |
 
 Nothing in this table folds mark pixel area or overdraw into a tier decision — that is
 F3, still pending (above). One bounded exception is static admission, not a tier: above
-1,024 triangle-mesh faces, Scene compile charges each face's clipped bounding box
+1,024 triangle-mesh faces, raster-work admission charges each face's clipped bounding box
 against `MESH_OVERDRAW_PLOTS` and fails closed (#1006; scene-ir.md "Mesh tiers and
 dense-fill rule").
 
@@ -1349,8 +1349,11 @@ keeps every face (raster formats paint them at the requested scale), SVG/PDF
 write vector faces up to 50,000 faces aggregate and above it one raster image
 per mesh that Rust paints from the same faces at the default PNG scale (2,
 falling back to 1, then failing closed at `MAX_SCENE_IMAGE_PIXELS`), and
-above 1,024 faces the faces' overdraw is bounded to 64 plot rectangles so
-painting is never quadratic. Every
+above 1,024 faces raster-work consumers bound the faces' overdraw to 64 plot
+rectangles so painting is never quadratic. Pure vector SVG/PDF through
+50,000 faces bypass that raster cost bound (#1042); SVG/PDF above it retain
+both overdraw and dense-image grid limits. The format-aware non-rendering
+ABI 394 support query and XYST consumers enforce the same Rust decision. Every
 trace's packed rows share `MAX_SCENE_MARKS` before any host materializes them.
 Polar lines (the browser ships them direct), areas, and every other kind above
 the 10,000-record public budget, forced-direct scatters beyond the ceiling,

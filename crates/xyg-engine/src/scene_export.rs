@@ -1552,7 +1552,7 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 // SVG/PDF dense-fill image above; the predicate only counts:
                 // 3 expanded records per face share the Scene mark ceiling.
                 // (Overdraw and image-grid bounds need pixel geometry and are
-                // checked at Scene compile, `SceneBatch::check_mesh_budgets`.)
+                // checked after format selection, `SceneDocument::check_mesh_budgets`.)
                 mesh_face_records = (trace.n_x as usize)
                     .checked_mul(3)
                     .and_then(|records| mesh_face_records.checked_add(records))

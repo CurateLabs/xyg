@@ -213,7 +213,7 @@ export function compilePainter(painter: ArrayBuffer, detachedColors = false) {
   const tickValues: number[] = [], tickLabels: string[] = [], tickMajor: boolean[] = [];
   let nextString = stringOffset;
   const textLengths = [u32(LENGTHS_AT), u32(LENGTHS_AT + 4), u32(LENGTHS_AT + 8), u32(LENGTHS_AT + 12)];
-  if (textLengths.some((value) => value > 4096) || (!hasY2 && textLengths[3]) || bytes.subarray(HEADER_BYTES - 4, HEADER_BYTES).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text header is invalid");
+  if (textLengths.some((value) => value > 4096) || (!hasY2 && textLengths[3])) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text header is invalid");
   const text = textLengths.map((length) => {
     const end = nextString + length;
     if (!Number.isSafeInteger(end) || end > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text range is invalid");
@@ -361,7 +361,7 @@ export function compilePainter(painter: ArrayBuffer, detachedColors = false) {
     const present = bytes[Y2_TEXT_AT + 24], flags = u32(Y2_TEXT_AT + 12);
     const tickSize = f32(Y2_TEXT_AT), titleSize = f32(Y2_TEXT_AT + 4), padding = f32(Y2_TEXT_AT + 8);
     const tickPaint = bytes.subarray(Y2_TEXT_AT + 16, Y2_TEXT_AT + 20), titlePaint = bytes.subarray(Y2_TEXT_AT + 20, Y2_TEXT_AT + 24);
-    if (present > 7 || flags > 0xf || bytes.subarray(Y2_TEXT_AT + 25, Y2_TEXT_AT + Y2_TEXT_BYTES).some((value) => value !== 0)
+    if (present > 7 || flags > 0xf || (bytes[Y2_TEXT_AT + 25] !== 0 || bytes.subarray(Y2_TEXT_AT + 28, Y2_TEXT_AT + Y2_TEXT_BYTES).some((value) => value !== 0))
       || (present & 1 ? !(tickSize >= 1 && tickSize <= 1000 && titleSize >= 1 && titleSize <= 1000 && padding >= -1000 && padding <= 1000) : (tickSize !== 0 || titleSize !== 0 || padding !== 0))
       || (!(present & 2) && tickPaint.some((value) => value !== 0)) || (!(present & 4) && titlePaint.some((value) => value !== 0))) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter y2 text record is invalid");
     return {
@@ -372,11 +372,14 @@ export function compilePainter(painter: ArrayBuffer, detachedColors = false) {
     };
   })();
   const axis = (id: string, range: number[], start: number, count: number, isX: boolean, axisOffset: number, axisText: AxisText | null = null) => {
-    if (bytes.subarray(axisOffset + 5, axisOffset + 8).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter axis reserved bytes are nonzero");
-    const sideCode = bytes[axisOffset], tickMask = bytes[axisOffset + 1], labelMask = bytes[axisOffset + 2], majorDirection = bytes[axisOffset + 3], minorDirection = bytes[axisOffset + 4];
-    if (sideCode > 1 || tickMask > 3 || labelMask > 3 || majorDirection > 2 || minorDirection > 2) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter axis style is invalid");
+    // XYPB v17: byte 5 packs mode (low 3 bits) and per-side anchors
+    // (bits 3-4 / 5-6). Bottom/left i16 rotation is at 6-7; top/right
+    // rotations live at header 416/418/378 (x/y/y2).
+    const flags = bytes[axisOffset + 5], mode = flags & 7, anchor0 = (flags >> 3) & 3, anchor1 = (flags >> 5) & 3, angle = view.getInt16(axisOffset + 6, true) / 100, otherAngle = view.getInt16(id === "x" ? 416 : id === "y" ? 418 : 378, true) / 100, sideCode = bytes[axisOffset], tickMask = bytes[axisOffset + 1], labelMask = bytes[axisOffset + 2], majorDirection = bytes[axisOffset + 3], minorDirection = bytes[axisOffset + 4];
+    if (sideCode > 1 || tickMask > 3 || labelMask > 3 || majorDirection > 2 || minorDirection > 2 || mode < 2 || mode > 6 || flags > 127 || anchor0 > 2 || anchor1 > 2) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter axis style is invalid");
     const sides = isX ? ["bottom", "top"] : ["left", "right"];
-    const direction = ["out", "in", "inout"];
+    const direction = ["out", "in", "inout"], anchors = ["start", "center", "end"];
+    const firstAngle = labelMask === 2 ? otherAngle : angle;
     const numbers = Array.from({ length: 7 }, (_, index) => f64(axisOffset + 32 + index * 8));
     if (numbers.some((value) => value < 0 || value > 1000) || !(labelSize > 0 && labelSize <= 1000)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter axis geometry is outside bounds");
     const majorValues: number[] = [], majorLabels: string[] = [], minorValues: number[] = [];
@@ -385,7 +388,7 @@ export function compilePainter(painter: ArrayBuffer, detachedColors = false) {
       else minorValues.push(tickValues[index]);
     }
     const labelColor = rgba(bytes.subarray(axisOffset + 28, axisOffset + 32));
-    return { id, scale: "linear", range, tick_values: majorValues, minor_tick_values: minorValues, tick_labels: majorLabels, tick_resolution: "rust_scene", tick_label_strategy: "auto", tick_sides: sides.filter((_, index) => tickMask & (1 << index)), tick_label_sides: sides.filter((_, index) => labelMask & (1 << index)), grid: true, side: sides[sideCode], style: { axis_color: rgba(bytes.subarray(axisOffset + 8, axisOffset + 12)), grid_color: rgba(bytes.subarray(axisOffset + 12, axisOffset + 16)), tick_color: rgba(bytes.subarray(axisOffset + 16, axisOffset + 20)), tick_label_color: axisText?.tickColor ?? labelColor, label_color: axisText?.titleColor ?? labelColor, axis_width: numbers[0], grid_width: numbers[1], tick_width: numbers[2], tick_length: numbers[3], tick_direction: direction[majorDirection], tick_label_size: axisText?.tickSize ?? labelSize, label_size: axisText?.titleSize ?? labelSize, ...(axisText?.padding !== undefined ? { tick_padding: axisText.padding } : {}), ...(axisText?.titleFlags ? { ...(axisText.titleFlags & 1 ? { label_font_style: "italic" } : {}), ...(axisText.titleFlags & 2 ? { label_font_weight: "bold" } : {}) } : {}), ...(axisText?.tickFlags ? { ...(axisText.tickFlags & 1 ? { tick_label_font_style: "italic" } : {}), ...(axisText.tickFlags & 2 ? { tick_label_font_weight: "bold" } : {}) } : {}) }, minor_style: { grid_color: rgba(bytes.subarray(axisOffset + 20, axisOffset + 24)), tick_color: rgba(bytes.subarray(axisOffset + 24, axisOffset + 28)), grid_width: numbers[4], tick_width: numbers[5], tick_length: numbers[6], tick_direction: direction[minorDirection] } };
+    return { id, scale: "linear", range, tick_values: majorValues, minor_tick_values: minorValues, tick_labels: majorLabels, tick_resolution: "rust_scene", tick_label_strategy: mode > 4 ? (mode > 5 ? "off" : "none") : "preserve", tick_stagger: mode === 3, ...(firstAngle ? { tick_label_angle: firstAngle } : {}), tick_label_angles: { [sides[0]]: angle, [sides[1]]: otherAngle }, tick_label_anchors: { [sides[0]]: anchors[anchor0], [sides[1]]: anchors[anchor1] }, tick_sides: sides.filter((_, index) => tickMask & (1 << index)), tick_label_sides: sides.filter((_, index) => labelMask & (1 << index)), grid: true, side: sides[sideCode], style: { axis_color: rgba(bytes.subarray(axisOffset + 8, axisOffset + 12)), grid_color: rgba(bytes.subarray(axisOffset + 12, axisOffset + 16)), tick_color: rgba(bytes.subarray(axisOffset + 16, axisOffset + 20)), tick_label_color: axisText?.tickColor ?? labelColor, label_color: axisText?.titleColor ?? labelColor, axis_width: numbers[0], grid_width: numbers[1], tick_width: numbers[2], tick_length: numbers[3], tick_direction: direction[majorDirection], tick_label_size: axisText?.tickSize ?? labelSize, label_size: axisText?.titleSize ?? labelSize, ...(axisText?.padding !== undefined ? { tick_padding: axisText.padding } : {}), ...(axisText?.titleFlags ? { ...(axisText.titleFlags & 1 ? { label_font_style: "italic" } : {}), ...(axisText.titleFlags & 2 ? { label_font_weight: "bold" } : {}) } : {}), ...(axisText?.tickFlags ? { ...(axisText.tickFlags & 1 ? { tick_label_font_style: "italic" } : {}), ...(axisText.tickFlags & 2 ? { tick_label_font_weight: "bold" } : {}) } : {}) }, minor_style: { grid_color: rgba(bytes.subarray(axisOffset + 20, axisOffset + 24)), tick_color: rgba(bytes.subarray(axisOffset + 24, axisOffset + 28)), grid_width: numbers[4], tick_width: numbers[5], tick_length: numbers[6], tick_direction: direction[minorDirection] } };
   };
   const xAxis = { ...axis("x", [left, right], 0, xTickCount, true, chrome + 24), label: text[1] };
   const yAxis = { ...axis("y", [bottom, top], xTickCount, yTickCount, false, chrome + 112), label: text[2] };

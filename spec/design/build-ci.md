@@ -63,6 +63,13 @@ The single-producer guard parses the cargo/npm/node arguments, so reordered or a
 cannot hide a second producer, and the `test` and `python_floor` jobs no longer install the unused
 `wasm32-unknown-unknown` target.
 
+The `matplotlib_reference` job also runs
+`tests/test_named_colorbar_comparison.py` explicitly alongside its full pyplot
+suite. Its dev dependencies provide Pillow and its pinned Matplotlib 3.11.0
+install exercises both shared-renderer corruption witnesses. The minimal
+Python-floor environment skips that module through `pytest.importorskip` when
+Pillow or Matplotlib is absent.
+
 `scripts/verify_ci_workflow.py` is a conservative static guard, not a shell parser: it
 fails closed where it cannot analyze a step (folded or quoted `run` scalars with a pipe, a
 heredoc left open) and accepts a few false positives rather than miss a gate.

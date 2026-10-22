@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 393
-#define XYG_ABI_SIGNATURE_SHA256 "c79d7e5ba5ce00b1fb1c1afb66ae64171c61e666fbdce6601d46507dc395b5b0"
+#define XYG_ABI_VERSION 394
+#define XYG_ABI_SIGNATURE_SHA256 "0f946380a29c43ff507ba447e400a8a7c23a41f647d121ca3b7fb85371d9609e"
 
 #ifdef __cplusplus
 extern "C" {
@@ -414,6 +414,7 @@ int32_t xyg_scene_scatter_paint_channel_admit(const uint8_t * text, size_t text_
 size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_splice_annotations(const uint8_t * rows, size_t rows_len, const uint8_t * sidecars, size_t sidecars_len, const uint8_t * annotations, size_t annotations_len, uint8_t * out, size_t out_cap);
 size_t xyg_scene_static_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, size_t width, size_t height, int32_t quality, uint8_t * out, size_t out_cap);
+size_t xyg_scene_static_export_reason(const uint8_t * encoded, size_t encoded_len, uint32_t format, uint8_t * out, size_t out_cap);
 size_t xyg_scene_support_reason(uint32_t request_version, uint64_t features, uint8_t * out, size_t out_cap);
 size_t xyg_scene_svg(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_tick_anchor(const uint8_t * text, size_t text_len);

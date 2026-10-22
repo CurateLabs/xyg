@@ -214,6 +214,13 @@ interactive path:
 | `opt-level = "s"` | 877 KB | 311 KB | 21.1 / 203 ms |
 | `opt-level = "z"` | 777 KB | 280 KB | 38.3 / 363 ms |
 
+The raw gate moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
+writer now runs the Rust tick-label strategy layout, including per-side rotations.
+After merging main `4631927`, the local optimized build measures **1,542,222 raw
+bytes** and **636,944 gzip bytes** (Node `gzipSync`, default level 6), compared with
+the earlier merge-base build's 1,539,454 raw / 635,754 gzip. The gates remain
+1,507 KiB raw / 624 KiB gzip, with 946 / 2,032 bytes of headroom respectively.
+
 ABI 30 camera transport and closed polygon caches make the default O3 artifact
 1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
 one codegen unit and stripping; ABI30 set LLVM's inline threshold to 150.
@@ -258,7 +265,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging enforces 1,504 KiB raw / 624 KiB gzip limits. The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+packaging now enforces 1,507 KiB raw / 624 KiB gzip limits (including the XYPB v17 decision above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -440,8 +447,8 @@ split connected line/area geometry. Painter v14 retains only the annotation tag
 in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
-Painter contract v16 begins with `XYPB`, independent painter version 16, canonical
-Scene v34 (`SCENE_VERSION = 34`), a 420-byte header (v16 inserts the 88-byte y2 axis
+Painter contract v17 begins with `XYPB`, independent painter version 17, canonical
+Scene v34 (`SCENE_VERSION = 34`), a 420-byte header (v16 inserted the 88-byte y2 axis
 block at 264, a 32-byte y2 chrome-text record at 352, and moves the length words to 384;
 see `scene-ir.md` for the full map), 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
@@ -473,6 +480,32 @@ XYLB v1 through v6 only; v7 (annotation provenance) is Scene-wire only and Rust
 normalizes provenance before painter encoding. Both ceilings are pinned:
 `BROWSER_PAINTER_XYLB_MAX_VERSION` in `scene.rs` and `XYLB_PAINTER_VERSIONS` in
 `js/src/48_wasm_scene.ts` (#1040).
+
+XYPB v17 (#1036) carries each axis's Rust-resolved tick-label layout in the x, y and y2
+axis blocks. Byte 5 (formerly reserved) uses bits 0-2 for the mode Rust applied
+to the kept labels (Scene strategy codes: `2` rotate, `3` stagger, `4` preserve,
+`5` none, `6` off;
+auto, hide and preserve all arrive as `4` because Rust has already thinned them).
+Bits 3-4 and 5-6 carry the bottom/left and top/right display anchors
+(`0` start, `1` center, `2` end); bit 7 is reserved zero. Bytes 6-7 are an
+`i16` bottom/left label rotation in hundredths of a degree.
+The top/right rotations use the same encoding at header bytes 416-417 (x),
+418-419 (y), and 378-379 (y2; formerly reserved in its chrome-text record). Labels
+the layout drops (and all labels under `none`/`off`) arrive as empty strings.
+The browser applies exactly that for `tick_resolution: "rust_scene"` axes: it skips blank labels, rotates
+by the carried angle for each label side, puts alternate labels on a second row
+for stagger, and never re-runs its own auto/downsample logic; `none` hides ticks
+and labels while the frame spines stay, like the static SVG. Rust resolves both label sides independently,
+so default rotation has the same side-specific sign as static SVG, while an explicit
+rotation applies to both sides. Rust reduces equivalent full turns into the
+`[-180, 180]` degree range before hundredth-degree encoding, while resolving
+each display anchor from the original angle and any authored anchor. Thus
+`350` degrees paints as `-10` degrees with its original anchor, rather than
+clamping to the wire limit or deriving alignment from the reduced sign. The
+browser applies those anchors literally. The authored collision header at
+bytes 76-79 is zeroed in the painter. The client accepts exactly
+one painter version, so an older XYPB fails closed (`Rust painter contract version is
+incompatible`) and the Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
 TypeScript validates and materializes those decisions
 without positioning or collision policy. Legends whose intrinsic width or height exceeds the plot fail
 closed before encoding so SVG, raster, and browser consumers share one policy.

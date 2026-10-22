@@ -51,9 +51,14 @@ pub const SCENE_RECORD_Y2_BIT: u8 = 0x40;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 16;
+pub const BROWSER_PAINTER_VERSION: u32 = 17;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 420;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
+/// XYPB v17 resolves each axis's tick-label layout in Rust. Axis-block byte 5
+/// is the mode the layout applied (`tick_layout::STRATEGY_*`: rotate, stagger,
+/// none, off, or preserve for auto/hide/preserve), bytes 6-7 an i16 label
+/// rotation in hundredths of a degree, and labels the layout drops arrive
+/// blank, so the browser applies no strategy policy of its own.
 /// XYPB v16 header map beyond the v15 prefix: the y2 axis block (same 88-byte
 /// record as x/y) follows the chrome input at 264, then the fixed y2 text
 /// record, the text/legend/colorbar/label lengths, and the y2 tick count.
@@ -9285,121 +9290,6 @@ impl<'a> SceneBatch<'a> {
         })
     }
 
-    /// Static triangle-mesh budgets (#1006), checked at Scene compile so
-    /// every consumer is bounded before it runs and no host or predicate ever
-    /// rasterizes. Counts only:
-    ///
-    /// - above `PUBLIC_POLYFILL_GROUP_BUDGET` faces, the faces' plot-clipped
-    ///   pixel bounding boxes, each charged `height × (width + 1)` (covered
-    ///   pixels plus one pixel of per-row edge walking), may total at most
-    ///   `MESH_OVERDRAW_PLOTS` plot rectangles (scanline painting cost is
-    ///   that sum, so overlapping full-plot faces or full-height slivers
-    ///   cannot make export quadratic in faces × pixels);
-    /// - above `MAX_PUBLIC_TRIANGLE_MESH_FACES` faces, the SVG/PDF dense-fill
-    ///   image grid (`dense_fill_grid`) must fit `MAX_SCENE_IMAGE_PIXELS`.
-    ///
-    /// Either overrun is `SceneError::Limit`, which the product encoder
-    /// relays as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. At or below the group
-    /// budget nothing is checked, so those Scenes are byte-identical.
-    pub fn check_mesh_budgets(&self) -> Result<(), SceneError> {
-        let triangle = SceneRecordKind::Triangle as u8;
-        let faces = self.kinds.iter().filter(|kind| **kind == triangle).count() / 3;
-        if faces <= PUBLIC_POLYFILL_GROUP_BUDGET {
-            return Ok(());
-        }
-        let layout = self.layout;
-        let plot_area = (layout.right - layout.left) * (layout.bottom - layout.top);
-        // Small plots keep an absolute floor so a modest mesh is never
-        // refused merely because the plot is tiny.
-        let budget = (MESH_OVERDRAW_PLOTS * plot_area).max(MAX_SCENE_IMAGE_PIXELS as f64);
-        let mut covered = 0.0f64;
-        let mut index = 0usize;
-        while index < self.kinds.len() {
-            if self.kinds[index] != triangle {
-                index += 1;
-                continue;
-            }
-            if index + 3 > self.kinds.len() {
-                return Err(SceneError::Length);
-            }
-            let (mut x0, mut y0, mut x1, mut y1) = (
-                f64::INFINITY,
-                f64::INFINITY,
-                f64::NEG_INFINITY,
-                f64::NEG_INFINITY,
-            );
-            let mut finite = true;
-            let mut vertices = [(0.0f64, 0.0f64); 3];
-            for (slot, vertex) in (index..index + 3).enumerate() {
-                let (px, py) = match &self.polar {
-                    Some(polar) => polar
-                        .project(self.x0[vertex], self.y0[vertex])
-                        .unwrap_or((f64::NAN, f64::NAN)),
-                    None => (
-                        self.x_scale.pixel(self.x0[vertex]),
-                        self.row_y_scale(vertex).1.pixel(self.y0[vertex]),
-                    ),
-                };
-                finite &= px.is_finite() && py.is_finite();
-                vertices[slot] = (px, py);
-                x0 = x0.min(px);
-                y0 = y0.min(py);
-                x1 = x1.max(px);
-                y1 = y1.max(py);
-            }
-            if finite {
-                let width = x1.min(layout.right) - x0.max(layout.left);
-                let height = y1.min(layout.bottom) - y0.max(layout.top);
-                if width >= 0.0 && height > 0.0 {
-                    // Scanline fill cost: covered pixels plus a per-row
-                    // edge-walk term, so full-height slivers are not free.
-                    covered += height * (width + 1.0);
-                }
-                // The closed outline is painted separately (raster
-                // `stroke`): it zero-fills a scratch box over the face's
-                // bounds padded by `ext = width / 2 + 1`, then scans each
-                // edge's padded bounds — the stroker's own work estimate.
-                // Charge exactly those boxes, clipped to the viewport, so a
-                // wide outline on tiny faces cannot hide behind fill bounds.
-                let stroke_width = self
-                    .stroke_width
-                    .get(self.style_refs[index] as usize)
-                    .copied()
-                    .unwrap_or(0.0);
-                if stroke_width > 0.0 && stroke_width.is_finite() {
-                    let ext = stroke_width / 2.0 + 1.0;
-                    let clipped = |ax: f64, ay: f64, bx: f64, by: f64| -> f64 {
-                        let w = bx.min(layout.viewport_width) - ax.max(0.0);
-                        let h = by.min(layout.viewport_height) - ay.max(0.0);
-                        if w > 0.0 && h > 0.0 {
-                            w * h
-                        } else {
-                            0.0
-                        }
-                    };
-                    covered += clipped(x0 - ext, y0 - ext, x1 + ext, y1 + ext);
-                    for edge in 0..3 {
-                        let (a, b) = (vertices[edge], vertices[(edge + 1) % 3]);
-                        covered += clipped(
-                            a.0.min(b.0) - ext,
-                            a.1.min(b.1) - ext,
-                            a.0.max(b.0) + ext,
-                            a.1.max(b.1) + ext,
-                        );
-                    }
-                }
-                if covered > budget {
-                    return Err(SceneError::Limit);
-                }
-            }
-            index += 3;
-        }
-        if faces > MAX_PUBLIC_TRIANGLE_MESH_FACES && dense_fill_grid(layout).is_none() {
-            return Err(SceneError::Limit);
-        }
-        Ok(())
-    }
-
     /// Whether row `index` is plotted against `y2`, and its y scale.
     fn row_y_scale(&self, index: usize) -> (bool, AxisScale) {
         match &self.y2 {
@@ -11960,6 +11850,104 @@ pub struct SceneGraphParts {
 }
 
 impl SceneDocument {
+    /// Non-rendering, format-aware static mesh admission (#1042, dossier §28).
+    /// Vector SVG/PDF faces skip the raster work bound through 50,000 faces;
+    /// raster formats and dense vector images retain the #1006 CSS-pixel
+    /// fill/outline cost bound. Decoded coordinates are already projected.
+    pub fn check_mesh_budgets(&self, raster: bool) -> Result<(), SceneError> {
+        let triangle = SceneRecordKind::Triangle;
+        let faces = self
+            .records
+            .iter()
+            .filter(|record| record.kind == triangle)
+            .count()
+            / 3;
+        let vector = !raster;
+        if vector && faces <= MAX_PUBLIC_TRIANGLE_MESH_FACES {
+            return Ok(());
+        }
+        if faces <= PUBLIC_POLYFILL_GROUP_BUDGET {
+            return Ok(());
+        }
+        let layout = self.layout;
+        let plot_area = (layout.right - layout.left) * (layout.bottom - layout.top);
+        // Small plots keep an absolute floor so a modest mesh is never
+        // refused merely because the plot is tiny.
+        let budget = (MESH_OVERDRAW_PLOTS * plot_area).max(MAX_SCENE_IMAGE_PIXELS as f64);
+        let mut covered = 0.0f64;
+        let mut index = 0usize;
+        while index < self.records.len() {
+            if self.records[index].kind != triangle {
+                index += 1;
+                continue;
+            }
+            if index + 3 > self.records.len() {
+                return Err(SceneError::Length);
+            }
+            let (mut x0, mut y0, mut x1, mut y1) = (
+                f64::INFINITY,
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+                f64::NEG_INFINITY,
+            );
+            let mut vertices = [(0.0f64, 0.0f64); 3];
+            for (slot, vertex) in (index..index + 3).enumerate() {
+                let [px, py, _, _] = self.records[vertex].coordinates;
+                vertices[slot] = (px, py);
+                x0 = x0.min(px);
+                y0 = y0.min(py);
+                x1 = x1.max(px);
+                y1 = y1.max(py);
+            }
+            if self.records[index].visible {
+                let width = x1.min(layout.right) - x0.max(layout.left);
+                let height = y1.min(layout.bottom) - y0.max(layout.top);
+                if width >= 0.0 && height > 0.0 {
+                    // Scanline fill cost: covered pixels plus a per-row
+                    // edge-walk term, so full-height slivers are not free.
+                    covered += height * (width + 1.0);
+                }
+                // The closed outline is painted separately (raster
+                // `stroke`): it zero-fills a scratch box over the face's
+                // bounds padded by `ext = width / 2 + 1`, then scans each
+                // edge's padded bounds — the stroker's own work estimate.
+                // Charge exactly those boxes, clipped to the viewport, so a
+                // wide outline on tiny faces cannot hide behind fill bounds.
+                let stroke_width = self.styles[self.records[index].style_ref].stroke_width;
+                if stroke_width > 0.0 && stroke_width.is_finite() {
+                    let ext = stroke_width / 2.0 + 1.0;
+                    let clipped = |ax: f64, ay: f64, bx: f64, by: f64| -> f64 {
+                        let w = bx.min(layout.viewport_width) - ax.max(0.0);
+                        let h = by.min(layout.viewport_height) - ay.max(0.0);
+                        if w > 0.0 && h > 0.0 {
+                            w * h
+                        } else {
+                            0.0
+                        }
+                    };
+                    covered += clipped(x0 - ext, y0 - ext, x1 + ext, y1 + ext);
+                    for edge in 0..3 {
+                        let (a, b) = (vertices[edge], vertices[(edge + 1) % 3]);
+                        covered += clipped(
+                            a.0.min(b.0) - ext,
+                            a.1.min(b.1) - ext,
+                            a.0.max(b.0) + ext,
+                            a.1.max(b.1) + ext,
+                        );
+                    }
+                }
+                if covered > budget {
+                    return Err(SceneError::Limit);
+                }
+            }
+            index += 3;
+        }
+        if vector && faces > MAX_PUBLIC_TRIANGLE_MESH_FACES && dense_fill_grid(layout).is_none() {
+            return Err(SceneError::Limit);
+        }
+        Ok(())
+    }
+
     /// Bounded geographic footer for exact configured network attributions.
     /// Caller admits 32x decode/rebuild storage before this method. Local/complete
     /// explicit-label Scenes return byte-identically; never invent a provider.
@@ -13992,6 +13980,88 @@ impl SceneDocument {
         format_tick(value, ticks.step, policy.scale.kind)
     }
 
+    /// Serialize every AxisTicks::ticks position so log minor grid lines match
+    /// SVG/raster consumers. Labels attach only for AxisTicks::labeled that the
+    /// strategy layout keeps (empty UTF-8 otherwise). Returns the XYPB v17 axis
+    /// facts as well: resolved mode (`tick_layout::STRATEGY_*`; hide arrives as
+    /// preserve), per-side display anchors, and normalized rotations in
+    /// hundredths of a degree.
+    /// Out of line: one body serves all three axes in the size-budgeted WASM.
+    #[inline(never)]
+    fn painter_ticks(
+        &self,
+        slot: AxisSlot,
+        scale: AxisScale,
+        axis: AxisTicks,
+    ) -> Result<(Vec<(f32, String, bool)>, [u8; 5]), SceneError> {
+        // Keep the first label side's labels, as in SVG. Resolve the other
+        // side too when both are drawn: default rotation depends on the side.
+        let policy = self.slot_policy(slot);
+        let style = policy.style;
+        let side = if style.tick_label_sides == 0 {
+            style.side as u8
+        } else {
+            style.tick_label_sides.trailing_zeros() as u8
+        };
+        let (texts, items, mode) = self.axis_tick_layout(slot, &axis, scale, side);
+        let mut keep = vec![false; axis.labeled.len()];
+        for item in &items {
+            if let Some(slot) = keep.get_mut(item.index as usize) {
+                *slot = true;
+            }
+        }
+        let encode = |items: &[tick_layout::TickLabelItem], side| {
+            let angle = items.first().map_or(0.0, |item| item.angle);
+            // Preserve the original angle's anchor before reducing equivalent
+            // turns to the i16 wire range. 350deg and -10deg rotate alike, but
+            // their default anchors differ.
+            let anchor = display_tick_anchor(
+                policy.anchor_authored,
+                policy.anchor,
+                slot == AxisSlot::X,
+                side,
+                angle,
+            );
+            let normalized = angle.rem_euclid(360.0);
+            let normalized = if normalized > 180.0 { normalized - 360.0 } else { normalized };
+            ((normalized * 100.0).round() as i16, anchor)
+        };
+        let mut angles = [0_i16; 2];
+        let mut anchors = [0_u8; 2];
+        (angles[side as usize], anchors[side as usize]) = encode(&items, side);
+        if style.tick_label_sides == 3 {
+            let (_, other_items, _) = self.axis_tick_layout(slot, &axis, scale, 1 - side);
+            (angles[(1 - side) as usize], anchors[(1 - side) as usize]) =
+                encode(&other_items, 1 - side);
+        }
+        let [a0, a1] = angles[0].to_le_bytes();
+        let [b0, b1] = angles[1].to_le_bytes();
+        let ticks = axis
+            .ticks
+            .iter()
+            .map(|&value| {
+                let at = scale.pixel(value) as f32;
+                if !at.is_finite() {
+                    return Err(SceneError::NonFinite);
+                }
+                let index = axis
+                    .labeled
+                    .iter()
+                    .position(|candidate| *candidate == value);
+                let label = index
+                    .filter(|index| keep.get(*index) == Some(&true))
+                    .and_then(|index| texts.get(index))
+                    .cloned()
+                    .unwrap_or_default();
+                Ok((at, label, index.is_some()))
+            })
+            .collect::<Result<Vec<_>, SceneError>>()?;
+        Ok((
+            ticks,
+            [mode as u8 | (anchors[0] << 3) | (anchors[1] << 5), a0, a1, b0, b1],
+        ))
+    }
+
     fn axis_hides_chrome(&self, slot: impl Into<AxisSlot>) -> bool {
         self.slot_policy(slot.into()).strategy == tick_layout::STRATEGY_NONE as u8
     }
@@ -14009,20 +14079,44 @@ impl SceneDocument {
         side_code: u8,
     ) -> Vec<AxisTickLabelItem> {
         let slot = slot.into();
-        let is_x = slot == AxisSlot::X;
-        if self.axis_hides_labels(slot) {
-            return Vec::new();
-        }
         let policy = self.slot_policy(slot);
+        let (texts, kept, _) = self.axis_tick_layout(slot, ticks, scale, side_code);
+        kept.into_iter()
+            .filter_map(|item| {
+                let index = item.index as usize;
+                Some(AxisTickLabelItem {
+                    value: *ticks.labeled.get(index)?,
+                    text: texts.get(index)?.clone(),
+                    angle: item.angle,
+                    row: item.row,
+                    anchor: display_tick_anchor(
+                        policy.anchor_authored,
+                        policy.anchor,
+                        slot == AxisSlot::X,
+                        side_code,
+                        item.angle,
+                    ),
+                })
+            })
+            .collect()
+    }
+
+    /// The shared strategy layout: formatted labels (empty when labels are
+    /// hidden), the kept items, and the effective mode, for one label side.
+    #[inline(never)]
+    fn axis_tick_layout(
+        &self,
+        slot: AxisSlot,
+        ticks: &AxisTicks,
+        scale: AxisScale,
+        side_code: u8,
+    ) -> (Vec<String>, Vec<tick_layout::TickLabelItem>, u32) {
+        let is_x = slot == AxisSlot::X;
+        let policy = self.slot_policy(slot);
+        if self.axis_hides_labels(slot) {
+            return (Vec::new(), Vec::new(), u32::from(policy.strategy));
+        }
         let font_size = policy.style.tick_label_size(self.chrome.label_font_size);
-        let (strategy, min_gap, explicit_angle, category, authored, anchor_code) = (
-            policy.strategy,
-            policy.min_gap,
-            policy.angle,
-            policy.category,
-            policy.anchor_authored,
-            policy.anchor,
-        );
         let side = if is_x {
             if side_code == 0 {
                 tick_layout::SIDE_BOTTOM
@@ -14035,53 +14129,41 @@ impl SceneDocument {
             tick_layout::SIDE_RIGHT
         };
         let layout_anchor = if is_x {
-            collision_layout_anchor(authored, anchor_code)
+            collision_layout_anchor(policy.anchor_authored, policy.anchor)
         } else {
             tick_layout::ANCHOR_CENTER
         };
-        let values = ticks.labeled.clone();
-        let texts: Vec<String> = values
+        let texts: Vec<String> = ticks
+            .labeled
             .iter()
             .enumerate()
             .map(|(index, value)| self.axis_tick_label(slot, index, *value, ticks))
             .collect();
-        let positions: Vec<f64> = values.iter().map(|value| scale.pixel(*value)).collect();
+        let positions: Vec<f64> = ticks.labeled.iter().map(|value| scale.pixel(*value)).collect();
         let labels: Vec<&str> = texts.iter().map(String::as_str).collect();
-        let kept = tick_layout::tick_label_layout(
+        let (kept, mode) = tick_layout::tick_label_layout_resolved(
             &positions,
             &labels,
-            u32::from(strategy),
+            u32::from(policy.strategy),
             side,
             layout_anchor,
             is_x,
-            category,
+            policy.category,
             font_size,
-            min_gap,
-            explicit_angle,
+            policy.min_gap,
+            policy.angle,
         )
         .unwrap_or_else(|| {
-            (0..values.len() as u32)
+            let all = (0..texts.len() as u32)
                 .map(|index| tick_layout::TickLabelItem {
                     index,
                     angle: 0.0,
                     row: 0,
                 })
-                .collect()
+                .collect();
+            (all, tick_layout::STRATEGY_PRESERVE)
         });
-        kept.into_iter()
-            .filter_map(|item| {
-                let index = item.index as usize;
-                let value = *values.get(index)?;
-                let text = texts.get(index)?.clone();
-                Some(AxisTickLabelItem {
-                    value,
-                    text,
-                    angle: item.angle,
-                    row: item.row,
-                    anchor: display_tick_anchor(authored, anchor_code, is_x, side_code, item.angle),
-                })
-            })
-            .collect()
+        (texts, kept, mode)
     }
 
     fn legend_bounds(&self, legend: &SceneLegend) -> Result<(f64, f64, f64, f64), SceneError> {
@@ -16619,6 +16701,7 @@ impl SceneDocument {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
         }
+        self.check_mesh_budgets(true)?;
         let x_ticks = self.resolved_axis_ticks(true)?;
         let y_ticks = self.resolved_axis_ticks(false)?;
         let y2_ticks = self
@@ -16721,38 +16804,17 @@ impl SceneDocument {
                 .then_some(value)
                 .ok_or(SceneError::NonFinite)
         };
-        // Serialize every AxisTicks::ticks position so log minor grid lines
-        // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
-        // (empty UTF-8 for unlabeled minor ticks).
-        let browser_ticks = |slot: AxisSlot, scale: AxisScale, axis: AxisTicks| {
-            axis.ticks
-                .iter()
-                .copied()
-                .map(|value| {
-                    let major = axis.labeled.contains(&value);
-                    let label = if major {
-                        let index = axis
-                            .labeled
-                            .iter()
-                            .position(|candidate| *candidate == value)
-                            .ok_or(SceneError::Length)?;
-                        self.axis_tick_label(slot, index, value, &axis)
-                    } else {
-                        String::new()
-                    };
-                    Ok((f32_value(scale.pixel(value))?, label, major))
-                })
-                .collect::<Result<Vec<_>, SceneError>>()
-        };
-        let x_ticks = browser_ticks(AxisSlot::X, self.x_scale, self.resolved_axis_ticks(true)?)?;
-        let y_ticks = browser_ticks(AxisSlot::Y, self.y_scale, self.resolved_axis_ticks(false)?)?;
-        let y2_ticks = match &self.y2 {
-            Some(y2) => browser_ticks(
+        let (x_ticks, x_meta) =
+            self.painter_ticks(AxisSlot::X, self.x_scale, self.resolved_axis_ticks(true)?)?;
+        let (y_ticks, y_meta) =
+            self.painter_ticks(AxisSlot::Y, self.y_scale, self.resolved_axis_ticks(false)?)?;
+        let (y2_ticks, y2_meta) = match &self.y2 {
+            Some(y2) => self.painter_ticks(
                 AxisSlot::Y2,
                 y2.scale,
                 self.resolved_axis_ticks(AxisSlot::Y2)?,
             )?,
-            None => Vec::new(),
+            None => (Vec::new(), [0; 5]),
         };
 
         let mut groups = Vec::new();
@@ -17215,10 +17277,21 @@ impl SceneDocument {
         write_chrome_style_input(&mut chrome_input, &self.chrome);
         debug_assert_eq!(chrome_input.len(), SCENE_CHROME_STYLE_INPUT_BYTES);
         out[64..264].copy_from_slice(&chrome_input);
+        // The authored collision header is Rust-internal; the painter carries
+        // only the resolved per-axis strategy below.
+        out[76..80].fill(0);
+        out[93..96].copy_from_slice(&x_meta[..3]);
+        out[181..184].copy_from_slice(&y_meta[..3]);
+        // Header tail carries top/right rotations; axis bytes 6-7 carry
+        // bottom/left rotations. No browser-side sign policy is needed.
+        out[416..418].copy_from_slice(&x_meta[3..]);
+        out[418..420].copy_from_slice(&y_meta[3..]);
         if let Some(y2) = &self.y2 {
             let mut axis = Vec::with_capacity(PAINTER_Y2_AXIS_BYTES);
             write_axis_chrome_style(&mut axis, &y2.axis);
             out[264..264 + PAINTER_Y2_AXIS_BYTES].copy_from_slice(&axis);
+            out[269..272].copy_from_slice(&y2_meta[..3]);
+            out[378..380].copy_from_slice(&y2_meta[3..]);
             // Fixed y2 chrome-text record: the resolved XYCO typography and
             // paints, so the browser applies them rather than the shared
             // label size and single paint of the primary axes.
@@ -24509,7 +24582,12 @@ pub(crate) mod tests {
         assert_eq!(&raster[37..41], &[1, 2, 3, 255]);
         assert_eq!(&raster[78..82], &[4, 5, 6, 128]);
         let painter = document.to_browser_painter(16_384).unwrap();
-        assert_eq!(&painter[64..264], style_input.as_slice());
+        // XYPB v17 writes preserve plus top-center / left-end anchor bits
+        // into byte 5 of the x and y axis blocks; everything else is the validated style input.
+        let mut expected_input = style_input.clone();
+        expected_input[93 - 64] = 4 | (1 << 5);
+        expected_input[181 - 64] = 4 | (2 << 3);
+        assert_eq!(&painter[64..264], expected_input.as_slice());
         // XYPB v16: the title/x/y/y2-title lengths follow the y2 axis block and
         // the fixed y2 text record (zero here: no secondary axis).
         assert!(painter[264..384].iter().all(|byte| *byte == 0));
@@ -25727,6 +25805,12 @@ pub(crate) mod tests {
         }
     }
 
+    impl SceneBatch<'_> {
+        fn static_raster_support(&self) -> Result<(), SceneError> {
+            SceneDocument::decode(&self.encode())?.check_mesh_budgets(true)
+        }
+    }
+
     fn mesh_pixels(document: &SceneDocument, scale: f64) -> (usize, usize, Vec<u8>) {
         let commands = document.to_raster_commands(scale).unwrap();
         let (w, h) = (
@@ -25739,17 +25823,51 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn mesh_vector_admission_is_format_aware_and_inclusive() {
+        let layout = PlotLayout::new(640.0, 420.0, 40.0, 20.0, 20.0, 40.0).unwrap();
+        for count in [5_000, 50_000, 50_001] {
+            let faces: Vec<_> = (0..count)
+                .map(|i| {
+                    let a = i as f64 * std::f64::consts::TAU / count as f64;
+                    let b = (i + 1) as f64 * std::f64::consts::TAU / count as f64;
+                    [
+                        [5.0, 5.0],
+                        [5.0 + 5.0 * a.cos(), 5.0 + 5.0 * a.sin()],
+                        [5.0 + 5.0 * b.cos(), 5.0 + 5.0 * b.sin()],
+                    ]
+                })
+                .collect();
+            let fixture = MeshFixture::from_faces(&faces);
+            let encoded = fixture.batch(layout).encode();
+            let document = SceneDocument::decode(&encoded).unwrap();
+            assert_eq!(
+                document.check_mesh_budgets(false),
+                if count <= 50_000 {
+                    Ok(())
+                } else {
+                    Err(SceneError::Limit)
+                }
+            );
+            assert_eq!(document.check_mesh_budgets(true), Err(SceneError::Limit));
+            assert_eq!(document.to_raster_commands(1.0), Err(SceneError::Limit));
+        }
+    }
+
+    #[test]
     fn mesh_overdraw_is_bounded_above_the_group_budget_only() {
         let layout = PlotLayout::new(320.0, 240.0, 30.0, 10.0, 12.0, 26.0).unwrap();
         // At or below 1,024 faces nothing is checked (byte-identical).
         let at_budget = MeshFixture::overlap(PUBLIC_POLYFILL_GROUP_BUDGET);
-        assert_eq!(at_budget.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(at_budget.batch(layout).static_raster_support(), Ok(()));
         // 1,100 full-plot faces charge ~550 plot halves: far over the bound.
         let overlapping = MeshFixture::overlap(1_100);
-        assert_eq!(overlapping.batch(layout).check_mesh_budgets(), Err(SceneError::Limit));
+        assert_eq!(
+            overlapping.batch(layout).static_raster_support(),
+            Err(SceneError::Limit)
+        );
         // A tessellation of the plot charges about 3 plots.
         let grid = MeshFixture::grid(40, 30);
-        assert_eq!(grid.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(grid.batch(layout).static_raster_support(), Ok(()));
         // Full-height zero-width slivers pay their per-row edge walk.
         let slivers: Vec<[[f64; 2]; 3]> = (0..20_000)
             .map(|i| {
@@ -25758,7 +25876,10 @@ pub(crate) mod tests {
             })
             .collect();
         let slivers = MeshFixture::from_faces(&slivers);
-        assert_eq!(slivers.batch(layout).check_mesh_budgets(), Err(SceneError::Limit));
+        assert_eq!(
+            slivers.batch(layout).static_raster_support(),
+            Err(SceneError::Limit)
+        );
     }
 
     #[test]
@@ -25776,14 +25897,15 @@ pub(crate) mod tests {
         let tiny = MeshFixture::from_faces(&tiny);
         let thick = [100.0; 3];
         assert_eq!(
-            tiny.batch_with_widths(layout, &thick).check_mesh_budgets(),
+            tiny.batch_with_widths(layout, &thick)
+                .static_raster_support(),
             Err(SceneError::Limit)
         );
         // The same faces with the fixture's ordinary 0.5-0.75 px outlines,
         // and a stroked tessellation of the plot, still admit.
-        assert_eq!(tiny.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(tiny.batch(layout).static_raster_support(), Ok(()));
         let grid = MeshFixture::grid(160, 160);
-        assert_eq!(grid.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(grid.batch(layout).static_raster_support(), Ok(()));
     }
 
     #[test]
@@ -25799,8 +25921,13 @@ pub(crate) mod tests {
         let huge = PlotLayout::new(1_550.0, 1_440.0, 40.0, 10.0, 10.0, 30.0).unwrap();
         assert!(dense_fill_grid(huge).is_none());
         let dense = MeshFixture::grid(160, 160); // 51,200 faces
-        assert_eq!(dense.batch(huge).check_mesh_budgets(), Err(SceneError::Limit));
-        assert_eq!(dense.batch(small).check_mesh_budgets(), Ok(()));
+        assert_eq!(
+            SceneDocument::decode(&dense.batch(huge).encode())
+                .unwrap()
+                .check_mesh_budgets(false),
+            Err(SceneError::Limit)
+        );
+        assert_eq!(dense.batch(small).static_raster_support(), Ok(()));
     }
 
     #[test]

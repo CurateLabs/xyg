@@ -1798,7 +1798,7 @@ the browser does.
 | Scatter the host's `payload_tier` call marks density (n > `SCATTER_DENSITY_THRESHOLD` 200,000, or > `DIRECT_SOFT_CEILING` with per-item channels, or `density=True`) | density | one `DensityBlit` Image record (`MAX_SCENE_IMAGE_PIXELS`) |
 | Plain scatter `payload_tier` leaves direct (≤ 200,000, or `density=False` up to 2,000,000) | direct | one Scatter record per point, within the figure-wide packed-row bound below |
 | Scatter with a per-item paint or size plane (`color=` array/categories, `size=` array, per-item stroke/width/opacity), ≤ 2,000,000 | direct | one Scatter record per point only while its XYTA paint plane fits one 4 MiB record: at most 24 bytes per point (fill, stroke, f64 width, f64 diameter), so ≤ 174,586 points (`xyta_paint_plane_fits`); above, `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` |
-| `triangle_mesh` (not `joined_fill`) above 1,024 faces | per-face PolyFill groups (painter ceiling 1,024) | every face kept as a Scene record (3 per face ≤ `MAX_SCENE_MARKS`), overdraw-bounded; SVG/PDF write vector faces up to `MAX_PUBLIC_TRIANGLE_MESH_FACES` = 50,000 faces aggregate and one dense-fill raster image per mesh above it (below) |
+| `triangle_mesh` (not `joined_fill`) above 1,024 faces | per-face PolyFill groups (painter ceiling 1,024) | every face kept as a Scene record (3 per face ≤ `MAX_SCENE_MARKS`); raster-work consumers are overdraw-bounded; SVG/PDF write vector faces up to `MAX_PUBLIC_TRIANGLE_MESH_FACES` = 50,000 faces aggregate and one dense-fill raster image per mesh above it (below) |
 | `hexbin` above 1,024 cells | per-cell PolyFill groups | unchanged: `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` (hexbin's static budget is #1023's) |
 | Graph node scatter (`FLAG_GRAPH_MARKS`), `box-outlier` / `stem-marker` companions, `area` / `error_band`, segments, every other kind | own budgets | unchanged record budgets (graph-mark.md §8) |
 
@@ -1871,9 +1871,10 @@ The Scene always keeps every face as three `Triangle` records:
   (`color`, `opacity`, `fill_opacity`, `stroke`, `stroke_width`,
   `stroke_opacity`, `role`, `joined_fill`) consume the shared Rust autorange
   over all three vertex columns;
-- compile bounds (`SceneBatch::check_mesh_budgets`, counts only, never
-  rasterizes): above 1,024 faces each face is charged its plot-clipped pixel
-  bounding box as `height × (width + 1)` CSS px² (covered pixels plus one
+- format-aware consumer bounds (`SceneDocument::check_mesh_budgets`,
+  counts only, never rasterizes, #1042): PNG/JPEG/WebP above 1,024 faces,
+  and SVG/PDF only above the 50,000-face vector ceiling, charge each face its
+  plot-clipped pixel bounding box as `height × (width + 1)` CSS px² (covered pixels plus one
   pixel of per-row edge walking). A face whose style has
   `stroke_width > 0` is also charged its closed outline exactly as the raster
   stroker scans it: the scratch box over the face's bounds padded by
@@ -1891,16 +1892,21 @@ The Scene always keeps every face as three `Triangle` records:
   that sum — is never quadratic in faces × pixels (1,100 overlapping
   full-plot faces, or 20,000 full-height zero-width slivers, fail closed; a
   tessellation of the plot charges about 3). Above 50,000 faces the dense-fill
-  grid must also fit (below). Known limitation: the bound runs at Scene
-  compile, before any format is chosen, and the support predicate has no
-  format, so it also refuses vector-only SVG/PDF of 1,025–50,000 faces that no
-  consumer would rasterize. It is a bounding-box cost model, not an overlap
-  measure: a radial fan of 1,025 long thin wedges (about 0.27 s to PNG at
-  1,024) fails closed although its faces barely overlap, while its 1,024-face
-  vector SVG writes in 4 ms. Moving the bound to the raster and dense-image
-  consumers needs a format-aware predicate; that is a follow-up, not this
-  change. Either overrun is `SceneError::Limit` →
-  `EncodeAssembledCode::Lod` → `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. At or below
+  grid must also fit (below). Pure vector SVG/PDF through 50,000 faces
+  bypass both raster cost and dense-image grid bounds: a 5,000- or 50,000-face
+  radial fan exports as vector paths even though its thin wedges' bounding
+  boxes exceed the raster-work bound. At 50,001 faces the same fan enters
+  the dense-image tier and fails closed. The CSS-pixel cost model and
+  threshold remain unchanged for every consumer that rasterizes. Refusal is
+  `SceneError::Limit` → `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
+  The non-rendering ABI 394 `xyg_scene_static_export_reason(scene, format)`
+  shares this check with the public Scene and XYST consumers. Python
+  `scene_export_support_reason(..., format=...)` and Node
+  `sceneExportSupportReason(..., {format})` default to PNG admission;
+  format-neutral Scene/XYST assembly only enforces record/input bounds.
+  XYST checks every decoded panel after its layout/chrome modifications and
+  before painting, so multi-panel, pyplot, and direct XYST callers cannot
+  bypass raster-work admission. At or below
   1,024 faces nothing is checked and every byte is unchanged;
 - raster formats (PNG, JPEG, WebP): the raster consumer paints every face
   directly at the requested scale (`append_raster_fill_run`: solid fill, the
@@ -1913,8 +1919,8 @@ The Scene always keeps every face as three `Triangle` records:
   `append_raster_fill_run` lowering painted onto `dense_fill_grid` — the plot
   rectangle snapped outward to whole device pixels at `DENSE_FILL_SVG_SCALE`
   = 2 (the native default PNG scale, the recorded SVG/PDF choice), or at
-  scale 1 when that grid exceeds `MAX_SCENE_IMAGE_PIXELS`; Scene compile
-  refuses a plot too large for both. The image's pixels are the default PNG
+  scale 1 when that grid exceeds `MAX_SCENE_IMAGE_PIXELS`; the chosen
+  SVG/PDF consumer refuses a plot too large for both. The image's pixels are the default PNG
   export's pixels for those faces; it overhangs the plot rectangle by under one
   device pixel and is clipped like every mark, keeps the trace's z-order, has
   no `image-rendering:pixelated`, and PDF (converted from that SVG) marks it
@@ -1931,7 +1937,7 @@ The Scene always keeps every face as three `Triangle` records:
 to main, checks a 1,250-face mesh stays vector, checks the 51,200-face dense
 mesh's SVG/PDF image and its PNG at scales 1–4 against the per-polygon raster
 of its two 25,600-face halves (≤ 3 per channel away from the seam), and pins
-the overdraw, image-grid, and mark fail-closes; Rust tests in `scene.rs` pin
+the format-aware overdraw, image-grid, and mark fail-closes; Rust tests in `scene.rs` pin
 the overdraw charge, the grid fallback, the 50,000/51,200-face SVG switch, and
 the embedded image against the Scene raster at scale 2. Timings (local, release
 build, 640×420 or default figure): 250,632 colored faces — support 0.55 s,
@@ -1939,6 +1945,32 @@ SVG 1.63 s, PNG 1.15 s; 599,500 constant faces — support 1.43 s, SVG 2.48 s,
 PNG 2.18 s; 1,100 overlapping full-plot faces fail closed in milliseconds
 (before: 24 s per compile). `benchmarks/test_codspeed_kernels.py::test_svg_export_triangle_mesh_tier_thresholds`
 tracks SVG export at 1,024, 49,920, and 50,176 faces.
+
+
+### Format-aware static mesh evidence (#1042)
+
+`benchmarks/bench_static_mesh_formats.py` records public export times, output
+sizes/hashes, and stable raster refusals for 1,024/5,000/50,000/50,001-face
+radial fans and 1,100 overlapping faces. The committed local report is
+`spec/benchmarks/static-mesh-formats-local.json`; it also records Matplotlib
+3.11 SVG/PDF/PNG comparison rows. Chart setup is excluded, viewport is
+640×420 CSS px, PNG scale is 1, and timings are diagnostic rather than gates.
+Reproduce with:
+
+```bash
+cargo build --release
+XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so" uv run --with matplotlib==3.11.0 \
+  python benchmarks/bench_static_mesh_formats.py --matplotlib --repeats 3 \
+  --output spec/benchmarks/static-mesh-formats-local.json
+```
+
+Python `tests/test_static_dense_mesh_tier.py`, Node
+`packages/xy-node/test/static-mesh-format.test.mjs`, and Rust's
+`mesh_vector_admission_is_format_aware_and_inclusive` prove the vector
+threshold, raster stable reason, and above-ceiling dense-image refusal.
+This does not claim to improve the conservative bounding-box cost model or
+admit the same high-cost fans to raster output.
+
 
 **Figure-wide bounds (#1006).** Before any host materializes columns or
 paint planes, the predicate also fails closed with
@@ -1998,7 +2030,8 @@ scatters above the plane budget keep failing in materialization as before).
 A dense-fill mesh adds nothing to the Scene; its SVG/PDF image is at most
 2,000,000 RGBA pixels, PNG-compressed. The stepwise `xyg_scene_encode_assembled`
 now returns `-7` and `xyg_scene_encode_assembled_from_sidecars` `-22` for
-expansion or mesh-budget overruns (formerly `-3` / `-16`), and
+expansion overruns (formerly `-3` / `-16`; mesh-work admission moved to
+format-aware consumers in #1042), and
 `xyg_scene_xyta_trace_observations_materialize` returns `-3`
 (`SCENE_XYTA_RECORD_OVER_BUDGET`) for a record over its 4 MiB budget, which
 both hosts relay as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`.
@@ -2385,6 +2418,18 @@ TypeScript default (XYPB carries no title-angle fact) and is −90° for both th
 and y2 titles, so every surface agrees; `tests/browser/wasm_foundation_page.mjs`
 asserts the rendered y2 title transform. There is no y2 grid
 (Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
+
+**XYPB v17.** Adds the Rust-resolved tick-label layout to the x/y/y2 axis blocks: byte 5
+uses bits 0-2 for the applied mode (rotate 2, stagger 3, preserve 4, none 5, off 6),
+bits 3-4 / 5-6 for bottom/left and top/right display anchors (start 0, center 1,
+end 2), with bit 7 reserved zero. Bytes 6-7 carry an
+`i16` bottom/left rotation in 1/100 degree. Top/right rotations are `i16` at
+header bytes 416-417 (x), 418-419 (y), and 378-379 (y2; in the chrome-text
+record's former reserved bytes). Rust resolves each side, including the sign
+of default rotation. Rotations are normalized into `[-180, 180]` degrees for
+encoding, but anchors resolve from the original angle so equivalent full turns
+retain SVG alignment; dropped labels are blank and the authored collision
+header at 76-79 is zeroed. See `browser-wasm.md` (#1036). Version 16 layout follows.
 
 **XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are
 the y2 axis block (88 bytes, zero without y2), 352–383 the fixed y2 chrome-text

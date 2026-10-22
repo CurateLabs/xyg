@@ -1464,4 +1464,9 @@ def export_figure(
         background=background,
         optimize_png=optimize_png,
     )
-    return _native.static_document_export(document, format, scale=scale, quality=quality)
+    try:
+        return _native.static_document_export(document, format, scale=scale, quality=quality)
+    except _native.StaticDocumentRejected as exc:
+        if exc.code == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD":
+            raise UnsupportedStaticExport(exc.code) from exc
+        raise

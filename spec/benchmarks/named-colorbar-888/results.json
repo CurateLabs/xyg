@@ -1,0 +1,839 @@
+{
+  "environment": {
+    "python": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "packages": {
+      "matplotlib": "3.11.0",
+      "numpy": "2.5.1",
+      "pillow": "12.3.0",
+      "contourpy": "1.4.0",
+      "cycler": "0.12.1",
+      "fonttools": "4.67.0",
+      "kiwisolver": "1.5.1",
+      "packaging": "26.3",
+      "pyparsing": "3.3.3",
+      "python-dateutil": "3.0.0",
+      "six": "1.17.0",
+      "tzdata": "2026.5"
+    },
+    "matplotlib_backend": "Agg",
+    "git_commit": "634503e4feb06bdeec515bcbf36cc7941d45616b",
+    "probe_sha256": "69547d44b995bcbe70ca9a4c44d3d3357f21e7309554e8597ce52231e29cdac3",
+    "abi_version": 393,
+    "native_sha256": "a64deda8a975f269ffd19402d4d1240d7e76707e41b17d309d0bae0f65897d26"
+  },
+  "cases": {
+    "ordinary": {
+      "domain_hex": [
+        "0x0.0p+0",
+        "0x1.0000000000000p+0"
+      ],
+      "xyg": {
+        "status": "exported",
+        "scene_sha256": "cc2f8ada457052c597091a0a2505c50a74219a7610099e7323f2dcb9ad4d3f4c",
+        "stop_values_hex": [
+          "0x0.0p+0",
+          "0x1.999999999999ap-4",
+          "0x1.999999999999ap-3",
+          "0x1.3333333333333p-2",
+          "0x1.999999999999ap-2",
+          "0x1.0000000000000p-1",
+          "0x1.3333333333333p-1",
+          "0x1.6666666666666p-1",
+          "0x1.999999999999ap-1",
+          "0x1.ccccccccccccdp-1",
+          "0x1.0000000000000p+0"
+        ],
+        "stop_rgba": [
+          [
+            68,
+            1,
+            84,
+            255
+          ],
+          [
+            72,
+            36,
+            117,
+            255
+          ],
+          [
+            65,
+            68,
+            135,
+            255
+          ],
+          [
+            53,
+            95,
+            141,
+            255
+          ],
+          [
+            42,
+            120,
+            142,
+            255
+          ],
+          [
+            33,
+            145,
+            140,
+            255
+          ],
+          [
+            34,
+            168,
+            132,
+            255
+          ],
+          [
+            68,
+            191,
+            112,
+            255
+          ],
+          [
+            122,
+            209,
+            81,
+            255
+          ],
+          [
+            189,
+            223,
+            38,
+            255
+          ],
+          [
+            253,
+            231,
+            37,
+            255
+          ]
+        ],
+        "svg_bands": [
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "184.2",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(68,1,84,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "164.4",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(72,36,117,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "144.6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(65,68,135,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "124.8",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(53,95,141,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "105",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(42,120,142,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "85.2",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(33,145,140,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "65.4",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(34,168,132,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "45.6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(68,191,112,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "25.8",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(122,209,81,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(189,223,38,1.000000)"
+          }
+        ],
+        "svg": {
+          "file": "ordinary-xyg.svg",
+          "bytes": 5274,
+          "sha256": "ebd75eea21e44ee6abe26ae1447542b360a565a3d264f9286a6c36a89f97875b",
+          "original_sha256": "d5355a905dc4505717e5c6c2462f4b509847799b7f505b9dfabaa4d66dcdba5d"
+        },
+        "png": {
+          "file": "ordinary-xyg.png",
+          "bytes": 14149,
+          "sha256": "837c44e537c8179ffe1b2e48bd68a0f126d8ca906ed51b042ca4ba0ea57ff8ff",
+          "original_sha256": "837c44e537c8179ffe1b2e48bd68a0f126d8ca906ed51b042ca4ba0ea57ff8ff",
+          "decoded": {
+            "size": [
+              320,
+              240
+            ],
+            "rgba_sha256": "16916c718afcc3342eda27a4e66291c3d42cff3a393c93b332611295449348c0",
+            "unique_rgba": 213
+          }
+        }
+      },
+      "matplotlib": {
+        "normalize": {
+          "status": "returned",
+          "endpoint_values_hex": [
+            "0x0.0p+0",
+            "0x1.0000000000000p+0"
+          ],
+          "domain_after_hex": [
+            "0x0.0p+0",
+            "0x1.0000000000000p+0"
+          ],
+          "warnings": []
+        },
+        "colorbar": {
+          "status": "exported",
+          "svg": {
+            "status": "exported",
+            "file": "ordinary-mpl.svg",
+            "bytes": 8592,
+            "sha256": "8df318229268189e07decd103c90bf500e8f7c72c650f4d135600e2781d831f3",
+            "original_sha256": "a9a5a8efb874a3b8e27c00d5d8c2c8e09f11bec8b114d5ab70ad5597a9645308"
+          },
+          "png": {
+            "status": "exported",
+            "file": "ordinary-mpl.png",
+            "bytes": 5934,
+            "sha256": "a3765c3e2605273f7112a5f11c8d757037702ef32d252641aa3628fe0e8fae4b",
+            "original_sha256": "a3765c3e2605273f7112a5f11c8d757037702ef32d252641aa3628fe0e8fae4b",
+            "decoded": {
+              "size": [
+                320,
+                240
+              ],
+              "rgba_sha256": "3b1d1900cdf377e72fe0339734c9edbda4590030b48236c6861123e918182bfc",
+              "unique_rgba": 546
+            }
+          },
+          "domain_after_hex": [
+            "0x0.0p+0",
+            "0x1.0000000000000p+0"
+          ],
+          "warnings": []
+        }
+      }
+    },
+    "wide_positive": {
+      "domain_hex": [
+        "0x0.0p+0",
+        "0x1.e42d130773b76p+1023"
+      ],
+      "xyg": {
+        "status": "exported",
+        "scene_sha256": "76f787a3e8672316451b5bfb530bfd1631d0439174e24a781fad40b0db2f74f9",
+        "stop_values_hex": [
+          "0x0.0p+0",
+          "0x1.8357426c5c92bp+1020",
+          "0x1.8357426c5c92cp+1021",
+          "0x1.228171d1456e0p+1022",
+          "0x1.8357426c5c92cp+1022",
+          "0x1.e42d130773b76p+1022",
+          "0x1.228171d1456e0p+1023",
+          "0x1.52ec5a1ed1005p+1023",
+          "0x1.8357426c5c92cp+1023",
+          "0x1.b3c22ab9e8251p+1023",
+          "0x1.e42d130773b76p+1023"
+        ],
+        "stop_rgba": [
+          [
+            68,
+            1,
+            84,
+            255
+          ],
+          [
+            72,
+            36,
+            117,
+            255
+          ],
+          [
+            65,
+            68,
+            135,
+            255
+          ],
+          [
+            53,
+            95,
+            141,
+            255
+          ],
+          [
+            42,
+            120,
+            142,
+            255
+          ],
+          [
+            33,
+            145,
+            140,
+            255
+          ],
+          [
+            34,
+            168,
+            132,
+            255
+          ],
+          [
+            68,
+            191,
+            112,
+            255
+          ],
+          [
+            122,
+            209,
+            81,
+            255
+          ],
+          [
+            189,
+            223,
+            38,
+            255
+          ],
+          [
+            253,
+            231,
+            37,
+            255
+          ]
+        ],
+        "svg_bands": [
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "184.2",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(68,1,84,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "164.4",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(72,36,117,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "144.6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(65,68,135,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "124.8",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(53,95,141,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "105",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(42,120,142,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "85.2",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(33,145,140,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "65.4",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(34,168,132,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "45.6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(68,191,112,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "25.8",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(122,209,81,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(189,223,38,1.000000)"
+          }
+        ],
+        "svg": {
+          "file": "wide_positive-xyg.svg",
+          "bytes": 4794,
+          "sha256": "d9e6f15bd681882b4d1ff3ed25b02e7a794a93f2ad49d4da664ae62666b053ca",
+          "original_sha256": "7d4e504e0f278e0100c422a0087cdcd1bea1ae683934a3a42a34044014dfda41"
+        },
+        "png": {
+          "file": "wide_positive-xyg.png",
+          "bytes": 14161,
+          "sha256": "baf0f7ddfe92b57d29b7e73611017e14e960621ae80053ff9c803d2f5b6db41c",
+          "original_sha256": "baf0f7ddfe92b57d29b7e73611017e14e960621ae80053ff9c803d2f5b6db41c",
+          "decoded": {
+            "size": [
+              320,
+              240
+            ],
+            "rgba_sha256": "e5dabc46b4cee5c02a80b564f4fe416a7717e5cab4aea499c068452d4bcea64d",
+            "unique_rgba": 211
+          }
+        }
+      },
+      "matplotlib": {
+        "normalize": {
+          "status": "returned",
+          "endpoint_values_hex": [
+            "0x0.0p+0",
+            "0x1.0000000000000p+0"
+          ],
+          "domain_after_hex": [
+            "0x0.0p+0",
+            "0x1.e42d130773b76p+1023"
+          ],
+          "warnings": []
+        },
+        "colorbar": {
+          "status": "export_error",
+          "svg": {
+            "status": "error",
+            "error": {
+              "type": "OverflowError",
+              "message": "cannot convert float infinity to integer"
+            }
+          },
+          "png": {
+            "status": "error",
+            "error": {
+              "type": "OverflowError",
+              "message": "cannot convert float infinity to integer"
+            }
+          },
+          "domain_after_hex": [
+            "0x0.0p+0",
+            "0x1.e42d130773b76p+1023"
+          ],
+          "warnings": [
+            "RuntimeWarning: overflow encountered in add",
+            "RuntimeWarning: overflow encountered in multiply"
+          ]
+        }
+      }
+    },
+    "wide_signed": {
+      "domain_hex": [
+        "-0x1.e42d130773b76p+1023",
+        "0x1.e42d130773b76p+1023"
+      ],
+      "xyg": {
+        "status": "exported",
+        "scene_sha256": "541216cedd4c6cfd23198590fa5bc63d45126122ada311ed6e8a99735c7ab687",
+        "stop_values_hex": [
+          "-0x1.e42d130773b76p+1023",
+          "-0x1.8357426c5c92cp+1023",
+          "-0x1.228171d1456e1p+1023",
+          "-0x1.8357426c5c92ap+1022",
+          "-0x1.8357426c5c928p+1021",
+          "0x0.0p+0",
+          "0x1.8357426c5c928p+1021",
+          "0x1.8357426c5c929p+1022",
+          "0x1.228171d1456e2p+1023",
+          "0x1.8357426c5c92cp+1023",
+          "0x1.e42d130773b76p+1023"
+        ],
+        "stop_rgba": [
+          [
+            68,
+            1,
+            84,
+            255
+          ],
+          [
+            72,
+            36,
+            117,
+            255
+          ],
+          [
+            65,
+            68,
+            135,
+            255
+          ],
+          [
+            53,
+            95,
+            141,
+            255
+          ],
+          [
+            42,
+            120,
+            142,
+            255
+          ],
+          [
+            33,
+            145,
+            140,
+            255
+          ],
+          [
+            34,
+            168,
+            132,
+            255
+          ],
+          [
+            68,
+            191,
+            112,
+            255
+          ],
+          [
+            122,
+            209,
+            81,
+            255
+          ],
+          [
+            189,
+            223,
+            38,
+            255
+          ],
+          [
+            253,
+            231,
+            37,
+            255
+          ]
+        ],
+        "svg_bands": [
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "184.2",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(68,1,84,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "164.4",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(72,36,117,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "144.6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(65,68,135,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "124.8",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(53,95,141,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "105",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(42,120,142,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "85.2",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(33,145,140,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "65.4",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(34,168,132,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "45.6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(68,191,112,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "25.8",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(122,209,81,1.000000)"
+          },
+          {
+            "data-xy-slot": "colorbar_band",
+            "x": "306",
+            "y": "6",
+            "width": "14",
+            "height": "19.8",
+            "fill": "rgba(189,223,38,1.000000)"
+          }
+        ],
+        "svg": {
+          "file": "wide_signed-xyg.svg",
+          "bytes": 4536,
+          "sha256": "e3d22d6e350fa5746f1023617da574dfffc28fed35a96151625bf53faa9e87d6",
+          "original_sha256": "59765daa4870a05182ab411a9cb2d22627684527aaf06d111da56226d8180208"
+        },
+        "png": {
+          "file": "wide_signed-xyg.png",
+          "bytes": 14150,
+          "sha256": "c63e768b0419fbc167788569e5e6af534c0594b700510f8798edb85ca9919a7a",
+          "original_sha256": "c63e768b0419fbc167788569e5e6af534c0594b700510f8798edb85ca9919a7a",
+          "decoded": {
+            "size": [
+              320,
+              240
+            ],
+            "rgba_sha256": "e34d304213914328d3dd349764c183b88a074b50604add0da80ac3501484725d",
+            "unique_rgba": 211
+          }
+        }
+      },
+      "matplotlib": {
+        "normalize": {
+          "status": "returned",
+          "endpoint_values_hex": [
+            "0x0.0p+0",
+            "nan"
+          ],
+          "domain_after_hex": [
+            "-0x1.e42d130773b76p+1023",
+            "0x1.e42d130773b76p+1023"
+          ],
+          "warnings": [
+            "RuntimeWarning: invalid value encountered in divide",
+            "RuntimeWarning: overflow encountered in scalar subtract",
+            "RuntimeWarning: overflow encountered in subtract"
+          ]
+        },
+        "colorbar": {
+          "status": "error",
+          "operation": "colorbar construction",
+          "error": {
+            "type": "ValueError",
+            "message": "Axis limits cannot be NaN or Inf"
+          },
+          "domain_after_hex": [
+            "-0x1.e42d130773b76p+1023",
+            "0x1.e42d130773b76p+1023"
+          ],
+          "warnings": [
+            "RuntimeWarning: invalid value encountered in divide",
+            "RuntimeWarning: overflow encountered in scalar subtract"
+          ]
+        }
+      }
+    },
+    "adjacent": {
+      "domain_hex": [
+        "0x1.0000000000000p+0",
+        "0x1.0000000000001p+0"
+      ],
+      "xyg": {
+        "status": "rejected",
+        "error": {
+          "type": "UnsupportedSceneV3",
+          "message": "XYG_SCENE_UNSUPPORTED_COLORBAR: colorbar requires bounded literal RGBA Scene framing"
+        }
+      },
+      "matplotlib": {
+        "normalize": {
+          "status": "returned",
+          "endpoint_values_hex": [
+            "0x0.0p+0",
+            "0x1.0000000000000p+0"
+          ],
+          "domain_after_hex": [
+            "0x1.0000000000000p+0",
+            "0x1.0000000000001p+0"
+          ],
+          "warnings": []
+        },
+        "colorbar": {
+          "status": "exported",
+          "svg": {
+            "status": "exported",
+            "file": "adjacent-mpl.svg",
+            "bytes": 7329,
+            "sha256": "6ebaa4e100548b1ab01ebd98f023d57bc6962443efac255e9c66f2ef0cc56d64",
+            "original_sha256": "71f1a4e200121e0a18af0960d04b24a860a5e770944c20d307b9ab326efd62ee"
+          },
+          "png": {
+            "status": "exported",
+            "file": "adjacent-mpl.png",
+            "bytes": 5685,
+            "sha256": "e6e2bbe8c1011cb9cab742ec61eeb50fa818cc9b88d25b1c55a274c716e071e4",
+            "original_sha256": "e6e2bbe8c1011cb9cab742ec61eeb50fa818cc9b88d25b1c55a274c716e071e4",
+            "decoded": {
+              "size": [
+                320,
+                240
+              ],
+              "rgba_sha256": "dfafb9b615f054f5fdddcb15dfec8d7cbd3b384f6c7494b61e2a5a21ed4182aa",
+              "unique_rgba": 470
+            }
+          },
+          "domain_after_hex": [
+            "0x1.ccccccccccccdp-1",
+            "0x1.199999999999bp+0"
+          ],
+          "warnings": []
+        }
+      }
+    },
+    "reversed_invalid": {
+      "domain_hex": [
+        "0x1.0000000000000p+1",
+        "0x1.0000000000000p+0"
+      ],
+      "xyg": {
+        "status": "rejected",
+        "error": {
+          "type": "UnsupportedSceneV3",
+          "message": "XYG_SCENE_UNSUPPORTED_COLORBAR: colorbar requires bounded literal RGBA Scene framing"
+        }
+      },
+      "matplotlib": {
+        "normalize": {
+          "status": "error",
+          "operation": "normalize",
+          "error": {
+            "type": "ValueError",
+            "message": "minvalue must be less than or equal to maxvalue"
+          },
+          "domain_after_hex": [
+            "0x1.0000000000000p+1",
+            "0x1.0000000000000p+0"
+          ],
+          "warnings": []
+        },
+        "colorbar": {
+          "status": "exported",
+          "svg": {
+            "status": "exported",
+            "file": "reversed_invalid-mpl.svg",
+            "bytes": 8581,
+            "sha256": "34fdb09a978111a335ae73536198d12b308340526d7d691633e6f7d3ad047e47",
+            "original_sha256": "890d82e760b7375dd9ad9fc820ec41ae6ff0d441961917d03a77ee6fa704ea78"
+          },
+          "png": {
+            "status": "exported",
+            "file": "reversed_invalid-mpl.png",
+            "bytes": 5474,
+            "sha256": "55002e12fb2573f7d8e0bde4dc3d9aed21e0566936bc160fb160b4b9e480d4ce",
+            "original_sha256": "55002e12fb2573f7d8e0bde4dc3d9aed21e0566936bc160fb160b4b9e480d4ce",
+            "decoded": {
+              "size": [
+                320,
+                240
+              ],
+              "rgba_sha256": "15513e4e523e908d01a1882f289baa7cf2326ac57db342ba861838862685b0cf",
+              "unique_rgba": 545
+            }
+          },
+          "domain_after_hex": [
+            "0x1.ccccccccccccdp-1",
+            "0x1.0000000000000p+1"
+          ],
+          "warnings": []
+        }
+      }
+    }
+  }
+}
