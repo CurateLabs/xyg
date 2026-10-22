@@ -68,6 +68,61 @@ def _wheel(path: Path) -> tuple[str, str, dict[str, bytes]]:
     return name.group(1).decode(), version.group(1).decode(), files
 
 
+def _validate_core_compatibility(declared: Any) -> list[str]:
+    if (
+        not isinstance(declared, dict)
+        or type(declared.get("schemaVersion")) is not int
+        or declared["schemaVersion"] != 1
+    ):
+        raise ValueError("Core compatibility declaration must be an object with schemaVersion 1")
+    ledger = declared.get("ledgerVersion")
+    if type(ledger) is not int or ledger <= 0:
+        raise ValueError("Core compatibility ledgerVersion must be a positive integer")
+    for field in ("algorithmSchemaVersions", "searchSchemaVersions"):
+        versions = declared.get(field)
+        if (
+            not isinstance(versions, list)
+            or not versions
+            or any(type(version) is not int or version <= 0 for version in versions)
+            or len(set(versions)) != len(versions)
+        ):
+            raise ValueError(f"Core compatibility {field} must list unique positive integers")
+    supported = declared.get("supportedCoreVersions")
+    if not isinstance(supported, list) or not supported:
+        raise ValueError("Core compatibility supportedCoreVersions must be a nonempty list")
+    for version in supported:
+        if not isinstance(version, str) or parse_tag(f"xyg-v{version}").npm != version:
+            raise ValueError(
+                "Core compatibility supported versions must use exact canonical versions"
+            )
+    if len(set(supported)) != len(supported):
+        raise ValueError("Core compatibility supported versions must be unique")
+    evidence = declared.get("evidence")
+    if not isinstance(evidence, list) or not evidence:
+        raise ValueError("Core compatibility evidence must be a nonempty list")
+    seen = set()
+    for record in evidence:
+        if not isinstance(record, dict):
+            raise ValueError("Core compatibility evidence records must be objects")
+        version = record.get("coreVersion")
+        if not isinstance(version, str) or version not in supported or version in seen:
+            raise ValueError("Core compatibility evidence must match each supported version once")
+        seen.add(version)
+        for field, length in (
+            ("coreSourceCommit", 40),
+            ("contractCorpusSha256", 64),
+            ("resultManifestSha256", 64),
+        ):
+            value = record.get(field)
+            if not isinstance(value, str) or re.fullmatch(rf"[0-9a-f]{{{length}}}", value) is None:
+                raise ValueError(
+                    f"Core compatibility evidence {field} must be {length} lowercase hex digits"
+                )
+    if seen != set(supported):
+        raise ValueError("Core compatibility evidence is missing a supported version")
+    return supported
+
+
 def verify(
     *, tag: str, commit: str, wheel: Path, facade: Path, native: Path, browser: Path
 ) -> dict[str, Any]:
@@ -140,14 +195,7 @@ def verify(
             raise ValueError(
                 "Python, Node, and browser packages declare different Core compatibility"
             )
-    declared = json.loads(compatibility)
-    supported = declared.get("supportedCoreVersions")
-    if declared.get("schemaVersion") != 1 or not isinstance(supported, list) or not supported:
-        raise ValueError("invalid Core compatibility declaration")
-    for version in supported:
-        if not isinstance(version, str):
-            raise ValueError("supported Core versions must be exact version strings")
-        parse_tag(f"xyg-v{version}")
+    supported = _validate_core_compatibility(json.loads(compatibility))
 
     paths = {"python": wheel, "nodeFacade": facade, "nodeNative": native, "browser": browser}
     return {
