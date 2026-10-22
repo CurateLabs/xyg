@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from . import channels, columns
+from . import _native, channels, columns
 
 if TYPE_CHECKING:
     from ._figure import Figure  # noqa: F401
@@ -60,8 +60,18 @@ class AnnotationsSpecMixin(_Host):
                             f"{label}.y",
                         ),
                         "text": self._required_text(annotation.get("text"), f"{label}.text"),
-                        "dx": self._finite_scalar(annotation.get("dx", 0.0), f"{label}.dx"),
-                        "dy": self._finite_scalar(annotation.get("dy", 0.0), f"{label}.dy"),
+                        "dx": self._finite_scalar(
+                            _native.default_text_annotation_dx()
+                            if annotation.get("dx") is None
+                            else annotation["dx"],
+                            f"{label}.dx",
+                        ),
+                        "dy": self._finite_scalar(
+                            _native.default_text_annotation_dy()
+                            if annotation.get("dy") is None
+                            else annotation["dy"],
+                            f"{label}.dy",
+                        ),
                         "anchor": self._annotation_anchor(
                             annotation.get("anchor", "start"), f"{label}.anchor"
                         ),

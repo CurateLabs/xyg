@@ -1472,7 +1472,7 @@ test("buildPayload ships annotations from annotationSpecs like Python build_payl
   const { spec } = fig.buildPayload();
   assert.equal(fig.annotations.length, 1);
   assert.deepEqual(spec.annotations, [
-    { text: "hi", kind: "text", x: 0, y: 1, dx: 0, dy: 0, anchor: "start" },
+    { text: "hi", kind: "text", x: 0, y: 1, dx: 6, dy: -6, anchor: "start" },
   ]);
 });
 

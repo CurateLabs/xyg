@@ -153,6 +153,51 @@ pub fn pack_colorbar(input: ColorbarFrameInput<'_>) -> Result<Vec<u8>, ColorbarE
     Ok(out)
 }
 
+/// Evenly spaced, strictly increasing stop values with bit-exact endpoints.
+///
+/// Uses `lo + (hi - lo) * i / n` while `(hi - lo) * i` is finite and
+/// `lo * (1 - t) + hi * t` when that product overflows (domains such as
+/// `[-1.7e308, 1.7e308]`), clamps into the
+/// domain, and lifts any value that rounding left at or below its predecessor
+/// to the next representable f64, clamping each stop so the remaining stops
+/// still fit below `hi`. A domain with too few representable values
+/// between its endpoints for `count` samples is rejected as `Order` rather
+/// than dropping samples.
+fn uniform_stop_values(lo: f64, hi: f64, count: usize) -> Result<Vec<f64>, ColorbarError> {
+    let last = count - 1;
+    let mut values = Vec::with_capacity(count);
+    values.push(lo);
+    for index in 1..last {
+        let t = index as f64 / last as f64;
+        // Keep the historical single-rounding form wherever the span and the
+        // scaled product are finite so ordinary domains frame byte-identically.
+        let scaled = (hi - lo) * index as f64;
+        let ideal = if scaled.is_finite() {
+            lo + scaled / last as f64
+        } else {
+            lo * (1.0 - t) + hi * t
+        };
+        if !ideal.is_finite() {
+            return Err(ColorbarError::Order);
+        }
+        let previous = *values.last().unwrap();
+        // Lift only when rounding left the value at or below its predecessor,
+        // and never past the ceiling that reserves room for later stops.
+        let value = if ideal > previous {
+            ideal
+        } else {
+            previous.next_up()
+        }
+        .min((index..last).fold(hi, |ceiling, _| ceiling.next_down()));
+        if value <= previous {
+            return Err(ColorbarError::Order);
+        }
+        values.push(value);
+    }
+    values.push(hi);
+    Ok(values)
+}
+
 /// Resolve one named colormap and frame its canonical stops without host-side
 /// stop interpolation. `flags` uses the same horizontal/minor input bits as
 /// [`pack_colorbar`].
@@ -173,18 +218,18 @@ pub fn pack_named_colorbar(
         return Err(ColorbarError::Limit);
     }
     let color_count = colors.len();
-    let denominator = color_count.saturating_sub(1).max(1) as f64;
+    if flags & !FLAG_INPUT_MASK != 0 {
+        return Err(ColorbarError::Length);
+    }
+    if !lo.is_finite() || !hi.is_finite() || lo >= hi {
+        return Err(ColorbarError::NonFinite);
+    }
+    let values = uniform_stop_values(lo, hi, color_count)?;
     let stops: Vec<ColorbarStop> = colors
         .into_iter()
-        .enumerate()
-        .map(|(index, rgb)| ColorbarStop {
-            value: if index == 0 {
-                lo
-            } else if index + 1 == color_count {
-                hi
-            } else {
-                lo + (hi - lo) * index as f64 / denominator
-            },
+        .zip(values)
+        .map(|(rgb, value)| ColorbarStop {
+            value,
             rgba: [rgb[0], rgb[1], rgb[2], 255],
         })
         .collect();
@@ -202,6 +247,20 @@ pub fn pack_named_colorbar(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const PINNED_BITS: [u64; 11] = [
+        0xbfffe94e3e6304db,
+        0xbff77abbdebceb3a,
+        0xbfee1852fe2da332,
+        0xbfda765c7dc2dfe0,
+        0x3fbd0fb403561a90,
+        0x3fe47f1b3fb6f696,
+        0x3ff2ae1fff8194eb,
+        0x3ffb1cb25f27ae8f,
+        0x4001c5a25f66e416,
+        0x4005fceb8f39f0e6,
+        0x400a3434bf0cfdb9,
+    ];
 
     #[test]
     fn frames_v2_header_stops_ticks_and_title() {
@@ -322,6 +381,193 @@ mod tests {
             f64::from_le_bytes(framed[last..last + 8].try_into().unwrap()),
             2.0
         );
+    }
+
+    fn named_values(lo: f64, hi: f64, name: &str) -> Result<Vec<f64>, ColorbarError> {
+        let framed = pack_named_colorbar(0, lo, hi, [32, 32, 32, 255], b"", name, &[])?;
+        let count = u32::from_le_bytes(framed[12..16].try_into().unwrap()) as usize;
+        Ok((0..count)
+            .map(|index| {
+                let at = COLORBAR_HEADER_BYTES + index * COLORBAR_STOP_BYTES;
+                f64::from_le_bytes(framed[at..at + 8].try_into().unwrap())
+            })
+            .collect())
+    }
+
+    /// Bar fraction of `v` computed with halved terms so it cannot overflow.
+    fn fraction(v: f64, lo: f64, hi: f64) -> f64 {
+        (v / 2.0 - lo / 2.0) / (hi / 2.0 - lo / 2.0)
+    }
+
+    fn assert_ordered_palette(values: &[f64], lo: f64, hi: f64, name: &str) {
+        assert_eq!(values.len(), colormap::colormap_named_stops(name).len());
+        assert_eq!(values[0], lo);
+        assert_eq!(*values.last().unwrap(), hi);
+        assert!(
+            values.windows(2).all(|pair| pair[0] < pair[1]),
+            "{values:?}"
+        );
+    }
+
+    fn assert_full_palette(values: &[f64], lo: f64, hi: f64, name: &str) {
+        assert_eq!(values.len(), colormap::colormap_named_stops(name).len());
+        assert_eq!(values[0], lo);
+        assert_eq!(*values.last().unwrap(), hi);
+        assert!(
+            values.windows(2).all(|pair| pair[0] < pair[1]),
+            "{values:?}"
+        );
+        if values.len() > 2 && hi / 2.0 - lo / 2.0 > 1e-300 && hi.is_finite() {
+            let n = (values.len() - 1) as f64;
+            for (index, &v) in values.iter().enumerate() {
+                let want = index as f64 / n;
+                assert!(
+                    (fraction(v, lo, hi) - want).abs() < 1e-9,
+                    "stop {index} of {lo:e}..{hi:e}: {} vs {want}",
+                    fraction(v, lo, hi)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn named_colorbar_survives_extreme_finite_domains() {
+        for (lo, hi) in [
+            (0.0, 1.7e308),
+            (-1.7e308, 1.7e308),
+            (-f64::MAX, f64::MAX),
+            (-f64::MAX, 0.0),
+            (f64::MAX / 2.0, f64::MAX),
+            (-f64::MIN_POSITIVE, f64::MIN_POSITIVE),
+            (0.0, f64::from_bits(1) * 64.0),
+        ] {
+            for name in ["viridis", "viridis_r", "blues"] {
+                let values = named_values(lo, hi, name).unwrap();
+                assert_full_palette(&values, lo, hi, name);
+            }
+        }
+    }
+
+    #[test]
+    fn named_colorbar_spacing_is_uniform_on_wide_domains() {
+        for (lo, hi) in [
+            (0.0, 1.7e308),
+            (-f64::MAX, 0.0),
+            (f64::MAX / 2.0, f64::MAX),
+            (-f64::MAX, f64::MAX),
+        ] {
+            let values = named_values(lo, hi, "viridis").unwrap();
+            assert_full_palette(&values, lo, hi, "viridis");
+        }
+    }
+
+    #[test]
+    fn named_colorbar_flags_are_checked_before_the_domain() {
+        assert_eq!(
+            pack_named_colorbar(0x80, 2.0, 1.0, [0; 4], b"", "viridis", &[]),
+            Err(ColorbarError::Length)
+        );
+    }
+
+    #[test]
+    fn named_colorbar_pins_ordinary_non_unit_domain_bit_patterns() {
+        // Captured from the pre-#888 formula `lo + (hi - lo) * i / n`.
+        let values =
+            named_values(-1.994_459_384_630_593_8, 3.275_491_230_567_891, "viridis").unwrap();
+        let bits: Vec<u64> = values.iter().map(|v| v.to_bits()).collect();
+        assert_eq!(bits, PINNED_BITS);
+    }
+
+    #[test]
+    fn named_colorbar_keeps_ordinary_domain_bytes() {
+        let values = named_values(0.0, 1.0, "viridis").unwrap();
+        let expected: Vec<f64> = (0..values.len())
+            .map(|index| match index {
+                0 => 0.0,
+                last if last + 1 == values.len() => 1.0,
+                _ => index as f64 / (values.len() - 1) as f64,
+            })
+            .collect();
+        assert_eq!(values, expected);
+    }
+
+    #[test]
+    fn named_colorbar_adjacent_domains_keep_every_sample_or_reject() {
+        // Exactly enough representable values: every palette sample survives.
+        let lo = 1.0_f64;
+        let mut hi = lo;
+        for _ in 0..10 {
+            hi = hi.next_up();
+        }
+        let values = named_values(lo, hi, "viridis").unwrap();
+        assert_full_palette(&values, lo, hi, "viridis");
+        // Fewer representable values than samples: stable Order, no silent
+        // drop and no endpoint-only substitution.
+        for steps in [1, 2, 9] {
+            let mut hi = lo;
+            for _ in 0..steps {
+                hi = hi.next_up();
+            }
+            assert_eq!(
+                pack_named_colorbar(0, lo, hi, [32, 32, 32, 255], b"", "viridis", &[]),
+                Err(ColorbarError::Order),
+                "{steps} ulps"
+            );
+        }
+    }
+
+    #[test]
+    fn named_colorbar_exact_fit_domains_crossing_a_power_of_two_keep_every_value() {
+        let eps = f64::EPSILON; // 2^-52: spacing just below 2.0
+        // 9 values below 2.0, 2.0 itself, and 2.0 + 2^-51: exactly 11.
+        let lo = 2.0 - 9.0 * eps;
+        let hi = 2.0 + 2.0 * eps;
+        let values = named_values(lo, hi, "viridis").unwrap();
+        assert_ordered_palette(&values, lo, hi, "viridis");
+        let mut every = vec![lo];
+        while *every.last().unwrap() < hi {
+            every.push(every.last().unwrap().next_up());
+        }
+        assert_eq!(every.len(), 11);
+        assert_eq!(values, every);
+        // The same crossing one value short stays a stable rejection.
+        assert_eq!(
+            pack_named_colorbar(0, lo.next_up(), hi, [32; 4], b"", "viridis", &[]),
+            Err(ColorbarError::Order)
+        );
+        // Exact fit with the 11 values entirely above, below, and across a
+        // binade, in both signs and for a reversed palette.
+        for start in [
+            1.0_f64,
+            0.5 - 4.0 * eps / 2.0,
+            -2.0 - 3.0 * 2.0 * eps,
+            -(2.0 + 2.0 * eps),
+        ] {
+            let mut top = start;
+            for _ in 0..10 {
+                top = top.next_up();
+            }
+            for name in ["viridis", "viridis_r"] {
+                let values = named_values(start, top, name).unwrap();
+                assert_ordered_palette(&values, start, top, name);
+            }
+        }
+    }
+
+    #[test]
+    fn named_colorbar_rejects_equal_reversed_and_non_finite_domains() {
+        for (lo, hi) in [
+            (1.0, 1.0),
+            (2.0, 1.0),
+            (f64::NAN, 1.0),
+            (0.0, f64::INFINITY),
+            (f64::NEG_INFINITY, 0.0),
+        ] {
+            assert_eq!(
+                pack_named_colorbar(0, lo, hi, [32, 32, 32, 255], b"", "viridis", &[]),
+                Err(ColorbarError::NonFinite)
+            );
+        }
     }
 
     #[test]

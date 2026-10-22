@@ -133,8 +133,15 @@ import {
   staticDocumentExport,
   svgToPdf,
 } from "./scene.js";
-import { xyDefaultPngExportScale } from "./native.js";
+import {
+  xyDefaultPngExportScale,
+  xyDefaultTextAnnotationDx,
+  xyDefaultTextAnnotationDy,
+} from "./native.js";
 const _DEFAULT_PNG_EXPORT_SCALE = Number(xyDefaultPngExportScale());
+// Text annotation offset defaults are Rust-owned (ABI 393); read, never copied.
+const _DEFAULT_TEXT_ANNOTATION_DX = Number(xyDefaultTextAnnotationDx());
+const _DEFAULT_TEXT_ANNOTATION_DY = Number(xyDefaultTextAnnotationDy());
 
 export { PROTOCOL_VERSION };
 
@@ -1037,8 +1044,8 @@ function annotationSpecs(fig) {
         x: annotationValue(fig, annotation.x, "x", `${label}.x`),
         y: annotationValue(fig, annotation.y, yValueAxis(annotation), `${label}.y`),
         text: requiredText(annotation.text, `${label}.text`),
-        dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
-        dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
+        dx: finiteScalar(annotation.dx ?? _DEFAULT_TEXT_ANNOTATION_DX, `${label}.dx`),
+        dy: finiteScalar(annotation.dy ?? _DEFAULT_TEXT_ANNOTATION_DY, `${label}.dy`),
         anchor: annotationAnchor(annotation.anchor ?? "start", `${label}.anchor`),
       });
     } else if (kind === "marker") {

@@ -279,9 +279,7 @@ function xyafDispatch(annotation) {
   const kind = String(annotation.kind ?? "");
   const style = { ...(annotation.style ?? {}) };
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
-  const layoutText = kind === "text"
-    && (["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key))
-      || style.coordinate_space != null);
+  const layoutText = kind === "text"; // every text row is laid out; Rust owns the default offset
   const dispatch = sceneXyafAnnotationDispatchPlan({
     kind,
     authored_wrap: authoredWrap,
@@ -305,7 +303,6 @@ function validateXyafAnnotationStyle(annotation) {
     if (wrapped) throw new RangeError(`Scene wrapped annotations do not encode ${JSON.stringify(unsupported)}`);
     if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
     if (kind === "callout") throw new RangeError(`Scene callout style does not encode ${JSON.stringify(unsupported)}`);
-    if (kind === "text") throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
     throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
   }
 }

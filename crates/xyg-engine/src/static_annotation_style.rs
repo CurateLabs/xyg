@@ -401,18 +401,14 @@ pub fn resolve_packed(bytes: &[u8]) -> Result<Vec<u8>> {
         }
         let kind_name = kind.unwrap_or("");
         let layout_key = row_flags & ROW_LAYOUT != 0;
-        // Non-data text routes through the laid-out (XYAW) label slot, like
-        // the Scene annotation pack does; the Scene pack validates the value.
-        let non_data_space = matches!(
-            style.get("coordinate_space").copied(),
-            Some(Value::Text(space)) if space != "data"
-        );
+        // All text routes through the laid-out (XYAW) label slot, like the
+        // Scene annotation pack does (#1024); the pack validates the value.
         slot_rows.push(LabelSlotRow {
             kind: kind_name,
             authored_wrap: row_flags & ROW_WRAP != 0,
             layout: layout_key
                 || (matches!(kind_name, "text" | "marker") && rotation.is_some())
-                || (kind_name == "text" && non_data_space),
+                || kind_name == "text",
             labelled: text.is_some_and(|text| !text.is_empty()),
         });
         pending.push(entry);
@@ -713,8 +709,8 @@ mod tests {
             }
             entries
         };
-        // No host layout flag: the style value alone routes the text row to
-        // the XYAW slot, after the XYAT rows, as the Scene annotation pack does.
+        // No host layout flag: every text row takes the XYAW slot in authored
+        // order, as the Scene annotation pack does (#1024).
         let rows = [
             (0, (Some("a"), Some("text"), sized(21.0, Some("axes_fraction")))),
             (0, (Some("b"), Some("text"), sized(22.0, None))),
@@ -723,7 +719,7 @@ mod tests {
         ];
         let table = parse(&resolve_packed(&frame_flags(&rows)).unwrap()).1;
         let sizes: Vec<_> = table.iter().map(|raw| entry(raw).1).collect();
-        assert_eq!(sizes, vec![22.0, 23.0, 21.0, 24.0]);
+        assert_eq!(sizes, vec![21.0, 22.0, 23.0, 24.0]);
     }
     #[test]
     fn label_table_follows_scene_label_order() {
@@ -750,9 +746,8 @@ mod tests {
         assert_eq!(
             sizes,
             vec![
-                21.0, 23.0, // XYAT: rows 1 and 3
                 41.0, 42.0, // XYAL: rule row 5 and marker row 7
-                22.0, 24.0, 43.0, // XYAW: rows 2, 6 and laid-out marker row 8
+                21.0, 22.0, 23.0, 24.0, 43.0, // XYAW: every text row and laid-out marker row 8
                 31.0, 32.0, // XYAC: rows 0 and 9
                 33.0, // wrapped callout: row 10
             ]

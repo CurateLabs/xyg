@@ -2365,8 +2365,8 @@ def text(
     y: CoordinateLike,
     value: str,
     *,
-    dx: float = 6.0,
-    dy: float = -6.0,
+    dx: float | None = None,
+    dy: float | None = None,
     color: Optional[str] = None,
     anchor: str = "start",
     rotation: float | None = None,
@@ -2380,8 +2380,10 @@ def text(
         x: Anchor x coordinate or category.
         y: Anchor y coordinate or category.
         value: Text to display.
-        dx: Horizontal pixel offset from the anchor.
-        dy: Vertical pixel offset from the anchor.
+        dx: Horizontal pixel offset from the anchor; unset takes the Rust-owned
+            default (shared with Node).
+        dy: Vertical pixel offset from the anchor; unset takes the Rust-owned
+            default (shared with Node).
         color: Text color.
         anchor: Text alignment relative to the anchor point.
         rotation: Label rotation in degrees.
@@ -2417,8 +2419,8 @@ def label(
     y: CoordinateLike,
     value: str,
     *,
-    dx: float = 6.0,
-    dy: float = -6.0,
+    dx: float | None = None,
+    dy: float | None = None,
     color: Optional[str] = None,
     anchor: str = "start",
     rotation: float | None = None,
@@ -2432,8 +2434,10 @@ def label(
         x: Anchor x coordinate or category.
         y: Anchor y coordinate or category.
         value: Text to display.
-        dx: Horizontal pixel offset from the anchor.
-        dy: Vertical pixel offset from the anchor.
+        dx: Horizontal pixel offset from the anchor; unset takes the Rust-owned
+            default (shared with Node).
+        dy: Vertical pixel offset from the anchor; unset takes the Rust-owned
+            default (shared with Node).
         color: Text color.
         anchor: Text alignment relative to the anchor point.
         rotation: Label rotation in degrees.

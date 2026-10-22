@@ -1022,8 +1022,7 @@ def to_png(
             gl=gl,
         )
     if path is not None:
-        with open(path, "wb") as f:
-            f.write(data)
+        _atomic_write_bytes(path, data)
     return data
 
 

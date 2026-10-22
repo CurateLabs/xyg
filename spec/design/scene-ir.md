@@ -1000,13 +1000,16 @@ Remaining polar marks and richer legend variants stay explicit compatibility
 exceptions. Public SVG and native PNG auto-route supported figures through
 Rust Scene; PDF consumes that Rust SVG. The public annotation route is the
 bounded primary Cartesian family on the otherwise proven literal Cartesian
-geometry slice: unoffset plain text, Rust-positioned labelled
+geometry slice: text (every text row is laid out in XYAW at the Rust default
+offset `(6, -6)` when `dx`/`dy` are unset, #1024; XYAW paints after the XYAL
+rule/band/marker labels), Rust-positioned labelled
 rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded
 wrapped text/callouts. Ordinary/wrapped callouts retain literal color, opacity,
 width, anchor, offsets, and literal label background/border; Rust alone
 validates them and resolves leaders, label boxes, and wrapped line breaks.
 Unwrapped text offsets/anchors and marker-label offsets/anchors are not Scene
-fields and deliberately remain compatibility exceptions. Other annotation
+fields and deliberately remain compatibility exceptions. (Text offsets are now
+admitted through XYAW; see above.) Other annotation
 combinations/kinds, themes, classes/CSS/custom fonts, nonliteral chrome,
 custom marker paths/glyphs, data-driven symbol channels, unmodeled marks, and LOD remain compatibility
 preflight exceptions. Literal disconnected segments, error-bar stems/caps,
@@ -2274,6 +2277,17 @@ hexbin, custom reducers, and categorical / `direct_rgba` hexbin on Scene.
 ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 LOD and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
+
+`xyg_scene_pack_named_colorbar` derives its stop values with overflow-safe
+arithmetic: single-rounding `lo + (hi - lo) * i / n` while `(hi - lo) * i` is
+finite, `lo * (1 - t) + hi * t` otherwise, bit-exact `lo`/`hi`, and a
+next-representable lift only when rounding leaves a value at or below its
+predecessor. Extreme finite domains therefore keep the whole palette. A domain
+with fewer representable values than palette samples is rejected `Order`
+(never thinned, no endpoint-only substitute, no XYCB v3 fraction extension);
+XYCB v2 requires strictly increasing stops. Python and Node both surface the
+stable `XYG_SCENE_UNSUPPORTED_COLORBAR` reason for these domains, as for empty,
+reversed, or non-finite ones (#888).
 
 Constant-style Cartesian heatmap expands a regular rows×cols lattice onto
 existing Scene v25 Rect records (one rectangle per cell) for

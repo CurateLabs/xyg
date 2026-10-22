@@ -189,10 +189,10 @@ def test_annotation_query_bytes_and_expected_facts(name, node_results):
         # An unknown kind yields no label, and its size is never interpreted.
         assert entries == []
     elif name == "label_order":
-        # Scene label order: the plain text (XYAT), the labelled rule (XYAL),
-        # the wrapped and laid-out texts (XYAW), then the callout (XYAC); the
-        # arrow has no label.
-        assert [entry[1] for entry in entries] == [23.0, 14.0, 22.0, 24.0, 17.0]
+        # Scene label order: the labelled rule (XYAL), every text row in
+        # authored order (XYAW, plain text included, #1024), then the callout
+        # (XYAC); the arrow has no label.
+        assert [entry[1] for entry in entries] == [14.0, 22.0, 24.0, 23.0, 17.0]
     elif name.startswith("mixed_"):
         sizes = [entry[1] for entry in entries]
         assert all(entry[0] & 1 for entry in entries)

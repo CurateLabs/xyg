@@ -3199,6 +3199,7 @@ class Axes(PlotTypeMixin):
         boundary_boundaries: np.ndarray | None = None
         boundary_colors: np.ndarray | None = None
         boundary_caps: np.ndarray | None = None
+        boundary_extend = "neither"
         prepared_boundary = (
             None
             if truecolor
@@ -3216,6 +3217,7 @@ class Axes(PlotTypeMixin):
             boundary_boundaries = prepared_boundary.boundaries
             boundary_colors = prepared_boundary.band_colors
             boundary_caps = prepared_boundary.caps
+            boundary_extend = prepared_boundary.extend
             vmin, vmax = resolved_norm_domain
             truecolor = True
         bounded_norm = isinstance(norm, str) or type(norm).__name__ in {"Normalize", "LogNorm"}
@@ -3477,6 +3479,7 @@ class Axes(PlotTypeMixin):
             entry["discrete_boundaries"] = boundary_boundaries
             entry["discrete_colors"] = boundary_colors
             entry["discrete_caps"] = boundary_caps
+            entry["discrete_extend"] = boundary_extend
         image = AxesImage(self, entry)
         if clip_path is not None:
             image.set_clip_path(clip_path)

@@ -198,10 +198,7 @@ def _xyaf_dispatch(annotation: dict[str, Any]) -> tuple[str, dict[str, Any], boo
     kind = str(annotation.get("kind", ""))
     style = dict(annotation.get("style") or {})
     authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
-    layout_text = kind == "text" and (
-        any(key in annotation for key in ("dx", "dy", "anchor", "rotation"))
-        or style.get("coordinate_space") is not None
-    )
+    layout_text = kind == "text"  # every text row is laid out; Rust owns the default offset
     dispatch = _native.scene_xyaf_annotation_dispatch_plan(
         kind=kind,
         authored_wrap=authored_wrap,
@@ -233,10 +230,6 @@ def _validate_xyaf_annotation_style(annotation: dict[str, Any]) -> None:
             raise UnsupportedSceneV3(f"Scene arrow style does not encode {unsupported!r}")
         if kind == "callout":
             raise UnsupportedSceneV3(f"Scene callout style does not encode {unsupported!r}")
-        if kind == "text":
-            raise UnsupportedSceneV3(
-                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
-            )
         raise UnsupportedSceneV3(
             f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
         )

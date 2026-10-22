@@ -13,6 +13,16 @@ in the README).
 
 ## [Unreleased]
 
+### Fixed
+- Static export draws a colormapped `contourf` colorbar (up to 15 levels) as
+  one solid band per level, as Matplotlib 3.11 does, instead of a smooth ramp
+  (#1046). `spacing="proportional"` and `format=` are admitted on it, extension
+  caps use the colormap under/over colors, and a `BoundaryNorm` with its own
+  `extend` now gives the colorbar end triangles when `extend=` is not passed.
+  Expected fixture-hash change: every static export of such a contourf colorbar
+  (SVG/PNG/PDF/JPEG/WebP) differs from before; colormapped contours with more
+  than 15 bands and contours with a custom `norm=` keep the ramp.
+
 ### Changed
 - `resolve_colormap` stop admission is now strict for every mark (#1025):
   RGB stop rows must be integers in 0..255 (`ValueError: ... stops must be
@@ -168,11 +178,32 @@ in the README).
   (#13 / #18). GitHub Actions environment `pypi` plus workflow
   `publish.yaml` match the pending PyPI trusted publisher.
 
+### Fixed
+- Storage guidance audit (#1014): `xyg.pyplot` `Figure.show()` now opens a valid
+  `file:` URI on every platform (it interpolated the raw path, which is
+  invalid for Windows drive paths and unescaped for spaces), and a failed
+  zone-map sidecar publish no longer strands a partial `.tmp` file beside an
+  out-of-core column. Added `spec/design/storage-and-platforms.md` recording
+  every disk path XYG writes, temp-directory resolution per platform, and
+  container or mounted-volume guidance.
+
 ### Changed
 - Node `contour` without `color` now paints the per-level `viridis` colormap
   (Python parity) instead of a single stroke; pass `color` for the old look
   (#1025). Custom gradient/list/stop contour colormaps are refused by static
   Scene export on both hosts with `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP`.
+- ABI 393: an unset text-annotation `dx`/`dy` now resolves to one Rust-owned
+  default (`xyg_default_text_annotation_dx()` = 6, `_dy()` = -6) that Python and
+  Node read through the ABI instead of carrying their own (#1024). Node
+  previously defaulted to `0, 0` while Python used `6, -6`, so the same chart
+  exported with different label placement; the documented Python value wins.
+  Node text annotations that omit `dx`/`dy` now sit 6 px right and 6 px above
+  their anchor, and `xyg.text`/`xyg.label` default to `None` (unset). Every
+  text row is now laid out by Rust, so unset means the same in static export and
+  the live payload; bare out-of-domain text is placed rather than rejected as an
+  attached label. Label-table and paint order change: every text row is now XYAW,
+  so offsetless raw text paints after rule, band and marker (XYAL) labels instead
+  of before them (`static-annotation-style.md`, `scene-ir.md`).
 - Repository branding and all owned documentation, support, CI, security, and
   source pointers now target `CurateLabs/xyg`; inherited benchmark records keep
   their original repository field as provenance (#14).
@@ -222,6 +253,21 @@ in the README).
   silently leave a stale row in the CodSpeed dashboard.
 
 ### Fixed
+- Named Scene colorbars (`xyg_scene_pack_named_colorbar`) no longer fail
+  `NonFinite` on finite domains whose span overflows (`[0, 1.7e308]`,
+  `[-1.7e308, 1.7e308]`) and no longer fail `Order` when rounding collapses
+  interior stops: stop values use overflow-safe interpolation, bit-exact
+  endpoints, and the next representable value when rounding repeats one. Ordinary
+  domains frame byte-identically. Domains with fewer representable values than
+  palette samples (for example `[1, nextafter(1)]`) still fail closed with
+  `Order`, surfaced identically by Python and Node as
+  `XYG_SCENE_UNSUPPORTED_COLORBAR`; this is a documented decision with no XYCB
+  v3 extension (#888). Colorbar tick generation and placement on the domains
+  this admits (`[0, 1.7e308]`, `[-MAX, MAX]`, `[MAX/2, MAX]`) no longer
+  overflow in tick generation, pixel placement, or minor-tick subdivision;
+  `linear_ticks` stops at the first non-finite step, and colorbar ticks that
+  still cannot be resolved are rejected at Scene admission in every renderer
+  rather than panicking.
 - `benchmarks/bench_line.py --sizes 1e4` no longer fails its own extrema oracle (#1027). The product was correct: below the LOD budget a line is shipped in the lossless `direct` tier, which the oracle wrongly rejected as "not decimated". The oracle now accepts `direct` when every row is present and runs the same per-column comparison; the CI methodology contract step covers `1e4,1e5`.
 - Source-distribution CI and release validation now exercise both installation
   contracts independently: a forced Cargo build must load the native backend,
