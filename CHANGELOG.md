@@ -14,6 +14,13 @@ in the README).
 ## [Unreleased]
 
 ### Fixed
+- SVG/PDF triangle meshes through 50,000 faces now bypass raster overdraw
+  admission (#1042), so 5,000/50,000-face radial fans export as vector paths.
+  PNG/JPEG/WebP and dense SVG/PDF above the vector ceiling retain the same
+  bounded fill/outline work and stable `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`
+  refusal. ABI 394 adds a non-rendering format-aware Scene support query;
+  Python and Node support predicates accept a format (default PNG). Scene,
+  XYST, and painter wire versions are unchanged.
 - Static export draws a colormapped `contourf` colorbar (up to 15 levels) as
   one solid band per level, as Matplotlib 3.11 does, instead of a smooth ramp
   (#1046). `spacing="proportional"` and `format=` are admitted on it, extension

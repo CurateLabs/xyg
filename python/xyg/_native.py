@@ -8999,6 +8999,16 @@ def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
 _SCENE_STATIC_FORMATS = {"svg": 0, "png": 1, "pdf": 2, "jpeg": 3, "webp": 4}
 
 
+def scene_static_export_reason(encoded: bytes, format: str) -> str:
+    """Query format-aware Rust Scene admission without rendering (#1042)."""
+    code = _SCENE_STATIC_FORMATS.get(format)
+    if code is None:
+        raise ValueError(f"invalid Scene static export format: {format!r}")
+    return _scene_bytes_output(
+        encoded, _lib.xyg_scene_static_export_reason, "static export support", code
+    ).decode("utf-8")
+
+
 def scene_static_export(
     encoded: bytes,
     format: str,
@@ -9024,6 +9034,9 @@ def scene_static_export(
     height_px = _positive_int(height, "scene static height")
     if isinstance(quality, bool) or not isinstance(quality, int):
         raise ValueError(f"quality must be an int in 1..100, got {quality!r}")
+    reason = scene_static_export_reason(encoded, format)
+    if reason:
+        raise ValueError(reason)
     return _scene_bytes_output(
         encoded,
         _lib.xyg_scene_static_export,

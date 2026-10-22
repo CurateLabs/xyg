@@ -38,6 +38,7 @@ impl SceneStaticFormat {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SceneStaticExportError {
     InvalidScene,
+    Lod,
     Scale,
     Size,
     Raster,
@@ -61,6 +62,12 @@ pub fn scene_static_export(
 ) -> Result<Vec<u8>, SceneStaticExportError> {
     let document =
         SceneDocument::decode(encoded).map_err(|_| SceneStaticExportError::InvalidScene)?;
+    document
+        .check_mesh_budgets(!matches!(
+            format,
+            SceneStaticFormat::Svg | SceneStaticFormat::Pdf
+        ))
+        .map_err(|_| SceneStaticExportError::Lod)?;
     match format {
         SceneStaticFormat::Svg => Ok(document.to_svg().into_bytes()),
         SceneStaticFormat::Pdf => {

@@ -963,9 +963,8 @@ fn encode_assembled_with_radii(
         .map_err(map_expansion)?
         .with_corner_radii(corner_radii)
         .map_err(map_scene)?;
-    // #1006: triangle-mesh overdraw and dense-fill grid budgets (counted,
-    // never rasterized here) fail closed with the LOD reason.
-    batch.check_mesh_budgets().map_err(map_expansion)?;
+    // #1042: mesh raster-work admission belongs to the chosen consumer, not
+    // format-neutral Scene assembly. Record expansion remains bounded here.
     Ok(batch.encode())
 }
 

@@ -9285,121 +9285,6 @@ impl<'a> SceneBatch<'a> {
         })
     }
 
-    /// Static triangle-mesh budgets (#1006), checked at Scene compile so
-    /// every consumer is bounded before it runs and no host or predicate ever
-    /// rasterizes. Counts only:
-    ///
-    /// - above `PUBLIC_POLYFILL_GROUP_BUDGET` faces, the faces' plot-clipped
-    ///   pixel bounding boxes, each charged `height × (width + 1)` (covered
-    ///   pixels plus one pixel of per-row edge walking), may total at most
-    ///   `MESH_OVERDRAW_PLOTS` plot rectangles (scanline painting cost is
-    ///   that sum, so overlapping full-plot faces or full-height slivers
-    ///   cannot make export quadratic in faces × pixels);
-    /// - above `MAX_PUBLIC_TRIANGLE_MESH_FACES` faces, the SVG/PDF dense-fill
-    ///   image grid (`dense_fill_grid`) must fit `MAX_SCENE_IMAGE_PIXELS`.
-    ///
-    /// Either overrun is `SceneError::Limit`, which the product encoder
-    /// relays as `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD`. At or below the group
-    /// budget nothing is checked, so those Scenes are byte-identical.
-    pub fn check_mesh_budgets(&self) -> Result<(), SceneError> {
-        let triangle = SceneRecordKind::Triangle as u8;
-        let faces = self.kinds.iter().filter(|kind| **kind == triangle).count() / 3;
-        if faces <= PUBLIC_POLYFILL_GROUP_BUDGET {
-            return Ok(());
-        }
-        let layout = self.layout;
-        let plot_area = (layout.right - layout.left) * (layout.bottom - layout.top);
-        // Small plots keep an absolute floor so a modest mesh is never
-        // refused merely because the plot is tiny.
-        let budget = (MESH_OVERDRAW_PLOTS * plot_area).max(MAX_SCENE_IMAGE_PIXELS as f64);
-        let mut covered = 0.0f64;
-        let mut index = 0usize;
-        while index < self.kinds.len() {
-            if self.kinds[index] != triangle {
-                index += 1;
-                continue;
-            }
-            if index + 3 > self.kinds.len() {
-                return Err(SceneError::Length);
-            }
-            let (mut x0, mut y0, mut x1, mut y1) = (
-                f64::INFINITY,
-                f64::INFINITY,
-                f64::NEG_INFINITY,
-                f64::NEG_INFINITY,
-            );
-            let mut finite = true;
-            let mut vertices = [(0.0f64, 0.0f64); 3];
-            for (slot, vertex) in (index..index + 3).enumerate() {
-                let (px, py) = match &self.polar {
-                    Some(polar) => polar
-                        .project(self.x0[vertex], self.y0[vertex])
-                        .unwrap_or((f64::NAN, f64::NAN)),
-                    None => (
-                        self.x_scale.pixel(self.x0[vertex]),
-                        self.row_y_scale(vertex).1.pixel(self.y0[vertex]),
-                    ),
-                };
-                finite &= px.is_finite() && py.is_finite();
-                vertices[slot] = (px, py);
-                x0 = x0.min(px);
-                y0 = y0.min(py);
-                x1 = x1.max(px);
-                y1 = y1.max(py);
-            }
-            if finite {
-                let width = x1.min(layout.right) - x0.max(layout.left);
-                let height = y1.min(layout.bottom) - y0.max(layout.top);
-                if width >= 0.0 && height > 0.0 {
-                    // Scanline fill cost: covered pixels plus a per-row
-                    // edge-walk term, so full-height slivers are not free.
-                    covered += height * (width + 1.0);
-                }
-                // The closed outline is painted separately (raster
-                // `stroke`): it zero-fills a scratch box over the face's
-                // bounds padded by `ext = width / 2 + 1`, then scans each
-                // edge's padded bounds — the stroker's own work estimate.
-                // Charge exactly those boxes, clipped to the viewport, so a
-                // wide outline on tiny faces cannot hide behind fill bounds.
-                let stroke_width = self
-                    .stroke_width
-                    .get(self.style_refs[index] as usize)
-                    .copied()
-                    .unwrap_or(0.0);
-                if stroke_width > 0.0 && stroke_width.is_finite() {
-                    let ext = stroke_width / 2.0 + 1.0;
-                    let clipped = |ax: f64, ay: f64, bx: f64, by: f64| -> f64 {
-                        let w = bx.min(layout.viewport_width) - ax.max(0.0);
-                        let h = by.min(layout.viewport_height) - ay.max(0.0);
-                        if w > 0.0 && h > 0.0 {
-                            w * h
-                        } else {
-                            0.0
-                        }
-                    };
-                    covered += clipped(x0 - ext, y0 - ext, x1 + ext, y1 + ext);
-                    for edge in 0..3 {
-                        let (a, b) = (vertices[edge], vertices[(edge + 1) % 3]);
-                        covered += clipped(
-                            a.0.min(b.0) - ext,
-                            a.1.min(b.1) - ext,
-                            a.0.max(b.0) + ext,
-                            a.1.max(b.1) + ext,
-                        );
-                    }
-                }
-                if covered > budget {
-                    return Err(SceneError::Limit);
-                }
-            }
-            index += 3;
-        }
-        if faces > MAX_PUBLIC_TRIANGLE_MESH_FACES && dense_fill_grid(layout).is_none() {
-            return Err(SceneError::Limit);
-        }
-        Ok(())
-    }
-
     /// Whether row `index` is plotted against `y2`, and its y scale.
     fn row_y_scale(&self, index: usize) -> (bool, AxisScale) {
         match &self.y2 {
@@ -11960,6 +11845,104 @@ pub struct SceneGraphParts {
 }
 
 impl SceneDocument {
+    /// Non-rendering, format-aware static mesh admission (#1042, dossier §28).
+    /// Vector SVG/PDF faces skip the raster work bound through 50,000 faces;
+    /// raster formats and dense vector images retain the #1006 CSS-pixel
+    /// fill/outline cost bound. Decoded coordinates are already projected.
+    pub fn check_mesh_budgets(&self, raster: bool) -> Result<(), SceneError> {
+        let triangle = SceneRecordKind::Triangle;
+        let faces = self
+            .records
+            .iter()
+            .filter(|record| record.kind == triangle)
+            .count()
+            / 3;
+        let vector = !raster;
+        if vector && faces <= MAX_PUBLIC_TRIANGLE_MESH_FACES {
+            return Ok(());
+        }
+        if faces <= PUBLIC_POLYFILL_GROUP_BUDGET {
+            return Ok(());
+        }
+        let layout = self.layout;
+        let plot_area = (layout.right - layout.left) * (layout.bottom - layout.top);
+        // Small plots keep an absolute floor so a modest mesh is never
+        // refused merely because the plot is tiny.
+        let budget = (MESH_OVERDRAW_PLOTS * plot_area).max(MAX_SCENE_IMAGE_PIXELS as f64);
+        let mut covered = 0.0f64;
+        let mut index = 0usize;
+        while index < self.records.len() {
+            if self.records[index].kind != triangle {
+                index += 1;
+                continue;
+            }
+            if index + 3 > self.records.len() {
+                return Err(SceneError::Length);
+            }
+            let (mut x0, mut y0, mut x1, mut y1) = (
+                f64::INFINITY,
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+                f64::NEG_INFINITY,
+            );
+            let mut vertices = [(0.0f64, 0.0f64); 3];
+            for (slot, vertex) in (index..index + 3).enumerate() {
+                let [px, py, _, _] = self.records[vertex].coordinates;
+                vertices[slot] = (px, py);
+                x0 = x0.min(px);
+                y0 = y0.min(py);
+                x1 = x1.max(px);
+                y1 = y1.max(py);
+            }
+            if self.records[index].visible {
+                let width = x1.min(layout.right) - x0.max(layout.left);
+                let height = y1.min(layout.bottom) - y0.max(layout.top);
+                if width >= 0.0 && height > 0.0 {
+                    // Scanline fill cost: covered pixels plus a per-row
+                    // edge-walk term, so full-height slivers are not free.
+                    covered += height * (width + 1.0);
+                }
+                // The closed outline is painted separately (raster
+                // `stroke`): it zero-fills a scratch box over the face's
+                // bounds padded by `ext = width / 2 + 1`, then scans each
+                // edge's padded bounds — the stroker's own work estimate.
+                // Charge exactly those boxes, clipped to the viewport, so a
+                // wide outline on tiny faces cannot hide behind fill bounds.
+                let stroke_width = self.styles[self.records[index].style_ref].stroke_width;
+                if stroke_width > 0.0 && stroke_width.is_finite() {
+                    let ext = stroke_width / 2.0 + 1.0;
+                    let clipped = |ax: f64, ay: f64, bx: f64, by: f64| -> f64 {
+                        let w = bx.min(layout.viewport_width) - ax.max(0.0);
+                        let h = by.min(layout.viewport_height) - ay.max(0.0);
+                        if w > 0.0 && h > 0.0 {
+                            w * h
+                        } else {
+                            0.0
+                        }
+                    };
+                    covered += clipped(x0 - ext, y0 - ext, x1 + ext, y1 + ext);
+                    for edge in 0..3 {
+                        let (a, b) = (vertices[edge], vertices[(edge + 1) % 3]);
+                        covered += clipped(
+                            a.0.min(b.0) - ext,
+                            a.1.min(b.1) - ext,
+                            a.0.max(b.0) + ext,
+                            a.1.max(b.1) + ext,
+                        );
+                    }
+                }
+                if covered > budget {
+                    return Err(SceneError::Limit);
+                }
+            }
+            index += 3;
+        }
+        if vector && faces > MAX_PUBLIC_TRIANGLE_MESH_FACES && dense_fill_grid(layout).is_none() {
+            return Err(SceneError::Limit);
+        }
+        Ok(())
+    }
+
     /// Bounded geographic footer for exact configured network attributions.
     /// Caller admits 32x decode/rebuild storage before this method. Local/complete
     /// explicit-label Scenes return byte-identically; never invent a provider.
@@ -16619,6 +16602,7 @@ impl SceneDocument {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
         }
+        self.check_mesh_budgets(true)?;
         let x_ticks = self.resolved_axis_ticks(true)?;
         let y_ticks = self.resolved_axis_ticks(false)?;
         let y2_ticks = self
@@ -25727,6 +25711,12 @@ pub(crate) mod tests {
         }
     }
 
+    impl SceneBatch<'_> {
+        fn static_raster_support(&self) -> Result<(), SceneError> {
+            SceneDocument::decode(&self.encode())?.check_mesh_budgets(true)
+        }
+    }
+
     fn mesh_pixels(document: &SceneDocument, scale: f64) -> (usize, usize, Vec<u8>) {
         let commands = document.to_raster_commands(scale).unwrap();
         let (w, h) = (
@@ -25739,17 +25729,51 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn mesh_vector_admission_is_format_aware_and_inclusive() {
+        let layout = PlotLayout::new(640.0, 420.0, 40.0, 20.0, 20.0, 40.0).unwrap();
+        for count in [5_000, 50_000, 50_001] {
+            let faces: Vec<_> = (0..count)
+                .map(|i| {
+                    let a = i as f64 * std::f64::consts::TAU / count as f64;
+                    let b = (i + 1) as f64 * std::f64::consts::TAU / count as f64;
+                    [
+                        [5.0, 5.0],
+                        [5.0 + 5.0 * a.cos(), 5.0 + 5.0 * a.sin()],
+                        [5.0 + 5.0 * b.cos(), 5.0 + 5.0 * b.sin()],
+                    ]
+                })
+                .collect();
+            let fixture = MeshFixture::from_faces(&faces);
+            let encoded = fixture.batch(layout).encode();
+            let document = SceneDocument::decode(&encoded).unwrap();
+            assert_eq!(
+                document.check_mesh_budgets(false),
+                if count <= 50_000 {
+                    Ok(())
+                } else {
+                    Err(SceneError::Limit)
+                }
+            );
+            assert_eq!(document.check_mesh_budgets(true), Err(SceneError::Limit));
+            assert_eq!(document.to_raster_commands(1.0), Err(SceneError::Limit));
+        }
+    }
+
+    #[test]
     fn mesh_overdraw_is_bounded_above_the_group_budget_only() {
         let layout = PlotLayout::new(320.0, 240.0, 30.0, 10.0, 12.0, 26.0).unwrap();
         // At or below 1,024 faces nothing is checked (byte-identical).
         let at_budget = MeshFixture::overlap(PUBLIC_POLYFILL_GROUP_BUDGET);
-        assert_eq!(at_budget.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(at_budget.batch(layout).static_raster_support(), Ok(()));
         // 1,100 full-plot faces charge ~550 plot halves: far over the bound.
         let overlapping = MeshFixture::overlap(1_100);
-        assert_eq!(overlapping.batch(layout).check_mesh_budgets(), Err(SceneError::Limit));
+        assert_eq!(
+            overlapping.batch(layout).static_raster_support(),
+            Err(SceneError::Limit)
+        );
         // A tessellation of the plot charges about 3 plots.
         let grid = MeshFixture::grid(40, 30);
-        assert_eq!(grid.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(grid.batch(layout).static_raster_support(), Ok(()));
         // Full-height zero-width slivers pay their per-row edge walk.
         let slivers: Vec<[[f64; 2]; 3]> = (0..20_000)
             .map(|i| {
@@ -25758,7 +25782,10 @@ pub(crate) mod tests {
             })
             .collect();
         let slivers = MeshFixture::from_faces(&slivers);
-        assert_eq!(slivers.batch(layout).check_mesh_budgets(), Err(SceneError::Limit));
+        assert_eq!(
+            slivers.batch(layout).static_raster_support(),
+            Err(SceneError::Limit)
+        );
     }
 
     #[test]
@@ -25776,14 +25803,15 @@ pub(crate) mod tests {
         let tiny = MeshFixture::from_faces(&tiny);
         let thick = [100.0; 3];
         assert_eq!(
-            tiny.batch_with_widths(layout, &thick).check_mesh_budgets(),
+            tiny.batch_with_widths(layout, &thick)
+                .static_raster_support(),
             Err(SceneError::Limit)
         );
         // The same faces with the fixture's ordinary 0.5-0.75 px outlines,
         // and a stroked tessellation of the plot, still admit.
-        assert_eq!(tiny.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(tiny.batch(layout).static_raster_support(), Ok(()));
         let grid = MeshFixture::grid(160, 160);
-        assert_eq!(grid.batch(layout).check_mesh_budgets(), Ok(()));
+        assert_eq!(grid.batch(layout).static_raster_support(), Ok(()));
     }
 
     #[test]
@@ -25799,8 +25827,13 @@ pub(crate) mod tests {
         let huge = PlotLayout::new(1_550.0, 1_440.0, 40.0, 10.0, 10.0, 30.0).unwrap();
         assert!(dense_fill_grid(huge).is_none());
         let dense = MeshFixture::grid(160, 160); // 51,200 faces
-        assert_eq!(dense.batch(huge).check_mesh_budgets(), Err(SceneError::Limit));
-        assert_eq!(dense.batch(small).check_mesh_budgets(), Ok(()));
+        assert_eq!(
+            SceneDocument::decode(&dense.batch(huge).encode())
+                .unwrap()
+                .check_mesh_budgets(false),
+            Err(SceneError::Limit)
+        );
+        assert_eq!(dense.batch(small).static_raster_support(), Ok(()));
     }
 
     #[test]

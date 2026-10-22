@@ -314,7 +314,7 @@ def public_static_export(
     Format dispatch is ABI 164 ``scene_static_export``. Explicit Scene callers
     still use ``figure_svg`` / ``figure_raster_commands``.
     """
-    reason, scene = _public_scene_or_reason(figure, width=width, height=height)
+    reason, scene = _public_scene_or_reason(figure, width=width, height=height, format=format)
     if reason is not None or scene is None:
         return None
     w = int(width if width is not None else figure.width)
@@ -362,11 +362,14 @@ def _public_scene_or_reason(
     width: int | None = None,
     height: int | None = None,
     y2_chrome: Y2Chrome | None = None,
+    format: str | None = None,
 ) -> tuple[str | None, bytes | None]:
     """Compile the public Scene once, or return the support diagnostic.
 
     The predicate must still compile so it cannot disagree with the encoder.
     Product routers reuse the compiled batch instead of encoding a second time.
+    A format-neutral document compile skips only consumer mesh-work admission;
+    the XYST exporter checks the final panels once its format is chosen.
     """
     envelope = _pack_public_export_support(figure, width=width, height=height)
     reason = _native.scene_public_export_reason(envelope)
@@ -382,7 +385,8 @@ def _public_scene_or_reason(
         if str(exc) == "invalid canonical scene plot layout":
             return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None
         raise
-    return None, scene
+    reason = _native.scene_static_export_reason(scene, format) if format is not None else ""
+    return reason or None, scene if not reason else None
 
 
 def scene_export_support_reason(
@@ -390,8 +394,9 @@ def scene_export_support_reason(
     *,
     width: int | None = None,
     height: int | None = None,
+    format: str = "png",
 ) -> str | None:
-    """Return why a figure cannot compile to the canonical Rust Scene, or ``None``.
+    """Return the Rust static-export diagnostic for ``format`` (default PNG).
 
     This is the single support predicate the #117 public static-export router
     consults before selecting the Rust Scene path over the compatibility
@@ -407,4 +412,4 @@ def scene_export_support_reason(
     and facet SVG/raster reuse that compiled batch rather than compiling a second
     Scene.
     """
-    return _public_scene_or_reason(figure, width=width, height=height)[0]
+    return _public_scene_or_reason(figure, width=width, height=height, format=format)[0]

@@ -4,8 +4,8 @@ The Scene keeps every face. Raster formats (PNG/JPEG/WebP) paint them
 directly at the requested scale. SVG/PDF write one vector path per face up to
 ``MAX_PUBLIC_TRIANGLE_MESH_FACES`` (50,000) faces aggregate; above that each
 mesh trace is one embedded raster image of its own faces at the default PNG
-scale (2) — the dense-fill tier. Above 1,024 faces, Scene compile bounds the
-faces' overdraw so no export is quadratic in faces x pixels. Meshes at or
+scale (2) — the dense-fill tier. Above 1,024 faces, raster-work admission
+bounds the faces' overdraw; pure vector SVG/PDF bypass that raster cost bound. Meshes at or
 below 1,024 faces are byte-identical to before. Hexbin keeps its own budget
 (#1023).
 """
@@ -218,7 +218,7 @@ def test_dense_mesh_consumes_the_shared_rust_autorange() -> None:
 def test_mesh_overdraw_above_the_group_budget_fails_closed() -> None:
     """1,100 full-plot faces would paint ~1,100 plots of pixels: refused.
 
-    Painting cost is the faces' covered pixels; above 1,024 faces Scene compile
+    Painting cost is the faces' covered pixels; above 1,024 faces raster admission
     charges each face its plot-clipped bounding box and refuses more than 64
     plot rectangles, so overlapping faces cannot make export quadratic. At or
     below 1,024 faces nothing changes.
@@ -235,7 +235,11 @@ def test_mesh_overdraw_above_the_group_budget_fails_closed() -> None:
         assert scene_export_support_reason(figure) == expected, n
         if expected:
             with pytest.raises(UnsupportedStaticExport, match=_LOD):
-                figure.to_svg()
+                figure.to_png()
+            assert scene_export_support_reason(figure, format="svg") is None
+            assert scene_export_support_reason(figure, format="pdf") is None
+            assert "<image" not in figure.to_svg()
+            assert figure.to_image("pdf").startswith(b"%PDF")
 
 
 def test_dense_mesh_above_the_scene_image_ceiling_fails_closed() -> None:
@@ -247,7 +251,7 @@ def test_dense_mesh_above_the_scene_image_ceiling_fails_closed() -> None:
         width=1_700,
         height=1_400,
     ).figure()
-    assert scene_export_support_reason(figure) == _LOD
+    assert scene_export_support_reason(figure, format="svg") == _LOD
     with pytest.raises(UnsupportedStaticExport, match=_LOD):
         figure.to_svg()
 
@@ -307,3 +311,91 @@ def test_thick_mesh_outlines_are_charged_and_fail_closed_fast() -> None:
     thin = chart(0.5).figure()
     assert scene_export_support_reason(thin) is None
     assert thin.to_png().startswith(b"\x89PNG")
+
+
+def _radial_fan(n: int) -> xyg.Chart:
+    angle = np.arange(n + 1, dtype=np.float64) * (2 * np.pi / n)
+    zeros = np.zeros(n)
+    return xyg.chart(
+        xyg.triangle_mesh(
+            x0=zeros,
+            y0=zeros,
+            x1=np.cos(angle[:-1]),
+            y1=np.sin(angle[:-1]),
+            x2=np.cos(angle[1:]),
+            y2=np.sin(angle[1:]),
+        ),
+        xyg.x_axis(domain=(-1.0, 1.0)),
+        xyg.y_axis(domain=(-1.0, 1.0)),
+        width=WIDTH,
+        height=HEIGHT,
+    )
+
+
+@pytest.mark.parametrize("faces", [5_000, 50_000])
+def test_radial_fan_is_vector_only_through_the_inclusive_ceiling(faces: int) -> None:
+    """#1042: non-overlapping fan boxes exceed the raster cost bound."""
+    figure = _radial_fan(faces).figure()
+    for format in ("svg", "pdf"):
+        assert scene_export_support_reason(figure, format=format) is None
+    svg = figure.to_svg()
+    assert "<image" not in svg
+    assert svg.count(" Z") >= faces
+    pdf = figure.to_image("pdf")
+    assert pdf.startswith(b"%PDF") and b"/Subtype /Image" not in pdf
+    for format in ("png", "jpeg", "webp"):
+        assert scene_export_support_reason(figure, format=format) == _LOD
+        with pytest.raises(UnsupportedStaticExport, match=_LOD):
+            figure.to_image(format)
+
+
+def test_radial_fan_above_vector_ceiling_keeps_dense_image_bound() -> None:
+    figure = _radial_fan(50_001).figure()
+    for format in ("svg", "pdf", "png"):
+        assert scene_export_support_reason(figure, format=format) == _LOD
+        with pytest.raises(UnsupportedStaticExport, match=_LOD):
+            figure.to_image(format)
+
+
+def test_multi_panel_xyst_cannot_bypass_raster_mesh_work_admission() -> None:
+    from xyg import _native, _static_document
+
+    scene = figure_scene(_radial_fan(5_000).figure())
+    document = _static_document.encode(
+        [_static_document.Panel(scene, offset, 0, WIDTH, HEIGHT) for offset in (0, WIDTH)],
+        width=WIDTH * 2,
+        height=HEIGHT,
+    )
+    assert b"<image" not in _native.static_document_export(document, "svg")
+    with pytest.raises(_native.StaticDocumentRejected) as rejected:
+        _native.static_document_export(document, "png")
+    assert rejected.value.code == _LOD
+
+
+def test_format_support_query_preserves_the_c_byte_buffer_contract() -> None:
+    import ctypes
+
+    from xyg import _native
+
+    encoded = figure_scene(_radial_fan(5_000).figure())
+    source = ctypes.create_string_buffer(encoded)
+    query = _native._lib.xyg_scene_static_export_reason
+    sentinel = ctypes.c_size_t(-1).value
+    expected = _LOD.encode()
+    assert query(source, len(encoded), 1, None, 0) == len(expected)
+    short = ctypes.create_string_buffer(b"zz")
+    assert query(source, len(encoded), 1, short, 2) == len(expected)
+    assert short.raw == b"zz\0"  # No partial diagnostic or NUL is written.
+    output = ctypes.create_string_buffer(b"z" * (len(expected) + 1))
+    assert query(source, len(encoded), 1, output, len(expected)) == len(expected)
+    assert output.raw[: len(expected)] == expected
+    assert output.raw[len(expected)] == ord("z")  # Diagnostic has no NUL terminator.
+    for code in (0, 2):
+        assert query(source, len(encoded), code, short, 2) == 0
+        assert short.raw == b"zz\0"
+    malformed = ctypes.create_string_buffer(b"XYGS")
+    assert query(malformed, 4, 0, short, 2) == sentinel
+    assert query(source, len(encoded), 99, short, 2) == sentinel
+    assert query(None, 0, 0, short, 2) == sentinel
+    assert query(source, len(encoded), 1, None, 1) == sentinel
+    assert short.raw == b"zz\0"
