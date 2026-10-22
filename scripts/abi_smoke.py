@@ -2368,6 +2368,8 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_density_wasm_source_admit.restype = ctypes.c_int32
     lib.xyg_density_wasm_source_admit.argtypes = [ctypes.c_int32, ctypes.c_int32]
+    lib.xyg_payload_axis_side_resolve.restype = ctypes.c_int32
+    lib.xyg_payload_axis_side_resolve.argtypes = [ctypes.c_int32, ctypes.c_int32]
     lib.xyg_density_wasm_density_wire_kind.restype = ctypes.c_int32
     lib.xyg_density_wasm_density_wire_kind.argtypes = [
         ctypes.c_int32,
@@ -7916,6 +7918,15 @@ def main() -> None:
         and lib.xyg_density_wasm_density_wire_kind(1, 0, 1) == 2
         and lib.xyg_density_wasm_density_wire_kind(0, 1, 1) == 0,
         "density_wasm_density_wire_kind",
+    )
+    ok(
+        lib.xyg_payload_axis_side_resolve(0, -1) == 0
+        and lib.xyg_payload_axis_side_resolve(1, -1) == 0
+        and lib.xyg_payload_axis_side_resolve(2, -1) == 1
+        and lib.xyg_payload_axis_side_resolve(2, 0) == 0
+        and lib.xyg_payload_axis_side_resolve(2, 2) == -1
+        and lib.xyg_payload_axis_side_resolve(3, -1) == -1,
+        "payload_axis_side_resolve",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(
