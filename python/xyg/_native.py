@@ -16896,7 +16896,7 @@ _AXIS_SIDE_NAMES = {
 
 
 def payload_axis_side_resolve(axis_role: str, authored: str | None) -> str:
-    """Resolved axis side name via ``xyg_payload_axis_side_resolve`` (ABI 393).
+    """Resolved axis side name via ``xyg_payload_axis_side_resolve`` (ABI 392).
 
     ``axis_role`` is ``"x"``, ``"y"`` or ``"y2"``; ``authored`` is the authored
     side or ``None``. Rust owns the default (x bottom, y left, an unauthored y2

@@ -230,10 +230,6 @@ def _validate_xyaf_annotation_style(annotation: dict[str, Any]) -> None:
             raise UnsupportedSceneV3(f"Scene arrow style does not encode {unsupported!r}")
         if kind == "callout":
             raise UnsupportedSceneV3(f"Scene callout style does not encode {unsupported!r}")
-        if kind == "text":
-            raise UnsupportedSceneV3(
-                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
-            )
         raise UnsupportedSceneV3(
             f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
         )

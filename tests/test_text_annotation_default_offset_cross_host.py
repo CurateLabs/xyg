@@ -124,3 +124,16 @@ def test_node_raw_unset_text_static_and_payload_agree_and_explicit_zero_holds(
     )
     assert node["zero"]["payload"] == [0, 0]
     assert node["zero"]["svg"] != node["bare"]["svg"]
+
+
+def test_raw_explicit_zero_holds_in_static_and_payload_and_matches_node(
+    node_results: dict[str, Any],
+) -> None:
+    zero = [{**RAW[0], "dx": 0, "dy": 0}]
+    figure = _raw_figure(zero)
+    spec = figure._annotation_specs()[0]
+    assert (spec["dx"], spec["dy"]) == (0.0, 0.0)
+    svg = figure.to_svg()
+    assert svg != _raw_figure(RAW).to_svg()
+    assert svg == _chart(xyg.text(1, 2, "default offset", dx=0, dy=0)).to_svg()
+    assert svg == node_results["raw"]["zero"]["svg"]

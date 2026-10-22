@@ -156,7 +156,9 @@ in the README).
   their anchor, and `xyg.text`/`xyg.label` default to `None` (unset). Every
   text row is now laid out by Rust, so unset means the same in static export and
   the live payload; bare out-of-domain text is placed rather than rejected as an
-  attached label.
+  attached label. Label-table and paint order change: every text row is now XYAW,
+  so offsetless raw text paints after rule, band and marker (XYAL) labels instead
+  of before them (`static-annotation-style.md`, `scene-ir.md`).
 - Repository branding and all owned documentation, support, CI, security, and
   source pointers now target `CurateLabs/xyg`; inherited benchmark records keep
   their original repository field as provenance (#14).

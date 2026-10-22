@@ -1000,13 +1000,16 @@ Remaining polar marks and richer legend variants stay explicit compatibility
 exceptions. Public SVG and native PNG auto-route supported figures through
 Rust Scene; PDF consumes that Rust SVG. The public annotation route is the
 bounded primary Cartesian family on the otherwise proven literal Cartesian
-geometry slice: unoffset plain text, Rust-positioned labelled
+geometry slice: text (every text row is laid out in XYAW at the Rust default
+offset `(6, -6)` when `dx`/`dy` are unset, #1024; XYAW paints after the XYAL
+rule/band/marker labels), Rust-positioned labelled
 rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded
 wrapped text/callouts. Ordinary/wrapped callouts retain literal color, opacity,
 width, anchor, offsets, and literal label background/border; Rust alone
 validates them and resolves leaders, label boxes, and wrapped line breaks.
 Unwrapped text offsets/anchors and marker-label offsets/anchors are not Scene
-fields and deliberately remain compatibility exceptions. Other annotation
+fields and deliberately remain compatibility exceptions. (Text offsets are now
+admitted through XYAW; see above.) Other annotation
 combinations/kinds, themes, classes/CSS/custom fonts, nonliteral chrome,
 custom marker paths/glyphs, data-driven symbol channels, unmodeled marks, and LOD remain compatibility
 preflight exceptions. Literal disconnected segments, error-bar stems/caps,

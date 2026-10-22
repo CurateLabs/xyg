@@ -303,7 +303,6 @@ function validateXyafAnnotationStyle(annotation) {
     if (wrapped) throw new RangeError(`Scene wrapped annotations do not encode ${JSON.stringify(unsupported)}`);
     if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
     if (kind === "callout") throw new RangeError(`Scene callout style does not encode ${JSON.stringify(unsupported)}`);
-    if (kind === "text") throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
     throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
   }
 }
