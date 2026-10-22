@@ -1962,6 +1962,35 @@ mod tests {
         }
     }
 
+    /// One missing offset takes only its own default, and an explicit zero is
+    /// never replaced (#1024).
+    #[test]
+    fn partial_and_zero_text_offsets_resolve_independently() {
+        let laid_out = |dx: Option<f64>, dy: Option<f64>| {
+            let mut record = spaced_text(XYAF_KIND_TEXT, 0);
+            let mut facts = u32::from_le_bytes(record[16..20].try_into().unwrap());
+            for (flag, slot, value) in [(FACT_HAS_DX, 6, dx), (FACT_HAS_DY, 7, dy)] {
+                if let Some(value) = value {
+                    facts |= flag;
+                    let at = 32 + slot * 8;
+                    record[at..at + 8].copy_from_slice(&value.to_le_bytes());
+                }
+            }
+            record[16..20].copy_from_slice(&facts.to_le_bytes());
+            let packed = pack_annotation_facts(&record, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+            let section = xyaw_section(&packed).expect("text is laid out");
+            let row = &section[12..];
+            (
+                f64::from_le_bytes(row[16..24].try_into().unwrap()),
+                f64::from_le_bytes(row[24..32].try_into().unwrap()),
+            )
+        };
+        assert_eq!(laid_out(Some(3.0), None), (3.0, -6.0));
+        assert_eq!(laid_out(None, Some(4.0)), (6.0, 4.0));
+        assert_eq!(laid_out(Some(0.0), Some(0.0)), (0.0, 0.0));
+        assert_eq!(laid_out(Some(0.0), None), (0.0, -6.0));
+    }
+
     #[test]
     fn coordinate_space_is_text_only_and_bounded() {
         assert!(
