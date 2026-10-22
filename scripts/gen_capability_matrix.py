@@ -69,6 +69,11 @@ def render() -> str:
         "Its seven layer families reuse the same Rust Scene renderers; the CSS",
         "property table below does not imply geographic CSS input support.",
         "",
+        "Named-colorbar numeric-domain admission has a separate",
+        "[capability comparison and reproducible Matplotlib evidence](../benchmarks/named-colorbar-888/README.md).",
+        "Static XYCB v2 retains every named palette sample on admitted extreme finite",
+        "domains; adjacent domains with too few representable stops fail closed.",
+        "",
         "## In one line",
         "",
         f"- **{counts['mark_style_properties_shipped']}** mark style properties across "

@@ -110,6 +110,10 @@ jobs:
         env:
           MPLBACKEND: Agg
         run: .venv/bin/pytest -q -rs tests/pyplot
+      - name: Verify named-colorbar comparison corruption witnesses
+        env:
+          MPLBACKEND: Agg
+        run: .venv/bin/pytest -q -rs tests/test_named_colorbar_comparison.py
 
   test:
     name: Test (Rust + Python + JS)

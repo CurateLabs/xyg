@@ -22,6 +22,11 @@ Geographic composition uses a separate literal-RGBA catalog contract:
 Its seven layer families reuse the same Rust Scene renderers; the CSS
 property table below does not imply geographic CSS input support.
 
+Named-colorbar numeric-domain admission has a separate
+[capability comparison and reproducible Matplotlib evidence](../benchmarks/named-colorbar-888/README.md).
+Static XYCB v2 retains every named palette sample on admitted extreme finite
+domains; adjacent domains with too few representable stops fail closed.
+
 ## In one line
 
 - **11** mark style properties across **21** mark kinds, drawn by all three renderers.
