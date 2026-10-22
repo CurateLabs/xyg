@@ -227,6 +227,10 @@ installing all three engines with
 
 These must pass before publishing.
 
+The retained `0.6.0-rc.1` preparation and its outstanding publication gates are
+recorded in [the candidate record](../releases/0.6.0-rc.1.md). Retained artifacts
+do not constitute the accepted cross-host release required by issue #108.
+
 | Area | Gate | Command or evidence |
 |---|---|---|
 | Python floor | `pyproject.toml`, Ruff, docs, syntax, and annotations stay on the Python 3.11+ floor | `python scripts/check_python_floor.py` |

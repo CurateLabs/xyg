@@ -132,10 +132,10 @@ message}`). Details: design §6.4.
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 378 | `abiVersion()`, `xyg_abi_version` |
-| WASM ABI | 27 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
-| Scene | 31 | `SCENE_VERSION` |
-| Paint protocol | 13 | `PROTOCOL_VERSION` (typed tooltip columns) |
+| Native C ABI | 393 | `abiVersion()`, `xyg_abi_version` |
+| WASM ABI | 34 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
+| Scene | 34 | `SCENE_VERSION` |
+| Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |
 | `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 1 | `composition.ledgerVersion` |
