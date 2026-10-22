@@ -51,9 +51,14 @@ pub const SCENE_RECORD_Y2_BIT: u8 = 0x40;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 16;
+pub const BROWSER_PAINTER_VERSION: u32 = 17;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 420;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
+/// XYPB v17 resolves each axis's tick-label layout in Rust. Axis-block byte 5
+/// is the mode the layout applied (`tick_layout::STRATEGY_*`: rotate, stagger,
+/// none, off, or preserve for auto/hide/preserve), bytes 6-7 an i16 label
+/// rotation in hundredths of a degree, and labels the layout drops arrive
+/// blank, so the browser applies no strategy policy of its own.
 /// XYPB v16 header map beyond the v15 prefix: the y2 axis block (same 88-byte
 /// record as x/y) follows the chrome input at 264, then the fixed y2 text
 /// record, the text/legend/colorbar/label lengths, and the y2 tick count.
@@ -13975,6 +13980,88 @@ impl SceneDocument {
         format_tick(value, ticks.step, policy.scale.kind)
     }
 
+    /// Serialize every AxisTicks::ticks position so log minor grid lines match
+    /// SVG/raster consumers. Labels attach only for AxisTicks::labeled that the
+    /// strategy layout keeps (empty UTF-8 otherwise). Returns the XYPB v17 axis
+    /// facts as well: resolved mode (`tick_layout::STRATEGY_*`; hide arrives as
+    /// preserve), per-side display anchors, and normalized rotations in
+    /// hundredths of a degree.
+    /// Out of line: one body serves all three axes in the size-budgeted WASM.
+    #[inline(never)]
+    fn painter_ticks(
+        &self,
+        slot: AxisSlot,
+        scale: AxisScale,
+        axis: AxisTicks,
+    ) -> Result<(Vec<(f32, String, bool)>, [u8; 5]), SceneError> {
+        // Keep the first label side's labels, as in SVG. Resolve the other
+        // side too when both are drawn: default rotation depends on the side.
+        let policy = self.slot_policy(slot);
+        let style = policy.style;
+        let side = if style.tick_label_sides == 0 {
+            style.side as u8
+        } else {
+            style.tick_label_sides.trailing_zeros() as u8
+        };
+        let (texts, items, mode) = self.axis_tick_layout(slot, &axis, scale, side);
+        let mut keep = vec![false; axis.labeled.len()];
+        for item in &items {
+            if let Some(slot) = keep.get_mut(item.index as usize) {
+                *slot = true;
+            }
+        }
+        let encode = |items: &[tick_layout::TickLabelItem], side| {
+            let angle = items.first().map_or(0.0, |item| item.angle);
+            // Preserve the original angle's anchor before reducing equivalent
+            // turns to the i16 wire range. 350deg and -10deg rotate alike, but
+            // their default anchors differ.
+            let anchor = display_tick_anchor(
+                policy.anchor_authored,
+                policy.anchor,
+                slot == AxisSlot::X,
+                side,
+                angle,
+            );
+            let normalized = angle.rem_euclid(360.0);
+            let normalized = if normalized > 180.0 { normalized - 360.0 } else { normalized };
+            ((normalized * 100.0).round() as i16, anchor)
+        };
+        let mut angles = [0_i16; 2];
+        let mut anchors = [0_u8; 2];
+        (angles[side as usize], anchors[side as usize]) = encode(&items, side);
+        if style.tick_label_sides == 3 {
+            let (_, other_items, _) = self.axis_tick_layout(slot, &axis, scale, 1 - side);
+            (angles[(1 - side) as usize], anchors[(1 - side) as usize]) =
+                encode(&other_items, 1 - side);
+        }
+        let [a0, a1] = angles[0].to_le_bytes();
+        let [b0, b1] = angles[1].to_le_bytes();
+        let ticks = axis
+            .ticks
+            .iter()
+            .map(|&value| {
+                let at = scale.pixel(value) as f32;
+                if !at.is_finite() {
+                    return Err(SceneError::NonFinite);
+                }
+                let index = axis
+                    .labeled
+                    .iter()
+                    .position(|candidate| *candidate == value);
+                let label = index
+                    .filter(|index| keep.get(*index) == Some(&true))
+                    .and_then(|index| texts.get(index))
+                    .cloned()
+                    .unwrap_or_default();
+                Ok((at, label, index.is_some()))
+            })
+            .collect::<Result<Vec<_>, SceneError>>()?;
+        Ok((
+            ticks,
+            [mode as u8 | (anchors[0] << 3) | (anchors[1] << 5), a0, a1, b0, b1],
+        ))
+    }
+
     fn axis_hides_chrome(&self, slot: impl Into<AxisSlot>) -> bool {
         self.slot_policy(slot.into()).strategy == tick_layout::STRATEGY_NONE as u8
     }
@@ -13992,20 +14079,44 @@ impl SceneDocument {
         side_code: u8,
     ) -> Vec<AxisTickLabelItem> {
         let slot = slot.into();
-        let is_x = slot == AxisSlot::X;
-        if self.axis_hides_labels(slot) {
-            return Vec::new();
-        }
         let policy = self.slot_policy(slot);
+        let (texts, kept, _) = self.axis_tick_layout(slot, ticks, scale, side_code);
+        kept.into_iter()
+            .filter_map(|item| {
+                let index = item.index as usize;
+                Some(AxisTickLabelItem {
+                    value: *ticks.labeled.get(index)?,
+                    text: texts.get(index)?.clone(),
+                    angle: item.angle,
+                    row: item.row,
+                    anchor: display_tick_anchor(
+                        policy.anchor_authored,
+                        policy.anchor,
+                        slot == AxisSlot::X,
+                        side_code,
+                        item.angle,
+                    ),
+                })
+            })
+            .collect()
+    }
+
+    /// The shared strategy layout: formatted labels (empty when labels are
+    /// hidden), the kept items, and the effective mode, for one label side.
+    #[inline(never)]
+    fn axis_tick_layout(
+        &self,
+        slot: AxisSlot,
+        ticks: &AxisTicks,
+        scale: AxisScale,
+        side_code: u8,
+    ) -> (Vec<String>, Vec<tick_layout::TickLabelItem>, u32) {
+        let is_x = slot == AxisSlot::X;
+        let policy = self.slot_policy(slot);
+        if self.axis_hides_labels(slot) {
+            return (Vec::new(), Vec::new(), u32::from(policy.strategy));
+        }
         let font_size = policy.style.tick_label_size(self.chrome.label_font_size);
-        let (strategy, min_gap, explicit_angle, category, authored, anchor_code) = (
-            policy.strategy,
-            policy.min_gap,
-            policy.angle,
-            policy.category,
-            policy.anchor_authored,
-            policy.anchor,
-        );
         let side = if is_x {
             if side_code == 0 {
                 tick_layout::SIDE_BOTTOM
@@ -14018,53 +14129,41 @@ impl SceneDocument {
             tick_layout::SIDE_RIGHT
         };
         let layout_anchor = if is_x {
-            collision_layout_anchor(authored, anchor_code)
+            collision_layout_anchor(policy.anchor_authored, policy.anchor)
         } else {
             tick_layout::ANCHOR_CENTER
         };
-        let values = ticks.labeled.clone();
-        let texts: Vec<String> = values
+        let texts: Vec<String> = ticks
+            .labeled
             .iter()
             .enumerate()
             .map(|(index, value)| self.axis_tick_label(slot, index, *value, ticks))
             .collect();
-        let positions: Vec<f64> = values.iter().map(|value| scale.pixel(*value)).collect();
+        let positions: Vec<f64> = ticks.labeled.iter().map(|value| scale.pixel(*value)).collect();
         let labels: Vec<&str> = texts.iter().map(String::as_str).collect();
-        let kept = tick_layout::tick_label_layout(
+        let (kept, mode) = tick_layout::tick_label_layout_resolved(
             &positions,
             &labels,
-            u32::from(strategy),
+            u32::from(policy.strategy),
             side,
             layout_anchor,
             is_x,
-            category,
+            policy.category,
             font_size,
-            min_gap,
-            explicit_angle,
+            policy.min_gap,
+            policy.angle,
         )
         .unwrap_or_else(|| {
-            (0..values.len() as u32)
+            let all = (0..texts.len() as u32)
                 .map(|index| tick_layout::TickLabelItem {
                     index,
                     angle: 0.0,
                     row: 0,
                 })
-                .collect()
+                .collect();
+            (all, tick_layout::STRATEGY_PRESERVE)
         });
-        kept.into_iter()
-            .filter_map(|item| {
-                let index = item.index as usize;
-                let value = *values.get(index)?;
-                let text = texts.get(index)?.clone();
-                Some(AxisTickLabelItem {
-                    value,
-                    text,
-                    angle: item.angle,
-                    row: item.row,
-                    anchor: display_tick_anchor(authored, anchor_code, is_x, side_code, item.angle),
-                })
-            })
-            .collect()
+        (texts, kept, mode)
     }
 
     fn legend_bounds(&self, legend: &SceneLegend) -> Result<(f64, f64, f64, f64), SceneError> {
@@ -16705,38 +16804,17 @@ impl SceneDocument {
                 .then_some(value)
                 .ok_or(SceneError::NonFinite)
         };
-        // Serialize every AxisTicks::ticks position so log minor grid lines
-        // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
-        // (empty UTF-8 for unlabeled minor ticks).
-        let browser_ticks = |slot: AxisSlot, scale: AxisScale, axis: AxisTicks| {
-            axis.ticks
-                .iter()
-                .copied()
-                .map(|value| {
-                    let major = axis.labeled.contains(&value);
-                    let label = if major {
-                        let index = axis
-                            .labeled
-                            .iter()
-                            .position(|candidate| *candidate == value)
-                            .ok_or(SceneError::Length)?;
-                        self.axis_tick_label(slot, index, value, &axis)
-                    } else {
-                        String::new()
-                    };
-                    Ok((f32_value(scale.pixel(value))?, label, major))
-                })
-                .collect::<Result<Vec<_>, SceneError>>()
-        };
-        let x_ticks = browser_ticks(AxisSlot::X, self.x_scale, self.resolved_axis_ticks(true)?)?;
-        let y_ticks = browser_ticks(AxisSlot::Y, self.y_scale, self.resolved_axis_ticks(false)?)?;
-        let y2_ticks = match &self.y2 {
-            Some(y2) => browser_ticks(
+        let (x_ticks, x_meta) =
+            self.painter_ticks(AxisSlot::X, self.x_scale, self.resolved_axis_ticks(true)?)?;
+        let (y_ticks, y_meta) =
+            self.painter_ticks(AxisSlot::Y, self.y_scale, self.resolved_axis_ticks(false)?)?;
+        let (y2_ticks, y2_meta) = match &self.y2 {
+            Some(y2) => self.painter_ticks(
                 AxisSlot::Y2,
                 y2.scale,
                 self.resolved_axis_ticks(AxisSlot::Y2)?,
             )?,
-            None => Vec::new(),
+            None => (Vec::new(), [0; 5]),
         };
 
         let mut groups = Vec::new();
@@ -17199,10 +17277,21 @@ impl SceneDocument {
         write_chrome_style_input(&mut chrome_input, &self.chrome);
         debug_assert_eq!(chrome_input.len(), SCENE_CHROME_STYLE_INPUT_BYTES);
         out[64..264].copy_from_slice(&chrome_input);
+        // The authored collision header is Rust-internal; the painter carries
+        // only the resolved per-axis strategy below.
+        out[76..80].fill(0);
+        out[93..96].copy_from_slice(&x_meta[..3]);
+        out[181..184].copy_from_slice(&y_meta[..3]);
+        // Header tail carries top/right rotations; axis bytes 6-7 carry
+        // bottom/left rotations. No browser-side sign policy is needed.
+        out[416..418].copy_from_slice(&x_meta[3..]);
+        out[418..420].copy_from_slice(&y_meta[3..]);
         if let Some(y2) = &self.y2 {
             let mut axis = Vec::with_capacity(PAINTER_Y2_AXIS_BYTES);
             write_axis_chrome_style(&mut axis, &y2.axis);
             out[264..264 + PAINTER_Y2_AXIS_BYTES].copy_from_slice(&axis);
+            out[269..272].copy_from_slice(&y2_meta[..3]);
+            out[378..380].copy_from_slice(&y2_meta[3..]);
             // Fixed y2 chrome-text record: the resolved XYCO typography and
             // paints, so the browser applies them rather than the shared
             // label size and single paint of the primary axes.
@@ -24493,7 +24582,12 @@ pub(crate) mod tests {
         assert_eq!(&raster[37..41], &[1, 2, 3, 255]);
         assert_eq!(&raster[78..82], &[4, 5, 6, 128]);
         let painter = document.to_browser_painter(16_384).unwrap();
-        assert_eq!(&painter[64..264], style_input.as_slice());
+        // XYPB v17 writes preserve plus top-center / left-end anchor bits
+        // into byte 5 of the x and y axis blocks; everything else is the validated style input.
+        let mut expected_input = style_input.clone();
+        expected_input[93 - 64] = 4 | (1 << 5);
+        expected_input[181 - 64] = 4 | (2 << 3);
+        assert_eq!(&painter[64..264], expected_input.as_slice());
         // XYPB v16: the title/x/y/y2-title lengths follow the y2 axis block and
         // the fixed y2 text record (zero here: no secondary axis).
         assert!(painter[264..384].iter().all(|byte| *byte == 0));

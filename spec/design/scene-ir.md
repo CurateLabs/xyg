@@ -2419,6 +2419,18 @@ and y2 titles, so every surface agrees; `tests/browser/wasm_foundation_page.mjs`
 asserts the rendered y2 title transform. There is no y2 grid
 (Matplotlib default). The y2 title baseline mirrors `y_title_baseline`.
 
+**XYPB v17.** Adds the Rust-resolved tick-label layout to the x/y/y2 axis blocks: byte 5
+uses bits 0-2 for the applied mode (rotate 2, stagger 3, preserve 4, none 5, off 6),
+bits 3-4 / 5-6 for bottom/left and top/right display anchors (start 0, center 1,
+end 2), with bit 7 reserved zero. Bytes 6-7 carry an
+`i16` bottom/left rotation in 1/100 degree. Top/right rotations are `i16` at
+header bytes 416-417 (x), 418-419 (y), and 378-379 (y2; in the chrome-text
+record's former reserved bytes). Rust resolves each side, including the sign
+of default rotation. Rotations are normalized into `[-180, 180]` degrees for
+encoding, but anchors resolve from the original angle so equivalent full turns
+retain SVG alignment; dropped labels are blank and the authored collision
+header at 76-79 is zeroed. See `browser-wasm.md` (#1036). Version 16 layout follows.
+
 **XYPB v16.** `BROWSER_PAINTER_VERSION = 16`, header 420 bytes: bytes 264–351 are
 the y2 axis block (88 bytes, zero without y2), 352–383 the fixed y2 chrome-text
 record (`tick_label_size`, `label_size`, `tick_padding` f32; `text_flags u32`;

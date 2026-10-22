@@ -393,10 +393,13 @@ fn y2_paints_right_gutter_labels_with_equal_domain_tick_parity() {
     let commands = document.to_raster_commands(1.0).unwrap();
     assert!(commands.windows(4).any(|w| w == b"Righ"));
 
-    // XYPB v16: the y2 axis block, its fixed text record and the y2 ticks.
+    // XYPB v16+: the y2 axis block, its fixed text record and the y2 ticks.
     let painter = document.to_browser_painter(1 << 24).unwrap();
     assert_eq!(&painter[..4], b"XYPB");
     assert_eq!(u32_at(&painter, 4), crate::scene::BROWSER_PAINTER_VERSION);
+    // XYPB v17 packs preserve with bottom-center / left-end / right-start anchors at axis byte 5.
+    assert_eq!(crate::scene::BROWSER_PAINTER_VERSION, 17);
+    assert_eq!([painter[93], painter[181], painter[269]], [4 | (1 << 3), 4 | (2 << 3), 4]);
     assert_eq!(u32_at(&painter, 12) as usize, BROWSER_PAINTER_HEADER_BYTES);
     let y2_block = &painter[264..352];
     assert!(y2_block.iter().any(|byte| *byte != 0));
@@ -747,5 +750,38 @@ fn arrow_run_on_the_secondary_plane_is_rejected_by_both_validators_on_the_same_b
         let decoder = SceneDocument::decode(&tampered);
         assert_eq!(validator.err(), Some(SceneError::Length), "row {row}");
         assert_eq!(decoder.err(), Some(SceneError::Length), "row {row}");
+    }
+}
+
+/// XYPB v17: the effective layout mode lands at axis byte 5 (hide arrives as
+/// preserve), hidden labels arrive blank, and the authored collision header
+/// at bytes 76..80 is zeroed.
+#[test]
+fn painter_carries_the_resolved_tick_label_mode_and_blanks_hidden_labels() {
+    let labels = |painter: &[u8]| -> Vec<String> {
+        // Tick table: 16-byte records, then the shared string table.
+        let (ticks, strings) = (u32_at(painter, 56) as usize, u32_at(painter, 60) as usize);
+        let count = u32_at(painter, 48) as usize;
+        let mut at = strings + (u32_at(painter, 384) + u32_at(painter, 388) + u32_at(painter, 392) + u32_at(painter, 396)) as usize;
+        (0..count)
+            .map(|index| {
+                let length = u32_at(painter, ticks + index * 16 + 8) as usize;
+                let text = String::from_utf8(painter[at..at + length].to_vec()).unwrap();
+                at += length;
+                text
+            })
+            .collect()
+    };
+    for (strategy, mode) in [(0u8, 4u8), (1, 4), (4, 4), (5, 5), (6, 6)] {
+        let mut facts = chrome_facts(auto_flags(), None);
+        facts[12] = strategy;
+        let scene = encode(&[scatter(1, 0.5, false)], &facts);
+        let painter = SceneDocument::decode(&scene).unwrap().to_browser_painter(1 << 24).unwrap();
+        assert_eq!(painter[93], mode | (1 << 3), "strategy {strategy}, bottom-center anchor");
+        assert_eq!(i16::from_le_bytes([painter[94], painter[95]]), 0);
+        assert_eq!(painter[181], 4 | (2 << 3), "the untouched y axis keeps preserve and left-end anchor");
+        assert_eq!(painter[76..80], [0; 4], "collision header is Rust-internal");
+        let shown = labels(&painter).iter().filter(|label| !label.is_empty()).count();
+        assert_eq!(shown == 0, mode >= 5, "strategy {strategy}: {shown} labels");
     }
 }

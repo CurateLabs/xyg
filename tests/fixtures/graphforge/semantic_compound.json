@@ -139,14 +139,14 @@
   "goldens": {
     "light": {
       "scene_sha256": "af0c8072e02b3ed4a422579ba505a8bf318193db61230293cc765d4ade3cc539",
-      "painter_sha256": "f5596ebf8006d0ed8d98547754effc8b5b3429f47aa82035082caf7d1989b392",
+      "painter_sha256": "2ebb821c902502fcd25fffaa9398ddc7fe6c8b7921de6ce02cb2ddea0b1ca5ec",
       "svg_sha256": "fa7d1d03ab5b02cf96992ef1533b512b4d95d2fee9a35b0b51ece844878030c5",
       "raster_sha256": "76d4b959cdee20707179a42b57d7af507d503678d544fde36f26d9f9ab038bcf",
       "png_sha256": "b08e35b392c388007f2d4098a0a90aae3f890d4bd6e74808d6307d686d99b5da"
     },
     "dark": {
       "scene_sha256": "64a37a521aaedff465374c1af1af0156b698a699a7826b56e569cb830705fa53",
-      "painter_sha256": "4c07bfe02f4077d7e4d0d76dca54c371ddd97a6518695e74859664e662a13132",
+      "painter_sha256": "416b6d602e31a9fb51e9f11caa714194f89facb0cb03a00a1bebb5742301a3f0",
       "svg_sha256": "80759fb51d39e8b63b7d449b0bbe673ad3cd6ce6a980091f69ccd5ce2a4cb676",
       "raster_sha256": "f9c87b437ebd6169bf5b51be9cc41789ea17ca1903b9e0f705b776698221d4a1",
       "png_sha256": "31682582e0f42aedc072c9fbc39c0d982cacb6fb49f925e02af95263a01b0d35"
