@@ -99,12 +99,11 @@ applicable is a failure; a skipped job that is inapplicable is recorded as such.
 | Advisory (outside `ci.yml`) | `codspeed.yml`, `density-100m.yml`, `ceiling-benchmark.yml`, `benchmark-refresh.yml`, `docs.yml`, `binder.yml`, `final-coderabbit.yml` | scheduled or manual | not an aggregate input |
 
 Changes from run 38640943006, where `Release surfaces` passed while three jobs failed:
-The release classifier treats `spec/graphforge-compatibility.json` as an
-executable compatibility contract alongside `spec/abi/` and `spec/wasm/`;
-a declaration-only edit requires the release surface matrix. Compatibility
-scripts, tests, and checked-in Core fixtures also require it. The Python Test
-job runs the complete `tests/` tree, including the matched/mismatched Core
-compatibility suite.
+The packaged `python/xyg/graphforge-compatibility.json` declaration lives under
+the classifier's required Python surface; a declaration-only edit requires
+the release surface matrix. Compatibility scripts, tests, and checked-in Core
+fixtures also require it. The Python Test job runs the complete `tests/` tree,
+including the Core corpus and unsupported-version suites.
 
 `matplotlib_reference` moved from a main-only job outside the aggregate to a classifier-gated
 release-surface job; the benchmark jobs lost `continue-on-error` and became aggregate inputs
@@ -887,3 +886,18 @@ Keep pushing these in low-conflict increments:
   behavior when the native core is unavailable.
 - Move advisory type checking to a hard gate once the checker and codebase agree
   on the dynamic `ctypes` and callback surfaces.
+
+
+### Core result compatibility declaration (#936)
+
+`python/xyg/graphforge-compatibility.json` is the release authority for the
+exact Core versions qualified by the pinned real Core schema/descriptor and
+IPC corpora. Packaging carries it in the wheel/sdist, Node facade, and
+browser package. `verify_release_cohort.py` requires byte-identical copies
+and records their SHA-256 plus the declared exact versions. A missing or
+different declaration fails qualification. The current evidence qualifies
+exact Core 0.5.2 and 0.6.0-rc.5 from real corpus evidence; this does not qualify
+the planned installable 0.6.0 artifact pair. #108 must add
+complete candidate evidence before claiming that pair. No editor/Hub
+handshake is introduced, and native/Scene/WASM compatibility identifiers
+keep their separate contracts.

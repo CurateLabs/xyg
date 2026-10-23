@@ -22,6 +22,17 @@ overview. Each chart keeps that overview through unavailable-refinement
 transitions, paints changed pixels when zoomed, restores identical home
 pixels, and releases its listeners and GPU resources on disposal.
 
+Zoom and home restoration use the public `root.xy.applyState` API with
+animation and history disabled. Each capture first requires a completed
+`_drawNow()` presentation and checks the public ranges against the intended
+viewport. It may wait at most eight tasks for presentation to become available;
+after presentation, blank or unchanged zoom pixels fail immediately without
+pixel retries. Reports retain presentation completion, viewport, canvas,
+context-state, and alpha-count diagnostics. This uses the supported navigation
+path; it does not establish the cause of an earlier intermittent capture failure.
+These captures use the shared GL host and do not qualify the dedicated-context
+fallback; each report records the observed `sharedHost` state.
+
 Reproduce from a checkout containing the recorded harness:
 
 ```bash
@@ -65,12 +76,11 @@ mixed-source parity failure above without narrowing the default gate.
 node js/build.mjs
 npm run build:wasm
 uv run python scripts/verify_wasm_assets.py
-XYG_WASM_FOUNDATION_REPORT=/tmp/current-foundation.json node scripts/wasm_foundation_smoke.mjs
+XYG_WASM_FOUNDATION_REPORT=/tmp/xyg-current-foundation.json node scripts/wasm_foundation_smoke.mjs
 ```
 
 The report's asset and harness hashes bind the tested bytes. `harnessCommit`
 identifies the checkout base and `artifactCommit` is unset; this working-tree
-verification is not an immutable
-candidate build or an installed-package platform/host acceptance result. The
-source assets include the ledger version 2 schema changes and measured WASM
-size cleanup described in [the size record](../../benchmarks/graphforge-compatibility-size-local.json).
+verification is not an immutable candidate build or an installed-package
+platform/host acceptance result. Source merges require rebuilding and rerunning
+this full gate before the report can describe the merged source.

@@ -16,6 +16,7 @@ import {
   composeGraphForgeRequest,
   decodeGraphForgeDocument,
   encodeGraphForgeRequest,
+  graphforgeLedger,
 } from "../src/graphforge.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -197,4 +198,51 @@ test("the browser bundle frames the same request bytes and decodes the same iden
   }));
   assert.throws(() => client.decodeWasmGraphForgeDocument(stale), (e) => e.code === "GF_COMPOSE_GENERATION_STALE" && e.layer === 0);
   assert.throws(() => decodeGraphForgeDocument(stale), (e) => e.code === "GF_COMPOSE_GENERATION_STALE" && e.layer === 0);
+});
+
+
+test("unsupported-schema diagnostics are byte-identical on native and WASM", { skip }, async () => {
+  const wasm = await loadWasm();
+  const result = fs.readFileSync(path.join(DERIVED, "pagerank-schema-v2.arrow"));
+  const generation = MANIFEST.bases.cyclic.generation;
+  for (const intent of ["graph", "table"]) {
+    const request = encodeGraphForgeRequest({ base: base("cyclic"), layers: [{ result, intent, generation }] });
+    const native = composeGraphForgeRequest(request);
+    const browser = wasm(request);
+    assert.equal(Buffer.compare(Buffer.from(native), Buffer.from(browser)), 0);
+    assert.throws(() => decodeGraphForgeDocument(browser), (error) => {
+      assert.equal(error.code, "GF_RESULT_SCHEMA_VERSION");
+      assert.match(error.message, /node-score result schema version 2/);
+      assert.match(error.message, /next action:/);
+      return true;
+    });
+  }
+});
+
+test("published Core rc.5 catalog and path-cost schema rejection match actual WASM", { skip }, async () => {
+  const wasm = await loadWasm();
+  const results = path.join(ROOT, "tests/fixtures/graphforge/results-0.6.0-rc.5");
+  const manifest = JSON.parse(fs.readFileSync(path.join(results, "manifest.json")));
+  const read = (name) => fs.readFileSync(path.join(results, `${name}.arrow`));
+  const registry = new Map(graphforgeLedger().flatMap((row) => row.algorithms.map((a) => [a, row])));
+  registry.set("find", graphforgeLedger().find((row) => row.schema === "search"));
+  for (const { algorithm } of [...manifest.contracts, { algorithm: "find" }]) {
+    const spec = manifest.bases[manifest.fixtures[algorithm].base];
+    const intents = registry.get(algorithm).intents;
+    const request = encodeGraphForgeRequest({
+      base: { tables: [read(spec.nodes), read(spec.edges)], generation: spec.generation },
+      layers: [{ result: read(algorithm), intent: intents.includes("parallel-coordinates") ? "parallel-coordinates" : intents[0], generation: spec.generation }],
+    });
+    const native = composeGraphForgeRequest(request);
+    const browser = wasm(request);
+    assert.equal(Buffer.compare(Buffer.from(native), Buffer.from(browser)), 0, algorithm);
+    assert.equal(decodeGraphForgeDocument(browser).layers[0].schema, registry.get(algorithm).schema);
+  }
+  for (const intent of ["graph", "table"]) {
+    const request = encodeGraphForgeRequest({ layers: [{ result: fs.readFileSync(path.join(DERIVED, "path-cost-schema-v2.arrow")), intent }] });
+    const native = composeGraphForgeRequest(request);
+    const browser = wasm(request);
+    assert.equal(Buffer.compare(Buffer.from(native), Buffer.from(browser)), 0);
+    assert.throws(() => decodeGraphForgeDocument(browser), (e) => e.code === "GF_RESULT_SCHEMA_VERSION" && /path-cost result schema version 2.*next action:/.test(e.message));
+  }
 });

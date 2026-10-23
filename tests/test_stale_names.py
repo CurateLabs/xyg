@@ -6,6 +6,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -211,3 +213,34 @@ def test_structural_identity_honors_the_documented_line_marker(tmp_path: Path) -
         encoding="utf-8",
     )
     assert check_stale_names.check_stale_names(tmp_path) == []
+
+
+def test_ci_core_checkout_is_outside_product_audits_without_exempting_product_files(
+    tmp_path: Path,
+) -> None:
+    yaml = pytest.importorskip("yaml")
+
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    checkout = next(
+        step
+        for step in workflow["jobs"]["test"]["steps"]
+        if step.get("name") == "Fetch Core-owned schema and algorithm registries"
+    )
+    external = tmp_path / checkout["with"]["path"]
+    # The same manifest reference is legitimate in Core, stale in the product.
+    content = '[lib]\npath = "src/lib.rs"\n'  # src/lib.rs ABI rejection probe
+    for relative in (
+        "benchmarks/runners/gdc-scorecard/Cargo.toml",
+        "vendor/datafusion-physical-plan/Cargo.toml",
+    ):
+        path = external / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    assert check_stale_names.check_stale_names(tmp_path) == []
+    product = tmp_path / "crates/xyg-engine/Cargo.toml"
+    product.parent.mkdir(parents=True)
+    product.write_text(content)
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1
+    assert errors[0].startswith("crates/xyg-engine/Cargo.toml:2:")
+    assert "src/lib.rs ABI" in errors[0]

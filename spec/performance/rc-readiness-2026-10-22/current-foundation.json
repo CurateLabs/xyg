@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "status": "passed",
   "scope": "full-foundation",
-  "recordedAt": "2026-10-23T00:06:09.936Z",
+  "recordedAt": "2026-10-23T00:30:45.217Z",
   "artifactCommit": null,
-  "harnessCommit": "2286d86db8b9d3eedf7ca5456a9e259520c8be6a",
+  "harnessCommit": "6f5e81f9d9f0364cc5ed302d65a0bc702b4e4062",
   "node": "v24.21.0",
   "browser": "149.0.7827.55",
   "platform": "linux",
@@ -24,13 +24,13 @@
       "sha256": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee"
     },
     "xyg-wasm.wasm": {
-      "bytes": 1543015,
-      "sha256": "ae83bd6818eaa452e49938bab3db7f6bd09c5b93f928e941129b29c52567995d"
+      "bytes": 1542339,
+      "sha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502"
     }
   },
   "harness": {
     "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
-    "tests/browser/wasm_foundation_page.mjs": "c67d29dc52544bc9fc87e435dce532e8ea1c3595d75321eb96a4614b0800aa90",
+    "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24",
     "spec/wasm/abi.json": "442524fb009b9b9b7880a5ff829a537fb332686bc5f6e21765d9ceaae1e5ae9b"
   },
   "package": null,
@@ -54,6 +54,140 @@
       "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
       "replacements": 0,
       "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
       "overviewRetained": true,
       "disposed": true,
       "screenshot": {
@@ -78,6 +212,140 @@
       "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
       "replacements": 0,
       "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
       "overviewRetained": true,
       "disposed": true,
       "screenshot": {
@@ -109,6 +377,140 @@
       "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
       "replacements": 0,
       "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
       "overviewRetained": true,
       "disposed": true,
       "screenshot": {
@@ -133,6 +535,140 @@
       "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
       "replacements": 0,
       "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
       "overviewRetained": true,
       "disposed": true,
       "screenshot": {
@@ -157,6 +693,140 @@
       "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
       "replacements": 0,
       "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
       "overviewRetained": true,
       "disposed": true,
       "screenshot": {
@@ -188,6 +858,140 @@
       "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
       "replacements": 0,
       "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
       "overviewRetained": true,
       "disposed": true,
       "screenshot": {

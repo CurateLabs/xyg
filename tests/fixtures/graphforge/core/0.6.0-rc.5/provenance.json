@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/CurateLabs/graphforge",
+  "commit": "aaa573f446bbed5b8d7577c9a9824ddd6664e840",
+  "coreVersion": "0.6.0-rc.5",
+  "sources": {
+    "crates/graphforge-core/src/algorithms.rs": "d319ae4faa651a31d88ca9fa8c3575cf0ec610e9170e320d6425beedef18d0b1",
+    "crates/graphforge-api/src/invocation_descriptor.rs": "0f8759ea01e84a916c6682c1b0e37577ad4172947c971ab8abe94b2023c2351c"
+  },
+  "corpusSha256": "12259b971134af394d10794ad26a35fc83647430aebf91c32c6fb33168bc2efc"
+}

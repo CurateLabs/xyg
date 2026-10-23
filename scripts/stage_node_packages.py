@@ -175,13 +175,24 @@ def stage_facade(*, client: Path, output: Path, version: str) -> Path:
     for name in ("README.md", "NOTICE"):
         _copy_file(source / name, destination / name)
     _copy_file(ROOT / "LICENSE", destination / "LICENSE")
+    _copy_file(
+        ROOT / "python/xyg/graphforge-compatibility.json",
+        destination / "graphforge-compatibility.json",
+    )
     _copy_file(client, destination / "client" / "standalone.js")
 
     manifest = _release_manifest(source / "package.json", version)
     manifest["optionalDependencies"] = {
         f"@curatelabs/xyg-node-{platform_id}": version for platform_id in sorted(PLATFORMS)
     }
-    manifest["files"] = ["src", "client/standalone.js", "README.md", "NOTICE", "LICENSE"]
+    manifest["files"] = [
+        "src",
+        "client/standalone.js",
+        "graphforge-compatibility.json",
+        "README.md",
+        "NOTICE",
+        "LICENSE",
+    ]
     _write_manifest(destination / "package.json", manifest)
     _verify_facade(destination, version, client)
     return destination

@@ -75,51 +75,58 @@ After the ledger lookup, every canonical field must exist with its Arrow kind:
 nullable node properties in rank/cluster/find results; those are carried, not
 checked.
 
-XYG owns the authoritative disposition ledger in
-`crates/xyg-engine/src/graphforge/ledger.rs` and this document. Editors consume
-`graphforgeLedger()` / `ledger_tsv()` and maintain coverage tests, rather than
-authoring a second ledger. The historical vendored extension document is
-provenance only and does not determine XYG policy. The *composition* column is
-XYG's rendering of each disposition; the *intents* column lists the only
-intents a caller may request. Rust tests enforce this table against the code
-and validate every descriptor/schema in the retained Core corpus.
+The authoritative disposition/composition ledger lives in
+`crates/xyg-engine/src/graphforge/ledger.rs`, with this XYG-owned table as its
+reviewable document. Python `graphforge_ledger()`, Node `graphforgeLedger()`,
+and `xyg_graphforge_ledger_tsv` expose the runtime form; hosts do not maintain
+another registry. A Rust test requires this table to match the code.
 
-An unsupported algorithm/search schema version fails during composition on
-every host with the existing stable `GF_RESULT_SCHEMA_VERSION` code, the schema
-name/version, and the next action to install a supporting XYG release. Missing
-or invalid stamps also fail; results never fall back to an unrecognized table.
-Diagnostics contain no result values.
+Core owns algorithm descriptors and Arrow schema facts. The pinned corpus in
+`tests/fixtures/graphforge/core` is exported from Core's own Rust registry
+and descriptor iterator at the immutable commit in `provenance.json`.
+CI retrieves those exact Core sources and regenerates the corpus in check
+mode; changed exported facts fail the build. Rust also requires every Core
+algorithm/version/canonical field to map to the ledger and agree with the
+real Core-produced IPC fixtures (including field order, nullable flags,
+integer signedness/width, and float widths). Variable embedding dimensions
+remain Core's `Float32List` family, admitting its fixed-size list encoding.
+The editor's previous vendored ledger is removed from XYG; editor issue #90
+replaces its own copy with a runtime coverage test against this authority.
 
-The machine-readable release declaration is
-[`../graphforge-compatibility.json`](../graphforge-compatibility.json). The
-0.6.0 release line qualifies **Core 0.6.0-rc.5 result-schema composition** using
-its immutable npm source/artifacts: 96 algorithm descriptors, all 112 generated
-IPC fixtures, search schema v1, and algorithm schema v1. The two additions
-since the historical Core 0.5.2 corpus are `bfs_depth` and `dijkstra_cost`;
-these carry source/target/cost but no path and have explicit `path-cost`
-table-only disposition. They cannot paint a path that Core did not return.
-Ledger contents version is 2; the composition protocol/ABI versions retain
-their independent contracts. The existing Python/Node/WASM cross-host corpus
-is regenerated for this ledger header; its historical Scene31 comparison
-normalizes that word back to 1 before comparing the retained historical hash.
-No historical render measurement or Scene31 evidence is rewritten.
+### Qualified Core releases and version rejection (#936)
 
-The source/target UUID tables and schema diagnostics keep the existing browser
-artifact gates. Direct hexadecimal UUID formatting and one shared cold error
-formatter reduce the same intermediate release-preparation module from
-1,543,903 to 1,543,015 optimized bytes (637,699 to 637,510 default-gzip bytes).
-The unchanged raw/gzip gates are 1,543,168 / 638,976 bytes. This is local artifact
-size evidence, with unchanged result text and error semantics; it measures no
-runtime performance. Environment, raw sizes/hashes and reproduction are in
-[`../benchmarks/graphforge-compatibility-size-local.json`](../benchmarks/graphforge-compatibility-size-local.json).
+`python/xyg/graphforge-compatibility.json` is the single release declaration.
+It ships in the Python package and is copied unchanged to the Node facade
+and browser package roots. The release-cohort verifier rejects missing or
+different declarations and records its hash and exact supported Core
+versions in the release evidence. This is release metadata, not a client
+handshake or a substitute for per-result schema validation.
 
-This is result-schema qualification, not Core Hub/CLI, editor, platform, or
-combined launch qualification. `selectedLaunchPairing` remains unset: Core
-#1095 still selects the next immutable launch candidate, whose actual corpus
-must pass before that version is declared. Equal RC suffixes prove nothing.
-Reproduce with `python3 scripts/check_graphforge_compatibility.py --tag
-xyg-v0.6.0-rc.1 --core-version 0.6.0-rc.5` and `cargo test -p xyg-engine
-graphforge::`. The corpus README records registry hashes and regeneration.
+Qualified exact releases are **Core 0.5.2** (94 algorithm results) and
+**Core 0.6.0-rc.5** (96 algorithm results), each with its own pinned Core-owned
+schema/descriptor corpus, real published-binding IPC run, `find` fixture,
+and native/Python/Node/WASM composition evidence. The rc.5 corpus lives in
+`tests/fixtures/graphforge/core/0.6.0-rc.5` and its 112 real fixtures in
+`tests/fixtures/graphforge/results-0.6.0-rc.5`; the original 0.5.2 evidence
+is preserved. Ledger contents version 2 adds `path-cost`: `bfs_depth` and
+`dijkstra_cost` draw derived endpoint pairs carrying `cost`, without inferring
+an ordered path or a persisted relationship.
+
+This declares no version interval, later release candidate, or installable
+editor pairing. #108/#884 still require the actual Core/XYG artifact cohort
+and package-level installation evidence; equal RC suffixes are not a
+compatibility rule. Editor #90 consumes a published qualified XYG package
+before deleting its copy and retaining runtime-ledger coverage.
+
+During composition, an unsupported numeric result version retains the
+stable `GF_RESULT_SCHEMA_VERSION` code and now reports, for example,
+`node-score result schema version 2 is not supported (expected 1)`, followed
+by a next action to use a declared-compatible Core or upgrade XYG. Search
+versions name the `search` schema. Missing/malformed version metadata is
+reported as `(missing or invalid)` without echoing arbitrary metadata.
+No row values, identities, or paths enter the error. All hosts surface the
+same Rust error document; requesting `table` does not bypass rejection.
+There is no ABI, request, Scene, or composition-wire version change.
 
 <!-- graphforge-ledger:begin -->
 | Schema | Disposition | Composition | Intents | Algorithms |
@@ -127,9 +134,9 @@ graphforge::`. The corpus README records registry hashes and regeneration.
 | `node-score` | node-layer | node-score | graph | pagerank, betweenness, closeness, harmonic_closeness, degree, eigenvector, article_rank, hits_hub, hits_authority, celf, clustering_coefficient, local_clustering_coefficient, triangles, k_core, preferential_attachment, adamic_adar, common_neighbors, resource_allocation, total_neighbors |
 | `node-community` | node-layer | node-group | graph | louvain, leiden, label_propagation, speaker_listener, girvan_newman, modularity_optimization, fastgreedy, infomap, leading_eigenvector, walktrap, spinglass, hdbscan, k_means, approximate_max_k_cut, components, strongly_connected, biconnected, k_core_decomposition |
 | `similarity` | derived-edges | derived-edges | graph | node_similarity, knn, filtered_knn, filtered_node_similarity, cosine |
+| `path-cost` | derived-edges | derived-edges | graph | bfs_depth, dijkstra_cost |
 | `path` | ordered-paths | paths | graph | bfs, dijkstra, dijkstra_all_pairs, astar, bellman_ford, floyd_warshall, delta_stepping |
 | `ranked-path` | ordered-paths | paths | graph | yens |
-| `path-cost` | table-only | table | table | bfs_depth, dijkstra_cost |
 | `traversal` | node-layer | node-traversal | graph | dfs |
 | `walk` | ordered-paths | walks | graph | random_walk |
 | `pair` | derived-edges | derived-edges | graph | transitive_closure |

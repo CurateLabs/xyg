@@ -177,37 +177,82 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
         let replacements = 0;
         const originalUpload = view._uploadGrid.bind(view);
         view._uploadGrid = (...args) => { replacements++; return originalUpload(...args); };
-        const capture = () => {
-          view._drawNow();
+        let lastCapture;
+        const capture = async (expected = view.view0) => {
+          const requestedView = view._copyView(view.view);
+          let rendered, attempts = 0;
+          // Wait only for a completed presentation. Pixel assertions below
+          // read once and never retry an unexpected blank or stale image.
+          while (attempts < 8) {
+            attempts++;
+            rendered = view._drawNow();
+            if (rendered === true) break;
+            await nextTask();
+          }
+          if (rendered !== true) {
+            throw new Error(`${scenario.name} did not complete presentation: ${JSON.stringify({
+              rendered, attempts, requestedView, currentView: view._copyView(view.view),
+              glLost: view._glLost, contextLost: view.gl?.isContextLost(),
+            })}`);
+          }
+          const state = view.root.xy.state();
+          if (Object.entries(expected.ranges).some(([axisId, range]) =>
+            state.ranges[axisId]?.[0] !== range[0] || state.ranges[axisId]?.[1] !== range[1])) {
+            throw new Error(`${scenario.name} presented an unexpected public viewport: ${JSON.stringify({
+              expected: expected.ranges, actual: state.ranges,
+            })}`);
+          }
           // GLHost presents into a per-chart 2D canvas; its shared GL buffer
           // dimensions and currently bound framebuffer belong to the host.
-          // Read the chart's actual presented canvas under either host mode.
+          // Read the chart's actual presented canvas rather than the shared GL buffer.
           const copy = document.createElement("canvas");
           copy.width = view.canvas.width; copy.height = view.canvas.height;
           const context = copy.getContext("2d");
           context.drawImage(view.canvas, 0, 0);
-          return context.getImageData(0, 0, copy.width, copy.height).data;
+          const pixels = context.getImageData(0, 0, copy.width, copy.height).data;
+          lastCapture = {
+            rendered, attempts, requestedView, presentedView: view._copyView(view.view),
+            canvas: [copy.width, copy.height], glLost: view._glLost,
+            contextLost: view.gl?.isContextLost(), sharedHost: !!view._glHost,
+            alphaPixels: pixels.filter((alpha, index) => index % 4 === 3 && alpha > 0).length,
+          };
+          return pixels;
         };
-        const before = capture();
+        const before = await capture();
+        const homePresentation = lastCapture;
         const beforeSha256 = await sha256(before);
         const zoom = view._viewFrom({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } });
         view._scheduleViewRequest(zoom, { delay: 0 });
         view._scheduleViewRequest(view.view0, { delay: 0 });
         for (let attempt = 0; attempt < 8; attempt++) await nextTask();
-        const after = capture();
+        const after = await capture();
         if (trace.density !== overview || trace.density.tex !== texture || replacements
             || view._wasmDensity || await sha256(trace.density.grid) !== overviewSha256
             || await sha256(after) !== beforeSha256 || !after.some((_, index) => index % 4 === 3 && after[index] > 0)) {
           throw new Error(`${scenario.name} replaced or blanked its Rust-authored overview`);
         }
-        view.view = zoom;
-        const zoomPixels = capture();
-        if (!zoomPixels.some((_, index) => index % 4 === 3 && zoomPixels[index] > 0)
-            || await sha256(zoomPixels) === beforeSha256) {
-          throw new Error(`${scenario.name} blanked after viewport navigation`);
+        if (!view.root.xy.applyState({ ranges: zoom.ranges }, { animate: false, history: false })) {
+          throw new Error(`${scenario.name} rejected public zoom state`);
         }
-        view.view = view._copyView(view.view0);
-        if (await sha256(capture()) !== beforeSha256) throw new Error(`${scenario.name} did not restore exact home pixels`);
+        const zoomPixels = await capture(zoom);
+        const zoomPresentation = lastCapture;
+        const zoomSha256 = await sha256(zoomPixels);
+        if (!lastCapture.alphaPixels || zoomSha256 === beforeSha256) {
+          throw new Error(`${scenario.name} viewport presentation failed: ${JSON.stringify({
+            ...lastCapture, beforeSha256, zoomSha256,
+            reason: lastCapture.alphaPixels ? "identical-home-pixels" : "blank-pixels",
+          })}`);
+        }
+        if (!view.root.xy.applyState({ ranges: view.view0.ranges }, { animate: false, history: false })) {
+          throw new Error(`${scenario.name} rejected public home state`);
+        }
+        const homePixels = await capture();
+        const restoredPresentation = lastCapture;
+        if (await sha256(homePixels) !== beforeSha256) throw new Error(`${scenario.name} did not restore exact home pixels`);
+        if (trace.density !== overview || trace.density.tex !== texture || replacements
+            || await sha256(trace.density.grid) !== overviewSha256) {
+          throw new Error(`${scenario.name} replaced its overview during public viewport navigation`);
+        }
         const pngBase64 = view.canvas.toDataURL("image/png").split(",")[1];
         const eventCount = events.length, gl = view.gl;
         view.destroy();
@@ -221,6 +266,7 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
         cases.push({
           name: scenario.name, entry, events, overviewSha256, framebufferSha256: beforeSha256,
           zoomFramebufferSha256: await sha256(zoomPixels), replacements, allocatedWorkers,
+          presentations: { home: homePresentation, zoom: zoomPresentation, restored: restoredPresentation },
           overviewRetained: true, disposed: true, pngBase64,
         });
       } finally {

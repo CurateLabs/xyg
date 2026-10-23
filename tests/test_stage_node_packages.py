@@ -132,6 +132,9 @@ def test_facade_staging_locks_optionals_and_embeds_client(tmp_path: Path) -> Non
     client = tmp_path / "standalone.js"
     client.write_text("var xyg={renderStandalone(){}};", encoding="utf-8")
     staged = mod.stage_facade(client=client, output=tmp_path / "out", version="0.6.0-rc.1")
+    assert (staged / "graphforge-compatibility.json").read_bytes() == (
+        REPO / "python/xyg/graphforge-compatibility.json"
+    ).read_bytes()
     manifest = json.loads((staged / "package.json").read_text(encoding="utf-8"))
     assert manifest["version"] == "0.6.0-rc.1"
     assert set(manifest["optionalDependencies"]) == {

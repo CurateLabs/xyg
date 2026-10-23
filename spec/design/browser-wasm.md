@@ -221,16 +221,6 @@ bytes** and **636,944 gzip bytes** (Node `gzipSync`, default level 6), compared 
 the earlier merge-base build's 1,539,454 raw / 635,754 gzip. The gates remain
 1,507 KiB raw / 624 KiB gzip, with 946 / 2,032 bytes of headroom respectively.
 
-Core result-ledger version 2 adds UUID-bearing path-cost tables. Its local
-optimized artifact measures **1,543,015 raw bytes** and **637,510 gzip bytes**
-(default level 6), with the same 1,507 KiB raw / 624 KiB gzip gates and
-153 / 1,466 bytes of headroom. Direct UUID hex encoding and one shared cold
-schema-error formatter avoid 888 raw bytes from the first implementation;
-the table values and diagnostics are unchanged. This compares two local
-implementations of the same new capability, not a released baseline or a
-runtime speed claim. [The size record](../benchmarks/graphforge-compatibility-size-local.json)
-retains hashes, environment, and reproduction commands.
-
 ABI 30 camera transport and closed polygon caches make the default O3 artifact
 1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
 one codegen unit and stripping; ABI30 set LLVM's inline threshold to 150.

@@ -11,6 +11,8 @@ its node UUIDs and schema metadata, into `tests/fixtures/graphforge/derived/`:
 - `node2vec-coordinates-partial.arrow`: the first two of those rows (nodes
   without coordinates);
 - `node2vec-1d.arrow`: the result truncated to one dimension;
+- `pagerank-schema-v2.arrow`: real PageRank bytes with only the result-schema
+  metadata changed to unsupported version 2 (a negative fixture, not a Core release);
 - `node2vec-2d.arrow`: the same result with `embedding` truncated to two
   dimensions and `graphforge.dimensions = 2`, standing in for a GraphForge
   run with `dimensions: 2`.
@@ -70,7 +72,19 @@ def build() -> dict[str, bytes]:
             metadata=metadata_1d,
         ),
     )
+    pagerank = ipc.open_stream((SOURCE.parent / "pagerank.arrow").read_bytes()).read_all()
+    unsupported = pagerank.replace_schema_metadata(
+        {**pagerank.schema.metadata, b"graphforge.algorithm_schema_version": b"2"}
+    )
+    path_cost = ipc.open_stream(
+        (SOURCE.parent.parent / "results-0.6.0-rc.5/dijkstra_cost.arrow").read_bytes()
+    ).read_all()
+    path_cost_v2 = path_cost.replace_schema_metadata(
+        {**path_cost.schema.metadata, b"graphforge.algorithm_schema_version": b"2"}
+    )
     return {
+        "path-cost-schema-v2.arrow": _stream(path_cost_v2),
+        "pagerank-schema-v2.arrow": _stream(unsupported),
         "node2vec-1d.arrow": _stream(one_d),
         "node2vec-coordinates.arrow": _stream(coordinates),
         "node2vec-coordinates-partial.arrow": _stream(coordinates.slice(0, 2)),

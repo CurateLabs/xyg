@@ -149,6 +149,33 @@ jobs:
       - name: Node exact-platform package inventory (#52)
         run: python3 scripts/verify_node_packages.py
 
+      - name: Read the qualified Core schema corpus pin
+        id: core_contract_pin
+        run: |
+          python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
+          import json
+          pin = json.load(open("tests/fixtures/graphforge/core/0.6.0-rc.5/provenance.json"))["commit"]
+          assert len(pin) == 40 and all(c in "0123456789abcdef" for c in pin)
+          print(f"commit={pin}")
+          PYCODE
+      - name: Fetch Core-owned schema and algorithm registries
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: CurateLabs/graphforge
+          ref: ${{ steps.core_contract_pin.outputs.commit }}
+          path: target/core-contracts
+          fetch-depth: 0
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /Cargo.toml
+            /crates/graphforge-core/src/algorithms.rs
+            /crates/graphforge-api/src/invocation_descriptor.rs
+      - name: Verify the pinned Core schema and descriptor corpus
+        run: |
+          python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts
+          python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts --output tests/fixtures/graphforge/core/0.6.0-rc.5
+
       - name: Rust unit tests
         run: cargo test --workspace
 

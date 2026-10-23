@@ -479,22 +479,52 @@ test("derived edges carry no provenance row in hover rows", () => {
   assert.ok(rows.filter((r) => !String(r.edge_id).startsWith("derived:")).every((r) => Number.isInteger(r.provenance_row)));
 });
 
-for (const algorithm of ["bfs_depth", "dijkstra_cost"]) {
-  test(`Core 0.6.0-rc.5 ${algorithm} preserves source/target/cost as a table`, () => {
-    const result = fs.readFileSync(path.join(ROOT, "tests/fixtures/graphforge/core/0.6.0-rc.5/results", `${algorithm}.arrow`));
-    const composition = composeGraphForge({ layers: [{ result, intent: "table" }] });
-    assert.equal(composition.ledgerVersion, 2);
-    assert.equal(composition.kind, "table");
-    assert.deepEqual(composition.table.columns, ["source_uuid", "target_uuid", "cost"]);
-    assert.deepEqual(composition.table.kinds, ["uuid", "uuid", "float"]);
-    assert.deepEqual(composition.table.rows, [[
-      "01a16606-0da3-77db-a1f2-510b1f541190",
-      "01a16606-0dd9-766d-bfd1-4fdb8bdb05a1",
-      "1",
-    ]]);
-    assert.throws(
-      () => composeGraphForge({ layers: [{ result, intent: "graph" }] }),
-      (error) => error.code === "GF_COMPOSE_INTENT_UNSUPPORTED",
-    );
-  });
-}
+
+test("unsupported result-schema versions name the schema and next action", () => {
+  for (const [fixture, schema] of [["pagerank-schema-v2", "node-score"], ["path-cost-schema-v2", "path-cost"]]) {
+    const result = fs.readFileSync(path.join(ROOT, `tests/fixtures/graphforge/derived/${fixture}.arrow`));
+    for (const intent of ["graph", "table"]) {
+      assert.throws(() => composeGraphForge({
+        base: base("cyclic"),
+        layers: [{ result, intent, generation: generationOf("cyclic") }],
+      }), (error) => {
+        assert.equal(error.code, "GF_RESULT_SCHEMA_VERSION");
+        assert.ok(error.message.includes(`${schema} result schema version 2`));
+        assert.match(error.message, /expected 1/);
+        assert.match(error.message, /next action:/);
+        assert.ok(!/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.test(error.message));
+        return true;
+      });
+    }
+  }
+});
+
+test("published Core rc.5 catalog composes, including endpoint-only path costs", () => {
+  const results = path.join(ROOT, "tests/fixtures/graphforge/results-0.6.0-rc.5");
+  const manifest = JSON.parse(fs.readFileSync(path.join(results, "manifest.json")));
+  const read = (name) => fs.readFileSync(path.join(results, `${name}.arrow`));
+  const registry = new Map(graphforgeLedger().flatMap((row) => row.algorithms.map((a) => [a, row])));
+  registry.set("find", graphforgeLedger().find((row) => row.schema === "search"));
+  assert.equal(manifest.contracts.length, 96);
+  assert.deepEqual(manifest.failures, {});
+  for (const { algorithm } of [...manifest.contracts, { algorithm: "find" }]) {
+    const spec = manifest.bases[manifest.fixtures[algorithm].base];
+    const intents = registry.get(algorithm).intents;
+    const c = composeGraphForge({
+      base: { tables: [read(spec.nodes), read(spec.edges)], generation: spec.generation },
+      layers: [{ result: read(algorithm), intent: intents.includes("parallel-coordinates") ? "parallel-coordinates" : intents[0], generation: spec.generation }],
+    });
+    assert.equal(c.layers[0].schema, registry.get(algorithm).schema);
+    if (algorithm === "bfs") assert.ok(c.paths.length && Number.isNaN(c.paths[0].rank));
+    if (algorithm === "yens") assert.ok(c.paths.length && c.paths.every((p) => Number.isInteger(p.rank)));
+    if (["bfs_depth", "dijkstra_cost"].includes(algorithm)) {
+      const derived = [...c.edges.derived].flatMap((v, i) => v ? [i] : []);
+      assert.equal(derived.length, 1);
+      assert.equal(c.paths.length, 0);
+      assert.equal(c.layers[0].schema, "path-cost");
+      assert.deepEqual(c.layers[0].valueNames, ["cost"]);
+      assert.equal(c.layers[0].edgeValues[derived[0]], algorithm === "bfs_depth" ? 1 : 4.25);
+      assert.equal(c.edges.uuid[derived[0]], null);
+    }
+  }
+});

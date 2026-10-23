@@ -415,7 +415,7 @@ class GraphForgeComposition:
                         {
                             "layer": int(path_layer[p]),
                             "row": int(get("path.row")[p]),
-                            "rank": int(get("path.rank")[p]),
+                            "rank": float(get("path.rank")[p]),
                             "cost": float(get("path.cost")[p]),
                             "nodes": [
                                 int(v)
