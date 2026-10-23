@@ -1225,6 +1225,54 @@ def test_density_authority_workflow_is_main_only_and_cost_bounded() -> None:
     assert verify_ci_workflow.validate_density_workflow() == []
 
 
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        (
+            "        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '43 5 * * 0'\n",
+            "",
+        ),
+        ('          XYG_DENSITY_100M_AUTHORITY: "1"', '          XYG_DENSITY_100M_AUTHORITY: "0"'),
+        ("--points 100000000 --authority", "--points 1000000"),
+        (
+            "--timeout 3600 --max-rss-gib 12 --max-disk-gib 4",
+            "--timeout 7200 --max-rss-gib 24 --max-disk-gib 8",
+        ),
+        ('--sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"', ""),
+        ("        env:\n", "        continue-on-error: true\n        env:\n"),
+    ],
+)
+def test_colored_authority_cannot_relax_its_guard_or_evidence(tmp_path, old, new):
+    source = verify_ci_workflow.DEFAULT_DENSITY_WORKFLOW.read_text()
+    at = source.index("      - name: Run weekly/manual 100M colored spill authority")
+    assert old in source[at:]
+    path = tmp_path / "density.yml"
+    path.write_text(source[:at] + source[at:].replace(old, new, 1))
+    assert verify_ci_workflow.validate_density_workflow(path)
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("--points 16384 --chunk-points 4096", "--points 100000000 --authority"),
+        (
+            '"$RUNNER_TEMP/density-spill-pr.json" --artifact-root "$GITHUB_WORKSPACE"',
+            '"$RUNNER_TEMP/density-spill-pr.json"',
+        ),
+        (
+            "      - name: Colored spill harness contract (small scale only)\n",
+            "      - name: Colored spill harness contract (small scale only)\n        if: false\n",
+        ),
+    ],
+)
+def test_colored_pr_control_cannot_run_authority_or_skip_verification(tmp_path, old, new):
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text()
+    assert old in source
+    path = tmp_path / "ci.yml"
+    path.write_text(source.replace(old, new, 1))
+    assert verify_ci_workflow.validate_ci_workflow(path)
+
+
 def test_density_authority_rejects_pull_request_and_unguarded_100m(tmp_path: Path) -> None:
     source = verify_ci_workflow.DEFAULT_DENSITY_WORKFLOW.read_text(encoding="utf-8")
     source = source.replace("  workflow_dispatch:\n", "  pull_request:\n  workflow_dispatch:\n")

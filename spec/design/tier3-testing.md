@@ -190,11 +190,15 @@ the protocol and real-browser proof.
 
 ## Remaining #11 acceptance
 
-The structural harness above is only one part of #11. Corrupt/missing tile
-I/O, append refusal, predicate bypass, shared-budget pressure, and resource
-boundaries also require their focused kernel/host/browser fixtures. Scheduled
-or manual main performance runs must retain comparable spill/fetch/compose
-measurements, the real 100M colored memmap pan/zoom gate, and competitive
+The structural harness and negative fixtures above cover bounded I/O failure,
+append refusal/rebuild, predicate bypass, and shared-budget pressure. The
+[distinct colored-spill mode](density-spill-evidence.md) reuses #876's
+supervisor for mapped source, repeated pans/adjacent zooms and count/color
+oracles. Its PR control and scheduled/manual workflow commands are implemented;
+only an actual accepted main run can establish its 100M latency result.
+It explicitly records browser coverage as not run. Scheduled or manual main
+performance runs must still retain comparable spill/fetch/compose measurements,
+the real 100M colored memmap pan/zoom/browser gate, and competitive
 Datashader/HoloViews/hvPlot/Plotly/Bokeh evidence with environment, source and
 artifact hashes, raw results, and reproduction commands. Reuse #876's
 resource-authorized harness and feed the accepted results into #113/#54;
