@@ -14,6 +14,14 @@ in the README).
 ## [Unreleased]
 
 ### Fixed
+- GraphForge `bfs_depth` and `dijkstra_cost` results compose as tables with
+  source/target UUIDs and costs, without inventing paths. XYG owns coverage
+  ledger version 2 and qualifies Core `0.6.0-rc.5` result schemas against an
+  authentic corpus; final launch pairing remains separate (#936/#884).
+- The release workflow includes the browser package in the seven-package npm
+  cohort, checks aligned versions and asset hashes before uploading, and
+  requires both registry opt-ins before PyPI publication. GitHub prereleases
+  stay off the latest-release channel (#52/#53/#108).
 - SVG/PDF triangle meshes through 50,000 faces now bypass raster overdraw
   admission (#1042), so 5,000/50,000-face radial fans export as vector paths.
   PNG/JPEG/WebP and dense SVG/PDF above the vector ceiling retain the same

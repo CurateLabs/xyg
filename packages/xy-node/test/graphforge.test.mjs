@@ -478,3 +478,23 @@ test("derived edges carry no provenance row in hover rows", () => {
   assert.ok(derived.every((r) => !("provenance_row" in r)));
   assert.ok(rows.filter((r) => !String(r.edge_id).startsWith("derived:")).every((r) => Number.isInteger(r.provenance_row)));
 });
+
+for (const algorithm of ["bfs_depth", "dijkstra_cost"]) {
+  test(`Core 0.6.0-rc.5 ${algorithm} preserves source/target/cost as a table`, () => {
+    const result = fs.readFileSync(path.join(ROOT, "tests/fixtures/graphforge/core/0.6.0-rc.5/results", `${algorithm}.arrow`));
+    const composition = composeGraphForge({ layers: [{ result, intent: "table" }] });
+    assert.equal(composition.ledgerVersion, 2);
+    assert.equal(composition.kind, "table");
+    assert.deepEqual(composition.table.columns, ["source_uuid", "target_uuid", "cost"]);
+    assert.deepEqual(composition.table.kinds, ["uuid", "uuid", "float"]);
+    assert.deepEqual(composition.table.rows, [[
+      "01a16606-0da3-77db-a1f2-510b1f541190",
+      "01a16606-0dd9-766d-bfd1-4fdb8bdb05a1",
+      "1",
+    ]]);
+    assert.throws(
+      () => composeGraphForge({ layers: [{ result, intent: "graph" }] }),
+      (error) => error.code === "GF_COMPOSE_INTENT_UNSUPPORTED",
+    );
+  });
+}

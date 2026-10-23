@@ -1,0 +1,77 @@
+{
+  "schema": "xyg.graphforge-compatibility-artifact-size/v1",
+  "kind": "local-artifact-size-comparison-not-runtime-performance-measurement",
+  "date": "2026-10-23",
+  "baseCommit": "2286d86db8b9d3eedf7ca5456a9e259520c8be6a",
+  "sourceState": "Uncommitted release-preparation tree including Core 0.6.0-rc.5 result-schema support; the baseline is the same intermediate tree before the two formatter cleanups, not a prior released version.",
+  "scope": "One local deterministic optimized WASM artifact per source variant. All other source, compiler, optimizer, target and build settings are held constant. No browser startup, runtime speed, memory, platform, or competitor performance claim.",
+  "environment": {
+    "platform": "Linux x86_64",
+    "kernel": "7.0.0-31-generic",
+    "libc": "glibc 2.43",
+    "node": "24.21.0",
+    "rustc": "1.96.0 (ac68faa20 2026-05-25)",
+    "binaryen": "132.0.0",
+    "target": "wasm32-unknown-unknown",
+    "rustOptimization": "O3; target LLVM inline threshold 100; release fat LTO; codegen-units 1",
+    "postLink": "wasm-opt -O3 --all-features",
+    "gzip": "node:zlib.gzipSync(bytes), default compression level"
+  },
+  "before": {
+    "description": "New UUID table cells formatted with 16 per-byte format! temporary strings plus a final hyphenating format!; algorithm and search version errors constructed by separate format! call sites.",
+    "optimizedRawBytes": 1543903,
+    "gzipBytes": 637699,
+    "optimizedSha256": "18427ce2745e72bd0475b2b8a53334f27fd9d9a69154c940ff7a7b22afd172ce"
+  },
+  "after": {
+    "description": "UUID cells write lowercase hex digits and hyphens directly to one preallocated 36-byte String; version errors share a cold helper with identical code and message.",
+    "optimizedRawBytes": 1543015,
+    "gzipBytes": 637510,
+    "optimizedSha256": "ae83bd6818eaa452e49938bab3db7f6bd09c5b93f928e941129b29c52567995d",
+    "sourceSha256": {
+      "crates/xyg-engine/src/graphforge/views.rs": "b465184369468300d72e349715790b5be8347c85071a5f0c1a4dc6d32f571758",
+      "crates/xyg-engine/src/graphforge/recognize.rs": "cc0cc835da85f753d2ae05c7b22306af9891a1922891ee778d38b6a76b3b89bd"
+    }
+  },
+  "change": {
+    "rawBytesSaved": 888,
+    "gzipBytesSaved": 189
+  },
+  "unchangedBudgets": {
+    "rawBytes": 1543168,
+    "gzipBytes": 638976,
+    "rawHeadroomBytes": 153,
+    "gzipHeadroomBytes": 1466
+  },
+  "contract": {
+    "nativeAbi": 394,
+    "wasmAbi": 34,
+    "scene": 34,
+    "painter": 17,
+    "graphforgeComposition": 1,
+    "graphforgeLedger": 2,
+    "uuidOutput": "Canonical lowercase hyphenated UUID text; same source_uuid, target_uuid and cost cells as the native Core-produced fixtures.",
+    "diagnostics": "GF_RESULT_SCHEMA_VERSION retains schema/version and next action; no result values."
+  },
+  "reproduction": [
+    "Use the source state with Core 0.6.0-rc.5 corpus and path-cost registration retained; change only the two formatter implementations described in before/after. Do not compare against a different released tree.",
+    "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test -p xyg-engine graphforge:: --offline",
+    "PATH=\"$HOME/.cargo/bin:$PATH\" npm run build:wasm",
+    "The before variant intentionally fails js/package-wasm.mjs raw-size gate. Retain target/wasm32-unknown-unknown/release/xyg_wasm.wasm before switching source variants.",
+    "For either raw variant: import { optimizeWasm } from './js/optimize-wasm.mjs'; const bytes = optimizeWasm(readFileSync(rawPath)); record bytes.length, gzipSync(bytes).length and createHash('sha256').update(bytes).digest('hex').",
+    "The after variant passes packaging and writes packages/xy-client/dist/xyg-wasm.wasm and its hash/version manifest; Python receives identical copied bytes.",
+    "PATH=\"$HOME/.cargo/bin:$PATH\" cargo build --release --offline",
+    "uv run pytest -q tests/test_graphforge_compatibility.py tests/test_graphforge.py tests/test_graphforge_semantic_evidence.py tests/test_m2_wave_b_evidence.py",
+    "XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" node --test packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs"
+  ],
+  "observedChecks": {
+    "rustGraphForgeTests": 66,
+    "wasmProducer": "passed after cleanup with unchanged raw/gzip gates; validated exports/imports/signatures and ABI/Scene contract",
+    "finalNativeHostChecks": {
+      "pythonTests": 30,
+      "nodeTests": 27,
+      "crossHostCases": 99,
+      "nativeReleaseBuild": "passed after both formatter changes"
+    }
+  }
+}

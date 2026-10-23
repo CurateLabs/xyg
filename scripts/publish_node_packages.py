@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Publish the complete XYG Node package set with safe immutable retries.
+"""Publish the complete XYG npm package set with safe immutable retries.
 
 npm versions are immutable, while a release contains five native packages and
-one facade. A network failure can therefore leave a prefix published. On a
+one browser package and one facade. A network failure can leave a prefix published. On a
 retry, this command skips an existing artifact only when the registry's SHA-1
 and SHA-512 integrity values are byte-identical to the local tarball; any
 mismatch fails closed. New uploads receive the same registry-side confirmation
@@ -24,6 +24,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
+    from release_version import parse_tag
+    from stage_browser_package import ASSETS, EXPECTED_EXPORTS, JS_BUDGET_BYTES, WASM_BUDGET_BYTES
     from stage_node_packages import (
         NATIVE_BUDGET_BYTES,
         validate_native_payload,
@@ -32,6 +34,13 @@ try:
         PLATFORMS as PLATFORM_LAYOUTS,
     )
 except ModuleNotFoundError:  # Imported as ``scripts.publish_node_packages`` in tests.
+    from scripts.release_version import parse_tag
+    from scripts.stage_browser_package import (
+        ASSETS,
+        EXPECTED_EXPORTS,
+        JS_BUDGET_BYTES,
+        WASM_BUDGET_BYTES,
+    )
     from scripts.stage_node_packages import (
         NATIVE_BUDGET_BYTES,
         validate_native_payload,
@@ -48,7 +57,9 @@ PLATFORMS = (
     "win32-x64",
 )
 FACADE = "@curatelabs/xyg-node"
-EXPECTED_NAMES = tuple(f"{FACADE}-{platform}" for platform in PLATFORMS) + (FACADE,)
+BROWSER = "@curatelabs/xyg"
+NATIVE_NAMES = tuple(f"{FACADE}-{platform}" for platform in PLATFORMS)
+EXPECTED_NAMES = (*NATIVE_NAMES, BROWSER, FACADE)
 NPM_TIMEOUT_S = 300
 REGISTRY_VERIFY_ATTEMPTS = 6
 REGISTRY_VERIFY_DELAY_S = 2
@@ -69,6 +80,15 @@ def _artifact(path: Path) -> Artifact:
         raise ValueError(f"expected an npm .tgz artifact, got {path}")
     try:
         with tarfile.open(path, "r:gz") as archive:
+            members = archive.getmembers()
+            if (
+                len({item.name for item in members}) != len(members)
+                or any(item.issym() or item.islnk() for item in members)
+                or any(
+                    item.name.startswith("/") or ".." in Path(item.name).parts for item in members
+                )
+            ):
+                raise ValueError(f"{path.name} contains unsafe, linked, or duplicate paths")
             member = archive.getmember("package/package.json")
             handle = archive.extractfile(member)
             if handle is None or member.size > 1024 * 1024:
@@ -77,6 +97,8 @@ def _artifact(path: Path) -> Artifact:
             if not isinstance(manifest, dict):
                 raise ValueError(f"{path.name} package manifest is not a JSON object")
             name = manifest.get("name")
+            if name == BROWSER:
+                _validate_browser_archive(archive, manifest)
             if isinstance(name, str) and name.startswith(f"{FACADE}-"):
                 _validate_native_archive(archive, manifest, name.removeprefix(f"{FACADE}-"))
     except (KeyError, tarfile.TarError, UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -117,19 +139,67 @@ def _validate_native_archive(
     validate_native_payload(handle.read(), platform_id)
 
 
-def load_release(directory: Path) -> list[Artifact]:
+def _validate_browser_archive(archive: tarfile.TarFile, manifest: dict[str, object]) -> None:
+    if manifest.get("exports") != EXPECTED_EXPORTS or manifest.get("type") != "module":
+        raise ValueError("browser archive must expose the canonical ESM/IIFE/Worker/WASM paths")
+    for key in ("dependencies", "optionalDependencies", "peerDependencies", "scripts", "bin"):
+        if manifest.get(key):
+            raise ValueError(f"browser archive must not declare {key}")
+    member = archive.getmember("package/ASSET-MANIFEST.json")
+    stream = archive.extractfile(member)
+    if stream is None or member.size > 1024 * 1024:
+        raise ValueError("browser archive has an invalid asset manifest")
+    inventory = json.loads(stream.read().decode("utf-8"))
+    if (
+        not isinstance(inventory, dict)
+        or inventory.get("schemaVersion") != 1
+        or inventory.get("package") != BROWSER
+        or inventory.get("packageVersion") != manifest.get("version")
+    ):
+        raise ValueError("browser asset manifest identity/version does not match package")
+    assets = inventory.get("assets")
+    if not isinstance(assets, dict) or set(assets) != set(ASSETS):
+        raise ValueError("browser asset manifest must list the exact four XYG assets")
+    paths = {f"package/dist/{name}" for name in ASSETS}
+    if {
+        item.name
+        for item in archive.getmembers()
+        if item.isfile() and item.name.startswith("package/dist/")
+    } != paths:
+        raise ValueError("browser archive dist inventory must contain the exact four XYG assets")
+    for name in ASSETS:
+        member = archive.getmember(f"package/dist/{name}")
+        stream = archive.extractfile(member)
+        budget = WASM_BUDGET_BYTES if name.endswith(".wasm") else JS_BUDGET_BYTES
+        if stream is None or not member.isfile() or not 0 < member.size <= budget:
+            raise ValueError(f"browser asset {name} is missing or outside the package budget")
+        payload = stream.read()
+        expected = assets[name]
+        if (
+            not isinstance(expected, dict)
+            or expected.get("bytes") != len(payload)
+            or expected.get("sha256") != hashlib.sha256(payload).hexdigest()
+        ):
+            raise ValueError(f"browser asset manifest mismatch for {name}")
+        if name.endswith(".wasm") and not payload.startswith(b"\0asm\x01\0\0\0"):
+            raise ValueError("browser WASM asset has an invalid module header")
+
+
+def load_release(directory: Path, *, tag: str | None = None) -> list[Artifact]:
     artifacts = [_artifact(path) for path in sorted(directory.rglob("*.tgz"))]
     by_name = {artifact.name: artifact for artifact in artifacts}
     if len(artifacts) != len(EXPECTED_NAMES) or set(by_name) != set(EXPECTED_NAMES):
         raise ValueError(
-            "expected exactly the six XYG Node packages; "
+            "expected exactly the seven XYG npm packages; "
             f"found {[artifact.name for artifact in artifacts]}"
         )
     versions = {artifact.version for artifact in artifacts}
     if len(versions) != 1:
         raise ValueError(f"XYG Node package versions are not aligned: {sorted(versions)}")
     version = versions.pop()
-    expected_optionals = {name: version for name in EXPECTED_NAMES if name != FACADE}
+    if tag is not None and parse_tag(tag).npm != version:
+        raise ValueError(f"npm package version {version!r} does not match release tag {tag!r}")
+    expected_optionals = {name: version for name in NATIVE_NAMES}
     if by_name[FACADE].manifest.get("optionalDependencies") != expected_optionals:
         raise ValueError("facade optionalDependencies do not exactly match the staged package set")
     return [by_name[name] for name in EXPECTED_NAMES]
@@ -203,11 +273,16 @@ def _dist_tag(version: str) -> list[str]:
 
 
 def publish_release(artifacts: list[Artifact]) -> None:
+    # Reject a stale retry before uploading any further member of the cohort.
+    existing = {}
     for artifact in artifacts:
-        spec = f"{artifact.name}@{artifact.version}"
-        remote = _registry_dist(spec)
+        remote = _registry_dist(f"{artifact.name}@{artifact.version}")
         if remote is not None:
             _assert_registry_bytes(artifact, remote)
+        existing[artifact.name] = remote
+    for artifact in artifacts:
+        spec = f"{artifact.name}@{artifact.version}"
+        if existing[artifact.name] is not None:
             print(f"already published with identical SHA-512 bytes: {spec}")
             continue
         subprocess.run(
@@ -229,10 +304,18 @@ def publish_release(artifacts: list[Artifact]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("directory", type=Path, help="directory containing all six .tgz files")
+    parser.add_argument("directory", type=Path, help="directory containing all seven .tgz files")
+    parser.add_argument("--tag", help="require every package version to match this XYG release tag")
+    parser.add_argument(
+        "--check", action="store_true", help="validate archives without registry access"
+    )
     args = parser.parse_args(argv)
     try:
-        publish_release(load_release(args.directory))
+        artifacts = load_release(args.directory, tag=args.tag)
+        if args.check:
+            print("Verified complete seven-package XYG npm cohort")
+        else:
+            publish_release(artifacts)
     except (
         OSError,
         ValueError,
@@ -240,7 +323,7 @@ def main(argv: list[str] | None = None) -> int:
         subprocess.CalledProcessError,
         subprocess.TimeoutExpired,
     ) as error:
-        print(f"XYG Node publication failed: {error}", file=sys.stderr)
+        print(f"XYG npm publication failed: {error}", file=sys.stderr)
         return 1
     return 0
 

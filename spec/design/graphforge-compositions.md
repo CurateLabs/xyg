@@ -75,14 +75,51 @@ After the ledger lookup, every canonical field must exist with its Arrow kind:
 nullable node properties in rank/cluster/find results; those are carried, not
 checked.
 
-The ledger lives in `crates/xyg-engine/src/graphforge/ledger.rs`. Schema ids,
-canonical fields, and dispositions match the extension's
-`docs/engineering/RESULT_SCHEMAS.md` (vendored at
-`tests/fixtures/graphforge/extension/RESULT_SCHEMAS.md`; a Rust test fails if
-they disagree). The *composition* column is XYG's rendering of each
-disposition; the *intents* column lists the only intents a caller may request.
-A Rust test also fails if this table drifts from the code, and another if any
-GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
+XYG owns the authoritative disposition ledger in
+`crates/xyg-engine/src/graphforge/ledger.rs` and this document. Editors consume
+`graphforgeLedger()` / `ledger_tsv()` and maintain coverage tests, rather than
+authoring a second ledger. The historical vendored extension document is
+provenance only and does not determine XYG policy. The *composition* column is
+XYG's rendering of each disposition; the *intents* column lists the only
+intents a caller may request. Rust tests enforce this table against the code
+and validate every descriptor/schema in the retained Core corpus.
+
+An unsupported algorithm/search schema version fails during composition on
+every host with the existing stable `GF_RESULT_SCHEMA_VERSION` code, the schema
+name/version, and the next action to install a supporting XYG release. Missing
+or invalid stamps also fail; results never fall back to an unrecognized table.
+Diagnostics contain no result values.
+
+The machine-readable release declaration is
+[`../graphforge-compatibility.json`](../graphforge-compatibility.json). The
+0.6.0 release line qualifies **Core 0.6.0-rc.5 result-schema composition** using
+its immutable npm source/artifacts: 96 algorithm descriptors, all 112 generated
+IPC fixtures, search schema v1, and algorithm schema v1. The two additions
+since the historical Core 0.5.2 corpus are `bfs_depth` and `dijkstra_cost`;
+these carry source/target/cost but no path and have explicit `path-cost`
+table-only disposition. They cannot paint a path that Core did not return.
+Ledger contents version is 2; the composition protocol/ABI versions retain
+their independent contracts. The existing Python/Node/WASM cross-host corpus
+is regenerated for this ledger header; its historical Scene31 comparison
+normalizes that word back to 1 before comparing the retained historical hash.
+No historical render measurement or Scene31 evidence is rewritten.
+
+The source/target UUID tables and schema diagnostics keep the existing browser
+artifact gates. Direct hexadecimal UUID formatting and one shared cold error
+formatter reduce the same intermediate release-preparation module from
+1,543,903 to 1,543,015 optimized bytes (637,699 to 637,510 default-gzip bytes).
+The unchanged raw/gzip gates are 1,543,168 / 638,976 bytes. This is local artifact
+size evidence, with unchanged result text and error semantics; it measures no
+runtime performance. Environment, raw sizes/hashes and reproduction are in
+[`../benchmarks/graphforge-compatibility-size-local.json`](../benchmarks/graphforge-compatibility-size-local.json).
+
+This is result-schema qualification, not Core Hub/CLI, editor, platform, or
+combined launch qualification. `selectedLaunchPairing` remains unset: Core
+#1095 still selects the next immutable launch candidate, whose actual corpus
+must pass before that version is declared. Equal RC suffixes prove nothing.
+Reproduce with `python3 scripts/check_graphforge_compatibility.py --tag
+xyg-v0.6.0-rc.1 --core-version 0.6.0-rc.5` and `cargo test -p xyg-engine
+graphforge::`. The corpus README records registry hashes and regeneration.
 
 <!-- graphforge-ledger:begin -->
 | Schema | Disposition | Composition | Intents | Algorithms |
@@ -92,6 +129,7 @@ GraphForge 0.5.2 contract (94 algorithms) lacks an entry.
 | `similarity` | derived-edges | derived-edges | graph | node_similarity, knn, filtered_knn, filtered_node_similarity, cosine |
 | `path` | ordered-paths | paths | graph | bfs, dijkstra, dijkstra_all_pairs, astar, bellman_ford, floyd_warshall, delta_stepping |
 | `ranked-path` | ordered-paths | paths | graph | yens |
+| `path-cost` | table-only | table | table | bfs_depth, dijkstra_cost |
 | `traversal` | node-layer | node-traversal | graph | dfs |
 | `walk` | ordered-paths | walks | graph | random_walk |
 | `pair` | derived-edges | derived-edges | graph | transitive_closure |
@@ -390,7 +428,7 @@ are compared byte for byte.
 
 ## 6. Hosts
 
-### 6.1 Native C ABI (ABI 378)
+### 6.1 Native C ABI (current ABI 394)
 
 | Symbol | Role |
 |---|---|
@@ -434,7 +472,7 @@ themselves remain outside static export.
 
 `graphforgeWebviewPayload(composition, opts)` returns `{spec, buffer,
 nodeTrace, edgeTrace, figure, positions}` for a browser host (click events on).
-Hover rows travel as typed tooltip columns (protocol v13, graph-mark.md §2),
+Hover rows travel as typed tooltip columns (protocol v14, graph-mark.md §2),
 not per-element JSON. `positions` (also `graphforgePositions(figure,
 composition)`) are the laid-out node positions keyed by node UUID.
 `graphforgeChart(next, { positions })` and `graphforgeWebviewPayload(next, {
@@ -488,7 +526,7 @@ document SHA-256 for 99 cases; the Python generator
 `tests/test_graphforge.py` and `packages/xy-node/test/graphforge-cross-host.test.mjs`
 reproduce it.
 
-### 6.3 Direct-browser WASM (`@curatelabs/xyg`, WASM ABI 27)
+### 6.3 Direct-browser WASM (`@curatelabs/xyg`, current WASM ABI 34)
 
 `xyg_wasm_graphforge_compose(handle, offset, length)` composes one staged
 `XYGQ` request with the same engine call as the native host and returns its

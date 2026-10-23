@@ -2,19 +2,18 @@
 //!
 //! Source: CurateLabs/graphforge `crates/graphforge-core/src/algorithms.rs`
 //! (`result_schema` / `path_schema` / `analyze_schema`) at algorithm schema
-//! v1, cross-checked against the extension's ledger
-//! (CurateLabs/graphforge-vscode `docs/engineering/RESULT_SCHEMAS.md`).
-//! Schema ids, canonical fields, and dispositions match that ledger exactly;
-//! the `composition` column is XYG's canonical rendering of the disposition.
+//! v1. XYG is the authority for dispositions and rendering; editors consume
+//! `ledger_tsv()` rather than authoring a second ledger. Immutable Core descriptor
+//! and Arrow corpora test this mapping without an editor dependency.
 
 /// Algorithm result schema version this ledger understands.
 pub const ALGORITHM_SCHEMA_VERSION: u32 = 1;
 /// `find` search result schema version this ledger understands.
 pub const SEARCH_SCHEMA_VERSION: u32 = 1;
 /// Version of this ledger's contents (bumps when an entry changes).
-pub const LEDGER_VERSION: u32 = 1;
+pub const LEDGER_VERSION: u32 = 2;
 
-/// The extension's disposition vocabulary.
+/// XYG's result disposition vocabulary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Disposition {
     EntityGraph,
@@ -361,6 +360,20 @@ pub const ALGORITHM_SCHEMAS: &[SchemaEntry] = &[
         algorithms: &["yens"],
         derived_type: Some("PATH_STEP"),
         note: "k ranked node paths with cost.",
+    },
+    SchemaEntry {
+        id: "path-cost",
+        version: 1,
+        disposition: Disposition::TableOnly,
+        composition: Composition::Scalar,
+        fields: &[
+            f("source_uuid", Uuid, Source),
+            f("target_uuid", Uuid, Target),
+            f("cost", Float, Cost),
+        ],
+        algorithms: &["bfs_depth", "dijkstra_cost"],
+        derived_type: None,
+        note: "Source/target cost without a returned path; tabulate without inventing edges.",
     },
     SchemaEntry {
         id: "traversal",
@@ -754,14 +767,6 @@ mod tests {
             .collect()
     }
 
-    fn backticked(text: &str) -> Vec<String> {
-        text.split('`')
-            .skip(1)
-            .step_by(2)
-            .map(str::to_owned)
-            .collect()
-    }
-
     #[test]
     fn spec_ledger_table_matches_the_code() {
         let spec = read_repo("spec/design/graphforge-compositions.md");
@@ -805,45 +810,65 @@ mod tests {
     }
 
     #[test]
-    fn extension_ledger_agrees_on_ids_dispositions_and_membership() {
-        let doc = read_repo("tests/fixtures/graphforge/extension/RESULT_SCHEMAS.md");
-        let table = &doc
-            [doc.find("## Coverage ledger").unwrap()..doc.find("Non-algorithm results").unwrap()];
-        let mut checked = 0;
-        for line in table
-            .lines()
-            .filter(|l| l.starts_with("| ") && !l.starts_with("| Schema"))
-        {
-            let row = cells(line);
-            let ids = backticked(&row[0]);
-            let disposition = row[1].split_whitespace().next().unwrap();
-            for algorithm in row[3].split(',') {
-                let name = algorithm.split_whitespace().next().unwrap();
-                let entry = schema_for_algorithm(name).unwrap_or_else(|| {
-                    panic!("extension algorithm {name} is not in the XYG ledger")
-                });
-                assert_eq!(entry.disposition.name(), disposition, "{name}");
-                if !ids.is_empty() {
-                    assert!(
-                        ids.contains(&entry.id.to_owned()),
-                        "{name}: {} not in {ids:?}",
-                        entry.id
-                    );
-                }
-                checked += 1;
-            }
-            // Aliases the extension lists in parentheses are registered too.
-            if let Some(alias) = row[3].split("alias ").nth(1) {
-                let alias = &alias[..alias.find(')').unwrap()];
-                assert!(schema_for_algorithm(alias).is_some(), "alias {alias}");
-            }
+    fn immutable_core_rc5_descriptors_and_results_match_the_ledger() {
+        use crate::arrow_ipc::read_table;
+        use crate::graphforge::container::{Builder, REQUEST_MAGIC};
+        use crate::graphforge::{compose::compose_bytes, recognize::recognize};
+
+        let root = "tests/fixtures/graphforge/core/0.6.0-rc.5";
+        let contracts = read_repo(&format!("{root}/contracts.tsv"));
+        let load = |name: &str| {
+            std::fs::read(format!(
+                "{}/../../{root}/results/{name}.arrow",
+                env!("CARGO_MANIFEST_DIR")
+            ))
+            .unwrap()
+        };
+        let mut count = 0;
+        for line in contracts.lines().skip(1) {
+            let fields: Vec<_> = line.split('\t').collect();
+            assert_eq!(fields.len(), 5);
+            let [algorithm, verb, algorithm_version, schema_version, base] =
+                <[&str; 5]>::try_from(fields).unwrap();
+            assert_eq!(algorithm_version, "1");
+            let entry = schema_for_algorithm(algorithm)
+                .unwrap_or_else(|| panic!("Core {algorithm} has no XYG disposition"));
+            assert_eq!(entry.version.to_string(), schema_version, "{algorithm}");
+            let result = load(algorithm);
+            let table = read_table(&result).unwrap();
+            let recognized = recognize(&table.schema).unwrap();
+            assert_eq!(recognized.algorithm, algorithm);
+            assert_eq!(recognized.verb, verb);
+            assert_eq!(recognized.entry.id, entry.id);
+            let nodes = load(&format!("base-{base}-nodes"));
+            let edges = load(&format!("base-{base}-edges"));
+            let mut request = Builder::new(REQUEST_MAGIC);
+            request.bytes("base.table", 0, &nodes);
+            request.bytes("base.table", 1, &edges);
+            request.bytes("layer.result", 0, &result);
+            // Embeddings use their real high-dimensional vector plane;
+            // caller-owned 2D coordinates are a separate contract.
+            let intent = if entry.composition.intents().contains(&Intent::Graph) {
+                "graph"
+            } else if entry.composition.intents().contains(&Intent::Table) {
+                "table"
+            } else {
+                "parallel-coordinates"
+            };
+            request.utf8("layer.intent", 0, intent);
+            compose_bytes(&request.finish())
+                .unwrap_or_else(|_| panic!("Core {algorithm} did not compose as {intent}"));
+            count += 1;
         }
-        assert!(
-            checked >= 94,
-            "checked {checked} extension ledger algorithms"
+        assert_eq!(count, 96, "pinned Core 0.6.0-rc.5 descriptor count");
+        let search = load("find");
+        assert_eq!(
+            recognize(&read_table(&search).unwrap().schema)
+                .unwrap()
+                .entry
+                .id,
+            "search"
         );
-        let search = doc.lines().find(|l| l.starts_with("| `search`")).unwrap();
-        assert_eq!(cells(search)[1], SEARCH_SCHEMA.disposition.name());
     }
 
     #[test]

@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "full-foundation",
+  "recordedAt": "2026-10-23T00:06:09.936Z",
+  "artifactCommit": null,
+  "harnessCommit": "2286d86db8b9d3eedf7ca5456a9e259520c8be6a",
+  "node": "v24.21.0",
+  "browser": "149.0.7827.55",
+  "platform": "linux",
+  "architecture": "x64",
+  "artifactSource": "source-dist",
+  "assets": {
+    "index.js": {
+      "bytes": 749738,
+      "sha256": "e4701e1d5b412c05d1e2d80b30a436cb79946c0a03b5eb624d743e28a62e4246"
+    },
+    "standalone.js": {
+      "bytes": 749766,
+      "sha256": "85c7a9e7ad01dce54fe484868cabf5f365687180e2200a0361227b71f1ba2687"
+    },
+    "wasm-worker.js": {
+      "bytes": 52693,
+      "sha256": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee"
+    },
+    "xyg-wasm.wasm": {
+      "bytes": 1543015,
+      "sha256": "ae83bd6818eaa452e49938bab3db7f6bd09c5b93f928e941129b29c52567995d"
+    }
+  },
+  "harness": {
+    "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+    "tests/browser/wasm_foundation_page.mjs": "c67d29dc52544bc9fc87e435dce532e8ea1c3595d75321eb96a4614b0800aa90",
+    "spec/wasm/abi.json": "442524fb009b9b9b7880a5ff829a537fb332686bc5f6e21765d9ceaae1e5ae9b"
+  },
+  "package": null,
+  "csp": "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+  "externalRequests": [],
+  "densityNoRefinement": [
+    {
+      "name": "missing-inline-artifact",
+      "entry": "esm",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "self-contained Rust/WASM density artifact is unavailable",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "xyg-current-foundation.json.esm-missing-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "malformed-inline-artifact",
+      "entry": "esm",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "inline worker requires generated base64 bytes and classic worker source",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "xyg-current-foundation.json.esm-malformed-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "missing-retained-source",
+      "entry": "esm",
+      "events": [
+        {
+          "code": "XYG_WASM_SOURCE_UNAVAILABLE",
+          "message": "density refinement requires a retained typed source",
+          "traceIds": [
+            0
+          ]
+        },
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "41a44c0067b30c3f38c812d81596cb49388f48fca13c483b82235da79e51dd93",
+      "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "xyg-current-foundation.json.esm-missing-retained-source.png",
+        "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+      }
+    },
+    {
+      "name": "missing-inline-artifact",
+      "entry": "iife",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "self-contained Rust/WASM density artifact is unavailable",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "xyg-current-foundation.json.iife-missing-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "malformed-inline-artifact",
+      "entry": "iife",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "inline worker requires generated base64 bytes and classic worker source",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "xyg-current-foundation.json.iife-malformed-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "missing-retained-source",
+      "entry": "iife",
+      "events": [
+        {
+          "code": "XYG_WASM_SOURCE_UNAVAILABLE",
+          "message": "density refinement requires a retained typed source",
+          "traceIds": [
+            0
+          ]
+        },
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "41a44c0067b30c3f38c812d81596cb49388f48fca13c483b82235da79e51dd93",
+      "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "xyg-current-foundation.json.iife-missing-retained-source.png",
+        "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+      }
+    }
+  ],
+  "limitations": [
+    "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
+    "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
+    "No actual packaged Reflex XYChart application, full candidate host matrix, large-scale timings, or validly framed corrupt inline WASM claim."
+  ]
+}

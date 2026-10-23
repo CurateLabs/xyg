@@ -141,6 +141,29 @@ fn table(layer: &Layer<'_>, mut decisions: Vec<Decision>) -> GfResult<Vec<u8>> {
                     values.iter().map(|v| v.unwrap_or(f64::NAN)).collect(),
                 )
             }
+            Kind::Uuid => {
+                let values = uuids(&column, false).map_err(|e| e.in_layer(layer.index))?;
+                (
+                    values
+                        .iter()
+                        .map(|value| {
+                            value.map(|id| {
+                                const HEX: &[u8; 16] = b"0123456789abcdef";
+                                let mut text = String::with_capacity(36);
+                                for (index, byte) in id.into_iter().enumerate() {
+                                    if matches!(index, 4 | 6 | 8 | 10) {
+                                        text.push('-');
+                                    }
+                                    text.push(HEX[(byte >> 4) as usize] as char);
+                                    text.push(HEX[(byte & 15) as usize] as char);
+                                }
+                                text
+                            })
+                        })
+                        .collect(),
+                    vec![f64::NAN; values.len()],
+                )
+            }
             Kind::Utf8 => {
                 let values = texts(&column).map_err(|e| e.in_layer(layer.index))?;
                 (

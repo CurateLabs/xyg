@@ -1,0 +1,578 @@
+[
+  {
+    "verb": "rank",
+    "algorithm": "pagerank",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "betweenness",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "closeness",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "harmonic_closeness",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "degree",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "eigenvector",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "article_rank",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "hits_hub",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "hits_authority",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "celf",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "clustering_coefficient",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "triangles",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "k_core",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "preferential_attachment",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "adamic_adar",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "common_neighbors",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "resource_allocation",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "rank",
+    "algorithm": "total_neighbors",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "louvain",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "leiden",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "label_propagation",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "speaker_listener",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "girvan_newman",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "modularity_optimization",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "fastgreedy",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "infomap",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "leading_eigenvector",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "walktrap",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "spinglass",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "hdbscan",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "k_means",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "approximate_max_k_cut",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "components",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "strongly_connected",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "biconnected",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "cluster",
+    "algorithm": "k_core_decomposition",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "bfs",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "dijkstra",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "dijkstra_all_pairs",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "astar",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "bellman_ford",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "floyd_warshall",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "delta_stepping",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "yens",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "max_flow",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "max_flow_edges",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "min_cut",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "min_cut_edges",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "min_cost_max_flow",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "min_cost_max_flow_edges",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "gomory_hu_tree",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "min_steiner_tree",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "prize_collecting_steiner_tree",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "dfs",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "random_walk",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "transitive_closure",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "bfs_depth",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "paths",
+    "algorithm": "dijkstra_cost",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "minimum_spanning_tree",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "maximum_spanning_tree",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "minimum_k_spanning_tree",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "topological_sort",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "is_dag",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "find_cycles",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "dag_longest_path",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "dag_longest_path_weighted",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "node_coloring",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "edge_coloring",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "chromatic_number",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "k1_coloring",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "max_weight_matching",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "max_cardinality_matching",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "max_bipartite_matching",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "euler_circuit",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "euler_path",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "has_euler_circuit",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "has_euler_path",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "is_planar",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "articulation_points",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "bridges",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "triangle_count",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "conductance",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "modularity",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "transitivity",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "triad_census",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "dyad_census",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "count_automorphisms",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "node2vec",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "graphsage",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "fast_random_projection",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "analyze",
+    "algorithm": "hashgnn",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "similar",
+    "algorithm": "node_similarity",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "similar",
+    "algorithm": "knn",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "similar",
+    "algorithm": "filtered_knn",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "similar",
+    "algorithm": "filtered_node_similarity",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  },
+  {
+    "verb": "similar",
+    "algorithm": "cosine",
+    "algorithmVersion": 1,
+    "resultSchemaVersion": 1
+  }
+]

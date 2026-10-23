@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
 import json
@@ -58,12 +59,31 @@ def _native(os_name: str, cpu: str) -> bytes:
 
 def _release(tmp_path: Path, version: str = "1.2.3"):
     mod = _load()
-    optionals = {name: version for name in mod.EXPECTED_NAMES if name != mod.FACADE}
+    optionals = {name: version for name in mod.NATIVE_NAMES}
     for index, name in enumerate(mod.EXPECTED_NAMES):
         manifest: dict[str, object] = {"name": name, "version": version}
         files = None
         if name == mod.FACADE:
             manifest["optionalDependencies"] = optionals
+        elif name == mod.BROWSER:
+            manifest.update({"type": "module", "exports": mod.EXPECTED_EXPORTS})
+            files = {
+                f"dist/{name}": b"\0asm\x01\0\0\0" if name.endswith(".wasm") else b"export {};"
+                for name in mod.ASSETS
+            }
+            inventory = {
+                "schemaVersion": 1,
+                "package": mod.BROWSER,
+                "packageVersion": version,
+                "assets": {
+                    name: {
+                        "bytes": len(files[f"dist/{name}"]),
+                        "sha256": hashlib.sha256(files[f"dist/{name}"]).hexdigest(),
+                    }
+                    for name in mod.ASSETS
+                },
+            }
+            files["ASSET-MANIFEST.json"] = json.dumps(inventory).encode()
         else:
             platform_id = name.removeprefix(f"{mod.FACADE}-")
             library, os_name, cpu = mod.PLATFORM_LAYOUTS[platform_id]
@@ -217,3 +237,76 @@ def test_prereleases_publish_under_the_next_dist_tag(tmp_path: Path, monkeypatch
         assert tagged == ("-" in artifact.version), (artifact.version, command)
     assert mod._dist_tag("0.6.0-rc.1") == ["--tag", "next"]
     assert mod._dist_tag("0.6.0") == []
+
+
+@pytest.mark.parametrize("damage", ["missing", "mixed-version", "asset-digest", "extra-asset"])
+def test_browser_is_required_and_bound_to_the_same_exact_cohort(
+    tmp_path: Path, damage: str
+) -> None:
+    mod = _release(tmp_path)
+    browser = tmp_path / f"artifact-{mod.EXPECTED_NAMES.index(mod.BROWSER)}.tgz"
+    if damage == "missing":
+        browser.unlink()
+    else:
+        with tarfile.open(browser) as archive:
+            files = {
+                member.name.removeprefix("package/"): archive.extractfile(member).read()
+                for member in archive.getmembers()
+            }
+        manifest = json.loads(files.pop("package.json"))
+        if damage == "mixed-version":
+            manifest["version"] = "1.2.4"
+        elif damage == "asset-digest":
+            files["dist/index.js"] = b"tampered"
+        else:
+            files["dist/extra.js"] = b"unexpected"
+        _pack(browser, manifest, files)
+    with pytest.raises(
+        ValueError, match=r"seven|identity/version|manifest mismatch|dist inventory"
+    ):
+        mod.load_release(tmp_path)
+
+
+def test_release_tag_version_and_check_mode_fail_before_registry_access(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mod = _release(tmp_path, "0.6.0-rc.1")
+
+    def registry(*args, **kwargs):
+        pytest.fail("check mode must not contact the registry")
+
+    monkeypatch.setattr(mod, "_registry_dist", registry)
+    assert mod.main([str(tmp_path), "--tag", "xyg-v0.6.0-rc.1", "--check"]) == 0
+    assert mod.main([str(tmp_path), "--tag", "xyg-v0.6.0-rc.2", "--check"]) == 1
+
+
+def test_late_existing_mismatch_prevents_all_new_uploads(tmp_path: Path, monkeypatch) -> None:
+    mod = _release(tmp_path)
+    artifacts = mod.load_release(tmp_path)
+
+    def registry(spec):
+        return (
+            mod.RegistryDist("wrong", "sha512-wrong") if spec.startswith(mod.FACADE + "@") else None
+        )
+
+    monkeypatch.setattr(mod, "_registry_dist", registry)
+    monkeypatch.setattr(
+        mod.subprocess,
+        "run",
+        lambda *args, **kwargs: pytest.fail("must reject the cohort before publishing any package"),
+    )
+    with pytest.raises(RuntimeError, match="immutable registry mismatch"):
+        mod.publish_release(artifacts)
+
+
+def test_pre_pypi_cli_rejects_missing_browser_without_registry_access(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mod = _release(tmp_path, "0.6.0-rc.1")
+    (tmp_path / f"artifact-{mod.EXPECTED_NAMES.index(mod.BROWSER)}.tgz").unlink()
+    monkeypatch.setattr(
+        mod,
+        "_registry_dist",
+        lambda spec: pytest.fail("incomplete archives must fail before registry access"),
+    )
+    assert mod.main([str(tmp_path), "--tag", "xyg-v0.6.0-rc.1", "--check"]) == 1

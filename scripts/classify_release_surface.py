@@ -2,7 +2,7 @@
 """Classify whether changed paths require the complete release-surface matrix.
 
 Fail-closed: a path is a release surface unless it is explicitly recognized prose
-(root Markdown, LICENSE, ``docs/``, ``spec/`` outside ``spec/abi/`` and ``spec/wasm/``).
+(root Markdown, LICENSE, ``docs/``, and ``spec/`` outside executable contracts).
 Unknown paths therefore require the full matrix; they never skip it.
 """
 
@@ -18,6 +18,7 @@ from pathlib import Path
 # spec/abi/ and spec/wasm/ are generated-contract inputs to the native and WASM jobs.
 PROSE_PREFIXES = ("docs/", "spec/")
 CONTRACT_PREFIXES = ("spec/abi/", "spec/wasm/")
+CONTRACT_FILES = {"spec/graphforge-compatibility.json"}
 PROSE_ROOT_FILES = {"LICENSE"}
 PROSE_ROOT_SUFFIXES = (".md",)
 
@@ -27,8 +28,10 @@ def is_release_surface(path: str) -> bool:
     if "/" not in normalized:
         prose = normalized in PROSE_ROOT_FILES or normalized.endswith(PROSE_ROOT_SUFFIXES)
     else:
-        prose = normalized.startswith(PROSE_PREFIXES) and not normalized.startswith(
-            CONTRACT_PREFIXES
+        prose = (
+            normalized.startswith(PROSE_PREFIXES)
+            and not normalized.startswith(CONTRACT_PREFIXES)
+            and normalized not in CONTRACT_FILES
         )
     return not prose
 

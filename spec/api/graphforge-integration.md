@@ -25,16 +25,19 @@ Everything is GraphForge Arrow IPC bytes exactly as the engine returned them
 | `layers[i].coordinates` | caller 2D reduction for embeddings (Arrow IPC `node_uuid`, `x`, `y`) | embeddings are never plotted from dimensions 0/1 |
 | `select` | UUIDs selected in the results table | painted in the selected state by Rust |
 
-Intent per extension disposition (the full per-schema ledger is
-`graphforgeLedger()` / `xyg_graphforge_ledger_tsv`, and agrees with
-`RESULT_SCHEMAS.md` by test):
+XYG owns the result dispositions and allowed intents. The full per-schema
+ledger is `graphforgeLedger()` / `xyg_graphforge_ledger_tsv`; consumers use
+that runtime ledger instead of maintaining another authority. Exact Core
+result-schema qualifications and the separate launch-pairing status are
+recorded in [the compatibility declaration](../graphforge-compatibility.json).
 
-| Extension disposition | XYG intent(s) | Result |
+| XYG disposition | XYG intent(s) | Result |
 |---|---|---|
 | `node-layer`, `edge-layer`, `derived-edges`, `ordered-paths` | `graph` | base graph + result planes, derived edges dashed with a halo, ordered steps with arrows |
 | `composition-required` — `edge-color` | `graph` | edge colors joined onto the base relationships |
 | `composition-required` — `embedding` | `parallel-coordinates`, or `embedding-coordinates` with `coordinates` | full-vector view, or the caller's 2D placement |
 | `table-only` scalars | `table` | canonical columns, text cells |
+| `table-only` path costs (`bfs_depth`, `dijkstra_cost`) | `table` | source/target UUIDs and cost; no fabricated path |
 | `table-only` categories (conductance, triad/dyad census) | `table` or `bar-chart` | bars in result order |
 | `entity-graph` (Cypher) | — | pass as `base.tables` |
 
@@ -132,14 +135,15 @@ message}`). Details: design §6.4.
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 378 | `abiVersion()`, `xyg_abi_version` |
-| WASM ABI | 27 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
-| Scene | 31 | `SCENE_VERSION` |
-| Paint protocol | 13 | `PROTOCOL_VERSION` (typed tooltip columns) |
+| Native C ABI | 394 | `abiVersion()`, `xyg_abi_version` |
+| WASM ABI | 34 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
+| Scene | 34 | `SCENE_VERSION` |
+| Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |
+| Browser painter binary | 17 | `BROWSER_PAINTER_VERSION` (`XYPB`) |
 | `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
-| Coverage ledger | 1 | `composition.ledgerVersion` |
-| GraphForge algorithm / search schema | 1 / 1 | ledger (GraphForge 0.5.2: 94 algorithms) |
+| Coverage ledger | 2 | `composition.ledgerVersion` |
+| GraphForge algorithm / search schema | 1 / 1 | ledger (qualified Core 0.6.0-rc.5 corpus: 96 algorithms) |
 
 ## 6. Error codes
 

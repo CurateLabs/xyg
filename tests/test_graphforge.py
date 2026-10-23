@@ -79,7 +79,7 @@ def test_python_reproduces_the_cross_host_bytes_for_every_case() -> None:
         assert hashlib.sha256(document).hexdigest() == case["document_sha256"], case["name"]
 
 
-def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
+def test_render_document_refresh_preserves_historical_scene_and_ledger_contract() -> None:
     gen = _generator()
     case = next(case for case in gen.cases() if case["name"] == "multi-layer + render + select")
     document = bytearray(compose_graphforge_request(gen.build_request(case)))
@@ -100,7 +100,14 @@ def test_render_document_refresh_changes_only_its_scene_version_words() -> None:
             assert struct.unpack_from("<I", document, offset + 4)[0] == _native.scene_version()
             struct.pack_into("<I", document, offset + 4, 31)
             changed.add(name)
-    assert changed == {"scene.version", "scene.canonical"}
+        elif name == "ledger.version":
+            # The historical Scene31 document predates path-cost registration.
+            # Normalize its header only; preserve the retained historical hash
+            # and prove every old-corpus result byte still matches that evidence.
+            assert struct.unpack_from("<I", document, offset)[0] == 2
+            struct.pack_into("<I", document, offset, 1)
+            changed.add(name)
+    assert changed == {"scene.version", "scene.canonical", "ledger.version"}
     refresh = json.loads((ROOT / "tests/fixtures/graphforge/scene32_refresh.json").read_text())
     assert (
         hashlib.sha256(document).hexdigest()
