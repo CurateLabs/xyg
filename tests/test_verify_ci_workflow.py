@@ -74,6 +74,14 @@ def test_ci_workflow_accepts_current_gates() -> None:
         ),
         (".venv/bin/python benchmarks/bench_tier3_pyramid.py", "graph/kernel ceilings"),
         ("node benchmarks/bench_tier3_pyramid_node.mjs", "graph/kernel ceilings"),
+        (
+            'python3 scripts/verify_tier3_pyramid_report.py "$RUNNER_TEMP/tier3-python.json"',
+            "graph/kernel ceilings",
+        ),
+        (
+            'python3 scripts/verify_tier3_pyramid_report.py "$RUNNER_TEMP/tier3-node.json"',
+            "graph/kernel ceilings",
+        ),
     ],
 )
 @pytest.mark.parametrize("replacement", ["# {command}", "echo {command}", "{command} || true"])
@@ -82,8 +90,14 @@ def test_ci_workflow_requires_active_graph_suite_commands(
 ) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
-    original = f"          {command}\n"
-    assert workflow.count(original) == 1
+    candidates = [
+        line
+        for line in workflow.splitlines(keepends=True)
+        if line == f"          {command}\n" or line.startswith(f"          {command} ")
+    ]
+    assert len(candidates) == 1
+    original = candidates[0]
+    command = original.strip()
     path.write_text(
         workflow.replace(original, f"          {replacement.format(command=command)}\n", 1),
         encoding="utf-8",

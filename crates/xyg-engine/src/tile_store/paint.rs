@@ -309,8 +309,9 @@ impl TileStore {
             let gy0 = cy.saturating_sub(1);
             let gx1 = (cx + tw - 1).min(dim);
             let gy1 = (cy + th - 1).min(dim);
-            let (counts, colors, _pins) =
-                self.gather_rect(level, (gx0, gx1, gy0, gy1), self.has_color)?;
+            let (counts, colors, _pins) = self
+                .gather_rect(level, (gx0, gx1, gy0, gy1), self.has_color)
+                .map_err(|error| self.finish_failed_frame(error))?;
             let stride = gx1 - gx0;
             for sy in cy..(cy + th - 2) {
                 for sx in cx..(cx + tw - 2) {

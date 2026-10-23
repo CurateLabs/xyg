@@ -369,8 +369,9 @@ describe that target, not current behavior; see the shipped subset after them:
 pyramid**, not tiles. One trace-wide grid over the full data bounds whose finest level
 is `PYRAMID_BASE_DIM`² (2048², `python/xyg/config.py`), each coarser level an exact 4→1
 u64 sum saturating to u32 down to 1². Built lazily on the first density view at
-≥ `PYRAMID_MIN_POINTS` (2,000,000). There is no per-tile fetch entry point and no tile
-addressing — the C ABI is `xy_pyramid_build` / `_append` / `_count` / `_compose` /
+≥ `PYRAMID_MIN_POINTS` (2,000,000). This resident representation has no tile
+addressing; its separate disk-store companion supplies the tile fetch and keyed
+painter described below and in §32b. The resident C ABI is `xy_pyramid_build` / `_append` / `_count` / `_compose` /
 `_free`, and composition happens kernel-side over the whole window. `_compose` takes a
 `max_upsample` bound: in-RAM traces cap it at 2× so a below-floor window falls back to
 the exact `range_indices` + `bin_2d` re-bin, but **out-of-core / huge traces**
@@ -417,9 +418,11 @@ tier keyed on the *actual* in-window count:
   recorded per update by the `binning` value).
 
 The sorted columns are a derived **f32** cache (§27: canonical stays f64, every derived
-buffer is rebuildable). *Pending:* tiling proper (per-tile build, fetch, and pan-time reuse), so
-"pan is pure tile reuse" is design, not behavior. See `spec/design/lod-architecture.md`
-§4 for the full design and its shipped-status ledger.
+buffer is rebuildable). Disk tile fetch and pan-time texture reuse are implemented
+for spilled stores (#10); construction still builds the resident pyramid before
+spilling. Streaming construction and unordered source localization remain part
+of #110 rather than a consequence of the texture cache. See
+`spec/design/lod-architecture.md` §4 for the design and shipped-status ledger.
 
 So the honest cost model of the tiled design: **O(points) once at build, O(visible tiles) per frame,
 O(visible points) on deep zoom past the pyramid floor.** This is also exactly the

@@ -3,16 +3,17 @@
 
 Runs as a child process. Serves one page whose JS imports `ChartView` from the
 shipped ESM bundle and connects it to this process over a real WebSocket. The
-bridge is `channel.handle_message` — the same dispatcher the widget and Reflex
-adapters use — so deep zoom drills to exact rows exactly as a live chart does.
+bridge is `channel.handle_message` — the same dispatcher the widget and live
+application hosts use — so deep zoom drills to exact rows exactly as a live chart does.
 This is the interactive XYG chart; the standalone HTML export is not measured.
 
-Wire framing (binary, both directions where buffers ride):
-    u32le json_len | json bytes | buffer bytes concatenated
-    json: {"content": <message>, "buf_lens": [int, ...]}
-Client -> server messages are plain JSON text (inbound carries no buffers).
+Wire framing: production XYBF v1 in both directions when buffers ride;
+legacy no-buffer requests remain JSON text. Requests are bounded before dispatch.
+Application-byte totals count UTF-8 JSON text and complete binary frames (including
+framing/padding), not WebSocket headers, HTTP, TLS, TCP/IP or network-stack bytes.
 
 Also serves:
+    /transport_metrics  cumulative WebSocket application-message byte totals
     /static/*   the installed XYG client bundle
     /oracle     ?x0=&x1=&y0=&y1= -> {"count": rows in window}  (ground truth
                 for the drill check, computed on the exact source arrays)
@@ -27,6 +28,7 @@ import argparse
 import asyncio
 import json
 import struct
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -37,7 +39,7 @@ import tornado.web
 import tornado.websocket
 
 import xyg
-from xyg.channel import handle_message
+from xyg.channel import FrameLimits, decode_frame, encode_frame, handle_message
 
 SEED = 20260713
 # Sentinels sit in the far Gaussian tail: guaranteed sparse (drillable), and
@@ -61,39 +63,202 @@ def make_data(n: int) -> tuple[np.ndarray, np.ndarray]:
     return x, y
 
 
-PAGE = """<!doctype html>
+# Control ingress stays small even when first paint or replies are much larger.
+REQUEST_LIMITS = FrameLimits(
+    max_frame_bytes=64 * 1024,
+    max_metadata_bytes=16 * 1024,
+    max_buffers=16,
+    max_buffer_bytes=64 * 1024,
+)
+XYDC_MAX_BYTES = 3104
+APPLICATION_BYTE_LAYER = "websocket_application_messages"
+
+
+def _reject_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON constant: {value}")
+
+
+def decode_request(message: str | bytes) -> tuple[dict[str, Any], list[memoryview]]:
+    """Validate the envelope and XYDC attachment shape before channel dispatch.
+
+    Inventory semantics/keys remain Rust-owned; this checks only the bounded
+    binary control document's identity, version and declared extent.
+    """
+    if isinstance(message, bytes):
+        frame = decode_frame(message, limits=REQUEST_LIMITS)
+        content, buffers = frame.message, list(frame.buffers)
+    else:
+        if len(message.encode("utf-8")) > REQUEST_LIMITS.max_metadata_bytes:
+            raise ValueError("JSON control exceeds metadata limit")
+        content = json.loads(message, parse_constant=_reject_constant)
+        buffers = []
+    if not isinstance(content, dict):
+        raise ValueError("control must be a JSON object")
+    if content.get("type") == "density_view":
+        if content.get("tile_cache") is not None:
+            if content["tile_cache"] is not True or len(buffers) != 1:
+                raise ValueError("tile_cache requires one XYDC attachment")
+            raw = buffers[0]
+            if not 32 <= len(raw) <= XYDC_MAX_BYTES or raw[:4] != b"XYDC":
+                raise ValueError("invalid bounded XYDC attachment")
+            version = struct.unpack_from("<I", raw, 4)[0]
+            count = struct.unpack_from("<I", raw, 28)[0]
+            if version != 1 or count > 256 or len(raw) != 32 + count * 12:
+                raise ValueError("invalid XYDC version or extent")
+        elif buffers:
+            raise ValueError("density_view attachments require tile_cache: true")
+    return content, buffers
+
+
+@dataclass
+class ApplicationBytes:
+    """Cumulative socket-message bodies at the application layer, both directions."""
+
+    to_host: dict[str, int] = field(
+        default_factory=lambda: {"json_bytes": 0, "binary_frame_bytes": 0}
+    )
+    from_host: dict[str, int] = field(
+        default_factory=lambda: {"json_bytes": 0, "binary_frame_bytes": 0}
+    )
+
+    def record(self, direction: str, message: str | bytes) -> None:
+        counts = getattr(self, direction)
+        key = "json_bytes" if isinstance(message, str) else "binary_frame_bytes"
+        counts[key] += len(message.encode("utf-8")) if isinstance(message, str) else len(message)
+
+    def snapshot(self) -> dict[str, Any]:
+        result: dict[str, Any] = {"layer": APPLICATION_BYTE_LAYER}
+        for direction in ("to_host", "from_host"):
+            counts = dict(getattr(self, direction))
+            result[direction] = {**counts, "total_bytes": sum(counts.values())}
+        result["total_bytes"] = (
+            result["to_host"]["total_bytes"] + result["from_host"]["total_bytes"]
+        )
+        return result
+
+
+# Executed unchanged by the page and the bounded Node transport regression tests.
+TRANSPORT_JS = """
+const REQUEST_LIMITS = {maxFrameBytes: 65536, maxMetadataBytes: 16384,
+  maxBuffers: 16, maxBufferBytes: 65536};
+const align8 = (n) => Math.ceil(n / 8) * 8;
+const byteSpan = (b) => {
+  if (b instanceof ArrayBuffer) return new Uint8Array(b);
+  if (ArrayBuffer.isView(b)) return new Uint8Array(b.buffer, b.byteOffset, b.byteLength);
+  throw new TypeError("attachment must be an ArrayBuffer or view");
+};
+function validateDensityControl(msg, buffers) {
+  if (msg.type !== "density_view") return;
+  if (msg.tile_cache != null) {
+    if (msg.tile_cache !== true || buffers.length !== 1)
+      throw new RangeError("tile_cache requires one XYDC attachment");
+    const b = byteSpan(buffers[0]);
+    if (b.byteLength < 32 || b.byteLength > 3104 ||
+        b[0] !== 88 || b[1] !== 89 || b[2] !== 68 || b[3] !== 67)
+      throw new RangeError("invalid bounded XYDC attachment");
+    const d = new DataView(b.buffer, b.byteOffset, b.byteLength);
+    const count = d.getUint32(28, true);
+    if (d.getUint32(4, true) !== 1 || count > 256 || b.byteLength !== 32 + count * 12)
+      throw new RangeError("invalid XYDC version or extent");
+  } else if (buffers.length) {
+    throw new RangeError("density_view attachments require tile_cache: true");
+  }
+}
+function encodeFrame(content, buffers = []) {
+  if (!content || typeof content !== "object" || Array.isArray(content))
+    throw new TypeError("frame metadata must be an object");
+  if (buffers.length > REQUEST_LIMITS.maxBuffers) throw new RangeError("too many attachments");
+  validateDensityControl(content, buffers);
+  const metadata = new TextEncoder().encode(JSON.stringify(content));
+  if (metadata.byteLength > REQUEST_LIMITS.maxMetadataBytes)
+    throw new RangeError("metadata exceeds limit");
+  const spans = buffers.map(byteSpan);
+  let total = align8(24 + metadata.byteLength);
+  for (const b of spans) {
+    if (b.byteLength > REQUEST_LIMITS.maxBufferBytes) throw new RangeError("attachment exceeds limit");
+    total = align8(total + 8 + b.byteLength);
+    if (total > REQUEST_LIMITS.maxFrameBytes) throw new RangeError("frame exceeds limit");
+  }
+  const result = new Uint8Array(total);
+  const view = new DataView(result.buffer);
+  result.set([88, 89, 66, 70, 1, 0]); // XYBF v1, flags=0
+  view.setUint16(6, 24, true);
+  view.setUint32(8, metadata.byteLength, true);
+  view.setUint32(12, spans.length, true);
+  view.setBigUint64(16, BigInt(total), true);
+  result.set(metadata, 24);
+  let off = align8(24 + metadata.byteLength);
+  for (const b of spans) {
+    view.setBigUint64(off, BigInt(b.byteLength), true);
+    result.set(b, off + 8);
+    off = align8(off + 8 + b.byteLength);
+  }
+  return result.buffer;
+}
+const applicationBytes = {
+  layer: "websocket_application_messages",
+  to_host: {json_bytes: 0, binary_frame_bytes: 0},
+  from_host: {json_bytes: 0, binary_frame_bytes: 0},
+};
+function recordBytes(direction, message) {
+  const key = typeof message === "string" ? "json_bytes" : "binary_frame_bytes";
+  applicationBytes[direction][key] += typeof message === "string"
+    ? new TextEncoder().encode(message).byteLength : message.byteLength;
+}
+function applicationBytesSnapshot() {
+  const snapshot = {layer: applicationBytes.layer, total_bytes: 0};
+  for (const direction of ["to_host", "from_host"]) {
+    const counts = applicationBytes[direction];
+    snapshot[direction] = {...counts, total_bytes: counts.json_bytes + counts.binary_frame_bytes};
+    snapshot.total_bytes += snapshot[direction].total_bytes;
+  }
+  return snapshot;
+}
+function sendMessage(socket, msg, buffers = []) {
+  validateDensityControl(msg, buffers);
+  const message = buffers.length ? encodeFrame(msg, buffers) : JSON.stringify(msg);
+  if (typeof message === "string" &&
+      new TextEncoder().encode(message).byteLength > REQUEST_LIMITS.maxMetadataBytes)
+    throw new RangeError("JSON control exceeds metadata limit");
+  socket.send(message);
+  recordBytes("to_host", message);
+}
+"""
+
+PAGE = (
+    """<!doctype html>
 <meta charset="utf-8">
 <title>xy live</title>
 <style>html,body{margin:0;background:#fff}#chart{width:900px;height:420px}</style>
 <div id="chart"></div>
 <script type="module">
-import { ChartView } from "/static/index.js";
-
-function decodeFrame(buf) {
-  // Header and every buffer are 8-byte padded by the host so each column's
-  // DataView offset satisfies its dtype alignment (the client's decoder
-  // rejects misaligned columns, correctly).
-  const view = new DataView(buf);
-  const jsonLen = view.getUint32(0, true);
-  const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, jsonLen)));
-  const buffers = [];
-  let off = (4 + jsonLen + 7) & ~7;
-  for (const len of json.buf_lens) {
-    buffers.push(new DataView(buf, off, len));
-    off += (len + 7) & ~7;
-  }
-  return { content: json.content, buffers };
-}
+import { ChartView, decodeFrame } from "/static/index.js";
+"""
+    + TRANSPORT_JS
+    + """
 
 const ws = new WebSocket(`ws://${location.host}/ws`);
 ws.binaryType = "arraybuffer";
 const handlers = [];
 ws.onmessage = (ev) => {
-  if (typeof ev.data === "string") return;
-  const { content, buffers } = decodeFrame(ev.data);
+  recordBytes("from_host", ev.data);
+  let content, buffers;
+  try {
+    if (typeof ev.data === "string") {
+      content = JSON.parse(ev.data);
+      buffers = [];
+    } else {
+      ({ message: content, buffers } = decodeFrame(ev.data));
+    }
+    if (!content || typeof content !== "object" || Array.isArray(content))
+      throw new TypeError("message metadata must be an object");
+  } catch (error) {
+    ws.close(1007, "invalid application frame");
+    throw error;
+  }
   if (content.type === "init") {
     const comm = {
-      send: (msg) => ws.send(JSON.stringify(msg)),
+      send: (msg, buffers = []) => sendMessage(ws, msg, buffers),
       wantsViewChange: () => false,
       onMessage: (cb) => { handlers.push(cb); return () => {}; },
     };
@@ -106,6 +271,7 @@ ws.onmessage = (ev) => {
 };
 
 window.__arm = {
+  applicationBytes: applicationBytesSnapshot,
   ready: () => !!window.__view && !!window.__view.gl,
   domain: () => {
     const v = window.__view && window.__view.view;
@@ -146,18 +312,33 @@ window.__arm = {
 };
 </script>
 """
+)
 
 
-def encode_frame(content: dict[str, Any], buffers: list[Any]) -> bytes:
-    """Frame with 8-byte alignment: header padded, each buffer padded, so
-    every column's client-side DataView offset meets its dtype alignment."""
-    raw = [bytes(memoryview(b)) for b in buffers]
-    body = json.dumps({"content": content, "buf_lens": [len(b) for b in raw]}).encode()
-    parts = [struct.pack("<I", len(body)), body, b" " * (-(4 + len(body)) % 8)]
-    for b in raw:
-        parts.append(b)
-        parts.append(b"\0" * (-len(b) % 8))
-    return b"".join(parts)
+class WSHandler(tornado.websocket.WebSocketHandler):
+    def initialize(self, fig, spec, buffers, accounting: ApplicationBytes) -> None:
+        self.fig, self.spec, self.buffers = fig, spec, buffers
+        self.accounting = accounting
+
+    def send_frame(self, content, buffers) -> None:
+        frame = encode_frame(content, buffers or [])
+        self.write_message(frame, binary=True)
+        self.accounting.record("from_host", frame)
+
+    def open(self) -> None:
+        self.send_frame({"type": "init", "spec": self.spec}, self.buffers)
+
+    def on_message(self, message: str | bytes) -> None:
+        # Count delivered application bytes, including rejected control bodies.
+        self.accounting.record("to_host", message)
+        try:
+            content, buffers = decode_request(message)
+        except (ValueError, RecursionError):
+            self.close(1007, "invalid application frame")
+            return
+        reply = handle_message(self.fig, content, buffers)
+        if reply is not None:
+            self.send_frame(*reply)
 
 
 def main() -> None:
@@ -185,17 +366,11 @@ def main() -> None:
             inside = (x >= q["x0"]) & (x <= q["x1"]) & (y >= q["y0"]) & (y <= q["y1"])
             self.write({"count": int(np.count_nonzero(inside))})
 
-    class WSHandler(tornado.websocket.WebSocketHandler):
-        def open(self) -> None:
-            self.write_message(encode_frame({"type": "init", "spec": spec}, bufs), binary=True)
+    accounting = ApplicationBytes()
 
-        def on_message(self, message: str | bytes) -> None:
-            if isinstance(message, bytes):
-                return  # inbound messages carry no buffers (channel contract)
-            reply = handle_message(fig, json.loads(message))
-            if reply is not None:
-                content, out = reply
-                self.write_message(encode_frame(content, out), binary=True)
+    class MetricsHandler(tornado.web.RequestHandler):
+        def get(self) -> None:
+            self.write(accounting.snapshot())
 
     async def serve() -> None:
         # The server must be created inside the running loop so its handlers
@@ -204,14 +379,20 @@ def main() -> None:
         app = tornado.web.Application(
             [
                 (r"/", PageHandler),
-                (r"/ws", WSHandler),
+                (
+                    r"/ws",
+                    WSHandler,
+                    {"fig": fig, "spec": spec, "buffers": bufs, "accounting": accounting},
+                ),
+                (r"/transport_metrics", MetricsHandler),
                 (r"/oracle", OracleHandler),
                 (
                     r"/static/(.*)",
                     tornado.web.StaticFileHandler,
                     {"path": str(static_dir)},
                 ),
-            ]
+            ],
+            websocket_max_message_size=REQUEST_LIMITS.max_frame_bytes,
         )
         sockets = tornado.netutil.bind_sockets(args.port, "127.0.0.1")
         server = tornado.httpserver.HTTPServer(app)

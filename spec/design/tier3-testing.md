@@ -78,6 +78,82 @@ validation; it does not compare cold and warm timings or assert the dedicated
 real-browser tile smoke. These MB-scale fixtures make no 100M/1B allocation
 and introduce no new workflow or required status.
 
+The bounded reports now have schema version 1, runtime/environment metadata,
+measured native-library SHA256, producer/harness source hashes, all 32 raw tile
+timings, maximum descriptor/GPU bytes, and the observed process-wide residency.
+`scripts/verify_tier3_pyramid_report.py` independently pins the one-million-row
+control, 32 oracle and painter frames, 256-square resident pyramid, 2 MiB CPU
+budget, 256-descriptor cap, and eight-screen R8 GPU budget. The report cannot
+raise its own limits. The existing CI graph/chart smoke and `check-graph` run
+this verifier for both hosts; `--check-local` checks source identity and
+`--native` checks the measured library. The bounded timing remains advisory.
+
+Additional host regression proof lives in
+`tests/test_phase4_tile_spill_hosts.py` and
+`packages/xy-node/test/pyramid.test.mjs`: two stores share a one-tile process
+budget and eviction forces a reload; rejected colored appends preserve both
+count and mean-color output. The Python public append path invalidates the
+old colored store and lazily rebuilds to match a fresh chart. A categorical
+legend predicate, even with a valid XYDC request, emits the exact `-masked`
+reply without tile frames or tile statistics and leaves the store's hit/miss
+counters unchanged. Removing the predicate resumes the same unfiltered store.
+Node has no corresponding legend-predicate host entry point; no synthetic
+Node predicate capability is claimed.
+
+`benchmarks/test_codspeed_kernels.py` adds bounded count and mean-color spill
+snapshot/teardown, warm C-ABI fetch, alternating fetch misses under one-tile
+eviction, and warm spilled compose against resident oracles. Source generation
+and resident-pyramid construction occur outside measurement. Fetch uses
+preallocated output arrays; compose measures the Python/native wrapper including
+its output allocations. Snapshot includes store creation and teardown. The existing main-only
+CodSpeed scheduler discovers these cases; PRs run their correctness assertions.
+Simulation measures CPU work and excludes system-call wall time. These are
+neither cold-disk latency measurements nor the real 100M acceptance gate.
+
+### Negative tile I/O contracts (#11, bounded kernel proof)
+
+`crates/xyg-engine/src/tile_store.rs` uses deterministic MB-scale spill files
+(base dimensions 512/1024, 4,096 canonical rows) to enforce these failure
+contracts without a large-data allocation:
+
+- Dirty eviction writes the complete count slab before removing its resident
+  source or decrementing process-wide resident bytes. A failed/partial write
+  retains the dirty tile and its full charge. A read-only replacement file
+  descriptor forces writeback failure even under root; repeated failures must
+  preserve the source, and restoring a writable descriptor must allow eviction
+  and compositions identical to a full appended rebuild.
+- Count/color compose and keyed paint must release their frame pins and attempt
+  ordinary budget eviction on a failed gather too. Truncation partway through a
+  later count or color slab follows successful pinned loads; it must return
+  `UnexpectedEof`, admit no partial tile, and leave no clean residency above the
+  configured budget. Restoring the file must recover exact grid/color or paint
+  bytes. Fetch into caller buffers must admit neither a partial color tile nor
+  an unreadable tile; failed reads leave those buffers unchanged.
+- Cleanup does not turn failure into success or replace the original operation
+  error with a secondary writeback error. If cleanup also fails, retained dirty
+  sources remain charged even above budget; later writable recovery can persist
+  and evict them. This is an I/O failure, not a new residency/LOD policy.
+- Append input refusals remain atomic as specified in D4. An I/O error after
+  mutation can leave a partially applied batch across rows/levels: discard and
+  rebuild from canonical columns rather than blindly replaying that batch.
+  Paint generation must change before mutation even when the call later fails,
+  so cached textures cannot retain the old identity for changed cells.
+- The store reads its live descriptor, not a reopened pathname. On Unix,
+  removing the pathname or changing its permissions does not revoke the open
+  descriptor: uncached reads and dirty writeback continue to work. A write-only
+  replacement descriptor tests an actual unreadable source. These tests do not
+  mislabel unlink/chmod as guaranteed read failures or promise pathname reopen.
+- Dropping each failed/recovered store removes its temporary spill pathname
+  (if still present) and returns all remaining resident charges to zero.
+
+Reproduce with `cargo test -p xyg-engine tile_store -- --test-threads=1`.
+The fixtures cover count/color short reads, unreadable descriptors, writeback
+failure, error precedence, recovery, and cleanup. They do not validate arbitrary
+same-length byte corruption (the process-local cache has no checksum), OS fault
+codes on every platform, or the remaining host/browser and scale gates in #11.
+The unlink/permission fixture is Unix-only; the descriptor/truncation fixtures
+use the platform's existing positioned-I/O implementation.
+
 ### 5. Explicit non-goals for CI
 
 - Do not allocate 1B points to “prove” Tier-3.

@@ -2102,8 +2102,10 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ".venv/bin/python benchmarks/bench_parity_kernels.py --sizes 100000 --no-baseline",
         ".venv/bin/python benchmarks/bench_scale_all_charts.py --profile smoke",
         "node benchmarks/bench_scale_all_charts_node.mjs --profile smoke",
-        ".venv/bin/python benchmarks/bench_tier3_pyramid.py",
-        "node benchmarks/bench_tier3_pyramid_node.mjs",
+        '.venv/bin/python benchmarks/bench_tier3_pyramid.py > "$RUNNER_TEMP/tier3-python.json"',
+        'node benchmarks/bench_tier3_pyramid_node.mjs > "$RUNNER_TEMP/tier3-node.json"',
+        'python3 scripts/verify_tier3_pyramid_report.py "$RUNNER_TEMP/tier3-python.json" --check-local --expect-commit "$GITHUB_SHA" --native "$XYG_NATIVE_LIB"',
+        'python3 scripts/verify_tier3_pyramid_report.py "$RUNNER_TEMP/tier3-node.json" --check-local --expect-commit "$GITHUB_SHA" --native "$XYG_NATIVE_LIB"',
     )
     _require_job_contains(
         errors,

@@ -646,6 +646,102 @@ def test_pyramid_compose(benchmark, pyramid_handle):
     assert result is not None
 
 
+@pytest.fixture(params=[False, True], ids=["counts", "mean-color"])
+def spill_pyramid(request):
+    """MB-scale disk fixtures; setup and source generation stay outside timing."""
+    rng = np.random.default_rng(73)
+    x, y = rng.random(32_768), rng.random(32_768)
+    colored = request.param
+    if colored:
+        idx = (x >= 0.5).astype(np.uint8)
+        lut = np.array([[240, 30, 20, 255], [20, 60, 230, 255]], dtype=np.uint8)
+        handle = k.pyramid_build_color(x, y, 0, 1, 0, 1, 512, idx=idx, lut=lut)
+    else:
+        handle = k.pyramid_build(x, y, 0, 1, 0, 1, 512)
+    assert handle
+    try:
+        yield handle, colored
+    finally:
+        assert k.pyramid_free(handle)
+
+
+@pytest.fixture
+def spill_store(spill_pyramid):
+    handle, colored = spill_pyramid
+    store = k.pyramid_spill(handle)
+    assert store
+    assert k.tile_budget_set(2 << 20)
+    try:
+        yield store, colored
+    finally:
+        assert k.tile_store_free(store)
+        assert k.tile_budget_set(0)
+
+
+def test_tile_spill_snapshot(benchmark, spill_pyramid):
+    """Snapshot + store teardown; simulation tracks CPU, not disk wall latency."""
+    handle, _ = spill_pyramid
+
+    def snapshot():
+        store = k.pyramid_spill(handle)
+        assert store
+        assert k.tile_store_free(store)
+        return store
+
+    assert benchmark(snapshot)
+
+
+@pytest.mark.parametrize("cache", ["hit", "miss-with-eviction"])
+def test_tile_fetch(benchmark, spill_store, cache):
+    """Generated C ABI, preallocated output; no new public host fetch API."""
+    store, colored = spill_store
+    counts = np.zeros(256 * 256, dtype=np.uint32)
+    colors = np.zeros((256 * 256, 4), dtype=np.uint16) if colored else None
+    color_ptr = colors.ctypes.data if colored else None
+
+    def fetch(tx):
+        return _native._lib.xyg_tile_store_fetch(store, 0, tx, 0, counts.ctypes.data, color_ptr)
+
+    assert fetch(0) == 1
+    expected = counts.copy()
+    if cache == "hit":
+        before = k.tile_store_stats(store)
+        assert benchmark(fetch, 0) == 1
+        assert k.tile_store_stats(store)[0] > before[0]
+    else:
+        # One resident tile forces both misses on each two-tile replay.
+        assert k.tile_budget_set(1_000_000 if colored else 300_000)
+        before = k.tile_store_stats(store)
+
+        def replay():
+            assert fetch(1) == 1
+            return fetch(0)
+
+        assert benchmark(replay) == 1
+        assert k.tile_store_stats(store)[1] >= before[1] + 2
+    np.testing.assert_array_equal(counts, expected)
+    stats = k.tile_store_stats(store)
+    assert stats[2] <= stats[4]
+
+
+def test_tile_compose(benchmark, spill_store, spill_pyramid):
+    """Warm screen-bounded compose compared with the resident count/color oracle."""
+    store, colored = spill_store
+    handle, _ = spill_pyramid
+    compose = k.tile_store_compose_color if colored else k.tile_store_compose
+    oracle = k.pyramid_compose_color if colored else k.pyramid_compose
+    args = (0, 1, 0, 1, 128, 96, 8)
+    expected = oracle(handle, *args)
+    assert compose(store, *args) is not None  # explicit warmup
+    actual = benchmark(compose, store, *args)
+    assert actual is not None and expected is not None
+    assert actual[-1] == expected[-1]
+    np.testing.assert_array_equal(actual[0], expected[0])
+    if colored:
+        np.testing.assert_array_equal(actual[1], expected[1])
+    assert k.tile_store_stats(store)[2] <= 2 << 20
+
+
 def test_histogram_uniform(benchmark, data):
     _, y = data
     benchmark(k.histogram_uniform, y, -6.0, 6.0, 512)
