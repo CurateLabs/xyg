@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "browser": "149.0.7827.55",
+  "launchArgs": [
+    "--use-gl=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--ignore-gpu-blocklist"
+  ],
+  "export": {
+    "file": "density.html",
+    "sha256": "f8798e2583390df3e30fb777c69d137893f95d950dc229ca8e8ec8f700a7091e"
+  },
+  "faultInjection": "CDP bootstrap setter: missing null; invalid preserves classicWorkerSource and replaces WASM base64 with bytes 00 01 02 03.",
+  "cases": [
+    {
+      "name": "missing-inline-module",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "self-contained Rust/WASM density artifact is unavailable",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "before": {
+        "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+        "alphaPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        }
+      },
+      "zoomed": {
+        "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+        "alphaPixels": 2843,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0.25,
+            0.75
+          ],
+          "y": [
+            0.25,
+            0.75
+          ]
+        }
+      },
+      "restored": {
+        "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+        "alphaPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        }
+      },
+      "originalModuleSha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502",
+      "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+      "replacementUploads": 0,
+      "workers": [],
+      "objectUrls": 0,
+      "sharedHost": true,
+      "disposal": {
+        "destroyed": true,
+        "glReleased": true,
+        "listeners": 0,
+        "liveWorkers": 0,
+        "objectUrls": 0
+      },
+      "external": [],
+      "errors": [],
+      "screenshot": {
+        "file": "evidence.export.json.missing-inline-module.png",
+        "sha256": "79cdbd333697535d3bae10c65f5f76b16282d8bd31680fb1b9fcfec9f93f0a3b"
+      }
+    },
+    {
+      "name": "invalid-inline-module",
+      "events": [
+        {
+          "code": "XYG_WASM_INIT_FAILED",
+          "message": "WebAssembly.compile(): expected magic word 00 61 73 6d, found 00 01 02 03 @+0",
+          "traceIds": [
+            0
+          ]
+        },
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "before": {
+        "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+        "alphaPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        }
+      },
+      "zoomed": {
+        "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+        "alphaPixels": 2843,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0.25,
+            0.75
+          ],
+          "y": [
+            0.25,
+            0.75
+          ]
+        }
+      },
+      "restored": {
+        "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+        "alphaPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        }
+      },
+      "originalModuleSha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502",
+      "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+      "replacementUploads": 0,
+      "workers": [
+        {
+          "url": "blob:null/851894f5-19dc-48ea-af9d-d1cc87f18b33",
+          "terminated": true
+        }
+      ],
+      "objectUrls": 0,
+      "sharedHost": true,
+      "disposal": {
+        "destroyed": true,
+        "glReleased": true,
+        "listeners": 0,
+        "liveWorkers": 0,
+        "objectUrls": 0
+      },
+      "external": [],
+      "errors": [],
+      "screenshot": {
+        "file": "evidence.export.json.invalid-inline-module.png",
+        "sha256": "79cdbd333697535d3bae10c65f5f76b16282d8bd31680fb1b9fcfec9f93f0a3b"
+      }
+    }
+  ],
+  "limitations": [
+    "Actual installed-wheel to_html output; only two optional inline-module failure cases.",
+    "SOURCE_UNSUPPORTED is proven by the separate actual Python-produced live Reflex split payload."
+  ]
+}

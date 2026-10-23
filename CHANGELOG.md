@@ -9,7 +9,9 @@ All notable changes to **xy** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/) once `1.0.0` ships;
 pre-1.0, minor versions may contain breaking changes (see the stability table
-in the README).
+in the README). The planned 0.6 series has the more specific
+[compatibility and deprecation commitment](spec/releases/compatibility-policy.md);
+its acceptance remains gated by #108.
 
 ## [Unreleased]
 
@@ -52,6 +54,15 @@ in the README).
   than 15 bands and contours with a custom `norm=` keep the ramp.
 
 ### Changed
+- Native ABI 395 adds bounded, tile-keyed density paint frames from spilled
+  pyramids. Live clients reuse retained textures across pans, preserve exact
+  spatial deep-zoom refinement, and crossfade adjacent pyramid levels. Rust
+  owns the served level, normalization, and texture budget; binary inventory
+  controls carry observed keys through the transport-neutral notebook channel (#10).
+- A generated source API inventory detects declaration drift across Python,
+  pyplot, Node, browser, native ABI, and operator configuration. It
+  records unclassified surfaces and review gaps explicitly; it is preparation
+  for the #108 API freeze and does not declare the release accepted.
 - `resolve_colormap` stop admission is now strict for every mark (#1025):
   RGB stop rows must be integers in 0..255 (`ValueError: ... stops must be
   integers in 0..255, got X`, identical in Node), so unit-float rows such as

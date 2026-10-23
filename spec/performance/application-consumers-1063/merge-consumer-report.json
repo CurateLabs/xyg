@@ -1,0 +1,287 @@
+{
+  "schema": 1,
+  "commit": "721323e19318431e137fd7afa7b01282ede841e4",
+  "browser": "149.0.7827.55",
+  "node": "v24.21.0",
+  "hosts": {
+    "node": {
+      "kinds": {
+        "scatter": 114,
+        "line": 2436,
+        "bar": 67230,
+        "graph": 433
+      },
+      "update": true,
+      "browserSelection": true,
+      "export": true,
+      "disposeRemount": true,
+      "outgoingViewReleased": true,
+      "workersTerminated": true,
+      "glContextReleased": true,
+      "localWorkerAndWasmRequested": true,
+      "rustTicksAdmitted": true,
+      "errors": [],
+      "missingWasmFailsClosed": true
+    },
+    "streamlit": {
+      "coloredPixels": 114,
+      "rerun": true,
+      "singleIframe": true,
+      "exportControls": true,
+      "downloads": {
+        "svg": {
+          "filename": "chart.svg",
+          "bytes": 5303,
+          "sha256": "de48bd9a12085a5df817bb9df56934d8483801243b9101bdbbd032913461a060"
+        },
+        "png": {
+          "filename": "chart.png",
+          "bytes": 108691,
+          "sha256": "30539d30549f0e390f69989cd956d21734cf3d7ca10b3ae60a25e482a436f35a"
+        }
+      },
+      "pythonSelectionCallbacks": false,
+      "errors": []
+    }
+  },
+  "hashes": {
+    "target/release/libxyg_core.so": "6c4ab4ac2aa448942dcf42e4f3dfe74d07f4937cd1b0a5c80b52d46e6f16bca2",
+    "packages/xy-client/dist/index.js": "b7bf5702e7d28647b651777c364a8ec6c82403e145d16475ef8e06484b8ddfce",
+    "packages/xy-client/dist/xyg-wasm.wasm": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502"
+  },
+  "python": "3.12.15",
+  "streamlit": "1.66.1",
+  "app_tests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "node_runtime_dependencies": {
+    "koffi": "3.1.4"
+  },
+  "npm_fresh_cache": true,
+  "public_html_density_degradation": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "browser": "149.0.7827.55",
+    "launchArgs": [
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--ignore-gpu-blocklist"
+    ],
+    "export": {
+      "file": "density.html",
+      "sha256": "f899332143f61fcac11af3237e7e4a29db9460bc2fef76bce52776df0a040c4e"
+    },
+    "faultInjection": "CDP bootstrap setter: missing null; invalid preserves classicWorkerSource and replaces WASM base64 with bytes 00 01 02 03.",
+    "cases": [
+      {
+        "name": "missing-inline-module",
+        "events": [
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "self-contained Rust/WASM density artifact is unavailable",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "before": {
+          "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomed": {
+          "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+          "alphaPixels": 2843,
+          "inkPixels": 2843,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0.25,
+              0.75
+            ],
+            "y": [
+              0.25,
+              0.75
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "restored": {
+          "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomMaxChannelDelta": 255,
+        "restoration": {
+          "maxChannelDelta": 1,
+          "changedChannels": 1
+        },
+        "originalModuleSha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502",
+        "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+        "replacementUploads": 0,
+        "workers": [],
+        "objectUrls": 0,
+        "sharedHost": true,
+        "disposal": {
+          "destroyed": true,
+          "glReleased": true,
+          "listeners": 0,
+          "liveWorkers": 0,
+          "objectUrls": 0
+        },
+        "external": [],
+        "errors": [],
+        "screenshot": {
+          "file": "density-export.json.missing-inline-module.png",
+          "sha256": "acb0d3d6d1bc81efe07564a55c60d6d99a3a12d26a50e6447f7b2c5e0533d771"
+        }
+      },
+      {
+        "name": "invalid-inline-module",
+        "events": [
+          {
+            "code": "XYG_WASM_INIT_FAILED",
+            "message": "WebAssembly.compile(): expected magic word 00 61 73 6d, found 00 01 02 03 @+0",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "before": {
+          "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomed": {
+          "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+          "alphaPixels": 2843,
+          "inkPixels": 2843,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0.25,
+              0.75
+            ],
+            "y": [
+              0.25,
+              0.75
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "restored": {
+          "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomMaxChannelDelta": 255,
+        "restoration": {
+          "maxChannelDelta": 1,
+          "changedChannels": 1
+        },
+        "originalModuleSha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502",
+        "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+        "replacementUploads": 0,
+        "workers": [
+          {
+            "url": "blob:null/cef061f5-ff83-454f-9a31-4bc757c415b1",
+            "terminated": true
+          }
+        ],
+        "objectUrls": 0,
+        "sharedHost": true,
+        "disposal": {
+          "destroyed": true,
+          "glReleased": true,
+          "listeners": 0,
+          "liveWorkers": 0,
+          "objectUrls": 0
+        },
+        "external": [],
+        "errors": [],
+        "screenshot": {
+          "file": "density-export.json.invalid-inline-module.png",
+          "sha256": "acb0d3d6d1bc81efe07564a55c60d6d99a3a12d26a50e6447f7b2c5e0533d771"
+        }
+      }
+    ],
+    "limitations": [
+      "Actual installed-wheel to_html output; only two optional inline-module failure cases.",
+      "Unsupported split-source descriptors remain covered by the shared density-source tests; this public packed-HTML proof covers inline-module failures only."
+    ]
+  },
+  "installed_artifacts": {
+    "xyg-0.0.1.dev2880+721323e1-py3-none-linux_x86_64.whl": "ea0acb016a5de4b129f2414ec73c6bd931e78583d0b4da489aef5abe48398d53",
+    "curatelabs-xyg-node-linux-x64-0.0.0-test.1063.tgz": "df24000125ac9e30a4372a9e324fd64d64b2933054bbcc5aeea02e8aee2303c5",
+    "curatelabs-xyg-node-0.0.0-test.1063.tgz": "461e8957de46a426dc7bd6ffe40b00330db6d473c2a2b31ee743375eed16bbd5",
+    "curatelabs-xyg-0.0.0-test.1063.tgz": "aa77cfb48871426bba544c52e200d64c64bcdfb2d3370e1da5e5f5ec588574b3"
+  },
+  "host_path_isolation": {
+    "python_without_node": true,
+    "node_without_python": true
+  }
+}

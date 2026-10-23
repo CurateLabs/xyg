@@ -54,6 +54,19 @@ API/type inventory entries retire; generic `chrome_components` stays covered.
 - `tests/test_verify_ci_workflow.py` rejects missing, skipped, softened or
   commented consumer gates and missing retained browser evidence.
 
+## Integration with #1065
+
+Main's new packaged Reflex application, `packaged_reflex_ticks_*` runners and
+socket adapter assertions retire with the adapter. Its framework-free
+`standalone_export.py` moves to `tests/fixtures/packaged_density_export.py`.
+The required installed consumer gate now runs that fixture with the installed
+wheel and the retained `packaged_density_export_browser.mjs`, preserving both
+missing/corrupt inline-WASM HTML cases. Generic density tile/channel, Node,
+WASM, spill, lifecycle and recovery checks remain, including binary XYDC
+attachment forwarding in `test_density_tile_frames.py`. The release inventory
+retains its public-surface guard and experimental Python classification while
+removing the retired namespace and regenerating its snapshot through its tool.
+
 The Streamlit iframe is a snapshot with browser-local interactions. It does
 not replace the live Python callback, incremental append or geographic lease
 transport. Those shared contracts stay in the tests named above; unsupported

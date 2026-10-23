@@ -371,6 +371,20 @@ not stable across workers — documented as dev-only, not deployment-safe.
 
 ### 3.5 Lifecycle
 
+Each live frontend mount captures its `__xy_views` inspection-map key when
+the effect starts: the supplied DOM id, or its generated mount id. Geographic
+and ordinary payload replacements publish under that same key, and unmount
+removes it even after React has cleared the DOM ref. Destroying the view alone
+does not release buffers retained through a stale inspection-map entry.
+
+Frontend `comm.send(message, buffers)` preserves nonempty raw buffer
+attachments in the outer Socket.IO `{fig, mid, m, buffers}` envelope, behind
+the same connected/payload-epoch guards as ordinary messages. In particular,
+`density_view` inventories use the bounded binary `XYDC` attachment with a
+`tile_cache: true` control flag; tile keys and counts do not become JSON number
+arrays. The existing geographic host transport retains its dedicated binary
+request route.
+
 Rooms track delivery subscriptions; the registry mirrors active SID membership
 only for rebuildable state tokens so it can bound version tombstones.
 Disconnects and explicit unsubs remove that membership, and the last departure

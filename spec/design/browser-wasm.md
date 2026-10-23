@@ -938,16 +938,17 @@ implementation (#260); and interpreted Wave B evidence (#263).
 
 Angular/polar and secondary-axis ChartView cutovers subsequently shipped under
 #869 through the Rust packed tick resolver described above. Real-browser
-packaged asset/tick admission, failure and recovery evidence remains a separate
-#886 requirement. #1063 retires the Reflex-only journey; replacement application
-coverage follows [application-consumers.md](application-consumers.md).
+packaged Reflex application evidence is retained below as historical
+pre-removal evidence. [#1063](https://github.com/CurateLabs/xyg/issues/1063) supersedes
+the Reflex-specific requirement and retargets #886 to supported Python/
+Streamlit and Node/vanilla-TypeScript consumers; that qualification remains open.
+Replacement application coverage follows [application-consumers.md](application-consumers.md).
 
 Work outside that claimed subset is tracked independently:
 
-- replacement Python/Streamlit and Node/vanilla TypeScript application journeys
-  plus explicit same-origin packaged tick assets and fail-closed admission;
-  #886 retains its shared obligations under #1063;
-
+- supported-consumer packaged tick-asset qualification after Reflex retirement:
+  [#886](https://github.com/CurateLabs/xyg/issues/886) and
+  [#1063](https://github.com/CurateLabs/xyg/issues/1063);
 - direct-browser aggregate production paths beyond the current density/Scene
   vertical: [#885: direct-browser authoring and aggregate completion](https://github.com/CurateLabs/xyg/issues/885); and
 - post-Wave-A current-`main` SHA-keyed hosted artifacts, a green CodSpeed
@@ -1014,6 +1015,45 @@ it cannot establish current-source fixture parity or the complete #54 matrix.
 It does not prove the full application-consumer matrix, a validly framed corrupt
 inline WASM module, every unsupported source family, or large-scale hosted
 performance. Those remaining #886/#885 and release requirements stay open.
+
+### Pre-removal Reflex and shared public HTML journeys (#886 / #1063)
+
+The six Reflex cases retained in
+[`spec/performance/packaged-reflex-2026-10-23`](../performance/packaged-reflex-2026-10-23/README.md)
+qualify the pre-removal adapter only. #1063 retires that surface and supersedes
+its #886 requirement. These are historical migration records, not qualification
+of the replacement consumers. The old runner verified one exact installed
+wheel, compiled an actual `XYChart` fixture, and checked primary, secondary and
+polar tick caches, missing/corrupt tick modules, live unsupported density
+refinement, strict CSP and React unmount cleanup. Its package/harness hashes,
+frontend lockfiles, process tree, source ledgers and compile/runtime/browser
+logs retain their original meaning. The adapter app and runners are removed.
+
+The required `scripts/consumer_apps_smoke.py` gate preserves the framework-free
+public HTML portion using `tests/fixtures/packaged_density_export.py` and
+`scripts/packaged_density_export_browser.mjs`. It exercises the installed
+wheel's unmodified public `Chart.to_html()` document at a `file:` URL. A CDP
+bootstrap setter withholds the optional inline module or replaces only its
+base64 WASM bytes with `00 01 02 03`, preserving valid classic-worker framing,
+generated CSP, client, metadata and Rust grid. The latter reaches actual
+`WebAssembly.compile` rejection. Both cases require unchanged overview/grid/
+texture, zero replacement uploads, colored distinct zoom pixels, exact home
+ranges, and no live Worker or object URL after rejection/destruction. The home
+display comparison records changed channels and requires a maximum difference
+of one integer channel value for Canvas2D presentation/readback rounding;
+grid bytes and texture identity remain exact.
+Zoom pixels must differ by more than that same rounding tolerance, preventing
+unchanged home output plus readback rounding from satisfying the zoom oracle.
+They do not synthesize split-only unsupported-source descriptors into packed
+HTML. The generated file retains its own CSP and rejects all HTTP requests.
+The runner records SwiftShader arguments and uses a bounded completed
+presentation before reading pixels. Reports, screenshots and a compressed
+copy of the generated document remain under the existing consumer evidence
+upload; generated bundles are not committed (dossier §33).
+
+These bounded shared cases do not close amended #886, the full #54 matrix,
+final-candidate cohort reuse or hosted performance qualification. Supported
+application coverage follows [application-consumers.md](application-consumers.md).
 
 Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
 typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "package": "@curatelabs/xyg",
+  "assets": {
+    "index.js": {
+      "bytes": 749738,
+      "sha256": "e4701e1d5b412c05d1e2d80b30a436cb79946c0a03b5eb624d743e28a62e4246"
+    },
+    "standalone.js": {
+      "bytes": 749766,
+      "sha256": "85c7a9e7ad01dce54fe484868cabf5f365687180e2200a0361227b71f1ba2687"
+    },
+    "wasm-worker.js": {
+      "bytes": 52693,
+      "sha256": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee"
+    },
+    "xyg-wasm.wasm": {
+      "bytes": 1542339,
+      "sha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502"
+    }
+  }
+}

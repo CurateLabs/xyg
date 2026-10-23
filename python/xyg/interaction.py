@@ -1066,7 +1066,16 @@ def _ship_index_points(
 
 
 def density_view(
-    fig: "Figure", trace_id: int, x0: float, x1: float, y0: float, y1: float, w: int, h: int
+    fig: "Figure",
+    trace_id: int,
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    w: int,
+    h: int,
+    *,
+    tile_cache: bytes | bytearray | memoryview | None = None,
 ) -> tuple[dict[str, Any], list[bytes]]:
     """Re-aggregate a density-mode scatter for a new viewport (O(visible
     points); the client requests this when pan/zoom leaves the shipped grid).
@@ -1135,6 +1144,65 @@ def density_view(
     # takes the honest Tier-B re-bin below, recorded via the binning label.
     pyr = None if (nonlinear or vis_rows is not None) else _ensure_pyramid(t)
     store = None if (nonlinear or vis_rows is not None) else _tile_store_of(t)
+    # Tile framing replaces only the aggregate painter, never the existing
+    # exact spatial refinement. Use the same Rust LOD plan and finest-source
+    # resolution predicate as the legacy compose path below; eligible index
+    # requests pass through it before any tile-painter return.
+    spatial_refinement = False
+    if store is not None and getattr(t, "_spatial_index", None) is not None and not mean_colors:
+        aggregate_plan = lod.plan_view_lod(
+            request,
+            SCATTER_DENSITY_THRESHOLD * 2,
+            SCATTER_DENSITY_THRESHOLD,
+            False,
+            aggregate_reduction="pyramid-count",
+        )
+        finest_source = _pyramid_source_shape(t, lo_x, hi_x, lo_y, hi_y)
+        spatial_refinement = finest_source is None or _pyramid_grid_is_upsampled(
+            0,
+            aggregate_plan.grid_w,
+            aggregate_plan.grid_h,
+            finest_source,
+        )
+    if store is not None and tile_cache is not None and not spatial_refinement:
+        # Transport observations only. Rust validates keys/generation and owns
+        # level choice, screen budget, retention, gutters, tone and color bytes.
+        from ._paint import fill_opacity
+
+        if not isinstance(tile_cache, (bytes, bytearray, memoryview)) or len(tile_cache) > 3104:
+            raise ValueError("tile_cache requires bounded XYDC bytes")
+        frame = kernels.tile_store_paint(
+            store,
+            lo_x,
+            hi_x,
+            lo_y,
+            hi_y,
+            w,
+            h,
+            opacity=fill_opacity(t.style),
+            control=tile_cache,
+        )
+        if frame is not None:
+            level = int.from_bytes(frame[8:12], "little")
+            lod.exit_drill(t)
+            return {
+                "traces": [
+                    {
+                        "id": trace_id,
+                        "mode": "density",
+                        "tier": "density",
+                        "visible": SCATTER_DENSITY_THRESHOLD * 2,
+                        "reduction": "pyramid-count",
+                        "binning": f"pyramid-L{level}-tiles",
+                        "density": {
+                            "tile_frame": 0,
+                            "x_range": [lo_x, hi_x],
+                            "y_range": [lo_y, hi_y],
+                        },
+                        "tiles": _tiles_stats_dict(store),
+                    }
+                ]
+            }, [frame]
     if store is not None:
         # Spilled path: no pyramid_count; treat like no-rescan for the serve
         # gate (compose is the cheap O(tiles) answer).

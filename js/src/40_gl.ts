@@ -682,9 +682,13 @@ uniform sampler2D u_grid; uniform sampler2D u_lut;
 uniform vec4 u_gridRange; // coord(gx0),coord(gx1),coord(gy0),coord(gy1)
 uniform float u_opacity; uniform vec4 u_color; uniform int u_constantColor;
 uniform int u_meanColor;
+uniform vec4 u_clipRange;
+uniform int u_tileClip;
+uniform float u_densityLogScale;
 in vec2 v_coord;
 out vec4 outColor;
 void main() {
+  if (u_tileClip == 1 && (v_coord.x < u_clipRange.x || v_coord.x >= u_clipRange.y || v_coord.y < u_clipRange.z || v_coord.y >= u_clipRange.w)) discard;
   vec2 uv = vec2((v_coord.x - u_gridRange.x) / (u_gridRange.y - u_gridRange.x),
                  (v_coord.y - u_gridRange.z) / (u_gridRange.w - u_gridRange.z));
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
@@ -695,7 +699,7 @@ void main() {
     outColor = vec4(s.rgb * u_opacity, alpha);
     return;
   }
-  float t = s.r;
+  float t = s.r * u_densityLogScale;
   if (t <= 0.0) discard;
   vec4 paint = u_constantColor == 1
     ? u_color

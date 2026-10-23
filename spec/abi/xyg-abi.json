@@ -1,9 +1,9 @@
 {
-  "abi_version": 394,
+  "abi_version": 395,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "0f946380a29c43ff507ba447e400a8a7c23a41f647d121ca3b7fb85371d9609e",
+  "signature_sha256": "0701e862a4f8ea7e1c067c8292b3de63dca87a319d8a963310f191c8f03ea529",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -69057,6 +69057,258 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_tile_store_free(uint64_t store)"
+    },
+    {
+      "name": "xyg_tile_store_paint",
+      "node_name": "xyTileStorePaint",
+      "nargs": 12,
+      "arguments": [
+        {
+          "name": "store",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "x0",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "x1",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "y0",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "y1",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "width",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "height",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "opacity",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "known",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "known_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_tile_store_paint(uint64_t store, double x0, double x1, double y0, double y1, size_t width, size_t height, double opacity, const uint8_t * known, size_t known_len, uint8_t * out, size_t out_capacity)"
+    },
+    {
+      "name": "xyg_tile_store_paint_capacity",
+      "node_name": "xyTileStorePaintCapacity",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "width",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "height",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_tile_store_paint_capacity(size_t width, size_t height)"
     },
     {
       "name": "xyg_tile_store_stats",

@@ -22,9 +22,10 @@ Contracts (moved verbatim from `FigureWidget._on_custom_msg`):
   transport-agnostic `(msg, buffers)` refresh; each transport ships it its
   own way (the widget re-syncs traits and sends; a server transport would
   broadcast it). Do not add a third message shape here.
-- **`buffers` is accepted and currently unused** — no inbound message carries
-  binary payloads today, but the signature lets transports pass attachments
-  through without a break.
+- **`density_view` tile inventory is binary** — `tile_cache: true` requires
+  one bounded XYDC attachment, forwarded unchanged to Rust. Numerical tile
+  keys, generation, opacity and served level never enter JSON metadata.
+  All other inbound kinds retain their existing attachment contract.
 """
 
 from __future__ import annotations
@@ -198,7 +199,6 @@ def handle_message(
     Returns the reply to ship back over the wire, or None when there is
     nothing to send (malformed input, callback-only kinds, empty updates).
     """
-    del buffers  # no inbound message carries buffers today (see module doc)
     if not isinstance(content, dict):
         return None
     kind = content.get("type")
@@ -238,6 +238,11 @@ def handle_message(
         # Tier-2 scatter panned/zoomed: re-bin the visible window (§5).
         seq = content.get("seq")
         try:
+            tile_cache = None
+            if content.get("tile_cache") is not None:
+                if content["tile_cache"] is not True or not buffers or len(buffers) != 1:
+                    return None
+                tile_cache = buffers[0]
             update, out = fig.density_view(
                 content["trace"],
                 content["x0"],
@@ -246,6 +251,7 @@ def handle_message(
                 content["y1"],
                 content.get("w", 512),
                 content.get("h", 384),
+                tile_cache=tile_cache,
             )
         except (KeyError, TypeError, ValueError, IndexError):
             return None

@@ -1,0 +1,28 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.91s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+
+running 8 tests
+test tile_store::tests::append_equals_full_rebuild_and_rejections_are_atomic ... ok
+test tile_store::tests::colored_paint_uses_physical_alpha_and_append_invalidates_count_keys ... ok
+test tile_store::tests::colored_spill_composes_bit_for_bit_and_refuses_append ... ok
+test tile_store::tests::registry_roundtrip_and_spill_file_lifecycle ... ok
+test tile_store::tests::lru_keeps_resident_bytes_at_budget_and_records_over_budget ... ok
+test tile_store::tests::keyed_paint_pan_transfers_only_new_edges_and_matches_uncached_bytes ... ok
+test tile_store::tests::registered_stores_share_one_deterministic_lru_budget ... ok
+test tile_store::tests::spill_fetch_and_compose_match_in_ram_bit_for_bit ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 1636 filtered out; finished in 2.52s
+
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-65077abe13f18b2c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-3248208b6d85f135)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

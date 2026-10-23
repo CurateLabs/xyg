@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import gzip
 import hashlib
 import json
 import os
@@ -324,6 +325,36 @@ def main() -> None:
             stack.enter_context(tempfile.TemporaryDirectory(prefix=".consumer-smoke-", dir=ROOT))
         )
         python, node_install, hashes, consumer_facts = installed_consumers(directory, args.wheel)
+        # Preserve the framework-free HTML degradation proof added on main.
+        density_html = directory / "density.html"
+        subprocess.run(
+            [
+                str(python),
+                str(ROOT / "tests/fixtures/packaged_density_export.py"),
+                str(density_html),
+            ],
+            cwd=directory,
+            env=env,
+            check=True,
+            timeout=60,
+        )
+        (output / "density-export.html.gz").write_bytes(
+            gzip.compress(density_html.read_bytes(), mtime=0)
+        )
+        density_report = output / "density-export.json"
+        subprocess.run(
+            ["node", str(ROOT / "scripts/packaged_density_export_browser.mjs")],
+            cwd=directory,
+            env={
+                **env,
+                "XYG_CHROMIUM": args.chromium,
+                "XYG_DENSITY_EXPORT": str(density_html),
+                "XYG_DENSITY_EXPORT_REPORT": str(density_report),
+            },
+            check=True,
+            timeout=90,
+        )
+        consumer_facts["public_html_density_degradation"] = json.loads(density_report.read_text())
         commands[0][0] = str(python)
         commands[0][4] = str(ROOT / "examples/streamlit/app.py")
         commands[1][1] = str(ROOT / "examples/vanilla-ts/server.mjs")

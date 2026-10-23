@@ -1,0 +1,125 @@
+{
+  "schema": "xyg-density-tile-proof-v1",
+  "scope": "Current uncommitted source and generated source-dist/native producers; not a frozen or published candidate. 32,768 deterministic points; structural cache proof, no competitor or 100M latency claim.",
+  "baseline_commit": "cbf2c0eb3fdc2bb4f1ec8dd1cede8f3f73158342",
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "stdlib_python": "3.14.4",
+    "node": "v24.21.0",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "chromium": "Google Chrome for Testing 156.0.8078.4"
+  },
+  "sources": {
+    "crates/xyg-engine/src/tile_store.rs": {
+      "bytes": 56393,
+      "sha256": "104a45ad1758daec3a2e84e1fcb445bd3ba0bad72f272fc0777044ebd98af8b8"
+    },
+    "crates/xyg-engine/src/tile_store/paint.rs": {
+      "bytes": 14686,
+      "sha256": "66aa2ec7442e22f5af0eb86246aec47f0fef13df80b6e6aba2a56807212fe914"
+    },
+    "crates/xyg-core/src/lib.rs": {
+      "bytes": 1047857,
+      "sha256": "d344de82a8ad7b81958f32093a842ff0897259ccb563370a29a267354e0a070d"
+    },
+    "python/xyg/_native.py": {
+      "bytes": 694339,
+      "sha256": "7c3fc9ab723bcfa32923637e8c8117ce3851fddfa14f86263fb15799e35af989"
+    },
+    "python/xyg/interaction.py": {
+      "bytes": 79721,
+      "sha256": "1c8423d3f17a34e358ef6146980ac6bc7c0b338d911e74b6131ee99eb1b71822"
+    },
+    "python/xyg/channel.py": {
+      "bytes": 16570,
+      "sha256": "6aa8dba06484a8944135764f2996fc149c312fbfef6738b1ab3034c8ac4d40bc"
+    },
+    "python/xyg/kernels.py": {
+      "bytes": 26609,
+      "sha256": "64fa7738b7770c30c7548bc1b168fda5e9b13778d9926b78468814580c64f565"
+    },
+    "python/reflex_xy/namespace.py": {
+      "bytes": 28470,
+      "sha256": "777434b9a04eff8d1e77de399a532fa848727cded0122acca6d8eec96ff9810a"
+    },
+    "packages/xy-node/src/pyramid.js": {
+      "bytes": 17376,
+      "sha256": "e689dfd8b8e2a701fe9ad8fdd9f55eeeea34aaca3f0aa0897699adc08d90167f"
+    },
+    "packages/xy-node/src/figure.js": {
+      "bytes": 134554,
+      "sha256": "96a9981114f18c42810208b7a9962d4260ccc0e292df340dc33928bc7b5fc19f"
+    },
+    "js/src/40_gl.ts": {
+      "bytes": 85906,
+      "sha256": "0d9c90b0ba6b5eb473fe7efda11096f18dd52c331efb420bd3d7622471b7a140"
+    },
+    "js/src/45_lod.ts": {
+      "bytes": 78052,
+      "sha256": "bff59a3eb57a47756a729271c3634459313c45c40ac0133c48efe56e0d6dc11a"
+    },
+    "js/src/50_chartview.ts": {
+      "bytes": 418701,
+      "sha256": "1800e59a2fb21951b27506294603f6643cb84ca069a506ea7e1996e95c1f7ed7"
+    },
+    "js/src/54_kernel.ts": {
+      "bytes": 45764,
+      "sha256": "2b557462f5582fd323ddcad55d6b74f82709dee74f7947f331324e71388098d6"
+    },
+    "js/src/60_entries.ts": {
+      "bytes": 18929,
+      "sha256": "0c739e2936567015ed4f8695ad8b4d18d39d1c4fd317ac8ce3c454f603ec19f9"
+    },
+    "scripts/density_tile_smoke.py": {
+      "bytes": 13644,
+      "sha256": "b70c08aa37a6967427682822b90b9924943e9454be24028e2ebb7b2d5892b8dd"
+    },
+    "tests/test_density_tile_frames.py": {
+      "bytes": 5441,
+      "sha256": "ed8b67b22088e2214eedbe946c512c8831b85b12e8fa519706f411ab8bb0e384"
+    },
+    "tests/test_spatial.py": {
+      "bytes": 7798,
+      "sha256": "9ceeb880ff794646f0a60bf7a340a861e80245a38f053c934d8664d82c71e70b"
+    },
+    "tests/reflex_adapter/test_socket_data_plane.py": {
+      "bytes": 64942,
+      "sha256": "056bb447d9307a643a8c03dd650bbed2b950a31e22e86593270e862f16d8ef9f"
+    },
+    "packages/xy-node/test/pyramid.test.mjs": {
+      "bytes": 11126,
+      "sha256": "112294af06d43645168e4d7fc59346a21511b6e375346fd9e16246dbf2d37e3b"
+    }
+  },
+  "generated_artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 5597880,
+      "sha256": "6c4ab4ac2aa448942dcf42e4f3dfe74d07f4937cd1b0a5c80b52d46e6f16bca2"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 756584,
+      "sha256": "f4cde4d46a94800ff708b71f25c2bf0cb17ac106f292df845c5d6590d6fc5b82"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 756614,
+      "sha256": "9dbd8dc4c8ef27538ef96618873f7473269c8c391153037c06ae6358121541a6"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 52693,
+      "sha256": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1542339,
+      "sha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502"
+    }
+  },
+  "checks": {
+    "rust_tile_store": 8,
+    "python_spatial_tile_spill_channel": 38,
+    "node_pyramid": 14,
+    "reflex_socket_data_plane": 35,
+    "abi_smoke_checks": 673,
+    "legacy_render_smoke": "passed",
+    "wasm_assets": "verified"
+  }
+}

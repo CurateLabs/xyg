@@ -1,0 +1,10 @@
+{
+  "notCommitted": {
+    "evidence.export.html.gz": {
+      "sha256": "2ad0e93c00bbe65750620e90e7d7976f190d161ca9d24b915e4a97e5457f66c1",
+      "bytes": 1127696,
+      "localPath": "/tmp/xyg-packaged-reflex/baseline-omitted.export.html.gz",
+      "reason": "Dossier \u00a733: generated embedded bundles remain local; exact original export SHA and reproduction are retained."
+    }
+  }
+}

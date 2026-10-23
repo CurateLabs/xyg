@@ -166,3 +166,53 @@ Independent reviewer `review_1063` found no blocking findings. Reviewed base:
 `7b19fb3db4f71da7824295b7793e925819167f80`. Implementation diff SHA-256,
 excluding this evidence directory:
 `bceffadb6920129a7f92964a07ac76b7041bc2c4138f974b16f2e6931774fb02`.
+
+
+## Main #1065 merge resolution
+
+The merge queue landed `250072b1c369b9784959b91843e268f16756ed2c` before
+#1064, introducing density-tile reuse, ABI 395, release inventory/policy and
+additional Reflex proof. This branch merges that main commit into prior head
+`721323e19318431e137fd7afa7b01282ede841e4` without rewriting history.
+
+The resolution preserves main's Rust/native/Node/browser density behavior,
+XYDC binary channel forwarding, generated ABI 395, release inventory gate and
+compatibility/format policies. Adapter modify/delete conflicts retain deletion.
+The newly introduced compiled Reflex app, its six adapter-only browser cases
+and socket tests retire. Its pure `standalone_export.py` moves to
+`tests/fixtures/packaged_density_export.py`; the required installed consumer
+gate now runs it and the preserved `packaged_density_export_browser.mjs`.
+The public API inventory drops the retired namespace and source references,
+retains experimental Python classification, and is regenerated through its
+own `--write` tool. Main's immutable performance evidence remains unchanged.
+
+The retained HTML probe now uses the same ANGLE SwiftShader launch setting as
+the consumer gate. The legacy `--use-gl=swiftshader` setting lost its context
+on the local Chromium 149 build. With ANGLE, both cases retained exact ranges,
+grid hashes, texture/overview identities and zero replacement uploads, but home
+readback differed in one blue byte (247 versus 246). The current display oracle
+records channel deltas and permits at most one integer value of rounding;
+source bytes and lifecycle remain exact. A colored-ink check additionally
+rejects blank opaque output. Review identified that zoom must exceed that same
+rounding allowance; it now requires a channel delta greater than one.
+Deliberate four-value restoration corruption and stale zoom plus one-value
+rounding both fail. No product rendering policy was changed for this proof.
+
+Validation: full Rust workspace tests and native release build passed; the
+focused Rust tile-store run passed 8 tests; focused Python density/channel/
+spill/inventory/dependency checks passed 54 tests; Node pyramid passed 15;
+`make check-ci` passed 583; ABI smoke passed 673; API and stale-name guards,
+client build and WASM asset verification passed. The freshly built verified
+wheel and clean npm installs passed all six Streamlit AppTests, both consumer
+browser journeys and both missing/corrupt inline-WASM HTML cases. The native
+density-tile browser smoke also passed. Raw outputs, current artifact hashes,
+fault diagnostics and screenshots accompany this record. Reports identify the
+prior head plus this uncommitted merge tree; they do not claim immutable source
+for the working-tree wheel. Generated HTML/client bytes are retained only in
+CI/local ignored output, not committed.
+
+Independent reviewer `review_1063` completed the final resolution review with
+no blocking findings after the zoom-oracle correction. Reviewed main:
+`250072b1c369b9784959b91843e268f16756ed2c`. Implementation diff SHA-256 against
+that main, excluding this evidence directory:
+`4e8f2fc607a0aededfc3c5aaa0485bac879ee1897771c7fcbc214d606ada40ce`.

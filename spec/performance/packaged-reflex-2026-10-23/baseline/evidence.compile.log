@@ -1,0 +1,9 @@
+─────────────────────── Initializing packaged_ticks_app ────────────────────────
+Warning: Your version (0.9.8) of reflex is out of date. Upgrade to 0.10.0 with 
+'pip install reflex --upgrade'
+[03:22:02] Initializing the web directory.                        console.py:232
+Success: Initialized packaged_ticks_app. Install dependencies from 
+`requirements.txt` with `uv pip install -r requirements.txt` (or your preferred 
+installer) before running `uv run reflex run`.
+Compiling: ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 24/23 0:00:00
+Success: App compiled successfully in 0.141 seconds.

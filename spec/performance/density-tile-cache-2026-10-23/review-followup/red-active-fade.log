@@ -1,0 +1,1 @@
+FAIL:Error: incomplete resize source still fading at assert (file:///tmp/xy-export-aed9cqv5/chart-343BD79E.html:1478:39) at shrink (file:///tmp/xy-export-aed9cqv5/chart-343BD79E.html:1602:5) at async file:///tmp/xy-export-aed9cqv5/chart-343BD79E.html:1614:25

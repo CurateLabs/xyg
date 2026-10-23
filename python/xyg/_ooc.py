@@ -21,9 +21,10 @@ one thing you cannot do at 9-billion-row scale is *materialize the array in RAM
 to hand to* ``Figure.scatter``. This builder is that missing piece: it writes
 canonical f64 to a disk memmap one batch at a time (peak RAM = one batch), then
 returns the finished read-only view. Feed that view to the ordinary public
-API — ``fig.scatter(x=view_x, y=view_y, density=True)`` — and the whole
-pipeline runs against disk-backed truth with resident memory bounded by the
-screen, not the data (§2, §27).
+API — ``xyg.scatter_chart(xyg.scatter(x=view_x, y=view_y))`` — and the whole
+pipeline reads disk-backed canonical data. Ingest and pyramid construction
+still process source rows; this alone does not prove the complete larger-than-
+RAM navigation and resource-budget contract tracked by Phase 4 (#110/#113).
 
 Pure NumPy; no framework/widget/pyarrow imports, matching ``columns.py``.
 """
@@ -86,8 +87,8 @@ class MemmapF64Builder:
         """Flush, truncate to the written length, and return a read-only view.
 
         The returned array is a canonical f64 column: contiguous, single-copy,
-        disk-backed. Hand it to :meth:`xyg.Figure.scatter` /
-        ``ColumnStore.ingest`` exactly like an in-RAM array.
+        disk-backed. Pass it to public ``xyg.scatter(x=..., y=...)`` inside
+        ``xyg.scatter_chart(...)`` exactly like an in-RAM array.
 
         An empty column truncates the file to **0 bytes** and returns a plain
         empty array: a memmap can't map an empty file, and — crucially — an

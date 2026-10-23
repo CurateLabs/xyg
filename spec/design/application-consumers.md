@@ -122,6 +122,19 @@ after a required smoke fails; the smoke itself remains unconditional and fatal.
 The browser runner defaults to a failed exit until the complete report is
 written, so an incomplete asynchronous journey cannot be reported as success.
 
+The same installed consumer gate preserves the public HTML density degradation
+proof from #1065. `tests/fixtures/packaged_density_export.py` produces a real
+`Chart.to_html()` document with the installed wheel; the framework-free
+`scripts/packaged_density_export_browser.mjs` withholds or corrupts its optional
+inline WASM module. Both cases require unchanged Rust overview/grid/texture,
+colored zoom pixels, exact home ranges and released Workers/object URLs. Home
+display readback allows at most one integer channel value of rounding while
+requiring identical grid bytes and texture identity; zoom must exceed that
+rounding tolerance, and observed deltas are recorded. Reports,
+screenshots and the compressed generated document stay in the existing CI
+evidence directory. The former compiled Reflex app and its six adapter-only
+cases retire; their immutable historical evidence remains unchanged.
+
 Application frameworks live in the `consumers` dependency group, separate from
 `dev` and the Matplotlib-only reference lane. Installing Streamlit transitively
 installs pandas, which otherwise activates optional pandas compatibility probes
