@@ -47,6 +47,16 @@ surface rather than blending unrelated resolutions. Same-level pans update
 membership without blending a surface over itself. Reduced-motion rendering
 sets both transition and exposure to their completed values.
 
+A resize, generation replacement, or same-level reply during an active fade
+can remove some outgoing textures from Rust's retained inventory. The client
+checks every live outgoing frame, including `_densitySwitchPrev`, by texture
+object identity. If any source is incomplete it immediately completes the
+presentation transition, clears outgoing aliases, and removes incomplete
+cached frames before they can draw. This applies even to adjacent levels or
+an unchanged served level. The client does not exceed Rust's budget to keep
+a fade alive. Retiring an incomplete frame preserves the current color/LUT
+metadata for subsequent tiles.
+
 Count tiles encode `round(255 * log1p(count) / log1p(source-level maximum))`
 in Rust. The per-window maximum stays separate and uses the existing eased
 exposure: the shader scales these stable texels by
@@ -65,6 +75,16 @@ planes are raw binary attachments. The small request metadata contains only
 Anywidget and Reflex preserve the attachment unchanged. Unknown versions,
 truncation, trailing bytes, invalid fields and excessive keys fail closed.
 The host has no server-side texture residency state.
+
+Reply dimensions are checked against the existing finite request dimensions
+bounded to 16–4096, rather than against the raw canvas size. Thus a 4924-pixel
+canvas can accept a valid 4096-pixel paint frame. Oversized headers, mismatch
+with the bounded request, and non-finite requested dimensions fail before
+allocation/cache mutation. Python normalizes through `ViewportRequest`; Node's
+`densityViewFromPyramid` uses the same Rust-backed `screenShape` helper.
+The low-level `tileStorePaint` helper still requires bounded dimensions and
+refuses an unbounded direct call. Raw binary XYDC and structured Node inventory
+options remain distinct; a typed array's built-in `keys()` is not inventory.
 
 `XYDC` version 1 is a 32-byte header followed by `count * 12` bytes of u32
 `(level, tx, ty)` triples (maximum 256, total maximum 3104 bytes):
@@ -118,3 +138,8 @@ bounded structural proof; the dedicated 100M latency gate remains #11 work.
 The existing CI Headless render smoke step runs this tile probe after the
 general render probe, within the existing Test job and Release surfaces
 aggregate; it adds no required status or large allocation.
+
+The [review follow-up proof](../performance/density-tile-cache-2026-10-23/review-followup/README.md)
+adds wide-viewport admission/refusal and actual mid-fade resize pixel oracles.
+Earlier root proof files and installed-wheel reports remain historical records
+for their original hashes; this source update does not requalify those artifacts.

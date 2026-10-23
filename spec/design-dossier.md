@@ -482,8 +482,14 @@ now carry Rust-served source tiles, not shifted window grids. Rust owns the
 served level, raw XYDC inventory admission, XYDT texture bytes and retention;
 TypeScript only uploads/paints. Count exposure remains window-normalized,
 mean-color alpha remains physical, and ordinary level changes use adjacent
-crossfades. The unchanged eight-screen-texture byte ceiling can require an
-explicit resource-coarsened level jump; this GPU rule does not alter CPU
+crossfades when every outgoing texture remains owned. If Rust's updated
+inventory removes part of a source frame, including a prior source during an
+active fade, the client immediately completes that transition and drops
+incomplete frame references; it cannot retain extra textures beyond Rust's
+budget. Reply admission compares with the finite 16–4096 bounded viewport,
+so canvases wider than 4096 continue to receive capped painter updates.
+The unchanged eight-screen-texture byte ceiling can require an explicit
+resource-coarsened level jump; this GPU rule does not alter CPU
 tile pinning (§32b). The [binary contract and proof commands](design/density-tile-painter.md)
 record the gutter/framing, normalization, budget flags, stale/malformed
 admission and disposal behavior (§28/§29).

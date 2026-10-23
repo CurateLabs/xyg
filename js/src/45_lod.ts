@@ -1204,7 +1204,10 @@ export function lodApplyTileFrame(view, g, bytes) {
   const max = f(40), logMax = f(48), opacity = f(56), budget = u(64), declaredBytes = u(68);
   const width=u(72),height=u(76);
   if(width<16 || width>4096 || height<16 || height>4096 || budget!==width*height*((flags&1)?4:1)*8) return false;
-  if(g._lastDensityReq && (g._lastDensityReq.w!==width || g._lastDensityReq.h!==height)) return false;
+  // Compare with the existing host screen-shape boundary, not canvas size.
+  // This is reply admission; Rust still chooses paint resolution and level.
+  const boundedDimension=(value)=>Math.max(16,Math.min(4096,Math.trunc(value)));
+  if(g._lastDensityReq && (![g._lastDensityReq.w,g._lastDensityReq.h].every(Number.isFinite) || boundedDimension(g._lastDensityReq.w)!==width || boundedDimension(g._lastDensityReq.h)!==height)) return false;
   const xr = [f(96), f(104)], yr = [f(112), f(120)];
   if (![max, logMax, opacity, ...xr, ...yr].every(Number.isFinite) || max < 0 || logMax < 0 || opacity < 0 || opacity > 1 || xr[1] <= xr[0] || yr[1] <= yr[0] || declaredBytes > budget) return false;
   const old = g._tileTextures || new Map();
@@ -1238,22 +1241,32 @@ export function lodApplyTileFrame(view, g, bytes) {
       next.set(row.key,tile);
     }
   } catch (_) { for (const tex of created) view.gl.deleteTexture(tex); return false; }
-  for (const [key,tile] of old) if (next.get(key)!==tile) view.gl.deleteTexture(tile.tex);
-  const previous = g.density;
+  // Rust's new inventory is authoritative. A presentation fade cannot keep
+  // drawing an outgoing frame after any of its texture owners are replaced.
+  const retainedFrame=(d)=>!d?.tileSet || d.tileSet.every((tile)=>next.get(tile.key)===tile);
+  const interruptedFade=[g.density,g.prevDensity,g._shownDensity,g._densitySwitchPrev].some((d)=>!retainedFrame(d));
+  const current=g.density;
+  const previous = retainedFrame(current)?current:null;
   const set = rows.slice(0,active).map((row)=>next.get(row.key));
-  const frame:any = {tileSet:set,level,tex:set[0]?.tex || null,w:u(72),h:u(76),max,normMax:view._prefersReducedMotion()?max:lodNormMax(g,max),xRange:xr,yRange:yr,visible:Infinity,lut:previous?.lut,color:previous?.color,_filterKey:""};
-  if (previous && previous.tileSet && (previous.level === level || Math.abs(previous.level-level)>1)) {
+  const frame:any = {tileSet:set,level,tex:set[0]?.tex || null,w:u(72),h:u(76),max,normMax:view._prefersReducedMotion()?max:lodNormMax(g,max),xRange:xr,yRange:yr,visible:Infinity,lut:current?.lut,color:current?.color,_filterKey:""};
+  if (interruptedFade || (previous?.tileSet && Math.abs(previous.level-level)>1)) {
+    // Complete a fade whose source no longer fits Rust's byte budget. Reset
+    // every outgoing alias so the next draw cannot restart it from a hole.
+    g._shownDensity=frame;g.prevDensity=null;g._densitySwitchPrev=null;
+    g._densitySwitchFadeStart=null;g._densityFadeStart=null;
+  } else if (previous?.tileSet && previous.level === level) {
     g._shownDensity = frame; // pan updates membership/uniforms, never double-counts a level
   } else {
     g.prevDensity = previous;
   }
+  for (const [key,tile] of old) if (next.get(key)!==tile) view.gl.deleteTexture(tile.tex);
   g._tileTextures = next; g._tileGeneration = generation; g._tileOpacity = opacity;
   g._tileLevel = level; g._tileNeedsRefine = !!(flags&2); g._tileCapable = true;
   g._tileStats = {received:missing,uploads:created.length,retained:n-missing,gpuBytes:byteCount,budget,level,resourceCoarsened:!!(flags&4)};
   g.density = frame;
   // Existing exposure easing is presentation only; tile bytes stay immutable.
   g._densityNormAnim = ((flags&1) || view._prefersReducedMotion()) ? null : {start:frame.normMax,target:max,startedAt:view._now(),duration:max<frame.normMax?420:260};
-  const keep = new Set([frame, g._densitySwitchPrev, g._shownDensity, previous].filter(Boolean));
+  const keep = new Set([frame, g._densitySwitchPrev, g._shownDensity, previous].filter((d)=>d && retainedFrame(d)));
   for (const old of g.densityCache || []) if (!keep.has(old)) {
     if(old.tex && !old.tileSet) view.gl.deleteTexture(old.tex);
     lodReleaseDensityOverlay(view,g,old,keep);

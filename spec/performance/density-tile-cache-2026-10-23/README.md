@@ -1,9 +1,15 @@
 # Keyed density cache evidence
 
-Scope: current source/native producer and generated browser bundle, before a
+Initial scope: the source/native producer and generated browser bundle before a
 release freeze. This is a 32,768-point correctness/resource/transport proof;
 it makes no competitor or dedicated 100M latency claim. The separate #11
 scale gate remains open.
+
+The original reports below remain bound to their recorded source and assets.
+Later review found bounded-viewport admission and resize-during-fade defects.
+[The review follow-up](review-followup/README.md) records the corrected client,
+new regressions, and updated source/browser validation. Do not treat the
+original client hashes as the later client or an accepted release candidate.
 
 [Browser raw results](browser.json) record R8 counts and premultiplied RGBA
 means. Both cases use actual raw XYDC HTTP requests and native Rust XYDT

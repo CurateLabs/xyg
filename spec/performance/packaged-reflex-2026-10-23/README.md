@@ -39,10 +39,18 @@ changed only its ABI stamp. The `fixed/` and `diagnostics/strict-null-oracle/`
 source ledgers retain their original build-time snapshot of
 `packages/xy-node/test/fixtures/mark_parity.json`, before that refresh. That
 Node test fixture is not shipped in the Python wheel. The other 679 source
-hashes, six prebuilt assets, and three ABI contracts still match; no runtime
-producer changed. The historical ledgers and report hashes are preserved.
+hashes, six prebuilt assets, and three ABI contracts matched at that repair;
+no runtime producer changed in the fixture repair. The historical ledgers and
+report hashes are preserved.
 
-The matching current
+Subsequent client fixes for bounded viewport admission and resize-during-fade
+retirement change the browser source and generated client assets. This wheel
+and its source snapshots remain historical, pre-fix integration evidence.
+[The later source-browser proof](../density-tile-cache-2026-10-23/review-followup/README.md)
+does not retroactively qualify this wheel; the final candidate must contain
+the corrected client and repeat its affected packaged acceptance.
+
+The matching pre-fix
 [full foundation report](../density-tile-cache-2026-10-23/source-browser-validation/xyg-tile-final-foundation.json)
 passes six ESM/IIFE no-refinement cases, and all four of its client/worker/WASM
 asset hashes match this wheel. It complements the actual Python HTML exports

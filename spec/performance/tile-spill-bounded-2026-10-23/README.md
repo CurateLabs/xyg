@@ -26,6 +26,13 @@ does not identify the changed source. Python uses NumPy's default linear
 percentile interpolation; Node uses nearest rank. Their reported p95 values
 are not a comparative latency claim.
 
+These reports retain their original host-source hashes. A later Node host
+viewport/control repair has a separate
+[bounded Node rerun](../density-tile-cache-2026-10-23/review-followup/node-bounded.json)
+and [current source provenance](../density-tile-cache-2026-10-23/review-followup/validation-provenance.json).
+That rerun preserves the same transfer, residency, and oracle results; it is
+still bounded correctness evidence with advisory timings.
+
 Reproduce from a checkout containing this change:
 
 ```bash

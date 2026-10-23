@@ -66,7 +66,14 @@ def main() -> None:
             control = self.rfile.read(int(self.headers["Content-Length"]))
             assert req["tile_cache"] is True and "keys" not in req
             control_owner = ctypes.create_string_buffer(control)
-            width, height = req["w"], req["h"]
+            bounded_w, bounded_h = ctypes.c_int32(), ctypes.c_int32()
+            assert (
+                lib.xyg_screen_shape(
+                    req["w"], req["h"], ctypes.byref(bounded_w), ctypes.byref(bounded_h)
+                )
+                == 1
+            )
+            width, height = bounded_w.value, bounded_h.value
             capacity = lib.xyg_tile_store_paint_capacity(width, height)
             out = (ctypes.c_ubyte * capacity)()
             result = lib.xyg_tile_store_paint(
@@ -89,6 +96,8 @@ def main() -> None:
                 {
                     "case": req["case"],
                     "seq": req["seq"],
+                    "requested_size": [req["w"], req["h"]],
+                    "served_size": [width, height],
                     "bytes": result,
                     "level": struct.unpack_from("<I", raw, 8)[0],
                     "flags": struct.unpack_from("<I", raw, 12)[0],
@@ -147,11 +156,11 @@ def main() -> None:
   if(kind==='color')local.traces[0].color={mode:'categorical',palette:['#f03228','#145ae6'],categories:['red','blue']};
   const v=xy.renderStandalone(host,local,blob),g=v.gpuTraces[0],gl=v.gl;
   v._prefersReducedMotion=()=>true;
-  let uploads=0, creates=0, requests=0,lastRaw=null,lastMessage=null,inflight=Promise.resolve();
+  let uploads=0, creates=0, requests=0,lastRaw=null,lastMessage=null,lastRequest=null,inflight=Promise.resolve();
   const image=gl.texImage2D.bind(gl),create=gl.createTexture.bind(gl);
   gl.texImage2D=(...a)=>{uploads++;return image(...a);};
   gl.createTexture=(...a)=>{creates++;return create(...a);};
-  v.comm={send(msg,buffers){if(msg.type!=='density_view')return;requests++;
+  v.comm={send(msg,buffers){if(msg.type!=='density_view')return;requests++;lastRequest=msg;
    assert(msg.tile_cache===true&&buffers.length===1&&!msg.keys,'observations must be raw binary');
    inflight=fetch(endpoint,{method:'POST',headers:{'content-type':'application/octet-stream','x-xyg-request':JSON.stringify({...msg,case:kind})},body:buffers[0]})
     .then(r=>r.arrayBuffer()).then(raw=>{
@@ -229,11 +238,64 @@ def main() -> None:
    v._drawDensity=draw;v._prefersReducedMotion=()=>true;
   }
   assert(adjacentFade,'fixture must exercise actual adjacent levels');
+  // Real canvas widths may exceed the native paint resolution ceiling.
+  // The server applies the same Rust screen-shape boundary as Python.
+  const resize=(w,h)=>{v.fluid=true;v.fluidH=true;v._resize(w,h);clearTimeout(v._viewTimer);};
+  resize(5000,320);
+  await request([0,.5,0,.5]);
+  assert(lastRequest.w>4096&&g.density.w===4096,`bounded large viewport frame rejected: request ${lastRequest.w}, displayed ${g.density.w}`);
+  await request([.25,.75,0,.5]);
+  assert(g.density.w===4096&&g.density.xRange[0]===.25,'large viewport pan stopped updating');
+  const widePixels=pixels(),wideCapture=await summarize(widePixels),wideInk=densityInk(widePixels);
+  const wideRequest={...g._lastDensityReq},wideMap=g._tileTextures,wideUploads=uploads,wideCreates=creates;
+  for(const width of [4097,4095]) {
+    const malformed=lastRaw.slice(0),d=new DataView(malformed);
+    d.setUint32(72,width,true);d.setUint32(64,width*d.getUint32(76,true)*((d.getUint32(12,true)&1)?4:1)*8,true);
+    g._lastDensityReq=wideRequest;v._onKernelMsg({...lastMessage,seq:v.seq},[malformed]);
+    assert(g._tileTextures===wideMap&&uploads===wideUploads&&creates===wideCreates,'oversized/mismatched paint size adopted');
+  }
+  for(const width of [Infinity,NaN]) {
+    g._lastDensityReq={...wideRequest,w:width};v._onKernelMsg({...lastMessage,seq:v.seq},[lastRaw]);
+    assert(g._tileTextures===wideMap&&uploads===wideUploads&&creates===wideCreates,'non-finite requested shape adopted');
+  }
+  const wideAfterRefusal=pixels();assert(wideAfterRefusal.every((p,i)=>p===widePixels[i]),'paint-size refusal changed pixels');
+  await request([.25,.75,0,.5],true);const wideOracle=pixels();
+  assert(wideOracle.every((p,i)=>p===widePixels[i]),'wide cached/uncached pixel mismatch');
+  // Build a nine-tile outgoing L0 surface, then shrink during its L1 fade.
+  // The first shrink keeps L1 itself but prunes part of _densitySwitchPrev;
+  // the second makes the immediately previous L1 surface incomplete too.
+  resize(560,420);await request([.125,.625,.125,.625]);
+  assert(g._tileLevel===0&&g.density.tileSet.length===9,`resize fade source fixture drifted: ${g._tileLevel}/${g.density.tileSet.length}, ${v.plot.w}x${v.plot.h}, budget ${g._tileStats.budget}`);
+  let resizeClock=2000;v._now=()=>resizeClock;v._prefersReducedMotion=()=>false;
+  await request([0,1,0,1]);
+  const fadeSource=g._densitySwitchPrev,currentLevel=g._tileLevel;
+  assert(fadeSource?.level===0&&currentLevel===1&&fadeSource.tileSet.every(t=>gl.isTexture(t.tex)),'resize did not begin a valid adjacent fade');
+  resizeClock+=70;v._drawNow();
+  async function shrink(width,height,expectedLevel,outgoing) {
+    resize(width,height);const stats=await request([0,1,0,1]);
+    const removed=outgoing.tileSet.filter(t=>!gl.isTexture(t.tex)).length;
+    assert(removed>0,'Rust did not prune resize fixture outgoing tiles');
+    assert(g._tileLevel===expectedLevel,'resize served level drifted');
+    assert(!g._densitySwitchPrev&&g._shownDensity===g.density&&!g.prevDensity,'incomplete resize source still fading');
+    assert((g.densityCache||[]).every(d=>!d.tileSet||d.tileSet.every(t=>gl.isTexture(t.tex))),'incomplete frame remains cached');
+    // Complete count exposure only: this comparison isolates fade ownership.
+    g._densityNormAnim=null;g.density.normMax=g.density.max;
+    const atMidFade=pixels(),capture=await summarize(atMidFade),ink=densityInk(atMidFade);
+    v._prefersReducedMotion=()=>true;await request([0,1,0,1],true);
+    const completed=pixels();let differences=0;
+    for(let i=0;i<completed.length;i++)if(completed[i]!==atMidFade[i])differences++;
+    assert(differences===0,'resize mid-fade/uncached pixel mismatch '+differences);
+    v._prefersReducedMotion=()=>false;
+    return {servedLevel:expectedLevel,removedSourceTiles:removed,stats,capture:{...capture,densityPixels:ink},pixelDifferences:differences,fadeCompleted:true};
+  }
+  const sameLevelResize=await shrink(400,320,1,fadeSource),beforeSecondShrink=g.density;
+  const adjacentResize=await shrink(300,190,2,beforeSecondShrink);
+  v._prefersReducedMotion=()=>true;
   const all=[...g._tileTextures.values()].map(t=>t.tex),savedRaw=lastRaw,savedMsg=lastMessage;
   v.destroy();const destroyedUploads=uploads,destroyedCreates=creates;v._onKernelMsg(savedMsg,[savedRaw]);
   assert(uploads===destroyedUploads&&creates===destroyedCreates&&!v.gl&&g._tileTextures.size===0,'disposed reply retained tiles');
   assert(all.every(t=>!gl.isTexture(t))&&!gl.isBuffer(sharedBuffer),'disposed GPU resource live');
-  output[kind]={first:a,pan:b,insidePan:inside,uncached:fresh,pixelDifferences:different,cachedCapture:{...cachedCapture,densityPixels:cachedInk},uncachedCapture:{...oracleCapture,densityPixels:oracleInk},zoomCapture:{...zoomCapture,densityPixels:zoomInk},ordinaryLevels:[oldLevel,zoomLevel],adjacentFade,malformedFormatFlip:true,legacyOverlayRetirement:true,sharedOverlayPreserved:true,malformedAndStale:true,disposed:true};
+  output[kind]={first:a,pan:b,insidePan:inside,uncached:fresh,pixelDifferences:different,cachedCapture:{...cachedCapture,densityPixels:cachedInk},uncachedCapture:{...oracleCapture,densityPixels:oracleInk},zoomCapture:{...zoomCapture,densityPixels:zoomInk},ordinaryLevels:[oldLevel,zoomLevel],adjacentFade,wideViewport:{requestedWidth:wideRequest.w,servedWidth:4096,capture:{...wideCapture,densityPixels:wideInk},pixelDifferences:0,sizeRefusal:true},sameLevelResize,adjacentResize,malformedFormatFlip:true,legacyOverlayRetirement:true,sharedOverlayPreserved:true,malformedAndStale:true,disposed:true};
  }
  document.title='TILES:'+JSON.stringify(output);
 }catch(e){document.title='FAIL:'+e.stack;}})();

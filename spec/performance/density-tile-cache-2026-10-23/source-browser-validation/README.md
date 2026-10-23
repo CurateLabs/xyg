@@ -5,6 +5,11 @@ with exact artifact/harness hashes in [provenance](provenance.json). They
 establish source integration behavior on Linux x64 Chromium, not an immutable
 release candidate or the full host/platform matrix.
 
+These are the initial client validation snapshots. Later viewport-admission
+and fade-retirement corrections have separate
+[source-browser evidence](../review-followup/README.md); the original report
+and artifact hashes here remain unchanged.
+
 The [unmodified full foundation report](xyg-tile-final-foundation.json) and
 six screenshots pass with local assets and strict CSP. The
 [isolated interaction report](interaction.json) passes the existing budgets

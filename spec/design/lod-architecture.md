@@ -328,8 +328,12 @@ reply = legacy window compose, or native XYDT keyed source textures (#10)
   receive only missing XYDT tile bodies. Rust owns served level, retention
   and the eight-screen-texture ceiling. Other paths keep window composition.
 - **Zoom = adjacent level:** ordinary changes use the existing
-  `_densitySwitchPrev` crossfade; the explicit GPU resource exception when
-  an adjacent level cannot fit is recorded in the
+  `_densitySwitchPrev` crossfade while every outgoing frame is fully retained.
+  A resize or same-level update that prunes any active fade source immediately
+  completes that presentation transition and drops incomplete owners, within
+  Rust's unchanged inventory budget. Reply dimensions are admitted against
+  the existing finite 16–4096 bounded viewport, including wider canvases.
+  The explicit GPU resource exception when an adjacent level cannot fit is recorded in the
   [tile painter contract](density-tile-painter.md).
 - **Below the floor** (view finer than level 0): ordinary in-RAM traces can
   re-bin or ship real points. Huge/no-rescan/spilled traces retain an

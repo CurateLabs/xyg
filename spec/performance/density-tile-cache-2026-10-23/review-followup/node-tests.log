@@ -1,0 +1,23 @@
+✔ shouldUsePyramid mirrors Python PYRAMID_MIN_POINTS (1.027473ms)
+✔ pyramid build/count/compose/free goldens (1.471863ms)
+✔ pyramid compose full-window matches bin2d total mass (2.383957ms)
+✔ pyramid append conserves count; domain growth refused (0.303587ms)
+✔ pyramid outresolve returns null (caller falls back to bin2d) (0.358007ms)
+✔ force_pyramid ignored below PYRAMID_MIN like Python _density_trace_spec (18.457797ms)
+✔ compose cost does not grow with N once pyramid is built (scale evidence) (33.14022ms)
+✔ pyramidReportBytes matches 4/3 geometric series (0.203428ms)
+✔ densityLogU8 accepts pyramid compose grids (0.569529ms)
+✔ pyramid spill compose is bit-identical to in-RAM compose (2.983819ms)
+✔ figure pyramidSpill records §28 tiles binning on density tier (302.960099ms)
+✔ scatter spill option is strict and survives the composed mark path (0.639704ms)
+✔ Rust tile painter pan reuses identical source bytes and bounds controls (9.623594ms)
+✔ binary tile observations fail closed before allocating reply pixels (1.257597ms)
+✔ density tile host clamps viewport through Rust screenShape before painting (39.285332ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 566.794755

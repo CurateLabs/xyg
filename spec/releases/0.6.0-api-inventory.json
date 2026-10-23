@@ -1217,7 +1217,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"cbf2c0eb3fdc2bb4f1ec8dd1cede8f3f73158342",
+  "baseCommit":"12eb6ff8f1d03a5618f21279c68154715916bf38",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1234,7 +1234,7 @@
   "js/src/40_gl.ts":"0d9c90b0ba6b5eb473fe7efda11096f18dd52c331efb420bd3d7622471b7a140",
   "js/src/42_glhost.ts":"c4a63d21f1610e398595ce7c93416c4bc97c42223c9fb7d95131a7e25bbe39ca",
   "js/src/43_external_gl.ts":"06ed8e024e47fd792a97f0cd9bad6d0cc806fbfee8d142df35776c69ee74fbd2",
-  "js/src/45_lod.ts":"bff59a3eb57a47756a729271c3634459313c45c40ac0133c48efe56e0d6dc11a",
+  "js/src/45_lod.ts":"402f566336993d58f2c1decc6603b510c8532e384a24f9f344a0074fe02ad554",
   "js/src/47_wasm.ts":"6a07f47deb8a2df420606e2a0957fa6c742dabf47a8cc2d316cd2223e4fbb5d4",
   "js/src/48_wasm_scene.ts":"72999ece4f6d66d0a86e1a700a56424da1337a859a53416676718c14030836d9",
   "js/src/49_wasm_aggregate.ts":"067f93834bc4a5a4f5197851b45d49afe74c28a84a26ccd2fbc2d7c84aaa4b09",
@@ -1354,7 +1354,7 @@
   "packages/xy-node/src/native-path.js":"0f117ab853f641e10ab2f713a4f232e3411de3c59f73780c83924137f21be4f1",
   "packages/xy-node/src/native.js":"ae102470bdca88c3c9634b11692ebed5eb95c5f08d5af3779225f703c7300953",
   "packages/xy-node/src/payloadTraceMaterialize.js":"33e943b1af6851a9d28e0dcd64ba9ca3ad0aed8909b95fcd631b88d153fda24a",
-  "packages/xy-node/src/pyramid.js":"e689dfd8b8e2a701fe9ad8fdd9f55eeeea34aaca3f0aa0897699adc08d90167f",
+  "packages/xy-node/src/pyramid.js":"de505c5d95366ebc7bf74dc3b70bc7e3206782fee5ed3e7c18543bffd37a992b",
   "packages/xy-node/src/sankey.js":"16e6ca9215868568a473f4856620cd4acb1df1bae2028d5d35dcac0660a7e44d",
   "packages/xy-node/src/scene.js":"17e3284f92489788f256be00be3135b6014289bf93decb849b5f380c8a66801f",
   "packages/xy-node/src/sceneBulkNative.js":"bd395fc8a18e013dcb53937d3f48546a9a7637a04847ef705c08fd6ba46581dc",
@@ -1410,7 +1410,7 @@
   "spec/api/api-examples.md":"707642fbc781500344d1e7cd6be6893d7529b49621c196effb927431d9d8ed6c",
   "spec/api/browser-wasm.md":"aa222bf482fbd7fd061d2260abdc9871ce692017fa5d9283ab5f1c47838dce56",
   "spec/api/export.md":"149ed36d3572c7c913d2a6424495142e1c3efbccbe0a2c0e810fa81ce8327d8c",
-  "spec/design/browser-wasm.md":"b69a746da324675bbb7a97cea8b6cbde74a96bce1b33dd0d3b6eea5f8cdec501",
+  "spec/design/browser-wasm.md":"6ffed5a6f5ca13c037c68202f807d15724adf45b06c97d8abe55a771ad23daa5",
   "spec/design/host-parity.md":"1a1b0fb7015838295e343c8f07071d52db55fe06f62c97e1c9663ca928e59b30",
   "spec/design/reflex-integration.md":"c4e343ed870544ba21c34deefc321f3b6754775747764206ccc24d216e26fb04",
   "spec/design/reflex-shaped-api.md":"706416de7345d4015ce82e30c2dd56d3b9fa2dc4ec68ca4be33145dbcfd6cf33",

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "source-browser-and-bounded-node-followup-not-release-acceptance",
+  "recordedAt": "2026-10-23T04:35:36.041407+00:00",
+  "baseCommit": "12eb6ff8f1d03a5618f21279c68154715916bf38",
+  "artifactCommit": null,
+  "artifactSource": "working-tree-build",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "node": "v24.21.0",
+  "commands": [
+    "XYG_WASM_FOUNDATION_REPORT=/tmp/xyg-1065-review-foundation.json node scripts/wasm_foundation_smoke.mjs",
+    "node benchmarks/bench_tier3_pyramid_node.mjs"
+  ],
+  "sourceAndArtifactSha256": {
+    "js/src/45_lod.ts": "402f566336993d58f2c1decc6603b510c8532e384a24f9f344a0074fe02ad554",
+    "packages/xy-node/src/pyramid.js": "de505c5d95366ebc7bf74dc3b70bc7e3206782fee5ed3e7c18543bffd37a992b",
+    "packages/xy-node/test/pyramid.test.mjs": "d83e1c72b0160a170a2f5c3c630a67e142144d9a689b60f09debc1ebc5e8cc71",
+    "benchmarks/bench_tier3_pyramid_node.mjs": "45e6b78343ec9d306487efac82d2f0336f3ea221de066df7b06a3e2dcb7e8f1c",
+    "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+    "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24",
+    "spec/wasm/abi.json": "442524fb009b9b9b7880a5ff829a537fb332686bc5f6e21765d9ceaae1e5ae9b",
+    "target/release/libxyg_core.so": "6c4ab4ac2aa448942dcf42e4f3dfe74d07f4937cd1b0a5c80b52d46e6f16bca2",
+    "packages/xy-client/dist/index.js": "b7bf5702e7d28647b651777c364a8ec6c82403e145d16475ef8e06484b8ddfce",
+    "packages/xy-client/dist/standalone.js": "8cb331481653b845d7e081d340c459a914115dddf8864095d502af5f9d664149",
+    "packages/xy-client/dist/wasm-worker.js": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee",
+    "packages/xy-client/dist/xyg-wasm.wasm": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502"
+  },
+  "retainedSha256": {
+    "xyg-1065-review-foundation.json.esm-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-1065-review-foundation.json.iife-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-1065-review-foundation.json.esm-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-1065-review-foundation.json.iife-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "xyg-1065-review-foundation.json.esm-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "node-bounded.json": "7a0354db60126642f305b5aa44065cf68799c48cad8a40b55d8747a0320f4d6d",
+    "xyg-1065-review-foundation.json.iife-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-1065-review-foundation.log": "9894a13bb9ce0924d916f7117cfce6941bf283a63a87deaed8305b6e58ff4653",
+    "xyg-1065-review-foundation.json": "ce80dddc13679fd6cc078bece9029ba28be1fe41863bad154e95958646fdf719"
+  },
+  "limitations": [
+    "Uncommitted source/client validation; not an immutable candidate or packaged-host matrix.",
+    "The bounded Node run uses one million generated rows; timings are advisory and not 100M or competitive evidence.",
+    "Earlier wheel and browser reports remain historical with their original hashes."
+  ]
+}

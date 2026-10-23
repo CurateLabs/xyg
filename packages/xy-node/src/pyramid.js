@@ -20,6 +20,7 @@ import {
   f64Ptr,
   f32Ptr,
   minMax,
+  screenShape,
   u8Ptr,
 } from "./encode.js";
 import {
@@ -522,10 +523,16 @@ export function densityViewFromPyramid(
   const ensured = cache.ensure(x, y, { force, noRescan: autoNoRescan, forceSpill });
   if (ensured.kind === "none") return null;
   if(ensured.kind === "tiles" && tileCache != null) {
-    const frame=tileStorePaint(ensured.handle,loX,hiX,loY,hiY,w,h,{control:tileCache instanceof Uint8Array?tileCache:null,
-      opacity,generation:tileCache.generation || "0",knownOpacity:tileCache.opacity ?? -1,
-      level:tileCache.level ?? -1,keys:tileCache.keys || [],
-    });
+    if (!Number.isFinite(w) || !Number.isFinite(h)) {
+      throw new RangeError("screen dimensions must be finite numbers");
+    }
+    // Match Python's viewport normalization through Rust (ABI 329, §5).
+    const [paintWidth, paintHeight] = screenShape(w, h);
+    const paintOptions = tileCache instanceof Uint8Array
+      ? { control: tileCache, opacity }
+      : { opacity, generation: tileCache.generation || "0", knownOpacity: tileCache.opacity ?? -1,
+        level: tileCache.level ?? -1, keys: tileCache.keys || [] };
+    const frame = tileStorePaint(ensured.handle, loX, hiX, loY, hiY, paintWidth, paintHeight, paintOptions);
     if(frame) return {frame,level:new DataView(frame.buffer,frame.byteOffset,frame.byteLength).getUint32(8,true),
       reduction:"pyramid-count",tier:"density",handle:ensured.handle,tiles:tileStoreStats(ensured.handle)};
   }

@@ -265,3 +265,50 @@ test("binary tile observations fail closed before allocating reply pixels", asyn
       assert.throws(()=>tileStorePaint(s,0,1,0,1,64,64,{control:bad}),RangeError);
   } finally {tileStoreFree(s);}
 });
+
+test("density tile host clamps viewport through Rust screenShape before painting", async () => {
+  const { PyramidCache, densityViewFromPyramid, screenShape } = await import("../src/index.js");
+  const { tileStorePaint } = await import("../src/pyramid.js");
+  const n = 2048;
+  const x = fill(n, i => (i * 17 % n) / n);
+  const y = fill(n, i => (i * 31 % n) / n);
+  const cache = new PyramidCache();
+  const control = new Uint8Array(32), header = new DataView(control.buffer);
+  control.set([88, 89, 68, 67]);
+  header.setUint32(4, 1, true);
+  header.setFloat64(16, -1, true);
+  header.setInt32(24, -1, true);
+  try {
+    for (const [width, height, expected] of [
+      [5000, 48, [4096, 48]],
+      [48, 5000, [48, 4096]],
+      [2, -3, [16, 16]],
+      [0, 0, [16, 16]],
+      [128.9, 96.2, [128, 96]],
+    ]) {
+      const result = densityViewFromPyramid(cache, x, y, 0, 1, 0, 1, width, height, {
+        force: true, forceSpill: true, tileCache: control,
+      });
+      const frame = new DataView(result.frame.buffer, result.frame.byteOffset, result.frame.byteLength);
+      assert.deepEqual([frame.getUint32(72, true), frame.getUint32(76, true)], expected);
+      // Python's ViewportRequest uses this same Rust screen_shape result.
+      assert.deepEqual(screenShape(width, height), expected);
+      assert.deepEqual(result.frame, tileStorePaint(cache.store, 0, 1, 0, 1, ...expected, { control }));
+      const structured = densityViewFromPyramid(cache, x, y, 0, 1, 0, 1, width, height, { tileCache: {} });
+      assert.deepEqual(structured.frame, result.frame);
+    }
+    assert.throws(() => tileStorePaint(cache.store, 0, 1, 0, 1, 5000, 48, { control }), /invalid tile painter viewport/);
+    for (const [width, height] of [
+      [Infinity, 48], [-Infinity, 48], [NaN, 48],
+      [48, Infinity], [48, -Infinity], [48, NaN],
+    ]) {
+      assert.throws(() => densityViewFromPyramid(cache, x, y, 0, 1, 0, 1, width, height, { tileCache: control }), /finite/);
+    }
+    assert.throws(() => densityViewFromPyramid(cache, x, y, 0, 1, 0, 1, 5000, 48, {
+      tileCache: new Uint8Array([0]),
+    }), /invalid tile painter frame/);
+    assert.throws(() => densityViewFromPyramid(cache, x, y, 0, 1, 0, 1, 5000, 48, {
+      tileCache: { keys: [[1.5, 0, 0]] },
+    }), /known tiles require/);
+  } finally { cache.free(); }
+});
