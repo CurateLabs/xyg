@@ -99,6 +99,12 @@ applicable is a failure; a skipped job that is inapplicable is recorded as such.
 | Advisory (outside `ci.yml`) | `codspeed.yml`, `density-100m.yml`, `ceiling-benchmark.yml`, `benchmark-refresh.yml`, `docs.yml`, `binder.yml`, `final-coderabbit.yml` | scheduled or manual | not an aggregate input |
 
 Changes from run 38640943006, where `Release surfaces` passed while three jobs failed:
+The packaged `python/xyg/graphforge-compatibility.json` declaration lives under
+the classifier's required Python surface; a declaration-only edit requires
+the release surface matrix. Compatibility scripts, tests, and checked-in Core
+fixtures also require it. The Python Test job runs the complete `tests/` tree,
+including the Core corpus and unsupported-version suites.
+
 `matplotlib_reference` moved from a main-only job outside the aggregate to a classifier-gated
 release-surface job; the benchmark jobs lost `continue-on-error` and became aggregate inputs
 on `push`/`workflow_dispatch`, so main's own evidence failures turn the aggregate red;
@@ -548,18 +554,25 @@ publisher) publishes only from tagged releases, with layered guards:
   required reviewers) so OIDC trusted publishing can mint a token bound to
   that environment name.
 - **Publish opt-in.** The upload step itself additionally requires the
-  `XYG_ALLOW_PYPI_PUBLISH` repository variable to equal `'true'`. The variable
-  does not exist by default, so a version tag builds and verifies artifacts
-  but does not upload until that opt-in is set. The first successful upload
-  publishes to the PyPI project `xyg`, whose first alpha is already available.
+  `XYG_ALLOW_PYPI_PUBLISH` and `XYG_ALLOW_NPM_PUBLISH` repository variables to
+  equal `'true'`. Both opt-ins certify that registry bootstrap and candidate
+  acceptance are complete. A version tag with either opt-in absent builds
+  and verifies artifacts but uploads to neither registry. The complete seven
+  npm archives, tag-derived versions, and browser asset hashes are checked
+  before PyPI uploads. Aligned uploads target the existing PyPI project `xyg`,
+  whose first alpha is already available.
 - **Tagged dispatch only.** A non-dry-run `workflow_dispatch` must target an
   existing `refs/tags/xyg-v*` ref and runs the same tag/CHANGELOG gate as a tag
   push. Dispatching `main` can exercise the complete dry-run matrix, but can
   never publish even when the repository opt-in is enabled.
-- **GitHub Release after PyPI.** Once the PyPI job succeeds, `github-release`
-  creates the matching GitHub Release with generated notes and attaches the
-  runtime-verified PyEmscripten wheel. It has `contents: write`; build and PyPI
-  jobs remain read-only except for the OIDC token. The docs workflow builds
+- **GitHub Release after both registries.** Once the PyPI and npm jobs succeed,
+  `github-release` creates the matching GitHub Release with generated notes
+  and attaches the runtime-verified PyEmscripten wheel and browser archive.
+  The shared release-version parser classifies canonical and legacy alpha,
+  beta, and RC tags; these releases use `--prerelease --latest=false` so a
+  candidate cannot become the stable/latest GitHub release. It has
+  `contents: write`; build and PyPI jobs remain read-only except for the OIDC
+  token. The docs workflow builds
   and retains a verified Astro Starlight static
   site, but there is currently no production-documentation deployment
   workflow: the inherited reflex.dev promotion path was removed because
@@ -579,7 +592,7 @@ cannot determine an XYG version or trigger an XYG release. No destructive tag
 pruning is required. The fork's published alpha is `0.0.1a2`; future production
 tags use the `xyg-v*` line and the same opt-in and artifact verification gates.
 
-**Registry snapshot (2026-10-14).** PyPI contains only `xyg` 0.0.1a2, with
+**Registry snapshot (2026-10-22).** PyPI contains only `xyg` 0.0.1a2, with
 `xyg-0.0.1a2-py3-none-manylinux_2_39_x86_64.whl` (Linux x86-64, glibc 2.39+)
 and `xyg-0.0.1a2.tar.gz`. Neither `@curatelabs/xyg` nor
 `@curatelabs/xyg-node` is published to npm. Source/release-matrix coverage,
@@ -608,22 +621,26 @@ suffixes `-alpha.N`, `-beta.N`, and `-rc.N` map to npm unchanged (and to Python
 `aN`, `bN`, `rcN`); the legacy PEP 440 tag suffixes `aN`, `bN`, and `rcN` map to
 the same npm versions; stable versions are identical.
 
-Every run packs and dry-publishes all six Node tarballs. A real npm upload is
-additionally gated by an `xyg-v*` ref, non-dry dispatch, repository identity,
+Every run packs and dry-publishes all six Node tarballs and the browser tarball.
+The publisher requires exactly these seven packages at one version: five native
+packages, `@curatelabs/xyg`, and `@curatelabs/xyg-node`. Browser validation rechecks
+the four-asset inventory, SHA-256 digests, byte lengths, WASM header, canonical
+exports, and absence of runtime dependencies or package executables. A real
+npm upload is additionally gated by an `xyg-v*` ref, non-dry dispatch, repository identity,
 the `npm` GitHub environment, and both `XYG_ALLOW_PYPI_PUBLISH=true` and
 `XYG_ALLOW_NPM_PUBLISH=true`. The PyPI job (including the shared tag,
 CHANGELOG, and package-name guards) succeeds before npm can publish.
 Publication
 uses npm trusted publishing on a GitHub-hosted runner (Node 24, npm >=11.5.1,
-OIDC `id-token: write`) and publishes platform packages before the facade, so
-the public facade never points at absent versioned optionals. Prerelease
+OIDC `id-token: write`) and publishes platform packages, then the browser,
+then the facade, so the public facade never points at absent versioned optionals. Prerelease
 versions (`-rc.N`, dry runs) publish under the `next` dist-tag, which npm
-requires and which keeps them off `latest`. Publication is
-retry-safe: `scripts/publish_node_packages.py` skips an immutable version only
+requires and which keeps them off `latest`. npm publication is retry-safe: `scripts/publish_node_packages.py` skips an immutable version only
 after both its registry SHA-1 and SHA-512 Subresource Integrity value match the
-local tarball, rejects a mismatch in either digest, and resumes the native-first
-sequence before publishing the facade. After each upload it polls briefly for
-npm visibility and proves both registry digests before advancing to the next
+local tarball, preflights every existing package before any new upload,
+rejects a mismatch in either digest, and resumes the native-first sequence
+before publishing the browser and facade. After each upload it polls briefly
+for npm visibility and proves both registry digests before advancing to the next
 native package or, last, the facade. A visibility timeout reports that the
 release must be retried for verification; it never treats an accepted upload as
 verified merely because the publish command returned successfully. Registry
@@ -631,9 +648,20 @@ inspection and upload subprocesses use a five-minute timeout so a
 stalled npm endpoint fails promptly instead of holding a partial release until
 the workflow-wide limit. This makes cross-registry recovery convergent even
 though PyPI and npm cannot provide one atomic transaction. Configure this
-exact `publish.yaml` workflow as the trusted publisher for all six npm
+exact `publish.yaml` workflow as the trusted publisher for all seven npm
 projects; first-time project creation/ownership remains a deliberate registry
-bootstrap step. The GitHub Release waits for both PyPI and npm jobs.
+bootstrap step. npm requires each project to exist before trusted publishing
+can be configured. An authenticated maintainer with package write access must
+bootstrap the project and complete the interactive 2FA challenge for
+`npm trust`; GitHub repository access alone does not grant npm scope ownership.
+Use the accepted package bytes for the first real candidate upload if
+bootstrapping with that candidate; do not manufacture a placeholder RC.
+The publisher relationship is `CurateLabs/xyg` / `publish.yaml` / environment
+`npm`, and must explicitly allow `npm publish` because newly created trust
+relationships otherwise permit only staged publication. See the
+[npm trust prerequisites](https://docs.npmjs.com/cli/v11/commands/npm-trust/)
+and [trusted publishing configuration](https://docs.npmjs.com/trusted-publishers/).
+The GitHub Release waits for both PyPI and npm jobs.
 
 The release-only `browser-package` job builds the direct `xyg-engine` WASM
 adapter and the ESM, standalone, and static Worker bundles from the tagged
@@ -652,9 +680,10 @@ WASM assets. It rechecks every manifest SHA-256 and byte length before loading,
 requires the IIFE to expose `window.xy`, and exercises the Worker ABI mismatch,
 trap, and disposal negatives without a network fallback. The tarball is packed
 and dry-published on every release rehearsal,
-blocks the PyPI release gate if it cannot be produced, and is attached to the
-matching GitHub Release. Registry publication and clean browser-application
-conformance remain the explicit completion work for issue 53.
+blocks the PyPI release gate if it cannot be produced, and is published to npm
+with the same verified bytes and attached to the matching GitHub Release.
+Registry publication and clean browser-application conformance remain the
+explicit completion work for issue 53 until their actual results are recorded.
 
 Version-tag releases also assemble a Linux x64 cross-host cohort from the
 exact manylinux wheel, Node facade and native package, and host-neutral browser
@@ -713,12 +742,12 @@ Before tagging an `xyg-v*` release:
 - Confirm CI built and verified native wheels for Linux glibc and musl/Alpine
   (x86-64, aarch64, armv7), macOS (x86-64, Apple Silicon), and Windows (x86, x64,
   arm64).
-- Confirm the release workflow produced six npm tarballs, each platform
-  package contains the native bytes extracted from its exact wheel, every
+- Confirm the release workflow produced seven npm tarballs (five native,
+  browser, and facade), each platform package contains the native bytes extracted from its exact wheel, every
   manifest carries the tag-derived npm semver and CurateLabs repository
   identity, and the facade contains the byte-identical standalone paint client.
-- Before the first npm release, create/claim all six scoped public projects,
-  bind their trusted publisher to `CurateLabs/xyg` / `publish.yaml` /
+- Before the first npm release, create/claim all seven scoped public projects,
+  including `@curatelabs/xyg`, and bind their trusted publisher to `CurateLabs/xyg` / `publish.yaml` /
   environment `npm`, then enable `XYG_ALLOW_NPM_PUBLISH` alongside the PyPI
   opt-in. Keep either variable unset for build-only release rehearsals.
 - Confirm the Pyodide/Emscripten wheel passes its runtime load gate, not only
@@ -769,6 +798,53 @@ Before tagging an `xyg-v*` release:
   scripts, and the `examples/` apps are repository-only.
 - Confirm the wheel size budget is still below 15 MB.
 - Confirm `spec/api/api-examples.md` runs against the tagged API.
+### Promote accepted artifacts without rebuilding
+
+The accepted commit, selected unused XYG tag, compatible Core candidate,
+complete issue #108/#54 acceptance, and original artifact digests are release
+preconditions. A historical successful build or a draft Linux-only cohort does
+not satisfy them. For the final accepted source, build each target once and
+reuse its archive in every consumer lane and public upload:
+
+1. Keep both registry opt-ins disabled before creating the final tag. A tag
+   push, or a tagged dispatch with `dry_run=false`, then builds and checks the
+   complete versioned cohort without uploading. A run with `dry_run=true`
+   remains permanently a rehearsal because reruns preserve its original inputs.
+2. Retain the original run ID, full commit, tag, complete artifact inventory,
+   SHA-256 ledger, and actual acceptance results. Download that run's archives
+   for any additional acceptance lanes. Confirm the producer jobs completed
+   once and that all archives remain available and unexpired; archive retention
+   and GitHub's 30-day rerun window bound this promotion path.
+3. After all acceptance, access, bootstrap, and compatibility requirements pass,
+   enable both registry opt-ins. Obtain the original **Publish to PyPI** job ID
+   with `gh run view RUN_ID --json jobs --jq '.jobs[] | {name, databaseId}'`.
+   Request only that job's rerun with
+   `gh api --method POST repos/CurateLabs/xyg/actions/jobs/JOB_ID/rerun`.
+   GitHub reruns the selected job and its downstream npm/GitHub Release jobs;
+   it preserves the original SHA/ref and downloads the existing producer
+   artifacts. Inspect the new attempt and verify no producer was rerun and
+   every downloaded archive matches the retained ledger before crediting the
+   promotion as evidence. Repository opt-ins are an operational access gate;
+   they do not establish npm authentication or make cross-registry uploads
+   atomic.
+4. Verify fresh public installs and the PyPI/npm registry archive digests
+   against that exact retained ledger. Record all registry versions, evidence,
+   and any partial-upload recovery. PyPI's `skip-existing` upload option alone
+   does not compare existing file hashes; the public SHA-256 readback is required
+   even after a successful retry. GitHub Release creation intentionally does
+   not overwrite or promote an existing draft: inspect any existing release's
+   exact tag, commit, visibility, and asset hashes before recovery. A retained
+   integration draft is not authority to publish materially changed code under
+   that candidate; choose the next unused candidate instead. A fresh dispatch
+   or full-run rerun rebuilds archives and cannot promote already accepted bytes. If the originals have
+   expired, preserve the acceptance gap and select a new unused candidate
+   rather than silently rebuilding an accepted RC.
+
+The [GitHub rerun contract](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)
+preserves source identity; the [job-rerun endpoint](https://docs.github.com/en/rest/actions/workflow-runs#re-run-a-job-from-a-workflow-run)
+limits the rerun to the chosen job and its dependents. No CI protection or
+required approval policy needs to change for this process.
+
 ### Bundled Reflex integration
 
 Every `xyg` release carries the `reflex_xy` Python package and JSX wrapper. The

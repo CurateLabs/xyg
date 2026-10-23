@@ -75,6 +75,7 @@ fn version(schema: &Schema, key: &str) -> Option<u32> {
     schema.metadata(key)?.parse().ok()
 }
 
+#[cold]
 fn unsupported_version(schema: &str, got: Option<u32>, expected: u32) -> GfError {
     GfError::new(
         "GF_RESULT_SCHEMA_VERSION",

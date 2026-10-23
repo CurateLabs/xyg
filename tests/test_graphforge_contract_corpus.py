@@ -5,11 +5,51 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
+    """Exercise Git's real checkout conversion, including the hashed CJS generator."""
+    paths = [
+        Path("python/xyg/graphforge-compatibility.json"),
+        Path("scripts/gen_graphforge_result_fixtures.cjs"),
+        Path("tests/fixtures/graphforge/results-0.6.0-rc.5/generation.json"),
+    ]
+    for corpus, results in [("core", "results"), ("core/0.6.0-rc.5", "results-0.6.0-rc.5")]:
+        paths.extend(
+            Path("tests/fixtures/graphforge") / corpus / name
+            for name in ("contracts.tsv", "provenance.json")
+        )
+        paths.append(Path("tests/fixtures/graphforge") / results / "manifest.json")
+    original = {path: (ROOT / path).read_bytes() for path in paths}
+    # An unpinned control must change, proving checkout filtering was exercised.
+    original[Path("windows-default.txt")] = b"Windows default line endings\n"
+    (tmp_path / ".gitattributes").write_bytes((ROOT / ".gitattributes").read_bytes())
+    for path, payload in original.items():
+        (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / path).write_bytes(payload)
+
+    def git(*args: str) -> None:
+        subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True
+        )
+
+    git("init", "--quiet")
+    git("config", "core.autocrlf", "true")
+    git("config", "core.eol", "crlf")
+    git("add", "--all")
+    for path in original:
+        (tmp_path / path).unlink()
+    git("checkout-index", "--all", "--force")
+
+    assert (tmp_path / "windows-default.txt").read_bytes() == b"Windows default line endings\r\n"
+    changed = [str(path) for path in paths if (tmp_path / path).read_bytes() != original[path]]
+    assert changed == [], f"Windows checkout changed hash-bound evidence bytes: {changed}"
 
 
 @pytest.mark.parametrize(

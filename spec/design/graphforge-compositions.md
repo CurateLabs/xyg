@@ -435,7 +435,7 @@ are compared byte for byte.
 
 ## 6. Hosts
 
-### 6.1 Native C ABI (ABI 378)
+### 6.1 Native C ABI (current ABI 394)
 
 | Symbol | Role |
 |---|---|
@@ -479,7 +479,7 @@ themselves remain outside static export.
 
 `graphforgeWebviewPayload(composition, opts)` returns `{spec, buffer,
 nodeTrace, edgeTrace, figure, positions}` for a browser host (click events on).
-Hover rows travel as typed tooltip columns (protocol v13, graph-mark.md §2),
+Hover rows travel as typed tooltip columns (protocol v14, graph-mark.md §2),
 not per-element JSON. `positions` (also `graphforgePositions(figure,
 composition)`) are the laid-out node positions keyed by node UUID.
 `graphforgeChart(next, { positions })` and `graphforgeWebviewPayload(next, {
@@ -533,7 +533,7 @@ document SHA-256 for 99 cases; the Python generator
 `tests/test_graphforge.py` and `packages/xy-node/test/graphforge-cross-host.test.mjs`
 reproduce it.
 
-### 6.3 Direct-browser WASM (`@curatelabs/xyg`, WASM ABI 27)
+### 6.3 Direct-browser WASM (`@curatelabs/xyg`, current WASM ABI 34)
 
 `xyg_wasm_graphforge_compose(handle, offset, length)` composes one staged
 `XYGQ` request with the same engine call as the native host and returns its

@@ -14,6 +14,10 @@ in the README).
 ## [Unreleased]
 
 ### Fixed
+- The release workflow includes the browser package in the seven-package npm
+  cohort, checks aligned versions and asset hashes before uploading, and
+  requires both registry opt-ins before PyPI publication. GitHub prereleases
+  stay off the latest-release channel (#52/#53/#108).
 - GraphForge composition schema-version errors now name the XYG schema,
   received/expected version and next action, retaining the stable
   `GF_RESULT_SCHEMA_VERSION` code without echoing result values (#936).

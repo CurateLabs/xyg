@@ -79,7 +79,7 @@ only frames the generated `XYAG` request, transfers it to the static Worker,
 schedules bounded checkpoints, and decodes the generated `XYAO` output header.
 The shared Rust `bin_2d` and mean-color kernels own binning policy and numeric
 behavior; standalone density refinement now uses this path exclusively, while
-broader hosted evidence is tracked by the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
+broader hosted evidence is tracked by [#886: packaged ticks and density no-refinement proof](https://github.com/CurateLabs/xyg/issues/886).
 
 The generated ABI manifest is authoritative for request/output offsets, aligned
 strides, copy factors, the 32,768-point checkpoint, and the 64 MiB aggregate
@@ -683,7 +683,7 @@ preserved by default. `dataOwnership: "transfer"` explicitly opts into buffer
 detachment, while `workerOwnership: "own"` explicitly delegates Worker disposal
 to the handle. Aggregate
 production beyond the current density/Scene vertical is tracked by
-the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)); release-level cross-host conformance remains under
+[#885: direct-browser authoring and aggregate completion](https://github.com/CurateLabs/xyg/issues/885); release-level cross-host conformance remains under
 [#54](https://github.com/CurateLabs/xyg/issues/54). The two version numbers are
 checked independently so rebasing the axis/chrome work cannot silently widen
 this consumer.
@@ -936,22 +936,22 @@ contract; packaged WASM tick assets (#258); authored ChartView ticks (#257);
 ChartView colorbar ticks (#262); Reflex `XYChart` auto-attach implementation
 (#260); and interpreted Wave B evidence (#263).
 
-Angular/polar and secondary-axis ChartView cutovers are **frozen deferred
-keepers** on their existing compatibility paths. They are outside the
-follow-up issues and do not block the claimed M2 subset.
+Angular/polar and secondary-axis ChartView cutovers subsequently shipped under
+#869 through the Rust packed tick resolver described above. Real-browser
+packaged Reflex application evidence remains a separate #886 requirement.
 
 Work outside that claimed subset is tracked independently:
 
 - real-browser E2E proof for Reflex packaged tick-asset auto-attach
   (`XYChart` already injects explicit `./wasm-worker.js` +
   `./xyg-wasm.wasm` and calls `attachHostWasmTicks`):
-  the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54));
+  [#886: packaged Reflex tick auto-attach proof](https://github.com/CurateLabs/xyg/issues/886);
 - direct-browser aggregate production paths beyond the current density/Scene
-  vertical: the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)); and
+  vertical: [#885: direct-browser authoring and aggregate completion](https://github.com/CurateLabs/xyg/issues/885); and
 - post-Wave-A current-`main` SHA-keyed hosted artifacts, a green CodSpeed
   simulation, interpreted competitive budgets, and hosted visual evidence for
   the explicit no-refinement degradation boundary:
-  the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
+  [#886: packaged ticks and density no-refinement proof](https://github.com/CurateLabs/xyg/issues/886).
 
 The delivered hosted-artifact interpretation subset is recorded in
 [`spec/benchmarks/results.md`](../benchmarks/results.md). Related to #59;
@@ -969,11 +969,49 @@ no JavaScript aggregator fallback.
 | Kernel dispatch | `js/src/54_kernel.ts` (`wasm_density_no_refinement`) | shipped |
 | Observer phase | `js/src/60_entries.ts` (`density_no_refinement`) | shipped |
 | Standalone missing WASM | `tests/test_density_pan_no_rebin.py` | green when Chromium is present |
+| Packaged ESM/IIFE overview retention | `scripts/wasm_foundation_smoke.mjs` | three bounded generated-file cases per entry, actual packaged Rust aggregate, exact pixel/grid retention, zoom/home, no new Worker or texture upload, and disposal |
 | Bundle / contract probes | `tests/test_static_client_security.py`, `tests/test_wasm_density_chartview_contract.py`, `tests/test_wasm_full_density_source.py` | green |
-| Hosted SHA-keyed visual evidence of this boundary | nightly `hosted-density-browser-<sha>.json` | tracked by the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)); current artifacts prove refinement lifecycle, not no-refinement |
+| Hosted SHA-keyed visual evidence of this boundary | nightly `hosted-density-browser-<sha>.json` | tracked by [#886: packaged ticks and density no-refinement proof](https://github.com/CurateLabs/xyg/issues/886); current artifacts prove refinement lifecycle, not no-refinement |
 
 Stable codes: `XYG_WASM_UNAVAILABLE`, `XYG_WASM_SOURCE_UNAVAILABLE`, and
 `XYG_WASM_SOURCE_UNSUPPORTED`.
+
+
+The existing strict-CSP foundation smoke also runs the bounded #886 density
+cases against both the ESM and standalone IIFE entry points. A real local WASM
+Worker first produces an `XYAO` overview from canonical typed coordinates; the
+fixture only frames that grid and optional source columns for the painter.
+The generated-file cases remove the inline bootstrap, supply a malformed
+bootstrap rejected before Worker allocation, or omit the retained source.
+They assert the first explicit reason, unchanged Rust grid and texture,
+byte-identical presented home pixels before/after attempted refinement,
+nonblank zoom pixels, exact home restoration, zero replacement uploads, no
+new Worker allocation, and no post-destruction publication. A missing retained
+source initially reports `XYG_WASM_SOURCE_UNAVAILABLE`; a subsequent viewport
+request also reports the general `XYG_WASM_UNAVAILABLE` boundary.
+
+`XYG_BROWSER_DIST` points at an unpacked staged `@curatelabs/xyg` package, whose
+asset manifest is checked before execution. `XYG_WASM_FOUNDATION_REPORT` writes
+runtime/CSP details, asset and harness SHA-256 values, each event and pixel/grid
+hash, and six PNG captures beside the JSON report. Optional
+`XYG_RELEASE_COMMIT` records the artifact source declaration; package hashes
+remain the binding to the tested bytes. The harness commit and individual
+harness hashes are separate from that artifact declaration. For a focused
+reproduction against an already retained package:
+
+```bash
+XYG_BROWSER_DIST=/absolute/path/to/unpacked/package \
+XYG_WASM_FOUNDATION_ONLY=density-no-refinement \
+XYG_WASM_FOUNDATION_REPORT=artifacts/density-no-refinement.json \
+node scripts/wasm_foundation_smoke.mjs
+```
+
+Omitting `XYG_WASM_FOUNDATION_ONLY` preserves the complete existing foundation
+gate, including fixture parity. The focused mode proves these six cases only;
+it cannot establish current-source fixture parity or the complete #54 matrix.
+It does not prove a real packaged Reflex `XYChart`, a validly framed corrupt
+inline WASM module, every unsupported source family, or large-scale hosted
+performance. Those remaining #886/#885 and release requirements stay open.
 
 Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
 typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps

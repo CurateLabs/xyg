@@ -995,7 +995,7 @@ def _step_is_conditioned(job_text: str, step_needle: str) -> bool:
 # `if:` — is the point: `if: always()` or any unrelated condition would
 # satisfy a mere presence check while gating nothing.
 PYPI_PUBLISH_GATE = (
-    "if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
+    "if: vars.XYG_ALLOW_NPM_PUBLISH == 'true' && vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
     "startsWith(github.ref, 'refs/tags/xyg-v') && "
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
 )
@@ -3485,7 +3485,24 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "pypa/gh-action-pypi-publish@",
         "packages-dir: dist/",
         "skip-existing: true",
+        'scripts/publish_node_packages.py npm-dist --tag "$GITHUB_REF_NAME" --check',
+        "Verify complete npm cohort before PyPI",
+        "path: npm-dist/browser",
+        "name: browser-package",
     )
+    npm_preflight = _named_step_blocks(jobs.get("publish", "")).get(
+        "Verify complete npm cohort before PyPI", ""
+    )
+    preflight_gate, preflight_unsafe = _step_direct_key_values(npm_preflight, "if")
+    if (
+        preflight_unsafe
+        or preflight_gate != ["startsWith(github.ref, 'refs/tags/xyg-v')"]
+        or _step_run_lines(npm_preflight)
+        != ['python3 scripts/publish_node_packages.py npm-dist --tag "$GITHUB_REF_NAME" --check']
+    ):
+        errors.append(
+            "release PyPI must validate the complete tagged seven-package npm cohort before upload"
+        )
     _require_job_contains(
         errors,
         jobs,
@@ -3574,19 +3591,28 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "publish-npm",
         "release",
         "complete guarded npm trusted-publishing set (#52)",
-        "needs: [node-native-packages, node-facade, publish]",
+        "needs: [node-native-packages, node-facade, browser-package, publish]",
         "runs-on: ubuntu-latest",
         "environment: npm",
         "id-token: write",
         "actions/checkout@",
         "npm@^11.5.1",
         "pattern: node-*",
-        "test \"$(find node-dist -name '*.tgz' -type f | wc -l | tr -d ' ')\" = 6",
+        "python3 scripts/publish_node_packages.py node-dist --check",
+        "name: browser-package",
         "XYG_ALLOW_NPM_PUBLISH",
         "XYG_ALLOW_PYPI_PUBLISH",
         "refs/tags/xyg-v",
-        "scripts/publish_node_packages.py node-dist",
+        'scripts/publish_node_packages.py node-dist --tag "$GITHUB_REF_NAME"',
     )
+    npm_publish = _named_step_blocks(jobs.get("publish-npm", "")).get(
+        "Publish native and browser packages before the facade (OIDC)", ""
+    )
+    npm_gate, npm_gate_unsafe = _step_direct_key_values(npm_publish, "if")
+    if npm_gate_unsafe or npm_gate != [GITHUB_RELEASE_GATE]:
+        errors.append(
+            "release npm upload must use both registry opt-ins, the XYG tag, and the non-dry-run gate"
+        )
     if not _has_safe_release_dry_run_input(text):
         errors.append(
             "release workflow missing a unique boolean workflow_dispatch dry-run input "
@@ -3645,6 +3671,10 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "release-dist/*.whl release-dist/*.tgz",
         "--verify-tag",
         "--generate-notes",
+        'parse_tag(os.environ["GITHUB_REF_NAME"]).stage',
+        'if [ "$prerelease" = "true" ]; then',
+        "release_args=(--prerelease --latest=false)",
+        '"${release_args[@]}"',
     )
     if github_release.count("merge-multiple: true") < 2:
         errors.append(

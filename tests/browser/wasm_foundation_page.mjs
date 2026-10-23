@@ -21,6 +21,7 @@ import {
   renderWasmChart,
   renderWasmColumns,
   renderWasmScene,
+  renderStandalone,
   encodeWasmSemanticGraph,
   renderWasmSemanticGraph,
   resolveWasmTicks,
@@ -37,10 +38,10 @@ const WASM_MANIFEST = await wasmManifestResponse.json();
 const CANONICAL_ABI_VERSION = WASM_MANIFEST.abi_version;
 const CANONICAL_SCENE_VERSION = WASM_MANIFEST.scene_version;
 
-function directDensityFixture(host, comm = null, multi = false, fullSource = false, colorbar = null) {
-  const width = 16, height = 16;
-  const grid = new Float32Array(width * height);
-  grid[0] = 1;
+function directDensityFixture(host, comm = null, multi = false, fullSource = false, colorbar = null, exported = null) {
+  const width = exported?.aggregate.width ?? 16, height = exported?.aggregate.height ?? 16;
+  const grid = exported?.aggregate.grid ?? new Float32Array(width * height);
+  if (!exported) grid[0] = 1;
   const spec = {
     protocol: PROTOCOL, width: 320, height: 240, title: null,
     x_axis: { id: "x", kind: "linear", label: null, range: [0, 1], side: "bottom" },
@@ -53,7 +54,7 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
       id: 0, kind: "scatter", name: null, style: { opacity: 0.8 }, tier: "density",
       n_points: 4, n_marks: width * height, visible: 4, x_axis: "x", y_axis: "y",
       density: {
-        buf: 0, w: width, h: height, max: 1, enc: "f32", colormap: "viridis",
+        buf: 0, w: width, h: height, max: exported?.aggregate.maxCount ?? 1, enc: "f32", colormap: "viridis",
         x_range: [0, 1], y_range: [0, 1], binning: "exact", reduction: "bin2d",
         channels_dropped: false, dropped_channels: [], color: "#3987e5",
       },
@@ -64,6 +65,28 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
     view: { ranges: { x: [0, 1], y: [0, 1] } },
     ...(colorbar ? { colorbar } : {}),
   };
+  if (exported) {
+    let payload = new Uint8Array(grid.buffer, grid.byteOffset, grid.byteLength).slice();
+    if (exported.retainSample) {
+      const x = new Float32Array([0.125, 0.375, 0.625, 0.875]);
+      const y = new Float32Array([0.125, 0.375, 0.625, 0.875]);
+      spec.columns.push(
+        { byte_offset: payload.byteLength, len: x.length, dtype: "f32" },
+        { byte_offset: payload.byteLength + x.byteLength, len: y.length, dtype: "f32" },
+      );
+      spec.traces[0].density.sample = {
+        x: { col: 1, offset: 0, scale: 1 }, y: { col: 2, offset: 0, scale: 1 },
+        n: x.length, visible: x.length, x_range: [0, 1], y_range: [0, 1],
+        size: { mode: "constant", size: 2 },
+      };
+      const combined = new Uint8Array(payload.byteLength + x.byteLength + y.byteLength);
+      combined.set(payload);
+      combined.set(new Uint8Array(x.buffer), payload.byteLength);
+      combined.set(new Uint8Array(y.buffer), payload.byteLength + x.byteLength);
+      payload = combined;
+    }
+    return (exported.mount ?? renderStandalone)(host, spec, payload);
+  }
   if (fullSource) {
     // Cross the generated 32,768-point stream boundary twice. The source
     // remains in ChartView for the subsequent pan/recovery proof.
@@ -98,6 +121,167 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
 }
 
 const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+async function sha256(bytes) {
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+    .map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone, entry = "esm") {
+  // Produce the authoritative overview with the actual packaged Rust engine.
+  // This fixture only frames its XYAO grid and source planes for the painter.
+  const worker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  let aggregate;
+  try {
+    aggregate = await aggregateWasmBin2d(worker, {
+      x: [0.125, 0.375, 0.625, 0.875], y: [0.125, 0.375, 0.625, 0.875],
+      x0: 0, x1: 1, y0: 0, y1: 1, width: 16, height: 16,
+    }).result;
+  } finally {
+    await worker.dispose();
+  }
+  const overviewSha256 = await sha256(aggregate.grid);
+  const cases = [];
+  const previousInline = globalThis.__xygInlineWasm;
+  const OriginalWorker = globalThis.Worker;
+  let allocatedWorkers = 0;
+  globalThis.Worker = class extends OriginalWorker {
+    constructor(...args) { super(...args); allocatedWorkers++; }
+  };
+  try {
+    for (const scenario of [
+      { name: "missing-inline-artifact", inline: null, retainSample: true, code: "XYG_WASM_UNAVAILABLE" },
+      { name: "malformed-inline-artifact", inline: {}, retainSample: true, code: "XYG_WASM_UNAVAILABLE" },
+      { name: "missing-retained-source", inline: {}, retainSample: false, code: "XYG_WASM_SOURCE_UNAVAILABLE" },
+    ]) {
+      globalThis.__xygInlineWasm = scenario.inline;
+      const host = document.createElement("div");
+      host.style.cssText = "width:320px;height:240px";
+      document.body.append(host);
+      const events = [];
+      const onEvent = (event) => { if (host.contains(event.target)) events.push(event.detail); };
+      document.addEventListener("xy:wasm_density_no_refinement", onEvent);
+      let view;
+      try {
+        view = directDensityFixture(host, null, false, false, null, { aggregate, retainSample: scenario.retainSample, mount });
+        for (let attempt = 0; attempt < 100 && !events.length; attempt++) await nextTask();
+        if (events.length !== 1 || events[0].code !== scenario.code
+            || events[0].traceIds?.join(",") !== "0") {
+          throw new Error(`${scenario.name} omitted its explicit no-refinement reason: ${JSON.stringify(events)}`);
+        }
+        const trace = view.gpuTraces.find((trace) => trace.tier === "density");
+        const overview = trace.density, texture = overview.tex;
+        let replacements = 0;
+        const originalUpload = view._uploadGrid.bind(view);
+        view._uploadGrid = (...args) => { replacements++; return originalUpload(...args); };
+        let lastCapture;
+        const capture = async (expected = view.view0) => {
+          const requestedView = view._copyView(view.view);
+          let rendered, attempts = 0;
+          // Wait only for a completed presentation. Pixel assertions below
+          // read once and never retry an unexpected blank or stale image.
+          while (attempts < 8) {
+            attempts++;
+            rendered = view._drawNow();
+            if (rendered === true) break;
+            await nextTask();
+          }
+          if (rendered !== true) {
+            throw new Error(`${scenario.name} did not complete presentation: ${JSON.stringify({
+              rendered, attempts, requestedView, currentView: view._copyView(view.view),
+              glLost: view._glLost, contextLost: view.gl?.isContextLost(),
+            })}`);
+          }
+          const state = view.root.xy.state();
+          if (Object.entries(expected.ranges).some(([axisId, range]) =>
+            state.ranges[axisId]?.[0] !== range[0] || state.ranges[axisId]?.[1] !== range[1])) {
+            throw new Error(`${scenario.name} presented an unexpected public viewport: ${JSON.stringify({
+              expected: expected.ranges, actual: state.ranges,
+            })}`);
+          }
+          // GLHost presents into a per-chart 2D canvas; its shared GL buffer
+          // dimensions and currently bound framebuffer belong to the host.
+          // Read the chart's actual presented canvas rather than the shared GL buffer.
+          const copy = document.createElement("canvas");
+          copy.width = view.canvas.width; copy.height = view.canvas.height;
+          const context = copy.getContext("2d");
+          context.drawImage(view.canvas, 0, 0);
+          const pixels = context.getImageData(0, 0, copy.width, copy.height).data;
+          lastCapture = {
+            rendered, attempts, requestedView, presentedView: view._copyView(view.view),
+            canvas: [copy.width, copy.height], glLost: view._glLost,
+            contextLost: view.gl?.isContextLost(), sharedHost: !!view._glHost,
+            alphaPixels: pixels.filter((alpha, index) => index % 4 === 3 && alpha > 0).length,
+          };
+          return pixels;
+        };
+        const before = await capture();
+        const homePresentation = lastCapture;
+        const beforeSha256 = await sha256(before);
+        const zoom = view._viewFrom({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } });
+        view._scheduleViewRequest(zoom, { delay: 0 });
+        view._scheduleViewRequest(view.view0, { delay: 0 });
+        for (let attempt = 0; attempt < 8; attempt++) await nextTask();
+        const after = await capture();
+        if (trace.density !== overview || trace.density.tex !== texture || replacements
+            || view._wasmDensity || await sha256(trace.density.grid) !== overviewSha256
+            || await sha256(after) !== beforeSha256 || !after.some((_, index) => index % 4 === 3 && after[index] > 0)) {
+          throw new Error(`${scenario.name} replaced or blanked its Rust-authored overview`);
+        }
+        if (!view.root.xy.applyState({ ranges: zoom.ranges }, { animate: false, history: false })) {
+          throw new Error(`${scenario.name} rejected public zoom state`);
+        }
+        const zoomPixels = await capture(zoom);
+        const zoomPresentation = lastCapture;
+        const zoomSha256 = await sha256(zoomPixels);
+        if (!lastCapture.alphaPixels || zoomSha256 === beforeSha256) {
+          throw new Error(`${scenario.name} viewport presentation failed: ${JSON.stringify({
+            ...lastCapture, beforeSha256, zoomSha256,
+            reason: lastCapture.alphaPixels ? "identical-home-pixels" : "blank-pixels",
+          })}`);
+        }
+        if (!view.root.xy.applyState({ ranges: view.view0.ranges }, { animate: false, history: false })) {
+          throw new Error(`${scenario.name} rejected public home state`);
+        }
+        const homePixels = await capture();
+        const restoredPresentation = lastCapture;
+        if (await sha256(homePixels) !== beforeSha256) throw new Error(`${scenario.name} did not restore exact home pixels`);
+        if (trace.density !== overview || trace.density.tex !== texture || replacements
+            || await sha256(trace.density.grid) !== overviewSha256) {
+          throw new Error(`${scenario.name} replaced its overview during public viewport navigation`);
+        }
+        const pngBase64 = view.canvas.toDataURL("image/png").split(",")[1];
+        const eventCount = events.length, gl = view.gl;
+        view.destroy();
+        view._scheduleViewRequest(zoom, { delay: 0 });
+        for (let attempt = 0; attempt < 4; attempt++) await nextTask();
+        if (!view._destroyed || view.root.isConnected || view._wasmDensity || view.gl !== null
+            || view.gpuTraces.length || view._listeners.length || gl.isTexture(texture)
+            || events.length !== eventCount || allocatedWorkers !== 0) {
+          throw new Error(`${scenario.name} leaked a view/worker or published after disposal`);
+        }
+        cases.push({
+          name: scenario.name, entry, events, overviewSha256, framebufferSha256: beforeSha256,
+          zoomFramebufferSha256: await sha256(zoomPixels), replacements, allocatedWorkers,
+          presentations: { home: homePresentation, zoom: zoomPresentation, restored: restoredPresentation },
+          overviewRetained: true, disposed: true, pngBase64,
+        });
+      } finally {
+        view?.destroy();
+        document.removeEventListener("xy:wasm_density_no_refinement", onEvent);
+        host.remove();
+      }
+    }
+  } finally {
+    globalThis.Worker = OriginalWorker;
+    if (previousInline === undefined) delete globalThis.__xygInlineWasm;
+    else globalThis.__xygInlineWasm = previousInline;
+  }
+  return cases;
+}
 
 async function assertTickRevisionSettles(handle, label) {
   for (let attempt = 0; attempt < 8; attempt++) await nextTask();
@@ -614,6 +798,13 @@ async function run() {
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
   const wasmBytes = await wasmResponse.arrayBuffer();
   const wasmModule = await WebAssembly.compile(wasmBytes);
+
+  foundationStage = "packaged density no-refinement overview retention";
+  const densityNoRefinement = await densityNoRefinementEvidence(wasmModule);
+  globalThis.__xygDensityNoRefinementIife = () => densityNoRefinementEvidence(wasmModule, globalThis.xy.renderStandalone, "iife");
+  if (new URL(location.href).searchParams.get("only") === "density-no-refinement") {
+    return { ok: true, densityNoRefinement };
+  }
 
   foundationStage = "Rust-owned massive density first-paint policy";
   const policyInstance = await WebAssembly.instantiate(wasmModule);
@@ -4616,7 +4807,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy };
+  return { ok: true, densityPolicy, densityNoRefinement };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

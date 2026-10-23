@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import os
 import re
 import subprocess
 import sys
@@ -39,7 +41,7 @@ verify_ci_workflow = _load_verify_module()
 # mutate this line, so it must stay a verbatim copy of the workflow's own
 # spelling (the fork opt-in variable plus the manual dry-run switch, #13).
 RELEASE_PUBLISH_GATE_LINE = (
-    "        if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
+    "        if: vars.XYG_ALLOW_NPM_PUBLISH == 'true' && vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
     "startsWith(github.ref, 'refs/tags/xyg-v') && "
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')\n"
 )
@@ -3244,7 +3246,7 @@ def test_release_workflow_requires_post_publish_github_release(tmp_path: Path) -
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
     path.write_text(
-        workflow.replace("        run: gh release create ", "        run: echo ", 1),
+        workflow.replace("          gh release create ", "          echo ", 1),
         encoding="utf-8",
     )
 
@@ -4733,3 +4735,117 @@ def test_unnamed_trailing_step_after_the_oracles_is_caught(tmp_path: Path, trail
     block = workflow[start:end].rstrip("\n") + "\n" + trailer + "\n"
     errors = _wasm_errors(tmp_path, workflow[:start] + block + workflow[end:])
     assert any("must be its final two steps" in e for e in errors), errors
+
+
+@pytest.mark.parametrize(
+    "removed", ["--prerelease", "--latest=false", 'parse_tag(os.environ["GITHUB_REF_NAME"]).stage']
+)
+def test_release_prerelease_cannot_be_presented_as_latest_stable(
+    tmp_path: Path, removed: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    assert removed in workflow
+    path = tmp_path / "publish.yaml"
+    path.write_text(workflow.replace(removed, "removed", 1), encoding="utf-8")
+    errors = verify_ci_workflow.validate_release_workflow(path)
+    assert any("GitHub Release" in error for error in errors)
+
+
+def test_release_pypi_requires_npm_readiness_opt_in(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        workflow.replace(
+            RELEASE_PUBLISH_GATE_LINE,
+            RELEASE_PUBLISH_GATE_LINE.replace("vars.XYG_ALLOW_NPM_PUBLISH == 'true' && ", ""),
+        ),
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_release_workflow(path)
+    assert any("is not gated by the dry-run predicate" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "removed",
+    ["name: browser-package", "python3 scripts/publish_node_packages.py node-dist --check"],
+)
+def test_release_npm_must_include_browser_cohort(tmp_path: Path, removed: str) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    prefix, publish = workflow.split("  publish-npm:\n", 1)
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        prefix + "  publish-npm:\n" + publish.replace(removed, "removed", 1), encoding="utf-8"
+    )
+    errors = verify_ci_workflow.validate_release_workflow(path)
+    assert any("npm trusted-publishing set" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("tag", "prerelease"),
+    [
+        ("xyg-v0.6.0", False),
+        ("xyg-v0.6.0-alpha.1", True),
+        ("xyg-v0.6.0-beta.2", True),
+        ("xyg-v0.6.0-rc.3", True),
+        ("xyg-v0.6.0rc3", True),
+        ("xyg-v0.6.0a1", True),
+        ("xyg-v0.6.0-rc.03", None),
+    ],
+)
+def test_github_release_executes_canonical_prerelease_classification(
+    tmp_path: Path, tag: str, prerelease: bool | None
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    job = verify_ci_workflow._job_blocks(workflow)["github-release"]
+    step = verify_ci_workflow._named_step_blocks(job)["Create release and attach browser artifacts"]
+    command = "\n".join(verify_ci_workflow._step_run_lines(step))
+    captured = tmp_path / "gh-args.json"
+    fake_gh = tmp_path / "gh"
+    fake_gh.write_text(
+        f"#!{sys.executable}\nimport json, os, sys\nfrom pathlib import Path\nPath(os.environ['CAPTURED_GH_ARGS']).write_text(json.dumps(sys.argv[1:]))\n",
+        encoding="utf-8",
+    )
+    fake_gh.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", command],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+            "GITHUB_REF_NAME": tag,
+            "GITHUB_REPOSITORY": "CurateLabs/xyg",
+            "CAPTURED_GH_ARGS": str(captured),
+        },
+    )
+    if prerelease is None:
+        assert result.returncode != 0
+        assert not captured.exists()
+        return
+    assert result.returncode == 0, result.stderr
+    args = json.loads(captured.read_text())
+    assert args[:3] == ["release", "create", tag]
+    assert ("--prerelease" in args) is prerelease
+    assert ("--latest=false" in args) is prerelease
+
+
+@pytest.mark.parametrize(
+    "removed", ["name: browser-package", '--tag "$GITHUB_REF_NAME"', "--check"]
+)
+def test_release_pypi_preflight_requires_browser_and_tag_validation(
+    tmp_path: Path, removed: str
+) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    prefix, publish = workflow.split("  publish:\n", 1)
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        prefix + "  publish:\n" + publish.replace(removed, "removed", 1), encoding="utf-8"
+    )
+    errors = verify_ci_workflow.validate_release_workflow(path)
+    assert any(
+        "seven-package npm cohort" in error
+        or "Verify complete npm cohort" in error
+        or "name: browser-package" in error
+        for error in errors
+    )

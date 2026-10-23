@@ -30,3 +30,15 @@ of Core's real 0.5.2 PageRank and rc.5 path-cost tables. It is a rejection fixtu
 another Core release**. Regenerate with
 `uv run python scripts/gen_graphforge_derived_fixtures.py`; the Python, Node and
 real WASM hosts must return the same value-free unsupported-schema diagnostic.
+
+The corpus, provenance, result manifests/generation record, hashed CJS generator,
+and runtime compatibility declaration must retain LF bytes across checkouts.
+Their scoped `.gitattributes` rules preserve the recorded SHA-256 values and
+byte-identical packaged declarations even with Windows `core.autocrlf=true` and
+`core.eol=crlf`. Arrow IPC binaries are unaffected. The regression test performs
+an actual Git checkout into a temporary repository and proves an unpinned text
+control converts to CRLF while all nine hash-bound evidence files stay unchanged:
+
+```bash
+uv run pytest tests/test_graphforge_contract_corpus.py -q
+```

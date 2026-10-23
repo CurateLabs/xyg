@@ -6,5 +6,15 @@
 *.mjs text eol=lf
 *.ts text eol=lf
 
+# Core compatibility evidence and the runtime declaration are bound by raw-byte
+# hashes. Preserve those bytes on Windows, including the hashed CJS generator.
+python/xyg/graphforge-compatibility.json text eol=lf
+scripts/gen_graphforge_result_fixtures.cjs text eol=lf
+tests/fixtures/graphforge/core/**/contracts.tsv text eol=lf
+tests/fixtures/graphforge/core/**/provenance.json text eol=lf
+tests/fixtures/graphforge/results/manifest.json text eol=lf
+tests/fixtures/graphforge/results-0.6.0-rc.5/manifest.json text eol=lf
+tests/fixtures/graphforge/results-0.6.0-rc.5/generation.json text eol=lf
+
 # The measured source patch preserves unified-diff context whitespace byte-for-byte.
 spec/performance/geo-scale-2026-10-08/measured-source.patch whitespace=-blank-at-eol,-blank-at-eof

@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { extname, join, normalize, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { basename, dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), ".."));
 const browserPackage = process.env.XYG_BROWSER_DIST ? resolve(process.env.XYG_BROWSER_DIST) : null;
 const browserDist = browserPackage ? join(browserPackage, "dist") : join(root, "packages/xy-client/dist");
+const reportPath = process.env.XYG_WASM_FOUNDATION_REPORT ? resolve(process.env.XYG_WASM_FOUNDATION_REPORT) : null;
+const only = process.env.XYG_WASM_FOUNDATION_ONLY ?? "";
+if (only && only !== "density-no-refinement") throw new Error("XYG_WASM_FOUNDATION_ONLY only accepts density-no-refinement");
+const artifactCommit = process.env.XYG_RELEASE_COMMIT ?? null;
+if (artifactCommit !== null && !/^[0-9a-f]{40}$/.test(artifactCommit)) throw new Error("XYG_RELEASE_COMMIT must be a complete lowercase Git SHA");
 const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
   "/spec/wasm/abi.json",
@@ -134,7 +140,7 @@ try {
   const manifestRequested = page.waitForRequest(
     request => new URL(request.url()).pathname === "/spec/wasm/abi.json",
   );
-  await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: "commit" });
+  await page.goto(`http://127.0.0.1:${address.port}/${only ? `?only=${only}` : ""}`, { waitUntil: "commit" });
   await manifestRequested;
   if (await page.evaluate(() => globalThis.__xygWasmFoundation) !== undefined) {
     throw new Error("delayed manifest did not exercise asynchronous foundation startup");
@@ -156,12 +162,14 @@ try {
   }
   if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
-  if (!Array.isArray(result.densityPolicy) || result.densityPolicy.length !== 2) {
+  if (!only && (!Array.isArray(result.densityPolicy) || result.densityPolicy.length !== 2)) {
     throw new Error("browser foundation smoke omitted massive density policy evidence");
   }
-  console.log(`direct-browser density policy ${JSON.stringify(result.densityPolicy)}`);
+  if (!only) console.log(`direct-browser density policy ${JSON.stringify(result.densityPolicy)}`);
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
   if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function" && typeof globalThis.xy?.attachWasmTicks === "function")) throw new Error("published standalone IIFE did not expose window.xy");
+  const iifeNoRefinement = await page.evaluate(async () => globalThis.__xygDensityNoRefinementIife());
+  if (!Array.isArray(iifeNoRefinement) || iifeNoRefinement.length !== 3) throw new Error("standalone IIFE omitted density no-refinement evidence");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);
   const known = new Set([
     "/", "/redirect.wasm", "/delayed.wasm", "/missing.wasm",
@@ -169,7 +177,44 @@ try {
   ]);
   const unknown = requests.filter((path) => !known.has(path));
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);
-  console.log(`strict-CSP local-only WASM worker lifecycle smoke passed (${browserPackage ? "published package" : "source dist"})`);
+  if (!Array.isArray(result.densityNoRefinement) || result.densityNoRefinement.length !== 3) {
+    throw new Error("browser foundation smoke omitted density no-refinement evidence");
+  }
+  if (reportPath) {
+    await mkdir(dirname(reportPath), { recursive: true });
+    const assets = {};
+    for (const name of packagedAssets.values()) {
+      const bytes = await readFile(join(browserDist, name));
+      assets[name] = { bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") };
+    }
+    const harness = {};
+    for (const name of ["scripts/wasm_foundation_smoke.mjs", "tests/browser/wasm_foundation_page.mjs", "spec/wasm/abi.json"]) {
+      harness[name] = createHash("sha256").update(await readFile(join(root, name))).digest("hex");
+    }
+    const cases = [];
+    for (const { pngBase64, ...scenario } of [...result.densityNoRefinement, ...iifeNoRefinement]) {
+      const screenshot = `${reportPath}.${scenario.entry}-${scenario.name}.png`;
+      const bytes = Buffer.from(pngBase64, "base64");
+      await writeFile(screenshot, bytes);
+      cases.push({ ...scenario, screenshot: { file: basename(screenshot), sha256: createHash("sha256").update(bytes).digest("hex") } });
+    }
+    const report = {
+      schemaVersion: 1, status: "passed", scope: only || "full-foundation", recordedAt: new Date().toISOString(),
+      artifactCommit, harnessCommit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
+      node: process.version, browser: browser.version(), platform: process.platform, architecture: process.arch,
+      artifactSource: browserPackage ? "staged-package" : "source-dist", assets, harness,
+      package: browserPackage ? JSON.parse(await readFile(join(browserPackage, "package.json"), "utf8")).version : null,
+      csp, externalRequests: external, densityNoRefinement: cases,
+      limitations: [
+        "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
+        "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
+        "No actual packaged Reflex XYChart application, full candidate host matrix, large-scale timings, or validly framed corrupt inline WASM claim.",
+      ],
+    };
+    await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+    console.log(`density no-refinement evidence retained: ${reportPath}`);
+  }
+  console.log(`strict-CSP local-only WASM ${only || "worker lifecycle"} smoke passed (${browserPackage ? "staged package" : "source dist"})`);
 } finally {
   releaseManifest();
   await browser.close();
