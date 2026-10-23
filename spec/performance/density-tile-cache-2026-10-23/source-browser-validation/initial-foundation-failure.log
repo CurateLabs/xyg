@@ -1,0 +1,8 @@
+file:///home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/scripts/wasm_foundation_smoke.mjs:163
+  if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
+                               ^
+
+Error: browser page errors: worker was disposed
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/scripts/wasm_foundation_smoke.mjs:163:32
+
+Node.js v24.21.0

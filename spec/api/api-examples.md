@@ -12,7 +12,7 @@ the later per-chart examples show the same APIs scaling up.
 
 ## API Stability Notes
 
-xy has one public chart-building API: the declarative composition API.
+XYG has one public chart-building API: the declarative composition API.
 Charts are Reflex-shaped, declarative chart children — marks, axes,
 annotations, legend/tooltip chrome — composed inside a family container
 (`xyg.line_chart(...)`, `xyg.bar_chart(...)`, ...) or the neutral layering
@@ -21,7 +21,10 @@ resolution through `data=`, and charts take `on_hover` / `on_select` callbacks.
 The core composition contract is now stabilizing around lightweight Python
 children, layered marks, axes, annotations, built-in or custom legend/tooltip
 chrome, and CSS/Tailwind-friendly DOM hooks. Callback payload details and
-future adapter packages may still evolve before 1.0.
+future adapter packages remain experimental in the published alpha. The future
+accepted `0.6` inventory explicitly classifies each surface under the
+[public compatibility policy](../releases/compatibility-policy.md); these
+examples alone do not declare that release accepted.
 
 Composed `Chart` objects handle standalone HTML export, static image export
 (PNG/JPEG/WebP/SVG/PDF), notebook display, and memory reporting directly. The

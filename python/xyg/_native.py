@@ -11225,6 +11225,73 @@ def pyramid_spill(handle: int) -> int:
     return int(_lib.xyg_pyramid_spill(ctypes.c_uint64(_pyramid_handle(handle))))
 
 
+def tile_store_paint(
+    store: int,
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    w: int,
+    h: int,
+    *,
+    opacity: float = 1.0,
+    known_generation: int = 0,
+    known_opacity: float = -1.0,
+    previous_level: int = -1,
+    known_keys: Any = (),
+    control: bytes | bytearray | memoryview | None = None,
+) -> bytes | None:
+    """Pack host observations; Rust owns level, tile retention and GPU bytes."""
+    if (
+        not isinstance(known_keys, (list, tuple))
+        or len(known_keys) > 256
+        or any(
+            not isinstance(key, (list, tuple))
+            or len(key) != 3
+            or any(
+                not isinstance(v, int) or isinstance(v, bool) or not 0 <= v <= 0xFFFFFFFF
+                for v in key
+            )
+            for key in known_keys
+        )
+    ):
+        raise ValueError("known tile keys must be at most 256 level/x/y triples")
+    if not 0 <= known_generation <= 0xFFFFFFFFFFFFFFFF or not -1 <= previous_level <= 31:
+        raise ValueError("invalid tile painter generation or level")
+    if control is None:
+        import struct
+
+        control = struct.pack(
+            "<4sIQdiI", b"XYDC", 1, known_generation, known_opacity, previous_level, len(known_keys)
+        ) + b"".join(struct.pack("<3I", *k) for k in known_keys)
+    if not isinstance(control, (bytes, bytearray, memoryview)) or len(control) > 3104:
+        raise ValueError("invalid tile painter control")
+    raw_control = np.frombuffer(control, dtype=np.uint8)
+    capacity = int(_lib.xyg_tile_store_paint_capacity(int(w), int(h)))
+    if not capacity:
+        raise ValueError("invalid tile painter viewport")
+    out = np.empty(capacity, dtype=np.uint8)
+    written = int(
+        _lib.xyg_tile_store_paint(
+            _pyramid_handle(store),
+            float(x0),
+            float(x1),
+            float(y0),
+            float(y1),
+            int(w),
+            int(h),
+            float(opacity),
+            raw_control.ctypes.data if len(raw_control) else None,
+            len(raw_control),
+            out.ctypes.data,
+            len(out),
+        )
+    )
+    if written == ctypes.c_size_t(-1).value:
+        raise ValueError("invalid or oversized tile painter frame")
+    return out[:written].tobytes() if written else None
+
+
 def tile_store_compose(
     store: int,
     lo_x: float,

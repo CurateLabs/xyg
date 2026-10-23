@@ -37,6 +37,8 @@ import {
   xyTileBudgetSet,
   xyTileStoreAppend,
   xyTileStoreCompose,
+  xyTileStorePaint,
+  xyTileStorePaintCapacity,
   xyTileStoreComposeColor,
   xyTileStoreFree,
   xyTileStoreStats,
@@ -275,6 +277,34 @@ export function pyramidSpill(handle) {
   return BigInt(xyPyramidSpill(BigInt(handle)));
 }
 
+// Internal live-density transport helper. All decisions and bytes are Rust-owned.
+export function tileStorePaint(store, x0, x1, y0, y1, w, h, {
+  opacity = 1, generation = "0", knownOpacity = -1, level = -1, keys = [], control = null,
+} = {}) {
+  if (!Array.isArray(keys) || keys.length > 256 || keys.some(k => !Array.isArray(k) || k.length !== 3 || k.some(v => !Number.isInteger(v) || v < 0 || v > 0xffffffff))) {
+    throw new RangeError("known tiles require at most 256 u32 triples");
+  }
+  if ((typeof generation !== "string" && typeof generation !== "bigint") || String(generation).length > 20 || !/^\d+$/.test(String(generation)) || BigInt(generation) > 0xffffffffffffffffn || !Number.isInteger(level) || level < -1 || level > 31) {
+    throw new RangeError("invalid tile painter generation or level");
+  }
+  if(control===null) {
+    control=new Uint8Array(32+keys.length*12);
+    const d=new DataView(control.buffer);control.set([88,89,68,67]);d.setUint32(4,1,true);
+    d.setBigUint64(8,BigInt(generation),true);d.setFloat64(16,knownOpacity,true);d.setInt32(24,level,true);d.setUint32(28,keys.length,true);
+    keys.flat().forEach((v,i)=>d.setUint32(32+i*4,v,true));
+  }
+  if(!(control instanceof Uint8Array)||control.byteLength>3104) throw new RangeError("invalid tile painter control");
+  const capacity=Number(xyTileStorePaintCapacity(BigInt(w),BigInt(h)));
+  if(!capacity) throw new RangeError("invalid tile painter viewport");
+  const out=new Uint8Array(capacity);
+  const n=Number(xyTileStorePaint(BigInt(store),x0,x1,y0,y1,BigInt(w),BigInt(h),opacity,
+    pointer(control,"const uint8_t *"),BigInt(control.length),
+    pointer(out,"uint8_t *"),BigInt(out.length)));
+  if(n===0) return null;
+  if(!Number.isSafeInteger(n)||n<0||n>out.length) throw new RangeError("invalid tile painter frame");
+  return out.slice(0,n);
+}
+
 export function tileStoreCompose(
   store,
   loX,
@@ -398,7 +428,7 @@ export class PyramidCache {
     this.tried = false;
   }
 
-  ensure(x, y, { force = false, noRescan = false, forceSpill = false, coloredRgba = null } = {}) {
+  ensure(x, y, { force = false, noRescan = false, forceSpill = false, coloredRgba = null, coloredSource = null } = {}) {
     if (this.store !== 0n) return { kind: "tiles", handle: this.store };
     if (this.handle !== 0n) return { kind: "pyramid", handle: this.handle };
     if (this.tried && !force) return { kind: "none", handle: 0n };
@@ -419,8 +449,8 @@ export class PyramidCache {
     const autoNoRescan = noRescan || xa.length > PYRAMID_NO_RESCAN_ROWS;
     const dim = pyramidBaseDimFor(xa.length, { noRescan: autoNoRescan });
     let handle;
-    if (coloredRgba != null) {
-      handle = pyramidBuildColor(xa, ya, xmm[0], x1, ymm[0], y1, dim, { rgba: coloredRgba });
+    if (coloredRgba != null || coloredSource != null) {
+      handle = pyramidBuildColor(xa, ya, xmm[0], x1, ymm[0], y1, dim, coloredSource || { rgba: coloredRgba });
       this.colored = handle !== 0n;
     } else {
       handle = pyramidBuild(xa, ya, xmm[0], x1, ymm[0], y1, dim);
@@ -485,12 +515,20 @@ export function densityViewFromPyramid(
   hiY,
   w,
   h,
-  { force = false, noRescan = false, forceSpill = false } = {},
+  { force = false, noRescan = false, forceSpill = false, tileCache = null, opacity = 1 } = {},
 ) {
   const n = asF64Array(x).length;
   const autoNoRescan = noRescan || n > PYRAMID_NO_RESCAN_ROWS;
   const ensured = cache.ensure(x, y, { force, noRescan: autoNoRescan, forceSpill });
   if (ensured.kind === "none") return null;
+  if(ensured.kind === "tiles" && tileCache != null) {
+    const frame=tileStorePaint(ensured.handle,loX,hiX,loY,hiY,w,h,{control:tileCache instanceof Uint8Array?tileCache:null,
+      opacity,generation:tileCache.generation || "0",knownOpacity:tileCache.opacity ?? -1,
+      level:tileCache.level ?? -1,keys:tileCache.keys || [],
+    });
+    if(frame) return {frame,level:new DataView(frame.buffer,frame.byteOffset,frame.byteLength).getUint32(8,true),
+      reduction:"pyramid-count",tier:"density",handle:ensured.handle,tiles:tileStoreStats(ensured.handle)};
+  }
   const maxUpsample = autoNoRescan || ensured.kind === "tiles" ? 1_000_000 : 2;
   let composed;
   let tiles = null;

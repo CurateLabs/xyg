@@ -1,0 +1,483 @@
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "scenario": "unsupported-density",
+  "error": "page.waitForFunction: Timeout 10000ms exceeded.",
+  "diagnostics": {
+    "registryKeys": [
+      "packaged-density"
+    ],
+    "workers": [
+      {
+        "url": "http://127.0.0.1:56595/external/reflex_xy/assets/wasm-worker.js",
+        "terminated": true
+      }
+    ],
+    "retained": {
+      "destroyed": true,
+      "glReleased": true,
+      "ticksReleased": true,
+      "listeners": 0
+    }
+  },
+  "cases": [
+    {
+      "name": "primary",
+      "ticks": [
+        {
+          "axis": "x",
+          "ticks": [
+            0,
+            0.2,
+            0.4,
+            0.6000000000000001,
+            0.8,
+            1
+          ],
+          "labels": [
+            0,
+            0.2,
+            0.4,
+            0.6000000000000001,
+            0.8,
+            1
+          ],
+          "step": 0.2,
+          "source": "wasm",
+          "text": [
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+          ]
+        },
+        {
+          "axis": "y",
+          "ticks": [
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            2.5,
+            3,
+            3.5,
+            4
+          ],
+          "labels": [
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            2.5,
+            3,
+            3.5,
+            4
+          ],
+          "step": 0.5,
+          "source": "wasm",
+          "text": [
+            "0.0",
+            "0.5",
+            "1.0",
+            "1.5",
+            "2.0",
+            "2.5",
+            "3.0",
+            "3.5",
+            "4.0"
+          ]
+        }
+      ],
+      "diagnostics": {
+        "sequence": 1,
+        "revision": 1,
+        "axisIds": [
+          "x",
+          "y"
+        ],
+        "cancellations": 0
+      },
+      "captureMode": "shared-presented-2d",
+      "rendered": true,
+      "presentationAttempts": 1,
+      "events": [],
+      "alphaPixels": 1407,
+      "workers": [
+        {
+          "url": "http://127.0.0.1:56595/external/reflex_xy/assets/wasm-worker.js",
+          "terminated": false
+        }
+      ],
+      "densityBoundary": null,
+      "afterNavigation": {
+        "sequence": 2,
+        "revision": 2,
+        "axisIds": [
+          "x",
+          "y"
+        ],
+        "cancellations": 0
+      },
+      "disposal": {
+        "destroyed": true,
+        "glReleased": true,
+        "ticksReleased": true,
+        "listeners": 0,
+        "liveWorkers": 0
+      },
+      "requests": [
+        "/",
+        "/assets/manifest-8b907e4e.js",
+        "/assets/entry.client-Dhfbak_A.js",
+        "/assets/rolldown-runtime-QTnfLwEv.js",
+        "/assets/chunk-62JRHF6Z-Dq1aAwXd.js",
+        "/assets/react-dom-DJPhu9Mm.js",
+        "/assets/root-DmtLH9el.js",
+        "/assets/reflex-env-BD-Aq50W.js",
+        "/assets/emotion-react.browser.esm-D66BJTCW.js",
+        "/assets/esm-CnBPYIJk.js",
+        "/assets/_index-BIcf8BIq.js",
+        "/assets/XYChart-LMRhAmDd.js",
+        "/assets/__reflex_global_styles-NccINl-w.css",
+        "/xy/8a52bded189fd7b9788e.xyf",
+        "/external/reflex_xy/assets/wasm-worker.js",
+        "/external/reflex_xy/assets/xyg-wasm.wasm",
+        "/assets/_empty_._index-3MS-t1yF.js"
+      ],
+      "external": [],
+      "errors": [],
+      "socketErrors": [],
+      "screenshot": {
+        "file": "evidence.browser.json.primary.png",
+        "sha256": "abb14ba64023f9f36bf6e5bddb106788112f54bd8e6916ca39c06a96003c3c7a"
+      }
+    },
+    {
+      "name": "secondary",
+      "ticks": [
+        {
+          "axis": "x",
+          "ticks": [
+            0,
+            0.2,
+            0.4,
+            0.6000000000000001,
+            0.8,
+            1
+          ],
+          "labels": [
+            0,
+            0.2,
+            0.4,
+            0.6000000000000001,
+            0.8,
+            1
+          ],
+          "step": 0.2,
+          "source": "wasm",
+          "text": [
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+          ]
+        },
+        {
+          "axis": "y",
+          "ticks": [
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            2.5,
+            3,
+            3.5,
+            4
+          ],
+          "labels": [
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            2.5,
+            3,
+            3.5,
+            4
+          ],
+          "step": 0.5,
+          "source": "wasm",
+          "text": [
+            "0.0",
+            "0.5",
+            "1.0",
+            "1.5",
+            "2.0",
+            "2.5",
+            "3.0",
+            "3.5",
+            "4.0"
+          ]
+        },
+        {
+          "axis": "y2",
+          "ticks": [
+            0,
+            50,
+            100,
+            150,
+            200,
+            250,
+            300,
+            350,
+            400
+          ],
+          "labels": [
+            0,
+            50,
+            100,
+            150,
+            200,
+            250,
+            300,
+            350,
+            400
+          ],
+          "step": 50,
+          "source": "wasm",
+          "text": [
+            "0.0",
+            "50.0",
+            "100.0",
+            "150.0",
+            "200.0",
+            "250.0",
+            "300.0",
+            "350.0",
+            "400.0"
+          ]
+        }
+      ],
+      "diagnostics": {
+        "sequence": 1,
+        "revision": 1,
+        "axisIds": [
+          "x",
+          "y",
+          "y2"
+        ],
+        "cancellations": 0
+      },
+      "captureMode": "shared-presented-2d",
+      "rendered": true,
+      "presentationAttempts": 1,
+      "events": [],
+      "alphaPixels": 2419,
+      "workers": [
+        {
+          "url": "http://127.0.0.1:56595/external/reflex_xy/assets/wasm-worker.js",
+          "terminated": false
+        }
+      ],
+      "densityBoundary": null,
+      "afterNavigation": {
+        "sequence": 2,
+        "revision": 2,
+        "axisIds": [
+          "x",
+          "y",
+          "y2"
+        ],
+        "cancellations": 0
+      },
+      "disposal": {
+        "destroyed": true,
+        "glReleased": true,
+        "ticksReleased": true,
+        "listeners": 0,
+        "liveWorkers": 0
+      },
+      "requests": [
+        "/secondary",
+        "/assets/manifest-8b907e4e.js",
+        "/assets/entry.client-Dhfbak_A.js",
+        "/assets/rolldown-runtime-QTnfLwEv.js",
+        "/assets/chunk-62JRHF6Z-Dq1aAwXd.js",
+        "/assets/react-dom-DJPhu9Mm.js",
+        "/assets/root-DmtLH9el.js",
+        "/assets/reflex-env-BD-Aq50W.js",
+        "/assets/emotion-react.browser.esm-D66BJTCW.js",
+        "/assets/esm-CnBPYIJk.js",
+        "/assets/_secondary_._index-Bt4E65Vy.js",
+        "/assets/XYChart-LMRhAmDd.js",
+        "/assets/__reflex_global_styles-NccINl-w.css",
+        "/xy/a5c2cf03e8ca8d84fc6f.xyf",
+        "/external/reflex_xy/assets/wasm-worker.js",
+        "/external/reflex_xy/assets/xyg-wasm.wasm",
+        "/assets/_empty_._index-3MS-t1yF.js"
+      ],
+      "external": [],
+      "errors": [],
+      "socketErrors": [],
+      "screenshot": {
+        "file": "evidence.browser.json.secondary.png",
+        "sha256": "4eca59f4ac240e7d60a00f702c34c962bbdfb7489f87cc7f2e141db2d1ede574"
+      }
+    },
+    {
+      "name": "polar",
+      "ticks": [
+        {
+          "axis": "x",
+          "ticks": [
+            0,
+            1.0471975511965976,
+            2.0943951023931953,
+            3.141592653589793,
+            4.1887902047863905,
+            5.235987755982988
+          ],
+          "labels": [
+            0,
+            1.0471975511965976,
+            2.0943951023931953,
+            3.141592653589793,
+            4.1887902047863905,
+            5.235987755982988
+          ],
+          "step": 1.0471975511965976,
+          "source": "wasm",
+          "text": [
+            "0",
+            "π/3",
+            "2π/3",
+            "π",
+            "4π/3",
+            "5π/3"
+          ]
+        },
+        {
+          "axis": "y",
+          "ticks": [
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            2.5,
+            3,
+            3.5,
+            4
+          ],
+          "labels": [
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            2.5,
+            3,
+            3.5,
+            4
+          ],
+          "step": 0.5,
+          "source": "wasm",
+          "text": [
+            "0.0",
+            "0.5",
+            "1.0",
+            "1.5",
+            "2.0",
+            "2.5",
+            "3.0",
+            "3.5",
+            "4.0"
+          ]
+        }
+      ],
+      "diagnostics": {
+        "sequence": 1,
+        "revision": 1,
+        "axisIds": [
+          "x",
+          "y"
+        ],
+        "cancellations": 0
+      },
+      "captureMode": "shared-presented-2d",
+      "rendered": true,
+      "presentationAttempts": 1,
+      "events": [],
+      "alphaPixels": 651,
+      "workers": [
+        {
+          "url": "http://127.0.0.1:56595/external/reflex_xy/assets/wasm-worker.js",
+          "terminated": false
+        }
+      ],
+      "densityBoundary": null,
+      "afterNavigation": {
+        "sequence": 2,
+        "revision": 2,
+        "axisIds": [
+          "x",
+          "y"
+        ],
+        "cancellations": 0
+      },
+      "disposal": {
+        "destroyed": true,
+        "glReleased": true,
+        "ticksReleased": true,
+        "listeners": 0,
+        "liveWorkers": 0
+      },
+      "requests": [
+        "/polar",
+        "/assets/manifest-8b907e4e.js",
+        "/assets/entry.client-Dhfbak_A.js",
+        "/assets/rolldown-runtime-QTnfLwEv.js",
+        "/assets/chunk-62JRHF6Z-Dq1aAwXd.js",
+        "/assets/react-dom-DJPhu9Mm.js",
+        "/assets/root-DmtLH9el.js",
+        "/assets/reflex-env-BD-Aq50W.js",
+        "/assets/emotion-react.browser.esm-D66BJTCW.js",
+        "/assets/esm-CnBPYIJk.js",
+        "/assets/_polar_._index-CGrIo8Qc.js",
+        "/assets/XYChart-LMRhAmDd.js",
+        "/assets/__reflex_global_styles-NccINl-w.css",
+        "/xy/af5ebeb4408182ca0d51.xyf",
+        "/external/reflex_xy/assets/wasm-worker.js",
+        "/external/reflex_xy/assets/xyg-wasm.wasm",
+        "/assets/_empty_._index-3MS-t1yF.js"
+      ],
+      "external": [],
+      "errors": [],
+      "socketErrors": [],
+      "screenshot": {
+        "file": "evidence.browser.json.polar.png",
+        "sha256": "bc70ae7c22b5d5401605da83d48f89e511a0037b09c71a5414f91dcfc37d4423"
+      }
+    }
+  ],
+  "csp": "default-src 'self'; script-src 'self' 'nonce-xyg-packaged-reflex-evidence' 'wasm-unsafe-eval'; script-src-attr 'none'; worker-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:56595; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'self'",
+  "launchArgs": [
+    "--use-gl=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--ignore-gpu-blocklist"
+  ],
+  "errors": [],
+  "external": [],
+  "socketErrors": [],
+  "screenshot": {
+    "file": "evidence.browser.json.unsupported-density.failed.png",
+    "sha256": "e35ffdb604b21cc7ae553f54a4b0c2e3a481a39dcb49125e7b02ae2a136cd75d"
+  }
+}

@@ -7,3 +7,6 @@ Canonical acceptance checklist and roadmap:
 
 This file remains a stable in-repo pointer so specs can cite a path even if
 issue numbers move; prefer linking `#5` in commits and PRs.
+
+WP3 (#10) uses the [Rust-owned binary tile painter](../density-tile-painter.md);
+its GPU texture bound and explicit coarsening are separate from CPU D3 pinning.

@@ -182,7 +182,7 @@ function lodStartNormAnim(view, g, start, target) {
 function lodStepNorm(view, g) {
   const anim = g._densityNormAnim;
   const d = g.density;
-  if (!anim || !d || !d.grid || !d.tex) return;
+  if (!anim || !d || (!d.grid && !d.tileSet) || !d.tex) return;
   const t = Math.min(1, Math.max(0, (view._now() - anim.startedAt) / anim.duration));
   const k = t * t * (3 - 2 * t);
   const norm = anim.start + (anim.target - anim.start) * k;
@@ -191,7 +191,7 @@ function lodStepNorm(view, g) {
   if (rel > 0.004 || t >= 1) {
     d.normMax = norm;
     g.densityNormMax = norm;
-    lodWriteGridTexture(
+    if (!d.tileSet) lodWriteGridTexture(
       view.gl, d.tex, d.grid, d.w, d.h, norm, d.rgba, d.filter,
       view._fillOpacity(g.trace.style),
     );
@@ -635,7 +635,7 @@ export function lodRememberDensity(view, g, d) {
       const old = g.densityCache[i];
       if (old === d || lodDensityPinned(g, old) || !lodSameDensityWindow(old, d)) continue;
       g.densityCache.splice(i, 1);
-      if (old.tex) view.gl.deleteTexture(old.tex);
+      if (old.tex && !old.tileSet) view.gl.deleteTexture(old.tex);
       if (old.overlay && old.overlay !== g.sampleOverlay) {
         view._destroySampleOverlay(old.overlay);
         old.overlay = null;
@@ -659,7 +659,7 @@ export function lodRememberDensity(view, g, d) {
     if (drop < 0) break;
     const old = g.densityCache.splice(drop, 1)[0];
     if (!lodDensityPinned(g, old)) {
-      if (old.tex) view.gl.deleteTexture(old.tex);
+      if (old.tex && !old.tileSet) view.gl.deleteTexture(old.tex);
       // The window's sample overlay rides its cache entry (T9 pairing) and
       // dies with it — except the home/init overlay, which the standalone
       // re-bin worker keeps as its CPU-side source.
@@ -752,7 +752,7 @@ export function lodDropPointCache(view, g) {
 export function lodDropDensityCache(view, g) {
   for (const old of g.densityCache || []) {
     if (!old || old === g.density) continue;
-    if (old.tex && old.tex !== (g.density && g.density.tex)) view.gl.deleteTexture(old.tex);
+    if (old.tex && !old.tileSet && old.tex !== (g.density && g.density.tex)) view.gl.deleteTexture(old.tex);
     if (old.overlay && old.overlay !== g.sampleOverlay) {
       view._destroySampleOverlay(old.overlay);
       old.overlay = null;
@@ -1180,12 +1180,123 @@ export function lodFilterKey(codes) {
   return Array.from(codes || []).sort((a: any, b: any) => a - b).join(",");
 }
 
+// Overlays belong to density representations, with the first-payload
+// sample shared by the trace. Release only after the final owner retires.
+function lodReleaseDensityOverlay(view,g,old,survivors) {
+  if(!old?.overlay || old.overlay===g.sampleOverlay) return;
+  for(const live of survivors) if(live!==old && live?.overlay===old.overlay) return;
+  view._destroySampleOverlay(old.overlay);old.overlay=null;
+}
+
+// XYDT is a Rust-produced painter contract. Parsing validates structure and
+// resource bounds; it never chooses levels, aggregates, or an eviction victim.
+export function lodApplyTileFrame(view, g, bytes) {
+  if (view._destroyed || !view.gl) return false;
+  if (!(bytes instanceof Uint8Array) && !(bytes instanceof ArrayBuffer) && !ArrayBuffer.isView(bytes)) return false;
+  const raw = bytes instanceof Uint8Array ? bytes : bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : new Uint8Array(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  if (raw.byteLength < 128 || raw.byteLength > 64 * 1024 * 1024) return false;
+  const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+  const u = (o) => dv.getUint32(o, true), f = (o) => dv.getFloat64(o, true);
+  if (u(0) !== 0x54445958 || u(4) !== 1 || u(28) !== 96) return false;
+  const level = u(8), flags = u(12), n = u(16), active = u(20), missing = u(24);
+  if (level > 31 || flags > 7 || n > 256 || active > n || missing > active || 128 + n * 96 > raw.byteLength) return false;
+  const generation = dv.getBigUint64(32, true).toString();
+  const max = f(40), logMax = f(48), opacity = f(56), budget = u(64), declaredBytes = u(68);
+  const width=u(72),height=u(76);
+  if(width<16 || width>4096 || height<16 || height>4096 || budget!==width*height*((flags&1)?4:1)*8) return false;
+  if(g._lastDensityReq && (g._lastDensityReq.w!==width || g._lastDensityReq.h!==height)) return false;
+  const xr = [f(96), f(104)], yr = [f(112), f(120)];
+  if (![max, logMax, opacity, ...xr, ...yr].every(Number.isFinite) || max < 0 || logMax < 0 || opacity < 0 || opacity > 1 || xr[1] <= xr[0] || yr[1] <= yr[0] || declaredBytes > budget) return false;
+  const old = g._tileTextures || new Map();
+  const sameGeneration = g._tileGeneration === generation && (!(flags & 1) || g._tileOpacity === opacity);
+  const rows = [], seen = new Set();
+  let byteCount = 0, body = 128 + n * 96, actualMissing = 0;
+  for (let i = 0; i < n; i++) {
+    const at = 128 + i * 96, lv = u(at), tx = u(at + 4), ty = u(at + 8), w = u(at + 12), h = u(at + 16);
+    const offset = u(at + 20), length = u(at + 24), isActive = u(at + 28);
+    const key = `${lv}/${tx}/${ty}`, ranges = Array.from({length: 8}, (_,j) => f(at+32+j*8));
+    if (seen.has(key) || (i < active && lv !== level) || lv > 31 || tx > 65535 || ty > 65535 || w < 3 || w > 258 || h < 3 || h > 258 || isActive !== Number(i < active) || !ranges.every(Number.isFinite)) return false;
+    if (ranges[1] <= ranges[0] || ranges[3] <= ranges[2] || ranges[5] <= ranges[4] || ranges[7] <= ranges[6] || ranges[4] < ranges[0] || ranges[5] > ranges[1] || ranges[6] < ranges[2] || ranges[7] > ranges[3]) return false;
+    const size = w*h*((flags&1)?4:1); byteCount += size;
+    if (length) {
+      if (!isActive || length !== size || offset !== body || offset + length > raw.byteLength) return false;
+      body += length; actualMissing++;
+    } else if (offset || !sameGeneration || !old.has(key) || old.get(key).rgba !== !!(flags&1) || old.get(key).w !== w || old.get(key).h !== h || !view.gl.isTexture(old.get(key).tex)) return false;
+    seen.add(key); rows.push({key,level:lv,tx,ty,w,h,offset,length,isActive,ranges});
+  }
+  if (byteCount !== declaredBytes || body !== raw.byteLength || actualMissing !== missing) return false;
+  // Validate the ENTIRE frame before touching cache or allocating GPU objects.
+  const next = new Map(), created = [];
+  try {
+    for (const row of rows) {
+      let tile = old.get(row.key);
+      if (row.length) {
+        const tex = lodUploadTile(view.gl, raw.subarray(row.offset,row.offset+row.length),row.w,row.h,!!(flags&1));
+        created.push(tex);
+        tile = { ...row,tex,logMax,paintBytes:(flags&1)?raw.slice(row.offset,row.offset+row.length):null,rgba:!!(flags&1),xRange:row.ranges.slice(0,2),yRange:row.ranges.slice(2,4),clipRange:row.ranges.slice(4),lut:g.density?.lut,color:g.density?.color };
+      }
+      next.set(row.key,tile);
+    }
+  } catch (_) { for (const tex of created) view.gl.deleteTexture(tex); return false; }
+  for (const [key,tile] of old) if (next.get(key)!==tile) view.gl.deleteTexture(tile.tex);
+  const previous = g.density;
+  const set = rows.slice(0,active).map((row)=>next.get(row.key));
+  const frame:any = {tileSet:set,level,tex:set[0]?.tex || null,w:u(72),h:u(76),max,normMax:view._prefersReducedMotion()?max:lodNormMax(g,max),xRange:xr,yRange:yr,visible:Infinity,lut:previous?.lut,color:previous?.color,_filterKey:""};
+  if (previous && previous.tileSet && (previous.level === level || Math.abs(previous.level-level)>1)) {
+    g._shownDensity = frame; // pan updates membership/uniforms, never double-counts a level
+  } else {
+    g.prevDensity = previous;
+  }
+  g._tileTextures = next; g._tileGeneration = generation; g._tileOpacity = opacity;
+  g._tileLevel = level; g._tileNeedsRefine = !!(flags&2); g._tileCapable = true;
+  g._tileStats = {received:missing,uploads:created.length,retained:n-missing,gpuBytes:byteCount,budget,level,resourceCoarsened:!!(flags&4)};
+  g.density = frame;
+  // Existing exposure easing is presentation only; tile bytes stay immutable.
+  g._densityNormAnim = ((flags&1) || view._prefersReducedMotion()) ? null : {start:frame.normMax,target:max,startedAt:view._now(),duration:max<frame.normMax?420:260};
+  const keep = new Set([frame, g._densitySwitchPrev, g._shownDensity, previous].filter(Boolean));
+  for (const old of g.densityCache || []) if (!keep.has(old)) {
+    if(old.tex && !old.tileSet) view.gl.deleteTexture(old.tex);
+    lodReleaseDensityOverlay(view,g,old,keep);
+  }
+  // Window entries are legacy fallback/sample sources; tile frames have one
+  // keyed texture owner and never enter the old window-eviction policy.
+  g.densityCache = [...keep];
+  return true;
+}
+
+function lodUploadTile(gl, data, w, h, rgba) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,tex);
+  const align = gl.getParameter(gl.UNPACK_ALIGNMENT); gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+  gl.texImage2D(gl.TEXTURE_2D,0,rgba?gl.RGBA8:gl.R8,w,h,0,rgba?gl.RGBA:gl.RED,gl.UNSIGNED_BYTE,data);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT,align);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  return tex;
+}
+
 // Apply a kernel "density"-mode update: new grid texture with eased exposure
 // normalization, previous grid kept for the crossfade, source remembered in
 // the per-trace cache.
 export function lodApplyDensityUpdate(view, g, upd, buffers) {
-  lodMarkDrillDying(view, g);
   const d = upd.density;
+  if (d?.tile_frame !== undefined) {
+    const index=d.tile_frame;
+    if (!Number.isInteger(index) || index<0 || !buffers?.[index]) return;
+    let applied=false;
+    try { applied=lodApplyTileFrame(view,g,view._asU8(buffers[index])); } catch (_) { /* malformed transport is refused */ }
+    if (applied) {
+      lodMarkDrillDying(view,g);
+      if (g._tileNeedsRefine) {
+        g._lastDensityReq = null;
+        view._scheduleViewRequest?.(view.view,{delay:145});
+      }
+    } else { g._lastDensityReq = null; }
+    return;
+  }
+  lodMarkDrillDying(view, g);
   // Display side of the stands-rule (T13, user-directed #225 follow-up):
   // with a kernel attached, an aggregate reply REPLACES a covering texture
   // only when the client asked for exactly this window as a LADDER STEP
@@ -1293,6 +1404,18 @@ function lodDrawDensityWithFade(view, g, density, opacityScale = 1) {
     return;
   }
   if (fade >= 1) {
+    const retired=g._densitySwitchPrev;
+    if (density.tileSet && retired && !retired.tileSet) {
+      if(retired.tex) view.gl.deleteTexture(retired.tex);retired.tex=null;
+      if(g._homeDensity===retired) g._homeDensity=null;
+      g.densityCache=(g.densityCache || []).filter((d)=>d!==retired);
+      lodReleaseDensityOverlay(view,g,retired,[...g.densityCache,g.density,g._shownDensity,g._homeDensity]);
+    }
+    if (!density.tileSet && g._tileTextures?.size) {
+      for(const tile of g._tileTextures.values()) view.gl.deleteTexture(tile.tex);
+      g._tileTextures.clear();g._tileGeneration=null;g._tileLevel=undefined;
+      g.densityCache=(g.densityCache || []).filter((d)=>!d.tileSet);
+    }
     if (g.prevDensity === g._densitySwitchPrev) g.prevDensity = null;
     g._densitySwitchPrev = null;
     g._densitySwitchFadeStart = null;

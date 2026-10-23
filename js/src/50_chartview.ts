@@ -3248,6 +3248,9 @@ export class ChartView {
         delete s._legendPrevLut;
       }
     }
+    for (const tile of (g._tileTextures || new Map()).values()) {
+      if (tile._hoverKey !== undefined) this._styleDensityTile(tile, null, null);
+    }
     if (g._legendHoverTex) {
       // A density reply may have replaced g.density mid-hover; only restore
       // onto the object still wearing the hover texture.
@@ -3258,6 +3261,30 @@ export class ChartView {
       g._legendHoverTex = null;
       g._legendHoverPrevTex = null;
     }
+  }
+
+  // Tile bytes already carry Rust's physical compositing. Legend hover is
+  // presentation only: apply the existing nearest-palette dim to straight
+  // colors and restore the immutable premultiplied source on hover exit.
+  // texSubImage2D updates the same allocation, preserving the tile budget.
+  _styleDensityTile(tile, palette, cat) {
+    if (!tile.paintBytes) return;
+    const key=palette && cat!=null ? `${palette.join(",")}/${cat}` : null;
+    if ((tile._hoverKey ?? null) === key) return;
+    let pixels=tile.paintBytes;
+    if (key!==null) {
+      const straight=new Uint8Array(pixels.length);
+      for(let i=0;i<pixels.length;i+=4) {
+        const a=pixels[i+3]; straight[i+3]=a;
+        if(a) for(let j=0;j<3;j++) straight[i+j]=Math.min(255,Math.round(pixels[i+j]*255/a));
+      }
+      pixels=this._densityRgbaDimmed(straight,palette,cat);
+      for(let i=0;i<pixels.length;i+=4) for(let j=0;j<3;j++) pixels[i+j]=Math.round(pixels[i+j]*pixels[i+3]/255);
+    }
+    const gl=this.gl;
+    gl.bindTexture(gl.TEXTURE_2D,tile.tex);
+    gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,tile.w,tile.h,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+    tile._hoverKey=key;
   }
 
   // Per-cell sibling dim for an aggregated categorical plane: each occupied
@@ -4137,6 +4164,7 @@ export class ChartView {
     try {
       if (t.tier === "density") {
         const d = t.density;
+        g._tileCapable = !!d.tiles;
         const meta = this.spec.columns[d.buf];
         const raw = this._columnView(buffer, meta);
         const grid = d.enc === "log-u8" ? lodDecodeLogU8(raw, d.max) : raw;
@@ -6602,6 +6630,16 @@ export class ChartView {
   _drawDensity(g, density, opacityScale = 1) {
     const gl = this.gl;
     const d = density || g.density;
+    if (d?.tileSet) {
+      const hover=this._legendHover;
+      const palette=g.trace.color?.mode==="categorical" ? g.trace.color.palette : null;
+      const cat=hover?.traces?.includes(this.gpuTraces.indexOf(g)) ? hover.cat : null;
+      for (const tile of d.tileSet) {
+        this._styleDensityTile(tile,palette,cat);
+        this._drawDensity(g,{...tile,normMax:d.normMax},opacityScale);
+      }
+      return;
+    }
     // Structural guard: never bind a freed texture. Eviction pins every live
     // density (lodDensityPinned), so this should not trigger — but a crossfade
     // holds its source across frames, and binding a deleted handle is a hard
@@ -6629,6 +6667,10 @@ export class ChartView {
       this._axisCoord(xAxis, d.xRange[0]), this._axisCoord(xAxis, d.xRange[1]),
       this._axisCoord(yAxis, d.yRange[0]), this._axisCoord(yAxis, d.yRange[1]),
     );
+    const clip=d.clipRange || [d.xRange[0],d.xRange[1],d.yRange[0],d.yRange[1]];
+    gl.uniform4f(u("u_clipRange"),...clip);
+    gl.uniform1i(u("u_tileClip"),d.clipRange?1:0);
+    gl.uniform1f(u("u_densityLogScale"),d.logMax===undefined?1:d.logMax/(Math.log1p(d.normMax)||1));
     // Mean-color textures bake the style opacity INSIDE their physical
     // compositing (LOD doc §2 rule 1 — dense cells saturate past it exactly
     // like overplotted marks), so the uniform carries only the transition
@@ -9085,6 +9127,8 @@ export class ChartView {
     }
     this._deleteBuffers(g.drill, TRACE_GPU_BUFFERS);
     const textures = [];
+    for (const tile of (g._tileTextures || new Map()).values()) textures.push(tile.tex);
+    g._tileTextures?.clear(); g._tileGeneration=null;
     if (g.heatmap) textures.push(g.heatmap.tex);
     for (const d of g.densityCache || []) textures.push(d && d.tex);
     if (g.density) textures.push(g.density.tex);

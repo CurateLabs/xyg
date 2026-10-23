@@ -122,7 +122,7 @@ export function render({ model, el }) {
   if (spec?.geo_host === true) return renderGeoHost({model,el});
   const buffer = payloadBuffers(spec, model.get("buffers"));
   const comm = {
-    send: (msg) => model.send(msg),
+    send: (msg, buffers = []) => model.send(msg, {}, buffers),
     // Read the live spec: appends re-sync it, and the transport flag must
     // survive them (it is re-applied kernel-side on every append).
     wantsViewChange: () => model.get("spec")?.interaction?._transport_view_change === true,

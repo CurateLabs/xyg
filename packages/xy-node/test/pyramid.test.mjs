@@ -226,3 +226,42 @@ test("scatter spill option is strict and survives the composed mark path", () =>
   assert.equal(fig.traces[0].pyramid_spill, true);
   fig.dispose();
 });
+
+test("Rust tile painter pan reuses identical source bytes and bounds controls", async () => {
+  const {tileStorePaint}=await import("../src/pyramid.js");
+  const n=32768, x=fill(n,i=>(i*17%n)/n), y=fill(n,i=>(i*31%n)/n);
+  const pyr=pyramidBuild(x,y,0,1,0,1,1024), store=pyramidSpill(pyr);
+  pyramidFree(pyr);
+  const read=raw=>{
+    const d=new DataView(raw.buffer,raw.byteOffset,raw.byteLength), u=o=>d.getUint32(o,true);
+    const rows=Array.from({length:u(16)},(_,i)=>{const at=128+96*i;return {key:[u(at),u(at+4),u(at+8)],pixels:raw.slice(u(at+20),u(at+20)+u(at+24))};});
+    return {raw,level:u(8),active:u(20),missing:u(24),generation:d.getBigUint64(32,true).toString(),max:d.getFloat64(40,true),gpu:u(68),budget:u(64),rows};
+  };
+  try {
+    const a=read(tileStorePaint(store,0,.5,0,.5,256,256));
+    const b=read(tileStorePaint(store,.25,.75,0,.5,256,256,{generation:a.generation,level:a.level,keys:a.rows.map(r=>r.key)}));
+    const fresh=read(tileStorePaint(store,.25,.75,0,.5,256,256));
+    assert.deepEqual([a.level,a.active,a.missing,b.level,b.active,b.missing,fresh.missing],[1,1,1,1,2,1,2]);
+    const cache=new Map(a.rows.map(r=>[String(r.key),r.pixels]));
+    b.rows.filter(r=>r.pixels.length).forEach(r=>cache.set(String(r.key),r.pixels));
+    fresh.rows.forEach(r=>assert.deepEqual(cache.get(String(r.key)),r.pixels));
+    assert.equal(crypto.createHash("sha256").update(Buffer.concat(fresh.rows.map(r=>r.pixels))).digest("hex"),"410965db6e34b2143ebcb668edd99c35af3dd7caaade3e3eace7566cdb5486dd");
+    assert.equal(b.max,fresh.max); assert.ok(b.gpu<=b.budget); assert.equal(b.budget,524288);
+    for(const keys of [[[0,-1,0]],[[0,0]],Array(257).fill([0,0,0]),"invalid"])
+      assert.throws(()=>tileStorePaint(store,0,1,0,1,256,256,{keys}),RangeError);
+    assert.throws(()=>tileStorePaint(store,0,1,0,1,256,256,{generation:"18446744073709551616"}),RangeError);
+  } finally {tileStoreFree(store);}
+});
+
+test("binary tile observations fail closed before allocating reply pixels", async () => {
+  const {tileStorePaint}=await import("../src/pyramid.js");
+  const x=fill(32,i=>i/32),y=fill(32,i=>i/32),p=pyramidBuild(x,y,0,1,0,1,64),s=pyramidSpill(p);
+  pyramidFree(p);
+  try {
+    const control=new Uint8Array(32),d=new DataView(control.buffer);
+    control.set([88,89,68,67]);d.setUint32(4,1,true);d.setFloat64(16,-1,true);d.setInt32(24,-1,true);
+    assert.ok(tileStorePaint(s,0,1,0,1,64,64,{control}));
+    for(const bad of [control.slice(0,31),new Uint8Array(33),new Uint8Array(32)])
+      assert.throws(()=>tileStorePaint(s,0,1,0,1,64,64,{control:bad}),RangeError);
+  } finally {tileStoreFree(s);}
+});

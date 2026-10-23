@@ -132,7 +132,7 @@ message}`). Details: design §6.4.
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 394 | `abiVersion()`, `xyg_abi_version` |
+| Native C ABI | 395 | `abiVersion()`, `xyg_abi_version` |
 | WASM ABI | 34 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 34 | `SCENE_VERSION` |
 | Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |

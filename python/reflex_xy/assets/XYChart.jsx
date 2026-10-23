@@ -417,6 +417,9 @@ export function XYChart(props) {
     if (!token || src || !el) return undefined;
     const socket = xySocket();
     const mid = `m${nextMountId++}`;
+    // React clears DOM refs before effect cleanup. Retain the mount's key so
+    // both payload replacement and unmount address the same debug view entry.
+    const registryKey = outerRef.current?.id || mid;
     let view = null;
     let destroyed = false;
     let clickSeq = 0;
@@ -463,11 +466,12 @@ export function XYChart(props) {
       socket.emit("sub", { fig: token, px: el.clientWidth || null, mid });
     };
 
-    const emitMessage = (m) => {
+    const emitMessage = (m, buffers = []) => {
       // socket.io flushes its sendBuffer before firing `connect`; never queue
       // an old-epoch request while the namespace is disconnected.
       if (awaitingPayload || !socket.connected) return;
       const envelope = { fig: token, mid, m };
+      if (buffers.length) envelope.buffers = buffers;
       if (payloadVersion !== null) envelope.v = payloadVersion;
       socket.emit("msg", envelope);
     };
@@ -567,7 +571,7 @@ export function XYChart(props) {
     };
 
     const comm = {
-      send: (m, buffers) => {
+      send: (m, buffers = []) => {
         if (m?.type === "geo_host") {
           if (!socket.connected) throw new Error("geographic host transport disconnected");
           const payload = { fig: token, mid, m: { ...m, buffer: buffers?.[0] } };
@@ -589,7 +593,7 @@ export function XYChart(props) {
           lastSelect = m.type === "select_clear" ? null : m;
           if (cbRef.current.onSelectEnd) m = { ...m, include_rows: true };
         }
-        emitMessage(m);
+        emitMessage(m, buffers);
         if (m.type === "click" && cbRef.current.onPointClick) {
           // The kernel's click path resolves rows via pick; ask for the row
           // with a tagged seq the reply routing below consumes.
@@ -707,7 +711,7 @@ export function XYChart(props) {
         if (!(view instanceof XygGeoHostView)) {
           if (view) view.destroy();
           view = new XygGeoHostView(el, comm);
-          (window.__xy_views ||= new Map()).set(outerRef.current?.id || mid, view);
+          (window.__xy_views ||= new Map()).set(registryKey, view);
           view.ready.catch((error) => dbg("geographic host", error.message));
         }
         return;
@@ -812,7 +816,7 @@ export function XYChart(props) {
       restoreSelectionMask(selectionMaskRequest);
       // Debug/e2e handle (same spirit as the standalone example's
       // window.xyLiveDrilldown): headless probes assert on live views.
-      (window.__xy_views ||= new Map()).set(outerRef.current?.id || mid, view);
+      (window.__xy_views ||= new Map()).set(registryKey, view);
       replayPendingStatePushes(nextPayloadVersion);
     };
 
@@ -977,7 +981,7 @@ export function XYChart(props) {
         socket.off("err", onErr);
         socket.off("disconnect", onDisconnect);
         socket.off("connect", subscribe);
-        window.__xy_views?.delete(outerRef.current?.id || mid);
+        window.__xy_views?.delete(registryKey);
         const retiring = view; view = null;
         // Keep only the response listener until buffer-drop/release ACK.
         void retiring.dispose().finally(() => {
@@ -1006,7 +1010,7 @@ export function XYChart(props) {
       reclaimTooltipSlot();
       if (view) view.destroy();
       view = null;
-      window.__xy_views?.delete(outerRef.current?.id || mid);
+      window.__xy_views?.delete(registryKey);
       el.replaceChildren();
     };
   }, [token, src]);

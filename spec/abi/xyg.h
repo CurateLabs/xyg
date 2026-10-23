@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 394
-#define XYG_ABI_SIGNATURE_SHA256 "0f946380a29c43ff507ba447e400a8a7c23a41f647d121ca3b7fb85371d9609e"
+#define XYG_ABI_VERSION 395
+#define XYG_ABI_SIGNATURE_SHA256 "0701e862a4f8ea7e1c067c8292b3de63dca87a319d8a963310f191c8f03ea529"
 
 #ifdef __cplusplus
 extern "C" {
@@ -537,6 +537,8 @@ int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double 
 int32_t xyg_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, size_t out_capacity, uint8_t * out_rgba, size_t out_rgba_capacity);
 int32_t xyg_tile_store_fetch(uint64_t store, uint32_t level, uint32_t tx, uint32_t ty, uint32_t * out_counts, uint16_t * out_color);
 int32_t xyg_tile_store_free(uint64_t store);
+size_t xyg_tile_store_paint(uint64_t store, double x0, double x1, double y0, double y1, size_t width, size_t height, double opacity, const uint8_t * known, size_t known_len, uint8_t * out, size_t out_capacity);
+size_t xyg_tile_store_paint_capacity(size_t width, size_t height);
 int32_t xyg_tile_store_stats(uint64_t store, uint64_t * out);
 int32_t xyg_transition_keys_fixed(const uint8_t * data, size_t len, size_t width, uint32_t kind, int32_t swap_endian, uint32_t * out_lo, uint32_t * out_hi, size_t * out_error_first, size_t * out_error_index);
 size_t xyg_triangle_edges(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, double * out_x0, double * out_x1, double * out_y0, double * out_y1);

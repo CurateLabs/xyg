@@ -938,14 +938,16 @@ ChartView colorbar ticks (#262); Reflex `XYChart` auto-attach implementation
 
 Angular/polar and secondary-axis ChartView cutovers subsequently shipped under
 #869 through the Rust packed tick resolver described above. Real-browser
-packaged Reflex application evidence remains a separate #886 requirement.
+packaged Reflex application evidence is retained below as pre-removal/current-
+main evidence. [#1063](https://github.com/CurateLabs/xyg/issues/1063) supersedes
+the Reflex-specific requirement and retargets #886 to supported Python/
+Streamlit and Node/vanilla-TypeScript consumers; that qualification remains open.
 
 Work outside that claimed subset is tracked independently:
 
-- real-browser E2E proof for Reflex packaged tick-asset auto-attach
-  (`XYChart` already injects explicit `./wasm-worker.js` +
-  `./xyg-wasm.wasm` and calls `attachHostWasmTicks`):
-  [#886: packaged Reflex tick auto-attach proof](https://github.com/CurateLabs/xyg/issues/886);
+- supported-consumer packaged tick-asset qualification after Reflex retirement:
+  [#886](https://github.com/CurateLabs/xyg/issues/886) and
+  [#1063](https://github.com/CurateLabs/xyg/issues/1063);
 - direct-browser aggregate production paths beyond the current density/Scene
   vertical: [#885: direct-browser authoring and aggregate completion](https://github.com/CurateLabs/xyg/issues/885); and
 - post-Wave-A current-`main` SHA-keyed hosted artifacts, a green CodSpeed
@@ -1012,6 +1014,62 @@ it cannot establish current-source fixture parity or the complete #54 matrix.
 It does not prove a real packaged Reflex `XYChart`, a validly framed corrupt
 inline WASM module, every unsupported source family, or large-scale hosted
 performance. Those remaining #886/#885 and release requirements stay open.
+
+### Pre-removal Reflex and shared public HTML journeys (#886 / #1063)
+
+The six Reflex cases below qualify the pre-removal/current-main adapter only.
+#1063 retires that surface and supersedes its #886 requirement; they are
+migration evidence, not qualification of the replacement consumers. The two
+actual public Python HTML cases and the matching current ESM/IIFE foundation
+remain applicable shared density-degradation proof. The amended #886 remains
+open for supported Python/Streamlit and Node/vanilla-TypeScript coverage under
+#1063.
+
+`scripts/packaged_reflex_ticks_smoke.py` provides a separate real packaged-app
+gate. It verifies every installed `xyg`/`reflex_xy` implementation and asset
+file against one supplied wheel, rejects missing/extra/modified producers,
+compiles the actual `XYChart` fixture in production mode, and verifies the
+compiled app's linked tick/client assets against that install. It checks
+Cartesian, secondary `y2`, and polar Rust tick caches and labels through public
+viewport changes. Deliberate 404/corrupt tick modules must emit
+`XYG_WASM_INIT_FAILED`, expose no tick positions or partially admitted handle,
+and preserve visible marks. A real Python-produced live split density payload
+emits `XYG_WASM_SOURCE_UNSUPPORTED`, retains its initial Rust overview at the
+failed WASM dispatch boundary, and keeps valid native refinement available.
+
+The same command exercises the installed wheel's unmodified public
+`Chart.to_html()` document at a `file:` URL. A CDP bootstrap setter withholds
+the optional inline module or replaces only its base64 WASM bytes with
+`00 01 02 03`, preserving valid classic-worker framing and the generated CSP,
+client, metadata and grid. The latter reaches actual `WebAssembly.compile`
+rejection. Both cases require unchanged overview/grid/texture, zero replacement
+uploads, nonblank distinct zoom pixels and exact home restoration, and no live
+Worker or object URL after rejection/destruction. They do not synthesize the
+split-only unsupported-source descriptor into public packed HTML.
+
+The Reflex probe supplies a nonce CSP with same-origin assets/connections,
+rejects external HTTP/websocket origins and errors, and records its explicit
+loopback `local-network-access` permission. The generated file retains its own
+CSP and rejects all HTTP requests. Both probes record SwiftShader arguments,
+perform one pixel read after a bounded completed presentation, and require
+resource release; no blank/stale pixel retry is accepted. Each Reflex route
+also unmounts through React navigation and must remove its supplied DOM id
+from the inspection map after React clears refs.
+
+Reports retain package/installed-file/harness hashes, complete dependency
+inventory, compile/runtime logs, frontend lockfile, screenshots, event and
+lifecycle diagnostics, and the compiled Python app's process tree (no required
+Node/Bun runtime). Frontend compilation and browser testing use Node tools.
+The exported HTML's SHA/size and reproduction are retained while generated
+bundle bytes remain local under dossier §33. Worktree proofs declare that
+source explicitly, keep the base commit separate, and retain a source hash
+ledger; they do not declare an immutable artifact commit.
+
+The original-wheel regression and the scoped reproduction contract live in
+[`spec/performance/packaged-reflex-2026-10-23`](../performance/packaged-reflex-2026-10-23/README.md).
+This is one Linux/Reflex/Chromium slice, separate from final-candidate cohort
+reuse, the full #54 matrix, replacement-consumer qualification and refreshed
+hosted performance interpretation.
 
 Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
 typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps

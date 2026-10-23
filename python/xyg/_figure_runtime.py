@@ -13,10 +13,19 @@ if TYPE_CHECKING:
 
 
 def density_view(
-    self, trace_id: int, x0: float, x1: float, y0: float, y1: float, w: int, h: int
+    self,
+    trace_id: int,
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    w: int,
+    h: int,
+    *,
+    tile_cache: bytes | bytearray | memoryview | None = None,
 ) -> tuple[dict[str, Any], list[bytes]]:
     """Re-bin a density-mode scatter's aggregation grid for a new viewport."""
-    return interaction.density_view(self, trace_id, x0, x1, y0, y1, w, h)
+    return interaction.density_view(self, trace_id, x0, x1, y0, y1, w, h, tile_cache=tile_cache)
 
 
 def pick(

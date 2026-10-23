@@ -1648,3 +1648,83 @@ def test_subscription_departure_releases_evicted_version(_fresh_registry, depart
         assert replacement.version == 1
 
     run(main())
+
+
+def test_density_tile_inventory_round_trips_as_native_binary(_fresh_registry):
+    """Socket.IO preserves XYDC attachment bytes; malformed controls fail closed."""
+    import struct
+
+    from xyg import kernels
+
+    async def main():
+        n = 32768
+        i = np.arange(n, dtype=np.float64)
+        x, y = (i * 17 % n) / n, (i * 31 % n) / n
+        fig = xyg.scatter_chart(xyg.scatter(x, y, density=True)).figure()
+        pyramid = kernels.pyramid_build(x, y, 0, 1, 0, 1, 1024)
+        store = kernels.pyramid_spill(pyramid)
+        kernels.pyramid_free(pyramid)
+        trace = fig.traces[0]
+        trace._tile_store = store
+        trace._pyr_base_dim = 1024
+        token = registry.register(fig)
+        try:
+            async with data_plane_server() as (url, _):
+                client = await connect_client(url)
+                collector = Collector(client)
+                await client.emit("sub", {"fig": token, "mid": "tiles"}, namespace="/_xy")
+                await collector.next(collector.payloads)
+                request = {
+                    "type": "density_view",
+                    "trace": trace.id,
+                    "x0": 0.0,
+                    "x1": 0.5,
+                    "y0": 0.0,
+                    "y1": 0.5,
+                    "w": 256,
+                    "h": 256,
+                    "tile_cache": True,
+                }
+                control = struct.pack("<4sIQdiI", b"XYDC", 1, 0, -1.0, -1, 0)
+                await client.emit(
+                    "msg",
+                    {
+                        "fig": token,
+                        "mid": "tiles",
+                        "m": {**request, "seq": 1},
+                        "buffers": [control],
+                    },
+                    namespace="/_xy",
+                )
+                first = await collector.next(collector.messages)
+                raw = first["buffers"][0]
+                assert raw[:4] == b"XYDT"
+                assert first["message"]["traces"][0]["density"]["tile_frame"] == 0
+                assert struct.unpack_from("<I", raw, 24)[0] == 1
+                generation = struct.unpack_from("<Q", raw, 32)[0]
+                key = struct.unpack_from("<3I", raw, 128)
+                control = struct.pack("<4sIQdiI3I", b"XYDC", 1, generation, 1.0, key[0], 1, *key)
+                await client.emit(
+                    "msg",
+                    {"fig": token, "m": {**request, "seq": 2}, "buffers": [b"XYDC"]},
+                    namespace="/_xy",
+                )
+                await client.emit(
+                    "msg",
+                    {
+                        "fig": token,
+                        "mid": "tiles",
+                        "m": {**request, "seq": 3, "x0": 0.25, "x1": 0.75},
+                        "buffers": [control],
+                    },
+                    namespace="/_xy",
+                )
+                pan = await collector.next(collector.messages)
+                assert pan["message"]["seq"] == 3
+                assert struct.unpack_from("<2I", pan["buffers"][0], 20) == (2, 1)
+                await client.disconnect()
+        finally:
+            trace._tile_store = None
+            kernels.tile_store_free(store)
+
+    run(main())

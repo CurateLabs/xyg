@@ -435,7 +435,7 @@ are compared byte for byte.
 
 ## 6. Hosts
 
-### 6.1 Native C ABI (current ABI 394)
+### 6.1 Native C ABI (current ABI 395)
 
 | Symbol | Role |
 |---|---|

@@ -278,31 +278,37 @@ pyramid replaces per-view scans with per-view *tile composition*.
 > grid** (`levels: Vec<Vec<u32>>` plus optional `[u16; 4]` mean-color planes).
 > Phase-4 WP1 adds a parallel disk tile store (`tile_store.rs`) with
 > `(level, tx, ty)` spill/fetch/compose ABI 73 (`xyg_pyramid_spill` /
-> `xyg_tile_store_*` in `spec/abi/xyg-abi.json`); hosts do not engage it until
-> WP2. The 256²-tile decomposition here is that layout
+> `xyg_tile_store_*` in `spec/abi/xyg-abi.json`); WP2 engages it on Python
+> and Node. Native ABI 395 adds the WP3 keyed painter. The 256²-tile
+> decomposition here is that layout
 > ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) D1,
 > issue [#5](https://github.com/CurateLabs/xyg/issues/5)); level math,
 > aggregates, and build costs describe both the in-RAM pyramid and the spilled
 > slabs.
 
 - **Data-space tiles**, power-of-two levels, 256×256 cells/tile.
-  Level 0 covers the full x/y extent with 1 tile; level l has 4^l tiles.
+  Level 0 is the finest `base_dim`² grid; level l has dimension
+  `max(1, base_dim >> l)` and `ceil(dim_l / 256)²` tiles. Every level covers
+  the same full x/y extent; the final level L is 1². Spill slabs are ordered
+  coarsest first, independently of this finest-first level numbering.
 - Each tile stores the channel aggregates per §2: `count` (u32), and for
   channel-bearing traces a mean-color plane — per cell `[r, g, b, a]` as
   linear-light u16 means plus mean straight alpha (u16 scale). Means, not
   sums: 8 B/cell instead of 24+, at the cost of one re-rounding per level
   (≤ 0.5 lsb of u16 per level — recorded, invisible).
-- **Build:** one pass over rows bins into the finest level L
-  (L ≈ ceil(log4(N / target_points_per_cell / 256²))); levels L-1..0 are 4→1
+- **Build:** one pass over rows bins into finest level 0 (the base dimension
+  is selected from the points-per-cell target, bounded by the declared base
+  limits); levels 1..L are 4→1
   reductions (`count`: exact u64 sums saturating to u32; color: exact
   weighted means, weight = child count × child mean alpha — the same
   alpha-weighted average the flat kernel computes over raw points).
-  Total cost ≈ 1.33 × one full pass; total size ≈ 1.33 × finest level.
+  Cost is one row scan plus the geometric cell reductions; total stored
+  cells ≈ 1.33 × the finest level.
 - **Rust owns this** (`tiles.rs` + `tile_store.rs`, see rust-engine doc):
   build_pyramid() and in-RAM compose (shipped); tile spill/fetch/compose by
   `(level, tx, ty)` and count-only dirty-tile append are Phase-4 WP1 (roadmap
-  D1/D4 — hosts engage in WP2; the Phase-3 path still composes contiguous
-  levels).
+  D1/D4, engaged by Python/Node WP2; the in-RAM path still composes
+  contiguous levels).
   Colored pyramids refuse native appends — the batch's colors are unknown to
   the count-only append path and an append can move a continuous channel's
   domain, silently re-coloring every already-binned point — so the caller
@@ -311,23 +317,28 @@ pyramid replaces per-view scans with per-view *tile composition*.
 
 ### 4.2 Serving a viewport
 
-```
-level  = clamp(round(log2(data_span / view_span)), 0, L)
-tiles  = the ≤ ceil(w/256+1) × ceil(h/256+1) tiles intersecting the view
-reply  = compose(tiles) → one grid ≤ (screen px) — done kernel-side today,
-         client-side (texture atlas) in phase 3
+```text
+level = coarsest existing level whose source span meets requested resolution
+        on both axes; level 0 is the finest fallback (max_upsample applies)
+tiles = source tiles intersecting the viewport, with one-cell paint gutters
+reply = legacy window compose, or native XYDT keyed source textures (#10)
 ```
 
-- **Pan = tile reuse:** only newly exposed edge tiles ship. The client keeps
-  the multi-window density cache it already has (`densityCache` in 45_lod.ts)
-  — the pyramid formalizes it into keyed tiles instead of ad-hoc windows.
-- **Zoom = adjacent level:** crossfade between level textures is the exact
-  crossfade the client already does for density switches (`_densitySwitchPrev`).
-- **Below the floor** (view finer than level L): re-bin visible rows via
-  `range_indices` + `bin_2d` — O(visible), and visible is small at deep zoom.
-  This is today's behavior, now only on the deep-zoom tail where it's cheap.
-- **Drill-in unchanged:** when visible_count ≤ budget, ship exact points.
-  The pyramid only changes how *aggregated* views are produced.
+- **Pan = tile reuse:** spilled-pyramid clients send raw XYDC inventory and
+  receive only missing XYDT tile bodies. Rust owns served level, retention
+  and the eight-screen-texture ceiling. Other paths keep window composition.
+- **Zoom = adjacent level:** ordinary changes use the existing
+  `_densitySwitchPrev` crossfade; the explicit GPU resource exception when
+  an adjacent level cannot fit is recorded in the
+  [tile painter contract](density-tile-painter.md).
+- **Below the floor** (view finer than level 0): ordinary in-RAM traces can
+  re-bin or ship real points. Huge/no-rescan/spilled traces retain an
+  explicitly upsampled pyramid unless the existing position-only spatial
+  index can serve exact points or a screen-resolution grid affordably.
+  Color-bearing spatial refinement remains unavailable, as recorded in §4.1.
+- **Drill-in unchanged:** tile observations never bypass eligible spatial
+  point/grid refinement. The painter changes aggregated representation,
+  preserving the existing exact-query decisions.
 
 ### 4.3 Truthfulness across levels
 
@@ -741,8 +752,8 @@ contract entry before it lands.
    stay: the first-payload overlay and any future resolvable-tier subset are
    built from them.
 
-**Phase 3 — pyramid (build + serve shipped on Python + Node; client tile
-cache and dedicated 100M latency gate still open)**
+**Phase 3 — pyramid (build + serve and client tile cache shipped; dedicated
+100M latency gate still open)**
 6. **Done (count + mean-color planes):** `crates/xyg-engine/src/tiles.rs` builds a square count
    pyramid over the trace's full data bounds — finest level is
    `PYRAMID_BASE_DIM`² (2048², `python/xyg/config.py`), each coarser level an
@@ -808,9 +819,13 @@ cache and dedicated 100M latency gate still open)**
    mean-color plane — the upsampled *colored* pyramid grid stays (blurry but
    truthful) rather than flipping to a count-only surface (recorded, dossier
    §28 table).
-8. Client: tile-keyed cache replaces window-keyed `densityCache` (same
-   eviction, same crossfades). Still pending — `js/src/45_lod.ts` keys the
-   cache by density window, and no client code reads the served level.
+8. **Done (#10):** spilled-pyramid refinements use a Rust-owned keyed
+   texture inventory and served level; `45_lod.ts` uploads missing tiles and
+   draws clipped, guttered source textures. Binary observations/replies,
+   window exposure, physical mean color, adjacent fades and the explicit
+   GPU resource coarsening exception are specified in
+   [density-tile-painter.md](density-tile-painter.md). The legacy window cache
+   remains for nonspilled, masked and nonlinear-axis paths.
 9. Bench gate: 100M pan p95 < 16ms kernel time, zoom step < 50ms, memory
    within 1.5× finest level. CI uses
    `benchmarks/bench_tier3_pyramid.{py,mjs}` (build-once / compose-many at
@@ -835,11 +850,14 @@ Roadmap: [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md). Tracked by
     `tiles: {hit, miss, resident_bytes, spilled_bytes, budget_bytes,
     over_budget}`; `pyramid_report_bytes` covers resident tiles + index
     metadata, spilled bytes reported separately (D2).
-11. Optional: client tile-keyed cache (`45_lod.ts`) consumes `(level, tx, ty)`.
+11. **Done (#10):** client tile-keyed cache (`45_lod.ts`) consumes Rust-served `(level, tx, ty)`.
     **Acceptance:** a pan inside the cached tile set re-ships **zero** tiles;
     a one-tile pan step ships only the newly exposed edge row/column
     (≤ ceil(h/256+1) or ≤ ceil(w/256+1) tiles); eviction and crossfade
-    behavior unchanged from the window-keyed cache (T7 pins still hold).
+    behavior uses the same screen-texture ceiling and existing adjacent fade,
+    with [recorded resource exceptions](density-tile-painter.md) when the
+    adjacent level cannot fit. Rust owns retention; T7 texture ownership
+    and disposal still hold.
 12. Evidence: extend [tier3-testing.md](tier3-testing.md) with spill fixtures;
     dedicated 100M latency gate (CodSpeed / perf runner) — not CI allocation
     of 1B points.

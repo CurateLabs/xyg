@@ -2562,6 +2562,7 @@ export class Figure {
       const ensured = cache.ensure(xCol.values, yCol.values, {
         noRescan: autoNoRescan,
         forceSpill,
+        coloredSource: binColors,
       });
       if (ensured.kind !== "none") {
         hasPyramidResource = true;

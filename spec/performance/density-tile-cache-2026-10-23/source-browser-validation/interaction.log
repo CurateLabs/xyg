@@ -1,0 +1,8 @@
+interaction stress smoke OK: 7 rows, reps=12, budgets verified
+  direct_scatter_interaction: wheel=12.1ms pan=10.8ms hover=41.5ms min_lit=51495 blank=0 overlaps=0
+  density_scatter_interaction: wheel=23.5ms pan=22.1ms hover=11.5ms min_lit=68907 blank=0 overlaps=0
+  graph_2000_interaction: wheel=58.1ms pan=55.6ms hover=211.8ms min_lit=100490 blank=0 overlaps=0
+  line_120k_interaction: wheel=78.3ms pan=50.9ms hover=47.5ms min_lit=12616 blank=0 overlaps=0
+  histogram_120k_interaction: wheel=31.7ms pan=13.8ms hover=14.4ms min_lit=72037 blank=0 overlaps=0
+  bar_1200_interaction: wheel=55.4ms pan=36.3ms hover=30.7ms min_lit=130214 blank=0 overlaps=0
+  heatmap_39600_interaction: wheel=31.6ms pan=16.9ms hover=14.5ms min_lit=247404 blank=0 overlaps=0

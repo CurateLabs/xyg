@@ -199,7 +199,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 394;
+pub const ABI_VERSION: u32 = 395;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -12827,6 +12827,69 @@ pub unsafe extern "C" fn xyg_tile_store_fetch(
     })
 }
 
+/// Host allocation bound for XYDT painter replies; no I/O. Zero on invalid shape.
+#[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
+pub extern "C" fn xyg_tile_store_paint_capacity(width: usize, height: usize) -> usize {
+    tile_store::paint_capacity(width, height).unwrap_or(0)
+}
+
+/// Rust-owned tile-keyed density paint reply (#10). The output is XYDT v1;
+/// 0 means refused/stale, usize::MAX means invalid or insufficient capacity.
+/// Caller owns `out_capacity` writable bytes; known is bounded XYDC v1 inventory.
+#[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
+pub unsafe extern "C" fn xyg_tile_store_paint(
+    store: u64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    width: usize,
+    height: usize,
+    opacity: f64,
+    known: *const u8,
+    known_len: usize,
+    out: *mut u8,
+    out_capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if known_len > 32 + tile_store::MAX_PAINT_KEYS * 12
+            || (known_len > 0 && known.is_null())
+            || out.is_null()
+            || out_capacity > tile_store::MAX_PAINT_BYTES
+        {
+            return usize::MAX;
+        }
+        let raw = if known_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(known, known_len)
+        };
+        let Some(obs) = tile_store::PaintObservation::decode(raw) else {
+            return usize::MAX;
+        };
+        let req = tile_store::PaintRequest {
+            window: [x0, x1, y0, y1],
+            width,
+            height,
+            opacity,
+            known_generation: obs.generation,
+            known_opacity: obs.opacity,
+            previous_level: obs.level,
+            known: &obs.keys,
+        };
+        match tile_store::reg_with(store, |s| s.paint_frame(&req)) {
+            Some(Ok(Some(bytes))) if bytes.len() <= out_capacity => {
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
+                bytes.len()
+            }
+            Some(Ok(None)) | None => 0,
+            _ => usize::MAX,
+        }
+    })
+}
+
 /// Compose the window from spilled tiles into a w×h grid — the tile-store
 /// counterpart of `xyg_pyramid_compose`, bit-identical to it for the same
 /// pyramid. Returns the level used (>= 0), -1 on stale handle/bad args or
@@ -13025,6 +13088,29 @@ pub unsafe extern "C" fn xyg_tile_store_free(store: u64) -> i32 {
 // than omitting symbols and making every otherwise-supported kernel unusable.
 #[cfg(target_os = "emscripten")]
 mod wasm_tile_store_stubs {
+    #[export_name = "xyg_tile_store_paint_capacity"]
+    pub extern "C" fn tile_store_paint_capacity(_width: usize, _height: usize) -> usize {
+        0
+    }
+
+    #[export_name = "xyg_tile_store_paint"]
+    pub unsafe extern "C" fn tile_store_paint(
+        _store: u64,
+        _x0: f64,
+        _x1: f64,
+        _y0: f64,
+        _y1: f64,
+        _width: usize,
+        _height: usize,
+        _opacity: f64,
+        _known: *const u8,
+        _known_len: usize,
+        _out: *mut u8,
+        _out_capacity: usize,
+    ) -> usize {
+        0
+    }
+
     #[export_name = "xyg_pyramid_spill"]
     pub unsafe extern "C" fn pyramid_spill(_handle: u64) -> u64 {
         0
