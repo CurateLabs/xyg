@@ -1975,6 +1975,12 @@ threshold, raster stable reason, and above-ceiling dense-image refusal.
 This does not claim to improve the conservative bounding-box cost model or
 admit the same high-cost fans to raster output.
 
+The follow-up [cached admission evidence](../benchmarks/raster-mesh-admission-cache/README.md)
+records scoped CodSpeed simulation and walltime comparisons for repeated
+native raster command export, with raw results, profiles, environment, and
+reproduction commands. The optimization removes the redundant face-count
+scan from exports without changing mesh admission limits.
+
 
 **Figure-wide bounds (#1006).** Before any host materializes columns or
 paint planes, the predicate also fails closed with
