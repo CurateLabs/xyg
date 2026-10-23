@@ -34,6 +34,14 @@ are null, with `cbf2c0eb...` recorded only as the base. The source ledger binds
 contract hashes are explicitly recorded after build. No producer bytes changed
 during the final run.
 
+A later CI repair regenerated eleven cross-host fixtures for ABI 395; each
+changed only its ABI stamp. The `fixed/` and `diagnostics/strict-null-oracle/`
+source ledgers retain their original build-time snapshot of
+`packages/xy-node/test/fixtures/mark_parity.json`, before that refresh. That
+Node test fixture is not shipped in the Python wheel. The other 679 source
+hashes, six prebuilt assets, and three ABI contracts still match; no runtime
+producer changed. The historical ledgers and report hashes are preserved.
+
 The matching current
 [full foundation report](../density-tile-cache-2026-10-23/source-browser-validation/xyg-tile-final-foundation.json)
 passes six ESM/IIFE no-refinement cases, and all four of its client/worker/WASM
