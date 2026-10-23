@@ -1872,7 +1872,11 @@ The Scene always keeps every face as three `Triangle` records:
   `stroke_opacity`, `role`, `joined_fill`) consume the shared Rust autorange
   over all three vertex columns;
 - format-aware consumer bounds (`SceneDocument::check_mesh_budgets`,
-  counts only, never rasterizes, #1042): PNG/JPEG/WebP above 1,024 faces,
+  counts only, never rasterizes, #1042): the decoder retains the triangle
+  record count during its existing validation pass, including invisible
+  records. This derived, non-serialized metadata makes the face-count gate
+  constant-time for repeated exports and scenes without meshes; annotation
+  additions introduce no triangles. PNG/JPEG/WebP above 1,024 faces,
   and SVG/PDF only above the 50,000-face vector ceiling, charge each face its
   plot-clipped pixel bounding box as `height × (width + 1)` CSS px² (covered pixels plus one
   pixel of per-row edge walking). A face whose style has

@@ -11832,6 +11832,8 @@ pub struct SceneDocument {
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
+    /// Derived during decode; annotation additions never introduce triangles.
+    triangle_record_count: usize,
     polar: Option<PolarSceneState>,
     images: Vec<SceneImage>,
     gradients: Vec<Option<AuthoredGradient>>,
@@ -11856,12 +11858,7 @@ impl SceneDocument {
     /// fill/outline cost bound. Decoded coordinates are already projected.
     pub fn check_mesh_budgets(&self, raster: bool) -> Result<(), SceneError> {
         let triangle = SceneRecordKind::Triangle;
-        let faces = self
-            .records
-            .iter()
-            .filter(|record| record.kind == triangle)
-            .count()
-            / 3;
+        let faces = self.triangle_record_count / 3;
         let vector = !raster;
         if vector && faces <= MAX_PUBLIC_TRIANGLE_MESH_FACES {
             return Ok(());
@@ -13495,8 +13492,10 @@ impl SceneDocument {
         }
         let mut records = Vec::with_capacity(record_count);
         let mut raster_mark_capacity = 0usize;
+        let mut triangle_record_count = 0usize;
         for _ in 0..record_count {
             let kind = SceneRecordKind::from_code(bytes[offset])?;
+            triangle_record_count += usize::from(kind == SceneRecordKind::Triangle);
             let visible = match bytes[offset + 1] {
                 0 => false,
                 1 => true,
@@ -13705,6 +13704,7 @@ impl SceneDocument {
             styles,
             records,
             raster_mark_capacity,
+            triangle_record_count,
             polar,
             images,
             gradients,
@@ -25820,6 +25820,48 @@ pub(crate) mod tests {
         let mut pixels = vec![0; w * h * 4];
         assert!(crate::raster::rasterize_into(&commands, w, h, &mut pixels));
         (w, h, pixels)
+    }
+
+    #[test]
+    fn mesh_admission_counts_mixed_and_invisible_records_during_decode() {
+        let layout = PlotLayout::new(320.0, 240.0, 30.0, 10.0, 12.0, 26.0).unwrap();
+        for faces in [0, PUBLIC_POLYFILL_GROUP_BUDGET, 1_100] {
+            let mut fixture = MeshFixture::overlap(faces);
+            // Ordinary marks must neither inflate nor hide the mesh face count.
+            for _ in 0..100 {
+                fixture.kinds.push(SceneRecordKind::Scatter as u8);
+                fixture.ids.push(99);
+                fixture.refs.push(0);
+                fixture.zeros.push(0.0);
+                fixture.symbols.push(0);
+                fixture.x0.push(5.0);
+                fixture.y0.push(5.0);
+            }
+            let mut encoded = fixture.batch(layout).encode();
+            let document = SceneDocument::decode(&encoded).unwrap();
+            assert_eq!(document.triangle_record_count, faces * 3);
+            let expected = if faces <= PUBLIC_POLYFILL_GROUP_BUDGET {
+                Ok(())
+            } else {
+                Err(SceneError::Limit)
+            };
+            for _ in 0..2 {
+                assert_eq!(document.check_mesh_budgets(true), expected);
+                assert_eq!(document.check_mesh_budgets(false), Ok(()));
+                assert_eq!(document.to_raster_commands(1.0).map(|_| ()), expected);
+            }
+            // Visibility affects charged work, but not the decoded face count.
+            let offset = SCENE_BATCH_HEADER_BYTES + 3 * SCENE_STYLE_RECORD_BYTES;
+            for index in 0..faces * 3 {
+                let at = offset + index * SCENE_BATCH_RECORD_BYTES;
+                encoded[at + 1] = 0;
+                encoded[at + 16..at + 48].fill(0);
+            }
+            let hidden = SceneDocument::decode(&encoded).unwrap();
+            assert_eq!(hidden.triangle_record_count, faces * 3);
+            assert_eq!(hidden.check_mesh_budgets(true), Ok(()));
+            assert!(hidden.to_raster_commands(1.0).is_ok());
+        }
     }
 
     #[test]
