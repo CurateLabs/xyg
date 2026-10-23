@@ -27,6 +27,7 @@ import tempfile
 import threading
 import time
 import weakref
+from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -212,7 +213,9 @@ def _generate_sources(tmp: Path, points: int, chunk_points: int) -> tuple[Any, A
     )
 
 
-def _buffer_inventory(spec: dict[str, Any], buffers: list[bytes]) -> dict[str, Any]:
+def _buffer_inventory(
+    spec: dict[str, Any], buffers: Sequence[bytes | memoryview]
+) -> dict[str, Any]:
     classes: dict[str, dict[str, int]] = {}
     kinds_by_buffer: dict[int, set[str]] = {}
     for column in spec.get("columns", []):
@@ -237,7 +240,9 @@ def _buffer_inventory(spec: dict[str, Any], buffers: list[bytes]) -> dict[str, A
     }
 
 
-def _reply_buffer_inventory(message: dict[str, Any], buffers: list[bytes]) -> dict[str, Any]:
+def _reply_buffer_inventory(
+    message: dict[str, Any], buffers: Sequence[bytes | memoryview]
+) -> dict[str, Any]:
     kinds_by_buffer: dict[int, set[str]] = {}
 
     def visit(value: Any) -> None:
@@ -906,6 +911,10 @@ def _payload_fingerprint(spec: dict[str, Any], buffers: list[bytes]) -> str:
 
 def _worker(config_path: Path) -> int:
     config = json.loads(config_path.read_text(encoding="utf-8"))
+    if config.get("workload") == "colored-spill":
+        from benchmarks._density_spill import worker
+
+        return worker(config)
     tmp = Path(config["tmp"])
     runtime_tmp = tmp / "runtime-tmp"
     runtime_tmp.mkdir()
@@ -1130,7 +1139,8 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         "points": args.points,
         "authority": args.authority,
         "chunk_points": args.chunk_points,
-        "chrome": str(args.chrome.resolve()),
+        "chrome": str(args.chrome.resolve()) if args.chrome else None,
+        "workload": getattr(args, "workload", "resident-count"),
         "timeout": args.timeout,
         "max_rss_bytes": int(args.max_rss_gib * 1024**3),
         "max_disk_bytes": int(args.max_disk_gib * 1024**3),
@@ -1178,7 +1188,10 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
             if cancelled:
                 reason = "cancelled"
                 break
-            if rss > config["max_rss_bytes"]:
+            if rss > config["max_rss_bytes"] or (
+                config["workload"] == "colored-spill"
+                and worker_peak_rss_bytes > config["max_rss_bytes"]
+            ):
                 reason = "rss_limit"
                 break
             if temp_bytes > config["max_disk_bytes"]:
@@ -1200,6 +1213,9 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         orphan_after = _process_group_rss(pgid)[1]
 
     report: dict[str, Any]
+    report_kind = (
+        "density-colored-spill" if config["workload"] == "colored-spill" else "density-e2e"
+    )
     if result_path.is_file():
         try:
             decoded = json.loads(result_path.read_text(encoding="utf-8"))
@@ -1209,7 +1225,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         except (OSError, ValueError) as exc:
             report = {
                 "schema_version": SCHEMA_VERSION,
-                "report_kind": "density-e2e",
+                "report_kind": report_kind,
                 "status": "failed",
                 "authority": args.authority,
                 "point_count": args.points,
@@ -1218,7 +1234,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
     else:
         report = {
             "schema_version": SCHEMA_VERSION,
-            "report_kind": "density-e2e",
+            "report_kind": report_kind,
             "status": "failed",
             "authority": args.authority,
             "point_count": args.points,
@@ -1234,6 +1250,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         }
     )
     report["process_tree"] = {
+        "elapsed_seconds": time.monotonic() - start,
         "peak_rss_bytes": peak_tree_rss,
         "peak_temp_bytes": peak_temp_bytes,
         "peak_process_count": len(peak_pids),
@@ -1255,12 +1272,27 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         report["worker_stderr_tail"] = stderr[-4000:]
     failed = reason is not None or proc.returncode != 0 or report.get("status") != "ok"
     failed = failed or bool(orphan_after)
+    if config["workload"] == "colored-spill" and failed:
+        report["status"] = "failed"
+        report["failure"] = reason or report.get("failure") or "worker_or_cleanup_failed"
     return report, failed
 
 
 def _supervise(args: argparse.Namespace) -> int:
-    _authority_guard(args.points, args.authority, dict(os.environ))
-    source_bytes = args.points * 16
+    if getattr(args, "workload", "resident-count") == "colored-spill":
+        from benchmarks._density_spill import guard
+
+        guard(
+            args.points,
+            args.authority,
+            dict(os.environ),
+            args.timeout,
+            args.max_rss_gib,
+            args.max_disk_gib,
+        )
+    else:
+        _authority_guard(args.points, args.authority, dict(os.environ))
+    source_bytes = args.points * (24 if getattr(args, "workload", "") == "colored-spill" else 16)
     if source_bytes > args.max_disk_gib * 1024**3:
         raise ValueError("configured disk ceiling is smaller than the two canonical f64 sources")
     output = args.output.resolve()
@@ -1296,12 +1328,25 @@ def _supervise(args: argparse.Namespace) -> int:
         failed = True
     if not cleanup["temp_tree_removed"]:
         failed = True
+    if getattr(args, "workload", "resident-count") == "colored-spill" and not failed:
+        from scripts.verify_density_spill_report import validate
+
+        errors = validate(
+            report, expected_sha=os.environ.get("GITHUB_SHA") if args.authority else None
+        )
+        if errors:
+            report["status"] = "failed"
+            report["failure"] = "report_validation: " + "; ".join(errors)
+            failed = True
     _atomic_write_json(output, report)
     return int(failed)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--workload", choices=("resident-count", "colored-spill"), default="resident-count"
+    )
     parser.add_argument("--points", type=int, default=1_000_000)
     parser.add_argument("--output", type=Path, default=Path("density-e2e.json"))
     parser.add_argument("--chrome", type=Path)
@@ -1316,7 +1361,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.worker_config is not None:
         return _worker(args.worker_config)
-    if args.chrome is None or not args.chrome.is_file():
+    if args.workload == "resident-count" and (args.chrome is None or not args.chrome.is_file()):
         parser.error("--chrome must name an existing Chromium executable")
     bounded_numbers = (args.timeout, args.max_rss_gib, args.max_disk_gib)
     if (

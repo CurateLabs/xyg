@@ -21,6 +21,7 @@ import {
   figure,
   pyramidAppend,
   pyramidBuild,
+  pyramidBuildColor,
   pyramidCompose,
   pyramidCount,
   pyramidFree,
@@ -28,6 +29,9 @@ import {
   pyramidSpill,
   shouldUsePyramid,
   tileStoreCompose,
+  tileStoreComposeColor,
+  tileStoreAppend,
+  tileBudgetSet,
   tileStoreFree,
   tileStoreStats,
 } from "../src/index.js";
@@ -195,6 +199,55 @@ test("pyramid spill compose is bit-identical to in-RAM compose", () => {
   assert.ok(stats.spilled_bytes > 0);
   assert.equal(stats.budget_bytes, PYRAMID_RESIDENT_BYTES);
   assert.equal(tileStoreFree(store), true);
+});
+
+test("colored spill refuses append without changing counts or mean colors", () => {
+  const n = 8192;
+  const x = fill(n, i => ((i * 17) % n) / n);
+  const y = fill(n, i => ((i * 31) % n) / n);
+  const idx = Uint8Array.from(x, v => v >= 0.5 ? 1 : 0);
+  const lut = new Uint8Array([240, 30, 20, 255, 20, 60, 230, 255]);
+  const handle = pyramidBuildColor(x, y, 0, 1, 0, 1, 512, { idx, lut });
+  let store = 0n;
+  try {
+    store = pyramidSpill(handle);
+    assert.notEqual(store, 0n);
+    const before = tileStoreComposeColor(store, 0, 1, 0, 1, 64, 48, { maxUpsample: 16 });
+    assert.ok(before);
+    assert.equal(before.level, 3);
+    assert.equal(crypto.createHash("sha256").update(Buffer.concat([
+      Buffer.from(before.grid.buffer, before.grid.byteOffset, before.grid.byteLength),
+      Buffer.from(before.rgba.buffer, before.rgba.byteOffset, before.rgba.byteLength),
+    ])).digest("hex"), "281ddd659661acc5873e9cb71c96b323fe15c8a96623592ad8bdd5763e6c51a4");
+    assert.equal(tileStoreAppend(store, new Float64Array([0.25]), new Float64Array([0.25])), false);
+    const after = tileStoreComposeColor(store, 0, 1, 0, 1, 64, 48, { maxUpsample: 16 });
+    assert.deepEqual(after, before);
+  } finally {
+    if (store) tileStoreFree(store);
+    pyramidFree(handle);
+  }
+});
+
+test("two host stores share the process tile budget and evict sibling tiles", () => {
+  const x = fill(4096, i => ((i * 17) % 4096) / 4096);
+  const y = fill(4096, i => ((i * 31) % 4096) / 4096);
+  const stores = [];
+  try {
+    for (let i = 0; i < 2; i++) {
+      const handle = pyramidBuild(x, y, 0, 1, 0, 1, 512);
+      try { stores.push(pyramidSpill(handle)); } finally { pyramidFree(handle); }
+      assert.notEqual(stores[i], 0n);
+    }
+    tileBudgetSet(300_000); // room for one count tile, never two
+    for (const store of [stores[0], stores[1], stores[0]]) {
+      assert.ok(tileStoreCompose(store, 0, 1, 0, 1, 64, 48, { maxUpsample: 16 }));
+      assert.ok(Number(tileStoreStats(store).resident_bytes) <= 300_000);
+    }
+    assert.equal(Number(tileStoreStats(stores[0]).miss), 2);
+  } finally {
+    for (const store of stores) tileStoreFree(store);
+    tileBudgetSet(PYRAMID_RESIDENT_BYTES);
+  }
 });
 
 test("figure pyramidSpill records §28 tiles binning on density tier", () => {

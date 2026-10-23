@@ -365,7 +365,7 @@ impl TileStore {
     }
 
     fn evict(&mut self, key: (u32, u32, u32)) -> io::Result<()> {
-        let Some(tile) = self.resident.remove(&key) else {
+        let Some(tile) = self.resident.get(&key) else {
             return Ok(());
         };
         if tile.dirty {
@@ -378,6 +378,9 @@ impl TileStore {
             // Colored stores refuse appends (D4), so a dirty color plane is
             // unreachable; write-back covers counts only by construction.
         }
+        // RAM remains the dirty source until write-back fully succeeds.
+        // Failed or partial writes must leave both the tile and its charge.
+        self.resident.remove(&key);
         GLOBAL_RESIDENT.fetch_sub(self.tile_bytes(), Ordering::Relaxed);
         Ok(())
     }
@@ -496,7 +499,10 @@ impl TileStore {
             }
         }
         self.begin_frame();
-        let tile = self.fetch(level, tx, ty, &[])?;
+        let tile = match self.fetch(level, tx, ty, &[]) {
+            Ok(tile) => tile,
+            Err(error) => return Err(self.finish_failed_frame(error)),
+        };
         out_counts.copy_from_slice(&tile.counts);
         if let Some(oc) = out_color {
             oc.copy_from_slice(tile.color.as_ref().expect("colored store"));
@@ -516,6 +522,14 @@ impl TileStore {
     /// until the next frame overwrites it.
     fn finish_frame(&mut self) -> io::Result<()> {
         self.evict_to_budget(0, &[])
+    }
+
+    /// Release frame pins on I/O failure too. If cleanup itself cannot write
+    /// a dirty tile, retain that source and its charge; the original operation
+    /// error takes precedence over the secondary cleanup error.
+    fn finish_failed_frame(&mut self, error: io::Error) -> io::Error {
+        let _ = self.finish_frame();
+        error
     }
 
     /// The cell rect `[gx0, gx1) × [gy0, gy1)` of `level` that a compose of
@@ -679,7 +693,9 @@ impl TileStore {
                 Ok(Some(level))
             }
             Some(rect) => {
-                let (counts, _, _pinned) = self.gather_rect(level, rect, false)?;
+                let (counts, _, _pinned) = self
+                    .gather_rect(level, rect, false)
+                    .map_err(|error| self.finish_failed_frame(error))?;
                 let view = LevelView::window(
                     &counts,
                     None,
@@ -746,7 +762,9 @@ impl TileStore {
                 Ok(Some(level))
             }
             Some(rect) => {
-                let (counts, color, _pinned) = self.gather_rect(level, rect, true)?;
+                let (counts, color, _pinned) = self
+                    .gather_rect(level, rect, true)
+                    .map_err(|error| self.finish_failed_frame(error))?;
                 let color = color.expect("colored gather");
                 let view = LevelView::window(
                     &counts,
@@ -789,6 +807,9 @@ impl TileStore {
             }
         }
         self.begin_frame();
+        // I/O can fail after applying only a prefix. Invalidate texture keys
+        // before any mutation, including when no successful reply follows.
+        self.paint_generation = PAINT_GENERATION.fetch_add(1, Ordering::Relaxed);
         let base_dim = self.dims[0];
         let sx = base_dim as f64 / (self.x1 - self.x0);
         let sy = base_dim as f64 / (self.y1 - self.y0);
@@ -801,7 +822,9 @@ impl TileStore {
             for level in 0..self.dims.len() {
                 let (tx, ty) = ((cx / TILE_DIM) as u32, (cy / TILE_DIM) as u32);
                 let key = (level as u32, tx, ty);
-                self.fetch(level as u32, tx, ty, &[key])?;
+                self.fetch(level as u32, tx, ty, &[key])
+                    .map(|_| ())
+                    .map_err(|error| self.finish_failed_frame(error))?;
                 let tile = self.resident.get_mut(&key).expect("fetched tile");
                 let cell = &mut tile.counts[(cy % TILE_DIM) * TILE_DIM + (cx % TILE_DIM)];
                 *cell = cell.saturating_add(1);
@@ -811,7 +834,6 @@ impl TileStore {
                 cy >>= 1;
             }
         }
-        self.paint_generation = PAINT_GENERATION.fetch_add(1, Ordering::Relaxed);
         self.finish_frame()?;
         Ok(true)
     }
@@ -989,6 +1011,377 @@ mod tests {
         (40.0, 90.0, 10.0, 60.0, 256, 256, 2),
         (49.0, 51.0, 49.0, 51.0, 256, 256, 1 << 20),
     ];
+
+    #[test]
+    fn failed_dirty_writeback_retains_source_and_accounting_until_retry() {
+        let _guard = lock_budget();
+        budget_set(0);
+        assert_eq!(global_resident(), 0);
+        let (mut x, mut y) = scattered(4096);
+        let p = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 1024).unwrap();
+        let mut store = TileStore::spill(&p).unwrap();
+        assert!(store.append(&[12.5], &[12.5]).unwrap());
+        x.push(12.5);
+        y.push(12.5);
+        let rebuilt = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 1024).unwrap();
+        let resident = global_resident();
+        let dirty = store.resident.len();
+        store.file = File::open(&store.path).unwrap();
+        budget_set(1);
+        let mut tile = vec![99; TILE_CELLS];
+        // Admission must evict a dirty tile first. A read-only descriptor
+        // fails deterministically even when the test runs as root.
+        for _ in 0..2 {
+            assert!(store.fetch_into(0, 3, 3, &mut tile, None).is_err());
+            assert_eq!(tile, vec![99; TILE_CELLS]);
+            assert_eq!(store.resident.len(), dirty, "failed write retains source");
+            assert!(store.resident.values().all(|t| t.dirty));
+            assert_eq!(global_resident(), resident, "retained RAM stays charged");
+        }
+        store.file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&store.path)
+            .unwrap();
+        store.finish_frame().unwrap();
+        assert_eq!(global_resident(), 0);
+        let mut got = vec![0.0; 512 * 512];
+        let mut expected = got.clone();
+        let level = tiles::compose(&rebuilt, 0.0, 100.0, 0.0, 100.0, 512, 512, 2, &mut expected);
+        assert_eq!(
+            store
+                .compose(0.0, 100.0, 0.0, 100.0, 512, 512, 2, &mut got)
+                .unwrap(),
+            level
+        );
+        assert_eq!(got, expected, "retry persists every appended count");
+        let path = store.path.clone();
+        drop(store);
+        assert!(!path.exists());
+        assert_eq!(global_resident(), 0);
+        budget_set(0);
+    }
+
+    #[test]
+    fn failed_partial_gathers_release_residency_and_recover() {
+        let _guard = lock_budget();
+        assert_eq!(global_resident(), 0);
+        let (x, y) = scattered(4096);
+        let rgba = [120, 30, 240, 128].repeat(x.len());
+        for colored in [false, true] {
+            let p = if colored {
+                tiles::build_color(
+                    &x,
+                    &y,
+                    &kernels::BinColorSource::Rgba(&rgba),
+                    0.0,
+                    100.0,
+                    0.0,
+                    100.0,
+                    1024,
+                )
+                .unwrap()
+            } else {
+                tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 1024).unwrap()
+            };
+            for paint in [false, true] {
+                budget_set(1);
+                let mut store = TileStore::spill(&p).unwrap();
+                let original = fs::read(&store.path).unwrap();
+                assert!(original.len() > 1 << 20, "MB-scale spill fixture");
+                let offset = if colored {
+                    store.color_offset(0, 2, 0) + COLOR_SLAB_BYTES / 2
+                } else {
+                    store.count_offset(0, 2, 0) + COUNT_SLAB_BYTES / 2
+                };
+                store.file.set_len(offset).unwrap();
+                let request = PaintRequest {
+                    window: [0.0, 100.0, 0.0, 100.0],
+                    width: 1024,
+                    height: 1024,
+                    opacity: 0.7,
+                    known_generation: 0,
+                    known_opacity: -1.0,
+                    previous_level: -1,
+                    known: &[],
+                };
+                let mut counts = vec![7.0; 1024 * 1024];
+                let mut colors = vec![9; counts.len() * 4];
+                let error = if paint {
+                    store.paint_frame(&request).unwrap_err()
+                } else if colored {
+                    store
+                        .compose_color(
+                            0.0,
+                            100.0,
+                            0.0,
+                            100.0,
+                            1024,
+                            1024,
+                            2,
+                            &mut counts,
+                            &mut colors,
+                        )
+                        .unwrap_err()
+                } else {
+                    store
+                        .compose(0.0, 100.0, 0.0, 100.0, 1024, 1024, 2, &mut counts)
+                        .unwrap_err()
+                };
+                assert_eq!(error.kind(), io::ErrorKind::UnexpectedEof);
+                assert!(store.misses >= 3, "error follows successful pinned loads");
+                assert!(counts.iter().all(|&v| v == 7.0));
+                assert!(colors.iter().all(|&v| v == 9));
+                assert!(store.over_budget, "working-set pressure remains recorded");
+                assert_eq!(
+                    global_resident(),
+                    0,
+                    "failed frame releases its pins: colored={colored}, paint={paint}"
+                );
+                assert!(store.resident.is_empty());
+                fs::write(&store.path, original).unwrap();
+                if paint {
+                    let got = store.paint_frame(&request).unwrap().unwrap();
+                    let mut oracle = TileStore::spill(&p).unwrap();
+                    let mut expected = oracle.paint_frame(&request).unwrap().unwrap();
+                    // Independent stores have distinct generation identities.
+                    expected[32..40].copy_from_slice(&got[32..40]);
+                    assert_eq!(got, expected);
+                } else {
+                    let mut expected = vec![0.0; counts.len()];
+                    if colored {
+                        let mut expected_colors = vec![0; colors.len()];
+                        let level = tiles::compose_color(
+                            &p,
+                            0.0,
+                            100.0,
+                            0.0,
+                            100.0,
+                            1024,
+                            1024,
+                            2,
+                            &mut expected,
+                            &mut expected_colors,
+                        );
+                        assert_eq!(
+                            store
+                                .compose_color(
+                                    0.0,
+                                    100.0,
+                                    0.0,
+                                    100.0,
+                                    1024,
+                                    1024,
+                                    2,
+                                    &mut counts,
+                                    &mut colors
+                                )
+                                .unwrap(),
+                            level
+                        );
+                        assert_eq!(colors, expected_colors);
+                    } else {
+                        let level = tiles::compose(
+                            &p,
+                            0.0,
+                            100.0,
+                            0.0,
+                            100.0,
+                            1024,
+                            1024,
+                            2,
+                            &mut expected,
+                        );
+                        assert_eq!(
+                            store
+                                .compose(0.0, 100.0, 0.0, 100.0, 1024, 1024, 2, &mut counts)
+                                .unwrap(),
+                            level
+                        );
+                    }
+                    assert_eq!(counts, expected);
+                }
+                assert_eq!(global_resident(), 0);
+                let path = store.path.clone();
+                drop(store);
+                assert!(!path.exists());
+            }
+        }
+        budget_set(0);
+    }
+
+    #[test]
+    fn failed_append_invalidates_paint_generation_and_retains_dirty_counts() {
+        let _guard = lock_budget();
+        budget_set(0);
+        let (x, y) = scattered(4096);
+        let p = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 1024).unwrap();
+        let mut store = TileStore::spill(&p).unwrap();
+        let generation = store.paint_generation;
+        store.file = File::open(&store.path).unwrap();
+        budget_set(1);
+        assert!(store.append(&[12.5], &[12.5]).is_err());
+        assert_ne!(
+            store.paint_generation, generation,
+            "partially changed cells invalidate GPU keys even on I/O error"
+        );
+        let tile = &store.resident[&(0, 0, 0)];
+        assert!(tile.dirty);
+        assert_eq!(
+            tile.counts[128 * TILE_DIM + 128],
+            p.level_counts(0)[128 * 1024 + 128] + 1
+        );
+        assert_eq!(global_resident(), store.tile_bytes());
+        // An I/O-failed append is partial; discard/rebuild rather than replay
+        // a batch that might otherwise count its applied prefix twice.
+        let path = store.path.clone();
+        drop(store);
+        assert!(!path.exists());
+        assert_eq!(global_resident(), 0);
+        budget_set(0);
+    }
+
+    #[test]
+    fn failed_gather_preserves_read_error_when_dirty_cleanup_also_fails() {
+        let _guard = lock_budget();
+        budget_set(0);
+        let (x, y) = scattered(4096);
+        let p = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 1024).unwrap();
+        let mut store = TileStore::spill(&p).unwrap();
+        assert!(store.append(&[12.5], &[12.5]).unwrap());
+        let other_keys: Vec<_> = store
+            .resident
+            .keys()
+            .copied()
+            .filter(|&k| k != (0, 0, 0))
+            .collect();
+        for key in other_keys {
+            store.evict(key).unwrap();
+        }
+        let original = fs::read(&store.path).unwrap();
+        store
+            .file
+            .set_len(store.count_offset(0, 1, 0) + COUNT_SLAB_BYTES / 2)
+            .unwrap();
+        store.file = File::open(&store.path).unwrap();
+        budget_set(1);
+        let mut grid = vec![7.0; 1024 * 1024];
+        let error = store
+            .compose(0.0, 100.0, 0.0, 100.0, 1024, 1024, 2, &mut grid)
+            .unwrap_err();
+        assert_eq!(
+            error.kind(),
+            io::ErrorKind::UnexpectedEof,
+            "cleanup error must not mask the failed read"
+        );
+        assert!(grid.iter().all(|&v| v == 7.0));
+        assert!(store.resident[&(0, 0, 0)].dirty);
+        assert_eq!(global_resident(), store.tile_bytes());
+        fs::write(&store.path, original).unwrap();
+        store.file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&store.path)
+            .unwrap();
+        store.finish_frame().unwrap();
+        assert_eq!(global_resident(), 0);
+        let mut tile = vec![0; TILE_CELLS];
+        assert!(store.fetch_into(0, 0, 0, &mut tile, None).unwrap());
+        assert_eq!(
+            tile[128 * TILE_DIM + 128],
+            p.level_counts(0)[128 * 1024 + 128] + 1
+        );
+        let path = store.path.clone();
+        drop(store);
+        assert!(!path.exists());
+        assert_eq!(global_resident(), 0);
+        budget_set(0);
+    }
+
+    #[test]
+    fn failed_fetch_admits_neither_partial_nor_unreadable_planes() {
+        let _guard = lock_budget();
+        budget_set(1);
+        assert_eq!(global_resident(), 0);
+        let (x, y) = scattered(4096);
+        let rgba = [255, 0, 0, 255].repeat(x.len());
+        let p = tiles::build_color(
+            &x,
+            &y,
+            &kernels::BinColorSource::Rgba(&rgba),
+            0.0,
+            100.0,
+            0.0,
+            100.0,
+            512,
+        )
+        .unwrap();
+        let mut store = TileStore::spill(&p).unwrap();
+        let original = fs::read(&store.path).unwrap();
+        let mut counts = vec![99; TILE_CELLS];
+        let mut colors = vec![[99; 4]; TILE_CELLS];
+        for unreadable in [false, true] {
+            if unreadable {
+                fs::write(&store.path, &original).unwrap();
+                store.file = OpenOptions::new().write(true).open(&store.path).unwrap();
+            } else {
+                store
+                    .file
+                    .set_len(store.color_offset(0, 0, 0) + COLOR_SLAB_BYTES / 2)
+                    .unwrap();
+            }
+            let error = store
+                .fetch_into(0, 0, 0, &mut counts, Some(&mut colors))
+                .unwrap_err();
+            if !unreadable {
+                assert_eq!(error.kind(), io::ErrorKind::UnexpectedEof);
+            }
+            assert!(store.resident.is_empty());
+            assert_eq!(global_resident(), 0);
+            assert!(counts.iter().all(|&v| v == 99));
+            assert!(colors.iter().all(|&v| v == [99; 4]));
+        }
+        store.file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&store.path)
+            .unwrap();
+        assert!(store
+            .fetch_into(0, 0, 0, &mut counts, Some(&mut colors))
+            .unwrap());
+        assert!(counts.iter().any(|&v| v != 99));
+        let path = store.path.clone();
+        drop(store);
+        assert!(!path.exists());
+        assert_eq!(global_resident(), 0);
+        budget_set(0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn missing_path_and_permission_changes_do_not_revoke_live_descriptor() {
+        use std::os::unix::fs::PermissionsExt;
+        let _guard = lock_budget();
+        budget_set(1);
+        let (x, y) = scattered(4096);
+        let p = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 512).unwrap();
+        let mut store = TileStore::spill(&p).unwrap();
+        fs::set_permissions(&store.path, fs::Permissions::from_mode(0o0)).unwrap();
+        let mut tile = vec![0; TILE_CELLS];
+        assert!(store.fetch_into(0, 0, 0, &mut tile, None).unwrap());
+        fs::remove_file(&store.path).unwrap();
+        assert!(!store.path.exists());
+        assert!(store.append(&[12.5], &[12.5]).unwrap());
+        assert!(store.fetch_into(0, 0, 0, &mut tile, None).unwrap());
+        let mut grid = vec![0.0; 512 * 512];
+        store
+            .compose(0.0, 100.0, 0.0, 100.0, 512, 512, 2, &mut grid)
+            .unwrap();
+        assert_eq!(grid.iter().sum::<f32>(), (x.len() + 1) as f32);
+        drop(store);
+        assert_eq!(global_resident(), 0);
+        budget_set(0);
+    }
 
     #[test]
     fn spill_fetch_and_compose_match_in_ram_bit_for_bit() {

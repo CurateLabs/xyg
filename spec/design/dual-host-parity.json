@@ -352,7 +352,7 @@
       "name": "out-of-core tile pyramid",
       "python": "ready",
       "node": "ready",
-      "notes": "ready covers Phase-3 square pyramid + Phase-4 256² disk tile spill on both hosts (WP1 ABI 73 + WP2 engagement): §28 binning pyramid-L*-tiles, PYRAMID_RESIDENT_BYTES / xyg_tile_budget_set, tiles hit/miss/resident/spilled stats. Optional client tile cache (#10) and evidence (#11) remain. #5 with #8/#9 done; #10/#11 open. spec/design/tier3-phase4-roadmap.md."
+      "notes": "ready covers Phase-3 square pyramid + Phase-4 256² disk tile spill on both hosts (WP1 ABI 73 + WP2 engagement): §28 binning pyramid-L*-tiles, PYRAMID_RESIDENT_BYTES / xyg_tile_budget_set, tiles hit/miss/resident/spilled stats. Rust-served binary tile keys and browser texture reuse (#10) are implemented; #11 scale/performance evidence remains open. This row qualifies the bounded host capabilities, not the full #5/#109 Phase-4 exit. spec/design/tier3-phase4-roadmap.md."
     },
     {
       "tier": 3,

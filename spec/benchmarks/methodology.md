@@ -40,6 +40,54 @@ are published.
 | small-data | full pipeline at N=1k/10k: prep+TTFR+interaction-ready | the "performance library must not lose the everyday case" check |
 | large-data | N=1M/10M/100M per mode ladder | scatter+line+heatmap scenarios |
 
+### UX live-host transport prerequisite (#11)
+
+`benchmarks/_ux_live_host.py` connects the shipped `ChartView` to the production
+`handle_message(fig, content, buffers)` dispatcher. Both attachment-bearing
+requests and all initial/reply payloads use the production aligned `XYBF` v1
+frame (`xyg.channel.encode_frame` / `decode_frame` and the shipped JS decoder).
+The page's small encoder forwards exactly each ArrayBuffer/view's byte span,
+including TypedArray subviews and DataViews, without sending unrelated owner
+bytes. Legacy JSON text requests without attachments remain supported.
+
+Control ingress is limited to 64 KiB per WebSocket message, 16 KiB of JSON
+metadata, 16 attachments and 64 KiB per attachment; the aggregate frame limit
+still applies. A `density_view` with `tile_cache: true` must carry exactly one
+XYDC v1 attachment of 32–3,104 bytes with a matching declared key count (at most
+256). These identity/version/extent checks run before channel dispatch; Rust
+retains ownership of inventory semantics, keys and product decisions. Density
+requests without inventory retain their legacy no-buffer form. Malformed or
+truncated envelopes/control attachments close with code 1007, and Tornado
+rejects WebSocket messages over 64 KiB with code 1009. Outgoing payloads use the
+production frame limits (512 MiB total, 8 MiB metadata, 4,096 attachments,
+256 MiB per attachment), independent of the small control-ingress budget.
+
+`window.__arm.applicationBytes()` exposes cumulative per-page socket-message
+body bytes; `/transport_metrics` exposes the host's cumulative totals across
+connections. Both snapshots identify `layer: "websocket_application_messages"`,
+with `to_host` / `from_host` directional `json_bytes`, `binary_frame_bytes`,
+`total_bytes`, and an overall `total_bytes`. JSON counts UTF-8 text bytes;
+binary counts the entire XYBF frame, including header, metadata, attachment
+lengths and alignment padding. Initial paint and subsequent replies are
+included. Sends count bodies submitted to the socket API, and receives count
+bodies delivered by that API, including malformed bodies rejected by the host.
+Oversized messages rejected by Tornado before delivery are excluded. HTTP
+page/assets/oracle/metrics, WebSocket framing and handshakes, compression,
+TLS and TCP/IP overhead are excluded: these are **application-message bytes**,
+not network-stack bytes or proof of delivery.
+
+Bounded transport proof:
+
+```bash
+uv run --with tornado pytest tests/test_ux_live_host_transport.py -q
+```
+
+It exercises Python/native roundtrips, the actual page comm encoder in Node,
+production browser decode, and a small real loopback WebSocket, without large
+source arrays. Node/client-build and optional Tornado prerequisites produce
+explicit skips if absent. This repairs the harness prerequisite only; it makes
+no competitive performance claim and changes no UX workload or thresholds.
+
 ## 2. Truthfulness/exactness checks (the novel part)
 
 Every performance scenario carries an **oracle assertion**; a run that fails
@@ -593,7 +641,7 @@ including heatmap after #261.
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **123 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **131 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
 
@@ -727,10 +775,17 @@ the path measured rather than the identity fast path. Browser input-to-pixel
 latency stays in `bench_interaction.py`; before this module a selection
 regression could only surface as browser wall-clock noise.
 
-**`benchmarks/test_codspeed_kernels.py` — 80 rows** (75 functions; three are
+**`benchmarks/test_codspeed_kernels.py` — 88 rows** (78 functions; six are
 parametrized, over 2 ingest flavors, 3 `bin_2d` thread-cap regimes, and the 3
 #1006 triangle-mesh tier thresholds of `test_svg_export_triangle_mesh_tier_thresholds`:
-1,024, 49,920, and 50,176 faces). This is
+1,024, 49,920, and 50,176 faces; the spill snapshot and compose cases each
+expand over count/mean-color, and fetch expands over count/mean-color ×
+warm-hit/miss-with-eviction). The eight spill rows measure snapshot/teardown,
+preallocated C-ABI fetch, and the allocating Python/native compose wrapper.
+Their bounded source construction stays outside timing; simulation measures
+CPU work rather than disk wall latency. The color variants use explicit test
+parametrization so the static inventory and pytest collection agree. These
+are new rows; no existing row is renamed or removed. This is
 the bulk of the suite and covers the native compute core the rest of the engine
 sits on: decimation tiers, f32 encoding, and zone maps (`spec/design-dossier.md`
 §5, §4/§16, and §22 respectively), plus the end-to-end figure → wire-payload

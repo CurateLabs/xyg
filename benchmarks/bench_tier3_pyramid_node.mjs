@@ -7,6 +7,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import os from "node:os";
 
 import { nativeLibraryFileName } from "../packages/xy-node/src/native-path.js";
 
@@ -33,6 +36,7 @@ function spillEvidence(x, y) {
   let handle = pyramidBuild(x, y, 0, 1, 0, 1, 1024), store = 0n;
   assert.notEqual(handle, 0n);
   const budget = 2 << 20;
+  const residentSamples = [];
   const windows = Array.from({ length: 32 }, (_, index) => {
     const k = [0, 1, 2, 3, 4, 3, 2, 1][index % 8];
     return [k / 8, k / 8 + 0.5, 0, 0.5];
@@ -49,7 +53,8 @@ function spillEvidence(x, y) {
       assert.ok(expected && actual);
       assert.equal(actual.level, expected.level);
       assert.deepEqual(actual.grid, expected.grid);
-      assert.ok(Number(tileStoreStats(store).resident_bytes) <= budget);
+      residentSamples.push(Number(tileStoreStats(store).resident_bytes));
+      assert.ok(residentSamples.at(-1) <= budget);
     }
     assert.equal(pyramidFree(handle), true);
     handle = 0n;
@@ -89,7 +94,8 @@ function spillEvidence(x, y) {
       assert.equal(transferred, missing);
       assert.equal(logical, u32(68));
       return { pool: kept, state: { generation, level, keys, hashes,
-        normalization: Buffer.from(packet.subarray(40, 56)).toString("hex"), transferred, bytes: packet.length } };
+        normalization: Buffer.from(packet.subarray(40, 56)).toString("hex"), transferred, bytes: packet.length,
+        descriptors: count, gpu_bytes: u32(68), gpu_budget: u32(64) } };
     }
     let pool = new Map(), state = null;
     const observed = [], times = [];
@@ -100,7 +106,8 @@ function spillEvidence(x, y) {
       assert.ok(packet);
       ({ pool, state } = frame(packet, pool));
       observed.push(state);
-      assert.ok(Number(tileStoreStats(store).resident_bytes) <= budget);
+      residentSamples.push(Number(tileStoreStats(store).resident_bytes));
+      assert.ok(residentSamples.at(-1) <= budget);
     }
     let uncachedTiles = 0, uncachedBytes = 0;
     for (const [index, window] of windows.entries()) {
@@ -118,9 +125,14 @@ function spillEvidence(x, y) {
     assert.ok(Number(stats.hit) > 0 && Number(stats.miss) > 0);
     assert.ok(Number(stats.resident_bytes) <= Number(stats.budget_bytes));
     assert.equal(Number(stats.budget_bytes), budget);
-    times.sort((a, b) => a - b);
+    const sortedTimes = [...times].sort((a, b) => a - b);
     return { spill_ms: spillMs, compose_oracle_frames: windows.length, tile_frames: windows.length,
-      tile_frame_p95_ms: times[Math.floor(times.length * 0.95)],
+      tile_frame_p95_ms: sortedTimes[Math.floor(times.length * 0.95)],
+      tile_frame_samples_ms: times,
+      max_descriptors: Math.max(...observed.map(item => item.descriptors)),
+      max_gpu_bytes: Math.max(...observed.map(item => item.gpu_bytes)),
+      gpu_budget_bytes: observed[0].gpu_budget,
+      resident_samples_bytes: residentSamples,
       timing_scope: "cached sequence before separate uncached validation; advisory only",
       cached_transferred_tiles: cachedTiles, uncached_transferred_tiles: uncachedTiles,
       cached_reply_bytes: observed.reduce((sum, item) => sum + item.bytes, 0), uncached_reply_bytes: uncachedBytes,
@@ -170,6 +182,7 @@ const p95 = composeMs[Math.floor(composeMs.length * 0.95)];
 const resident = pyramidReportBytes(256);
 const rawXy = n * 16;
 const report = {
+  schema_version: 1,
   host: "node",
   family: "tier3_pyramid",
   n,
@@ -182,6 +195,21 @@ const report = {
   budget_ok: resident < rawXy && [...binnings].every((b) => b.startsWith("pyramid-L")),
   latency_advisory_ok: p95 < 50.0,
   spill: spillEvidence(x, y),
+  environment: {
+    generated_at_utc: new Date().toISOString(),
+    runtime: { node: process.version, v8: process.versions.v8 },
+    platform: { system: os.platform(), release: os.release(), machine: os.arch() },
+    cpu_count: os.cpus().length,
+    git: { commit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim() },
+  },
+  provenance: {
+    native_sha256: createHash("sha256").update(readFileSync(process.env.XYG_NATIVE_LIB)).digest("hex"),
+    source_sha256: Object.fromEntries([
+      "benchmarks/bench_tier3_pyramid_node.mjs", "packages/xy-node/src/pyramid.js",
+      "crates/xyg-engine/src/tile_store.rs", "crates/xyg-engine/src/tile_store/paint.rs",
+      "crates/xyg-engine/src/tiles.rs", "crates/xyg-core/src/lib.rs",
+    ].map(file => [file, createHash("sha256").update(readFileSync(path.join(root, file))).digest("hex")])),
+  },
 };
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.budget_ok ? 0 : 1);

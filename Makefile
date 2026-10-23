@@ -151,8 +151,10 @@ check-graph:
 	$(PYTHON) benchmarks/bench_parity_kernels.py --sizes 100000 --no-baseline
 	$(PYTHON) benchmarks/bench_scale_all_charts.py --profile smoke
 	node benchmarks/bench_scale_all_charts_node.mjs --profile smoke
-	$(PYTHON) benchmarks/bench_tier3_pyramid.py
-	node benchmarks/bench_tier3_pyramid_node.mjs
+	$(PYTHON) benchmarks/bench_tier3_pyramid.py > target/tier3-python.json
+	node benchmarks/bench_tier3_pyramid_node.mjs > target/tier3-node.json
+	$(PYTHON) scripts/verify_tier3_pyramid_report.py target/tier3-python.json --check-local --native "$(XYG_NATIVE_LIB)"
+	$(PYTHON) scripts/verify_tier3_pyramid_report.py target/tier3-node.json --check-local --native "$(XYG_NATIVE_LIB)"
 
 check-benchmark-harness:
 	$(PYTHON) scripts/verify_local.py --only benchmark_harness

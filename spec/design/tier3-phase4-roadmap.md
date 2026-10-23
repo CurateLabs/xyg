@@ -262,15 +262,19 @@ inside this frame; changing any of it means editing this section first.
 
 ### WP4 — Evidence ([#11](https://github.com/CurateLabs/xyg/issues/11))
 
-- Extend [tier3-testing.md](tier3-testing.md) with spill cases:
-  - synthetic tile directory fixture (MBs, not TBs);
-  - miss/hit counters;
-  - compose still screen-bounded;
-  - tiled compose golden against in-RAM compose (bit-identical counts);
-  - dirty-tile append equals from-scratch rebuild (D4);
-  - stale-filter negative path: predicate change ⇒ no tile-served reply (D6);
-  - never allocate 1B rows in CI.
-- Soft latency gate on a dedicated runner / CodSpeed job (dossier item 9).
+- [x] MB-scale spill fixtures, hit/miss counters, screen-bounded compose,
+  count/mean-color golden parity, dirty append/rebuild, colored refusal,
+  predicate bypass, process-wide budget pressure and failed-I/O cleanup.
+  The [testing contract](tier3-testing.md) maps these to Rust/Python/Node
+  tests and explicitly forbids 1B-row CI fixtures.
+- [x] Independently pinned structural report verification for both bounded
+  host harnesses; raw samples and native/source hashes accompany results.
+- [x] Bounded count/color spill/fetch/compose benchmark definitions in the
+  existing scheduled/manual main CodSpeed suite. Hosted comparison results
+  must still be retained after the definitions land.
+- [ ] Dedicated colored-spill 100M memmap pan/zoom latency and browser proof,
+  with independent fixed budgets and raw results (dossier item 9).
+- [ ] Comparable live competitive evidence and explicit scale limitations.
 
 ## Exit criteria
 
@@ -278,9 +282,11 @@ inside this frame; changing any of it means editing this section first.
       oracle within recorded u16 quantization.
 - [ ] Resident tile bytes stay under configured budget while canonical rows
       may remain memmap’d.
-- [ ] Python ↔ Node golden for the same spilled figure inputs.
-- [ ] Specs + `dual-host-parity.json` mark Phase-4 `ready` only when WP1–WP2
-      land; client tile cache may stay `partial`.
+- [x] Python ↔ Node count and mean-color goldens for the same spilled inputs
+      (`test_phase4_tile_spill_hosts.py` / `pyramid.test.mjs`). This bounded
+      seam proof does not substitute for the 100M or final-host matrix.
+- [x] Specs + `dual-host-parity.json` distinguish implemented WP1–WP3 bounded
+      capabilities from the outstanding #11/#5 scale and Phase-4 exit evidence.
 
 ## References
 

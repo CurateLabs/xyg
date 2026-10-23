@@ -20,8 +20,10 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT))
 
-from xyg import kernels  # noqa: E402
+from benchmarks.environment import collect_environment_metadata  # noqa: E402
+from xyg import _native, kernels  # noqa: E402
 
 
 def spill_evidence(x: np.ndarray, y: np.ndarray) -> dict:
@@ -30,6 +32,7 @@ def spill_evidence(x: np.ndarray, y: np.ndarray) -> dict:
     assert handle
     store = 0
     budget = 2 << 20
+    resident_samples = []
     windows = [(k / 8, k / 8 + 0.5, 0.0, 0.5) for k in [0, 1, 2, 3, 4, 3, 2, 1] * 4]
     try:
         start = time.perf_counter()
@@ -43,7 +46,8 @@ def spill_evidence(x: np.ndarray, y: np.ndarray) -> dict:
             assert expected is not None and actual is not None
             assert expected[1] == actual[1]
             np.testing.assert_array_equal(actual[0], expected[0])
-            assert kernels.tile_store_stats(store)[2] <= budget
+            resident_samples.append(kernels.tile_store_stats(store)[2])
+            assert resident_samples[-1] <= budget
         assert kernels.pyramid_free(handle)
         handle = 0
 
@@ -85,6 +89,9 @@ def spill_evidence(x: np.ndarray, y: np.ndarray) -> dict:
                 "normalization": packet[40:56],
                 "transferred": transferred,
                 "bytes": len(packet),
+                "descriptors": count,
+                "gpu_bytes": gpu_bytes,
+                "gpu_budget": gpu_budget,
             }
 
         pool, state, observed, times = {}, None, [], []
@@ -103,7 +110,8 @@ def spill_evidence(x: np.ndarray, y: np.ndarray) -> dict:
             assert packet is not None
             pool, state = frame(packet, pool)
             observed.append(state)
-            assert kernels.tile_store_stats(store)[2] <= budget
+            resident_samples.append(kernels.tile_store_stats(store)[2])
+            assert resident_samples[-1] <= budget
         uncached_tiles = uncached_bytes = 0
         for window, cached in zip(windows, observed, strict=True):
             packet = kernels.tile_store_paint(store, *window, 256, 256)
@@ -122,6 +130,11 @@ def spill_evidence(x: np.ndarray, y: np.ndarray) -> dict:
             "compose_oracle_frames": len(windows),
             "tile_frames": len(windows),
             "tile_frame_p95_ms": float(np.percentile(times, 95)),
+            "tile_frame_samples_ms": times,
+            "max_descriptors": max(item["descriptors"] for item in observed),
+            "max_gpu_bytes": max(item["gpu_bytes"] for item in observed),
+            "gpu_budget_bytes": observed[0]["gpu_budget"],
+            "resident_samples_bytes": resident_samples,
             "timing_scope": "cached sequence before separate uncached validation; advisory only",
             "cached_transferred_tiles": cached_tiles,
             "uncached_transferred_tiles": uncached_tiles,
@@ -181,6 +194,8 @@ def main() -> int:
     raw_xy = n * 16
     p95 = float(np.percentile(compose_ms, 95))
     report = {
+        "schema_version": 1,
+        "host": "python",
         "family": "tier3_pyramid",
         "n": n,
         "build_ms": build_ms,
@@ -192,6 +207,21 @@ def main() -> int:
         "budget_ok": resident < raw_xy and all(b.startswith("pyramid-L") for b in binnings),
         "latency_advisory_ok": p95 < 50.0,
         "spill": spill_evidence(x, y),
+        "environment": collect_environment_metadata(xy_backend=kernels.BACKEND),
+        "provenance": {
+            "native_sha256": hashlib.sha256(Path(_native._lib._name).read_bytes()).hexdigest(),
+            "source_sha256": {
+                path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+                for path in (
+                    "benchmarks/bench_tier3_pyramid.py",
+                    "python/xyg/_native.py",
+                    "crates/xyg-engine/src/tile_store.rs",
+                    "crates/xyg-engine/src/tile_store/paint.rs",
+                    "crates/xyg-engine/src/tiles.rs",
+                    "crates/xyg-core/src/lib.rs",
+                )
+            },
+        },
     }
     print(json.dumps(report, indent=2))
     return 0 if report["budget_ok"] else 1

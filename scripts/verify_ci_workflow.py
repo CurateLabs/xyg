@@ -2102,8 +2102,10 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ".venv/bin/python benchmarks/bench_parity_kernels.py --sizes 100000 --no-baseline",
         ".venv/bin/python benchmarks/bench_scale_all_charts.py --profile smoke",
         "node benchmarks/bench_scale_all_charts_node.mjs --profile smoke",
-        ".venv/bin/python benchmarks/bench_tier3_pyramid.py",
-        "node benchmarks/bench_tier3_pyramid_node.mjs",
+        '.venv/bin/python benchmarks/bench_tier3_pyramid.py > "$RUNNER_TEMP/tier3-python.json"',
+        'node benchmarks/bench_tier3_pyramid_node.mjs > "$RUNNER_TEMP/tier3-node.json"',
+        'python3 scripts/verify_tier3_pyramid_report.py "$RUNNER_TEMP/tier3-python.json" --check-local --expect-commit "$GITHUB_SHA" --native "$XYG_NATIVE_LIB"',
+        'python3 scripts/verify_tier3_pyramid_report.py "$RUNNER_TEMP/tier3-node.json" --check-local --expect-commit "$GITHUB_SHA" --native "$XYG_NATIVE_LIB"',
     )
     _require_job_contains(
         errors,
@@ -2237,6 +2239,29 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         '--output "$RUNNER_TEMP/density-e2e-pr.json"',
         "python3 scripts/verify_density_e2e_report.py \\",
         '"$RUNNER_TEMP/density-e2e-pr.json" --sha "$GITHUB_SHA"',
+        forbid_environment=True,
+    )
+    spill_name = "Colored spill harness contract (small scale only)"
+    spill_steps = [
+        step
+        for step in _step_sequence_blocks(test_job)
+        if _step_direct_key_values(step, "name")[0] == [spill_name]
+    ]
+    if len(spill_steps) != 1 or _step_direct_keys(spill_steps[0]) != (["name", "run"], False):
+        errors.append(
+            "CI colored spill contract must contain exactly one unconditional name/run step"
+        )
+    _require_step_runs_exactly(
+        errors,
+        test_job,
+        spill_name,
+        "exact bounded colored spill PR control",
+        ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
+        "--points 16384 --chunk-points 4096 \\",
+        "--timeout 180 --max-rss-gib 4 --max-disk-gib 1 \\",
+        '--output "$RUNNER_TEMP/density-spill-pr.json"',
+        "python3 scripts/verify_density_spill_report.py \\",
+        '"$RUNNER_TEMP/density-spill-pr.json" --artifact-root "$GITHUB_WORKSPACE"',
         forbid_environment=True,
     )
     _require_step_runs_exactly(
@@ -3106,6 +3131,8 @@ def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str
         ("Record runner capacity", None),
         ("Run daily 1M end-to-end control", None),
         ("Run weekly/manual 100M end-to-end authority", None),
+        ("Run daily 1M colored spill control", None),
+        ("Run weekly/manual 100M colored spill authority", None),
         (
             "Upload exact-SHA raw reports",
             "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
@@ -3134,6 +3161,8 @@ def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str
         ["name", "uses", "with"],
         ["name", "run"],
         ["name", "run"],
+        ["name", "run"],
+        ["name", "if", "env", "run"],
         ["name", "run"],
         ["name", "if", "env", "run"],
         ["name", "if", "uses", "with"],
@@ -3259,6 +3288,53 @@ def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str
     ):
         errors.append(
             "density 100M authority step must keep its exact guard, capability, and commands"
+        )
+    _require_step_runs_exactly(
+        errors,
+        density,
+        "Run daily 1M colored spill control",
+        "exact 1M colored spill control",
+        ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
+        "--points 1000000 --chunk-points 262144 \\",
+        "--timeout 600 --max-rss-gib 8 --max-disk-gib 2 \\",
+        '--output "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json"',
+        "python3 scripts/verify_density_spill_report.py \\",
+        '"$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json" --artifact-root "$GITHUB_WORKSPACE"',
+        allow_job_gate=True,
+        forbid_environment=True,
+    )
+    colored_step = _named_step_blocks(density).get(
+        "Run weekly/manual 100M colored spill authority", ""
+    )
+    colored_if, colored_if_unsafe = _step_direct_key_values(colored_step, "if")
+    colored_env = _unique_mapping_block(colored_step, "env", indent=8) or ""
+    colored_capability = _direct_yaml_key_values(
+        colored_env, "XYG_DENSITY_100M_AUTHORITY", indent=10
+    )
+    colored_env_keys = [
+        key
+        for indent, key, unsafe in _yaml_mapping_keys(colored_env)
+        if indent == 10 and not unsafe
+    ]
+    colored_commands = [
+        ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
+        "--points 100000000 --authority \\",
+        "--timeout 3600 --max-rss-gib 12 --max-disk-gib 4 \\",
+        '--output "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json"',
+        "python3 scripts/verify_density_spill_report.py \\",
+        '"$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json" --sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"',
+    ]
+    if (
+        colored_if_unsafe
+        or colored_if
+        != ["github.event_name == 'workflow_dispatch' || github.event.schedule == '43 5 * * 0'"]
+        or colored_capability != (['"1"'], False)
+        or colored_env_keys != ["XYG_DENSITY_100M_AUTHORITY"]
+        or _step_run_lines(colored_step) != colored_commands
+        or _direct_yaml_key_count(colored_step, "run", indent=8) != 1
+    ):
+        errors.append(
+            "colored spill 100M authority must keep its exact guard, capability, and commands"
         )
     upload = _named_step_blocks(density).get("Upload exact-SHA raw reports", "")
     upload_if, upload_if_unsafe = _step_direct_key_values(upload, "if")

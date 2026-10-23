@@ -33,6 +33,11 @@ and [current source provenance](../density-tile-cache-2026-10-23/review-followup
 That rerun preserves the same transfer, residency, and oracle results; it is
 still bounded correctness evidence with advisory timings.
 
+The [I/O-repair follow-up](io-followup/README.md) retains schema-1 reports
+with raw samples and per-report native/source identity, checked by the
+independently pinned bounded-report verifier. It supersedes neither these
+historical measurements nor the outstanding dedicated scale requirements.
+
 Reproduce from a checkout containing this change:
 
 ```bash
