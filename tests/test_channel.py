@@ -1,9 +1,8 @@
-"""The transport-agnostic dispatcher contract (reflex-integration §3.1).
+"""The transport-agnostic dispatcher contract (wire-protocol.md).
 
 `tests/test_widget.py` pins the anywidget wrapper path; this file pins
 `channel.handle_message` directly — return values instead of captured sends —
-so any future transport (the planned Reflex adapter routes) inherits a tested
-contract. Deliberately never imports `xyg.widget`.
+so each application transport inherits a tested contract. Deliberately never imports `xyg.widget`.
 """
 
 from __future__ import annotations

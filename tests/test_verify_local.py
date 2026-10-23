@@ -125,7 +125,7 @@ def test_browser_checks_are_listed_without_chromium(capsys: pytest.CaptureFixtur
     assert rc == 0
     assert "render_smoke_nonumpy" in out
     assert "smoke_render" in out
-    assert "reflex_lifecycle_smoke" in out
+    assert "app_lifecycle_smoke" in out
     assert "visual_regression_smoke" in out
     assert "interaction_stress_smoke" in out
     assert "chromium" in out
@@ -143,7 +143,10 @@ def test_example_checks_are_known_as_targeted_gate() -> None:
     selected = verify_local.select_checks(checks, only={"examples"})
 
     assert [check.name for check in selected] == ["examples"]
-    assert selected[0].command[-1:] == ("tests/test_example_apps.py",)
+    assert selected[0].command[-2:] == (
+        "tests/test_example_apps.py",
+        "tests/test_streamlit_consumer.py",
+    )
     assert selected[0].requires_modules == ("pytest",)
 
 
@@ -488,6 +491,7 @@ def test_dry_run_includes_examples_gate(capsys) -> None:
     assert rc == 0
     assert "examples" in out
     assert "tests/test_example_apps.py" in out
+    assert "tests/test_streamlit_consumer.py" in out
 
 
 def test_dry_run_includes_security_export_gate(capsys) -> None:
@@ -593,7 +597,7 @@ def test_contributor_setup_builds_native_core() -> None:
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
     setup_recipe = makefile.split("setup:\n", 1)[1].split("\n\n", 1)[0]
 
-    assert "uv sync --extra reflex --group dev" in setup_recipe
+    assert "uv sync --group dev" in setup_recipe
     assert "cargo build --release" in setup_recipe
 
 

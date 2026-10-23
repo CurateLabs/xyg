@@ -46,11 +46,11 @@ publish waits on the `@curatelabs` npm org (#13).
 ## 0. Three runtime surfaces (product-wide)
 
 XYG has exactly **three** runtime surfaces. They cover all chart types. Do not
-treat VS Code, notebooks, or Reflex as separate engine stacks.
+treat VS Code, notebooks, or Streamlit as separate engine stacks.
 
 | Surface | Location | Role |
 |---|---|---|
-| **1. Python host** | `python/xyg/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. Embeds a **copy** of the paint client plus the packaged `wasm-worker.js` / `xyg-wasm.wasm` tick assets in the wheel (`python/xyg/static/`) so Python users need no Node. The public import is `xyg`; `reflex_xy` remains a separate integration namespace. |
+| **1. Python host** | `python/xyg/` | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Streamlit HTML embedding**. Embeds a **copy** of the paint client plus the packaged `wasm-worker.js` / `xyg-wasm.wasm` tick assets in the wheel (`python/xyg/static/`) so Python users need no Node. The public import is `xyg`; no framework adapter namespace ships. |
 | **2. Node host** | `packages/xy-node` (`@curatelabs/xyg-node`) | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. Never publish `@xy/node`. Native loading uses the exact optional platform package (`@curatelabs/xyg-node-<platform>-<arch>`, #52), with only an explicit absolute-path `XYG_NATIVE_LIB` development override; it never searches a checkout, working directory, system path, or Python. Windows arm64 is an explicit unsupported error. Every loading failure is an `XygNativeError` with a stable `code` (`NATIVE_ERROR_CODES`): `XYG_NATIVE_UNSUPPORTED_PLATFORM` (`platform`, `arch`, `supported`), `XYG_NATIVE_LIBRARY_MISSING` (`packageName`, `searched`), `XYG_NATIVE_LIBRARY_PATH_INVALID` (relative `XYG_NATIVE_LIB`), `XYG_NATIVE_LOAD_FAILED` (the library exists but cannot be loaded), and `XYG_NATIVE_ABI_MISMATCH` (`expected`, `actual`; also a matching version that lacks a declared symbol). `@curatelabs/xyg-node/load` exports `loadXygNode()`, which imports no native code itself and resolves to `{ok: true, xyg}` or `{ok: false, code, message}` instead of throwing, so hosts such as VS Code extensions can degrade with a stable diagnostic; its `LOAD_ERROR_CODES` add `XYG_NODE_DEPENDENCY_MISSING` (a JavaScript dependency such as koffi is absent) and `XYG_NODE_IMPORT_FAILED` (any other import failure) so packaging problems never masquerade as native ones. A loadable library without `xyg_abi_version` is `XYG_NATIVE_ABI_MISMATCH` (`actual: null`). Host-facing loading messages carry no filesystem paths or loader text; `libraryPath`, `searched`, and `cause` stay on the thrown error for local debugging. `toHtml()` inlines the host-neutral standalone client, not the Python tree. Root `npm ci` does **not** install this package; CI Test and Python 3.11 jobs run `npm ci --prefix packages/xy-node` so koffi is present for Node host tests. |
 | **3. Browser surface** | `js/src/*.ts` + Rust/WASM → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 painter and browser lifecycle. It draws §29 buffers uploaded by Python/Node and uses the #59 foundation for direct browser execution by the same Rust engine compiled to WebAssembly in a Worker. TypeScript keeps paint, pick, gestures, accessibility, DOM chrome, transitions, caches, and request scheduling; Rust owns canonical layout/LOD/encode decisions. |
 
@@ -1292,7 +1292,7 @@ in WASM ABI 23 is carried by current WASM ABI 27 for Rust-owned f64
 linear/log/symlog/category/angular/UTC-time
 values, steps, and formatting. M2 #869 generalizes `attachWasmTicks` to
 primary/secondary Cartesian, polar angular/radial, authored minor, and eligible
-colorbar slots. Hosted `to_html()`, notebook widgets, and Reflex `XYChart`
+colorbar slots. Hosted `to_html()`, notebook widgets, and application-host embeds
 attach when they pass explicit Worker/WASM URLs; srcdoc and other unattached
 paths fail closed instead of running a canonical TypeScript fallback.
 
@@ -1472,7 +1472,7 @@ The exhaustive per-file application of these rules is
 | Temporal controller (#44) | Same `TemporalController` commands, exact u64 stable-ID replacement selection, revisions, atomic apply, and coordination reject rules ([temporal-controller.md](temporal-controller.md)) |
 
 Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
-notebook/Reflex vs Node embed / VS Code webview attach). Names and defaults
+notebook/application-host vs Node embed / VS Code webview attach). Names and defaults
 match.
 
 The direct-browser `XygWasmTemporalController` submits packed raw i64/u64
@@ -1949,12 +1949,12 @@ client must not grow a parallel “JS layout/LOD” product path.
   `GLHost`, obtains retain bits from Rust `XYDP`, and applies them only if the
   exact snapshot is still current. The first evictable class is the per-chart
   RGBA8 pick attachment; canonical Scene data and source identity stay intact,
-  and picking recreates the attachment lazily. Python, Reflex, and Node HTML
+  and picking recreates the attachment lazily. Python and Node HTML
   inherit this browser compositor when they use the packaged client; none owns
   a parallel admission policy. The same `GLHost` coalesces registered charts'
   color paints into one animation-frame batch without ranking them in the host;
   this browser execution mechanism therefore preserves the Rust-owned
-  admission decision across Python, Reflex, Node HTML, and direct-browser use.
+  admission decision across Python, Node HTML, and direct-browser use.
   `ChartView.watchDashboardResourceBudget(worker, budgetBytes)` adds opt-in
   continuous enforcement: shared-host lifecycle and measured-resource changes
   coalesce into serialized calls through that same Rust boundary. The watcher
@@ -1993,7 +1993,7 @@ parity proof `packages/xy-node/test/geo-viewport-wasm-parity.test.mjs`.
 
 ## Native retained geographic presentation
 
-The immutable notebook, Reflex binary namespace and VS Code webview adapters
+The immutable notebook and VS Code webview adapters
 are specified in [geographic-hosts.md](geographic-hosts.md), including public
 composition wiring, one-mount admission, release acknowledgment, actual host
 journey evidence and the remaining native live-update/orphan-recovery gates.

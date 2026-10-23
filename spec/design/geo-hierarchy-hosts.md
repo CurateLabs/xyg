@@ -1,5 +1,11 @@
 # Explicit hierarchy host adapters
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 Dossier §17/§27/§28; protocol `geo-hierarchy-protocol.md` remains the geometry,
 filter, LOD and authority policy. Python `_geo_hierarchy.GeoHierarchy.from_frame`
 and `from_frame_async`, Node `GeoHierarchy.fromFrame`, and shared TypeScript

@@ -10,7 +10,7 @@ version (an "unreleased" heading fails — date it as part of cutting the
 release).
 
 The ``xyg`` distribution uses `xyg-vX.Y.Z` tags and `CHANGELOG.md`. Its bundled
-Reflex integration and `reflex` extra ship on the same version line.
+The Python package and browser client ship on the same version line.
 
 Tags use the canonical semver spelling `xyg-vX.Y.Z` or `xyg-vX.Y.Z-rc.N` (also
 `-alpha.N` / `-beta.N`); the legacy PEP 440 tag spelling (`xyg-v0.6.0rc5`) is

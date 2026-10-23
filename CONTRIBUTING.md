@@ -12,6 +12,7 @@ cd xyg
 make setup        # dev environment + native core (needs Rust)
 make check        # fast gate
 make check-full   # full production gate (also needs Node 18+ and clippy)
+uv run python scripts/consumer_apps_smoke.py --chromium /usr/bin/google-chrome-stable
 ```
 
 ## Check the active backend

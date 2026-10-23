@@ -44,7 +44,7 @@ from xyg._figure import Figure
 
 # `encode_frame` builds the XYBF binary transport frame (wire-protocol.md §7)
 # the browser decodes with the bundled `xy.decodeFrame`; it is re-exported from
-# the transport-neutral channel module, the same seam the Reflex adapter uses.
+# the transport-neutral channel module, the same seam used by live application hosts.
 from xyg.channel import encode_frame
 from xyg.widget import bundled_js
 

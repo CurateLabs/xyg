@@ -29,12 +29,6 @@
         ]
       },
       {
-        "prefix": "python/reflex_xy/",
-        "extensions": [
-          ".py"
-        ]
-      },
-      {
         "prefix": "packages/xy-node/src/",
         "extensions": [
           ".js",
@@ -134,7 +128,7 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "allowed_responsibilities": [
-        "Composition and pyplot APIs, Reflex integration, ingest coercion, validation messages, transport, and notebook lifecycle."
+        "Composition and pyplot APIs, application transport, ingest coercion, validation messages, transport, and notebook lifecycle."
       ],
       "forbidden_responsibilities": [
         "A parallel implementation of canonical layout, LOD, encoding, aggregation, scene, or export policy.",
@@ -2943,102 +2937,6 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
-    },
-    {
-      "path": "python/reflex_xy/__init__.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/app.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/assets/__init__.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/component.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/events.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/namespace.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/payload_asset.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/registry.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/selections.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/state_bridge.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/tokens.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/reflex_xy/vars.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/__init__.py",

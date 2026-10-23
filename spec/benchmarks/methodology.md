@@ -285,7 +285,7 @@ fails when any of these four commands is missing, commented, echoed, or failure-
 These are the final two steps of the `test` job: they stay hard, but a stale oracle fails visibly
 without skipping the other `test` results ahead of them (the checker enforces the position).
 `make check-bench-oracles` runs the same four commands locally (needs
-`uv sync --extra reflex --group dev --group codspeed`). Timings stay scheduled; only the
+`uv sync --group dev --group codspeed`). Timings stay scheduled; only the
 assertions run before merge.
 
 **Methodology producers and report contract gate merge groups and pull requests (#1005/#1008).**

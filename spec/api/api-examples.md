@@ -13,7 +13,7 @@ the later per-chart examples show the same APIs scaling up.
 ## API Stability Notes
 
 xy has one public chart-building API: the declarative composition API.
-Charts are Reflex-shaped, declarative chart children — marks, axes,
+Charts are framework-independent, declarative chart children — marks, axes,
 annotations, legend/tooltip chrome — composed inside a family container
 (`xyg.line_chart(...)`, `xyg.bar_chart(...)`, ...) or the neutral layering
 container `xyg.chart(...)`. Marks accept arrays directly or column-name
@@ -456,7 +456,7 @@ picks the notebook host — `"widget"`, `"html"`, or auto, which falls back to
 the standalone-HTML iframe only on WASM kernels (JupyterLite/Pyodide), where a
 prebuilt frontend cannot load the anywidget extension; Marimo's WASM build
 bundles its own anywidget frontend and keeps the widget host
-(design/reflex-shaped-api.md §3.3).
+(design/composition-api.md §3.3).
 `to_image(format="png", ...)` returns bytes and `write_image(path, ...)` writes
 one file atomically with the format inferred from its extension; together they
 are the unified export surface across PNG/JPEG/WebP/SVG/PDF (and standalone
@@ -708,7 +708,7 @@ the Python `Chart` and never serialized into standalone HTML.
 ```python
 import xyg
 
-# In a Reflex app these could be rx.box(...), rx.vstack(...), etc.
+# Application hosts may supply opaque chrome components.
 class FrameworkComponent:
     pass
 
@@ -757,13 +757,11 @@ widget = chart.widget()  # Also used by notebook display(chart).
 widget.close()
 ```
 
-Reflex uses a state-owned `@reflex_xy.figure` recipe or a module-scope
-`reflex_xy.inline(chart)` token, then `reflex_xy.chart(token)`. A chart created
-only during page compilation cannot reconstruct its native reader in the
-backend worker. Node uses `chart.host()` with the VS Code subpath's
+Node uses `chart.host()` with the VS Code subpath's
 `attachGeoWebview(panel, adapter)`. See [geographic-hosts.md](../design/geographic-hosts.md)
-for the actual host fixtures, binary framing, one-mount admission and explicit
-immutable-frame/indexed-host limits. This checkpoint is pending integration.
+for binary framing, one-mount admission and immutable-frame/indexed-host limits.
+The removed Reflex adapter's historical journey fixtures are not current support.
+Stock Streamlit HTML does not expose the native geographic live-widget transport.
 
 A displayed native geographic widget can update camera/time without replacing
 the chart recipe. Sequence and revisions must follow the accepted snapshot;
@@ -785,4 +783,4 @@ await asyncio.wrap_future(widget.update(
 Completion means visual publication and retirement acknowledgment. A hierarchy
 frame supports static mounting; its live update rejects until an explicit
 hierarchy route is available. See [native live hosts](../design/geo-live-host.md)
-and the reproducible notebook, Reflex, VS Code and browser journey fixtures.
+and the reproducible notebook, VS Code and browser journey fixtures.

@@ -13,6 +13,15 @@ in the README).
 
 ## [Unreleased]
 
+### Removed
+
+- **Breaking:** removed Reflex support, including `reflex_xy`, `xyg[reflex]`,
+  `Chart.reflex_components()`, framework examples and adapter tests (#1063).
+  No compatibility shim ships. The declarative API, `chrome_components()`,
+  notebooks and HTML/static exports remain. Repository application coverage
+  uses Python/Streamlit and Node/vanilla TypeScript; Streamlit embeds HTML
+  snapshots without a Python callback or incremental streaming bridge.
+
 ### Fixed
 - The release workflow includes the browser package in the seven-package npm
   cohort, checks aligned versions and asset hashes before uploading, and

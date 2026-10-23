@@ -6,8 +6,6 @@ import sys
 import textwrap
 from typing import Optional
 
-import pytest
-
 HEAVY_MODULES = {
     "anywidget",
     "numpy",
@@ -89,40 +87,6 @@ def test_public_metadata_and_dir_are_lazy() -> None:
             if name in heavy or name.startswith("xyg.")
         ]
         assert eager == [], eager
-        """
-    )
-
-
-def test_reflex_integration_import_is_lazy_and_light() -> None:
-    _run_fresh(
-        """
-        import sys
-
-        import reflex_xy
-
-        assert reflex_xy.__version__
-        assert "XYPlugin" in dir(reflex_xy)
-        assert "chart" in reflex_xy.__all__
-        assert "reflex" not in sys.modules
-        assert "numpy" not in sys.modules
-        assert "xyg.channels" not in sys.modules
-        assert "xyg.kernels" not in sys.modules
-        assert "xyg._native" not in sys.modules
-        assert not any(name.startswith("reflex_xy.") for name in sys.modules)
-        """
-    )
-
-
-def test_reflex_registry_export_survives_lazy_app_import() -> None:
-    pytest.importorskip("reflex")
-    _run_fresh(
-        """
-        import reflex_xy
-
-        assert reflex_xy.XYPlugin
-        from reflex_xy.registry import registry
-
-        assert reflex_xy.registry is registry
         """
     )
 
@@ -383,7 +347,7 @@ def test_column_factory_does_not_shadow_columns_submodule() -> None:
 
 
 def test_channel_dispatcher_loads_without_widget_stack() -> None:
-    """The Reflex-forward guarantee: a server transport can drive
+    """A server transport can drive
     channel.handle_message with no anywidget/traitlets installed."""
     _run_fresh(
         """

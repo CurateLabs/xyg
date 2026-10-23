@@ -14,14 +14,6 @@ dependencies = [
     "anywidget>=0.9",
 ]
 
-[project.optional-dependencies]
-# The adapter source ships in every xyg wheel so the framework integration and
-# render client can never drift. The extra only selects the supported Reflex
-# floor; importing plain `xyg` remains framework-free.
-reflex = [
-    "reflex>=0.9.6",
-]
-
 [project.urls]
 Repository = "https://github.com/CurateLabs/xyg"
 Issues = "https://github.com/CurateLabs/xyg/issues"
@@ -45,9 +37,8 @@ dev = [
     # drilldown pan-alignment browser test importorskips it, so it lives in dev
     # where CI exercises that test.
     "starlette>=0.36",
-    # tests/reflex_adapter exercises the real socket data plane when the
-    # `reflex` extra is installed in the main CI job.
-    "aiohttp>=3.9",
+    # Consumer apps are development/test hosts, never package dependencies.
+    "streamlit>=1.56,<2",
     "uvicorn>=0.23",
     # Parses .binder/environment.yml in tests/test_binder_config.py so the
     # Binder contract is asserted on structure, not string transcription.
@@ -115,7 +106,7 @@ artifacts = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["python/xyg", "python/reflex_xy"]
+packages = ["python/xyg"]
 dev-mode-dirs = ["python"]
 
 [tool.hatch.build.targets.wheel.hooks.custom]
@@ -133,11 +124,8 @@ include = [
     # pathspec treats `src` as any directory named src, which would pull
     # `packages/xy-node/src/**`, and `package.json` would pull every nested
     # manifest. Leading slash matches only from the project root.
-    # Both Python packages published by the xyg distribution. The bundled adapter
-    # is selected by the `reflex` extra; the retired python/reflex-xy project
-    # and its independent lock/release material must not ride in this sdist.
+    # The framework-free Python package is the only published namespace.
     "/python/xyg/**",
-    "/python/reflex_xy/**",
     "/crates/**",
     # Engine `[[bench]]` sources live under crates/xyg-engine/benches/; they
     # ride this glob so `cargo clippy --all-targets` and `cargo bench` from an
@@ -233,15 +221,11 @@ exclude = ["examples/pdsh/*.ipynb"]
 # dual-engine layout mirrors every cell (matplotlib then xy), so imports and
 # helper defs repeat by design.
 "examples/pdsh/*.ipynb" = ["E402", "E731", "E741", "F401", "F811", "I001", "UP030", "UP032", "B007"]
-# Reflex state classes declare mutable defaults by design (reflex deep-copies
-# them per instance); both showcases use intentional unicode (× ∈ · › ⌄) in
-# their page prose and chrome.
-"examples/reflex/**" = ["RUF012", "RUF001"]
+# The FastAPI showcase uses intentional unicode in page prose and chrome.
 "examples/fastapi/**" = ["RUF001"]
-"tests/reflex_adapter/*.py" = ["RUF012"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["reflex_xy", "xyg"]
+known-first-party = ["xyg"]
 
 [tool.ty.environment]
 python = ".venv"
@@ -252,9 +236,8 @@ extra-paths = ["scripts"]
 [tool.ty.src]
 # Type-check the shippable library; tests/scripts/benchmarks use dynamic
 # patterns (ctypes, deliberately subscripting known-non-None Optionals) that a
-# pre-1.0 checker flags as false positives. The example apps live under
-# examples/ (outside this include) for the same reason: reflex state vars are
-# Vars at class scope (`.length()` etc.), which a plain annotation can't express.
+# pre-1.0 checker flags as false positives. Consumer app tooling is validated
+# by the dedicated example and browser gates rather than this library check.
 include = ["python"]
 
 [tool.pytest.ini_options]

@@ -91,7 +91,9 @@ shared client, and locked Starlight dependencies; runs source checks, static
 build, built-output validators, checkout quickstart, Chromium smoke, and
 quality hooks; and retains the verified `docs/app/dist/` site as an artifact.
 The CI contract uses a single static-site job, replacing the old Python-version
-matrix and Reflex production-server polling.
+matrix and obsolete framework production-server polling. The SDK no longer
+ships a Reflex adapter; repository consumers are specified in
+[application-consumers.md](application-consumers.md).
 
 Publishing remains a separate CurateLabs-owned operation. This migration
 creates a deployable static artifact, without restoring the removed upstream

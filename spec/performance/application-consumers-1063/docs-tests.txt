@@ -1,0 +1,23 @@
+npm notice run test
+npm notice run node --test tests/*.test.mjs && node scripts/check-built.mjs
+✔ Regional trends preserves its authored two-column native facet grid and title (2.491408ms)
+✔ styled facets preserve their three panels, explicit spacing, and absent grid title (1.712447ms)
+✔ facet grouping retains the full flat native-preview inventory (0.305523ms)
+✔ published docs retain routes, readable APIs, links, and actual native charts (4231.276914ms)
+✔ the link gate rejects missing pages and anchors, including encoded anchors (6.142869ms)
+✔ static links cannot escape the documented base or site output (0.422379ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4309.011878
+Verified Starlight production output: {
+  pages: 77,
+  links: 11139,
+  references: 72,
+  previews: 179,
+  uniqueSnapshots: 179
+}

@@ -37,20 +37,6 @@ except ModuleNotFoundError:  # imported by tests from the repository root
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:[A-Za-z0-9_.+!]*)?$")
 
 REQUIRED_FILES = {
-    "reflex_xy/__init__.py",
-    "reflex_xy/app.py",
-    "reflex_xy/assets/XYChart.jsx",
-    "reflex_xy/assets/__init__.py",
-    "reflex_xy/component.py",
-    "reflex_xy/events.py",
-    "reflex_xy/namespace.py",
-    "reflex_xy/payload_asset.py",
-    "reflex_xy/py.typed",
-    "reflex_xy/registry.py",
-    "reflex_xy/selections.py",
-    "reflex_xy/state_bridge.py",
-    "reflex_xy/tokens.py",
-    "reflex_xy/vars.py",
     "xyg/__init__.py",
     "xyg/_abi_generated.py",
     "xyg/_native.py",
@@ -118,9 +104,7 @@ def _require_only_shippable_roots(names: set[str]) -> None:
         name
         for name in names
         if name.rstrip("/")
-        and not (
-            name.startswith(("reflex_xy/", "xyg/")) or name.split("/", 1)[0].endswith(".dist-info")
-        )
+        and not (name.startswith("xyg/") or name.split("/", 1)[0].endswith(".dist-info"))
     )
     if unexpected:
         raise AssertionError(
@@ -417,16 +401,6 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool], require_wasm: boo
             zf.read("xyg/__init__.py"),
             {"__version__", "__all__", "_EXPORTS", "__getattr__"},
         )
-        _require_text_markers(
-            "reflex_xy/__init__.py",
-            zf.read("reflex_xy/__init__.py"),
-            {"XYPlugin", "chart", "figure", "__version__", '_distribution_version("xyg")'},
-        )
-        _require_text_markers(
-            "reflex_xy/assets/XYChart.jsx",
-            zf.read("reflex_xy/assets/XYChart.jsx"),
-            {"XYChart", "xy_client.js"},
-        )
         _require_class_surface(
             "xyg/_figure.py",
             zf.read("xyg/_figure.py"),
@@ -462,7 +436,6 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool], require_wasm: boo
             {"BACKEND", "_native", "ImportError"},
         )
         _require_py_typed_marker(zf.read("xyg/py.typed"))
-        _require_py_typed_marker(zf.read("reflex_xy/py.typed"), "reflex_xy/py.typed")
         _require_static_esm_exports(
             "xyg/static/index.js",
             zf.read("xyg/static/index.js"),

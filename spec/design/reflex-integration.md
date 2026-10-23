@@ -1,24 +1,15 @@
-# Reflex integration — design
+# Reflex integration — historical design
 
-Status: **implementation landed** (`python/reflex_xy`, tests under
-`tests/reflex_adapter/`). This document is the authoritative design; the
-prototype implements it end to end over Reflex 0.9.6. The deliverable is an
-integration bundled in the `xyg` distribution and installed with
-`xyg[reflex]`. It makes a xy figure a first-class Reflex component with the
-same performance contract as the notebook path: screen-bounded binary wire
-(§29), kernel-side canonical data (§27), stale-while-revalidate interaction
-(§17).
+Status: **retired and unsupported** by #1063. The `reflex_xy` namespace,
+`xyg[reflex]` extra, JSX wrapper, examples and adapter tests are removed with no
+compatibility shim. This document preserves the prior engineering record;
+all implementation, file, command and acceptance statements below describe the
+removed integration and impose no current Reflex support requirement.
 
-Two decisions define this revision (superseding the HTTP-routes draft — see
-§8 for the audit trail):
-
-1. **The data plane rides the app's existing websocket.** No new endpoints;
-   a second socket.io namespace multiplexes onto the engine.io connection
-   Reflex already maintains.
-2. **There is no figure server and no chart data in Redis.** Figures are
-   per-process *rebuildable caches*; Reflex state (already durable and
-   already distributed) is the only source of truth. The figure token is the
-   rebuild recipe.
+The current normative application-host and coverage contract is
+[application-consumers.md](application-consumers.md). Shared binary transport,
+Rust policy, selection, streaming, assets and lifecycle obligations continue at
+that boundary. Historical adapter evidence does not establish current support.
 
 ## 1. The core decision: two planes, one socket
 

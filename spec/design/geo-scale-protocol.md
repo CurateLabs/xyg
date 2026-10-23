@@ -1,5 +1,11 @@
 # Retained geographic lifecycle protocol (#50)
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 `geo_scale_protocol` is the shared Rust ingress for native and real WASM retained
 geographic processing. Hosts frame typed little-endian bytes and fulfill bounded
 read tickets. Rust owns source authentication, time selection, projection, LOD,

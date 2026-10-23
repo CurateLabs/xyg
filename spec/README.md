@@ -80,11 +80,11 @@ Internal architecture: how the engine is built and why.
 - [`pan-and-zoom-configuration.md`](design/pan-and-zoom-configuration.md) — the
   flat per-axis viewport-navigation contract: capability/action/axis/source
   switches, `zoom_limits`, reset, and the semantic `ranges` view events.
-- [`reflex-integration.md`](design/reflex-integration.md) — the bundled
-  `xyg[reflex]` integration design: figures as first-class Reflex components over a second
-  socket.io namespace.
-- [`reflex-shaped-api.md`](design/reflex-shaped-api.md) — how the core package
-  feels Reflex-shaped while keeping no Reflex dependency.
+- [`application-consumers.md`](design/application-consumers.md) — Python/Streamlit
+  and Node/vanilla TypeScript consumers; no shipped framework adapter.
+- [`reflex-integration.md`](design/reflex-integration.md) — retired historical design.
+- [`composition-api.md`](design/composition-api.md) — how the core package
+  defines the framework-independent declarative composition API.
 - [`renderer-architecture.md`](design/renderer-architecture.md) — audit of the
   shipped WebGL2 render path plus the architecture it converges to.
 - [`rust-engine.md`](design/rust-engine.md) — the Rust workspace

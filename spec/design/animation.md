@@ -1,7 +1,7 @@
 # Declarative animation and data transitions
 
 Status: **shipped** for the browser renderer, notebook widget, standalone HTML,
-and Reflex full-payload refreshes. Static SVG/native raster output remains
+and application-host full-payload refreshes. Static SVG/native raster output remains
 motion-free by definition.
 
 ## 1. Public grammar
@@ -146,7 +146,7 @@ displayed interpolated coordinates—not the stale prior endpoint. The older
 retained set is freed before the new endpoint is built, preserving the
 two-scene bound.
 
-Notebook `append` pushes and Reflex state rebuilds use this same controller
+Notebook `append` pushes and application-host rebuilds use this same controller
 when an animation policy is present. Append keeps its existing follow policy:
 home refits, a live-edge window slides, and a user inspecting history stays
 put. Without animation configuration the optimized affected-trace append path
@@ -162,8 +162,8 @@ handoff frames still suppress picking because their resident row space or
 screen mapping is temporarily changing. Keyboard traversal follows the current
 canonical scene during data motion and waits only for those view/LOD handoffs.
 
-`animation_start` and `animation_end` are DOM/Reflex/notebook lifecycle events.
-DOM and Reflex payloads include `phase` (`enter` or `update`) and the current
+`animation_start` and `animation_end` are DOM/notebook lifecycle events.
+DOM payloads include `phase` (`enter` or `update`) and the current
 view; the notebook comm sends the phase only. Interrupted transitions add
 `cancelled: true` to the end event. Standalone HTML dispatches local DOM events
 but has no Python callback transport.

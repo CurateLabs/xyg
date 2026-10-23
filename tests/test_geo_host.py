@@ -102,9 +102,6 @@ def test_remount_prepares_independent_data_same_authority_without_requery():
 
 
 def test_host_canonical_identity_is_bounded_frozen_and_content_addressed():
-    import reflex_xy
-    from reflex_xy.registry import registry
-
     source, chart = chart_fixture()
     facade = chart.host()
     original = facade.build_payload()[1]
@@ -112,10 +109,8 @@ def test_host_canonical_identity_is_bounded_frozen_and_content_addressed():
         assert len(original) == 304
         assert original[:4] == b"XYGQ"
         assert not any(original[16:24])  # Instance-local source handle is not authoring identity.
-        token = reflex_xy.inline(chart)
         other = chart.host()
         assert other.build_payload()[1] == original
-        assert registry.get(token).figure.build_payload()[1] == original
         # A caller mutation cannot alter an already authored host frame.
         chart.camera["center_x"] = 5.0
         assert facade.build_payload()[1] == original
@@ -124,7 +119,6 @@ def test_host_canonical_identity_is_bounded_frozen_and_content_addressed():
         owner, sequence = struct.unpack("<4sIIIQQ", buffers[0])[4:]
         buffers = None
         request(facade, 4, owner=owner, sequence=sequence)
-        registry.release(token)
         other.close()
     finally:
         facade.close()

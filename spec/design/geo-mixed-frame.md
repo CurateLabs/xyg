@@ -1,5 +1,11 @@
 # Immutable mixed geographic frame coordinator
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 `geo_mixed_frame.rs` adds a Rust-only atomic composition foundation over the
 existing immutable retained SceneData and tile SceneData authorities. It does not add a chart API, ABI signature or host projection/filtering policy,
 or claim completion of #50/#39. Its separately layered typed transport is

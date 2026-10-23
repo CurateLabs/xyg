@@ -57,7 +57,7 @@ paints no synthetic ticks. A canonical Rust Scene may instead carry tagged
 resolved tick descriptors, which ChartView consumes without recomputation.
 Self-contained
 Blob-worker HTML remains ineligible. Hosted `to_html()`, notebook widgets, and
-Reflex `XYChart` auto-attach when they serve the packaged `wasm-worker.js` and
+application-host embeds attach when they explicitly serve the packaged `wasm-worker.js` and
 `xyg-wasm.wasm` files at explicit same-origin URLs (`workerUrl` stays required;
 there is no path guessing or CDN). The srcdoc notebook iframe cannot load those
 siblings and fails closed for dynamic ticks. The M2-claimed delivery and its
@@ -933,19 +933,21 @@ PR CI or a CodSpeed simulation claim.
 
 The claimed M2 subset is delivered: the Worker/WASM foundation and strict-CSP
 contract; packaged WASM tick assets (#258); authored ChartView ticks (#257);
-ChartView colorbar ticks (#262); Reflex `XYChart` auto-attach implementation
-(#260); and interpreted Wave B evidence (#263).
+ChartView colorbar ticks (#262); the historical, now removed Reflex attach
+implementation (#260); and interpreted Wave B evidence (#263).
 
 Angular/polar and secondary-axis ChartView cutovers subsequently shipped under
 #869 through the Rust packed tick resolver described above. Real-browser
-packaged Reflex application evidence remains a separate #886 requirement.
+packaged asset/tick admission, failure and recovery evidence remains a separate
+#886 requirement. #1063 retires the Reflex-only journey; replacement application
+coverage follows [application-consumers.md](application-consumers.md).
 
 Work outside that claimed subset is tracked independently:
 
-- real-browser E2E proof for Reflex packaged tick-asset auto-attach
-  (`XYChart` already injects explicit `./wasm-worker.js` +
-  `./xyg-wasm.wasm` and calls `attachHostWasmTicks`):
-  [#886: packaged Reflex tick auto-attach proof](https://github.com/CurateLabs/xyg/issues/886);
+- replacement Python/Streamlit and Node/vanilla TypeScript application journeys
+  plus explicit same-origin packaged tick assets and fail-closed admission;
+  #886 retains its shared obligations under #1063;
+
 - direct-browser aggregate production paths beyond the current density/Scene
   vertical: [#885: direct-browser authoring and aggregate completion](https://github.com/CurateLabs/xyg/issues/885); and
 - post-Wave-A current-`main` SHA-keyed hosted artifacts, a green CodSpeed
@@ -1009,7 +1011,7 @@ node scripts/wasm_foundation_smoke.mjs
 Omitting `XYG_WASM_FOUNDATION_ONLY` preserves the complete existing foundation
 gate, including fixture parity. The focused mode proves these six cases only;
 it cannot establish current-source fixture parity or the complete #54 matrix.
-It does not prove a real packaged Reflex `XYChart`, a validly framed corrupt
+It does not prove the full application-consumer matrix, a validly framed corrupt
 inline WASM module, every unsupported source family, or large-scale hosted
 performance. Those remaining #886/#885 and release requirements stay open.
 

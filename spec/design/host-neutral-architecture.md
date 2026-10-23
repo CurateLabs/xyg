@@ -4,7 +4,7 @@
 only when the user is using Python.** Rust core + a thin Python host *or* a
 thin Node host + one shared TypeScript WebGL paint client. Not a mandatory
 three-stack. Embedding the paint client in the Python wheel for notebooks,
-`to_html()`, and Reflex is required and stays.
+`to_html()`, and application embeds is required and stays.
 
 **Tracking issue:** [#24](https://github.com/CurateLabs/xyg/issues/24).
 In-repo pointer: [`issues/host-neutral-architecture.md`](issues/host-neutral-architecture.md).
@@ -20,7 +20,7 @@ host / identity / store / client-packaging graph.
 
 | User | What they install | What they must not need |
 | --- | --- | --- |
-| Python (notebooks, pyplot, Reflex, `to_html`) | Python distribution (`pip install`; name in #13/#18) | Node, npm, or a CDN at install/export time |
+| Python (notebooks, pyplot, Streamlit HTML, `to_html`) | Python distribution (`pip install`; name in #13/#18) | Node, npm, or a CDN at install/export time |
 | JS / browser | `@curatelabs/xyg` | Python runtime or `python/xyg/` as the ship vehicle |
 | Node / VS Code | `@curatelabs/xyg-node` (loads the same `libxyg_core`) plus the paint client for HTML/webview | Python package tree |
 
@@ -36,15 +36,13 @@ self-contained strict-offline HTML; verifies the bundled client assets; and
 fails if Reflex is installed or plain `xyg` loads `reflex` or `reflex_xy`.
 The process check is deliberately scoped to Python subprocess creation rather
 than presented as an operating-system sandbox. Together with the installed
-asset checks, it keeps Node a build-time tool for generated assets and Reflex
-an explicit extra, never an implicit Python runtime requirement.
+asset checks, it keeps Node a build-time tool for generated assets and web
+frameworks outside XYG runtime dependencies.
 
 ### What stays Python forever
 
 - Composition API (`python/xyg/components.py`) and the matplotlib shim
   (`python/xyg/pyplot/`).
-- Reflex integration (`python/reflex_xy/`) — may keep linking
-  `xyg/static/index.js` from the *installed Python package*.
 - Notebook / anywidget / `Chart.to_html()` embedding a **copy** of the paint
   client inside the wheel.
 - Host ergonomics: ingest coercion, error-message text, transport attach.
@@ -124,11 +122,13 @@ strict-CSP Worker establish memory, version, status, cancellation, trap, and
 disposal semantics against the current canonical Scene. Typed chart ingest,
 Rust Scene production, painter integration, the current density vertical,
 packaged tick assets, and interpreted Wave B evidence are delivered.
-Polar/secondary ChartView tick paths are frozen deferred keepers. Real-browser
-Reflex attach proof, broader aggregate production, and refreshed hosted
-evidence are tracked by the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)),
-the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), and the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)) respectively. See
-[browser-wasm.md](browser-wasm.md).
+Polar/secondary ChartView tick paths follow the current packed-tick contract.
+Reflex-only attach proof is retired by #1063. Shared packaged tick assets,
+failure/recovery, broader aggregate production and refreshed hosted evidence
+remain #54/#885/#886 obligations. See
+[browser-wasm.md](browser-wasm.md) and
+[application-consumers.md](application-consumers.md).
+
 | Phase-4 tile spill | **#5** → #7 (done), **#8**, **#9**, #10, #11 | Derived cache spill. Append = dirty *tiles*, not owning the f64 store |
 | Fork CI hygiene | #12, #15, #16, #21 | Not on this architecture critical path |
 

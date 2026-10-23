@@ -648,7 +648,7 @@ ctypes/Koffi prototypes with deterministic generated artifacts:
 
 ## 4. What Python keeps forever
 
-Composition and pyplot APIs, Reflex integration, ingest normalization
+Composition and pyplot APIs, application transport, ingest normalization
 (pandas/Arrow/dtype coercion), validation and error-message text, notebook
 lifecycle, and widget/comm transport. Thin wrappers may assemble Rust-produced
 scene records into idiomatic Python objects, but canonical spec/scene emission,
@@ -658,7 +658,7 @@ moves those decisions into Rust in vertical slices. This host layer is the
 product's Python personality; keeping it is a feature. Node owns the same
 ergonomics role for JS users
 ([host-parity.md](host-parity.md); [host-neutral-architecture.md](host-neutral-architecture.md)).
-Python-only forever: composition API, pyplot, Reflex, and embedding a copy
+Python-only forever: composition API, pyplot, and embedding a copy
 of the paint client in the wheel. Canonical f64 values move to Rust
 `stream.rs` (#22); they must not remain a NumPy-only store.
 

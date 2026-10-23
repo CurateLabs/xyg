@@ -1,5 +1,11 @@
 # Retained geographic host coordinators
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 The internal Python `_geo_retained` and Node `geo-retained` modules coordinate
 Rust `XYGQ` sessions without adding a second chart API. Public composition wiring
 is owned by `components.py` and the Node composition entry point. This first

@@ -25,7 +25,7 @@ API — ``fig.scatter(x=view_x, y=view_y, density=True)`` — and the whole
 pipeline runs against disk-backed truth with resident memory bounded by the
 screen, not the data (§2, §27).
 
-Pure NumPy; no ``reflex``/widget/pyarrow imports, matching ``columns.py``.
+Pure NumPy; no framework/widget/pyarrow imports, matching ``columns.py``.
 """
 
 from __future__ import annotations

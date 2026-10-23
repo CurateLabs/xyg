@@ -1,8 +1,6 @@
-"""Tests for the example apps: examples/fastapi and examples/reflex.
+"""Tests for the FastAPI example and its framework-neutral chart builders.
 
-The core checks run on the framework-neutral ``charts.py`` builders and on
-source text, so they need neither reflex nor fastapi. The framework-specific
-checks skip when the extra is not importable.
+Framework-specific checks skip when FastAPI is not importable.
 """
 
 from __future__ import annotations
@@ -19,8 +17,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples"
 FASTAPI_DIR = EXAMPLES / "fastapi"
-REFLEX_DIR = EXAMPLES / "reflex"
-REFLEX_APP = REFLEX_DIR / "xy_reflex_demo" / "xy_reflex_demo.py"
 
 
 def _load(path: Path, name: str):
@@ -37,7 +33,7 @@ def _load(path: Path, name: str):
 
 def test_examples_commit_no_static_chart_html() -> None:
     tracked = subprocess.run(
-        ["git", "ls-files", "examples/reflex", "examples/fastapi"],
+        ["git", "ls-files", "examples/fastapi"],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -45,7 +41,6 @@ def test_examples_commit_no_static_chart_html() -> None:
     ).stdout.split()
     html = [p for p in tracked if p.endswith(".html")]
     assert html == [], f"the example apps must not commit static chart HTML: {html}"
-    assert not (REFLEX_DIR / "assets" / "charts").exists()
 
 
 # --- framework-neutral gallery builders (numpy + xy only) -------------------
@@ -142,74 +137,12 @@ def test_fastapi_app_serves_live_charts_and_code() -> None:
     assert frame.buffers  # the density grid rides raw, not base64 in JSON
 
 
-# --- Reflex app structure (source text, no reflex import) -------------------
-
-
-def test_reflex_app_shows_every_linking_method_and_event() -> None:
-    src = REFLEX_APP.read_text(encoding="utf-8")
-    required = [
-        "@reflex_xy.figure",  # live figure var
-        "reflex_xy.chart(",  # the component
-        "reflex_xy.append(",  # streaming
-        "reflex_xy.inline(",  # inline() token tier
-        "sparkline_chart()",  # static Chart tier passed directly
-        # the FastAPI 100M drilldown, served adapter-natively (§6); both apps
-        # honor the same point-count override for side-by-side comparison.
-        "def drilldown_chart",
-        "reflex_xy.inline(drilldown_chart())",
-        "XY_LIVE_POINTS",
-        "on_point_hover=",
-        "on_point_click=",
-        "on_select_end=",
-        "on_view_change=",
-        # click/hover are off by default, so on_point_click needs them enabled.
-        "interaction_config(hover=True, click=True)",
-        "inspect.getsource",  # introspected code accordions
-        "def code_accordion",
-    ]
-    for marker in required:
-        assert marker in src, marker
-    # The showcase links charts natively, without iframe or postMessage bridges.
-    assert "postMessage" not in src
-    assert "/charts/" not in src
-    assert "iframe" not in src.lower()
-
-
-def test_reflex_config_wires_the_xy_plugin() -> None:
-    cfg = (REFLEX_DIR / "rxconfig.py").read_text(encoding="utf-8")
-    assert "reflex_xy.XYPlugin()" in cfg
-    assert 'app_name="xy_reflex_demo"' in cfg
-
-
-def test_reflex_app_introspection_and_composition(tmp_path, monkeypatch) -> None:
-    pytest.importorskip("reflex")
-    pytest.importorskip("reflex_xy")
-    # A static chart compiles a payload asset into cwd/assets/xy; keep it in tmp.
-    monkeypatch.chdir(tmp_path)
-    # The §6 drilldown builds its columns at import; keep the test-time build
-    # cheap (same override the fastapi app test uses).
-    monkeypatch.setenv("XY_LIVE_POINTS", "50000")
-    sys.path.insert(0, str(REFLEX_DIR))
-    module = _load(REFLEX_APP, "xy_reflex_demo_under_test")
-
-    # The Code accordion reads live source: figure vars unwrap to their builder,
-    # event handlers to their function — both include the decorator line.
-    assert "@reflex_xy.figure" in module._source(module.Demo.cloud)
-    assert "def cloud" in module._source(module.Demo.cloud)
-    assert "def on_view" in module._source(module.Demo.on_view)
-    # The page composes without error and mints inline() tokens at import.
-    assert module.ORBITS_TOKEN.startswith("xyin-")
-    assert module.DRILLDOWN_TOKEN.startswith("xyin-")
-    assert module.DRILLDOWN_POINTS == 50000
-    assert module.index() is not None
-
-
 # --- retargeted browser smokes: import cleanly, pure helpers unit-tested -----
 
 
 @pytest.fixture(scope="module")
 def lifecycle_mod():
-    return _load(ROOT / "scripts" / "reflex_lifecycle_smoke.py", "reflex_lifecycle_smoke")
+    return _load(ROOT / "scripts" / "app_lifecycle_smoke.py", "app_lifecycle_smoke")
 
 
 @pytest.fixture(scope="module")
@@ -226,7 +159,7 @@ def test_smokes_cover_the_whole_gallery(lifecycle_mod, visual_mod, charts_mod) -
 
 
 def test_lifecycle_phases_and_dom_slots() -> None:
-    mod = _load(ROOT / "scripts" / "reflex_lifecycle_smoke.py", "reflex_lifecycle_smoke")
+    mod = _load(ROOT / "scripts" / "app_lifecycle_smoke.py", "app_lifecycle_smoke")
     assert mod.LIFECYCLE_PHASES[0] == "initial"
     assert mod.LIFECYCLE_PHASES[-1] == "restore"
     assert "context-restore" in mod.LIFECYCLE_PHASES

@@ -1,5 +1,11 @@
 # Geographic capability matrix and comparison scope
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 The geographic composition catalog frames explicit RGBA8, CSS-pixel dimensions,
 scalar domains, source-row state and full u64 identity. It does not accept the
 ordinary mark API's arbitrary CSS color vocabulary. All geometry and state

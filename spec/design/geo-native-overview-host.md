@@ -1,5 +1,11 @@
 # Native overview live host transport
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 Dossier §27, §29 and §34. This bounded route reuses the existing geographic
 composition and [XYGH candidate protocol](geo-live-host.md). It is an adapter
 for privately issued native `GeoOverviewIndex`/`GeoOverviewFrame` owners, not

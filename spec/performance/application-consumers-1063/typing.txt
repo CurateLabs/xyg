@@ -1,0 +1,4 @@
+All checks passed!
+$ (cd /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca && /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.venv/bin/ty check python tests/typing_pep561_consumer.py --output-format concise)
+$ (cd /tmp/xyg-typing-consumer-1_35kehi && /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.venv/bin/ty check --project /tmp/xyg-typing-consumer-1_35kehi --python /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.venv/bin/python /tmp/xyg-typing-consumer-1_35kehi/consumer.py --output-format concise --no-progress --color never)
+installed typing consumer OK: 132 canonical exports have concrete types

@@ -1,12 +1,12 @@
 # Pan and Zoom Configuration
 
 **Status:** implemented. The public Python API, wire format, browser mutation
-pipeline, linked views, semantic events, Reflex transport, and examples described
+pipeline, linked views, semantic events, application transport, and examples described
 here ship together. Touch pinch and dedicated keyboard viewport navigation remain
 the explicitly deferred follow-ups in section 22.
 
 **Audience:** XYG maintainers, adapter authors, and application developers who need
-predictable viewport behavior across standalone HTML, notebooks, and Reflex apps.
+predictable viewport behavior across standalone HTML, notebooks, and application hosts.
 
 ## 1. Decision summary
 
@@ -51,16 +51,16 @@ constraint: every zoom-enabled axis stops at its original home span when zooming
 - Apply one axis policy consistently to every source of the same action.
 - Keep pan, zoom, reset, selection, hover, and linking independent.
 - Preserve smooth client-local interaction without a Python round trip per frame.
-- Emit stable semantic events for notebooks and Reflex applications.
+- Emit stable semantic events for notebooks and application hosts.
 - Respect linear, time, log, categorical, and reversed axes.
 - Clamp every viewport mutation to optional hard axis bounds.
-- Keep standalone, notebook, and Reflex behavior equivalent.
+- Keep standalone, notebook, and application-host behavior equivalent.
 - Preserve existing charts when new options are omitted.
 
 ## 3. Non-goals
 
 - A reactive state system inside XYG.
-- Sending every pointer or wheel frame through Reflex state.
+- Sending every pointer or wheel frame through application state.
 - Arbitrary transforms, rotation, or 3D cameras.
 - Per-mark viewport policies inside one panel.
 - Public wheel acceleration/easing controls in the first version.
@@ -587,7 +587,7 @@ axis”, “Pan x and y axes”, or “Reset x axis”. Icons need not change.
 
 ### 11.1 Ownership
 
-The browser owns transient viewport state. Reflex or notebook Python receives
+The browser owns transient viewport state. The application host or notebook Python receives
 semantic events; it does not render every wheel frame back into the chart. Application
 state may persist the last committed view. Feeding it back must be idempotent and must
 not create an event loop.
@@ -619,14 +619,14 @@ Primary-axis `x0`, `x1`, `y0`, and `y1` remain compatibility aliases for
 `ranges.x` and `ranges.y`. New consumers use `ranges`.
 
 There is no `view_change` configuration switch. Local DOM events are always
-available, and notebook/Reflex transport subscribes only when the user supplies an
+available, and notebook/application transport subscribes only when the user supplies an
 `on_view_change` callback. Listener presence, rather than a second behavior flag,
 controls transport work.
 
 ### 11.3 Cadence
 
 - DOM events may emit once per animation frame.
-- Python/Reflex events are coalesced.
+- Python/application-host events are coalesced.
 - Continuous gestures always deliver a final `end` event.
 - Every capture-owning gesture acquires its pointer through one shared
   capture-loss detector (`ChartView._captureGesturePointer`), so the behavior
@@ -657,37 +657,13 @@ Different policies in one group are valid. An overview can navigate x while a de
 chart disables local navigation but follows linked x. Receivers may also have
 different bounds and clamp independently.
 
-## 13. Reflex integration
+## 13. Application integration
 
-The adapter uses the same semantic policy instead of inventing another gesture
-vocabulary:
-
-```python
-class Dashboard(rx.State):
-    visible_ranges: dict[str, list[float]] = {}
-
-    @rx.event
-    def remember_view(self, view: dict[str, object]):
-        if view.get("phase") == "end":
-            self.visible_ranges = {
-                axis_id: [float(bounds[0]), float(bounds[1])]
-                for axis_id, bounds in view["ranges"].items()
-            }
-
-
-chart = xyg.line_chart(
-    xyg.line(timestamps, values),
-    xyg.interaction_config(
-        pan_axes=("x",),
-        zoom_axes=("x",),
-    ),
-)
-
-reflex_xy.chart(chart, on_view_change=Dashboard.remember_view)
-```
-
-Large arrays never enter Reflex state. The small view event may be stored while the
-browser continues to navigate locally.
+The browser owns transient viewport state. Notebook Python receives committed
+semantic events and optional coalesced updates through its channel. Other live
+applications must attach their own explicit transport to the shared client.
+Stock Streamlit HTML supports browser-local interaction only; it has no Python
+callback bridge. See [application-consumers.md](application-consumers.md).
 
 ## 14. Accessibility and devices
 
@@ -853,13 +829,11 @@ Also verify no-op clamped actions emit no event/LOD request and modebar state fo
 the resolved policy. Cover `(1.0, None)`, finite zoom-out/in limits, partial per-axis
 maps, and limits reached on only one axis of a multi-axis action.
 
-### Reflex
+### Application consumers
 
-- Payloads are JSON-safe.
-- Continuous events coalesce and always end with `phase="end"`.
-- Applying a stored committed view does not loop.
-- Static charts retain local interaction without a backend.
-- Live charts refine LOD without placing buffers in Reflex state.
+Streamlit reruns must replace the HTML snapshot cleanly. Node/vanilla TypeScript
+must preserve binary host transport, event boundaries and disposal. Shared
+selection/streaming tests remain in channel and Node/browser suites.
 
 ## 19. Implementation status
 
@@ -874,7 +848,7 @@ The completed implementation includes:
    capabilities.
 5. Reset independent from selection clear.
 6. Semantic `ranges`, `source`, `axes`, `phase`, and `interaction_id` events, with
-   callback-gated notebook/Reflex transport.
+   callback-gated notebook/application transport.
 7. Python contract tests, client smoke coverage, generated examples, and matching
    canonical/generated JavaScript bundles.
 
@@ -915,10 +889,10 @@ holds only because a pan-locked axis is confined to its home window (§7.1).
 
 Domain is home, not a lock; bounds are the hard envelope. Reject as ambiguous.
 
-### Control every frame through Reflex state
+### Control every frame through application state
 
 This puts network latency and JSON state diffing in the input loop. Reject. The
-browser owns transient view state; Reflex owns application state and committed
+browser owns transient view state; the application host owns application state and committed
 coordination.
 
 ## 22. Resolved and deferred

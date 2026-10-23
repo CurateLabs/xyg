@@ -19,10 +19,10 @@ def dom_class_strings(self) -> list[str]:
     those slots), and annotation labels (``annotation["class_name"]`` when
     the annotation has text).
     Per-trace mark ``class_name`` values are adapter-only metadata for
-    canvas geometry and do not create DOM nodes. The Reflex adapter joins
-    this inventory into the Tailwind scan manifest for static charts (XYBF
-    payloads are opaque to Tailwind's source scan), so this method must be
-    extended whenever a new DOM class-carrying surface is added.
+    canvas geometry and do not create DOM nodes. Application hosts can use
+    this inventory in a Tailwind scan manifest for static charts (XYBF
+    payloads are opaque to a source scan), so this method must be extended
+    whenever a new DOM class-carrying surface is added.
     """
     class_strings: list[str] = []
     seen: set[str] = set()

@@ -41,3 +41,8 @@ docs/app/.astro/
 docs/app/.generated/
 docs/app/src/content/docs/
 docs/app/public/
+
+# Generated application-consumer smoke artifacts; CI retains these separately.
+/consumer-apps-smoke.json
+/consumer-apps-smoke/
+/.consumer-smoke-*/

@@ -1,5 +1,11 @@
 # Bounded original geographic rows
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 `geo_rows_session.rs` supplies the Rust full-source companion foundation required
 by dossier §20/§27 and #50/#39. It pages canonical original rows independently
 of painted vertices, aggregate cells, viewport bounds or visibility. It adds no

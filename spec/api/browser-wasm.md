@@ -85,18 +85,14 @@ The Python wheel copies `wasm-worker.js` and `xyg-wasm.wasm` into
 wasm_ticks=True)` writes those sidecars next to the document and sets
 `spec.wasm_ticks` to the explicit relative URLs `./wasm-worker.js` and
 `./xyg-wasm.wasm`. A mapping `wasm_ticks={"worker_url": "...", "wasm": "..."}`
-supplies already-served URLs for notebooks, Reflex, or an in-memory
+supplies already-served URLs for notebooks, application hosts, or an in-memory
 document. `render` / `renderStandalone` then call `attachWasmTicks` with
 those exact URLs. Missing or blob/data/CDN values fail closed
 (`xy:wasm_ticks_error`) and do not guess a path. The srcdoc notebook iframe
 and default offline `to_html()` string fail closed for dynamic ticks because
-they cannot load sibling module Workers. Reflex `register()` links
-the same two files beside `xy_client.js` when they are packaged, and
-`XYChart` auto-attaches them via `spec.wasm_ticks` plus `attachHostWasmTicks`
-(relative `./wasm-worker.js` and `./xyg-wasm.wasm`, resolved against the
-wrapper module). Real-browser E2E proof of that packaged attach is tracked by
-the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), independently of the delivered #59 subset. It never uses
-eval, Blob/data Workers,
+they cannot load sibling module Workers. Application hosts must serve explicit
+same-origin URLs for attach; see [application-consumers.md](../design/application-consumers.md).
+Reflex auto-attach support is removed. The shared client never uses eval, Blob/data Workers,
 guessed paths, a CDN, implicit asset lookup, synchronous main-thread WASM,
 or JavaScript tick generation for any axis.
 

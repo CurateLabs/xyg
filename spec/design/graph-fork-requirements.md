@@ -289,7 +289,7 @@ filter UIs.
 
 ### 4.7 Hosts
 
-- **REQ-HOST-1 (MUST).** Jupyter/anywidget, Reflex, standalone HTML, and
+- **REQ-HOST-1 (MUST).** Jupyter/anywidget, Streamlit HTML, standalone HTML, and
   Node-hosted apps use the shared graph mark + client
   ([host-parity.md](host-parity.md)).
 - **REQ-HOST-2 (MUST).** No Cytoscape.js / vis-network runtime dependency.

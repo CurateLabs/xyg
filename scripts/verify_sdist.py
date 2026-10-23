@@ -61,20 +61,6 @@ REQUIRED_FILES = {
     "js/src/60_entries.ts",
     "package.json",
     "package-lock.json",
-    "python/reflex_xy/__init__.py",
-    "python/reflex_xy/app.py",
-    "python/reflex_xy/assets/XYChart.jsx",
-    "python/reflex_xy/assets/__init__.py",
-    "python/reflex_xy/component.py",
-    "python/reflex_xy/events.py",
-    "python/reflex_xy/namespace.py",
-    "python/reflex_xy/payload_asset.py",
-    "python/reflex_xy/py.typed",
-    "python/reflex_xy/registry.py",
-    "python/reflex_xy/selections.py",
-    "python/reflex_xy/state_bridge.py",
-    "python/reflex_xy/tokens.py",
-    "python/reflex_xy/vars.py",
     "python/xyg/__init__.py",
     "python/xyg/_abi_generated.py",
     "python/xyg/_framing.py",
@@ -295,7 +281,7 @@ def _forbidden_sdist_member(name: str) -> bool:
         return False
     if parts[0] not in ALLOWED_TOP_LEVEL:
         return True
-    if parts[0] == "python" and parts[:2] not in {("python", "reflex_xy"), ("python", "xyg")}:
+    if parts[0] == "python" and parts[:2] not in {("python", "xyg")}:
         return True
     if parts[0] == "packages" and parts[:2] != ("packages", "xy-client"):
         return True
@@ -341,7 +327,6 @@ def verify_sdist(path: str, *, require_wasm: bool = False) -> None:
         _require_packaged_wasm(path, root, files)
     _require_pkg_info(path, root)
     _require_exact_file(path, root, "python/xyg/py.typed", b"")
-    _require_exact_file(path, root, "python/reflex_xy/py.typed", b"")
     # The bundle is minified (identifiers renamed), so the public surface is
     # checked through the export block rather than by name spelling.
     _require_esm_exports(path, root, "packages/xy-client/dist/index.js", _ESM_EXPORTS)

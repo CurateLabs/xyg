@@ -20,8 +20,8 @@ initial snapshots and application-host requirements for stateful examples.
 
 Lead with GraphForge use and the shared Rust core across Python, Node, and
 browser WASM. Distinguish measured results, supported features, and goals.
-The optional upstream framework adapter remains in the SDK; its engineering
-contract lives in `spec/design/reflex-integration.md` outside the public site.
+Application consumers use Streamlit/Python or Node/vanilla TypeScript as described
+in `spec/design/application-consumers.md`. No framework adapter ships in the SDK.
 
 Run the commands in README.md. CI checks the static site, links, Markdown/API
 exports, and real charts in Chromium and retains a build artifact. Publishing

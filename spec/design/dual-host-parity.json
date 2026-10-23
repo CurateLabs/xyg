@@ -9,16 +9,16 @@
     {
       "id": "python",
       "name": "Python host",
-      "paths": ["python/xyg/", "python/reflex_xy/"],
+      "paths": ["python/xyg/"],
       "abi_loader": "ctypes",
       "consumers": [
         "notebooks (anywidget / show())",
         "HTML export (to_html() / standalone)",
-        "Reflex"
+        "Streamlit HTML embedding (repository example)"
       ],
       "owns": [
         "idiomatic Python ingest",
-        "transport attach (widget comm / Reflex routes)",
+        "transport attach (widget comm / application routes)",
         "public composition API ergonomics"
       ],
       "must_not": [
@@ -61,7 +61,7 @@
       "consumers": [
         "anywidget notebooks",
         "HTML export / standalone",
-        "Reflex",
+        "Streamlit HTML embedding (repository example)",
         "Node / VS Code webview embeds"
       ],
       "owns": [

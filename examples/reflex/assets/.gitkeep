@@ -1,3 +1,0 @@
-# Reflex writes its own frontend assets here at compile time.
-# The bundled Reflex integration links its render client into assets/external/ and
-# writes static payloads into assets/xy/ (both gitignored).

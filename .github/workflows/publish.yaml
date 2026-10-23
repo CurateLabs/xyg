@@ -150,9 +150,9 @@ jobs:
         shell: bash
         run: |
           uv venv smoke
-          uv pip install -p smoke dist/*.whl numpy anywidget "reflex>=0.9.6"
-          ./smoke/bin/python -c "import importlib.metadata as m, reflex_xy, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native', k.__file__)" \
-            || ./smoke/Scripts/python.exe -c "import importlib.metadata as m, reflex_xy, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native')"
+          uv pip install -p smoke dist/*.whl numpy anywidget
+          ./smoke/bin/python -c "import importlib.metadata as m, xyg, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert xyg.__version__ == m.version('xyg'); print('native', k.__file__)" \
+            || ./smoke/Scripts/python.exe -c "import importlib.metadata as m, xyg, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert xyg.__version__ == m.version('xyg'); print('native')"
       - name: Prove plain Python wheel needs no optional host framework
         if: matrix.native
         shell: bash
@@ -420,43 +420,39 @@ jobs:
           XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv smoke-native
-          uv pip install --no-cache -p smoke-native dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
+          uv pip install --no-cache -p smoke-native dist/*.tar.gz numpy anywidget
           ./smoke-native/bin/python - <<'PY'
           import importlib.metadata as metadata
 
-          import reflex_xy
           import xyg
           import xyg.kernels as kernels
 
           version = metadata.version("xyg")
           assert xyg.__version__ == version
-          assert reflex_xy.__version__ == version
           assert kernels.BACKEND == "native", kernels.BACKEND
           print("sdist built and loaded the native Rust core")
           PY
-      - name: Verify coreless sdist imports reflex_xy
+      - name: Verify coreless sdist imports xyg
         shell: bash
         env:
           XYG_SKIP_CARGO: "1"
         run: |
           uv venv smoke-no-rust
-          uv pip install --no-cache -p smoke-no-rust dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
+          uv pip install --no-cache -p smoke-no-rust dist/*.tar.gz numpy anywidget
           ./smoke-no-rust/bin/python - <<'PY'
           import importlib.metadata as metadata
 
-          import reflex_xy
           import xyg
 
           version = metadata.version("xyg")
           assert xyg.__version__ == version
-          assert reflex_xy.__version__ == version
           try:
               import xyg.kernels  # noqa: F401
           except ImportError as err:
               msg = str(err)
               assert "native Rust core" in msg, msg
               assert "rustup.rs" in msg, msg
-              print("coreless sdist imports reflex_xy and errors clearly on compute")
+              print("coreless sdist imports xyg and errors clearly on compute")
           else:
               raise SystemExit("expected ImportError without the native core")
           PY

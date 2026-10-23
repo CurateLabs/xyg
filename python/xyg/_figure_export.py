@@ -24,7 +24,7 @@ def widget(self, *, wasm_ticks: Optional[Mapping[str, str]] = None) -> Any:
 
 def show(self, display: Optional[str] = None) -> Any:
     """The live widget, or a standalone-HTML view when the html display
-    host is selected (reflex-shaped-api.md §3.3: "auto" falls back to
+    host is selected (composition-api.md §3.3: "auto" falls back to
     html only on WASM kernels, whose prebuilt frontends cannot load the
     anywidget extension)."""
     if export.notebook_display_mode(display) == "widget":

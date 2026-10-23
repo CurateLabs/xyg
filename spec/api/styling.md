@@ -11,7 +11,7 @@ This engineering guide explains the implementation contract. The public,
 task-oriented references are [Styling](../../docs/styling/index.md),
 [Component Variations](../../docs/styling/component-variations.md), and
 [Mark Styles](../../docs/styling/mark-styles.md). For the API shapes see
-[reflex-shaped-api.md](../design/reflex-shaped-api.md); for the render internals
+[composition-api.md](../design/composition-api.md); for the render internals
 see [renderer-architecture.md](../design/renderer-architecture.md).
 
 ## The five ways to style
@@ -47,37 +47,16 @@ style APIs: a bare number on a length property becomes `px` (`{"font_size": 18}`
 → `font-size:18px`), custom properties (`--x`) and unitless properties pass
 through untouched.
 
-In Reflex, Tailwind utilities require `rx.plugins.TailwindV4Plugin()`. Configure
-that plugin with `{"darkMode": "selector"}` when `dark:` utilities should track
-Reflex's `.dark` color-mode switch; the plugin default instead follows the OS
-media query. Complete literal classes emitted into Reflex's generated JSX work
-with the plugin's normal scan paths; the original Python or Markdown path does
-not need to be added. Fixed Chart/Figure sources expose their class inventory
-automatically; token/Var sources pass their complete build-time inventory
-through `reflex_xy.chart(..., tailwind_classes=...)`. See the public
-[Chrome Slots](../../docs/styling/chrome-slots.md) guide for the
-standalone-export and dynamic-class boundaries.
+Application build systems own Tailwind source discovery and dark-mode setup.
+XYG exposes literal chart chrome classes through `Figure.dom_class_strings()`,
+without generated JSX or a framework-specific scan manifest. For standalone
+export use `custom_css` with the stylesheet that defines the classes.
+See [Chrome Slots](../../docs/styling/chrome-slots.md).
 
-The inventory preserves advanced Tailwind candidates verbatim, including
-quoted arbitrary values, escaped underscores, and Unicode content. It is an
-ordered string inventory: mappings and unordered sets raise. A live figure
-must inventory every complete class it can emit. A payload whose
-constructor-owned chrome changes (including `dom`, title, legend, colorbar,
-badge, modebar, or axis-band topology) rebuilds that chrome so old runtime
-classes or nodes do not linger; every named-axis range and durable geometric
-selection is restored silently.
+Application hosts must inventory every utility class they generate. A host
+rebuilding constructor-owned chrome disposes the previous view; state restoration
+is explicit and must respect the shared durable view-state contract.
 
-Before the live-chart inventory existed, the class names reached the DOM but
-their utilities were absent from the compiled stylesheet:
-
-![Live token chart before the Tailwind scan inventory: classes are present but
-the chart keeps its default chrome.](../assets/tailwind-live-before.jpg)
-
-The same production build with `tailwind_classes=` emits the requested
-utilities for the chart root, title, tooltip, and controls:
-
-![Live token chart after the Tailwind scan inventory: rounded fuchsia frame,
-amber surface, large title, and shadow utilities are applied.](../assets/tailwind-live-after.jpg)
 
 ## Rendered marks: standard CSS vocabulary
 
@@ -192,7 +171,7 @@ emits the same trace styles as before these mappings existed.
 
 A mark's `class_name` is adapter-only trace metadata. It does not create a DOM
 node and is not interpreted as a paint selector by the shipped browser,
-Reflex, SVG, or native renderers.
+application hosts, SVG, or native renderers.
 
 ### Polyline stroke geometry
 
@@ -236,9 +215,9 @@ for a non-DOM point mark, and the alternative (a `-xy-` vendor prefix) would
 force an unusable `_xy_marker_shape` Python alias. The distinction is recorded
 per property rather than encoded in the name.
 
-### Reflex integration boundary
+### Application integration boundary
 
-Reflex owns reactive `Var` values, conditions, application state, event
+The application owns reactive values, conditions, application state, event
 handlers, layouts, and themes. XYG does not duplicate those facilities. The
 integration resolves them into concrete `style`, `styles`, `class_name`, and
 `class_names` values and updates the renderer. CSS variables are the preferred
@@ -1261,8 +1240,8 @@ value is one on-screen glyph across WebGL, PNG, and SVG. Charts that already
 used these four symbols render at a corrected size or orientation for an
 unchanged `size`; the set of available symbols does not change.
 
-Interaction state belongs to the host framework. In Reflex, use Reflex state,
-event handlers, conditions, and ordinary CSS classes/styles; XYG only emits the
+Interaction state belongs to the application host. Use host state, event
+handlers, conditions, and ordinary CSS classes/styles; XYG only emits the
 events and renders the resulting props. The component API deliberately does not
 define a parallel hover/selected/unselected styling language.
 

@@ -715,9 +715,10 @@ dense-fill rule").
   `attachWasmTicks` schedules attached automatic, authored-value, and
   authored-empty primary/secondary Cartesian, polar angular/radial, authored
   minor, and eligible colorbar slots onto that lane. Hosted `to_html()`,
-  notebook widgets, and Reflex `XYChart` attach via packaged Worker/WASM URLs;
-  real-browser Reflex packaged-attach proof is tracked by
-  the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). Missing, invalid, pending, or unattached dynamic tick slots fail closed; Rust Scene-resolved descriptors remain paintable. `30_ticks.ts` has no canonical ladder or axis formatter.
+  notebook widgets, and application hosts attach via explicit packaged Worker/WASM URLs;
+  #1063 retires Reflex-only attach proof. Shared tick-asset, admission and failure
+  coverage continues under [application consumers](design/application-consumers.md)
+  and #54/#886. Missing, invalid, pending, or unattached dynamic tick slots fail closed; Rust Scene-resolved descriptors remain paintable. `30_ticks.ts` has no canonical ladder or axis formatter.
   Once Rust labels arrive, ChartView remeasures the actual host font and runs
   its complete resize path so gutters, mark canvas, chrome, titles, and
   interaction geometry move atomically; direct-browser proofs require the
@@ -2420,7 +2421,7 @@ user's data structure**, and whether any step re-encodes.
 | **Python (Polars / Arrow-pandas), native render** | in-process Arrow | **0** / 0 | none | — |
 | **Python (NumPy-pandas), native render** | NumPy → Arrow | **0–1** / 1 (numeric can alias; strings copy) | dictionary-encode strings once | conversion cost reported at ingest |
 | **Jupyter kernel → browser** | xy's GPU-ready column blob over **binary** anywidget comm frames | **2** / 3 (payload assembly; socket transit; JS ArrayBuffer landing) | **never** — the compact f32/u8 blob lands as typed views; base64/JSON is forbidden on the live path | old frontends without binary comms: explicit unsupported/error rather than silently changing the performance contract |
-| **Server app (Dash-style / Reflex)** | versioned `XYBF` frame over binary HTTP/WebSocket; strict JSON metadata + aligned raw buffers | 1–2 / 2–3 depending on server scatter/gather support; JS decode returns spans into `Response.arrayBuffer()` | never | control requests stay small JSON; SSE carries invalidations only; HTTP range requests into Parquet/Arrow files remain a Tier-3 option |
+| **Server app (framework-neutral)** | versioned `XYBF` frame over binary HTTP/WebSocket; strict JSON metadata + aligned raw buffers | 1–2 / 2–3 depending on server scatter/gather support; JS decode returns spans into `Response.arrayBuffer()` | never | control requests stay small JSON; SSE carries invalidations only; HTTP range requests into Parquet/Arrow files remain a Tier-3 option |
 | **Static HTML export (interactive)** | xy blob base64-embedded in the one-file artifact | 1 decode + stated 33% text expansion | base64, because HTML is a text container | size warning above threshold; offer aggregate-only embed (ship pyramid, not points) |
 | **Native static export** | in-process | 0 | none | — |
 
@@ -2634,7 +2635,7 @@ disk tile store the kernel owns. The locked frame — full rationale in
 **`pip install` is the Python front door; `npm install @curatelabs/xyg` is the
 JS/Node front door.** They must not collapse into each other. Python exists
 only when the user is using Python. Embedding the paint client in the Python
-wheel for notebooks / `to_html()` / Reflex is required and stays — that copy
+wheel for notebooks / `to_html()` / application embeds is required and stays — that copy
 is how Python users stay Node-free. The bug is treating `python/xyg/static` as
 the *only* ship vehicle for JS users.
 
@@ -2665,8 +2666,10 @@ requiring a Rust toolchain — an instant adoption cliff.
 3. **The notebook integration via `anywidget`** — the current standard: one widget
    implementation works across Jupyter, JupyterLab, VS Code, Colab, and Marimo, and
    gives us the binary comm channel (§29's Jupyter row) without maintaining N
-   frontend extensions. Server frameworks (Reflex/Dash-style) mount the same client
-   as a component. One boundary is spec'd (reflex-shaped-api.md §3.3): the widget
+   frontend extensions. Application hosts embed the same client; Streamlit uses
+   stock HTML snapshots without a Python callback bridge (see
+   `design/application-consumers.md`). One boundary is spec'd
+   (`design/composition-api.md` §3.3): the widget
    host still needs the anywidget *frontend* extension, which a prebuilt
    WASM-kernel frontend (JupyterLite's `%pip`, e.g. try-jupyter) cannot gain at
    runtime — there `show()`/rich display resolve to the standalone-HTML iframe
