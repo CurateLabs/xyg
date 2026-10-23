@@ -30,7 +30,7 @@ def test_consumer_frameworks_are_dev_only() -> None:
     project = data["project"]
     groups = data["dependency-groups"]
     assert not project.get("optional-dependencies")
-    assert {"dev", "codspeed"} <= groups.keys()
+    assert {"dev", "codspeed", "consumers"} <= groups.keys()
     requirements = [
         requirement
         for values in groups.values()
@@ -39,7 +39,10 @@ def test_consumer_frameworks_are_dev_only() -> None:
     ]
     names = {_dependency_name(requirement) for requirement in requirements}
     assert not any(name == "reflex" or name.startswith("reflex-") for name in names)
-    assert "streamlit>=1.56,<2" in groups["dev"]
+    assert groups["consumers"] == ["streamlit>=1.56,<2"]
+    assert not {"streamlit", "pandas"} & {
+        _dependency_name(requirement) for requirement in groups["dev"]
+    }
     assert "plotly" not in names
 
 

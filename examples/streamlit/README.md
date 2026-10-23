@@ -3,8 +3,8 @@
 After building XYG's native core and client and installing the locked dev group:
 
 ```bash
-uv run streamlit run examples/streamlit/app.py
-uv run pytest tests/test_streamlit_consumer.py -q
+uv run --group consumers streamlit run examples/streamlit/app.py
+uv run --group consumers pytest tests/test_streamlit_consumer.py -q
 ```
 
 This example uses only public XYG composition/export APIs and stock Streamlit

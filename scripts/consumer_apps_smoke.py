@@ -20,7 +20,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
-from importlib import metadata
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from stage_node_packages import stage_facade, stage_platform
@@ -28,7 +28,9 @@ from stage_node_packages import stage_facade, stage_platform
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def installed_consumers(directory: Path, wheel: Path | None) -> tuple[Path, Path, dict[str, str]]:
+def installed_consumers(
+    directory: Path, wheel: Path | None
+) -> tuple[Path, Path, dict[str, str], dict[str, object]]:
     """Install finished artifacts, never editable sources or native overrides."""
     build_env = dict(os.environ)
     cargo = Path.home() / ".cargo" / "bin"
@@ -61,6 +63,8 @@ def installed_consumers(directory: Path, wheel: Path | None) -> tuple[Path, Path
             "--locked",
             "--group",
             "dev",
+            "--group",
+            "consumers",
             "--no-hashes",
             "--no-header",
             "--no-emit-project",
@@ -85,6 +89,7 @@ def installed_consumers(directory: Path, wheel: Path | None) -> tuple[Path, Path
             str(requirements),
             str(wheel),
             "streamlit",
+            "pytest",
         ],
         check=True,
     )
@@ -107,6 +112,50 @@ def installed_consumers(directory: Path, wheel: Path | None) -> tuple[Path, Path
         env=clean_env,
         check=True,
     )
+    # The framework is optional for core collection but mandatory here. A
+    # broken/missing AppTest import must fail before pytest can skip the module.
+    streamlit_version = subprocess.check_output(
+        [
+            str(python),
+            "-c",
+            "from streamlit.testing.v1 import AppTest; "
+            "from importlib.metadata import version; print(version('streamlit'))",
+        ],
+        cwd=directory,
+        env=clean_env,
+        text=True,
+    ).strip()
+    config = directory / "pytest.ini"
+    config.write_text("[pytest]\n")
+    result_path = ROOT / "consumer-apps-smoke" / "streamlit-app-tests.xml"
+    result = subprocess.run(
+        [
+            str(python),
+            "-m",
+            "pytest",
+            "--noconftest",
+            "-c",
+            str(config),
+            "-q",
+            "--junitxml",
+            str(result_path),
+            str(ROOT / "tests/test_streamlit_consumer.py"),
+        ],
+        cwd=directory,
+        env=clean_env,
+        text=True,
+        capture_output=True,
+    )
+    (result_path.with_suffix(".txt")).write_text(result.stdout + result.stderr)
+    print(result.stdout + result.stderr)
+    result.check_returncode()
+    suites = ET.parse(result_path).getroot().iter("testsuite")
+    counts = {key: 0 for key in ("tests", "failures", "errors", "skipped")}
+    for suite in suites:
+        for key in counts:
+            counts[key] += int(suite.get(key, "0"))
+    if not counts["tests"] or any(counts[key] for key in ("failures", "errors", "skipped")):
+        raise RuntimeError(f"required installed Streamlit AppTests did not all execute: {counts}")
 
     version = "0.0.0-test.1063"  # local-only candidate; never published
     platform_id = subprocess.check_output(
@@ -164,7 +213,7 @@ def installed_consumers(directory: Path, wheel: Path | None) -> tuple[Path, Path
         cwd=node,
         check=True,
     )
-    return python, node, hashes
+    return python, node, hashes, {"streamlit": streamlit_version, "app_tests": counts}
 
 
 def free_port() -> int:
@@ -245,7 +294,7 @@ def main() -> None:
         directory = Path(
             stack.enter_context(tempfile.TemporaryDirectory(prefix=".consumer-smoke-", dir=ROOT))
         )
-        python, node_install, hashes = installed_consumers(directory, args.wheel)
+        python, node_install, hashes, consumer_facts = installed_consumers(directory, args.wheel)
         commands[0][0] = str(python)
         commands[0][4] = str(ROOT / "examples/streamlit/app.py")
         commands[1][1] = str(ROOT / "examples/vanilla-ts/server.mjs")
@@ -310,7 +359,7 @@ def main() -> None:
                     process.wait(timeout=10)
     report = json.loads((ROOT / "consumer-apps-smoke.json").read_text())
     report["python"] = sys.version.split()[0]
-    report["streamlit"] = metadata.version("streamlit")
+    report.update(consumer_facts)
     report["installed_artifacts"] = hashes
     report["host_path_isolation"] = {"python_without_node": True, "node_without_python": True}
     (ROOT / "consumer-apps-smoke.json").write_text(json.dumps(report, indent=2) + "\n")

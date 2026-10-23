@@ -1,6 +1,6 @@
 """Stock Streamlit consumer of XYG's public composition and export APIs.
 
-Run: uv run streamlit run examples/streamlit/app.py
+Run: uv run --group consumers streamlit run examples/streamlit/app.py
 The iframe supports browser gestures; it does not return selection to Python.
 """
 

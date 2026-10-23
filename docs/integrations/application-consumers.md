@@ -14,7 +14,7 @@ then run:
 
 ```bash
 uv sync --group dev
-uv run streamlit run examples/streamlit/app.py
+uv run --group consumers streamlit run examples/streamlit/app.py
 ```
 
 The embedded document supports browser-local pan, zoom and hover according to

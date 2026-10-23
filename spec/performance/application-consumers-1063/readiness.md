@@ -53,3 +53,40 @@ Independent reviewer `review_1063` found no blocking findings in the follow-up
 against base `191f9df04bda7e990805e380c53f9969a03444a5`. Reviewed patch SHA-256:
 `452dfd7b44157f03c6ce3f7f135ab18d08fa5d374cb35f4b957f4eadc3acbfc7`
 (before these evidence-only additions).
+
+## Framework dependency isolation follow-up
+
+The Matplotlib reference job on `191f9df0` activated pandas for the first time
+through Streamlit's new dev dependency. The prior lock did not contain pandas;
+no code under `python/xyg/pyplot` changed in #1063. The three observed optional
+pandas failures are reproducible with pandas 3.1: its default Series backend
+passes period ordinals instead of timestamp arrays, and the existing Rust
+static route rejects date axes with `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`. Those
+broader interop/static-route gaps are documented in `spec/matplotlib/compat.md`
+and remain visible in `pandas-activated-reproduction.txt.gz`; no pandas test was
+modified, skipped by new test code, or marked xfail by this follow-up.
+
+Streamlit now lives in a separate `consumers` test dependency group. The core
+and Matplotlib-only environments retain their prior dependency scope. The
+required installed consumer gate imports AppTest unconditionally, runs all six
+AppTests against the wheel with no checkout conftest injection, rejects zero
+executed tests or any skip/error/failure in its JUnit result, and then runs the
+real browser checks against that same installed environment. Thus optional core
+collection does not soften required application proof. The historical dev-group
+validation above predates this isolation; direct AppTests now use
+`uv run --group consumers pytest tests/test_streamlit_consumer.py`.
+
+Validation: 1,296 Matplotlib-reference tests passed, 4 optional tests skipped,
+41 existing expected failures and 4 existing non-strict unexpected passes;
+65 dependency/local-verifier tests passed; 19 required-gate guards passed;
+all 6 installed Streamlit AppTests and the clean installed browser gate passed
+with zero skips. Framework absence in the ordinary dev environment was also
+asserted directly. Hooks, Ruff and type checks passed. See the accompanying
+`matplotlib-reference-isolated.txt`, `consumer-group-guards.txt`,
+`installed-streamlit-app-tests.*`, `isolated-consumer-report.json` and
+`isolated-gate-contracts.txt` for raw results.
+
+Independent reviewer `review_1063` found no blocking findings against base
+`c92bc645663020a01bd9090869b0b6cffe2b6b49`. Implementation patch SHA-256,
+excluding this evidence directory:
+`92b5c2f2b8eccde32508673c9b391dac0a1be3d1a9174002c619c542c7e781d0`.

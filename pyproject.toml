@@ -37,13 +37,15 @@ dev = [
     # drilldown pan-alignment browser test importorskips it, so it lives in dev
     # where CI exercises that test.
     "starlette>=0.36",
-    # Consumer apps are development/test hosts, never package dependencies.
-    "streamlit>=1.56,<2",
     "uvicorn>=0.23",
     # Parses .binder/environment.yml in tests/test_binder_config.py so the
     # Binder contract is asserted on structure, not string transcription.
     "pyyaml>=6",
 ]
+# Application frameworks and their transitive packages stay isolated from the
+# core/reference environment. The required consumer gate installs this group
+# into a clean wheel environment and executes its AppTests there.
+consumers = ["streamlit>=1.56,<2"]
 # CodSpeed's pytest plugin is intentionally separate from the normal dev
 # environment: it is not needed for unit tests (tests/) or static analysis. It IS
 # needed to run benchmarks/test_codspeed_*.py, whose `benchmark` fixture it

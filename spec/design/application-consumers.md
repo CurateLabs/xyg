@@ -34,9 +34,9 @@ Hosted tick tests must serve explicit same-origin packaged Worker/WASM URLs.
 
 The AppTest module skips when the optional Streamlit framework is absent, as
 in the minimal Python-floor lane (XYG plus pytest only). The required application
-lane installs the locked development group and runs the unconditional real-app
-consumer gate, which fails on missing Streamlit or other prerequisites. Optional
-test collection must not turn that required consumer proof into a skip.
+lane runs the unconditional real-app consumer gate, which installs the locked
+consumer group into the clean wheel environment and executes every AppTest.
+Missing framework prerequisites fail that gate. Optional test collection must not turn that required consumer proof into a skip.
 
 ## Node / vanilla TypeScript
 
@@ -67,9 +67,9 @@ notebook, Node/VS Code and browser contracts stay authoritative.
 
 ```bash
 uv sync --group dev
-uv run streamlit run examples/streamlit/app.py
+uv run --group consumers streamlit run examples/streamlit/app.py
 node examples/vanilla-ts/server.mjs
-uv run pytest tests/test_streamlit_consumer.py -q
+uv run --group consumers pytest tests/test_streamlit_consumer.py -q
 uv run python scripts/consumer_apps_smoke.py --chromium /usr/bin/google-chrome-stable
 ```
 
@@ -102,3 +102,14 @@ the runner checks absence before recording isolation. Build tools remain
 available to the runner. CI retains `consumer-apps-smoke.json` (schema 1:
 versions, artifact SHA-256 values and scenario results) plus host logs and
 screenshots under `consumer-apps-smoke/`.
+
+Application frameworks live in the `consumers` dependency group, separate from
+`dev` and the Matplotlib-only reference lane. Installing Streamlit transitively
+installs pandas, which otherwise activates optional pandas compatibility probes
+in unrelated suites. The consumer gate exports both locked groups as constraints
+but installs framework packages only inside its fresh wheel environment. It
+imports AppTest unconditionally, runs `tests/test_streamlit_consumer.py` without
+checkout conftest/source-path injection, and rejects zero tests, failures, errors
+or skips in the resulting JUnit record. Browser checks then exercise the same
+installed environment. This boundary isolates framework dependencies without
+softening the required Streamlit tests or changing pandas/pyplot product policy.

@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 # The Python-floor lane deliberately installs only XYG + pytest. The required
-# application gate installs the locked dev group and starts real Streamlit apps.
+# application gate installs the locked consumer group and runs these AppTests
+# against the installed wheel before starting real Streamlit apps.
 AppTest = pytest.importorskip("streamlit.testing.v1").AppTest
 
 APP = Path(__file__).resolve().parents[1] / "examples" / "streamlit" / "app.py"

@@ -1858,6 +1858,9 @@ dependencies = [
 codspeed = [
     { name = "pytest-codspeed" },
 ]
+consumers = [
+    { name = "streamlit" },
+]
 dev = [
     { name = "hypothesis" },
     { name = "pillow" },
@@ -1866,7 +1869,6 @@ dev = [
     { name = "pyyaml" },
     { name = "ruff" },
     { name = "starlette" },
-    { name = "streamlit" },
     { name = "ty" },
     { name = "uvicorn" },
 ]
@@ -1879,6 +1881,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 codspeed = [{ name = "pytest-codspeed", specifier = ">=5,<6" }]
+consumers = [{ name = "streamlit", specifier = ">=1.56,<2" }]
 dev = [
     { name = "hypothesis", specifier = ">=6" },
     { name = "pillow", specifier = ">=10" },
@@ -1887,7 +1890,6 @@ dev = [
     { name = "pyyaml", specifier = ">=6" },
     { name = "ruff", specifier = "==0.15.8" },
     { name = "starlette", specifier = ">=0.36" },
-    { name = "streamlit", specifier = ">=1.56,<2" },
     { name = "ty" },
     { name = "uvicorn", specifier = ">=0.23" },
 ]
