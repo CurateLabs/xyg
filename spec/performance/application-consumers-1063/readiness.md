@@ -133,3 +133,36 @@ Independent reviewer `review_1063` completed review with no blocking findings.
 Reviewed base: `313af60de25ac04ea34b5c5c6451b082292fb5ed`. Implementation diff
 SHA-256 excluding this evidence directory:
 `2ec504e6130fead235e886716ea9105987c319217ef30fd155855ac6a0c743fc`.
+
+
+## Cold npm cache follow-up
+
+CI run 39901218330 on `7b19fb3d` passed the full Python suite: 7,351 passed,
+169 skipped, 114 expected failures and 4 non-strict unexpected passes. Its
+consumer step then failed because `npm install --offline` required cached
+Koffi registry metadata that this runner did not have (`ENOTCACHED`). The
+Release surfaces aggregate correctly failed because its required test job
+failed and its dependent wheel matrix was skipped. The other required
+independent inputs, including Python floor and Matplotlib reference
+compatibility, succeeded.
+
+The clean consumer install now uses a new temporary npm cache and permits
+registry fetches for the FFI dependency. All XYG packages still come from local
+packed artifacts. A package override selects the exact Koffi version from the
+existing Node host lockfile; post-install checks require that version and
+resolve Koffi within the clean install. Scripts remain disabled and browser/app
+runtime isolation is unchanged. The report records the Koffi version and fresh
+cache proof. This avoids relying on a warm runner or broad dependency drift.
+
+Reproduction with an empty npm cache and offline `koffi@3.1.4` installation
+failed as observed in CI (`cold-npm-offline-reproduction.txt`). The repaired
+full consumer gate passed all six installed AppTests, both browser journeys,
+cleanup/download assertions and optional-WASM failure behavior with a fresh
+cache and Koffi 3.1.4. Raw results and artifact hashes are in
+`cold-npm-consumer-run.txt` and `cold-npm-consumer-report.json`. The report
+identifies source head `7b19fb3d` plus the reviewed working diff below.
+
+Independent reviewer `review_1063` found no blocking findings. Reviewed base:
+`7b19fb3db4f71da7824295b7793e925819167f80`. Implementation diff SHA-256,
+excluding this evidence directory:
+`bceffadb6920129a7f92964a07ac76b7041bc2c4138f974b16f2e6931774fb02`.

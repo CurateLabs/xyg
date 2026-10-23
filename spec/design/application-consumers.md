@@ -103,6 +103,13 @@ available to the runner. CI retains `consumer-apps-smoke.json` (schema 1:
 versions, artifact SHA-256 values and scenario results) plus host logs and
 screenshots under `consumer-apps-smoke/`.
 
+The npm install starts with a fresh temporary cache. XYG packages come from
+the locally packed archives; the Koffi FFI dependency may be fetched from the
+registry, pinned by an override to the exact Node host lockfile version. The
+gate checks the installed version and resolves Koffi inside the clean install.
+It must not depend on pre-existing cached npm registry metadata. Network access
+during dependency installation does not relax browser/app runtime isolation.
+
 The Node browser proof retains the outgoing view before disposal, waits for
 Rust tick admission, and verifies destroyed state, listener/frame cleanup, GPU
 context release and actual Worker termination before remounting. Removing the

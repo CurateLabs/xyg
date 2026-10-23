@@ -192,12 +192,31 @@ def installed_consumers(
         hashes[archive.name] = hashlib.sha256(archive.read_bytes()).hexdigest()
     node = directory / "node"
     node.mkdir()
-    (node / "package.json").write_text('{"private":true,"type":"module"}')
+    host_lock = json.loads((ROOT / "packages/xy-node/package-lock.json").read_text())
+    koffi_version = host_lock["packages"]["node_modules/koffi"]["version"]
+    (node / "package.json").write_text(
+        json.dumps({"private": True, "type": "module", "overrides": {"koffi": koffi_version}})
+    )
+    # XYG comes only from these archives. Its locked FFI dependency may be
+    # fetched from npm; do not rely on registry metadata in the runner's cache.
+    npm_cache = directory / "npm-cache"
     subprocess.run(
-        ["npm", "install", "--offline", "--ignore-scripts", "--no-audit", "--no-fund", *archives],
+        [
+            "npm",
+            "install",
+            "--cache",
+            str(npm_cache),
+            "--ignore-scripts",
+            "--no-audit",
+            "--no-fund",
+            *archives,
+        ],
         cwd=node,
         check=True,
     )
+    installed_koffi = json.loads((node / "node_modules/koffi/package.json").read_text())
+    if installed_koffi["version"] != koffi_version:
+        raise RuntimeError("consumer Koffi version differs from the Node host lockfile")
     # Finished npm archives must resolve inside this clean install.
     subprocess.run(
         [
@@ -206,14 +225,24 @@ def installed_consumers(
             "-e",
             "import {createRequire} from 'node:module';import {realpathSync} from 'node:fs';"
             "const r=createRequire(process.cwd()+'/package.json');"
-            "for(const name of ['@curatelabs/xyg-node','@curatelabs/xyg'])"
+            "for(const name of ['@curatelabs/xyg-node','@curatelabs/xyg','koffi'])"
             "if(!realpathSync(r.resolve(name)).startsWith(process.cwd()+'/node_modules/'))"
             "throw Error('consumer escaped installed artifacts');",
         ],
         cwd=node,
         check=True,
     )
-    return python, node, hashes, {"streamlit": streamlit_version, "app_tests": counts}
+    return (
+        python,
+        node,
+        hashes,
+        {
+            "streamlit": streamlit_version,
+            "app_tests": counts,
+            "node_runtime_dependencies": {"koffi": koffi_version},
+            "npm_fresh_cache": True,
+        },
+    )
 
 
 def free_port() -> int:
