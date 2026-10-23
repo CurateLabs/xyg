@@ -1,0 +1,144 @@
+wheel verification OK: /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/dist/xyg-0.0.1.dev2875+cbf2c0eb-py3-none-linux_x86_64.whl
+Resolved 72 packages in 1ms
+Using CPython 3.12.15 interpreter at: .venv/bin/python
+Creating virtual environment at: .consumer-smoke-yeo4rqv4/python
+Activate with: source .consumer-smoke-yeo4rqv4/python/bin/activate
+Using Python 3.12.15 environment at: .consumer-smoke-yeo4rqv4/python
+Resolved 61 packages in 7ms
+Installed 61 packages in 272ms
+ + altair==6.3.0
+ + anyio==4.14.2
+ + anywidget==0.11.0
+ + asttokens==3.0.2
+ + attrs==26.1.0
+ + certifi==2026.7.22
+ + charset-normalizer==3.5.2
+ + click==8.4.2
+ + comm==0.2.3
+ + executing==2.2.1
+ + h11==0.16.0
+ + idna==3.18
+ + iniconfig==2.3.0
+ + ipython==9.16.1
+ + ipython-pygments-lexers==1.1.1
+ + ipywidgets==8.1.8
+ + itsdangerous==2.2.0
+ + jedi==0.20.0
+ + jinja2==3.1.6
+ + jsonschema==4.26.0
+ + jsonschema-specifications==2025.9.1
+ + jupyterlab-widgets==3.0.16
+ + markupsafe==3.0.4
+ + matplotlib-inline==0.2.2
+ + narwhals==2.27.1
+ + numpy==2.5.1
+ + packaging==26.3
+ + pandas==3.1.0
+ + parso==0.8.7
+ + pexpect==4.9.0
+ + pillow==12.3.0
+ + pluggy==1.6.0
+ + prompt-toolkit==3.0.53
+ + protobuf==7.36.2
+ + psutil==7.2.2
+ + psygnal==0.15.1
+ + ptyprocess==0.7.0
+ + pure-eval==0.2.3
+ + pyarrow==26.0.0
+ + pydeck==0.9.3
+ + pygments==2.20.0
+ + pytest==9.1.1
+ + python-dateutil==3.0.0
+ + python-multipart==0.0.32
+ + referencing==0.37.0
+ + requests==2.34.2
+ + rpds-py==2026.9.1
+ + six==1.17.0
+ + stack-data==0.6.3
+ + starlette==1.3.1
+ + streamlit==1.66.1
+ + traitlets==5.16.1
+ + typing-extensions==4.16.0
+ + tzdata==2026.5
+ + urllib3==2.8.0
+ + uvicorn==0.52.1
+ + watchdog==6.0.0
+ + wcwidth==0.8.2
+ + websockets==17.3
+ + widgetsnbextension==4.0.15
+ + xyg==0.0.1.dev2875+cbf2c0eb (from file:///home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/dist/xyg-0.0.1.dev2875+cbf2c0eb-py3-none-linux_x86_64.whl)
+
+added 5 packages in 710ms
+......                                                                   [100%]
+6 passed in 1.13s
+
+{
+  "schema": 1,
+  "commit": "313af60de25ac04ea34b5c5c6451b082292fb5ed",
+  "browser": "149.0.7827.55",
+  "node": "v24.21.0",
+  "hosts": {
+    "node": {
+      "kinds": {
+        "scatter": 114,
+        "line": 2436,
+        "bar": 67230,
+        "graph": 433
+      },
+      "update": true,
+      "browserSelection": true,
+      "export": true,
+      "disposeRemount": true,
+      "outgoingViewReleased": true,
+      "workersTerminated": true,
+      "glContextReleased": true,
+      "localWorkerAndWasmRequested": true,
+      "rustTicksAdmitted": true,
+      "errors": [],
+      "missingWasmFailsClosed": true
+    },
+    "streamlit": {
+      "coloredPixels": 114,
+      "rerun": true,
+      "singleIframe": true,
+      "exportControls": true,
+      "downloads": {
+        "svg": {
+          "filename": "chart.svg",
+          "bytes": 5303,
+          "sha256": "de48bd9a12085a5df817bb9df56934d8483801243b9101bdbbd032913461a060"
+        },
+        "png": {
+          "filename": "chart.png",
+          "bytes": 108691,
+          "sha256": "30539d30549f0e390f69989cd956d21734cf3d7ca10b3ae60a25e482a436f35a"
+        }
+      },
+      "pythonSelectionCallbacks": false,
+      "errors": []
+    }
+  },
+  "hashes": {
+    "target/release/libxyg_core.so": "5317fdf31f84039e7a84b4994cc856e06d9ac79e4a17453fc1c7d3a65e05ee05",
+    "packages/xy-client/dist/index.js": "e4701e1d5b412c05d1e2d80b30a436cb79946c0a03b5eb624d743e28a62e4246",
+    "packages/xy-client/dist/xyg-wasm.wasm": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502"
+  },
+  "python": "3.12.15",
+  "streamlit": "1.66.1",
+  "app_tests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "installed_artifacts": {
+    "xyg-0.0.1.dev2875+cbf2c0eb-py3-none-linux_x86_64.whl": "1d894da5b06c054edbb64938f0a531bc1b4dcdc0bbe593959614da25b9786989",
+    "curatelabs-xyg-node-linux-x64-0.0.0-test.1063.tgz": "29f07b4e0740a9d37b0b62dde1ae7e4f81f838877da00f4ffac4c9ff17f7bae4",
+    "curatelabs-xyg-node-0.0.0-test.1063.tgz": "7a3d74b85c3a741a99bc2e63f47d07f139d4dbf7deebf2c24a4666e217b28fc4",
+    "curatelabs-xyg-0.0.0-test.1063.tgz": "ecdb248f4461e0e951632f85bf8d4850eff5812e5c8ede15d2b78bdd5876a4c1"
+  },
+  "host_path_isolation": {
+    "python_without_node": true,
+    "node_without_python": true
+  }
+}

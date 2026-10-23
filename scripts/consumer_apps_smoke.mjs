@@ -13,6 +13,8 @@ const browser = await chromium.launch({ executablePath: values.chromium,
   args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const report = { schema: 1, commit: execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(),
   browser: browser.version(), node: process.version, hosts: {}, hashes: {} };
+// An incomplete asynchronous journey must never exit successfully without proof.
+process.exitCode = 1;
 const paint = async frame => {
   // Read the actual composited plot: GPU presentation buffers may already be cleared.
   const plot = frame.locator('canvas[style*="touch-action"]').first();
@@ -41,8 +43,22 @@ try {
   node.on('request', request => {
     assert.equal(new URL(request.url()).origin, values['node-url']); requested.push(new URL(request.url()).pathname);
   });
+  await node.addInitScript(() => {
+    const NativeWorker = globalThis.Worker;
+    globalThis.consumerWorkers = [];
+    globalThis.Worker = class extends NativeWorker {
+      constructor(...args) {
+        super(...args);
+        this.consumerRecord = { terminated: false };
+        globalThis.consumerWorkers.push(this.consumerRecord);
+      }
+      terminate() { this.consumerRecord.terminated = true; return super.terminate(); }
+    };
+  });
   await node.goto(values['node-url']);
   await node.waitForFunction(() => document.getElementById('status').textContent === 'scatter · 8 rows');
+  // Poll synchronously: waitForFunction treats an async predicate's Promise as truthy.
+  await node.evaluate(async () => { globalThis.consumerApp = await import('/app.js'); });
   await node.waitForFunction(() => document.querySelector('#chart canvas')?.width > 0);
   const pixels = {};
   for (const kind of ['scatter', 'line', 'bar', 'graph']) {
@@ -66,20 +82,42 @@ try {
   assert.equal(svg.status(), 200); assert.match(await svg.text(), /<svg/);
   assert.equal((await node.request.get(`${values['node-url']}/spec?count=999`)).status(), 400);
   await node.screenshot({ path: 'consumer-apps-smoke/node.png' });
+  // Retain the actual outgoing view; DOM removal alone cannot prove teardown.
+  await node.waitForFunction(() => {
+    const { view } = globalThis.consumerApp;
+    const axes = view?._wasmTicks?.diagnostics()?.axisIds;
+    return axes?.includes('x') && axes?.includes('y');
+  });
+  await node.evaluate(async () => {
+    const { view } = await import('/app.js');
+    if (!view.gl || !view._listeners.length || !globalThis.consumerWorkers.length)
+      throw new Error('cleanup proof requires an attached live view, listeners and Worker');
+    globalThis.outgoingView = view;
+    globalThis.outgoingGl = view.gl;
+  });
   await node.click('#dispose');
+  await node.waitForFunction(() => {
+    const { view } = globalThis.consumerApp;
+    const outgoing = globalThis.outgoingView;
+    return view === undefined && outgoing._destroyed && outgoing.gl === null
+      && outgoing._wasmTicks === null && outgoing._listeners.length === 0
+      && !outgoing._raf && globalThis.outgoingGl.isContextLost()
+      && globalThis.consumerWorkers.every(worker => worker.terminated);
+  }, undefined, { timeout: 10_000 });
   assert.equal(await node.locator('#chart canvas').count(), 0);
   await node.selectOption('#kind', 'line');
   await node.waitForFunction(() => document.getElementById('status').textContent === 'line · 8 rows');
   assert.ok(await paint(node) > 5);
-  await node.waitForFunction(async () => {
-    const { view } = await import('/app.js');
+  await node.waitForFunction(() => {
+    const { view } = globalThis.consumerApp;
     const axes = view?._wasmTicks?.diagnostics()?.axisIds;
     return axes?.includes('x') && axes?.includes('y');
   });
   assert.ok(requested.includes('/assets/wasm-worker.js') && requested.includes('/assets/xyg-wasm.wasm'));
   assert.deepEqual(errors, []);
   report.hosts.node = { kinds: pixels, update: true, browserSelection: true, export: true,
-    disposeRemount: true, localWorkerAndWasmRequested: true, rustTicksAdmitted: true, errors };
+    disposeRemount: true, outgoingViewReleased: true, workersTerminated: true,
+    glContextReleased: true, localWorkerAndWasmRequested: true, rustTicksAdmitted: true, errors };
 
   const missing = await browser.newPage();
   await missing.addInitScript(() => {
@@ -114,14 +152,53 @@ try {
   await frame.waitForTimeout(300);
   assert.ok(await paint(frame) > 5);
   assert.equal(await streamlit.locator('iframe').count(), 1);
-  await streamlit.getByRole('button', { name: 'Download SVG', exact: true }).waitFor();
-  await streamlit.getByRole('button', { name: 'Download PNG', exact: true }).waitFor();
+  const downloads = {};
+  for (const format of ['svg', 'png']) {
+    const [download] = await Promise.all([
+      streamlit.waitForEvent('download'),
+      streamlit.getByRole('button', { name: `Download ${format.toUpperCase()}`, exact: true }).click(),
+    ]);
+    assert.equal(download.suggestedFilename(), `chart.${format}`);
+    assert.equal(await download.failure(), null);
+    const path = `consumer-apps-smoke/${download.suggestedFilename()}`;
+    await download.saveAs(path);
+    const bytes = await readFile(path);
+    if (format === 'svg') {
+      const valid = await streamlit.evaluate(source => {
+        const doc = new DOMParser().parseFromString(source, 'image/svg+xml');
+        return !doc.querySelector('parsererror') && doc.documentElement.localName === 'svg'
+          && doc.documentElement.namespaceURI === 'http://www.w3.org/2000/svg'
+          && doc.querySelectorAll('path,polyline,line,rect,circle').length > 0;
+      }, bytes.toString('utf8'));
+      assert.ok(valid, 'SVG download must be a parsed chart document');
+    } else {
+      assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+      const decoded = await streamlit.evaluate(async encoded => {
+        const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+        const image = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width; canvas.height = image.height;
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0); image.close();
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let colored = 0;
+        for (let i = 0; i < pixels.length; i += 4)
+          if (pixels[i + 3] && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) - Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) > 50) colored++;
+        return { dimensions: [canvas.width, canvas.height], colored };
+      }, bytes.toString('base64'));
+      assert.deepEqual(decoded.dimensions, [1440, 720]); // public PNG default is scale=2
+      assert.ok(decoded.colored > 5, 'PNG download must contain chart paint');
+    }
+    downloads[format] = { filename: download.suggestedFilename(), bytes: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex') };
+  }
   await streamlit.screenshot({ path: 'consumer-apps-smoke/streamlit.png' });
   assert.deepEqual(streamlitErrors, []);
   report.hosts.streamlit = { coloredPixels: before, rerun: true, singleIframe: true,
-    exportControls: true, pythonSelectionCallbacks: false, errors: streamlitErrors };
+    exportControls: true, downloads, pythonSelectionCallbacks: false, errors: streamlitErrors };
   for (const file of ['target/release/libxyg_core.so', 'packages/xy-client/dist/index.js',
     'packages/xy-client/dist/xyg-wasm.wasm'])
     report.hashes[file] = createHash('sha256').update(await readFile(file)).digest('hex');
   await writeFile('consumer-apps-smoke.json', JSON.stringify(report, null, 2) + '\n');
+  process.exitCode = 0;
 } finally { await browser.close(); }

@@ -103,6 +103,18 @@ available to the runner. CI retains `consumer-apps-smoke.json` (schema 1:
 versions, artifact SHA-256 values and scenario results) plus host logs and
 screenshots under `consumer-apps-smoke/`.
 
+The Node browser proof retains the outgoing view before disposal, waits for
+Rust tick admission, and verifies destroyed state, listener/frame cleanup, GPU
+context release and actual Worker termination before remounting. Removing the
+canvas alone does not satisfy cleanup. State polls use synchronous predicates;
+a truthy Promise does not prove tick admission or disposal. The Streamlit proof
+clicks both export buttons, captures the downloads, verifies filenames, parses SVG chart content
+and decodes the PNG at its expected dimensions. Download bytes and hashes are
+retained. CI uploads available consumer evidence with `if: always()`, including
+after a required smoke fails; the smoke itself remains unconditional and fatal.
+The browser runner defaults to a failed exit until the complete report is
+written, so an incomplete asynchronous journey cannot be reported as success.
+
 Application frameworks live in the `consumers` dependency group, separate from
 `dev` and the Matplotlib-only reference lane. Installing Streamlit transitively
 installs pandas, which otherwise activates optional pandas compatibility probes

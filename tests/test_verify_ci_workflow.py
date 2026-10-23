@@ -4867,7 +4867,13 @@ def test_ci_requires_consumer_application_smokes(tmp_path: Path, mutation: str) 
 
 
 @pytest.mark.parametrize(
-    "missing", ["consumer-apps-smoke.json", "consumer-apps-smoke/", "if-no-files-found: error"]
+    "missing",
+    [
+        "consumer-apps-smoke.json",
+        "consumer-apps-smoke/",
+        "if-no-files-found: error",
+        "if: always()",
+    ],
 )
 def test_ci_requires_consumer_application_evidence(tmp_path: Path, missing: str) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -4884,5 +4890,15 @@ def test_ci_requires_consumer_application_evidence(tmp_path: Path, missing: str)
         + suffix,
         encoding="utf-8",
     )
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("Retain consumer application browser evidence" in error for error in errors)
+
+
+@pytest.mark.parametrize("condition", ["success()", "failure()", "always() && false", "false"])
+def test_ci_retains_consumer_evidence_after_failure(tmp_path: Path, condition: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    step = "      - name: Retain consumer application browser evidence\n        if: always()"
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow.replace(step, step.replace("always()", condition)), encoding="utf-8")
     errors = verify_ci_workflow.validate_ci_workflow(path)
     assert any("Retain consumer application browser evidence" in error for error in errors)

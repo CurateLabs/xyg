@@ -1,0 +1,15 @@
+.venv/bin/python scripts/verify_local.py --only ci_workflow
+Workflow verification OK: /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.github/workflows/ci.yml, /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.github/workflows/codspeed.yml, /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.github/workflows/density-100m.yml, /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.github/workflows/final-coderabbit.yml, /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.github/workflows/publish.yaml, /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/.github/merge-queue-ruleset.json
+RUN  ci_workflow: CI/release workflow production gates
+OK: 1 check(s) passed
+.venv/bin/python -m pytest -q tests/test_verify_ci_workflow.py tests/test_release_surface_gate.py tests/test_verify_wasm_assets.py tests/test_check_scheduled_evidence.py
+........................................................................ [ 12%]
+........................................................................ [ 24%]
+........................................................................ [ 37%]
+........................................................................ [ 49%]
+........................................................................ [ 61%]
+........................................................................ [ 74%]
+........................................................................ [ 86%]
+........................................................................ [ 98%]
+.......                                                                  [100%]
+583 passed in 319.56s (0:05:19)

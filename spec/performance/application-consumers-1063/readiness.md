@@ -90,3 +90,46 @@ Independent reviewer `review_1063` found no blocking findings against base
 `c92bc645663020a01bd9090869b0b6cffe2b6b49`. Implementation patch SHA-256,
 excluding this evidence directory:
 `92b5c2f2b8eccde32508673c9b391dac0a1be3d1a9174002c619c542c7e781d0`.
+
+
+## Browser review follow-up
+
+Greptile reviewed `191f9df0` with three non-blocking findings: canvas removal
+alone cannot prove resource cleanup, visible download buttons cannot prove
+exports, and a success-only upload loses failure evidence. All three are fixed.
+CodeRabbit skipped automatic review because repository auto-review is disabled;
+its skipped message is not counted as review evidence.
+
+The Node journey retains the outgoing tick-attached view and GL context and
+observes actual Worker termination. It requires destroyed state, empty listener
+records, cancelled draw work, detached tick ownership, released GL context and
+terminated Workers before remounting. Fault injection also exposed that the
+pinned Playwright implementation treats an async predicate's Promise as truthy;
+all tick/disposal polls now read the live module namespace synchronously. The
+runner defaults to a failed exit until the complete report has been written.
+
+The Streamlit journey clicks both real download buttons, captures filenames and
+bytes, parses SVG chart content, and decodes PNG chart paint at the public
+scale-2 dimensions (1440 by 720). CI uploads available evidence with
+`if: always()` while keeping the browser gate unconditional and fatal.
+
+Validation: all six installed AppTests and the clean installed browser gate
+passed with zero skips; `make check-ci` passed 583 workflow, release-surface,
+WASM-asset and scheduled-evidence contracts. The final positive run and artifact
+hashes are in `review-consumer-run.txt` and `review-consumer-report.json`; the
+report identifies source head `313af60d` plus the reviewed working diff below.
+`review-ci-contracts.txt` contains the full CI contract output.
+
+Mutation proof used copies of the browser script against the same installed
+hosts. Before disposal, replacing `globalThis.outgoingView.destroy` with a no-op
+caused the required synchronous disposal poll to time out at 10 seconds.
+Replacing the captured download bytes with `Buffer.from('broken')`, separately
+for SVG and PNG, failed the parsed-SVG and PNG-signature assertions. Every
+mutation returned a nonzero exit and produced no success report. Raw outputs
+are retained as `review-negative-{missing-destroy,broken-svg,broken-png}.txt.gz`.
+No example or product source was changed for these injections.
+
+Independent reviewer `review_1063` completed review with no blocking findings.
+Reviewed base: `313af60de25ac04ea34b5c5c6451b082292fb5ed`. Implementation diff
+SHA-256 excluding this evidence directory:
+`2ec504e6130fead235e886716ea9105987c319217ef30fd155855ac6a0c743fc`.

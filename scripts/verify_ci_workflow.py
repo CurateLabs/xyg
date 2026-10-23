@@ -2283,6 +2283,12 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "consumer-apps-smoke/",
         "if-no-files-found: error",
     )
+    consumer_upload = test_steps.get("Retain consumer application browser evidence", "")
+    consumer_upload_if, consumer_upload_if_unsafe = _step_direct_key_values(consumer_upload, "if")
+    if consumer_upload_if_unsafe or consumer_upload_if != ["always()"]:
+        errors.append(
+            "CI test job Retain consumer application browser evidence step must use if: always()"
+        )
     _require_step_contains(
         errors,
         test_job,
