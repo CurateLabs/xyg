@@ -1,0 +1,27 @@
+{
+  "date_utc": "2026-10-23",
+  "base_commit": "fdf7a374fa6d59f331050f4cf80b100f0d154a9c",
+  "head_code_commit": "f839e295b9fe489897dfdfc3812b77a0d072847c",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "cpu": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\nLLVM version: 22.1.2",
+  "cargo_codspeed": "cargo-codspeed 4.6.0",
+  "codspeed": "codspeed-runner 5.6.0",
+  "benchmark_file_sha256": "e92e759341248d966148c5d65d143d192e240ac5bf25b12f52e6c598ced1b1ee",
+  "cargo_lock_sha256": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+  "benchmark": "crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands",
+  "record_counts": [
+    10000,
+    100000,
+    1000000
+  ],
+  "timed_region": "SceneDocument::to_raster_commands(1.0); scene construction and decoding excluded",
+  "output_contract": "A successful native raster command Vec<u8>; mesh fill/outline admission thresholds and refusal reasons unchanged",
+  "comparison_scope": "Same-machine local CodSpeed runs, not directly comparable with historical aarch64 CI runs using runner 5.0.2",
+  "walltime_run_order": [
+    "base",
+    "head",
+    "head-repeat",
+    "base-repeat"
+  ]
+}

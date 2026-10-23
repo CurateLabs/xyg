@@ -1,0 +1,38 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"url\":\"https://app.codspeed.io/CurateLabs/xyg/runs/6adb81960e3bbd9ef5636396?uri=crates%2Fxyg-engine%2Fbenches%2Fkernels.rs%3A%3Ascene_v4_raster_commands%255B10000%255D&runnerMode=WallTime\",\"name\":\"scene_v4_raster_commands[10000]\",\"uri\":\"crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[10000]\",\"runnerMode\":\"WallTime\",\"flamegraphAvailable\":true,\"isArchived\":false,\"issues\":[],\"walltime\":{\"minSeconds\":0.000219075,\"lowerFenceSeconds\":0.000219075,\"q1Seconds\":0.00022639525,\"medianSeconds\":0.000227497,\"q3Seconds\":0.00023514825,\"upperFenceSeconds\":0.00024827774999999997,\"maxSeconds\":0.000265105,\"meanSeconds\":0.00023197749999999997,\"stdevSeconds\":0.000008620432325866752,\"totalTimeSeconds\":0.02319775,\"rounds\":100,\"iqrOutlierRounds\":7,\"stdevOutlierRounds\":3,\"iterPerRound\":1,\"warmupIters\":0}}"
+      }
+    ],
+    "structuredContent": {
+      "url": "https://app.codspeed.io/CurateLabs/xyg/runs/6adb81960e3bbd9ef5636396?uri=crates%2Fxyg-engine%2Fbenches%2Fkernels.rs%3A%3Ascene_v4_raster_commands%255B10000%255D&runnerMode=WallTime",
+      "name": "scene_v4_raster_commands[10000]",
+      "uri": "crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[10000]",
+      "runnerMode": "WallTime",
+      "flamegraphAvailable": true,
+      "isArchived": false,
+      "issues": [],
+      "walltime": {
+        "minSeconds": 0.000219075,
+        "lowerFenceSeconds": 0.000219075,
+        "q1Seconds": 0.00022639525,
+        "medianSeconds": 0.000227497,
+        "q3Seconds": 0.00023514825,
+        "upperFenceSeconds": 0.00024827774999999997,
+        "maxSeconds": 0.000265105,
+        "meanSeconds": 0.00023197749999999997,
+        "stdevSeconds": 8.620432325866752e-06,
+        "totalTimeSeconds": 0.02319775,
+        "rounds": 100,
+        "iqrOutlierRounds": 7,
+        "stdevOutlierRounds": 3,
+        "iterPerRound": 1,
+        "warmupIters": 0
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 3
+}

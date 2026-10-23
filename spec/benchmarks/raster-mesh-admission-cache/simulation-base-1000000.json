@@ -1,0 +1,29 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"url\":\"https://app.codspeed.io/CurateLabs/xyg/runs/6adb80a882e29de63121bbd9?uri=crates%2Fxyg-engine%2Fbenches%2Fkernels.rs%3A%3Ascene_v4_raster_commands%255B1000000%255D&runnerMode=Simulation\",\"name\":\"scene_v4_raster_commands[1000000]\",\"uri\":\"crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[1000000]\",\"runnerMode\":\"Simulation\",\"flamegraphAvailable\":true,\"isArchived\":false,\"issues\":[],\"valgrind\":{\"instructionsExecutionSeconds\":0.10867452751492666,\"cacheMissSeconds\":0.1460579125,\"memoryAccessSeconds\":0.1503919111111111,\"cpuTotalSeconds\":0.4051243511260378,\"sysSeconds\":0.000009694,\"sysCount\":1}}"
+      }
+    ],
+    "structuredContent": {
+      "url": "https://app.codspeed.io/CurateLabs/xyg/runs/6adb80a882e29de63121bbd9?uri=crates%2Fxyg-engine%2Fbenches%2Fkernels.rs%3A%3Ascene_v4_raster_commands%255B1000000%255D&runnerMode=Simulation",
+      "name": "scene_v4_raster_commands[1000000]",
+      "uri": "crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[1000000]",
+      "runnerMode": "Simulation",
+      "flamegraphAvailable": true,
+      "isArchived": false,
+      "issues": [],
+      "valgrind": {
+        "instructionsExecutionSeconds": 0.10867452751492666,
+        "cacheMissSeconds": 0.1460579125,
+        "memoryAccessSeconds": 0.1503919111111111,
+        "cpuTotalSeconds": 0.4051243511260378,
+        "sysSeconds": 9.694e-06,
+        "sysCount": 1
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 3
+}

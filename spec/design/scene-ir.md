@@ -1872,7 +1872,11 @@ The Scene always keeps every face as three `Triangle` records:
   `stroke_opacity`, `role`, `joined_fill`) consume the shared Rust autorange
   over all three vertex columns;
 - format-aware consumer bounds (`SceneDocument::check_mesh_budgets`,
-  counts only, never rasterizes, #1042): PNG/JPEG/WebP above 1,024 faces,
+  counts only, never rasterizes, #1042): the decoder retains the triangle
+  record count during its existing validation pass, including invisible
+  records. This derived, non-serialized metadata makes the face-count gate
+  constant-time for repeated exports and scenes without meshes; annotation
+  additions introduce no triangles. PNG/JPEG/WebP above 1,024 faces,
   and SVG/PDF only above the 50,000-face vector ceiling, charge each face its
   plot-clipped pixel bounding box as `height × (width + 1)` CSS px² (covered pixels plus one
   pixel of per-row edge walking). A face whose style has
@@ -1970,6 +1974,12 @@ Python `tests/test_static_dense_mesh_tier.py`, Node
 threshold, raster stable reason, and above-ceiling dense-image refusal.
 This does not claim to improve the conservative bounding-box cost model or
 admit the same high-cost fans to raster output.
+
+The follow-up [cached admission evidence](../benchmarks/raster-mesh-admission-cache/README.md)
+records scoped CodSpeed simulation and walltime comparisons for repeated
+native raster command export, with raw results, profiles, environment, and
+reproduction commands. The optimization removes the redundant face-count
+scan from exports without changing mesh admission limits.
 
 
 **Figure-wide bounds (#1006).** Before any host materializes columns or

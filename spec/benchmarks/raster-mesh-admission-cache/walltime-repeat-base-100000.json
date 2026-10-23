@@ -1,0 +1,38 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"url\":\"https://app.codspeed.io/CurateLabs/xyg/runs/6adb81c082e29de63121bc21?uri=crates%2Fxyg-engine%2Fbenches%2Fkernels.rs%3A%3Ascene_v4_raster_commands%255B100000%255D&runnerMode=WallTime\",\"name\":\"scene_v4_raster_commands[100000]\",\"uri\":\"crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[100000]\",\"runnerMode\":\"WallTime\",\"flamegraphAvailable\":true,\"isArchived\":false,\"issues\":[],\"walltime\":{\"minSeconds\":0.002268873,\"lowerFenceSeconds\":0.002268873,\"q1Seconds\":0.0023278715,\"medianSeconds\":0.0023775005,\"q3Seconds\":0.0024607164166666664,\"upperFenceSeconds\":0.0026599837916666657,\"maxSeconds\":0.003278643,\"meanSeconds\":0.0024282962099999995,\"stdevSeconds\":0.0001595961582941406,\"totalTimeSeconds\":0.242829621,\"rounds\":100,\"iqrOutlierRounds\":9,\"stdevOutlierRounds\":1,\"iterPerRound\":1,\"warmupIters\":0}}"
+      }
+    ],
+    "structuredContent": {
+      "url": "https://app.codspeed.io/CurateLabs/xyg/runs/6adb81c082e29de63121bc21?uri=crates%2Fxyg-engine%2Fbenches%2Fkernels.rs%3A%3Ascene_v4_raster_commands%255B100000%255D&runnerMode=WallTime",
+      "name": "scene_v4_raster_commands[100000]",
+      "uri": "crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[100000]",
+      "runnerMode": "WallTime",
+      "flamegraphAvailable": true,
+      "isArchived": false,
+      "issues": [],
+      "walltime": {
+        "minSeconds": 0.002268873,
+        "lowerFenceSeconds": 0.002268873,
+        "q1Seconds": 0.0023278715,
+        "medianSeconds": 0.0023775005,
+        "q3Seconds": 0.0024607164166666664,
+        "upperFenceSeconds": 0.0026599837916666657,
+        "maxSeconds": 0.003278643,
+        "meanSeconds": 0.0024282962099999995,
+        "stdevSeconds": 0.0001595961582941406,
+        "totalTimeSeconds": 0.242829621,
+        "rounds": 100,
+        "iqrOutlierRounds": 9,
+        "stdevOutlierRounds": 1,
+        "iterPerRound": 1,
+        "warmupIters": 0
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 3
+}

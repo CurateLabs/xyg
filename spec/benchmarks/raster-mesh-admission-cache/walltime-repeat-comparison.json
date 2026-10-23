@@ -1,0 +1,12 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "---\nrepository: CurateLabs/xyg\nhead_run_id: 6adb81960e3bbd9ef5636396\nbase_run_id: 6adb81c082e29de63121bc21\nimpact: 0.05627555864064848\ncomparison_url: https://app.codspeed.io/CurateLabs/xyg/runs/compare/6adb81c082e29de63121bc21..6adb81960e3bbd9ef5636396\n---\n\n## Summary\n\n| Status | Count |\n|--------|------:|\n| \u2705 Unchanged | 3 |\n"
+      }
+    ]
+  },
+  "jsonrpc": "2.0",
+  "id": 2
+}

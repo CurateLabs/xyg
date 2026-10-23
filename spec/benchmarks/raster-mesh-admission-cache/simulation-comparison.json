@@ -1,0 +1,12 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "---\nrepository: CurateLabs/xyg\nhead_run_id: 6adb7ff182e29de63121bbb2\nbase_run_id: 6adb80a882e29de63121bbd9\nimpact: 0.13204911278378018\ncomparison_url: https://app.codspeed.io/CurateLabs/xyg/runs/compare/6adb80a882e29de63121bbd9..6adb7ff182e29de63121bbb2\n---\n\n## Summary\n\n| Status | Count |\n|--------|------:|\n| \u26a1 Improvements | 2 |\n| \u2705 Unchanged | 1 |\n\n## Benchmark Results\n\n| Status | Benchmark Name | Benchmark URI | `BASE` | `HEAD` | Change |\n| --- | -------------- | ------------- | ------ | ------ | ---------- |\n| \u26a1 | `scene_v4_raster_commands[1000000]` | `crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[1000000]` | 405.1 ms | 348.3 ms | +16.32% |\n| \u26a1 | `scene_v4_raster_commands[100000]` | `crates/xyg-engine/benches/kernels.rs::scene_v4_raster_commands[100000]` | 38.5 ms | 35 ms | +10.17% |\n"
+      }
+    ]
+  },
+  "jsonrpc": "2.0",
+  "id": 2
+}
