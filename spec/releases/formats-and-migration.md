@@ -62,8 +62,9 @@ with guessed data.
    canonical format requires an explicit conversion through its producing
    reader; installing an older package does not convert it.
 
-Published packages currently use `xyg` / `reflex_xy` and scoped
-`@curatelabs/xyg*` names. There is no legacy `xy` import or `@xy/node`
+Supported packages use `xyg` and scoped `@curatelabs/xyg*` names.
+The removed `reflex_xy` namespace and `xyg[reflex]` extra have no compatibility
+shim; migrate to the [supported application consumers](../design/application-consumers.md). There is no legacy `xy` import or `@xy/node`
 compatibility alias. Port authoring code to the documented composition API;
 the internal `Figure` object is not the public chart-building surface.
 The corpus-defined `xyg.pyplot` shim has its own

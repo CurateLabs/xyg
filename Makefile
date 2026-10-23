@@ -20,7 +20,7 @@ help:
 		'  make check-browser    run browser smokes (set CHROMIUM=/path/to/chrome)' \
 		'  make check-conformance run accessibility + Chromium/Firefox/WebKit conformance' \
 		'  make check-docs       build and validate the Starlight docs and documentation examples' \
-		'  make check-examples   run canonical API examples and Reflex asset registry checks' \
+		'  make check-examples   run canonical API examples and consumer app checks' \
 		'  make check-security   run standalone HTML safety and client text-sink checks' \
 		'  make check-errors     run public error, LOD, and mutation-safety tests' \
 		'  make check-api        run lazy public API and type-surface checks' \
@@ -50,7 +50,7 @@ help:
 		'  make rust-check       run cargo test and clippy'
 
 setup:
-	uv sync --extra reflex --group dev --group codspeed
+	uv sync --group dev --group codspeed
 	cargo build --release
 
 setup-browser:
@@ -122,7 +122,7 @@ check-release-evidence:
 # Benchmark bodies carry correctness assertions; run each once with no timing or
 # instrumentation, exactly as the last steps of the CI `test` job do. Needs the
 # `codspeed` dependency group (pytest-codspeed provides the `benchmark` fixture):
-# `uv sync --extra reflex --group dev --group codspeed`.
+# `uv sync --group dev --group codspeed`.
 check-bench-oracles:
 	cargo bench -p xyg-engine --bench kernels -- --test
 	cargo bench -p xyg-wasm --bench aggregate -- --test

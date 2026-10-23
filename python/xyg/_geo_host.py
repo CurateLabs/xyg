@@ -39,7 +39,7 @@ _OVERVIEW_BUDGET = GeoOverviewIndex.budget.fget
 
 
 class GeoHostAdapter:
-    """Private host-neutral facade used by notebook and Reflex transports."""
+    """Private host-neutral facade used by notebook and application transports."""
 
     def __init__(self, chart, *, frame=None, selected_scope=None, hierarchy_lane=None):
         overview = chart._overview_layer()

@@ -21,3 +21,5 @@ The native Python and Node hosts share one C ABI. Direct-browser WASM runs the
 same Rust engine in a Worker with bounded feature coverage. Read
 [Rust engine and host parity](/docs/xy/core-concepts/rust-engine-and-host-parity/)
 for the common behavior and remaining boundaries.
+
+Application examples use [Python/Streamlit and Node/vanilla TypeScript](/docs/xy/integrations/application-consumers/).

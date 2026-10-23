@@ -1,0 +1,1 @@
+sdist verification OK: dist/xyg-0.0.1.dev2875+cbf2c0eb.tar.gz

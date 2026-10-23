@@ -249,7 +249,7 @@ def index() -> HTMLResponse:
 <main>
   <header>
     <h1>XYG × FastAPI</h1>
-    <p>Interactive WebGL2 charts served from a plain FastAPI app — no Reflex, no
+    <p>Interactive WebGL2 charts served from a plain FastAPI app — no framework adapter, no
        committed HTML. Each chart is generated on request with
        <code>chart.to_html()</code>; expand a card's <b>Code</b> panel to read the
        exact builder, loaded live from the server module.</p>

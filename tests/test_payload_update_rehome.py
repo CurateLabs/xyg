@@ -1,8 +1,7 @@
 """A full-payload update re-homes to the new data, so a grown range expands.
 
-Section 4 of the XYG Reflex showcase links two charts: zooming the overview's x
-range recomputes a *detail* histogram of only the points in view, and pushes it
-as a full ``payload`` (reflex-integration.md §4, "state-driven rebuild"). The
+A linked dashboard zooms its overview's x range and recomputes a *detail* histogram of only the points in view, and pushes it
+as a full ``payload`` (wire-protocol.md, "payload refresh"). The
 client applies that in place via ``ChartView.updatePayload``.
 
 Zooming the overview *out* grows the detail: more points in view means taller

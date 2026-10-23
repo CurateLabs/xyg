@@ -1,4 +1,4 @@
-"""Notebook display-host resolution (reflex-shaped-api.md §3.3).
+"""Notebook display-host resolution (composition-api.md §3.3).
 
 The widget host needs the anywidget *frontend* extension. A WASM-kernel
 deployment with a prebuilt frontend — JupyterLite's `%pip`, e.g.

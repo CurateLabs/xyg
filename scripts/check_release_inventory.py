@@ -22,10 +22,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT = Path("spec/releases/0.6.0-api-inventory.json")
-PYTHON_ROOTS = ("xyg", "reflex_xy", "xyg.pyplot")
+PYTHON_ROOTS = ("xyg", "xyg.pyplot")
 REFERENCES = {
-    "xyg": ["spec/api/api-examples.md", "spec/design/reflex-shaped-api.md", "spec/api/export.md"],
-    "reflex_xy": ["spec/design/reflex-integration.md", "tests/reflex_adapter/"],
+    "xyg": ["spec/api/api-examples.md", "spec/design/composition-api.md", "spec/api/export.md"],
     "xyg.pyplot": ["spec/matplotlib/compat.md", "tests/pyplot/corpus/"],
     "node": ["spec/design/host-parity.md", "packages/xy-node/test/"],
     "browser": ["spec/api/browser-wasm.md", "spec/design/browser-wasm.md", "js/src/60_entries.ts"],
@@ -298,7 +297,7 @@ class PythonInventory:
                 if node.level
                 else node.module or ""
             )
-            if target.startswith(("xyg", "reflex_xy")):
+            if target.startswith("xyg"):
                 try:
                     return self.symbol(target, alias.name, seen | {key})
                 except FileNotFoundError:
@@ -393,7 +392,6 @@ def environment_inventory(root: Path, python: PythonInventory) -> list[dict[str,
     variables: dict[str, dict[str, Any]] = {}
     paths = [
         *sorted((root / "python/xyg").rglob("*.py")),
-        *sorted((root / "python/reflex_xy").rglob("*.py")),
         root / "hatch_build.py",
     ]
     for path in paths:
@@ -566,7 +564,6 @@ def collect(root: Path = ROOT) -> dict[str, Any]:
             "package-lock.json",
             "js/tsconfig.json",
             "python/xyg/py.typed",
-            "python/reflex_xy/py.typed",
         )
     )
     sources.update(
@@ -606,14 +603,17 @@ def collect(root: Path = ROOT) -> dict[str, Any]:
         re.search(r"exports a stable\s+`createEngine\(\)` / chart-builder API", node_readme)
     )
     python_experimental = bool(
-        re.search(r"Reflex integration remain experimental", current_posture)
+        re.search(
+            r"composition API, chart-type set, visual styling\s+surface remain experimental",
+            current_posture,
+        )
     )
     chart_builders = {item["name"] for item in js["surfaces"].get("node/charts", [])}
     for surface_name, surface in surfaces.items():
         for index, symbol in enumerate(surface["symbols"]):
             classification = symbol.get("status", "unclassified")
             evidence = None
-            if surface_name in {"xyg", "reflex_xy"} and python_experimental:
+            if surface_name == "xyg" and python_experimental:
                 classification = "experimental"
                 evidence = "spec/process/production-readiness.md#current-contract"
             elif (

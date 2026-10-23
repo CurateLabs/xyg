@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "commit": "313af60de25ac04ea34b5c5c6451b082292fb5ed",
+  "browser": "149.0.7827.55",
+  "node": "v24.21.0",
+  "hosts": {
+    "node": {
+      "kinds": {
+        "scatter": 114,
+        "line": 2436,
+        "bar": 67230,
+        "graph": 433
+      },
+      "update": true,
+      "browserSelection": true,
+      "export": true,
+      "disposeRemount": true,
+      "outgoingViewReleased": true,
+      "workersTerminated": true,
+      "glContextReleased": true,
+      "localWorkerAndWasmRequested": true,
+      "rustTicksAdmitted": true,
+      "errors": [],
+      "missingWasmFailsClosed": true
+    },
+    "streamlit": {
+      "coloredPixels": 114,
+      "rerun": true,
+      "singleIframe": true,
+      "exportControls": true,
+      "downloads": {
+        "svg": {
+          "filename": "chart.svg",
+          "bytes": 5303,
+          "sha256": "de48bd9a12085a5df817bb9df56934d8483801243b9101bdbbd032913461a060"
+        },
+        "png": {
+          "filename": "chart.png",
+          "bytes": 108691,
+          "sha256": "30539d30549f0e390f69989cd956d21734cf3d7ca10b3ae60a25e482a436f35a"
+        }
+      },
+      "pythonSelectionCallbacks": false,
+      "errors": []
+    }
+  },
+  "hashes": {
+    "target/release/libxyg_core.so": "5317fdf31f84039e7a84b4994cc856e06d9ac79e4a17453fc1c7d3a65e05ee05",
+    "packages/xy-client/dist/index.js": "e4701e1d5b412c05d1e2d80b30a436cb79946c0a03b5eb624d743e28a62e4246",
+    "packages/xy-client/dist/xyg-wasm.wasm": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502"
+  },
+  "python": "3.12.15",
+  "streamlit": "1.66.1",
+  "app_tests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "installed_artifacts": {
+    "xyg-0.0.1.dev2875+cbf2c0eb-py3-none-linux_x86_64.whl": "1d894da5b06c054edbb64938f0a531bc1b4dcdc0bbe593959614da25b9786989",
+    "curatelabs-xyg-node-linux-x64-0.0.0-test.1063.tgz": "29f07b4e0740a9d37b0b62dde1ae7e4f81f838877da00f4ffac4c9ff17f7bae4",
+    "curatelabs-xyg-node-0.0.0-test.1063.tgz": "7a3d74b85c3a741a99bc2e63f47d07f139d4dbf7deebf2c24a4666e217b28fc4",
+    "curatelabs-xyg-0.0.0-test.1063.tgz": "ecdb248f4461e0e951632f85bf8d4850eff5812e5c8ede15d2b78bdd5876a4c1"
+  },
+  "host_path_isolation": {
+    "python_without_node": true,
+    "node_without_python": true
+  }
+}

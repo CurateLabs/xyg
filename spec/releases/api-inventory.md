@@ -19,7 +19,7 @@ uv run python scripts/check_release_inventory.py --require-classified
 The normal Python Test job already discovers the inventory tests. Its existing
 `npm ci` installs the pinned compiler before tests. No new required job, status,
 or runtime dependency is introduced. The inspector executes no XYG package or
-native/Reflex module: Python uses the standard-library AST, and JavaScript uses
+native module: Python uses the standard-library AST, and JavaScript uses
 the TypeScript version locked by `package-lock.json`. The pinned TypeScript 7
 synchronous API is an inspection dependency, not a second API implementation.
 A checkout without that compiler fails with the `npm ci` remedy.
@@ -29,7 +29,6 @@ A checkout without that compiler fails with the `npm ci` remedy.
 | Surface | Export authority | Recorded declaration contract and review references |
 | --- | --- | --- |
 | Python `xyg` | `python/xyg/__init__.py`: `__all__` and `_EXPORTS` | Resolve lazy targets without importing them; record functions, annotations, positional/keyword defaults, overloads, class fields and their declaration order, declared methods and protocols, decorators, base references, and statically raised exception references. Public composition, examples, export, and interaction specifications retain behavioral authority. |
-| `reflex_xy` | `python/reflex_xy/__init__.py`: explicit exports and lazy targets | Same declaration extraction; [integration design](../design/reflex-integration.md) and adapter fixtures retain registration, release, reconnect, and state-rebuild behavior. |
 | `xyg.pyplot` | Its explicit `__all__` and local import targets | Same declarations, including exported Axes/Figure methods; [corpus compatibility](../matplotlib/compat.md) and `tests/pyplot/corpus/` define supported behavior, loud refusals, and differences. An accidental non-`__all__` module attribute is not promoted into a supported shim API. |
 | Node | `packages/xy-node/package.json` export map, including every declared subpath | Compiler-resolved named exports and aliases, callable parameter/return types, declared class members, explicit defaults, and existing `.d.ts` declarations. Runtime JavaScript parameters and referenced literal default bindings are retained alongside `.d.ts` signatures where available. [Host parity](../design/host-parity.md) and the package README own loading errors, ownership, and supported-host behavior. |
 | Browser | `js/src/60_entries.ts` and the browser package export map | Compiler-resolved value/type exports, typed signatures, defaults, class members, interfaces and aliases. [Browser API](../api/browser-wasm.md), [design](../design/browser-wasm.md), and WASM conformance own Worker ownership, cancellation, disposal, error codes, CSP, and offline requirements. Worker/WASM asset entrypoints are package exports, not invented JavaScript functions. |
@@ -55,7 +54,7 @@ jq '.gaps' spec/releases/0.6.0-api-inventory.json
 
 Classification records existing promises, with their evidence, rather than
 inventing stability from an export. The currently published Python composition
-and Reflex posture is experimental. The Node README explicitly promises a
+posture is experimental. Reflex is unsupported and excluded under #1063. The Node README explicitly promises a
 stable `createEngine`/chart-builder API; its named chart constructors and engine
 alias carry that evidence. Native-loader code sets carry the explicit stable
 code promise in host parity. Other exports remain **unclassified** unless their

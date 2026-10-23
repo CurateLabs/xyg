@@ -587,7 +587,7 @@ def notebook_iframe(doc: str, *, width: object, height: object) -> str:
     )
 
 
-# Notebook display-host resolution (reflex-shaped-api.md §3.3). The widget
+# Notebook display-host resolution (composition-api.md §3.3). The widget
 # host needs the anywidget frontend extension; a WASM-kernel deployment with a
 # prebuilt frontend (JupyterLite's `%pip`, e.g. try-jupyter) installs only the
 # kernel-side package, so the comm opens against a frontend that cannot answer

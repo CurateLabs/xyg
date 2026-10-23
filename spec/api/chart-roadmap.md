@@ -60,15 +60,10 @@ Beyond the mark set, four capability layers now ship on `main`:
 - **Standalone LOD without a kernel:** `to_html` exports now re-bin the
   retained density sample in a bundled Web Worker on zoom (off the main
   thread), so a kernel-less page refines instead of stretching the overview.
-- **Reflex-first reactive API (`python/reflex_xy/`):** xy figures as
-  first-class Reflex components (PR #55). Chart data multiplexes onto the
-  app's existing websocket as a second socket.io namespace (`/_xy`) with
-  binary column attachments (§29 — no JSON numbers, no sidecar HTTP
-  endpoints); the only chart state in Reflex is a token string. The
-  `@reflex_xy.figure` computed-var decorator binds figure builders to Reflex
-  state so dependency tracking drives rebuilds and republishes, and a static
-  payload tier compiles zero-backend charts to asset files. See
-  `docs/integrations/reflex.md` and `spec/design/reflex-integration.md`.
+- **Application consumers:** repository Python/Streamlit and Node/vanilla
+  TypeScript examples exercise the supported host APIs. Reflex support is
+  removed (#1063); no adapter namespace or extra ships. See
+  [application-consumers.md](../design/application-consumers.md).
 
 **Prototyped (not on `main`):** candlestick + OHLC marks and a finance
 overlay/indicator layer (volume pane, SMA, VWAP, Bollinger, RSI, MACD,
@@ -352,17 +347,9 @@ nothing themeable competes with a user class. The full slot list (including
 `legend_swatch`, `tick_label`, `axis_title`, and the class-driven modebar
 active state via `--chart-modebar-active`) is `xyg.CHART_DOM_SLOTS`.
 
-For a fixed chart, the Reflex adapter also mirrors embedded class strings into
-generated JSX for Tailwind's compile-time scan. Runtime token/Var charts pass
-their complete names through
-`reflex_xy.chart(..., tailwind_classes="...")`; that scan-only manifest is
-emitted verbatim (including quotes, backslashes, and Unicode), discarded by the
-wrapper, and never reaches the DOM. State-driven constructor-chrome changes
-(including `dom`, title, legend, colorbar, badge, modebar, and axis-band
-topology) rebuild the view so runtime classes and nodes do not remain stale;
-durable selection and every named-axis range are restored silently. For the standalone
-`to_html(...)` export — which has no host page to inherit Tailwind from — pass
-`custom_css="…"` to inject the stylesheet defining those utility classes.
+Application build systems own Tailwind discovery; XYG exposes literal chart
+class inventories without generating framework JSX. For `to_html(...)`, use
+`custom_css="…"` to inject the stylesheet defining the utility classes.
 
 Explicitly **out of scope** (browser limit, not a backlog item): the plotted
 marks are WebGL2 canvas pixels — no CSS, Tailwind or otherwise, can style them.
@@ -387,8 +374,7 @@ interaction-latency comparison, not assumed.
 
 The first breadth milestone — **histogram, bar/column, area, heatmap** — and
 the first statistical block — **box, violin, ECDF, error bars/bands, hexbin,
-contour, steps/stairs/stems, and facets** — are in the current source, alongside
-the bundled Reflex integration. The verified PyPI alpha is `0.0.1a2`;
+contour, steps/stairs/stems, and facets** — are in the current source. The verified PyPI alpha is `0.0.1a2`;
 upstream `v0.0.1` is historical provenance, not an XYG release. The next
 sequence is therefore stabilization and compatibility depth,
 not re-implementing shipped primitives.
@@ -396,16 +382,17 @@ not re-implementing shipped primitives.
 1. **Stabilize the XYG alpha and source feature set.** The 2026-10-14 PyPI
    snapshot has only `0.0.1a2`, a Linux x86-64 glibc 2.39+ wheel and sdist.
    The source Pyodide wheel is runtime-verified but absent from that registry
-   inventory. The docs app and bundled Reflex adapter are on `main`; an owned
+   inventory. The docs app is on `main`; an owned
    public docs deployment is a separate release contract. Release/distribution correctness and the
    post-launch bug backlog are the current gate, not shipping. The interaction
    correctness issues (box-zoom view collapse, double-click blanking a dense
-   Reflex scatter, static integration chart crash, FacetChart CSS leak) come
+   application scatter, static integration chart crash, FacetChart CSS leak) come
    before any new chart family. The heatmap hover kernel crash is fixed
    (PR #106): the pick handler takes a dedicated grid-trace branch that returns
    row/col plus the cell value instead of indexing the edge-only x/y arrays.
-2. **Reflex-first reactive API — shipped** (PR #55, `python/reflex_xy/`; see
-   the capability-layer summary near the top of this doc). Linked facet
+2. **Application consumers and linked interaction.** The former framework
+   adapter is removed; Streamlit HTML and Node/vanilla TypeScript examples
+   consume the public host APIs. Linked facet
    interactions shipped in PR #105: `xyg.facet_chart(...)` takes
    `link=True|"both"|"x"|"y"` for runtime-linked panel axes and
    `link_select=True` to echo data-space selections across panels. First-class
@@ -433,9 +420,8 @@ Parallel, non-chart-type tracks:
   fast truecolor PNGs, and a baked bitmap font for text. `optimize=True`
   retains the slower indexed-palette path for smaller files;
   `engine=Engine.chromium` stays for an installed-browser CSS/WebGL screenshot.
-- **Reflex-first reactive API** — **shipped** (PR #55): the bundled integration
-  described in step 2 above, with websocket-multiplexed binary transport and
-  computed-var figure binding.
+- **Application consumers** — Python/Streamlit and Node/vanilla TypeScript
+  exercise existing host APIs without a shipped framework adapter.
 
 ## Near-Term API Sketch
 
@@ -461,8 +447,7 @@ New chart kinds land as composition marks plus a family container
 ## Decision Summary
 
 The rectangle/polygon/grid-texture foundations, statistical breadth block,
-full mark styling, native PNG rasterizer, core polar/pie/donut composition, and
-the **Reflex-first reactive API** (bundled `xyg[reflex]` integration) are in place
+full mark styling, native PNG rasterizer, and core polar/pie/donut composition are in place
 in the current source. The published alpha is a separate versioned surface.
 The next product track is
 **post-launch stabilization** (the open interaction/adapter bug backlog),

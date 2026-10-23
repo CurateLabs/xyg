@@ -163,6 +163,11 @@ def test_checked_in_inventory_matches_current_declarations():
     assert expected["acceptance"] == "preparation-only-not-a-freeze"
     assert expected["gaps"]
     assert inventory.SNAPSHOT.as_posix() not in expected["sourceSha256"]
+    assert "reflex_xy" not in actual["contracts"]["surfaces"]
+    assert all(
+        symbol["status"] == "experimental"
+        for symbol in actual["contracts"]["surfaces"]["xyg"]["symbols"]
+    )
 
 
 def test_named_literal_python_default_is_part_of_the_contract(root_path: Path):

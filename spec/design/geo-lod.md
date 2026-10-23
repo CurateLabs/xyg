@@ -1,5 +1,11 @@
 # Retained geographic point LOD (#50)
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 `geo_lod` is the shared Rust point processor building block. It borrows validated
 retained chunks and owns time-first projection, direct-tier admission, deterministic
 screen-cell aggregation and exact paged membership. The shared `geo_lod_scene`, `geo_lod_hit`, `geo_source_session`, and

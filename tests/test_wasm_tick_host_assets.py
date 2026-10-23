@@ -130,22 +130,12 @@ def test_bundled_wasm_tick_assets_fail_closed_when_missing(
 def test_client_and_export_contract_stay_fail_closed() -> None:
     entries = (ROOT / "js" / "src" / "60_entries.ts").read_text(encoding="utf-8")
     export_src = (ROOT / "python" / "xyg" / "export.py").read_text(encoding="utf-8")
-    reflex = (ROOT / "python" / "reflex_xy" / "assets" / "__init__.py").read_text(encoding="utf-8")
     assert "function attachHostWasmTicks" in entries
     assert "attachHostWasmTicks(view, spec)" in entries
     assert entries.count("attachHostWasmTicks(view, spec)") == 2
     assert "blob:|data:|javascript:" in entries
     assert "copy_wasm_tick_assets" in export_src
     assert "resolve_wasm_tick_assets" in export_src
-    assert "wasm-worker.js" in reflex
-    assert "xyg-wasm.wasm" in reflex
-    assert "reflex_wasm_tick_urls" in reflex
-    assert "follow-up" not in reflex
-    jsx = (ROOT / "python" / "reflex_xy" / "assets" / "XYChart.jsx").read_text(encoding="utf-8")
-    assert "attachHostWasmTicks" in jsx
-    assert 'new URL("./wasm-worker.js", import.meta.url)' in jsx
-    assert 'new URL("./xyg-wasm.wasm", import.meta.url)' in jsx
-    assert "attachHostWasmTicks(view, spec)" in jsx
 
 
 def test_exported_spec_roundtrips_wasm_tick_urls() -> None:

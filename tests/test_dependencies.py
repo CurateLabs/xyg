@@ -22,41 +22,32 @@ def test_core_runtime_dependencies_do_not_include_reflex() -> None:
 
     runtime_names = {_dependency_name(requirement) for requirement in dependencies}
 
-    assert not any(name == "reflex" or name.startswith("reflex-") for name in runtime_names), (
-        "plain xyg must stay Reflex-free; publish the supported framework floor "
-        "through the reflex extra"
-    )
+    assert runtime_names == {"numpy", "anywidget"}
 
 
-def test_core_publishes_only_the_reflex_optional_dependency() -> None:
+def test_consumer_frameworks_are_dev_only() -> None:
     data = tomllib.loads(ROOT.joinpath("pyproject.toml").read_text(encoding="utf-8"))
-    project = data.get("project") or {}
-    groups = data.get("dependency-groups") or {}
-    extras = project.get("optional-dependencies") or {}
-
-    assert set(extras) == {"reflex"}
-    assert any(
-        _dependency_name(requirement) == "reflex" and ">=0.9.6" in requirement
-        for requirement in extras["reflex"]
-    ), (
-        "xyg[reflex] must select the supported Reflex floor while the adapter "
-        "source remains bundled in the xyg distribution"
-    )
-    assert {"dev", "codspeed"} <= groups.keys()
-    group_names = {
-        _dependency_name(requirement)
-        for requirements in groups.values()
-        for requirement in requirements
+    project = data["project"]
+    groups = data["dependency-groups"]
+    assert not project.get("optional-dependencies")
+    assert {"dev", "codspeed", "consumers"} <= groups.keys()
+    requirements = [
+        requirement
+        for values in groups.values()
+        for requirement in values
         if isinstance(requirement, str)
+    ]
+    names = {_dependency_name(requirement) for requirement in requirements}
+    assert not any(name == "reflex" or name.startswith("reflex-") for name in names)
+    assert groups["consumers"] == ["streamlit>=1.56,<2"]
+    assert not {"streamlit", "pandas"} & {
+        _dependency_name(requirement) for requirement in groups["dev"]
     }
-    assert "plotly" not in group_names, (
-        "Plotly is an external comparison baseline installed by benchmark workflows, "
-        "not an XYG development or runtime dependency"
-    )
+    assert "plotly" not in names
 
 
-def test_core_package_does_not_import_reflex() -> None:
-    forbidden = ("reflex", "reflex_core", "reflex_base")
+def test_core_package_does_not_import_consumer_frameworks() -> None:
+    forbidden = ("reflex", "reflex_core", "reflex_base", "streamlit")
     violations: list[str] = []
     for path in sorted(CORE_PACKAGE.rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -71,7 +62,4 @@ def test_core_package_does_not_import_reflex() -> None:
                 if root in forbidden or root.startswith("reflex_"):
                     violations.append(f"{path.relative_to(ROOT)} imports from {node.module}")
 
-    assert violations == [], (
-        "python/xyg must stay framework-free; Reflex imports belong in the "
-        f"bundled python/reflex_xy integration: {violations}"
-    )
+    assert violations == [], f"python/xyg must stay framework-free: {violations}"

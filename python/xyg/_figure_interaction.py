@@ -91,8 +91,8 @@ def set_mark_style(
     """Configure legacy standalone hover/selection styling.
 
     This low-level compatibility hook is intentionally not exposed by the
-    declarative component API. Reflex integrations should derive ordinary
-    mark props/styles from Reflex state instead of maintaining XYG state.
+    declarative component API. Applications should derive ordinary mark
+    props/styles from their own state instead of maintaining XYG state.
     """
     for state, value in (
         ("hover", hover),

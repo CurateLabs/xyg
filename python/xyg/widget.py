@@ -192,8 +192,7 @@ class FigureWidget(anywidget.AnyWidget):
 
     def _on_custom_msg(self, widget: Any, content: Any, msg_buffers: Any) -> None:
         # All dispatch and callback semantics live in channel.handle_message
-        # (reflex-integration §3.1) — this widget is one transport among
-        # (eventually) several; it only owns the anywidget comm send.
+        # (wire-protocol.md) — this widget only owns the anywidget comm send.
         reply = handle_message(self._figure, content, msg_buffers, callbacks=self._callbacks)
         if reply is not None:
             msg, buffers = reply

@@ -62,8 +62,8 @@ wheel) is the shared renderer for:
 - VS Code webviews that host the same standalone or ESM bundle from
   `@curatelabs/xyg`, not from the Python package tree.
 
-Hosts differ only in transport attachment (anywidget comm, Reflex
-socket.io `/_xy`, or none for static HTML); mark paint stays identical.
+Hosts differ only in transport attachment (anywidget comm, explicit application
+transport, or none for static HTML); mark paint stays identical.
 
 ## 1. What's structurally right (keep)
 
@@ -107,9 +107,8 @@ socket.io `/_xy`, or none for static HTML); mark paint stays identical.
   `byte_offset`. *Split*: `buffer_layout: "split"` in the spec and one wire
   buffer per column, each column carrying an integer `buf` index into the
   buffer list — this skips the join copy, the largest allocation of a
-  direct-tier build. Split is what both shipping hosts use
-  (`build_payload_split` in `python/xyg/widget.py` and
-  `python/reflex_xy/namespace.py`); packed remains for standalone
+  direct-tier build. Split is what the notebook host uses
+  (`build_payload_split` in `python/xyg/widget.py`); packed remains for standalone
   export and for streaming `append`, which always re-ships packed
   (`python/xyg/interaction.py`). `payloadBuffers` (`60_entries.ts`) and
   `_columnView` (`50_chartview.ts`) treat any spec/transport disagreement as a

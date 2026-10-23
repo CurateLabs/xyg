@@ -52,30 +52,26 @@ control.
 - `python/xyg/` — package. `_native.py` (ctypes) binds the required
   Rust core; there is no NumPy fallback — `kernels.py` raises a clear
   ImportError if the native core can't load. `components.py`
-  is the Reflex-flavored composition API (`scatter_chart`/`line_chart` + marks/
+  is the declarative composition API (`scatter_chart`/`line_chart` + marks/
   axes) — the **only public chart-building surface**; keep it dependency-free
-  (no `reflex` import). `_figure.py` is the internal scene/engine object
+  (no web-framework import). `_figure.py` is the internal scene/engine object
   (`Figure`) that composed charts compile to via `Chart.figure()`; it is not
   exported from `xyg` (only `Selection` is public from it).
   `marks.py` is the declarative mark core: the single implementation of every
   chart kind, bound onto the internal `Figure` (one body, one signature, one
   set of defaults — parity is identity, not convention).
   `channels.py` resolves scatter color/size encodings. `channel.py` (singular)
-  is the transport-agnostic message dispatcher (widget comm today, Reflex
-  routes later) — it must never import the widget stack.
+  is the transport-agnostic message dispatcher (widget comm and application-host routes) — it must never import the widget stack.
 - `python/xyg/pyplot/` — the matplotlib shim, fully contained
   (one-way dependency onto the public composition API; guardrails in
   `tests/pyplot/test_boundaries.py`). Corpus-defined compatibility:
   `tests/pyplot/corpus/` + `spec/matplotlib/compat.md`.
-- `python/reflex_xy/` — the bundled Reflex integration (import namespace
-  `reflex_xy`; design: `spec/design/reflex-integration.md`). Chart
-  data rides the app's own websocket as a second socket.io namespace;
-  figures live in a per-process registry rebuilt from Reflex state on miss.
-  The source ships in every `xyg` artifact; the `xyg[reflex]` extra selects the
-  supported Reflex floor while plain `xyg` keeps no Reflex runtime dependency.
-  The core `python/xyg` package must never import Reflex. The render client is
-  linked out of that package at app compile (no second copy to drift).
-  Tests: `tests/reflex_adapter/` (skip unless Reflex is installed).
+- `examples/streamlit/` and `examples/vanilla-ts/` — repository-only application
+  consumers. Streamlit embeds HTML snapshots and has no Python callback bridge;
+  Node/vanilla TypeScript exercises the shared live browser boundary. Framework
+  support and coverage: `spec/design/application-consumers.md`. No Reflex adapter
+  namespace, dependency extra, or compatibility shim ships.
+
 - `packages/xy-node/` — Node host bindings (`@curatelabs/xyg-node`; koffi → same Rust C ABI). Covers
   server-side Node and VS Code extensions (VS Code is a consumer of these
   bindings, not a separate stack). Thin TypedArray loaders only; no
@@ -90,7 +86,7 @@ control.
   the host-neutral `@curatelabs/xyg` artifact
   (`packages/xy-client/dist/index.js` ESM + `standalone.js` IIFE `window.xy`),
   then **copies** those files into `python/xyg/static/` so notebooks /
-  `to_html()` / Reflex stay Node-free. Bundles are a **generated artifact,
+  `to_html()` / application embeds stay Node-free. Bundles are a **generated artifact,
   git-ignored, not committed** (§33): `hatch_build.py` builds them and
   force-includes them into the wheel/sdist at packaging time (exactly as it
   does the Rust core), so published Python distributions carry the copy
@@ -112,9 +108,9 @@ node js/build.mjs                     # typecheck + regenerate minified static/ 
 python3 scripts/abi_smoke.py          # C-ABI seam, stdlib only (no PyPI needed)
 python3 scripts/render_smoke_nonumpy.py  # WebGL2 render path in headless Chromium
 python3 scripts/append_stream_smoke.py   # streaming-append tail uploads + coalesced refines
-uv sync --extra reflex --group dev
+uv sync --group dev
 uv run pytest                         # native core required (no fallback)
-python3 scripts/reflex_ws_smoke.py    # browser E2E vs the running Reflex demo app
+uv run python scripts/consumer_apps_smoke.py --chromium /usr/bin/google-chrome-stable
 uv run ruff check . && uv run ruff format . && uv run ty check
 uv run python scripts/bench.py        # §12 benchmark harness
 python3 scripts/bench_scatter_native.py --render   # XYG scatter, no deps
@@ -180,7 +176,7 @@ PRs, or code. Set `git config user.name/user.email` to the human author
 ## Cursor Cloud specific instructions
 
 This section is for Cloud Agents. The startup update script already runs
-`uv sync --extra reflex --group dev`, `cargo build --release`, `npm ci`,
+`uv sync --group dev`, `cargo build --release`, `npm ci`,
 `node js/build.mjs`, and `npm ci --prefix packages/xy-node`, so dependencies,
 the native core, and the paint bundles are refreshed before you start. Standard
 per-service commands live in the `## Commands` section and the `Makefile`; the
@@ -197,7 +193,7 @@ notes below are the non-obvious caveats.
   `uv run python -c "import xyg.kernels as k; print(k.BACKEND)"` → `native`.
 - **Browser bundles are generated, not committed.** `node js/build.mjs`
   regenerates `python/xyg/static/{index,standalone}.js` (git-ignored, §33), which
-  `to_html()`/notebooks/Reflex need. Re-run it after editing anything under
+  `to_html()`/notebooks/application embeds need. Re-run it after editing anything under
   `js/src/`; a stale or missing bundle silently ships old client behavior.
 - **Run Python tooling through `uv`** (`uv run pytest`, `uv run ruff …`,
   `uv run ty check`) so it uses the project `.venv`. Running bare `pytest`/`ruff`

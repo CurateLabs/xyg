@@ -302,7 +302,7 @@ def test_mark_style_rejects_unrenderable_css_before_mutating_figure() -> None:
     assert len(fig.store) == 0
 
 
-def test_css_variables_remain_reflex_owned_dom_values() -> None:
+def test_css_variables_remain_application_owned_dom_values() -> None:
     chart = xyg.chart(
         xyg.line(x=[0.0, 1.0], y=[1.0, 2.0], style={"stroke": "var(--accent)"}),
         style={"--accent": "oklch(0.7 0.2 250)"},

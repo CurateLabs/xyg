@@ -42,7 +42,7 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | ABI contract | — (declarations duplicated by hand) | **`spec/abi/xyg-abi.json` + `xyg.h`**, generated with Python ctypes and Node Koffi declarations from `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`; byte-for-byte checked by `scripts/check_abi_parity.py` | landed (#57) |
 | Python distribution | `xy` | **`xyg`** | landed (`pyproject.toml` / wheels / `pip install xyg`) |
 | Python import namespace | `import xy` (`python/xy/`) | **`import xyg`** (`python/xyg/`) | landed (#51); no compatibility alias |
-| Bundled Reflex adapter | **`reflex_xy`** (`python/reflex_xy/`) | unchanged; extra spelled `xyg[reflex]` | retained by #51 product decision |
+| Retired framework adapter | `reflex_xy`, `xyg[reflex]` | removed; no compatibility namespace or extra | #1063 supersedes #51 retention |
 | Paint client (npm) | (Python `python/xyg/static` only) | **`@curatelabs/xyg`** (owned by #23; listed so the matrix is complete) | decided |
 | Node package | `@xy/node` (`packages/xy-node/`) | **`@curatelabs/xyg-node`** (in-tree directory stays `packages/xy-node`; never publish `@xy/node`) | decided (owner; npm scope locked with #24/#23) |
 | Node exact-platform natives | (none; repo/`_native_lib` only) | **`@curatelabs/xyg-node-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}`** as optionalDependencies of the facade; Windows arm64 unsupported; inventory/hashes/budgets via `scripts/verify_node_packages.py` | release staging plus native clean-install/load/export matrix landed; registry and VS Code remote conformance remain (#52) |
@@ -124,7 +124,7 @@ one reviewed PR on `main` before any release tag:
 5. **Host namespace renames** — Node package.json becomes `@curatelabs/xyg-node`
    with this crate split (directory stays `packages/xy-node`). Python
    `import xyg` / `python/xyg/` lands after the crate split, native artifact,
-   and Node lookup; the `reflex_xy` integration namespace remains stable. The
+   and Node lookup; #1063 removes the former framework integration namespace. The
    **distribution** name `xyg` (wheels,
    sdists, `pip install xyg`, `importlib.metadata.version("xyg")`) lands with
    the crate-split PR so PyPI trusted publishing can claim project `xyg`.
@@ -158,20 +158,21 @@ alpha does not relax that release contract.
 |---|---|
 | Distribution / PyPI project | `xyg` (`pyproject.toml` `name`, wheels, `pip install xyg`) |
 | Import namespace | `import xyg` from `python/xyg/` |
-| Reflex adapter | `reflex_xy` — **retained** for #51 |
+| Reflex adapter | removed by #1063; no compatibility alias |
 | Compatibility alias | **None** — `import xy` fails |
 
 **Completed cutover steps (one coherent change; no published mixed artifact):**
 
 1. `git mv python/xy python/xyg` (and update hatch `packages` / sdist includes / artifacts to `python/xyg/**`).
-2. Rewrite every product `import xy` / `from xy…` to `xyg` (tests, examples, docs, scripts, benches, and Reflex adapter imports of the chart package — adapter package name stays `reflex_xy`).
+2. Rewrite every product `import xy` / `from xy…` to `xyg` (tests, examples, docs, scripts, benches, and application imports of the chart package).
 3. Update `hatch_build.py` destinations (`python/xyg/_native_lib`, `python/xyg/static`).
 4. Update `scripts/verify_wheel.py` / `verify_sdist.py` expected paths (`xyg/_native_lib/…`, `xyg/static/…`).
-5. Keep `python/reflex_xy` / `import reflex_xy`; extra remains `xyg[reflex]`.
+5. #1063 supersedes adapter retention: remove `python/reflex_xy`, its extra,
+   assets, examples and tests.
 6. Refresh this matrix status to **landed**, clear stale allowlist entries that existed only for the old Python tree, and update host-parity / production-readiness wording.
 7. Prove BDD: clean `pip install` of wheel/sdist → `import xyg` renders; `import xy` raises `ModuleNotFoundError`.
 
-**Guardrail:** `tests/test_xyg_package_identity.py` locks the landed distribution/import identity, absence of the old namespace, and retained `reflex_xy` adapter.
+**Guardrail:** `tests/test_xyg_package_identity.py` locks the landed distribution/import identity, absence of the old namespace, and absence of the removed framework adapter.
 
 ## 6. Public positioning and evidence contract
 
@@ -203,7 +204,7 @@ other documentation sites. `docs/app` contains the static-site build;
 compiled at build time into native chart previews, without requiring a
 framework docs runtime. The site navigation and
 landing/integration/deployment guidance lead with **Use with GraphForge**.
-Reflex is upstream provenance and a retained optional technical adapter; it is
+Reflex is upstream provenance and a retired technical adapter; it is
 not XYG's product identity or required application framework. Source-only
 adapter references may remain where they accurately document that code.
 

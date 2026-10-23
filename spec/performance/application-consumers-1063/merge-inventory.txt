@@ -1,0 +1,2 @@
+Wrote spec/releases/0.6.0-api-inventory.json; preparation only, 679 explicit review gaps
+API declarations match the preparation inventory; acceptance/classification gaps remain explicit

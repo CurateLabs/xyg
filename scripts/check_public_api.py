@@ -109,7 +109,6 @@ DECLARATIVE_CHART_READOUTS = (
     "to_png",
     "memory_report",
     "chrome_components",
-    "reflex_components",
     "append",
     "pick",
     "select_range",
@@ -238,7 +237,7 @@ def validate_component_public_api(
 def validate_declarative_api_contract(
     pkg: ModuleType, components_module: ModuleType | None = None
 ) -> list[str]:
-    """Ensure the Reflex-shaped composition API remains a named public contract."""
+    """Ensure the framework-neutral composition API remains a named public contract."""
     errors: list[str] = []
     exports = getattr(pkg, "_EXPORTS", None)
     if not isinstance(exports, dict):

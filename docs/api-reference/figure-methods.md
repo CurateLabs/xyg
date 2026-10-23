@@ -110,12 +110,11 @@ Streaming has additional channel and monotonic-line constraints documented in
 
 ~~~python
 chrome: dict[str, object] = chart.chrome_components()
-chrome_alias: dict[str, object] = chart.reflex_components()
 ~~~
 
-These methods return the exact opaque replacement objects passed to
+This method returns the exact opaque replacement objects passed to
 `legend()`, `tooltip()`, or `colorbar()`. Core XYG does not serialize those
-objects. `reflex_components()` is an alias retained for adapter code.
+objects. Application hosts decide how to mount those objects.
 
 ## FacetChart Methods
 

@@ -16,14 +16,13 @@ screen-bounded performance core, but the stable commitments today are narrower:
   200 ms budget. Chart-building APIs are the compute import boundary; notebook
   widget dependencies stay deferred until `.widget()`/display, and standalone
   HTML export reads its static bundle without importing the widget stack.
-- Published wheels include only the shippable `xyg/` and bundled `reflex_xy/`
-  packages,
+- Published wheels include only the shippable `xyg/` package,
   `.dist-info`, the render-client JavaScript bundles, `py.typed`, and, for native
   wheels, the Rust core. The JS bundles are a generated artifact (not committed to
   git): the build hook builds them into the wheel/sdist, so **end users do not need
   Rust, Node, npm, or a CDN.**
 - Source distributions contain only install and build inputs: the `xyg` package,
-  bundled `reflex_xy` integration, Rust/JS sources, and the prebuilt render
+  Rust/JS sources, and the prebuilt render
   client. Repository-only docs, tests, benchmarks, scripts, and examples are
   excluded. Installing from an sdist therefore needs no Node.
 - Building from a raw source checkout (`pip install` from a clone, or the dev
@@ -42,7 +41,7 @@ screen-bounded performance core, but the stable commitments today are narrower:
   `decimated`, `density`, `sampled`, or `adaptive`.
 
 The currently published alpha's composition API, chart-type set, visual styling
-surface, and Reflex integration remain experimental. The future accepted
+surface remain experimental. Reflex support is removed under #1063. The future accepted
 `0.6` line uses the explicit stable/experimental/internal classification and
 deprecation commitments in the [public compatibility policy](../releases/compatibility-policy.md).
 Its [format and migration inventory](../releases/formats-and-migration.md)
@@ -257,9 +256,9 @@ These must pass before publishing.
 | Real chart render | A real composed chart exports and paints in Chromium | `python scripts/smoke_render.py <chromium>` |
 | Step tier update | A decimated `step` chart keeps its risers after a synthetic kernel `tier_update` replaces the vertex buffers | `python scripts/step_tier_smoke.py <chromium>` |
 | Dashboard reliability | Attempts 10/20/50/60 charts with hosted packaged Rust/WASM ticks admitted on every created chart, hard-gates the 10-chart row as loss-free and nonblank, retains partial larger rows, and applies the production shader-cache oracle to a complete, fully nonblank, loss-free 60-chart row | `python benchmarks/bench_dashboard.py --chart-counts 10,20,50,60 --chromium <chromium> --json dashboard-smoke.json` then `python scripts/verify_benchmark_report.py dashboard-smoke.json --kind dashboard-browser` |
-| sdist | Build-input-only source archive contains the `xyg` and bundled `reflex_xy` packages, JSX/render-client bundles, complete JS/Rust build sources, and `PKG-INFO` version/dependencies (including `Provides-Extra: reflex` and `reflex>=0.9.6` under that marker) matching the archive's own `xyg-<version>` root; repository-only material, duplicate/unsafe members, native binaries, and generated junk are absent | `python scripts/verify_sdist.py dist/*.tar.gz` |
-| Native wheel | Platform wheel contains package-only `xyg` and `reflex_xy` files, exactly one native library, the JSX wrapper but no duplicate render client, `METADATA` version/base dependencies/`reflex` extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, and is tagged non-pure | `python scripts/verify_wheel.py dist/*.whl --expect-native` |
-| Fallback wheel | No-toolchain wheel contains package-only `xyg` and `reflex_xy` files, `METADATA` version/base dependencies/`reflex` extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, is pure, and contains no native library | `python scripts/verify_wheel.py dist/*.whl --expect-pure` |
+| sdist | Build-input-only source archive contains the `xyg` package and render-client bundles, complete JS/Rust build sources, and `PKG-INFO` version/dependencies (without Reflex dependencies or an adapter extra) matching the archive's own `xyg-<version>` root; repository-only material, duplicate/unsafe members, native binaries, and generated junk are absent | `python scripts/verify_sdist.py dist/*.tar.gz` |
+| Native wheel | Platform wheel contains package-only `xyg` files, exactly one native library, no framework wrapper or duplicate render client, `METADATA` version/base dependencies and no Reflex extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, and is tagged non-pure | `python scripts/verify_wheel.py dist/*.whl --expect-native` |
+| Fallback wheel | No-toolchain wheel contains package-only `xyg` files, `METADATA` version/base dependencies and no Reflex extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, is pure, and contains no native library | `python scripts/verify_wheel.py dist/*.whl --expect-pure` |
 | Wheel size | Platform wheel remains small enough for notebook installs | CI budget: 15 MB |
 | Benchmark artifact | JSON benchmark reports carry schema, environment, categories, row status, and finite non-negative metrics; native reports must declare the native backend | `python scripts/verify_benchmark_report.py benchmark.json --kind scatter-vs`; repeat for line, install, core-2D, pyplot-vs-matplotlib, native, interaction, dashboard, and workflow artifacts |
 
@@ -313,7 +312,7 @@ production-facing push:
 | Changed surface | Focused gate |
 |---|---|
 | Public docs, API prose, examples, public benchmark wording, Starlight build | `make check-docs` |
-| `spec/api/api-examples.md`, Reflex chart registry/assets | `make check-examples` |
+| `spec/api/api-examples.md`, application consumer assets | `make check-examples` |
 | Public validation, error messages, builder rollback, LOD/drill mutation boundaries, chart/widget caching | `make check-errors` |
 | Public exports, lazy import mappings, component factories, public annotations | `make check-api` |
 | Import-time budget, `xyg.__init__`, dependency boundaries, widget/export/backend import boundaries | `make check-import` |
@@ -371,7 +370,7 @@ tick-label overlap, tooltip stability, crosshair visibility, view changes, box
 zoom narrow/restore behavior, brush select count/clear behavior, lit-pixel
 readback floors, and frame-to-frame color jumps. The visual regression smoke
 also validates title, plot, x-axis, and y-axis regions plus plot-region
-occupancy, and it screenshots static Reflex-style chrome shells for the custom
+occupancy, and it screenshots static declarative chrome shells for the custom
 legend/tooltip and annotated heatmap examples. A chart cannot collapse into a
 corner, lose axis/custom chrome, or pass merely because some pixels exist
 somewhere.
@@ -401,7 +400,7 @@ verify those exact files rather than rebuilding locally:
 make check-artifacts SDIST=/path/to/xyg.tar.gz WHEEL=/path/to/xyg.whl
 ```
 
-Use this after editing `spec/api/api-examples.md` or the Reflex dashboard chart
+Use this after editing `spec/api/api-examples.md` or the application example chart
 registry/assets:
 
 ```bash
@@ -464,7 +463,7 @@ For browser checks, pass the local Chromium/Chrome binary explicitly:
 make check-browser CHROMIUM=/path/to/chrome
 ```
 
-The lifecycle gate runs `scripts/reflex_lifecycle_smoke.py`. It boots the
+The lifecycle gate runs `scripts/app_lifecycle_smoke.py`. It boots the
 `examples/fastapi` app under uvicorn and, for every gallery chart route plus
 `/drilldown`, injects a probe over CDP (before the chart client loads) and
 requires the view to survive the `initial`, `narrow-resize`, `wide-resize`,
@@ -535,11 +534,10 @@ declaration is owned by #936. Reproduce with
 `python3 scripts/check_release_version.py --tag xyg-v0.6.0-rc.5` and
 `python3 -m pytest tests/test_release_version.py tests/test_check_release_version.py`.
 
-The repository has one release line: the `xyg` distribution, including its
-bundled `reflex_xy` integration, ships from `xyg-vX.Y.Z` tags through
-`publish.yaml`. The `xyg[reflex]` extra is dependency metadata in those same
-artifacts, not another package or release. The Python package and distribution
-share the canonical `xyg` identity; no `xy` compatibility import ships.
+The repository has one release line: the `xyg` distribution ships from
+`xyg-vX.Y.Z` tags through `publish.yaml`. The Python package and distribution
+share the canonical `xyg` identity; no `xy` compatibility import, `reflex_xy`
+namespace or `xyg[reflex]` extra ships.
 
 ### Fork release posture (CurateLabs/xyg, issue #13)
 
@@ -699,7 +697,7 @@ carry the same standalone painter, rechecks the browser asset manifest, and
 emits a SHA-256 ledger bound to the full release commit. The release-only job
 then installs those four archives in a new Python virtual environment and npm
 project and resolves the direct-browser WASM locally. This is the first issue
-54 cohort; the remaining platform, notebook/Reflex, VS Code local/remote,
+54 cohort; the remaining platform, notebook/Streamlit, VS Code local/remote,
 journey, lifecycle, and leak/isolation matrix remains required before closure.
 
 Packing is followed by native clean-install conformance on all five supported
@@ -722,8 +720,7 @@ after local staging; `--sbom` emits a CycloneDX-lite document). Never publish
 
 Python import `xyg` / `python/xyg/`, the distribution name, and
 `importlib.metadata` lookups all use `xyg`. The clean break intentionally ships
-no `xy` compatibility package; `reflex_xy` remains the separate integration
-namespace. `tests/test_xyg_package_identity.py` locks this identity.
+no `xy` compatibility package or framework adapter namespace. `tests/test_xyg_package_identity.py` locks this identity.
 
 Before tagging an `xyg-v*` release:
 
@@ -785,9 +782,9 @@ Before tagging an `xyg-v*` release:
 - Confirm the no-Rust install job passed (it must build, install, and then
   raise a clear ImportError on first compute — never a silent fallback).
 - Confirm the sdist verifier passed and the build-input-only source archive
-  contains `xyg`, bundled `reflex_xy`, the JSX/render-client bundles, complete
+  contains `xyg`, the render-client bundles, complete
   JS/Rust build sources, and the expected `PKG-INFO` package name, Python floor,
-  runtime dependencies, and Reflex extra. It must exclude repository-only
+  runtime dependencies, with no Reflex extra or dependency. It must exclude repository-only
   docs, tests, scripts, benchmarks, examples, native binaries, and generated
   caches.
 - Confirm each platform wheel passes `scripts/verify_wheel.py --expect-native`
@@ -795,9 +792,8 @@ Before tagging an `xyg-v*` release:
   fallback `py3-none-any` wheel passes `--expect-pure` and fails compute with
   the documented native-core error. Wheel
   `METADATA` must keep `Name: xyg`, `Requires-Python: >=3.11`,
-  `anywidget>=0.9`, and `numpy>=1.24` as base requirements, plus
-  `Provides-Extra: reflex` and `reflex>=0.9.6` guarded by that extra. The wheel
-  must contain `reflex_xy` and `XYChart.jsx`, and `RECORD` must list every
+  `anywidget>=0.9`, and `numpy>=1.24` as base requirements. Reflex extra/dependency
+  metadata, `reflex_xy` and `XYChart.jsx` must be absent. `RECORD` must list every
   archive file exactly once with matching `sha256` and size fields. Wheels
   and the sdist remain distribution/build-input-only: docs, tests, benchmarks,
   scripts, and the `examples/` apps are repository-only.
@@ -850,14 +846,15 @@ preserves source identity; the [job-rerun endpoint](https://docs.github.com/en/r
 limits the rerun to the chosen job and its dependents. No CI protection or
 required approval policy needs to change for this process.
 
-### Bundled Reflex integration
+### Application consumers
 
-Every `xyg` release carries the `reflex_xy` Python package and JSX wrapper. The
-wrapper links to the render client in the same installed distribution, so
-client, kernel, and framework bridge share one version. Plain `xyg` must not
-install Reflex; `xyg[reflex]` must install the declared supported floor.
-Release smoke tests install Reflex, import `reflex_xy`, and assert that its
-reported version matches the `xyg` distribution version.
+Release artifacts exclude the removed Reflex adapter, JSX assets and dependency
+extra. Repository consumers use Python/Streamlit and Node/vanilla TypeScript.
+The consumer gate runs `scripts/consumer_apps_smoke.py --chromium PATH`;
+Streamlit AppTest coverage lives in `tests/test_streamlit_consumer.py`. Stock
+Streamlit HTML is a snapshot without a Python callback or incremental streaming
+bridge. Shared selection/streaming and lifecycle gates remain required; see
+[application-consumers.md](../design/application-consumers.md).
 
 ## Hardening Backlog
 
@@ -878,15 +875,11 @@ Keep pushing these in low-conflict increments:
   path (today it only stops short of a real publish, it doesn't yet push to a
   test index), plus tying it to version-bump/tag validation and refreshed
   benchmark reports.
-- Keep the two example apps focused: `examples/reflex` on the bundled Reflex
-  integration surfaces (figure vars, events, state-driven and streaming
-  updates, `on_view_change`), and `examples/fastapi` on the framework-neutral
-  gallery plus the live 100M drilldown. The one deliberate overlap is that
-  drilldown chart itself: `examples/reflex` §6 serves the identical dataset
-  adapter-natively (an `inline()` token, no transport code) so cross-host
-  behavior can be A/B'd against fastapi's hand-rolled transport; both honor
-  `XY_LIVE_POINTS`. Neither commits static chart HTML, and both surface their
-  own source via `inspect.getsource`.
+- Keep application examples focused: `examples/streamlit` consumes public Python
+  HTML/native export, `examples/vanilla-ts` consumes native Node/browser payloads,
+  and `examples/fastapi` retains the framework-neutral live gallery. They must
+  declare their distinct callback/streaming boundaries and dispose old views.
+
 - Add first-class docs for the supported-platform matrix and the clear-error
   behavior when the native core is unavailable.
 - Move advisory type checking to a hard gate once the checker and codebase agree

@@ -1,7 +1,6 @@
-"""Transport-agnostic message dispatcher (spec/design/reflex-integration.md §3.1).
+"""Transport-agnostic message dispatcher (spec/design/wire-protocol.md).
 
-One kernel-side dispatcher for every transport: the anywidget comm today, and
-any future host (the planned Reflex adapter's HTTP routes) tomorrow. A
+One kernel-side dispatcher for notebook comms and application hosts. A
 transport parses its wire format, calls `handle_message`, and ships whatever
 reply comes back; Python-side callbacks fire in here so every transport gets
 identical semantics. Not to be confused with `channels.py`, which resolves
@@ -83,7 +82,7 @@ __all__ = [
 # (reply message, buffers to ship beside it — None when the reply has none).
 Reply = tuple[dict[str, Any], Optional[list[bytes]]]
 
-# Reflex semantic selection events include bounded JSON projections. The
+# Semantic selection events include bounded JSON projections. The
 # complete canonical Selection remains server-side and can be re-resolved.
 SELECTION_EVENT_ROW_LIMIT = 1000
 SELECTION_EVENT_ID_LIMIT = 10000

@@ -1,0 +1,31 @@
+........................................................................ [  5%]
+........................................................................ [ 10%]
+...............................................x..XX.................... [ 16%]
+.............................................xx......................... [ 21%]
+............................x..xx............X..X....................... [ 26%]
+.................................................x.........xxx...xxx.... [ 32%]
+........................................................................ [ 37%]
+..................xx................................................x... [ 42%]
+.......x.................xx...xx........................................ [ 48%]
+.x....................................................x................. [ 53%]
+...............................................................xx....... [ 58%]
+...................................................................x.... [ 64%]
+........................................................................ [ 69%]
+......................................x...................x............. [ 74%]
+.............................................ss...xs...xx......x........ [ 80%]
+.........xs.................................................x.x......... [ 85%]
+........................................................................ [ 91%]
+....x................x.................................................. [ 96%]
+...............................x.xx....x.........                        [100%]
+=============================== warnings summary ===============================
+tests/pyplot/test_corpus.py::test_corpus_snippet[53_matplotlib_311_plotting.py]
+  /home/ubuntu/.t3/worktrees/xyg/t3-700b2dca/python/xyg/_payload.py:168: RuntimeWarning: more than 8 series use default colors; the default palette repeats every 8 (series 9 wears series 1's color). Pass explicit color= per series, or group series, to keep identities distinct.
+    return emit_trace_materialized(self, t, pw, xr, yr, px_width)
+
+tests/pyplot/test_launch_compat.py::test_patch_with_a_non_finite_coordinate_keeps_its_vertices[inf]
+tests/pyplot/test_launch_compat.py::test_patch_with_a_non_finite_coordinate_keeps_its_vertices[-inf]
+  /home/ubuntu/.cache/uv/archive-v0/g95QBLmPm-f_6Huf/lib/python3.12/site-packages/matplotlib/transforms.py:2550: RuntimeWarning: invalid value encountered in dot
+    self._mtx = np.dot(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1296 passed, 4 skipped, 41 xfailed, 4 xpassed, 3 warnings in 115.52s (0:01:55)

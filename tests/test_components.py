@@ -1,4 +1,4 @@
-"""Reflex-style composition API: xyg.scatter_chart(xyg.scatter(...), xyg.x_axis(...)).
+"""Declarative composition API: xyg.scatter_chart(xyg.scatter(...), xyg.x_axis(...)).
 
 Verifies the component tree builds the same Figure the fluent API would, plus
 data= column-name resolution, event-prop wiring, and box-select (§34)."""
@@ -42,8 +42,8 @@ class FakeFrame:
         return self._cols[key]
 
 
-class FakeReflexComponent:
-    """Opaque stand-in for a Reflex component without importing Reflex."""
+class FakeFrameworkComponent:
+    """Opaque stand-in for an application component without importing a framework."""
 
     def __init__(self, name: str):
         self.name = name
@@ -526,9 +526,9 @@ def test_figure_dom_class_strings_covers_every_dom_class_carrying_surface():
 
 
 def test_declarative_core_contract_for_layered_axis_chrome_and_interaction():
-    legend_component = FakeReflexComponent("legend")
-    tooltip_component = FakeReflexComponent("tooltip")
-    colorbar_component = FakeReflexComponent("colorbar")
+    legend_component = FakeFrameworkComponent("legend")
+    tooltip_component = FakeFrameworkComponent("tooltip")
+    colorbar_component = FakeFrameworkComponent("colorbar")
     data = FakeFrame(
         {
             "month": np.array(["Jan", "Feb", "Mar"]),
@@ -909,8 +909,8 @@ def test_auto_and_none_default_drag_actions_are_always_valid():
 
 
 def test_legend_and_tooltip_accept_opaque_framework_components_without_serializing():
-    legend_component = FakeReflexComponent("legend")
-    tooltip_component = FakeReflexComponent("tooltip")
+    legend_component = FakeFrameworkComponent("legend")
+    tooltip_component = FakeFrameworkComponent("tooltip")
     chart = xyg.chart(
         xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
         xyg.legend(legend_component, show=False),
@@ -924,16 +924,15 @@ def test_legend_and_tooltip_accept_opaque_framework_components_without_serializi
 
     chrome = chart.chrome_components()
     assert chrome == {"legend": legend_component, "tooltip": tooltip_component}
-    assert chart.reflex_components() == chrome
 
     spec, _ = chart.figure().build_payload()
     assert spec["show_legend"] is False
     assert spec["show_tooltip"] is False
     assert spec["tooltip"] == {"fields": ["x", "y"]}
     assert spec["dom"]["class_names"]["tooltip"] == "tooltip-node"
-    assert "FakeReflexComponent" not in json.dumps(spec)
+    assert "FakeFrameworkComponent" not in json.dumps(spec)
     html = chart.to_html()
-    assert "FakeReflexComponent" not in html
+    assert "FakeFrameworkComponent" not in html
     assert "show_tooltip" in html
 
 
@@ -960,8 +959,8 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
     monkeypatch,
     tmp_path,
 ):
-    legend_component = FakeReflexComponent("legend")
-    tooltip_component = FakeReflexComponent("tooltip")
+    legend_component = FakeFrameworkComponent("legend")
+    tooltip_component = FakeFrameworkComponent("tooltip")
     events = {
         "hover": lambda row: row,
         "click": lambda row: row,
@@ -1028,7 +1027,7 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
         xyg.modebar(show=False, class_name="tw-modebar"),
         xyg.theme(grid_color="rgba(148,163,184,.28)"),
         xyg.interaction_config(hover=True, click=True, brush=True, crosshair=True),
-        title="Custom Reflex legend + tooltip",
+        title="Custom framework legend + tooltip",
         width="100%",
         height=360,
         class_name="h-[360px] w-full rounded-md border border-slate-200",
@@ -1049,27 +1048,25 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
         "show",
         "memory_report",
         "chrome_components",
-        "reflex_components",
         "_repr_html_",
     ):
         assert callable(getattr(chart, name))
 
     chrome = chart.chrome_components()
     assert chrome == {"legend": legend_component, "tooltip": tooltip_component}
-    assert chart.reflex_components() == chrome
 
     html_path = tmp_path / "chart.html"
     html = chart.to_html(html_path)
     assert html_path.read_text(encoding="utf-8") == html
-    assert "FakeReflexComponent" not in html
-    assert "Custom Reflex legend + tooltip" in html
+    assert "FakeFrameworkComponent" not in html
+    assert "Custom framework legend + tooltip" in html
 
     alias_path = tmp_path / "chart-alias.html"
     assert chart.html(alias_path) == alias_path.read_text(encoding="utf-8")
     repr_html = chart._repr_html_()
     assert repr_html.startswith('<iframe class="xy-notebook-frame"')
-    assert "FakeReflexComponent" not in repr_html
-    assert "Custom Reflex legend + tooltip" in repr_html
+    assert "FakeFrameworkComponent" not in repr_html
+    assert "Custom framework legend + tooltip" in repr_html
 
     spec = json.loads(_inline_spec_literal(html))
     assert spec["show_legend"] is False
@@ -1204,8 +1201,8 @@ def test_chart_callbacks_are_python_only_and_do_not_serialize_to_html(monkeypatc
         "select": LeakyCallback("select"),
         "view": LeakyCallback("view"),
     }
-    legend_component = FakeReflexComponent("legend")
-    tooltip_component = FakeReflexComponent("tooltip")
+    legend_component = FakeFrameworkComponent("legend")
+    tooltip_component = FakeFrameworkComponent("tooltip")
     chart = xyg.chart(
         xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
         xyg.legend(legend_component, show=False),
@@ -1227,7 +1224,7 @@ def test_chart_callbacks_are_python_only_and_do_not_serialize_to_html(monkeypatc
 
     html = chart.to_html()
     spec_json = _inline_spec_literal(html)
-    for forbidden in ("LeakyCallback", "FakeReflexComponent", "on_hover", "on_click"):
+    for forbidden in ("LeakyCallback", "FakeFrameworkComponent", "on_hover", "on_click"):
         assert forbidden not in spec_json
         assert forbidden not in html
 
@@ -1298,8 +1295,8 @@ def test_bad_interaction_options_do_not_cache_partial_chart_figure():
 
 
 def test_legend_and_tooltip_accept_render_keyword_components():
-    legend_component = FakeReflexComponent("legend")
-    tooltip_component = FakeReflexComponent("tooltip")
+    legend_component = FakeFrameworkComponent("legend")
+    tooltip_component = FakeFrameworkComponent("tooltip")
     chart = xyg.chart(
         xyg.scatter(x=[1.0], y=[2.0]),
         xyg.legend(render=legend_component),
@@ -1325,9 +1322,9 @@ def test_component_style_validation_rejects_non_serializable_values():
     with pytest.raises(ValueError, match="tooltip labels"):
         xyg.tooltip(labels={"x": 2})
     with pytest.raises(TypeError, match="at most one"):
-        xyg.legend(FakeReflexComponent("a"), FakeReflexComponent("b"))
+        xyg.legend(FakeFrameworkComponent("a"), FakeFrameworkComponent("b"))
     with pytest.raises(TypeError, match="component child with render"):
-        xyg.tooltip(FakeReflexComponent("a"), render=FakeReflexComponent("b"))
+        xyg.tooltip(FakeFrameworkComponent("a"), render=FakeFrameworkComponent("b"))
 
 
 def test_tooltip_revalidates_public_dataclass_construction_and_mutation():

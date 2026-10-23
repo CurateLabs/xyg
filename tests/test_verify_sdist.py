@@ -35,8 +35,6 @@ DEFAULT_PKG_INFO = (
     "Requires-Python: >=3.11\n"
     "Requires-Dist: anywidget>=0.9\n"
     "Requires-Dist: numpy>=1.24\n"
-    "Requires-Dist: reflex>=0.9.6; extra == 'reflex'\n"
-    "Provides-Extra: reflex\n"
 )
 
 
@@ -238,33 +236,15 @@ def test_verify_sdist_rejects_missing_pkg_info(tmp_path: Path) -> None:
             "with no conflicts",
         ),
         (
-            DEFAULT_PKG_INFO + "Requires-Dist: reflex>=0.8\n",
-            "only XYG base dependencies",
-        ),
-        (
-            DEFAULT_PKG_INFO.replace("reflex>=0.9.6", "reflex>=0.8"),
-            r"reflex>=0\.9\.6",
-        ),
-        (
-            DEFAULT_PKG_INFO + "Requires-Dist: reflex<0.9.6; extra == 'reflex'\n",
-            "exactly one requirement",
-        ),
-        (
             DEFAULT_PKG_INFO + "Requires-Dist: reflex>=0.9.6; extra == 'reflex'\n",
-            "exactly one requirement",
-        ),
-        (
-            DEFAULT_PKG_INFO.replace("; extra == 'reflex'", ""),
             "only XYG base dependencies",
         ),
+        (DEFAULT_PKG_INFO + "Requires-Dist: streamlit>=1.56\n", "only XYG base dependencies"),
+        (DEFAULT_PKG_INFO + "Provides-Extra: reflex\n", "no Provides-Extra"),
         (
             DEFAULT_PKG_INFO
             + "Requires-Dist: plotly>=5; extra == 'bench'\nProvides-Extra: bench\n",
             "only XYG base dependencies",
-        ),
-        (
-            DEFAULT_PKG_INFO.replace("Provides-Extra: reflex", "Provides-Extra: dev"),
-            "Provides-Extra: reflex",
         ),
     ],
 )
@@ -292,14 +272,6 @@ def test_verify_sdist_rejects_missing_host_neutral_bundle(tmp_path: Path) -> Non
         verify_sdist.verify_sdist(str(sdist))
 
 
-def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None:
-    sdist = tmp_path / "xyg-0.0.1.tar.gz"
-    _write_sdist(sdist, omit={"python/reflex_xy/assets/XYChart.jsx"})
-
-    with pytest.raises(AssertionError, match="reflex_xy"):
-        verify_sdist.verify_sdist(str(sdist))
-
-
 @pytest.mark.parametrize(
     "name",
     [
@@ -313,6 +285,8 @@ def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None
         "examples/demo.ipynb",
         "pr-assets/review.png",
         "python/other-package/__init__.py",
+        "python/reflex_xy/__init__.py",
+        "python/reflex_xy/assets/XYChart.jsx",
         "python/reflex-xy/reflex_xy/__init__.py",
         "scripts/verify_local.py",
         "spec/design-dossier.md",
@@ -337,22 +311,6 @@ def test_verify_sdist_rejects_partial_type_marker(tmp_path: Path) -> None:
     _write_sdist(sdist, replacements={"python/xyg/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="full-package PEP 561 marker"):
-        verify_sdist.verify_sdist(str(sdist))
-
-
-def test_verify_sdist_rejects_missing_reflex_type_marker(tmp_path: Path) -> None:
-    sdist = tmp_path / "xyg-0.0.1.tar.gz"
-    _write_sdist(sdist, omit={"python/reflex_xy/py.typed"})
-
-    with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
-        verify_sdist.verify_sdist(str(sdist))
-
-
-def test_verify_sdist_rejects_partial_reflex_type_marker(tmp_path: Path) -> None:
-    sdist = tmp_path / "xyg-0.0.1.tar.gz"
-    _write_sdist(sdist, replacements={"python/reflex_xy/py.typed": "partial\n"})
-
-    with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
         verify_sdist.verify_sdist(str(sdist))
 
 

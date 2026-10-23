@@ -11,8 +11,8 @@ the mark implementations, bound as `Figure`'s fluent methods at
 `PayloadMixin`) — the proposal is an *extension* of that shape, not a
 replacement.
 
-Related: `reflex-shaped-api.md` covers the public API/styling proposal for a
-Reflex-like component surface without making Reflex a core dependency.
+Related: `composition-api.md` covers the public API/styling proposal for a
+framework-independent declarative component surface.
 
 ## 1. The model in one paragraph
 
@@ -24,8 +24,8 @@ and marks — they never own data. Everything is a plain declarative node
 (dataclass), composable as children, and compiles to the existing internal
 engine figure + wire spec. One public front door over that engine:
 
-- **Compositional (Reflex-flavored):** `xyg.chart(xyg.scatter(...), xyg.line(...),
-  xyg.x_axis(...))` — declarative, component-tree shaped, what a Reflex wrapper
+- **Compositional:** `xyg.chart(xyg.scatter(...), xyg.line(...),
+  xyg.x_axis(...))` — declarative, component-tree shaped, what an application host
   serializes naturally. (The internal `_figure.Figure` fluent methods share the
   same mark implementations, so the vocabulary cannot fork.)
 
@@ -63,7 +63,7 @@ not break.
   code (contract already enforces this via capabilities).
 - **G5 — Declarative all the way down.** Every node is data (kind + props).
   No callbacks in the tree except the event props (`on_hover`, `on_click`,
-  `on_brush`, `on_select`, `on_view_change`), which is exactly what a Reflex
+  `on_brush`, `on_select`, `on_view_change`), which is what an application
   component can serialize + wire to server events without escape hatches.
 
 ## 3. The 10 common charts (all expressible today or with planned nodes)
@@ -167,8 +167,7 @@ panes is layout the Figure grid owns.
   (`handle_message` for hover/click/view_change, `_selection_reply` for
   brush/select);
   `on_view_change` carries the viewport for server-driven cross-filtering
-  and is wired in the Reflex wrapper
-  (`python/reflex_xy/component.py:85`).
+  and is attached by notebook and explicit application transports.
 - Animation ★: `animation` is a chart child supplying the default
   entrance/update/exit policy; mark-level `animation=` overrides it and
   `key=` supplies stable data identity. Lifecycle callbacks are fields of the
@@ -290,28 +289,12 @@ integer, and `gap` a non-negative one.
   count rather than being budgeted across the grid. A grid-wide budget is
   pending.
 
-## 6. Reflex integration (no escape hatches)
+## 6. Application integration
 
-The tree above is precisely a Reflex component tree's shape: snake_case
-props, children composition, `data=` + column-name resolution (`data_key`
-idiom), event props. It remains a XYG-owned tree, not a Reflex object,
-so the core package keeps zero Reflex dependencies. A future Reflex wrapper is
-therefore a *thin* codegen layer:
-
-1. Each `xyg.*` factory maps 1:1 to a Reflex component; props serialize as-is
-   (they're plain scalars/strings/arrays).
-2. Data flows as the existing binary payload through a Reflex asset/endpoint
-   (the 100M live-drilldown demo already proves the comm shape: a `comm`
-   object with `send`/`onMessage` over any transport).
-3. Events (`on_hover/on_select/on_view_change`) map to Reflex event handlers;
-   payloads are the same dicts the widget path already emits.
-4. State-driven restyle = re-render with new props; data identity is kept by
-   the column-store handles so unchanged columns don't re-ship (buffer-diff
-   updates, dossier §6 — planned, and this is the API that needs it).
-
-Anti-goals, stated so they stay out: no `raw_plotly_json`-style passthrough
-node, no per-mark imperative `draw(ctx)` callback, no CSS-in-props for mark
-geometry (theming stays on the `--chart-*` token path).
+The composition tree is XYG-owned and framework-independent. Concrete styling,
+opaque chrome objects and events are application-owned boundaries. No framework
+adapter ships. Repository consumers and their interaction limits are specified
+in [application-consumers.md](application-consumers.md).
 
 ## 7. Migration & compatibility
 

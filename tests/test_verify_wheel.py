@@ -56,19 +56,6 @@ except ImportError as err:
     raise ImportError("native core required") from err
 BACKEND = "native"
 """
-REFLEX_INIT_PY = """
-from .app import XYPlugin
-from .component import chart
-from .vars import figure
-def __getattr__(name):
-    if name == "__version__":
-        return _distribution_version("xyg")
-"""
-REFLEX_COMPONENT_JS = """
-// XYChart imports the render client bundled in xy.
-import { render } from "./xy_client.js";
-export function XYChart() { return render; }
-"""
 # Shaped like the real minified vite bundles: export aliases in the ESM,
 # a `var xy` IIFE namespace in the standalone build.
 INDEX_JS = (
@@ -89,8 +76,6 @@ DEFAULT_METADATA = "\n".join(
         "Requires-Python: >=3.11",
         "Requires-Dist: anywidget>=0.9",
         "Requires-Dist: numpy>=1.24",
-        "Requires-Dist: reflex>=0.9.6; extra == 'reflex'",
-        "Provides-Extra: reflex",
     ]
 )
 
@@ -199,10 +184,6 @@ def _write_wheel(
                 data = STANDALONE_JS
             elif name == "xyg/static/wasm-worker.js" and name not in replacements:
                 data = b"export {};"
-            elif name == "reflex_xy/__init__.py" and name not in replacements:
-                data = REFLEX_INIT_PY
-            elif name == "reflex_xy/assets/XYChart.jsx" and name not in replacements:
-                data = REFLEX_COMPONENT_JS
             write(zf, name, data)
         if native:
             write(zf, "xyg/_native_lib/libxyg_core.dylib", b"native")
@@ -368,33 +349,15 @@ def test_verify_wheel_rejects_missing_metadata_file(tmp_path: Path) -> None:
             "with no conflicts",
         ),
         (
-            DEFAULT_METADATA + "\nRequires-Dist: reflex>=0.8",
-            "only XYG base dependencies",
-        ),
-        (
-            DEFAULT_METADATA.replace("reflex>=0.9.6", "reflex>=0.8"),
-            r"reflex>=0\.9\.6",
-        ),
-        (
-            DEFAULT_METADATA + "\nRequires-Dist: reflex<0.9.6; extra == 'reflex'",
-            "exactly one requirement",
-        ),
-        (
             DEFAULT_METADATA + "\nRequires-Dist: reflex>=0.9.6; extra == 'reflex'",
-            "exactly one requirement",
-        ),
-        (
-            DEFAULT_METADATA.replace("; extra == 'reflex'", ""),
             "only XYG base dependencies",
         ),
+        (DEFAULT_METADATA + "\nRequires-Dist: streamlit>=1.56", "only XYG base dependencies"),
+        (DEFAULT_METADATA + "\nProvides-Extra: reflex", "no Provides-Extra"),
         (
             DEFAULT_METADATA
             + "\nRequires-Dist: plotly>=5; extra == 'bench'\nProvides-Extra: bench",
             "only XYG base dependencies",
-        ),
-        (
-            DEFAULT_METADATA.replace("Provides-Extra: reflex", "Provides-Extra: dev"),
-            "Provides-Extra: reflex",
         ),
     ],
 )
@@ -414,35 +377,11 @@ def test_verify_wheel_rejects_missing_type_marker(tmp_path: Path) -> None:
         verify_wheel.verify_wheel(whl, expect_native=True)
 
 
-def test_verify_wheel_rejects_missing_reflex_integration(tmp_path: Path) -> None:
-    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, omit={"reflex_xy/assets/XYChart.jsx"})
-
-    with pytest.raises(AssertionError, match="reflex_xy"):
-        verify_wheel.verify_wheel(whl, expect_native=True)
-
-
-def test_verify_wheel_rejects_missing_reflex_type_marker(tmp_path: Path) -> None:
-    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, omit={"reflex_xy/py.typed"})
-
-    with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
-        verify_wheel.verify_wheel(whl, expect_native=True)
-
-
 def test_verify_wheel_rejects_partial_type_marker(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, replacements={"xyg/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="full-package PEP 561 marker"):
-        verify_wheel.verify_wheel(whl, expect_native=True)
-
-
-def test_verify_wheel_rejects_partial_reflex_type_marker(tmp_path: Path) -> None:
-    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, replacements={"reflex_xy/py.typed": "partial\n"})
-
-    with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
         verify_wheel.verify_wheel(whl, expect_native=True)
 
 
@@ -695,3 +634,11 @@ def test_verify_wheel_require_wasm_rejects_missing_and_stale_assets(tmp_path: Pa
     _write_wheel(stale, extra=_wasm_members(tamper=True))
     with pytest.raises(AssertionError, match="does not match its manifest"):
         verify_wheel.verify_wheel(stale, expect_native=True, require_wasm=True)
+
+
+@pytest.mark.parametrize("name", ["reflex_xy/__init__.py", "reflex_xy/assets/XYChart.jsx"])
+def test_verify_wheel_rejects_retired_reflex_package(tmp_path: Path, name: str) -> None:
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    _write_wheel(whl, extra={name: b"retired adapter"})
+    with pytest.raises(AssertionError, match="non-package"):
+        verify_wheel.verify_wheel(whl, expect_native=True)

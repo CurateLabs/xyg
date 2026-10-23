@@ -8,8 +8,7 @@ candidate. [Readiness](0.6.0-readiness.md) records the remaining release gates.
 
 ## One public version line
 
-Python `xyg`, its bundled `reflex_xy` integration, the browser package, the Node
-facade, and all five Node native packages share one public release version.
+Python `xyg`, the browser package, the Node facade, and all five Node native packages share one public release version.
 [`release_version.py`](../../scripts/release_version.py) is the spelling
 authority: `xyg-v0.6.0-rc.N` maps to Python `0.6.0rcN` and npm `0.6.0-rc.N`.
 Different spellings do not identify different releases. GraphForge has its own

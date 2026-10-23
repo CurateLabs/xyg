@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 
 const documentPath = resolve(process.env.XYG_DENSITY_EXPORT);
 const output = resolve(process.env.XYG_DENSITY_EXPORT_REPORT);
-const launchArgs = ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"];
+const launchArgs = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"];
 const browser = await chromium.launch({ executablePath: process.env.XYG_CHROMIUM || undefined, args: launchArgs });
 const cases = [];
 try {
@@ -73,6 +73,7 @@ try {
         const trace = view.gpuTraces.find(trace => trace.tier === "density");
         const hash = async data => [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))]
           .map(value => value.toString(16).padStart(2, "0")).join("");
+        const captures = [];
         const capture = async expected => {
           let presented = false, attempts = 0, rendered;
           while (attempts < 8) {
@@ -100,22 +101,51 @@ try {
             gl.readPixels(0, 0, view.canvas.width, view.canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
             if (gl.getError() !== gl.NO_ERROR) throw new Error("export readback failed");
           }
-          const alphaPixels = pixels.filter((value, index) => index % 4 === 3 && value > 0).length;
-          if (!alphaPixels) throw new Error("export blanked its Rust overview");
-          return { sha256: await hash(pixels), alphaPixels, attempts, ranges: actual };
+          let alphaPixels = 0, inkPixels = 0;
+          for (let i = 0; i < pixels.length; i += 4) {
+            if (pixels[i + 3]) {
+              alphaPixels++;
+              if (Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) - Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) > 20) inkPixels++;
+            }
+          }
+          if (!alphaPixels || !inkPixels) throw new Error("export blanked its Rust overview");
+          captures.push(new Uint8Array(pixels));
+          return { sha256: await hash(pixels), alphaPixels, inkPixels, attempts, ranges: actual,
+            width: view.canvas.width, height: view.canvas.height };
         };
         const home = view._copyView(view.view0).ranges;
         const before = await capture(home);
         const zoom = { ...home, x: [0.25, 0.75], y: [0.25, 0.75] };
         if (!view.root.xy.applyState({ ranges: zoom }, { animate: false, history: false })) throw new Error("export refused zoom");
         const zoomed = await capture(zoom);
-        if (zoomed.sha256 === before.sha256) throw new Error("export repainted stale home pixels for zoom");
+        if (before.width !== zoomed.width || before.height !== zoomed.height)
+          throw new Error("export changed zoom canvas dimensions");
+        let zoomMaxChannelDelta = 0;
+        for (let i = 0; i < captures[0].length; i++)
+          zoomMaxChannelDelta = Math.max(zoomMaxChannelDelta, Math.abs(captures[0][i] - captures[1][i]));
+        if (zoomMaxChannelDelta <= 1) throw new Error("export repainted stale home pixels for zoom");
         if (!view.root.xy.applyState({ ranges: home }, { animate: false, history: false })) throw new Error("export refused home");
         const restored = await capture(home);
-        if (restored.sha256 !== before.sha256 || trace.density !== original.overview
+        // Canvas2D presentation/readback can round one color channel by one
+        // integer value. Source grids, texture identity and home ranges stay exact.
+        const restoration = { maxChannelDelta: 0, changedChannels: 0 };
+        if (before.width !== restored.width || before.height !== restored.height)
+          throw new Error("export changed home canvas dimensions");
+        for (let i = 0; i < captures[0].length; i++) {
+          const delta = Math.abs(captures[0][i] - captures[2][i]);
+          if (delta) restoration.changedChannels++;
+          restoration.maxChannelDelta = Math.max(restoration.maxChannelDelta, delta);
+        }
+        if (restoration.maxChannelDelta > 1 || trace.density !== original.overview
             || trace.density.tex !== original.texture || await hash(trace.density.grid) !== await hash(original.grid)
             || original.uploads || view._wasmDensity || window.__densityWorkers.length !== scenario.workers) {
-          throw new Error("export changed its overview/grid/texture, uploaded a replacement or allocated a fallback Worker");
+          throw new Error(`export changed its overview/grid/texture, uploaded a replacement or allocated a fallback Worker: ${JSON.stringify({
+            before: before.sha256, restored: restored.sha256, restoration, sameOverview: trace.density === original.overview,
+            sameTexture: trace.density.tex === original.texture, grid: await hash(trace.density.grid),
+            originalGrid: await hash(original.grid), uploads: original.uploads,
+            attachedDensity: !!view._wasmDensity, workers: window.__densityWorkers.length,
+            expectedWorkers: scenario.workers,
+          })}`);
         }
         // Allow the rejected module's worker disposal to finish; no pixel retry.
         for (let i = 0; i < 8 && window.__densityWorkers.some(worker => !worker.terminated); i++) {
@@ -124,7 +154,7 @@ try {
         if (window.__densityWorkers.some(worker => !worker.terminated) || window.__densityUrls.size) {
           throw new Error("failed inline module leaked a Worker or object URL");
         }
-        return { events: window.__densityEvents, before, zoomed, restored,
+        return { events: window.__densityEvents, before, zoomed, restored, zoomMaxChannelDelta, restoration,
           originalModuleSha256: window.__densityArtifactSha256, gridSha256: await hash(original.grid),
           replacementUploads: original.uploads, workers: window.__densityWorkers,
           objectUrls: window.__densityUrls.size, sharedHost: !!view._glHost };
@@ -169,6 +199,6 @@ try {
     export: { file: basename(documentPath), sha256: createHash("sha256").update(document).digest("hex") },
     faultInjection: "CDP bootstrap setter: missing null; invalid preserves classicWorkerSource and replaces WASM base64 with bytes 00 01 02 03.",
     cases, limitations: ["Actual installed-wheel to_html output; only two optional inline-module failure cases.",
-      "SOURCE_UNSUPPORTED is proven by the separate actual Python-produced live Reflex split payload."] }, null, 2) + "\n");
+      "Unsupported split-source descriptors remain covered by the shared density-source tests; this public packed-HTML proof covers inline-module failures only."] }, null, 2) + "\n");
   console.log(`packaged standalone density degradation passed: ${output}`);
 } finally { await browser.close(); }

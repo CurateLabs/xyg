@@ -1,5 +1,11 @@
 # Typed retained geographic selected-state hosts
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 This internal foundation follows dossier §27/§29/§34 and the
 [Rust linked-state protocol](geo-linked-state-protocol.md). It adds no chart
 builder, selection mapping, geometry/LOD policy or implicit cross-source join.

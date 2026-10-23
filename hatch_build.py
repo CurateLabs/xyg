@@ -15,7 +15,7 @@ Install ergonomics, by audience (design dossier §33):
   canonical ship vehicle is the host-neutral `@curatelabs/xyg` package
   (`packages/xy-client/dist/{index,standalone}.js`); this hook *copies* those
   bundles into `python/xyg/static/` so the Python wheel still embeds the client
-  for notebooks / `to_html()` / Reflex. `node js/build.mjs` writes the
+  for notebooks / `to_html()`. `node js/build.mjs` writes the
   host-neutral dist first, then copies into the Python tree. The `artifacts`
   config in pyproject.toml carries the git-ignored bundles into both the wheel
   (Python copy) and sdist (host-neutral + Python copy) — the JS analogue of
@@ -274,7 +274,7 @@ class CustomBuildHook(BuildHookInterface):
 
         Canonical output is `@curatelabs/xyg` (`packages/xy-client/dist`).
         The Python wheel *copies* those files into `python/xyg/static` so
-        notebooks / `to_html()` / Reflex need no Node. The rule is: **if either
+        notebooks / `to_html()` need no Node. The rule is: **if either
         copy is already on disk, sync the other; otherwise build from `js/`.**
 
         - A published wheel/sdist carries the Python copy, so `pip install xyg`

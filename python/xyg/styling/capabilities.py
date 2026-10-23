@@ -41,7 +41,7 @@ from ..dom import CHART_DOM_SLOTS
 RENDERERS: tuple[str, ...] = ("webgl", "svg", "native")
 
 #: Where chrome slots can be styled. `browser` covers standalone HTML, the
-#: notebook iframe, the widget, the Reflex adapter, and Chromium capture — all
+#: notebook iframe, the widget, application embeds, and Chromium capture — all
 #: of them render the same document with the same client.
 SURFACES: tuple[str, ...] = ("browser", "native_raster", "native_vector")
 

@@ -117,7 +117,7 @@ runs the real checker, so a consumer that verifies before its prerequisites exis
 ## Local reproduction
 
 ```bash
-uv sync --locked --extra reflex --group dev --group codspeed
+uv sync --locked --group dev --group codspeed
 cargo test --workspace
 cargo build --release
 npm ci

@@ -8,9 +8,7 @@ implementation divergences. The implementation lives in
 `js/src/57_viewstate.ts` (state document, history, axis bands, hover payload)
 plus hooks in `50_chartview.ts`/`52_tooltip.ts`/`53_interaction.ts`/
 `54_kernel.ts`, `python/xyg/_figure.py` (message builders, `view_state()`
-cache), `widget.py`, `channel.py`, and
-`python/reflex_xy/` (registry push path, `on_hover`, tooltip
-mount). It builds directly on the per-axis
+cache), `widget.py` and `channel.py`. It builds directly on the per-axis
 pan/zoom contract of PR #117 (canonical per-axis `ranges`, one clamped
 mutation path, semantic view events with `source`, `axes`, `phase`,
 `interaction_id`), which has landed.
@@ -20,11 +18,11 @@ mutation path, semantic view events with `source`, `axes`, `phase`,
 Four open requests are, individually, small features:
 
 - **#110** — a view history stack, so a user can step back to a previous view.
-- **#111** — custom tooltip renderers in `reflex_xy` with a structured
+- **#111** — historical framework tooltip request with a structured
   payload and cursor coordinates.
 - **#120** — per-axis navigation gestures: hover an axis, get a resize
   cursor, drag/scroll to change only that axis.
-- **#121** — out-of-band programmatic zoom/pan/select through `reflex_xy`,
+- **#121** — programmatic zoom/pan/select through host APIs,
   "similar to `.append`", without recreating the chart.
 
 Designed separately, each grows its own code path for describing "where the
@@ -118,14 +116,14 @@ Consequences:
   `js/src/53_interaction.ts`, and every entry point in this document is a
   caller of it.
 
-The browser client owns the live state; the kernel and the Reflex backend
+The browser client owns the live state; the kernel and application hosts
 are writers and observers, never a second source of truth. This keeps every
 feature below functional in kernel-less standalone HTML.
 
 ## 4. History (#110)
 
 A client-side ring buffer of durable-state snapshots. No kernel required —
-history works in notebooks, Reflex, and standalone HTML export identically.
+history works in notebooks and standalone HTML export identically.
 
 - **Push policy.** A snapshot of the *previous* durable state is pushed when
   a mutation with a new `interaction_id` commits. All phases of one gesture
@@ -155,7 +153,7 @@ history works in notebooks, Reflex, and standalone HTML export identically.
   rule; the static handle also exposes `back()`/`forward()` (§5.3). History
   navigation is *client-scoped by construction* — there is deliberately no
   Python-side `view_back()`: stacks live in each client, clients in one
-  Reflex room (or views of one notebook model) accumulate different stacks
+  shared application (or views of one notebook model) accumulate different stacks
   after local gestures, so a broadcast "back" operation would have each
   client restore a different snapshot (§5.2). Keyboard bindings are deferred
   with touch pinch; the existing keyboard point traversal is untouched.
@@ -165,7 +163,7 @@ history works in notebooks, Reflex, and standalone HTML export identically.
 
 ## 5. Programmatic control (#121)
 
-### 5.1 Core figure API (kernel-connected: notebook widget, live Reflex)
+### 5.1 Core figure API (kernel-connected notebook widget)
 
 ```python
 fig.set_view(ranges={"x": (0, 100)}, *, animate=True, history=True)
@@ -197,52 +195,12 @@ fig.view_state()                       # -> last committed durable state
   event confirms the clamped result — reads are eventually consistent and
   documented as such.
 
-### 5.2 `reflex_xy` out-of-band API
+### 5.2 Application control
 
-Mirrors `reflex_xy.append(token, …)` exactly — callable from any event
-handler, background task, or thread, with no component re-render and no
-payload reship:
-
-```python
-reflex_xy.set_view(token, ranges={"x": (t0, t1)})
-reflex_xy.reset_view(token)
-reflex_xy.select(token, range=..., polygon=..., rows=...)
-reflex_xy.clear_selection(token)
-```
-
-History navigation is deliberately absent from this surface. §4 stacks are
-client-local, and clients in one room hold different stacks after local
-gestures, so a broadcast back/forward *operation* would restore a different
-snapshot on every client — no room convergence is possible, and a
-server-initiated "back" has no originating stack to resolve against.
-Back/Forward exist only where a single client resolves them locally (the
-modebar and the §5.3 handle). An app that needs a server-driven "return to
-X" flow composes it from what it already has: record the state it cares
-about from `on_view_change`, restore it with `set_view` — an absolute patch,
-which does converge room-wide.
-
-Path: per-generation operation lease plus entry-local synchronous figure lock
-→ one wire message (§8) → pushed room-wide as a `msg` event on the `/_xy`
-namespace → every client in the room applies it through the §3 mutation path
-with `source: "api"`. Message construction and version capture are atomic with
-namespace payload/interaction kernels and an append's mutation and version
-bump, while different figures remain independent. Namespace work that also
-needs the generation's async lock always acquires async then synchronous;
-caller-thread view writes acquire only the synchronous lock, so the order has
-no reverse edge. Multi-client semantics are therefore identical to `append`
-and `registry.publish`: the room converges. The token stays the only chart state
-Reflex holds; setting a view does not mutate the figure payload or advance its
-version, though the message envelope stamps the generation it was built
-against. Like `append`, a call holds the figure lock only long enough to
-serialize one small message and performs no network round-trip in the caller's
-thread, so it is safe from ordinary event handlers as well as background tasks
-and threads; prefer a background task for long programmatic sequences, as for
-any bulk work in a handler.
-
-`on_view_change` handlers still fire for api-sourced changes (an app may
-need to persist them) but carry `source: "api"`, so a state bridge that
-writes what it reads can break the loop by filtering — no suppression
-mechanism, no special cases.
+The former token/room-based Reflex API is removed. Applications use the
+notebook API in §5.1 or attach the client handle in §5.3. Stock Streamlit
+HTML has no Python callback/streaming bridge; see
+[application-consumers.md](application-consumers.md).
 
 ### 5.3 Static tier
 
@@ -323,21 +281,11 @@ movement elsewhere must not dismiss them; `Escape` does.
 
 - `xy:hover` / `xy:leave` gain the payload under `detail` (existing `row`,
   `trace`, `index`, `view` keys remain — genuinely additive there).
-- `reflex_xy` grows a **new** `on_hover` prop that receives the full
-  payload. The existing `on_point_hover(row)` contract is untouched —
-  handlers reading `row["x"]` keep working. Replacing `on_point_hover`'s
-  argument was considered and rejected: nesting `row` inside a payload
-  breaks every existing subscript access, so "keep a `row` key" is not
-  compatibility. `on_point_hover` is documented as the narrow legacy form;
-  new code uses `on_hover`.
-- `xyg.tooltip(render=…)`: the adapter finally honors it. `reflex_xy.chart`
-  reads `chart.chrome_components()`, mounts the supplied Reflex component
-  into an overlay that the client positions with the built-in tooltip's
-  placement logic (flip-at-edges included), and pipes the §7.1 payload in as
-  props. The built-in tooltip is suppressed while a custom renderer is
-  mounted. Static charts get the same mount fed by the browser-resident
-  payload, which removes the "static charts cannot use the backend-event
-  workaround" gap from #111.
+- `xyg.tooltip(render=…)` retains an opaque replacement object, returned by
+  `chart.chrome_components()`. An application host must mount it explicitly;
+  XYG does not serialize arbitrary objects or ship a framework-specific renderer.
+- Browser DOM events expose the structured payload; notebook transport exposes
+  only its documented Python callbacks.
 
 ## 8. Wire and event additions
 
@@ -358,9 +306,8 @@ History back/forward have **no wire message**: stacks and their navigation
 are client-local (§4, §5.2). `view_nav` carries only `reset`, which is
 well-defined for every receiver because home ranges are client-known.
 
-All three reuse the existing `msg` envelope in both transports (anywidget
-comm and the `/_xy` socket.io namespace), so Reflex room broadcast and
-notebook delivery need no new plumbing. Hover payloads (§7) ride the
+All three reuse the existing `msg` envelope in the anywidget comm or an
+explicit application transport. Hover payloads (§7) ride the
 existing hover/pick messages — no new message, larger detail.
 
 ## 9. Testing contract
@@ -396,7 +343,7 @@ Locked in before implementation, in the PR #117 fail-first style:
 ## 10. What this unlocks (recorded, not promised)
 
 Shareable view permalinks (`serialize` → URL fragment → `applyState` on the
-static handle), server-driven guided tours in Reflex apps, cross-session
+static handle), server-driven guided tours in application hosts, cross-session
 view restore, and "sync my dashboard to this incident window" flows — all
 without new primitives.
 
@@ -405,7 +352,7 @@ without new primitives.
 | Phase | Ships | Delivers |
 | --- | --- | --- |
 | 0 | PR #117 lands | per-axis ranges, clamps, semantic events (dependency) |
-| 1 | §2 state object, §3 client controller, §5 Python + `reflex_xy` + static handle, §8 messages | #121 |
+| 1 | §2 state object, §3 client controller, §5 Python + static handle, §8 messages | #121 |
 | 2 | §4 history, modebar Back/Next menu controls, reset-as-navigation | #110 |
 | 3 | §6 axis-band gestures | #120 |
 | 4 | §7 hover payload + adapter tooltip mount | #111 |
@@ -424,21 +371,17 @@ Shipped behavior that refines this design rather than following it verbatim:
   streams stay gated on listener presence. Recorded in interaction.md §3 and
   wire-protocol.md §2 — a deliberate refinement of the pre-existing
   "listener presence" gate, costing one small message per gesture.
-- **Reflex tooltip payload.** §7.2 says the payload is piped "as props".
-  Reflex components are compiled ahead of time, so live per-frame props are
-  not expressible; the mounted component is positioned by the client (built-in
-  placement logic, built-in tooltip suppressed) and the payload reaches app
-  code through the new `on_hover` event prop — Reflex state is the dynamic
-  channel, which is the framework-native equivalent. `reflex_xy.chart` also
-  accepts an explicit `tooltip=` component for live (token) sources, where
-  `chrome_components()` is unreachable.
+- **Framework tooltip mounting.** The removed adapter's special mount and
+  event-prop path is retired. Opaque chrome replacement objects remain an
+  application-host responsibility.
+
 - **Axis-band drag classification.** "Drag along" vs "drag across" is decided
   once per gesture by the dominant displacement direction at the 3 px
   threshold, then locked; a pan-ineligible axis falls back to span-zoom and
   vice versa, so a band drag never dead-ends when only one capability is
   enabled.
 - **The JS handle is universal.** `root.xy` (`applyState`/`state`/`back`/
-  `forward`) is attached by every mount — notebook and Reflex included — not
+  `forward`) is attached by every mount — notebook included — not
   only the static tier; the §5.3 guarantee is the static tier's, the handle
   itself has one implementation.
 - **History restores animate** (like reset); `prefers-reduced-motion` is
@@ -452,7 +395,7 @@ Shipped behavior that refines this design rather than following it verbatim:
   PR #117.
 - Cross-chart or cross-page shared history; link groups share views, not
   stacks.
-- URL-router integration in `reflex_xy` — apps compose it from
+- URL-router integration — applications compose it from
   `on_view_change` + `set_view`.
 - Persisting view state into the figure payload — the browser client stays
   the single owner of live view state.

@@ -14,9 +14,8 @@ container or mounted volumes (#1014). Related: [tier3-phase4-roadmap.md](tier3-p
   derived file may be deleted at any time and is rebuilt on demand (dossier §27).
 - **No process-root, mount-point, or platform allowlist.** XYG never requires
   a fixed root (`/`, `/tmp`, a home directory) and never probes filesystem
-  type. Two narrow exceptions depend on the current directory: the Reflex
-  payload-asset writer (`Path.cwd() / "assets"`, the Reflex app-root
-  convention) and a development-only relative `XYG_NATIVE_LIB` in Python. Paths are resolved by the host runtime and the OS
+  type. A development-only relative `XYG_NATIVE_LIB` in Python depends on the
+  current directory. Paths are resolved by the host runtime and the OS
   (`std::env::temp_dir`, Python `tempfile`, Node `path`). A project or data
   volume mounted anywhere (Docker/Podman bind mount, WSL `/mnt/c`, SMB/NFS
   share, external drive, a different drive letter on Windows) works as long as
@@ -64,11 +63,10 @@ data, **N** nothing on disk.
 | `export.save/to_html/to_svg/...` destinations (`python/xyg/export.py` `_atomic_write_bytes`, `_atomic_write_text`; `_figure_export.py`; `_facets_grid.py`) | Caller-named export file | D | Caller path; temp file is created in the **destination directory** | Every export format (including both PNG paths, `export.to_png` and the facet grid `to_png`) uses same-directory `mkstemp` (`.<name>.<random>.tmp`), `fsync`, `os.replace`; failure removes the temp file and keeps the previous destination. Requires create and rename permission in the destination directory, so a write-only file or a mount that forbids rename fails with the OS error. `wasm_ticks=True` also writes Worker/WASM sidecars beside the destination. Node `toHtml(path)` uses a direct `writeFileSync` (not atomic). |
 | Browser-export temporary directories (`python/xyg/_chromium.py` session path, prefix `xy-export-`; `export.py` one-shot `html_to_png`, unprefixed `tempfile.TemporaryDirectory()`) | Page HTML, screenshot, Chromium stderr during browser-resolved export | T | `tempfile` default temp dir | Removed on close (retrying removal on Windows) or GC. Chromium also writes its own profile and `/dev/shm` data; `--disable-dev-shm-usage` is passed on both the one-shot and session paths, which makes Chromium use the temp dir instead of `/dev/shm` (so a small `/dev/shm` in a container is not the limit, but the temp dir must have room). |
 | `plt.show()` page (`python/xyg/pyplot/_mplfig.py`) | One HTML page opened in the default browser | T | `tempfile.NamedTemporaryFile(delete=False)` in the platform temp dir | Intentionally not deleted (the browser reads it after the call returns). URL is `Path(...).resolve().as_uri()`; it was previously `f"file://{name}"`, which is invalid on Windows drive paths and unescaped for spaces (fixed in #1014). |
-| Reflex payload assets (`python/reflex_xy/payload_asset.py`) | `assets/xy/<digest>.xyf`, content-addressed | D (regenerated at each app compile) | `Path.cwd() / "assets" / "xy"`; skipped when `REFLEX_BACKEND_ONLY` | Follows the Reflex convention that the app is run from its app root. Written via a unique `.tmp` then replace. In a container mount the app root (or `assets/`) writable at build time; a backend-only runtime never writes. |
-| Reflex figure registry, widget comm, notebook display | none | N | n/a | Per-process memory; rebuilt from Reflex state on miss. `XY_NOTEBOOK_DISPLAY` is a mode switch, not a path. |
+| Widget comm, notebook display | none | N | n/a | Per-process memory. `XY_NOTEBOOK_DISPLAY` is a mode switch, not a path. |
 | `XYG_ABI_TRACE_FILE` (`_abi_generated.py`, `_abi_generated.js`) | Test-only append-only JSONL of ABI calls | T (diagnostic) | Exact env value | Off unless set. Not part of the product contract. |
 | `XYG_NATIVE_LIB` | none (read-only library path override) | n/a | Python accepts relative (cwd-dependent) or absolute and **silently skips a missing path**, falling through to the packaged library then the dev `target/` dirs (`_native.py` `_find_library`); Node requires **absolute**, throws `XYG_NATIVE_LIBRARY_PATH_INVALID` for relative, and does not search further for a bad override | Development override; packaged lookup is otherwise fixed. |
-| Browser client (`js/src`, `@curatelabs/xyg`), browser WASM Worker | none | N | n/a | No IndexedDB, Cache Storage, OPFS, cookie, or `localStorage` use in the product path (only the opt-in `xy_debug` read in the Reflex wrapper). WASM modules and Workers are served from caller-chosen URLs; the browser HTTP cache is not an XYG store. |
+| Browser client (`js/src`, `@curatelabs/xyg`), browser WASM Worker | none | N | n/a | No IndexedDB, Cache Storage, OPFS, cookie, or `localStorage` use in the product path. WASM modules and Workers are served from caller-chosen URLs; the browser HTTP cache is not an XYG store. |
 | Pyodide / Emscripten | none | N | n/a | Tile spill and XYGC chunk reads are fail-closed stubs; in-memory kernels and Scene consumers work. |
 | Build-time (`hatch_build.py`, `js/package-wasm.mjs`, `js/optimize-wasm.mjs`) | Packaged native library, bundles, WASM assets; `optimize-wasm` uses `mkdtemp(os.tmpdir())` | build only | Repository checkout / `tmpdir` | Not runtime storage. |
 
@@ -106,15 +104,13 @@ output from a browser deployment is whatever the application saves.
 
 - A crash can orphan `xy-tiles-<pid>-<n>.xyts` (temp dir),
   `<column>.xyzones.<pid>.tmp` (beside the column), export temps
-  `.<name>.<random>.tmp` (destination directory) and Reflex
-  `.<digest>.xyf.<pid>.<random>.tmp` (`assets/xy/`). None is read back; delete
+  `.<name>.<random>.tmp` (destination directory). None is read back; delete
   them freely.
 - The native spill directory cannot be set per figure; it is the process temp
   directory. A per-figure `spill_dir` would be a new public option and is out
   of scope for this audit.
 - The chunk artifact (XYGC) path crosses the C ABI as UTF-8; a non-UTF-8 Unix
   path is rejected with handle 0 rather than lossily converted.
-- `Path.cwd()` in the Reflex asset writer is the Reflex app-root convention.
 
 ## Regression evidence
 

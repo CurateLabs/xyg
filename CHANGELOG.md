@@ -15,10 +15,16 @@ its acceptance remains gated by #108.
 
 ## [Unreleased]
 
+### Removed
+
+- **Breaking:** removed Reflex support, including `reflex_xy`, `xyg[reflex]`,
+  `Chart.reflex_components()`, framework examples and adapter tests (#1063).
+  No compatibility shim ships. The declarative API, `chrome_components()`,
+  notebooks and HTML/static exports remain. Repository application coverage
+  uses Python/Streamlit and Node/vanilla TypeScript; Streamlit embeds HTML
+  snapshots without a Python callback or incremental streaming bridge.
+
 ### Fixed
-- Packaged Reflex live charts remove their debug-registry entry using the
-  identifier captured at mount, including when React clears the DOM ref
-  before unmount cleanup (#886).
 - The release workflow includes the browser package in the seven-package npm
   cohort, checks aligned versions and asset hashes before uploading, and
   requires both registry opt-ins before PyPI publication. GitHub prereleases
@@ -52,9 +58,9 @@ its acceptance remains gated by #108.
   pyramids. Live clients reuse retained textures across pans, preserve exact
   spatial deep-zoom refinement, and crossfade adjacent pyramid levels. Rust
   owns the served level, normalization, and texture budget; binary inventory
-  controls carry observed keys through notebook and Reflex transports (#10).
+  controls carry observed keys through the transport-neutral notebook channel (#10).
 - A generated source API inventory detects declaration drift across Python,
-  Reflex, pyplot, Node, browser, native ABI, and operator configuration. It
+  pyplot, Node, browser, native ABI, and operator configuration. It
   records unclassified surfaces and review gaps explicitly; it is preparation
   for the #108 API freeze and does not declare the release accepted.
 - `resolve_colormap` stop admission is now strict for every mark (#1025):

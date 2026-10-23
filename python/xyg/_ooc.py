@@ -26,7 +26,7 @@ pipeline reads disk-backed canonical data. Ingest and pyramid construction
 still process source rows; this alone does not prove the complete larger-than-
 RAM navigation and resource-budget contract tracked by Phase 4 (#110/#113).
 
-Pure NumPy; no ``reflex``/widget/pyarrow imports, matching ``columns.py``.
+Pure NumPy; no framework/widget/pyarrow imports, matching ``columns.py``.
 """
 
 from __future__ import annotations

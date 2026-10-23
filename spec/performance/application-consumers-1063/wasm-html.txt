@@ -1,0 +1,1 @@
+hosted to_html WASM tick asset smoke passed

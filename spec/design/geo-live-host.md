@@ -1,5 +1,11 @@
 # Native live geographic hosts
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 Dossier §27/§29/§34. The existing `geo_chart(...).host()` / `.widget()` surface
 can replace its accepted retained Point/MultiPoint frame. Rust alone applies
 camera operations and signed temporal predicates, builds LOD, and picks the

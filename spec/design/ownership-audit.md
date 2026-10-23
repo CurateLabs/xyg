@@ -309,7 +309,7 @@ Unattached, invalid, pending,
 Blob-worker HTML, and srcdoc notebook paths fail closed instead of generating
 ticks in TypeScript.
 Hosted `to_html()`,
-notebook widgets, and Reflex can attach when they serve the packaged
+notebook widgets, and application embeds can attach when they serve the packaged
 Worker/WASM files at explicit URLs; this is not the all-host ChartView cutover.
 
 ## Binding seam decision
@@ -538,7 +538,7 @@ Owner: Python host. Disposition: `keep-host`.
 
 Allowed:
 
-- Composition and pyplot APIs, Reflex integration, ingest coercion, validation messages, transport, and notebook lifecycle.
+- Composition and pyplot APIs, application transport, ingest coercion, validation messages, transport, and notebook lifecycle.
 
 Forbidden:
 
@@ -923,18 +923,6 @@ Forbidden:
 | `packages/xy-node/src/sceneBulkNative.js` | Node host | `node-host` | `keep-host`; koffi bindings for scene bulk packers (ABI 321-324); mirrors `_scene_bulk_native.py` | — |
 | `packages/xy-node/src/temporal-graph.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/vscode.js` | Node host | `node-host` | `keep-host` | — |
-| `python/reflex_xy/__init__.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/app.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/assets/__init__.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/component.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/events.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/namespace.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/payload_asset.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/registry.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/selections.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/state_bridge.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/tokens.py` | Python host | `python-host` | `keep-host` | — |
-| `python/reflex_xy/vars.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/__init__.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_abi_generated.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
 | `python/xyg/_wasm_aggregate_generated.py` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |

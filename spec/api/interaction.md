@@ -14,8 +14,7 @@ Implementation: `python/xyg/components.py` (`interaction_config`, `Chart`,
 `FacetChart`), `python/xyg/_figure.py` (`set_interaction`,
 `_interaction_spec`), `python/xyg/channel.py` (kernel-side dispatch),
 `js/src/53_interaction.ts` (gestures, modebar, view state machine),
-`js/src/50_chartview.ts` (flag resolution, link channel),
-`python/reflex_xy/` (Reflex event props).
+`js/src/50_chartview.ts` (flag resolution, link channel).
 
 ## 1. How a switch resolves
 
@@ -225,22 +224,13 @@ Kernel-side callbacks (`python/xyg/channel.py`), wired through
   `on_brush` always fires before `on_select` for the same gesture; that
   ordering is an invariant and is tested.
 
-Reflex props (`python/reflex_xy/component.py`) are the live-mode
-mirror: `on_point_hover(row)`, `on_point_click(row)`,
-`on_select_end({total, x0, x1, y0, y1, polygon, cleared})`, and
-`on_view_change(msg)`. `on_view_change` is resolved in the browser and never
-reaches the kernel — `XYChart.jsx` intercepts the outgoing `view_change`
-message and invokes the handler directly, because the socket namespace
-registers no Python-side view callback. `on_hover(payload)` receives the
-full structured §7.1 payload (view-state.md), resolved entirely in the
-browser, so it works on static charts too; passing it flips the client's
-`hover` interaction flag for that mount. `on_point_hover` remains the
-narrow legacy row form — its argument shape is unchanged by design.
+Application HTML consumers receive browser DOM events. Stock Streamlit HTML
+does not forward events to Python. See
+[application consumers](../design/application-consumers.md) for the live boundary.
 
 Programmatic control is the write-side mirror of these events: kernel-connected
 charts expose `set_view` / `reset_view` / `select` / `clear_selection` /
-`view_state` (Chart and `FigureWidget`), and `reflex_xy` exposes the same
-verbs out-of-band by token, room-wide. The full contract — the durable state
+`view_state` (Chart and `FigureWidget`). The full contract — the durable state
 document, clamping identical to gestures, `source: "api"` tagging, and why
 rows-selections are non-durable — is
 [`../design/view-state.md`](../design/view-state.md) §5; the wire messages
@@ -286,7 +276,7 @@ follows its link group — the mechanism behind an overview-plus-linked-detail
 pairing.
 
 Broadcast has no dedicated switch. `_emitViewChange` runs on every committed
-view change: it always dispatches the local DOM event, sends kernel/Reflex
+view change: it always dispatches the local DOM event, sends kernel
 transport only when a listener is registered (§3), and calls
 `_broadcastLinkedView` when a link channel exists. Linked figures therefore
 stay in sync whether or not anything listens for view events.

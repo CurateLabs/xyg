@@ -4,8 +4,7 @@ Status: **shipped**. This document specifies the message catalog dispatched by
 `xyg.channel.handle_message` (`python/xyg/channel.py`) and consumed by
 `js/src/54_kernel.ts`, plus the first-paint buffer layouts and the version
 handshake. The transport envelopes that carry these messages are separate:
-the anywidget comm (`python/xyg/widget.py`), the `/_xy` socket.io namespace
-([reflex-integration.md](reflex-integration.md) §2), and the `XYBF` binary
+the anywidget comm (`python/xyg/widget.py`) and the `XYBF` binary
 frame (`python/xyg/_framing.py`, versioned in §7 below).
 
 ### Canonical graph identity
@@ -54,8 +53,8 @@ never share state.
 
 The catalog does not vary by transport: where a host sends a given message, it
 has the shape specified here, byte for byte. What varies is *which* messages a
-host sends — the Reflex wrapper resolves `view_change` in the browser and never
-emits it (§2).
+host sends. HTML snapshots have no Python transport; live consumers must
+explicitly attach one (see [application-consumers.md](application-consumers.md)).
 
 The canonical Scene v9 batch is an in-process native host contract and a direct
 browser/WASM binary input, not an `XYBF` JSON-number payload. Its little-endian
@@ -153,12 +152,8 @@ unconditionally (rAF-coalesced — one message per gesture; they feed the
 kernel's `view_state()` cache, view-state.md §5.1) and streams `"update"`
 phases only when an `on_view_change` listener exists. The kernel folds every
 well-formed event into the figure's durable-state cache before the callback
-gate. This is the one request
-type a host may withhold: on the Reflex host it never reaches the kernel,
-because `XYChart.jsx` intercepts the outgoing message and invokes the
-`on_view_change` prop directly
-(`python/reflex_xy/assets/XYChart.jsx`) — that namespace
-registers no Python-side view callback.
+gate. An application may consume this event locally; a standalone or stock
+Streamlit HTML snapshot has no Python channel.
 
 **`select`** — box select. Edges are ordered by `lod.normalize_window` with
 `require_area=False`, so a flipped or zero-area drag is still well-formed.
@@ -362,8 +357,7 @@ out of the client's history stack. A document the client cannot validate
 (higher `v`, unknown axis or key, non-finite number) is rejected whole and
 logged — never partially applied. Built by `Figure.state_patch_message`;
 senders are `FigureWidget.set_view`/`select`/`clear_selection` (anywidget
-comm) and `reflex_xy.set_view`/`select`/`clear_selection` (room-wide on the
-`/_xy` namespace).
+comm) or a host attaching the same message contract.
 
 **`view_nav`** — `{type, op: "reset", axes?}`, no buffers. Navigation to the
 home ranges, well-defined for every receiver because home ranges are
@@ -403,9 +397,8 @@ spec's `columns` table is the addressing scheme, and it comes in two layouts:
   index into the buffer list) with `byte_offset: 0`. The alignment padding for
   a `u8` column is folded into that column's own buffer, and `len` still
   counts only real values, so split is a byte-identical repack of packed. This
-  is what both live hosts ship at first paint — `FigureWidget`
-  (`python/xyg/widget.py`) and the `/_xy` namespace
-  (`python/reflex_xy/namespace.py`) — and on streaming append (§4),
+  is what `FigureWidget` (`python/xyg/widget.py`) ships at first paint
+  and on streaming append (§4),
   with no join copy anywhere on a live path.
 
 Column entries otherwise carry `len`, an optional `dtype` (`"u8"` or `"u32"`;
@@ -550,9 +543,7 @@ Two independent version constants:
 Compatibility is structural rather than negotiated: the client is versioned
 with the producing host. Python wheels embed a **copy** of `@curatelabs/xyg`
 at `python/xyg/static/index.js` so the JS that renders a payload is the build
-that shipped with the Python that produced it; `reflex_xy` deliberately does
-not package its own copy — `assets.register()` symlinks the client out of the
-installed `xyg` distribution, repairing a stale link if the install moved.
+that shipped with the Python that produced it.
 Node `toHtml` / VS Code webviews load the same host-neutral artifact, not the
 Python tree. The protocol check exists for the case that survives this: a
 browser holding a cached bundle against a restarted kernel.

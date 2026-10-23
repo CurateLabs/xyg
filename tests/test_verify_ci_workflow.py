@@ -327,32 +327,30 @@ def test_milestone_governance_rejects_legacy_autonomous_closers(
     assert any("m2_wave_c_close.sh" in error for error in errors)
 
 
-def test_ci_workflow_requires_locked_reflex_environment(tmp_path: Path) -> None:
+def test_ci_workflow_requires_locked_development_environment(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
-            "uv sync --locked --extra reflex --group dev --group codspeed",
-            "uv sync --extra reflex --group dev",
+            "uv sync --locked --group dev --group codspeed",
+            "uv sync --group dev",
         ),
         encoding="utf-8",
     )
 
     errors = verify_ci_workflow.validate_ci_workflow(path)
 
-    assert any(
-        "uv sync --locked --extra reflex --group dev --group codspeed" in error for error in errors
-    )
+    assert any("uv sync --locked --group dev --group codspeed" in error for error in errors)
 
 
-def test_locked_reflex_environment_must_be_in_named_install_step(tmp_path: Path) -> None:
+def test_locked_development_environment_must_be_in_named_install_step(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev --group codspeed"
+    required = "          uv sync --locked --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
             required,
-            "          uv sync --extra reflex --group dev\n\n"
+            "          uv sync --group dev\n\n"
             "      - name: Unrelated example\n"
             f"        run: {required.strip()}",
         ),
@@ -364,9 +362,9 @@ def test_locked_reflex_environment_must_be_in_named_install_step(tmp_path: Path)
     assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_cannot_be_commented_out(tmp_path: Path) -> None:
+def test_locked_development_environment_cannot_be_commented_out(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev --group codspeed"
+    required = "          uv sync --locked --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(workflow.replace(required, f"          # {required.strip()}"), encoding="utf-8")
 
@@ -375,9 +373,9 @@ def test_locked_reflex_environment_cannot_be_commented_out(tmp_path: Path) -> No
     assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_cannot_hide_in_step_env(tmp_path: Path) -> None:
+def test_locked_development_environment_cannot_hide_in_step_env(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev --group codspeed"
+    required = "uv sync --locked --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -385,7 +383,7 @@ def test_locked_reflex_environment_cannot_hide_in_step_env(tmp_path: Path) -> No
             "      - name: Install package + dev deps\n"
             "        env:\n"
             f"          FAKE_GATE: {required}\n",
-        ).replace(f"          {required}", "          uv sync --extra reflex --group dev"),
+        ).replace(f"          {required}", "          uv sync --group dev"),
         encoding="utf-8",
     )
 
@@ -394,9 +392,9 @@ def test_locked_reflex_environment_cannot_hide_in_step_env(tmp_path: Path) -> No
     assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_requires_an_exact_command_line(tmp_path: Path) -> None:
+def test_locked_development_environment_requires_an_exact_command_line(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev --group codspeed"
+    required = "uv sync --locked --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(f"          {required}", f"          echo '{required}'"),
@@ -408,9 +406,9 @@ def test_locked_reflex_environment_requires_an_exact_command_line(tmp_path: Path
     assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_cannot_be_heredoc_data(tmp_path: Path) -> None:
+def test_locked_development_environment_cannot_be_heredoc_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev --group codspeed"
+    required = "uv sync --locked --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -418,7 +416,7 @@ def test_locked_reflex_environment_cannot_be_heredoc_data(tmp_path: Path) -> Non
             "          cat <<'EOF'\n"
             f"          {required}\n"
             "          EOF\n"
-            "          uv sync --extra reflex --group dev",
+            "          uv sync --group dev",
         ),
         encoding="utf-8",
     )
@@ -428,9 +426,9 @@ def test_locked_reflex_environment_cannot_be_heredoc_data(tmp_path: Path) -> Non
     assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_cannot_be_folded_echo_data(tmp_path: Path) -> None:
+def test_locked_development_environment_cannot_be_folded_echo_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev --group codspeed"
+    required = "uv sync --locked --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -446,9 +444,9 @@ def test_locked_reflex_environment_cannot_be_folded_echo_data(tmp_path: Path) ->
     assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_cannot_be_folded_comment_data(tmp_path: Path) -> None:
+def test_locked_development_environment_cannot_be_folded_comment_data(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "uv sync --locked --extra reflex --group dev --group codspeed"
+    required = "uv sync --locked --group dev --group codspeed"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -464,7 +462,7 @@ def test_locked_reflex_environment_cannot_be_folded_comment_data(tmp_path: Path)
     assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_step_must_be_a_hard_gate(tmp_path: Path) -> None:
+def test_locked_development_environment_step_must_be_a_hard_gate(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     bypasses = (
         "if: false",
@@ -498,7 +496,7 @@ def test_locked_reflex_environment_step_must_be_a_hard_gate(tmp_path: Path) -> N
         assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_job_must_be_a_hard_gate(tmp_path: Path) -> None:
+def test_locked_development_environment_job_must_be_a_hard_gate(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     bypasses = (
         "if: false",
@@ -527,7 +525,7 @@ def test_locked_reflex_environment_job_must_be_a_hard_gate(tmp_path: Path) -> No
         assert any("Install package + dev deps" in error for error in errors)
 
 
-def test_locked_reflex_environment_rejects_workflow_shell_override(tmp_path: Path) -> None:
+def test_locked_development_environment_rejects_workflow_shell_override(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
     path.write_text(
@@ -543,7 +541,7 @@ def test_locked_reflex_environment_rejects_workflow_shell_override(tmp_path: Pat
     assert any("hard-gate run steps" in error for error in errors)
 
 
-def test_locked_reflex_environment_rejects_quoted_workflow_shell_override(
+def test_locked_development_environment_rejects_quoted_workflow_shell_override(
     tmp_path: Path,
 ) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -687,7 +685,7 @@ def test_multiline_quoted_env_value_does_not_create_a_sibling_key() -> None:
 
 def test_protected_step_requires_exactly_one_direct_run_key(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev --group codspeed\n"
+    required = "          uv sync --locked --group dev --group codspeed\n"
     duplicate_run_keys = (
         "        run: echo bypassed\n",
         '        "run": echo bypassed\n',
@@ -824,7 +822,7 @@ def test_url_like_scalar_values_are_not_mapping_keys() -> None:
 
 def test_plain_scalar_continuation_cannot_hide_duplicate_run(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required = "          uv sync --locked --extra reflex --group dev --group codspeed\n"
+    required = "          uv sync --locked --group dev --group codspeed\n"
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
@@ -2874,12 +2872,12 @@ def test_ci_workflow_rejects_methodology_dashboard_without_sixty_charts(
     )
 
 
-def test_ci_workflow_rejects_missing_reflex_lifecycle_smoke(tmp_path: Path) -> None:
+def test_ci_workflow_rejects_missing_app_lifecycle_smoke(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
-            '          .venv/bin/python scripts/reflex_lifecycle_smoke.py "$CHROME"\n',
+            '          .venv/bin/python scripts/app_lifecycle_smoke.py "$CHROME"\n',
             "",
         ),
         encoding="utf-8",
@@ -2887,7 +2885,7 @@ def test_ci_workflow_rejects_missing_reflex_lifecycle_smoke(tmp_path: Path) -> N
 
     errors = verify_ci_workflow.validate_workflow(path)
 
-    assert any("test job" in error and "reflex_lifecycle_smoke" in error for error in errors)
+    assert any("test job" in error and "app_lifecycle_smoke" in error for error in errors)
 
 
 def test_ci_workflow_rejects_missing_visual_regression_smoke(tmp_path: Path) -> None:
@@ -3477,43 +3475,41 @@ def test_release_workflow_rejects_missing_sdist_rust_smoke(tmp_path: Path) -> No
     )
 
 
-def test_ci_workflow_rejects_missing_coreless_sdist_reflex_import(tmp_path: Path) -> None:
+def test_ci_workflow_rejects_missing_coreless_sdist_xyg_import(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-    prefix, smoke = workflow.split("      - name: Verify coreless sdist imports reflex_xy\n", 1)
+    prefix, smoke = workflow.split("      - name: Verify coreless sdist imports xyg\n", 1)
     path = tmp_path / "ci.yml"
     path.write_text(
         prefix
-        + "      - name: Verify coreless sdist imports reflex_xy\n"
-        + smoke.replace("          import reflex_xy\n", "          import removed_reflex_xy\n", 1),
+        + "      - name: Verify coreless sdist imports xyg\n"
+        + smoke.replace("          import xyg\n", "          import removed_xyg\n", 1),
         encoding="utf-8",
     )
 
     errors = verify_ci_workflow.validate_ci_workflow(path)
 
     assert any(
-        "Verify coreless sdist imports reflex_xy" in error and "import reflex_xy" in error
-        for error in errors
+        "Verify coreless sdist imports xyg" in error and "import xyg" in error for error in errors
     )
 
 
-def test_release_workflow_rejects_missing_coreless_sdist_reflex_import(
+def test_release_workflow_rejects_missing_coreless_sdist_xyg_import(
     tmp_path: Path,
 ) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
-    prefix, smoke = workflow.split("      - name: Verify coreless sdist imports reflex_xy\n", 1)
+    prefix, smoke = workflow.split("      - name: Verify coreless sdist imports xyg\n", 1)
     path = tmp_path / "publish.yaml"
     path.write_text(
         prefix
-        + "      - name: Verify coreless sdist imports reflex_xy\n"
-        + smoke.replace("          import reflex_xy\n", "          import removed_reflex_xy\n", 1),
+        + "      - name: Verify coreless sdist imports xyg\n"
+        + smoke.replace("          import xyg\n", "          import removed_xyg\n", 1),
         encoding="utf-8",
     )
 
     errors = verify_ci_workflow.validate_release_workflow(path)
 
     assert any(
-        "Verify coreless sdist imports reflex_xy" in error and "import reflex_xy" in error
-        for error in errors
+        "Verify coreless sdist imports xyg" in error and "import xyg" in error for error in errors
     )
 
 
@@ -4849,3 +4845,60 @@ def test_release_pypi_preflight_requires_browser_and_tag_validation(
         or "name: browser-package" in error
         for error in errors
     )
+
+
+@pytest.mark.parametrize("mutation", ["missing", "commented", "skipped", "soft-failure"])
+def test_ci_requires_consumer_application_smokes(tmp_path: Path, mutation: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    command = '          uv run python scripts/consumer_apps_smoke.py --chromium "$CHROME"'
+    step = "      - name: Python Streamlit and vanilla TypeScript consumer apps\n"
+    if mutation == "missing":
+        workflow = workflow.replace(command, "          true")
+    elif mutation == "commented":
+        workflow = workflow.replace(command, "          # " + command.strip())
+    elif mutation == "skipped":
+        workflow = workflow.replace(step, step + "        if: false\n")
+    else:
+        workflow = workflow.replace(step, step + "        continue-on-error: true\n")
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow, encoding="utf-8")
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("consumer" in error or "continue-on-error" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "missing",
+    [
+        "consumer-apps-smoke.json",
+        "consumer-apps-smoke/",
+        "if-no-files-found: error",
+        "if: always()",
+    ],
+)
+def test_ci_requires_consumer_application_evidence(tmp_path: Path, missing: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    prefix, suffix = workflow.split(
+        "      - name: Retain consumer application browser evidence\n", 1
+    )
+    evidence, suffix = suffix.split("      - name: Browser lifecycle smoke (Chromium)\n", 1)
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        prefix
+        + "      - name: Retain consumer application browser evidence\n"
+        + evidence.replace(missing, "removed", 1)
+        + "      - name: Browser lifecycle smoke (Chromium)\n"
+        + suffix,
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("Retain consumer application browser evidence" in error for error in errors)
+
+
+@pytest.mark.parametrize("condition", ["success()", "failure()", "always() && false", "false"])
+def test_ci_retains_consumer_evidence_after_failure(tmp_path: Path, condition: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    step = "      - name: Retain consumer application browser evidence\n        if: always()"
+    path = tmp_path / "ci.yml"
+    path.write_text(workflow.replace(step, step.replace("always()", condition)), encoding="utf-8")
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("Retain consumer application browser evidence" in error for error in errors)

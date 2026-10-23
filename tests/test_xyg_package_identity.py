@@ -49,12 +49,10 @@ def test_import_xy_is_intentionally_absent_after_cutover() -> None:
         importlib.import_module("xy")
 
 
-def test_reflex_adapter_namespace_unchanged_for_this_slice() -> None:
-    # #51 Non-Goal: retain the established reflex_xy integration namespace.
-    assert (ROOT / "python" / "reflex_xy").is_dir()
-    import reflex_xy
-
-    assert reflex_xy.__name__ == "reflex_xy"
+def test_removed_reflex_namespace_is_absent() -> None:
+    assert not (ROOT / "python" / "reflex_xy").exists()
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("reflex_xy")
 
 
 def test_package_examples_bind_the_namespace_they_reference() -> None:

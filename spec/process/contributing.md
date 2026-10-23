@@ -131,7 +131,7 @@ regression comparison scripts, or report-schema validation, run:
 make check-benchmark-harness
 ```
 
-When you edit `spec/api/api-examples.md` or the Reflex example dashboard
+When you edit `spec/api/api-examples.md` or the application example dashboard
 registry/assets, run:
 
 ```bash
@@ -189,7 +189,7 @@ This runs seven split browser checks, which CI runs as separate steps:
 | `render_smoke_nonumpy` | `Headless render smoke (stdlib + Chromium)` |
 | `append_stream_smoke` | `Streaming append smoke (stdlib + Chromium)` |
 | `smoke_render` | `Real-Figure render smoke (numpy + Chromium)` |
-| `reflex_lifecycle_smoke` | `Browser lifecycle smoke (Chromium)` |
+| `app_lifecycle_smoke` | `Browser lifecycle smoke (Chromium)` |
 | `visual_regression_smoke` | `Browser visual regression smoke (Chromium)` |
 | `step_tier_smoke` | `Step tier-update smoke (Chromium)` |
 | `interaction_stress_smoke` | `Browser interaction stress smoke (Chromium)` |
@@ -214,7 +214,7 @@ same expansion. It renders a decimated `step` chart, feeds the view a synthetic
 `tier_update` exactly as the kernel would ship it, and asserts the re-uploaded
 vertex stream still contains the step risers.
 
-The lifecycle gate runs `scripts/reflex_lifecycle_smoke.py`: it boots the
+The lifecycle gate runs `scripts/app_lifecycle_smoke.py`: it boots the
 `examples/fastapi` app under uvicorn and drives Chromium at each gallery chart
 route plus `/drilldown`, injecting a probe over CDP before the chart client
 loads. Each chart must stay nonblank through the `initial`, `narrow-resize`,
@@ -254,7 +254,7 @@ checks are appended only with `--browser`, which requires `--chromium PATH`.
 `make list-checks` does show the browser checks before a Chrome path is
 configured, marked `[requires chromium]`. To see a browser command rendered with
 the `<CHROMIUM>` placeholder, name it explicitly, for example
-`python scripts/verify_local.py --dry-run --only reflex_lifecycle_smoke`.
+`python scripts/verify_local.py --dry-run --only app_lifecycle_smoke`.
 
 ## Pull Request Checklist
 

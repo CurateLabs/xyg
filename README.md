@@ -44,14 +44,16 @@ remain part of the same engine.
 
 | Host | Entry point | Current scope |
 | --- | --- | --- |
-| Python | `xyg` | Declarative charts, GraphForge composition, notebooks, and static export |
+| Python | `xyg` | Declarative charts, GraphForge composition, notebooks, static export, and repository Streamlit example |
 | Node.js | `@curatelabs/xyg-node` | Native chart and GraphForge composition for servers and extensions; source setup required |
 | Browser WASM | `@curatelabs/xyg` Worker API | Direct Rust/WASM execution with bounded chart/graph operations; complete host parity is still in progress |
 
 See the [graph guide](https://github.com/CurateLabs/xyg/blob/main/docs/charts/graph.md),
 [Node guide](https://github.com/CurateLabs/xyg/tree/main/packages/xy-node), and
 [browser WASM contract](https://github.com/CurateLabs/xyg/blob/main/spec/api/browser-wasm.md)
-for the available APIs and boundaries.
+for the available APIs and boundaries. Repository application examples cover
+[Python/Streamlit and Node/vanilla TypeScript](https://github.com/CurateLabs/xyg/blob/main/docs/integrations/application-consumers.md);
+Streamlit embeds HTML snapshots without a Python callback bridge.
 
 ## Installation
 

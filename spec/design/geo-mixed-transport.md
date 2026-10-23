@@ -1,5 +1,11 @@
 # Typed mixed geographic frame transport
 
+> Support update (#1063): Reflex-specific adapters, fixtures and journeys described
+> below are retired historical evidence, not current support or acceptance gates.
+> Shared native ownership, selection, binary transport and cleanup contracts remain
+> required for notebook, Node/VS Code and browser hosts. Current application coverage:
+> [application-consumers.md](application-consumers.md).
+
 This implementation checkpoint connects the Rust atomic coordinator in
 [geo-mixed-frame.md](geo-mixed-frame.md) to the existing native/WASM Tile execute,
 read and trusted painter exports. It adds no ABI signature, provider, host

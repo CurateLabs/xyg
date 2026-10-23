@@ -166,7 +166,7 @@ def _python_text_errors(path: Path, rel: str, text: str, *, repository_scan: boo
     """Reject retired public Python names in comments, docstrings, and errors."""
     if path.suffix != ".py":
         return []
-    if repository_scan and not rel.startswith(("python/xyg/", "python/reflex_xy/")):
+    if repository_scan and not rel.startswith("python/xyg/"):
         return []
     errors: list[str] = []
     try:

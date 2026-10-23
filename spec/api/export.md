@@ -52,8 +52,8 @@ configured name with no entry). With no `export` spec the menu falls back to
 When neither an export filename nor a usable chart title supplies a basename,
 browser downloads use `xyg-chart` (for example, `xyg-chart.svg`).
 
-There is no Reflex-side export API. `python/reflex_xy/` renders without a kernel in
-the browser; export runs on the composed chart object in Python.
+Python export runs on the composed chart object. Application HTML consumers
+render its snapshot; they do not create an additional framework export API.
 
 ## 2. Formats and backends
 
@@ -255,7 +255,7 @@ section existed the gaps were discoverable only by exporting and looking. An
 undocumented asymmetry reads as a bug; a documented one is a contract.
 
 The families are **browser** (standalone HTML, the notebook iframe, the widget,
-the Reflex adapter, and Chromium capture, which screenshots the same document),
+application HTML embedding, and Chromium capture, which screenshots the same document),
 **native raster** (`_raster.render_raster` → PNG/JPEG/WebP), and **native
 vector** (`_svg.to_svg`, and `_pdf.svg_to_pdf` on top of it).
 

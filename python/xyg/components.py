@@ -1,9 +1,8 @@
 """A declarative, composition-based component API.
 
-The *feel* is Reflex's (reflex.dev) chart components — a chart container with
-mark and axis children, snake_case keyword props, `data=` + column-name
-resolution, and `on_*` event props — but xyg does **not** import or depend
-on Reflex. It's the same ergonomics on top of the xyg engine (`Figure`):
+Charts contain mark and axis children, snake_case keyword props, `data=`
+column-name resolution, and `on_*` event props. The framework-neutral
+composition API compiles to the xyg engine (`Figure`):
 
     import xyg
 
@@ -187,7 +186,7 @@ ZoomLimits: TypeAlias = Union[ZoomLimit, Mapping[str, ZoomLimit]]
 
 
 class Component:
-    """Base for every xy component (Reflex-style: props + children)."""
+    """Base for every XYG component (props + children)."""
 
 
 @dataclass
@@ -277,7 +276,7 @@ class Axis(Component):
 
 @dataclass
 class Legend(Component):
-    """Legend chrome; ``render`` remains opaque for Reflex adapters."""
+    """Legend chrome; ``render`` remains opaque for application adapters."""
 
     show: bool = True
     loc: Optional[str] = None
@@ -295,7 +294,7 @@ class Legend(Component):
 
 @dataclass
 class Tooltip(Component):
-    """Hover-tooltip chrome; ``render`` remains opaque for Reflex adapters."""
+    """Hover-tooltip chrome; ``render`` remains opaque for application adapters."""
 
     show: bool = True
     fields: Optional[list[str]] = None
@@ -311,7 +310,7 @@ class Tooltip(Component):
 
 @dataclass
 class Colorbar(Component):
-    """Color scale chrome; ``render`` remains opaque for Reflex adapters."""
+    """Color scale chrome; ``render`` remains opaque for application adapters."""
 
     show: bool = True
     title: Optional[str] = None
@@ -607,7 +606,7 @@ def animation(
 
 
 # ---------------------------------------------------------------------------
-# Factory functions (the public, Reflex-flavored surface)
+# Factory functions (the public composition surface)
 # ---------------------------------------------------------------------------
 
 
@@ -3708,7 +3707,7 @@ def interaction_config(
 
 
 def _resolve(data: Any, key: Any, *, context: Optional[str] = None) -> Any:
-    """Reflex `data_key` idiom: a string names a column in `data`; anything else
+    """Column-key idiom: a string names a column in `data`; anything else
     is passed through as the values themselves."""
     if isinstance(key, str):
         prefix = f"{context} " if context else ""
@@ -4269,7 +4268,7 @@ class Chart(Component):
     # -- render (delegates to the engine) ------------------------------------
 
     def chrome_components(self) -> dict[str, Any]:
-        """Opaque user chrome objects for adapters such as Reflex.
+        """Opaque user chrome objects for application adapters.
 
         Core xy does not import or serialize framework components. The
         objects returned here are the exact Python objects passed to
@@ -4287,10 +4286,6 @@ class Chart(Component):
         if colorbars and colorbars[-1].render is not None:
             result["colorbar"] = colorbars[-1].render
         return result
-
-    def reflex_components(self) -> dict[str, Any]:
-        """Alias for `chrome_components()` for Reflex adapter/user code."""
-        return self.chrome_components()
 
     def widget(self, *, wasm_ticks: Optional[Mapping[str, str]] = None) -> Any:
         """The live notebook widget for this chart (built once, cached).
@@ -4676,7 +4671,7 @@ class Chart(Component):
 
 def _resolve_color(data: Any, color: Any, *, context: Optional[str] = None) -> Any:
     """Disambiguate a string `color`: a CSS color is a constant; any other
-    string is a column name resolved from `data` (Reflex data_key idiom)."""
+    string is a column name resolved from `data`."""
     if not isinstance(color, str):
         return color  # None, or an already-materialized array
     if _looks_like_css(color):

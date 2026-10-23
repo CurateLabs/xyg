@@ -72,7 +72,7 @@ operates on the same allocation and restores the immutable Rust bytes.
 All multibyte fields below are little-endian. Numeric inventories and pixel
 planes are raw binary attachments. The small request metadata contains only
 `tile_cache: true`; existing viewport controls keep their existing contract.
-Anywidget and Reflex preserve the attachment unchanged. Unknown versions,
+The transport-neutral channel and anywidget preserve the attachment unchanged. Unknown versions,
 truncation, trailing bytes, invalid fields and excessive keys fail closed.
 The host has no server-side texture residency state.
 

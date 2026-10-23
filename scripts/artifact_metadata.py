@@ -1,4 +1,4 @@
-"""Shared stdlib-only dependency checks for xy release artifacts."""
+"""Shared stdlib-only dependency checks for XYG release artifacts."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import re
 from email.message import Message
 
 BASE_DEPENDENCY_FLOORS = (("anywidget", "0.9"), ("numpy", "1.24"))
-REFLEX_REQUIREMENT = "Requires-Dist: reflex>=0.9.6; extra == 'reflex'"
 
 
 def _dependency_name(requirement: str) -> str:
@@ -31,19 +30,8 @@ def _is_valid_base_requirement(requirement: str, package: str, minimum: str) -> 
     return version + (0,) * (width - len(version)) == floor + (0,) * (width - len(floor))
 
 
-def _is_exact_reflex_extra(requirement: str) -> bool:
-    """Accept whitespace/quote normalization, but no extra constraints."""
-    return bool(
-        re.fullmatch(
-            r"\s*reflex\s*>=\s*0\.9\.6\s*;\s*extra\s*==\s*['\"]reflex['\"]\s*",
-            requirement,
-            flags=re.IGNORECASE,
-        )
-    )
-
-
 def dependency_metadata_errors(metadata: Message) -> list[str]:
-    """Return violations of xy's base/optional dependency metadata policy."""
+    """Return violations of XYG's framework-free dependency metadata policy."""
     requirements = metadata.get_all("Requires-Dist") or []
     errors: list[str] = []
 
@@ -59,12 +47,6 @@ def dependency_metadata_errors(metadata: Message) -> list[str]:
                 "(exactly one requirement, with no conflicts; exact stable lower bound required)"
             )
 
-    reflex_requirements = [
-        requirement for requirement in requirements if _dependency_name(requirement) == "reflex"
-    ]
-    if len(reflex_requirements) != 1 or not _is_exact_reflex_extra(reflex_requirements[0]):
-        errors.append(f"{REFLEX_REQUIREMENT} (exactly one requirement, with no conflicts)")
-
     base_floors = dict(BASE_DEPENDENCY_FLOORS)
     unexpected_requirements = []
     for requirement in requirements:
@@ -72,16 +54,11 @@ def dependency_metadata_errors(metadata: Message) -> list[str]:
         base_minimum = base_floors.get(name)
         if base_minimum is not None and _is_valid_base_requirement(requirement, name, base_minimum):
             continue
-        if _is_exact_reflex_extra(requirement):
-            continue
         unexpected_requirements.append(requirement)
     if unexpected_requirements:
-        errors.append(
-            "only XYG base dependencies plus the Reflex extra in Requires-Dist "
-            f"({unexpected_requirements})"
-        )
+        errors.append(f"only XYG base dependencies in Requires-Dist ({unexpected_requirements})")
 
     provided_extras = {extra.strip().lower() for extra in metadata.get_all("Provides-Extra") or []}
-    if provided_extras != {"reflex"}:
-        errors.append(f"Provides-Extra: reflex (got {sorted(provided_extras)})")
+    if provided_extras:
+        errors.append(f"no Provides-Extra entries allowed (got {sorted(provided_extras)})")
     return errors
