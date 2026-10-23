@@ -245,6 +245,7 @@ pyramid_compose = _impl.pyramid_compose
 pyramid_compose_color = _impl.pyramid_compose_color
 pyramid_free = _impl.pyramid_free
 pyramid_spill = _impl.pyramid_spill
+tile_store_paint = _impl.tile_store_paint
 tile_store_compose = _impl.tile_store_compose
 tile_store_compose_color = _impl.tile_store_compose_color
 tile_store_append = _impl.tile_store_append
@@ -645,6 +646,7 @@ __all__ = [
     "tile_store_compose",
     "tile_store_compose_color",
     "tile_store_free",
+    "tile_store_paint",
     "tile_store_stats",
     "transition_keys_fixed",
     "triangle_edges",

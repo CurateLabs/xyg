@@ -96,13 +96,13 @@ def _build_entry_payload(
         return _build_wire_payload(entry.figure, px)
 
 
-def _handle_entry_message(entry: FigureEntry, content: Any) -> Any:
+def _handle_entry_message(entry: FigureEntry, content: Any, buffers: Any = None) -> Any:
     """Dispatch under ``sync_lock``; the async caller already holds ``lock``."""
     with entry.sync_lock:
         host_message = getattr(entry.figure, "handle_host_message", None)
         if callable(host_message):
             return host_message(content)
-        return handle_message(entry.figure, content, None)
+        return handle_message(entry.figure, content, buffers)
 
 
 # An async callable(token) -> Figure | None: given a parseable figure token,
@@ -308,7 +308,21 @@ class XYNamespace(AsyncNamespace):
             # ``entry.lock`` -> ``entry.sync_lock`` is the same order used by
             # payload builds and wired append; synchronous view pushes take
             # only the latter and therefore cannot deadlock this path.
-            reply = await asyncio.to_thread(_handle_entry_message, entry, content)
+            inbound = (
+                data.get("buffers")
+                if isinstance(data, dict)
+                and isinstance(content, dict)
+                and content.get("type") == "density_view"
+                else None
+            )
+            if inbound is not None and (
+                not isinstance(inbound, (list, tuple))
+                or len(inbound) != 1
+                or not isinstance(inbound[0], (bytes, bytearray, memoryview))
+                or len(inbound[0]) > 3104
+            ):
+                return
+            reply = await asyncio.to_thread(_handle_entry_message, entry, content, inbound)
             if not self.registry.is_current(token, entry) or entry.version != operation_version:
                 return
         if reply is None:

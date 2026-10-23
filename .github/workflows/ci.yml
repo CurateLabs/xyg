@@ -283,6 +283,7 @@ jobs:
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
           echo "using $CHROME"
           python3 scripts/render_smoke_nonumpy.py "$CHROME"
+          python3 scripts/density_tile_smoke.py "$CHROME"
 
       - name: Polar GLSL parity smoke (stdlib + Chromium)
         run: |

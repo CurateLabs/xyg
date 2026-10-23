@@ -1,0 +1,8 @@
+───────────────────────────── Starting Reflex App ──────────────────────────────
+Warning: Your version (0.9.8) of reflex is out of date. Upgrade to 0.10.0 with 
+'pip install reflex --upgrade'
+Compiling: ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 24/23 0:00:00
+Creating Production Build:  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 4/4 0:00:05
+───────────────────────────────── App Running ──────────────────────────────────
+App running at: http://0.0.0.0:42245/
+[03:58:26] Reflex app stopped.                                    console.py:232

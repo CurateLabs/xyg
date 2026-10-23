@@ -477,6 +477,23 @@ per-trace-kind rules live in the LOD/Tiling Contract (§28).
 Tier transitions are automatic and hysteresis-guarded (to avoid thrashing at the
 boundary), and every downsampling decision is logged so we never *silently* hide data.
 
+**Tile-keyed spilled density (#10).** Native spilled-pyramid refinements
+now carry Rust-served source tiles, not shifted window grids. Rust owns the
+served level, raw XYDC inventory admission, XYDT texture bytes and retention;
+TypeScript only uploads/paints. Count exposure remains window-normalized,
+mean-color alpha remains physical, and ordinary level changes use adjacent
+crossfades when every outgoing texture remains owned. If Rust's updated
+inventory removes part of a source frame, including a prior source during an
+active fade, the client immediately completes that transition and drops
+incomplete frame references; it cannot retain extra textures beyond Rust's
+budget. Reply admission compares with the finite 16–4096 bounded viewport,
+so canvases wider than 4096 continue to receive capped painter updates.
+The unchanged eight-screen-texture byte ceiling can require an explicit
+resource-coarsened level jump; this GPU rule does not alter CPU
+tile pinning (§32b). The [binary contract and proof commands](design/density-tile-painter.md)
+record the gutter/framing, normalization, budget flags, stale/malformed
+admission and disposal behavior (§28/§29).
+
 ### 5.1 Tuning constants — `python/xyg/config.py`
 
 Every tier/decimation threshold lives in one module (§28: no silent decisions). The
@@ -502,8 +519,8 @@ re-exports several of them as a historic import path and is not listed for those
 | `DRILL_PAD_SPAN_CAP` | `64.0` | Hard per-axis cap on a padded drill window's span (× the view span), kept well under the client's §16 re-encode bound (1/256 of window span) so deep zooms can always re-tighten the f32 offset encoding. | `interaction.py` |
 | `DRILL_HISTORY_KEEP` | `8` | Recent drilled subsets kept resolvable per trace, so picks against a retired cached point window (T13) still translate exactly; older seqs drop the pick, data changes clear the history. | `lod.py` (`enter_drill`, `drill_history`), `interaction.py` (`pick`) |
 | `LOD_POINT_CACHE_WINDOWS` | `3` | Retired exact point windows kept per trace client-side beyond the live drill; LRU-bounded VRAM, swept by the T11 outgrown rule. | `js/src/45_lod.ts` (`lodRetireDrill`, `lodPromoteCachedDrill`) |
-| `LOD_POINTS_REQUEST_BAND` | `4` | The aggregate tier never refines per view (T13, revised): a raw-view `density_view` goes out only when the estimated in-view count sits within `budget × 4` of points territory — the LOWER of an area-scaled cached-window count and the retained sample counted in-view (`lodSampleViewCount`, distribution-true where area-scaling over-estimates sparse tails). | `js/src/45_lod.ts` (`lodAggregateStands`) |
-| `LOD_AGG_STEP_FACTOR` / `LOD_AGG_STEP_MAX` / `LOD_AGG_STEP_SLACK` | `4` / `2` / `1.5` | The stepped aggregate ladder (T13): while standing, the only density request is the view snapped outward to a power-of-4 block grid over the extent (per axis), at most 2 steps below home, and only when every covering texture is coarser than the step by more than the slack. Quantized windows are pan-stable and dedupable — at most 2 smooth-to-smooth swaps before points, worst-case softness ≈ 4× stretch per axis. | `js/src/45_lod.ts` (`lodAggregateStepWindow`) |
+| `LOD_POINTS_REQUEST_BAND` | `4` | For legacy window grids, the aggregate tier never refines per view (T13, revised): a raw-view `density_view` goes out only when the estimated in-view count sits within `budget × 4` of points territory — the LOWER of an area-scaled cached-window count and the retained sample counted in-view (`lodSampleViewCount`, distribution-true where area-scaling over-estimates sparse tails). | `js/src/45_lod.ts` (`lodAggregateStands`) |
+| `LOD_AGG_STEP_FACTOR` / `LOD_AGG_STEP_MAX` / `LOD_AGG_STEP_SLACK` | `4` / `2` / `1.5` | The legacy window-grid stepped aggregate ladder (T13): while standing, the only density request is the view snapped outward to a power-of-4 block grid over the extent (per axis), at most 2 steps below home, and only when every covering texture is coarser than the step by more than the slack. Quantized windows are pan-stable and dedupable — at most 2 smooth-to-smooth swaps before points, worst-case softness ≈ 4× stretch per axis. | `js/src/45_lod.ts` (`lodAggregateStepWindow`) |
 | `DEFAULT_PALETTE` | 8 CVD-safe hex entries | Rust-owned, versioned per-trace default color cycle and fallback categorical palette, used when the chart sets no `theme(palette=...)` (§20/§36). ABI 360 exposes bounded fixed-width `#rrggbb` bytes and RGBA8 rows; Python keeps a lazy immutable sequence proxy, Node initializes from the native contract, and direct WASM exports the same engine rows. Its ORDER is the CVD-safety mechanism — never re-order or extend without re-running the validator and bumping the palette-contract version. | `xyg-engine::kernels`; native/WASM ABI adapters; host palette proxies |
 | `MESH_OVERDRAW_PLOTS` | `64.0` | Static triangle-mesh admission (#1006), not a browser tier: for raster consumers above 1,024 faces, the chosen consumer charges each face `height × (width + 1)` of its plot-clipped pixel bounding box, plus its outline's padded stroke boxes when stroked, and fails closed with `XYG_SCENE_UNSUPPORTED_PUBLIC_LOD` past 64 plot rectangles (floor `MAX_SCENE_IMAGE_PIXELS` CSS px²), bounding raster and dense-image painting. SVG/PDF apply it only above the 50,000-face vector ceiling, when they rasterize dense images (#1042). | `scene.rs` (`SceneDocument::check_mesh_budgets`) |
 | `PYRAMID_MIN_POINTS` | `2_000_000` | Trace size at/above which a Tier-3 tile pyramid is built lazily; smaller traces never pay for one. | `interaction.py` |
@@ -1200,6 +1217,13 @@ perf regression (§12), plus per-trace-family lazy feature modules (Plotly's
 partial-bundle pain). Neither exists today.
 
 ## 24. Extensibility & the compatibility contract
+
+The accepted `0.6` release uses the explicit public-surface classification,
+synchronized versioning and deprecation rules in
+[the release compatibility policy](releases/compatibility-policy.md).
+[Stored-format and migration rules](releases/formats-and-migration.md) distinguish
+canonical inputs from rebuildable caches. These preparation records do not
+declare a final accepted candidate or expand an unsupported host capability.
 
 - **Compat is a measured number.** Plotly's `plot-schema.json` (~3,000 attributes) is
   ingested to *generate* the conformance suite: each attribute is classified

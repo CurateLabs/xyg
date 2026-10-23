@@ -41,8 +41,13 @@ screen-bounded performance core, but the stable commitments today are narrower:
 - Benchmark reports must label rendering modes explicitly: `direct`,
   `decimated`, `density`, `sampled`, or `adaptive`.
 
-The composition API, chart-type set, visual styling surface, and Reflex
-integration are still experimental and may change before a 1.0 release.
+The currently published alpha's composition API, chart-type set, visual styling
+surface, and Reflex integration remain experimental. The future accepted
+`0.6` line uses the explicit stable/experimental/internal classification and
+deprecation commitments in the [public compatibility policy](../releases/compatibility-policy.md).
+Its [format and migration inventory](../releases/formats-and-migration.md)
+distinguishes canonical data from rebuildable binary/GPU caches. These
+preparation documents do not declare an accepted or published `0.6` candidate.
 
 ## Fork CI posture
 

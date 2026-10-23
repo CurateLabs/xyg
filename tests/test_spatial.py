@@ -10,6 +10,7 @@ from __future__ import annotations
 import struct
 
 import numpy as np
+import pytest
 
 import xyg
 from xyg import kernels
@@ -144,3 +145,47 @@ def test_density_view_channelled_spatial_grid_keeps_density_tier_below_threshold
     assert trace["binning"] == "spatial-exact"
     assert trace["reduction"] == "bin2d"
     assert trace["visible"] == in_window
+
+
+@pytest.mark.parametrize("channelled", [False, True])
+def test_spilled_binary_tile_inventory_preserves_spatial_refinement(
+    tmp_path, monkeypatch, channelled
+):
+    """Cached painter requests keep the same exact point/grid policy as legacy."""
+    import struct
+
+    from xyg import interaction
+
+    rng = np.random.default_rng(2)
+    n = 400_000
+    lon = np.clip(rng.normal(0, 3, n), -10, 9.999)
+    lat = np.clip(rng.normal(0, 3, n), -10, 9.999)
+    idx = SpatialIndex.load(_write_index(tmp_path, 64, (-10.0, 10.0, -10.0, 10.0), lon, lat))
+    monkeypatch.setattr(interaction, "PYRAMID_MIN_POINTS", 1)
+    fig = xyg.chart(
+        xyg.scatter(
+            x=lon,
+            y=lat,
+            density=True,
+            pyramid_spill=True,
+            **({"size": np.ones(n)} if channelled else {}),
+        )
+    ).figure()
+    trace = fig.traces[0]
+    trace._spatial_index = idx
+    assert interaction._ensure_pyramid(trace) is None
+    assert interaction._tile_store_of(trace)
+    window = (-0.1, 0.1, -0.1, 0.1, 1000, 800)
+    baseline, baseline_buffers = fig.density_view(trace.id, *window)
+    observed, observed_buffers = fig.density_view(
+        trace.id, *window, tile_cache=struct.pack("<4sIQdiI", b"XYDC", 1, 0, -1.0, -1, 0)
+    )
+    before, after = baseline["traces"][0], observed["traces"][0]
+    assert (
+        after["binning"]
+        == before["binning"]
+        == ("spatial-exact" if channelled else "spatial-points")
+    )
+    for key in ("mode", "tier", "visible", "reduction"):
+        assert after[key] == before[key]
+    assert observed_buffers == baseline_buffers

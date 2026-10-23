@@ -44,6 +44,10 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::tiles::{self, LevelView, Pyramid};
 
+mod paint;
+pub use paint::{paint_capacity, PaintObservation, PaintRequest, MAX_PAINT_BYTES, MAX_PAINT_KEYS};
+static PAINT_GENERATION: AtomicU64 = AtomicU64::new(1);
+
 /// Cells per tile side (D1). Re-export of [`tiles::TILE_DIM`] for ABI sizing.
 pub use crate::tiles::TILE_DIM;
 const TILE_CELLS: usize = TILE_DIM * TILE_DIM;
@@ -158,6 +162,8 @@ pub struct TileStore {
     slab_base: Vec<u64>,
     total_slabs: u64,
     has_color: bool,
+    paint_generation: u64,
+    paint_maxima: Vec<u32>,
     x0: f64,
     x1: f64,
     y0: f64,
@@ -248,6 +254,10 @@ impl TileStore {
             slab_base,
             total_slabs,
             has_color,
+            paint_generation: PAINT_GENERATION.fetch_add(1, Ordering::Relaxed),
+            paint_maxima: (0..p.level_dims().len())
+                .map(|level| p.level_counts(level).iter().copied().max().unwrap_or(0))
+                .collect(),
             x0,
             x1,
             y0,
@@ -795,11 +805,13 @@ impl TileStore {
                 let tile = self.resident.get_mut(&key).expect("fetched tile");
                 let cell = &mut tile.counts[(cy % TILE_DIM) * TILE_DIM + (cx % TILE_DIM)];
                 *cell = cell.saturating_add(1);
+                self.paint_maxima[level] = self.paint_maxima[level].max(*cell);
                 tile.dirty = true;
                 cx >>= 1;
                 cy >>= 1;
             }
         }
+        self.paint_generation = PAINT_GENERATION.fetch_add(1, Ordering::Relaxed);
         self.finish_frame()?;
         Ok(true)
     }
@@ -1280,5 +1292,145 @@ mod tests {
             "the spill file is deleted with the store (§27 cache lifecycle)"
         );
         assert_eq!(global_resident(), 0, "drop returns every resident byte");
+    }
+    fn paint_u32(bytes: &[u8], at: usize) -> u32 {
+        u32::from_le_bytes(bytes[at..at + 4].try_into().unwrap())
+    }
+    fn paint_keys(bytes: &[u8]) -> Vec<u32> {
+        (0..paint_u32(bytes, 16) as usize)
+            .flat_map(|i| {
+                let at = 128 + i * 96;
+                [
+                    paint_u32(bytes, at),
+                    paint_u32(bytes, at + 4),
+                    paint_u32(bytes, at + 8),
+                ]
+            })
+            .collect()
+    }
+    #[test]
+    fn keyed_paint_pan_transfers_only_new_edges_and_matches_uncached_bytes() {
+        let _guard = lock_budget();
+        budget_set(DEFAULT_RESIDENT_BUDGET_BYTES);
+        let (x, y) = scattered(32_768);
+        let p = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 1024).unwrap();
+        let mut store = TileStore::spill(&p).unwrap();
+        let mut req = PaintRequest {
+            window: [0.0, 50.0, 0.0, 50.0],
+            width: 256,
+            height: 256,
+            opacity: 1.0,
+            known_generation: 0,
+            known_opacity: -1.0,
+            previous_level: -1,
+            known: &[],
+        };
+        let first = store.paint_frame(&req).unwrap().unwrap();
+        assert_eq!(paint_u32(&first, 8), 1);
+        assert_eq!(paint_u32(&first, 24), 1);
+        let keys = paint_keys(&first);
+        req.known = &keys;
+        req.known_generation = store.paint_generation;
+        req.known_opacity = 1.0;
+        req.previous_level = 1;
+        req.window = [25.0, 75.0, 0.0, 50.0];
+        let pan = store.paint_frame(&req).unwrap().unwrap();
+        assert_eq!(paint_u32(&pan, 20), 2);
+        assert_eq!(
+            paint_u32(&pan, 24),
+            1,
+            "overlapping tile never crosses the wire twice"
+        );
+        assert!(paint_u32(&pan, 68) <= paint_u32(&pan, 64));
+        req.known = &[];
+        let full = store.paint_frame(&req).unwrap().unwrap();
+        assert_eq!(paint_u32(&full, 24), 2);
+        for i in 0..paint_u32(&pan, 20) as usize {
+            let at = 128 + i * 96;
+            let len = paint_u32(&pan, at + 24) as usize;
+            let src = if len > 0 { &pan } else { &first };
+            let key = &pan[at..at + 12];
+            let source_at = (0..paint_u32(src, 16) as usize)
+                .map(|j| 128 + j * 96)
+                .find(|&p| &src[p..p + 12] == key)
+                .unwrap();
+            let o = paint_u32(src, source_at + 20) as usize;
+            let n = paint_u32(src, source_at + 24) as usize;
+            let full_at = 128 + i * 96;
+            let fo = paint_u32(&full, full_at + 20) as usize;
+            let fl = paint_u32(&full, full_at + 24) as usize;
+            assert_eq!(&src[o..o + n], &full[fo..fo + fl]);
+        }
+        assert_eq!(
+            &pan[40..56],
+            &full[40..56],
+            "same window exposure and source encoding"
+        );
+        req.known = &keys;
+        req.window = [25.0, 50.0, 25.0, 50.0];
+        let zoom = store.paint_frame(&req).unwrap().unwrap();
+        assert_eq!(paint_u32(&zoom, 8), 0, "adjacent source level");
+        assert_eq!(paint_u32(&zoom, 12) & 1, 0);
+        req.width = 16;
+        req.height = 16;
+        let bounded = store.paint_frame(&req).unwrap().unwrap();
+        assert_eq!(
+            paint_u32(&bounded, 12) & 2,
+            0,
+            "resource coarsening is not an endless refine request"
+        );
+        assert_ne!(
+            paint_u32(&bounded, 12) & 4,
+            0,
+            "nonadjacent resource transition is disclosed"
+        );
+        assert!(paint_u32(&bounded, 68) <= paint_u32(&bounded, 64));
+    }
+
+    #[test]
+    fn colored_paint_uses_physical_alpha_and_append_invalidates_count_keys() {
+        let _guard = lock_budget();
+        budget_set(DEFAULT_RESIDENT_BUDGET_BYTES);
+        let x = vec![12.5; 5];
+        let y = x.clone();
+        let rgba = [255u8, 0, 0, 128].repeat(5);
+        let colors = kernels::BinColorSource::Rgba(&rgba);
+        let p = tiles::build_color(&x, &y, &colors, 0.0, 100.0, 0.0, 100.0, 512).unwrap();
+        let mut store = TileStore::spill(&p).unwrap();
+        let mut req = PaintRequest {
+            window: [0.0, 50.0, 0.0, 50.0],
+            width: 256,
+            height: 256,
+            opacity: 0.4,
+            known_generation: 0,
+            known_opacity: -1.0,
+            previous_level: -1,
+            known: &[],
+        };
+        let frame = store.paint_frame(&req).unwrap().unwrap();
+        let at = 128;
+        let offset = paint_u32(&frame, at + 20) as usize;
+        let width = paint_u32(&frame, at + 12) as usize;
+        let cell = offset + ((64 + 1) * width + 64 + 1) * 4;
+        let expected = ((1.0 - (1.0 - 128.0 / 255.0 * 0.4f64).powi(5)) * 255.0).round() as u8;
+        assert_eq!(frame[cell + 3], expected);
+        assert_eq!(frame[cell], expected, "premultiplied red");
+        let keys = paint_keys(&frame);
+        req.known = &keys;
+        req.known_generation = store.paint_generation;
+        req.known_opacity = 0.4;
+        assert_eq!(paint_u32(&store.paint_frame(&req).unwrap().unwrap(), 24), 0);
+        req.opacity = 0.5;
+        assert!(
+            paint_u32(&store.paint_frame(&req).unwrap().unwrap(), 24) > 0,
+            "opacity changes cannot reuse baked colors"
+        );
+        let plain = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 512).unwrap();
+        let mut plain = TileStore::spill(&plain).unwrap();
+        req.known_generation = plain.paint_generation;
+        let generation = plain.paint_generation;
+        assert!(plain.append(&[12.5], &[12.5]).unwrap());
+        assert_ne!(plain.paint_generation, generation);
+        assert!(paint_u32(&plain.paint_frame(&req).unwrap().unwrap(), 24) > 0);
     }
 }

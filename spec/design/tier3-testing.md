@@ -1,14 +1,15 @@
 # Tier-3 pyramid — testing best practices
 
-**Status:** product testing contract for the Phase-3 Tier-3 pyramid
-([lod-architecture.md](lod-architecture.md) §4 / Phase 3 items 6–7).
+**Status:** product testing contract for the Phase-3 Tier-3 pyramid and bounded
+Phase-4 spill/reuse evidence (#11). This does not establish the dedicated
+100M, larger-than-RAM, or integrated Phase-4 exit gates.
 
 The shippable product is the **square multi-resolution count pyramid**
 (`xyg_pyramid_build` → `compose` / `count` / `append` / `free`), available on
 Python and Node, with §28 `binning: "pyramid-L<l>[-upsampled]"`. Phase-4
 disk-resident 256² tile spill is a separate residency milestone: Rust ABI WP1
-is landed; host engagement is **not**
-required to claim Phase-3 Tier-3 ready.
+and Python/Node host engagement are landed. Their existence does not establish
+Phase-4 scale acceptance or the final candidate host matrix.
 
 ## What “scale” means in CI
 
@@ -49,15 +50,39 @@ required to claim Phase-3 Tier-3 ready.
 
 - `benchmarks/bench_tier3_pyramid.py` / `benchmarks/bench_tier3_pyramid_node.mjs`
   - Build at CI size (default 1_000_000).
-  - Compose ≥ 32 random windows at ≤ 512×384.
+  - Compose 32 deterministic windows at ≤ 512×384.
   - **Hard:** every reply is screen-bounded; `pyramidReportBytes ≪ 16N`.
   - **Soft / advisory:** compose p95 under a generous CI budget (e.g. 50 ms);
     never fail the suite solely on cold CI jitter.
 
+Both existing scripts also build a 1024² count pyramid from the same ≤1M
+canonical rows, spill it, and enforce a 2 MiB process-wide tile-residency
+budget. Thirty-two spilled compositions must match the in-memory grid and
+served level exactly. The in-memory pyramid is then freed; canonical input
+columns remain available and are not counted as tile-cache residency.
+
+The subsequent 32-frame pan sequence reports actual Rust-served tile keys,
+generation, exposure, missing tiles, and encoded reply bytes. Its simulated
+client retains only Rust-returned keys. Every omitted payload must already be
+held, and every active tile hash and exposure must match a separate uncached
+fetch-all sequence. Cached transfers must be strictly fewer than uncached
+transfers. The reply must remain within 256 descriptors and the eight-screen
+texture budget for its actual R8/RGBA8 format; reported CPU tile residency must
+return within the configured 2 MiB budget after each call. Nonzero hit and miss
+counters are required. All stores and budgets are released/restored on exit.
+
+The JSON `spill` section retains these counters, sizes, oracle disposition,
+and advisory timing. The timed cached sequence precedes the separate uncached
+validation; it does not compare cold and warm timings or assert the dedicated
+100M latency gate. Physical GPU allocation and pixel parity belong to the
+real-browser tile smoke. These MB-scale fixtures make no 100M/1B allocation
+and introduce no new workflow or required status.
+
 ### 5. Explicit non-goals for CI
 
 - Do not allocate 1B points to “prove” Tier-3.
-- Do not require Phase-4 tile spill/load for green CI.
+- Do not substitute these bounded spill/reuse checks for complete Phase-4
+  product/host acceptance or large-scale measured evidence.
 - Do not require 100M pan p95 &lt; 16 ms on shared runners (dossier Phase-3
   item 9 stays a dedicated perf gate / CodSpeed job when instrumented).
 
@@ -77,7 +102,24 @@ node benchmarks/bench_tier3_pyramid_node.mjs
 
 | Surface | Phase-3 pyramid | Phase-4 tile spill |
 | --- | --- | --- |
-| Rust ABI | ready | design |
-| Python | ready (interactive + first paint) | design |
-| Node | ready (`pyramid.js` + figure density) | design |
-| Browser paint | ready (consumes density grids) | design (tile-keyed cache pending) |
+| Rust ABI | ready | bounded spill/compose and keyed paint frames implemented (ABI 395) |
+| Python | ready (interactive + first paint) | tile-store facade and live binary inventory implemented |
+| Node | ready (`pyramid.js` + figure density) | tile-store facade and keyed paint-frame loader implemented |
+| Browser paint | ready (consumes density grids) | keyed texture reuse and crossfade implemented; full Phase-4 acceptance remains open |
+
+[Retained bounded results](../performance/tile-spill-bounded-2026-10-23/README.md)
+record actual native build/harness hashes, raw Python/Node reports, and their
+scope limits. The [tile painter contract](density-tile-painter.md) describes
+the protocol and real-browser proof.
+
+## Remaining #11 acceptance
+
+The structural harness above is only one part of #11. Corrupt/missing tile
+I/O, append refusal, predicate bypass, shared-budget pressure, and resource
+boundaries also require their focused kernel/host/browser fixtures. Scheduled
+or manual main performance runs must retain comparable spill/fetch/compose
+measurements, the real 100M colored memmap pan/zoom gate, and competitive
+Datashader/HoloViews/hvPlot/Plotly/Bokeh evidence with environment, source and
+artifact hashes, raw results, and reproduction commands. Reuse #876's
+resource-authorized harness and feed the accepted results into #113/#54;
+neither these timings nor integer-only planner cases close that scope.

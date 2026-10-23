@@ -145,11 +145,21 @@ Object.assign(ChartView.prototype, {
             continue;
           }
           const win = plan.win;
+          let tileControl=null;
+          if(g._tileCapable) {
+            const inventory=g._tileForceUncached?[]:Array.from((g._tileTextures || new Map()).values());
+            tileControl=new Uint8Array(32+inventory.length*12);
+            const d=new DataView(tileControl.buffer);tileControl.set([88,89,68,67]);d.setUint32(4,1,true);
+            d.setBigUint64(8,BigInt(g._tileGeneration || "0"),true);d.setFloat64(16,g._tileOpacity ?? -1,true);
+            d.setInt32(24,g._tileLevel ?? -1,true);d.setUint32(28,inventory.length,true);
+            inventory.forEach((t:any,i)=>{d.setUint32(32+i*12,t.level,true);d.setUint32(36+i*12,t.tx,true);d.setUint32(40+i*12,t.ty,true);});
+          }
           this.comm.send({
             type: "density_view", seq, trace: g.trace.id,
             x0: win[0], x1: win[1], y0: win[2], y1: win[3],
             w: plotW, h: plotH,
-          });
+            ...(tileControl?{tile_cache:true}:{}),
+          },tileControl?[tileControl]:[]);
           // A ladder-step request's reply is the one density reply allowed
           // to repaint a covered view (lodApplyDensityUpdate).
           if (plan.step) g._stepReqWin = win;
@@ -216,6 +226,9 @@ Object.assign(ChartView.prototype, {
   _densityRequestPlan(g, view) {
     const [x0, x1] = this._axisRange(g.xAxis, view);
     const [y0, y1] = this._axisRange(g.yAxis, view);
+    if (g._tileCapable && !g._filterDirty && !this._traceFilterKey(g)) {
+      return {win:[Math.min(x0,x1),Math.max(x0,x1),Math.min(y0,y1),Math.max(y0,y1)],step:false};
+    }
     // Filter-dirty (interaction spec §10 / §34): every grid on the client was
     // computed under a previous hidden-category set — including the standing
     // home aggregate, which would otherwise elide the request entirely. Force

@@ -1,0 +1,42 @@
+{
+  "status": "source-integration-validation-not-release-acceptance",
+  "artifactSource": "working-tree-build",
+  "baseCommit": "cbf2c0eb3fdc2bb4f1ec8dd1cede8f3f73158342",
+  "artifactCommit": null,
+  "commands": {
+    "interaction": "uv run python scripts/interaction_stress_smoke.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome --json /tmp/xyg-isolated-interaction-stress.json --markdown /tmp/xyg-isolated-interaction-stress.md",
+    "foundation": "XYG_WASM_FOUNDATION_REPORT=/tmp/xyg-tile-final-foundation.json node scripts/wasm_foundation_smoke.mjs"
+  },
+  "currentArtifactAndHarnessSha256": {
+    "target/release/libxyg_core.so": "6c4ab4ac2aa448942dcf42e4f3dfe74d07f4937cd1b0a5c80b52d46e6f16bca2",
+    "packages/xy-client/dist/index.js": "f4cde4d46a94800ff708b71f25c2bf0cb17ac106f292df845c5d6590d6fc5b82",
+    "packages/xy-client/dist/standalone.js": "9dbd8dc4c8ef27538ef96618873f7473269c8c391153037c06ae6358121541a6",
+    "packages/xy-client/dist/wasm-worker.js": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee",
+    "packages/xy-client/dist/xyg-wasm.wasm": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502",
+    "benchmarks/bench_interaction.py": "1197edac2e5d696b27c49fb49062259e9d0164130978b58c6173f66d621cf220",
+    "scripts/interaction_stress_smoke.py": "0b3a38d8c4828594869adb5368f22444d4d01a6c32e63548dd26bcb86b399ce9",
+    "scripts/verify_benchmark_report.py": "fc97e981e6e86516f3377364024b188dec59fdb768116fdf3c776d94b6ac672e",
+    "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+    "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24"
+  },
+  "retainedSha256": {
+    "interaction.json": "e764346cc52c17d7dc863c9539db813029d80fd860457428e5c49cbb76cd75b6",
+    "interaction.md": "d08d113cbf7fc79e65c107c09662885dbff10c3adda85008dc24409d56cbd0e9",
+    "interaction.log": "0eaf77f780ba20d7df1d4e2c717127e344aae1c9f0a9b3f16ceaa8b17aca84f6",
+    "initial-foundation-failure.log": "d9aa33db4a7cc126e17ddd21aa113da9393842f7d0fd33a6b2cac00f7e552272",
+    "initial-browser-checks.log": "25726de420b7631712e7c1a5e065e914f60285de070f8ba35099e07751fcbd57",
+    "xyg-tile-final-foundation.log": "bf964fe3d5a97e37110777fed37aa9d96e0278d43ec8bf46e63e0e45d8a47ba5",
+    "xyg-tile-final-foundation.json": "8b759e23c6a0435a095912866c22f502ac98f982c1310e08425cf90fea3f6b6f",
+    "xyg-tile-final-foundation.json.esm-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-tile-final-foundation.json.esm-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-tile-final-foundation.json.esm-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "xyg-tile-final-foundation.json.iife-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-tile-final-foundation.json.iife-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "xyg-tile-final-foundation.json.iife-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  "qualifications": [
+    "The interaction report records an editable installation metadata version; it imports the changed checkout source and loads the hashed worktree native/client assets. That metadata version is not the tested artifact identity.",
+    "Initial validation overlapped builds/browser/Rust activity; exact artifact hashes were not captured for those failed runs. Their raw logs are diagnostics, not final artifact qualification.",
+    "No budgets/assertions were relaxed. Quiet validation is evidence under quieter conditions, not proof of the original failures cause."
+  ]
+}

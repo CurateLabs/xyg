@@ -1,0 +1,36 @@
+{
+  "host": "node",
+  "family": "tier3_pyramid",
+  "n": 1000000,
+  "build_ms": 12.518397999999934,
+  "compose_p95_ms": 2.173864999999978,
+  "compose_n": 32,
+  "binnings": [
+    "pyramid-L0"
+  ],
+  "resident_bytes": 349524,
+  "raw_xy_bytes": 16000000,
+  "budget_ok": true,
+  "latency_advisory_ok": true,
+  "spill": {
+    "spill_ms": 16.477242000000047,
+    "compose_oracle_frames": 32,
+    "tile_frames": 32,
+    "tile_frame_p95_ms": 3.7026990000000524,
+    "timing_scope": "cached sequence before separate uncached validation; advisory only",
+    "cached_transferred_tiles": 2,
+    "uncached_transferred_tiles": 56,
+    "cached_reply_bytes": 143272,
+    "uncached_reply_bytes": 3737056,
+    "tiles": {
+      "hit": 475,
+      "miss": 5,
+      "resident_bytes": 1311200,
+      "spilled_bytes": 7606272,
+      "budget_bytes": 2097152,
+      "over_budget": false
+    },
+    "oracles_equal": true,
+    "budget_ok": true
+  }
+}

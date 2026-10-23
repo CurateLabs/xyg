@@ -1,0 +1,64 @@
+probe: XY_OK lit=222372 total=230232 labels=26 pick=1 row=1 selAll=4103 selSome=2053 active=1 btns=18 modebarHidden=1 modebarTopLeft=1 modebarHover=1 modebarNoCollapse=1 modebarMenu=1 modebarDrag=1 modebarSelect=1 lassoEdit=1 modebarExport=1 panToggle=1 zin=1 smooth=1 labelThrottle=1 hoverSkip=1 zanch=1 retarget=1 nosnap=1 prefetch=1 maxwait=1 box=1 xonly=1 zmode=1 densityLit=1 drill=1 pending=1 dblend=1 dseq=1 hov=1 sstale=1 sfresh=1 srestore=1 plut=1 reg=1 refresh=1 dpick=1 hold=1 zoomout=1 broad=1 dying=1 dback=1 dnorm=1 dnormDone=1 stale=1 thrash=1 qwire=1 stream=1 tj=30 td=16 malformed=1 pixdet=1 splitbuf=1 barBase=1 histBase=1 edgepad=1 mgrad=1 axisontop=1 mtipbase=1 mcorner=1 mstroke=1 bgrad=1 bcorner=1 msmooth=1 bgocc=1 occLav=16445 occGrid=783 occAlpha=0 occTicks=3/3 occResolution=rust_scene meancolor=1 dretire=1 graphA11y=1 vstyle=1 fluid=1 grew=1 pick2=1 destroyed=1 unsub=1 ctxloss=1 ctxcycles=3 ctxquiet=1 ctxpixels=1 ctxhashes=408441484,408441484,408441484,408441484 ctxpost=1 ctxevents=3/3 ctxcounts=3/3 dprw=1
+lit fraction: 96.586%, DOM chrome nodes: 26, pick hits: 1, row-decoded: 1, select all/sub: 4103/2053, mask active: 1, modebar btns: 18, hidden/top-left/hover/no-collapse/menu/drag/select/lasso-edit/export: 1/1/1/1/1/1/1/1/1, zoom-in: 1, box-zoom: 1, x-only zoom: 1, zoom-mode: 1, fluid: 1, resize grew: 1, pick realloc: 1, destroyed: 1, unsub: 1
+render smoke OK (no numpy): line + colored/sized scatter + density + area + bars + heatmap + picking + box-select + modebar/box-zoom + responsive resize + LOD drill-in + mark styling (gradient/radius/stroke/smooth) + chrome-under-bg stacking
+probe: XY_OK {"warmData":6,"warmBytes":969600,"steadyData":0,"steadySubBytes":4800,"inPlace":1,"lit":40497,"mismatch":0,"viewSendsHome":0,"viewSendsZoomed":2,"hasStyleBuf":1,"dprSameKeeps":1,"dprMoved":1,"dprChangeRebuilds":1}
+per-tick GPU upload: steady 4800 B via bufferSubData (full rebuild would re-upload 504000 B: 105x more); view round-trips: home=0/5 ticks, zoomed=2/6 ticks
+append stream smoke OK: tail-only uploads + pixel-identical + coalesced refines
+probe: XY_OK lit=16590 total=278512 labels=19
+lit fraction: 5.957%, DOM chrome nodes: 19
+render smoke OK
+  chart/business-overview: survived lifecycle (min lit 47841)
+  chart/retention-cohort: survived lifecycle (min lit 66560)
+  chart/grouped-bars: survived lifecycle (min lit 13934)
+  chart/stacked-bars: survived lifecycle (min lit 52925)
+  chart/horizontal-bars: survived lifecycle (min lit 33240)
+  chart/normalized-bars: survived lifecycle (min lit 55808)
+  chart/diverging-bars: survived lifecycle (min lit 14316)
+  chart/rounded-goal-bars: survived lifecycle (min lit 23562)
+  chart/line-walk: survived lifecycle (min lit 9217)
+  chart/area: survived lifecycle (min lit 33340)
+  chart/histogram: survived lifecycle (min lit 23116)
+  chart/histogram-x-zoom: survived lifecycle (min lit 12915)
+  chart/box-zoom-drag: survived lifecycle (min lit 15725)
+  chart/heatmap: survived lifecycle (min lit 66560)
+  chart/composed-layers: survived lifecycle (min lit 54060)
+  chart/annotated-heatmap: survived lifecycle (min lit 66560)
+  chart/axes-scales: survived lifecycle (min lit 2425)
+  chart/interaction-basics: survived lifecycle (min lit 1633)
+  chart/density-scatter: survived lifecycle (min lit 47805)
+  drilldown: survived lifecycle (min lit 26555)
+  index: 20 iframes painted
+lifecycle smoke OK: 19 charts + drilldown x 6 phases, min lit pixels 1633
+  business-overview: 900x470 non-white=173001 colored=171376 colors=354 ticks=0
+  retention-cohort: 900x470 non-white=257864 colored=255947 colors=358 ticks=0
+  grouped-bars: 900x470 non-white=97320 colored=95604 colors=374 ticks=0
+  stacked-bars: 900x470 non-white=183907 colored=182750 colors=373 ticks=0
+  horizontal-bars: 900x470 non-white=160709 colored=159127 colors=304 ticks=0
+  normalized-bars: 900x470 non-white=228821 colored=227217 colors=476 ticks=0
+  diverging-bars: 900x470 non-white=56838 colored=52969 colors=495 ticks=0
+  rounded-goal-bars: 900x470 non-white=131520 colored=123242 colors=1641 ticks=0
+  line-walk: 900x470 non-white=21226 colored=18654 colors=1019 ticks=0
+  area: 900x470 non-white=114741 colored=112238 colors=1238 ticks=0
+  histogram: 900x470 non-white=83893 colored=82666 colors=301 ticks=0
+  histogram-x-zoom: 900x470 non-white=86693 colored=85146 colors=426 ticks=0
+  box-zoom-drag: 900x470 non-white=67039 colored=65519 colors=372 ticks=0
+  heatmap: 900x470 non-white=257744 colored=256145 colors=362 ticks=0
+  composed-layers: 900x470 non-white=217410 colored=171498 colors=1295 ticks=0
+  annotated-heatmap: 900x470 non-white=262846 colored=256049 colors=959 ticks=0
+  axes-scales: 900x470 non-white=10817 colored=6802 colors=1289 ticks=0
+  interaction-basics: 900x470 non-white=7705 colored=5559 colors=838 ticks=0
+  density-scatter: 900x470 non-white=126198 colored=111271 colors=658 ticks=0
+  drilldown: rendered
+visual regression smoke OK: 19 charts + drilldown
+probe: XY_OK before_n=6631 before_dupes=3315 after_n=1999 after_dupes=999
+step tier smoke OK
+interaction stress smoke FAILED:
+  - rows[5].box_zoom_p95_ms 346 ms exceeds budget 300 ms
+FAILED interaction_stress_smoke with exit code 1
+RUN  render_smoke_nonumpy: stdlib payload render smoke in Chromium
+RUN  append_stream_smoke: streaming-append tail uploads + coalesced refines in Chromium
+RUN  smoke_render: real composed-chart HTML render smoke in Chromium
+RUN  reflex_lifecycle_smoke: Reflex example iframe lifecycle smoke in Chromium
+RUN  visual_regression_smoke: representative chart screenshot smoke in Chromium
+RUN  step_tier_smoke: step traces stay step-shaped through kernel tier updates
+RUN  interaction_stress_smoke: browser interaction stress smoke with latency/visual budgets

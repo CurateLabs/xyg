@@ -71,20 +71,20 @@ inside this frame; changing any of it means editing this section first.
 
 ### D1 — Tile key and on-disk layout: fixed mmap slabs
 
-- **Key:** `(level, tx, ty)` — level 0 is the coarsest (1 tile), level *l*
+- **Key:** `(level, tx, ty)` — level 0 is the finest (`base_dim`), each higher level halves the dimension; level *l*
   has up to `ceil(dim_l/256)²` tiles over the pyramid’s square level grids.
 - **Layout:** one spill file per pyramid. Fixed header (magic `XYTS`,
   format version u32, base dim, level count, plane flags), then a dense
   count region and — for colored pyramids — a dense color region, each
-  ordered coarsest level first, row-major `(ty, tx)` within a level. Every
+  ordered coarsest level first (highest level index first), row-major `(ty, tx)` within a level. Every
   slab is a fixed 256²-cell block (count: 256 KiB of u32; color: 512 KiB of
   `[u16; 4]`); levels smaller than 256² store one zero-padded slab. Fixed
   slabs make every offset closed-form arithmetic — no per-tile directory
   lookup on the read path — and 4 KiB pages divide the slab size, so mmap
   reads stay page-aligned. Values are native-endian: the file is a
   **per-process rebuildable cache** (§27), never an interchange format, with
-  the same lifecycle as `xyg._ooc` canonical memmaps (process-scoped temp,
-  deleted on free/exit).
+  process-scoped temporary ownership, deleted on free/exit. User-owned
+  canonical memmaps are retained; they have a different lifecycle.
 - **Why not Arrow/Parquet (MVP):** the win Arrow buys (interchange,
   schema evolution, ecosystem readers) is worth nothing for a file that
   never leaves the process and can always be discarded and rebuilt; the
@@ -250,10 +250,15 @@ inside this frame; changing any of it means editing this section first.
 - [x] First paint + `density_view` prefer spilled tiles when the resident pyramid
   would exceed budget.
 
-### WP3 — Client (optional follow-on, [#10](https://github.com/CurateLabs/xyg/issues/10))
+### WP3 — Client (implemented, [#10](https://github.com/CurateLabs/xyg/issues/10))
 
-- Tile-keyed density cache in `js/src/45_lod.ts` (Phase-3 item 8) so pan
-  reuses textures keyed by `(level, tx, ty)`.
+- Tile-keyed density cache in `js/src/45_lod.ts` (Phase-3 item 8) reuses
+  Rust-served `(generation, level, tx, ty)` textures. Binary XYDC inventory
+  observations and XYDT painter frames keep level, encoding and retention
+  policy in Rust. See [density-tile-painter.md](density-tile-painter.md) for
+  the exact format, unchanged eight-screen-texture ceiling, explicit GPU
+  resource coarsening exception to adjacent changes, and cached/fetch-all
+  pixel/upload proofs. D3 CPU pinning behavior is unchanged.
 
 ### WP4 — Evidence ([#11](https://github.com/CurateLabs/xyg/issues/11))
 

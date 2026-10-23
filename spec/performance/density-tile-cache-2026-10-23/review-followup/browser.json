@@ -1,0 +1,831 @@
+{
+  "schema": "xyg-density-tile-smoke-v1",
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "native_abi": 395
+  },
+  "scope": "current-source native Rust and bundled painter; cache oracle fetches all tiles at identical Rust-served framing/level/exposure",
+  "browser": {
+    "count": {
+      "first": {
+        "received": 4,
+        "uploads": 4,
+        "retained": 0,
+        "gpuBytes": 266256,
+        "budget": 697536,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 4
+      },
+      "pan": {
+        "received": 2,
+        "uploads": 2,
+        "retained": 4,
+        "gpuBytes": 399384,
+        "budget": 697536,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 6
+      },
+      "insidePan": {
+        "received": 0,
+        "uploads": 0,
+        "retained": 6,
+        "gpuBytes": 399384,
+        "budget": 697536,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 6
+      },
+      "uncached": {
+        "received": 4,
+        "uploads": 4,
+        "retained": 0,
+        "gpuBytes": 266256,
+        "budget": 697536,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 10
+      },
+      "pixelDifferences": 0,
+      "cachedCapture": {
+        "alphaPixels": 6426,
+        "sha256": "283f8015799e2078536234b9ad99cea96f9939de268968902d7f26ac8d5a086f",
+        "densityPixels": 6426
+      },
+      "uncachedCapture": {
+        "alphaPixels": 6426,
+        "sha256": "283f8015799e2078536234b9ad99cea96f9939de268968902d7f26ac8d5a086f",
+        "densityPixels": 6426
+      },
+      "zoomCapture": {
+        "alphaPixels": 14212,
+        "sha256": "418e41830b9b2c9b91ffb63d25119baf3e6d86c7ddedbb065c5d6bfb797f995f",
+        "densityPixels": 14212
+      },
+      "ordinaryLevels": [
+        0,
+        1
+      ],
+      "adjacentFade": true,
+      "wideViewport": {
+        "requestedWidth": 4924,
+        "servedWidth": 4096,
+        "capture": {
+          "alphaPixels": 86403,
+          "sha256": "dbf6c3e508109e57beb770f2beb6cd5f88f763d6c9f2a6cdf51fe4905eb24422",
+          "densityPixels": 86403
+        },
+        "pixelDifferences": 0,
+        "sizeRefusal": true
+      },
+      "sameLevelResize": {
+        "servedLevel": 1,
+        "removedSourceTiles": 3,
+        "stats": {
+          "received": 0,
+          "uploads": 0,
+          "retained": 10,
+          "gpuBytes": 665640,
+          "budget": 697536,
+          "level": 1,
+          "resourceCoarsened": false,
+          "requestUploads": 29
+        },
+        "capture": {
+          "alphaPixels": 14212,
+          "sha256": "418e41830b9b2c9b91ffb63d25119baf3e6d86c7ddedbb065c5d6bfb797f995f",
+          "densityPixels": 14212
+        },
+        "pixelDifferences": 0,
+        "fadeCompleted": true
+      },
+      "adjacentResize": {
+        "servedLevel": 2,
+        "removedSourceTiles": 2,
+        "stats": {
+          "received": 1,
+          "uploads": 1,
+          "retained": 2,
+          "gpuBytes": 199692,
+          "budget": 240096,
+          "level": 2,
+          "resourceCoarsened": false,
+          "requestUploads": 34
+        },
+        "capture": {
+          "alphaPixels": 10254,
+          "sha256": "6d85528de6238e8a675b1b75e590a25155aafaf84c2ef63c3b8f491a446f72e5",
+          "densityPixels": 10254
+        },
+        "pixelDifferences": 0,
+        "fadeCompleted": true
+      },
+      "malformedFormatFlip": true,
+      "legacyOverlayRetirement": true,
+      "sharedOverlayPreserved": true,
+      "malformedAndStale": true,
+      "disposed": true
+    },
+    "color": {
+      "first": {
+        "received": 4,
+        "uploads": 4,
+        "retained": 0,
+        "gpuBytes": 1065024,
+        "budget": 2790144,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 4
+      },
+      "pan": {
+        "received": 2,
+        "uploads": 2,
+        "retained": 4,
+        "gpuBytes": 1597536,
+        "budget": 2790144,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 6
+      },
+      "insidePan": {
+        "received": 0,
+        "uploads": 0,
+        "retained": 6,
+        "gpuBytes": 1597536,
+        "budget": 2790144,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 6
+      },
+      "uncached": {
+        "received": 4,
+        "uploads": 4,
+        "retained": 0,
+        "gpuBytes": 1065024,
+        "budget": 2790144,
+        "level": 0,
+        "resourceCoarsened": false,
+        "requestUploads": 10
+      },
+      "pixelDifferences": 0,
+      "cachedCapture": {
+        "alphaPixels": 6534,
+        "sha256": "f65f7ac6b35ae39296810df7d1cb29e686494cb3569bf1dd8f94a083e88e9483",
+        "densityPixels": 6534
+      },
+      "uncachedCapture": {
+        "alphaPixels": 6534,
+        "sha256": "f65f7ac6b35ae39296810df7d1cb29e686494cb3569bf1dd8f94a083e88e9483",
+        "densityPixels": 6534
+      },
+      "zoomCapture": {
+        "alphaPixels": 14490,
+        "sha256": "01cb764ef1e876db9bdfe762d6cf6e69bad9dde374e2165aa91d59d5a2a8c4cd",
+        "densityPixels": 14490
+      },
+      "ordinaryLevels": [
+        0,
+        1
+      ],
+      "adjacentFade": true,
+      "wideViewport": {
+        "requestedWidth": 4924,
+        "servedWidth": 4096,
+        "capture": {
+          "alphaPixels": 87813,
+          "sha256": "20dc50244e3e4d1e15aaa8013947d016d3ea8c65e98596d40ea55fb36a233bae",
+          "densityPixels": 87813
+        },
+        "pixelDifferences": 0,
+        "sizeRefusal": true
+      },
+      "sameLevelResize": {
+        "servedLevel": 1,
+        "removedSourceTiles": 3,
+        "stats": {
+          "received": 0,
+          "uploads": 0,
+          "retained": 10,
+          "gpuBytes": 2662560,
+          "budget": 2790144,
+          "level": 1,
+          "resourceCoarsened": false,
+          "requestUploads": 29
+        },
+        "capture": {
+          "alphaPixels": 14490,
+          "sha256": "01cb764ef1e876db9bdfe762d6cf6e69bad9dde374e2165aa91d59d5a2a8c4cd",
+          "densityPixels": 14490
+        },
+        "pixelDifferences": 0,
+        "fadeCompleted": true
+      },
+      "adjacentResize": {
+        "servedLevel": 2,
+        "removedSourceTiles": 2,
+        "stats": {
+          "received": 1,
+          "uploads": 1,
+          "retained": 2,
+          "gpuBytes": 798768,
+          "budget": 960384,
+          "level": 2,
+          "resourceCoarsened": false,
+          "requestUploads": 34
+        },
+        "capture": {
+          "alphaPixels": 10489,
+          "sha256": "80d95c976735d0e1eab4d718ca2e406756dd6e8ac5b022ea25e739b073dc28b4",
+          "densityPixels": 10489
+        },
+        "pixelDifferences": 0,
+        "fadeCompleted": true
+      },
+      "malformedFormatFlip": true,
+      "legacyOverlayRetirement": true,
+      "sharedOverlayPreserved": true,
+      "malformedAndStale": true,
+      "disposed": true
+    }
+  },
+  "requests": [
+    {
+      "case": "count",
+      "seq": 1,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 266768,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "66afadb0906c8dd9f3b327f7f90a6a3c11f066241d6dd10258501d1f06e8a5eb"
+    },
+    {
+      "case": "count",
+      "seq": 2,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 133832,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 2,
+      "sha256": "36f6150d67c3dd64b509fcff562971e70517aa48c1a040a3ebd98b048fc1cbd9"
+    },
+    {
+      "case": "count",
+      "seq": 3,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 704,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "1ab2cda93ac0c15f31549a28a40c64dd906b98696c1686779b2342dfa99150f1"
+    },
+    {
+      "case": "count",
+      "seq": 4,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 704,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "01a0bbcfb7a61cfef3834e03ace658fee9f6836c2e28cff572fb103b8ab2c7c8"
+    },
+    {
+      "case": "count",
+      "seq": 5,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 266768,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "acdce5a7037c03fd66df613d0eb306684c6f3bba0ea5e74d93b49597f2399098"
+    },
+    {
+      "case": "count",
+      "seq": 6,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 512,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "599eabcf4b4b1a7df7952ae4f17d3899768cd3a1268c9069cc4a14f5b4eda25d"
+    },
+    {
+      "case": "count",
+      "seq": 7,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 267152,
+      "level": 1,
+      "flags": 0,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "6875b856cc048329517daef0cf124ebcfbe800454076720720fc15bdf8df03a0"
+    },
+    {
+      "case": "count",
+      "seq": 9,
+      "requested_size": [
+        4924,
+        238
+      ],
+      "served_size": [
+        4096,
+        238
+      ],
+      "bytes": 134216,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 2,
+      "sha256": "5e201853b068f6ff108e917a10d06ee03bca1bd5c420c603d11bcfa00ba10cf0"
+    },
+    {
+      "case": "count",
+      "seq": 10,
+      "requested_size": [
+        4924,
+        238
+      ],
+      "served_size": [
+        4096,
+        238
+      ],
+      "bytes": 1088,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "607b3d6e5305095cb6794180e1854aa85be9238ba232b68c946b465755dc7d1a"
+    },
+    {
+      "case": "count",
+      "seq": 11,
+      "requested_size": [
+        4924,
+        238
+      ],
+      "served_size": [
+        4096,
+        238
+      ],
+      "bytes": 266768,
+      "level": 0,
+      "flags": 0,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "8202a5f5e6844c4cc4931b3f29df7c113da707a0f4e29462c2d39192c6f9723a"
+    },
+    {
+      "case": "count",
+      "seq": 13,
+      "requested_size": [
+        484,
+        338
+      ],
+      "served_size": [
+        484,
+        338
+      ],
+      "bytes": 333812,
+      "level": 0,
+      "flags": 0,
+      "active": 9,
+      "fetches": 5,
+      "sha256": "29edd80f849345a8cde8cc6e45cd468326a646e24841f5eee9ffe3b376cd56f8"
+    },
+    {
+      "case": "count",
+      "seq": 14,
+      "requested_size": [
+        484,
+        338
+      ],
+      "served_size": [
+        484,
+        338
+      ],
+      "bytes": 267632,
+      "level": 1,
+      "flags": 0,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "47d0967589259de7fc28387f43992539cb2c8d10879508137780e97c9634b003"
+    },
+    {
+      "case": "count",
+      "seq": 16,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 1088,
+      "level": 1,
+      "flags": 0,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "381599941de5f4d09aec152c22ba06a2eea9d0b26a92ffcca6de246fb6652e59"
+    },
+    {
+      "case": "count",
+      "seq": 17,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 266768,
+      "level": 1,
+      "flags": 0,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "98521e9d9919cc97e9be9fdb28e803ffa40669b5ddb5b06c8ce3ae3d133726b7"
+    },
+    {
+      "case": "count",
+      "seq": 19,
+      "requested_size": [
+        246,
+        122
+      ],
+      "served_size": [
+        246,
+        122
+      ],
+      "bytes": 66980,
+      "level": 2,
+      "flags": 0,
+      "active": 1,
+      "fetches": 1,
+      "sha256": "72ca7f2862a06b32eacd451ec6797768655e6759e90dcc0a86e33066b39bda9d"
+    },
+    {
+      "case": "count",
+      "seq": 20,
+      "requested_size": [
+        246,
+        122
+      ],
+      "served_size": [
+        246,
+        122
+      ],
+      "bytes": 66788,
+      "level": 2,
+      "flags": 0,
+      "active": 1,
+      "fetches": 1,
+      "sha256": "6ef25e9bbbc2c2d1aea794a8b9f2d25f549252bc40ee86a7f7bc01879efcb6b2"
+    },
+    {
+      "case": "color",
+      "seq": 1,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 1065536,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "8cacec8f0df4602cc862a0fe21145a3dc7d723f56affb740e94e620f2cf33ebd"
+    },
+    {
+      "case": "color",
+      "seq": 2,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 533216,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 2,
+      "sha256": "f0d5de550fe7e0f25bffc73efaee8f0a4418c4519b5be75eec880dbdc68f06ad"
+    },
+    {
+      "case": "color",
+      "seq": 3,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 704,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "0ce65bcda7997c5312ea1febf4a2fc8017146b4131bebc6b6f1c5fdb38963eda"
+    },
+    {
+      "case": "color",
+      "seq": 4,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 704,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "65c8c7c9eee2fcd2896199b54bade3dc1afd81113e5b6d0043b23ac63ba40f53"
+    },
+    {
+      "case": "color",
+      "seq": 5,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 1065536,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "8633886cf12a2d24aec96aefcf980d2ac3859bf3a99b10905dbd0af2e442f843"
+    },
+    {
+      "case": "color",
+      "seq": 6,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 512,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "ea1b9120a549076284bd75ef04020475f65255055bf3f2e07c7655ddc9a9c5b6"
+    },
+    {
+      "case": "color",
+      "seq": 7,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 1065920,
+      "level": 1,
+      "flags": 1,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "a4905954929d40c18544de94146a757d2d0ea82950e2036cacceb43a2d1a947d"
+    },
+    {
+      "case": "color",
+      "seq": 9,
+      "requested_size": [
+        4924,
+        238
+      ],
+      "served_size": [
+        4096,
+        238
+      ],
+      "bytes": 533600,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 2,
+      "sha256": "f2431b8db54c0d4cc327b507f59da235ce8cf3224ebfd6e45f4b5e2678860a2e"
+    },
+    {
+      "case": "color",
+      "seq": 10,
+      "requested_size": [
+        4924,
+        238
+      ],
+      "served_size": [
+        4096,
+        238
+      ],
+      "bytes": 1088,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "32e754f8319006d1bdcb10f78b5c1cb433f6037820be6ca7c7aaad1a7c655593"
+    },
+    {
+      "case": "color",
+      "seq": 11,
+      "requested_size": [
+        4924,
+        238
+      ],
+      "served_size": [
+        4096,
+        238
+      ],
+      "bytes": 1065536,
+      "level": 0,
+      "flags": 1,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "203db99fa1e8b9786d0054b2ca594544b12a0054bba74c594829a746ddce492f"
+    },
+    {
+      "case": "color",
+      "seq": 13,
+      "requested_size": [
+        484,
+        338
+      ],
+      "served_size": [
+        484,
+        338
+      ],
+      "bytes": 1332272,
+      "level": 0,
+      "flags": 1,
+      "active": 9,
+      "fetches": 5,
+      "sha256": "f3020fb730f340c040cd5367f3a0779d722a7c0bf61bd9813a0bb3429de4ecb4"
+    },
+    {
+      "case": "color",
+      "seq": 14,
+      "requested_size": [
+        484,
+        338
+      ],
+      "served_size": [
+        484,
+        338
+      ],
+      "bytes": 1066400,
+      "level": 1,
+      "flags": 1,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "ed1d845577582eda4236000d5910e1be6608a37240b2ea731c570695642ed513"
+    },
+    {
+      "case": "color",
+      "seq": 16,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 1088,
+      "level": 1,
+      "flags": 1,
+      "active": 4,
+      "fetches": 0,
+      "sha256": "52f8361459d60e46be22e89b175f840e72e6124df15fc17d108f9f4f94525972"
+    },
+    {
+      "case": "color",
+      "seq": 17,
+      "requested_size": [
+        346,
+        252
+      ],
+      "served_size": [
+        346,
+        252
+      ],
+      "bytes": 1065536,
+      "level": 1,
+      "flags": 1,
+      "active": 4,
+      "fetches": 4,
+      "sha256": "8765f1d7f747758ecc732873defb5ea8b7a5bf716fbb74b0989a4cf5ddd751fa"
+    },
+    {
+      "case": "color",
+      "seq": 19,
+      "requested_size": [
+        246,
+        122
+      ],
+      "served_size": [
+        246,
+        122
+      ],
+      "bytes": 266672,
+      "level": 2,
+      "flags": 1,
+      "active": 1,
+      "fetches": 1,
+      "sha256": "2ba71cc37ff37b230b67a87cfe27bcf9da98f571ca821da607f81fcfdd50e628"
+    },
+    {
+      "case": "color",
+      "seq": 20,
+      "requested_size": [
+        246,
+        122
+      ],
+      "served_size": [
+        246,
+        122
+      ],
+      "bytes": 266480,
+      "level": 2,
+      "flags": 1,
+      "active": 1,
+      "fetches": 1,
+      "sha256": "291eb2a7ebb6e1f1665316aa1929ec906805a0dbf28ef7d2799f44a62cef30d9"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "schema": "xyg-density-tile-review-proof-v1",
+  "status": "passed",
+  "scope": "Current source-dist/native browser and bounded Node follow-up; not a frozen wheel or published release acceptance. Prior point-in-time proof is retained unchanged.",
+  "base_commit": "12eb6ff8f1d03a5618f21279c68154715916bf38",
+  "review_comments": [
+    "https://github.com/CurateLabs/xyg/pull/1065#discussion_r4356038988",
+    "https://github.com/CurateLabs/xyg/pull/1065#discussion_r4356038994"
+  ],
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "node": "v24.21.0",
+    "chromium": "Google Chrome for Testing 156.0.8078.4"
+  },
+  "commands": [
+    "node js/build.mjs",
+    "python3 scripts/verify_wasm_assets.py",
+    "python3 scripts/density_tile_smoke.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" node --test packages/xy-node/test/pyramid.test.mjs",
+    "uv run ruff check scripts/density_tile_smoke.py",
+    "uv run ruff format --check scripts/density_tile_smoke.py"
+  ],
+  "sources": {
+    "js/src/45_lod.ts": {
+      "bytes": 79153,
+      "sha256": "402f566336993d58f2c1decc6603b510c8532e384a24f9f344a0074fe02ad554"
+    },
+    "scripts/density_tile_smoke.py": {
+      "bytes": 18339,
+      "sha256": "2465995d71fb0e183e752d0b487cfa7df91d22c8676fe56305e638ce1f19a431"
+    },
+    "packages/xy-node/src/pyramid.js": {
+      "bytes": 17744,
+      "sha256": "de505c5d95366ebc7bf74dc3b70bc7e3206782fee5ed3e7c18543bffd37a992b"
+    },
+    "packages/xy-node/test/pyramid.test.mjs": {
+      "bytes": 13454,
+      "sha256": "d83e1c72b0160a170a2f5c3c630a67e142144d9a689b60f09debc1ebc5e8cc71"
+    },
+    "spec/design-dossier.md": {
+      "bytes": 281509,
+      "sha256": "5de490b6f6dbe9ce333692578243a19ad78dbccb1729ffc41b71d5b32efccf18"
+    },
+    "spec/design/density-tile-painter.md": {
+      "bytes": 8801,
+      "sha256": "ac48073ec113d705156acddba7b6d0093ae216925b55b904a12659c1c62e2783"
+    },
+    "spec/design/lod-architecture.md": {
+      "bytes": 57802,
+      "sha256": "68c88f1111fa92bb1618f169dd35e770b3ae1e55137d800d1c9be6ee558066aa"
+    },
+    "crates/xyg-engine/src/tile_store.rs": {
+      "bytes": 56393,
+      "sha256": "104a45ad1758daec3a2e84e1fcb445bd3ba0bad72f272fc0777044ebd98af8b8"
+    },
+    "crates/xyg-engine/src/tile_store/paint.rs": {
+      "bytes": 14686,
+      "sha256": "66aa2ec7442e22f5af0eb86246aec47f0fef13df80b6e6aba2a56807212fe914"
+    },
+    "crates/xyg-core/src/lib.rs": {
+      "bytes": 1047857,
+      "sha256": "d344de82a8ad7b81958f32093a842ff0897259ccb563370a29a267354e0a070d"
+    }
+  },
+  "generated_artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 5597880,
+      "sha256": "6c4ab4ac2aa448942dcf42e4f3dfe74d07f4937cd1b0a5c80b52d46e6f16bca2",
+      "matches_original_proof": true
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757006,
+      "sha256": "b7bf5702e7d28647b651777c364a8ec6c82403e145d16475ef8e06484b8ddfce",
+      "matches_original_proof": false
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757037,
+      "sha256": "8cb331481653b845d7e081d340c459a914115dddf8864095d502af5f9d664149",
+      "matches_original_proof": false
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 52693,
+      "sha256": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee",
+      "matches_original_proof": true
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1542339,
+      "sha256": "5327ad581ace763e476c9c380e26922a4f257ba8650d0fabe4700536eff22502",
+      "matches_original_proof": true
+    }
+  },
+  "failed_regressions": [
+    {
+      "file": "red-wide-viewport.log",
+      "phase": "extended native/browser probe against pre-repair 12eb6ff8 client; requested4924 returned4096 but displayed346",
+      "qualifications": "Source phase known; intermediate generated-bundle and harness hashes were not separately captured. Final producer fingerprints are below."
+    },
+    {
+      "file": "red-active-fade.log",
+      "phase": "P1-only intermediate client; actual560-to400 resize during active L0-toL1 fade leaves incomplete outgoing source",
+      "qualifications": "Intermediate failure log retained; it is not final candidate validation."
+    }
+  ],
+  "checks": {
+    "client_typecheck_shader_lint_bundle": "passed",
+    "packaged_wasm_assets": "verified",
+    "browser": "counts and means: wide/clamped admission, refusal, same-level active-fade and adjacent resize oracles all passed; prior full probe also passed",
+    "node_pyramid_tests": 15,
+    "native_abi": 395,
+    "native_source_and_binary_changed": false
+  },
+  "root_validation": "validation-provenance.json",
+  "historical_records": {
+    "browser.json": {
+      "bytes": 7165,
+      "sha256": "80ce5771e3df50106f521edf50349723d017c4032148c25bdf955f99815cff23"
+    },
+    "provenance.json": {
+      "bytes": 4640,
+      "sha256": "bc997a9043e074a6724e41d9d1e11b65e823896da52ed1c1b4f465d7a0c2fc59"
+    }
+  },
+  "retained": {
+    "browser.json": {
+      "bytes": 18179,
+      "sha256": "3ce55862c7dd4cebff040e84eff16eecc756a4c1ffdd0d5b57beca29a164fc7b"
+    },
+    "red-wide-viewport.log": {
+      "bytes": 211,
+      "sha256": "012ac481bbeebbbfd4de2b3d2267d30347615c9256e14a457b3b651f6b33fc7b"
+    },
+    "red-active-fade.log": {
+      "bytes": 259,
+      "sha256": "4ebf61989ec24fc0dbee86bd10c91c2f342f6a0553f463f55c853adeae3620ac"
+    },
+    "client-build.log": {
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "node-tests.log": {
+      "bytes": 1274,
+      "sha256": "aa40522ae5e5f066f2a7e8494459cbac9dd8013f2839d914fa6ecfc9a5853f39"
+    },
+    "README.md": {
+      "bytes": 3837,
+      "sha256": "4a05825e76a8439518e0083ef4760ecc73dd588ae31b8f1a032d1da1aa218c01"
+    }
+  }
+}
