@@ -6,7 +6,10 @@ import runpy
 from pathlib import Path
 
 import pytest
-from streamlit.testing.v1 import AppTest
+
+# The Python-floor lane deliberately installs only XYG + pytest. The required
+# application gate installs the locked dev group and starts real Streamlit apps.
+AppTest = pytest.importorskip("streamlit.testing.v1").AppTest
 
 APP = Path(__file__).resolve().parents[1] / "examples" / "streamlit" / "app.py"
 

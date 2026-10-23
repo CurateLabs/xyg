@@ -32,6 +32,12 @@ A rerun produces a fresh document. A missing dynamic tick attachment fails
 closed; an iframe must not guess Worker URLs or invent JavaScript ticks.
 Hosted tick tests must serve explicit same-origin packaged Worker/WASM URLs.
 
+The AppTest module skips when the optional Streamlit framework is absent, as
+in the minimal Python-floor lane (XYG plus pytest only). The required application
+lane installs the locked development group and runs the unconditional real-app
+consumer gate, which fails on missing Streamlit or other prerequisites. Optional
+test collection must not turn that required consumer proof into a skip.
+
 ## Node / vanilla TypeScript
 
 `examples/vanilla-ts/server.mjs` serves the shared client and Rust-backed Node
