@@ -641,7 +641,7 @@ including heatmap after #261.
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **123 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **131 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
 
@@ -775,10 +775,17 @@ the path measured rather than the identity fast path. Browser input-to-pixel
 latency stays in `bench_interaction.py`; before this module a selection
 regression could only surface as browser wall-clock noise.
 
-**`benchmarks/test_codspeed_kernels.py` — 80 rows** (75 functions; three are
+**`benchmarks/test_codspeed_kernels.py` — 88 rows** (78 functions; six are
 parametrized, over 2 ingest flavors, 3 `bin_2d` thread-cap regimes, and the 3
 #1006 triangle-mesh tier thresholds of `test_svg_export_triangle_mesh_tier_thresholds`:
-1,024, 49,920, and 50,176 faces). This is
+1,024, 49,920, and 50,176 faces; the spill snapshot and compose cases each
+expand over count/mean-color, and fetch expands over count/mean-color ×
+warm-hit/miss-with-eviction). The eight spill rows measure snapshot/teardown,
+preallocated C-ABI fetch, and the allocating Python/native compose wrapper.
+Their bounded source construction stays outside timing; simulation measures
+CPU work rather than disk wall latency. The color variants use explicit test
+parametrization so the static inventory and pytest collection agree. These
+are new rows; no existing row is renamed or removed. This is
 the bulk of the suite and covers the native compute core the rest of the engine
 sits on: decimation tiers, f32 encoding, and zone maps (`spec/design-dossier.md`
 §5, §4/§16, and §22 respectively), plus the end-to-end figure → wire-payload

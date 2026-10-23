@@ -646,7 +646,7 @@ def test_pyramid_compose(benchmark, pyramid_handle):
     assert result is not None
 
 
-@pytest.fixture(params=[False, True], ids=["counts", "mean-color"])
+@pytest.fixture
 def spill_pyramid(request):
     """MB-scale disk fixtures; setup and source generation stay outside timing."""
     rng = np.random.default_rng(73)
@@ -678,6 +678,9 @@ def spill_store(spill_pyramid):
         assert k.tile_budget_set(0)
 
 
+@pytest.mark.parametrize(
+    "spill_pyramid", [False, True], indirect=True, ids=["counts", "mean-color"]
+)
 def test_tile_spill_snapshot(benchmark, spill_pyramid):
     """Snapshot + store teardown; simulation tracks CPU, not disk wall latency."""
     handle, _ = spill_pyramid
@@ -692,6 +695,9 @@ def test_tile_spill_snapshot(benchmark, spill_pyramid):
 
 
 @pytest.mark.parametrize("cache", ["hit", "miss-with-eviction"])
+@pytest.mark.parametrize(
+    "spill_pyramid", [False, True], indirect=True, ids=["counts", "mean-color"]
+)
 def test_tile_fetch(benchmark, spill_store, cache):
     """Generated C ABI, preallocated output; no new public host fetch API."""
     store, colored = spill_store
@@ -724,6 +730,9 @@ def test_tile_fetch(benchmark, spill_store, cache):
     assert stats[2] <= stats[4]
 
 
+@pytest.mark.parametrize(
+    "spill_pyramid", [False, True], indirect=True, ids=["counts", "mean-color"]
+)
 def test_tile_compose(benchmark, spill_store, spill_pyramid):
     """Warm screen-bounded compose compared with the resident count/color oracle."""
     store, colored = spill_store
