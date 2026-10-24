@@ -42,6 +42,10 @@ new creation attempt or storage event fails. Context loss alone cannot supply
 deletion evidence. The independent verifier replays creation/storage/deletion
 events, category counts, capacity changes and peaks rather than trusting the
 aggregate cleanup flags.
+For each schema-2 journey, the category-derived keyed-tile peak must also be
+at least the largest sampled allocation independently bound to the native
+tile inventory. Relabeling tile resources as another category cannot lower
+the accepted peak below those observed bytes.
 
 The existing cached/fetch-all deterministic journey and monolithic seam oracle
 remain intact. A **third browser chart over the same host figure/source/store**

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import gzip
 import json
 import os
 import signal
@@ -339,6 +340,36 @@ def test_owned_lifetime_mutations_fail(pair, field, value):
     report, host = copy.deepcopy(pair)
     report["browser"]["runs"]["normal"]["gpu"][field] = value
     assert verify.validate(report, host, environ={})
+
+
+@pytest.mark.parametrize("mode", ["cached", "fetch-all", "normal"])
+def test_relabelled_tile_resources_cannot_understate_native_inventory(mode):
+    # Reuse authentic bounded bytes; this metadata mutation needs no browser.
+    retained = ROOT / "spec/performance/colored-owned-resources-2026-10-24"
+    report = json.loads(gzip.decompress((retained / "browser.json.gz").read_bytes()))
+    host = gzip.decompress((retained / "host.json.gz").read_bytes())
+    assert verify.validate(report, host, environ={}) == []
+    run = report["browser"]["runs"][mode]
+    gpu = run["gpu"]
+    tiles = [r for r in gpu["resources"] if r["category"] == "tiles"]
+    kept = min(tiles, key=lambda r: r["bytes"])
+    for resource in tiles:
+        if resource is not kept:
+            resource["category"] = "chart"
+    for category, counts in gpu["categories"].items():
+        counts["created"] = counts["deleted"] = sum(
+            r["category"] == category for r in gpu["resources"]
+        )
+    live = {}
+    gpu["tilePeakBytes"] = 0
+    for event in gpu["events"]:
+        live[event["id"]] = 0 if event["op"] == "delete" else event["bytes"]
+        gpu["tilePeakBytes"] = max(gpu["tilePeakBytes"], live.get(kept["id"], 0))
+    assert 0 < gpu["tilePeakBytes"] < max(s["stats"]["allocatedTileBytes"] for s in run["samples"])
+    # Category totals and allocation replay agree with each other; only the
+    # independent native inventory exposes this understated tile classification.
+    verify.owned_gpu(gpu)
+    assert verify.validate(report, host, environ={}) == ["owned tile peak below native inventory"]
 
 
 def test_reallocation_event_cannot_be_omitted_from_peak(pair):

@@ -606,6 +606,11 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
             gpu["peakInstrumentedBytes"] >= max(s["stats"]["gpuBytes"] for s in samples),
             "GPU peak below live allocation",
         )
+        if modern:
+            require(
+                gpu["tilePeakBytes"] >= max(s["stats"]["allocatedTileBytes"] for s in samples),
+                "owned tile peak below native inventory",
+            )
     require(
         0 <= transferred["cached"] < transferred["fetch-all"],
         "cache must reduce actual tile transfers",
