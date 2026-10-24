@@ -295,7 +295,8 @@ def main() -> None:
     )
     output = ROOT / "consumer-apps-smoke"
     output.mkdir(exist_ok=True)
-    ports = (free_port(), free_port())
+    (output / "packaged-consumers.failed.json").unlink(missing_ok=True)
+    ports = tuple(free_port() for _ in range(4))
     commands = [
         [
             sys.executable,
@@ -313,6 +314,9 @@ def main() -> None:
             "false",
         ],
         ["node", "examples/vanilla-ts/server.mjs"],
+        # The installed Python export is hosted without a Node runtime.
+        ["", "-m", "http.server", str(ports[2]), "--bind", "127.0.0.1"],
+        ["node", str(ROOT / "tests/fixtures/packaged_consumer_server.mjs")],
     ]
     env = {
         k: v
@@ -325,6 +329,24 @@ def main() -> None:
             stack.enter_context(tempfile.TemporaryDirectory(prefix=".consumer-smoke-", dir=ROOT))
         )
         python, node_install, hashes, consumer_facts = installed_consumers(directory, args.wheel)
+        hosted_html = directory / "hosted-html"
+        subprocess.run(
+            [
+                str(python),
+                str(ROOT / "tests/fixtures/packaged_consumer_ticks.py"),
+                str(hosted_html),
+            ],
+            cwd=directory,
+            env=env,
+            check=True,
+            timeout=60,
+        )
+        hosted_hashes = {}
+        for path in sorted(hosted_html.iterdir()):
+            data = path.read_bytes()
+            hosted_hashes[path.name] = hashlib.sha256(data).hexdigest()
+            (output / f"hosted-{path.name}.gz").write_bytes(gzip.compress(data, mtime=0))
+        consumer_facts["hosted_python_inputs"] = hosted_hashes
         # Preserve the framework-free HTML degradation proof added on main.
         density_html = directory / "density.html"
         subprocess.run(
@@ -358,30 +380,33 @@ def main() -> None:
         commands[0][0] = str(python)
         commands[0][4] = str(ROOT / "examples/streamlit/app.py")
         commands[1][1] = str(ROOT / "examples/vanilla-ts/server.mjs")
+        commands[2][0] = str(python)
         try:
             for i, command in enumerate(commands):
                 log = stack.enter_context((output / f"host-{i}.log").open("w"))
-                executable = str(python) if i == 0 else shutil.which("node")
+                python_host = i in (0, 2)
+                executable = str(python) if python_host else shutil.which("node")
                 if executable is None:
                     raise RuntimeError("Node is required for the Node consumer")
                 # Consume the Python app without Node on PATH, and the Node app
                 # without Python on PATH. Build/test tools stay in this runner.
                 executable_dir = directory / f"host-{i}-bin"
                 executable_dir.mkdir()
-                (executable_dir / ("python" if i == 0 else "node")).symlink_to(executable)
+                (executable_dir / ("python" if python_host else "node")).symlink_to(executable)
                 host_env = {
                     **env,
                     "PORT": str(ports[i]),
                     "PATH": str(executable_dir),
                     "XYG_CONSUMER_INSTALL": str(node_install),
+                    "XYG_CONSUMER_EVIDENCE": str(output),
                 }
-                forbidden = ("node",) if i == 0 else ("python", "python3")
+                forbidden = ("node",) if python_host else ("python", "python3")
                 if any(shutil.which(name, path=host_env["PATH"]) for name in forbidden):
                     raise RuntimeError("forbidden host runtime is available on consumer PATH")
                 processes.append(
                     subprocess.Popen(
                         command,
-                        cwd=directory,
+                        cwd=hosted_html if i == 2 else directory,
                         env=host_env,
                         stdout=log,
                         stderr=subprocess.STDOUT,
@@ -399,6 +424,10 @@ def main() -> None:
                     f"http://127.0.0.1:{ports[0]}",
                     "--node-url",
                     f"http://127.0.0.1:{ports[1]}",
+                    "--python-html-url",
+                    f"http://127.0.0.1:{ports[2]}",
+                    "--qualification-url",
+                    f"http://127.0.0.1:{ports[3]}",
                 ],
                 cwd=ROOT,
                 env=env,
@@ -422,6 +451,22 @@ def main() -> None:
     report.update(consumer_facts)
     report["installed_artifacts"] = hashes
     report["host_path_isolation"] = {"python_without_node": True, "node_without_python": True}
+    report["qualification_source_sha256"] = {
+        name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+        for name in (
+            "scripts/consumer_apps_smoke.py",
+            "scripts/consumer_apps_smoke.mjs",
+            "scripts/packaged_consumer_browser.mjs",
+            "tests/fixtures/packaged_consumer_ticks.py",
+            "tests/fixtures/packaged_consumer_server.mjs",
+            "tests/fixtures/packaged_density_consumer.mjs",
+        )
+    }
+    report["node_qualification_inputs"] = {
+        path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(output.glob("node-*"))
+        if path.name.endswith(".spec.json") or ".buffer-" in path.name
+    }
     (ROOT / "consumer-apps-smoke.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
 

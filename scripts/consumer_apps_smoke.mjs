@@ -5,14 +5,17 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright';
+import { qualifyPackagedConsumers } from './packaged_consumer_browser.mjs';
 const { values } = parseArgs({ options: {
   chromium: { type: 'string' }, 'streamlit-url': { type: 'string' }, 'node-url': { type: 'string' },
+  'python-html-url': { type: 'string' }, 'qualification-url': { type: 'string' },
 } });
-assert.ok(values.chromium && values['streamlit-url'] && values['node-url']);
-const browser = await chromium.launch({ executablePath: values.chromium,
-  args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+assert.ok(values.chromium && values['streamlit-url'] && values['node-url']
+  && values['python-html-url'] && values['qualification-url']);
+const launchArgs = ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+const browser = await chromium.launch({ executablePath: values.chromium, args: launchArgs });
 const report = { schema: 1, commit: execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(),
-  browser: browser.version(), node: process.version, hosts: {}, hashes: {} };
+  browser: browser.version(), node: process.version, launchArgs, hosts: {}, hashes: {} };
 // An incomplete asynchronous journey must never exit successfully without proof.
 process.exitCode = 1;
 const paint = async frame => {
@@ -36,6 +39,8 @@ const paint = async frame => {
 };
 
 try {
+  report.packagedQualification = await qualifyPackagedConsumers(browser,
+    { python: values['python-html-url'], node: values['qualification-url'] }, 'consumer-apps-smoke');
   const node = await browser.newPage({ viewport: { width: 1000, height: 800 } });
   const errors = [];
   const requested = [];

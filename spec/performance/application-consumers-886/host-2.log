@@ -1,0 +1,14 @@
+127.0.0.1 - - [24/Oct/2026 06:52:06] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:08] "GET /secondary.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:09] "GET /wasm-worker.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:09] "GET /xyg-wasm.wasm HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:10] "GET /polar.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:10] "GET /wasm-worker.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:10] "GET /xyg-wasm.wasm HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:11] "GET /missing.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:11] "GET /wasm-worker.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:11] code 404, message File not found
+127.0.0.1 - - [24/Oct/2026 06:52:11] "GET /missing.wasm HTTP/1.1" 404 -
+127.0.0.1 - - [24/Oct/2026 06:52:11] "GET /corrupt.html HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:12] "GET /wasm-worker.js HTTP/1.1" 200 -
+127.0.0.1 - - [24/Oct/2026 06:52:12] "GET /corrupt.wasm HTTP/1.1" 200 -
