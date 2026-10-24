@@ -1,0 +1,11 @@
+Retention-only pre-commit validation; full worktree.
+TMPDIR=target/colored-spill-browser-retention/tmp; UV_NO_SYNC=1 after uv sync --locked --group dev --no-install-project.
+Native/browser builds skipped; no product change or benchmark execution.
+$ uv run --with pre-commit pre-commit run --all-files
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+$ uv run ruff check .
+All checks passed!
+$ uv run ruff format --check .
+858 files already formatted

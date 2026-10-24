@@ -280,16 +280,25 @@ inside this frame; changing any of it means editing this section first.
   [retained evidence](../../benchmarks/results/colored-spill-2026-10-24/hosted-main/README.md).
   Pan p95 0.37907085 ms, slowest zoom 8.125563 ms; sampled tile residency fits
   16 MiB. This does not establish browser continuity or larger-than-RAM behavior.
-- [ ] Same colored-spill source real-browser continuity, pixels and physical
-  GPU ownership (dossier item 9); the host/kernel report explicitly leaves it open.
+- [x] Same colored-spill source scripted real-browser continuity and pixels:
+  clean-main run 40063864999 passed 33 framebuffer matches, eight adjacent
+  fades and zero seam error at 100M with production base 4096. The
+  [raw host/companion receipt](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md)
+  records SwiftShader and deterministic presentation, with complete cleanup.
+- [ ] Physical-GPU ownership evidence: instrumented software WebGL allocations
+  exclude pre-hook initial-payload textures and do not establish hardware VRAM
+  or a complete allocator audit. Natural-cadence/headline evidence remains open.
 - [ ] Comparable live competitive evidence and explicit scale limitations.
 
 ## Exit criteria
 
 - [ ] Colored 100M–class scatter pans without blanking; mean-color tiles match
-      oracle within recorded u16 quantization.
-- [ ] Resident tile bytes stay under configured budget while canonical rows
-      may remain memmap’d.
+      oracle within recorded u16 quantization. The scripted 100M companion
+      and native oracle now pass; broader headline behavior remains open.
+- [x] Resident tile bytes stay under configured budget while canonical rows
+      remain memmap’d: the 100M run retained three f64 mappings totaling 2.4 GB and
+      maximum sampled tile residency 16,517,088 bytes under 16 MiB, with
+      `over_budget: false`; fixtures enforce the policy beyond these samples.
 - [x] Python ↔ Node count and mean-color goldens for the same spilled inputs
       (`test_phase4_tile_spill_hosts.py` / `pyramid.test.mjs`). This bounded
       seam proof does not substitute for the 100M or final-host matrix.

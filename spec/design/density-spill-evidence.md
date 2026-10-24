@@ -149,16 +149,19 @@ spoof authority locally or dispatch it merely to validate harness changes.
 ## Explicit remaining acceptance
 
 The report deliberately requires `scope: host-kernel-only` and
-`browser.status: not-run`. A complete colored-spill real-browser journey at the same
-source/windows, nonblank pixels, seam tests, actual adjacent crossfades,
-GPU allocation and cached/fetch-all **pixel** equality remains open. The existing
+`browser.status: not-run`. That report alone cannot establish the same
+source/windows in a real browser, nonblank pixels, seams, actual adjacent
+crossfades, GPU allocation or cached/fetch-all **pixel** equality. The existing
 `scripts/density_tile_smoke.py` provides bounded count/mean browser coverage and
 its separate fixture is not evidence that this 100M source reached the browser.
 The [same-source browser companion](density-spill-browser-evidence.md) borrows
 this worker's actual figure, store, mappings and windows after host timing.
 Its separate independently validated artifact links the finalized host bytes;
-it never changes this report's scope or browser flag. A retained supervised 1M
-integration control passes, but actual 100M browser execution remains pending.
+it never changes this report's scope or browser flag. Actual clean-main run
+40063864999 now retains the [100M host/companion pair](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md):
+33 framebuffer matches, eight adjacent fades, zero seam error and complete
+instrumented cleanup at production base 4096. Its SwiftShader/manual-cadence
+scope leaves physical-GPU ownership and broader headline evidence open.
 Do not attach a separate fixture as a success flag for this workload.
 
 This slice also does not establish larger-than-RAM behavior, absence of all
@@ -177,5 +180,6 @@ maximum sampled tile residency 16,517,088 bytes under 16 MiB; canonical three-co
 f64 mappings 2.4 GB; spilled tiles 274,468,864 bytes. The independent count/mean
 overview oracle passed with zero observed count/RGB error and all cleanup checks
 passed. This is historical **host/kernel** evidence only. The same report
-explicitly records browser `not-run`; all browser, competitive, larger-than-RAM
-and final candidate limitations above remain in force.
+explicitly records browser `not-run`; the newer separate companion supplies
+the scripted browser observations above. Competitive, physical-GPU,
+larger-than-RAM and final candidate limitations remain in force.
