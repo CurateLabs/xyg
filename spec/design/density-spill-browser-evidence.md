@@ -7,15 +7,17 @@ inside the existing supervised host worker. The existing host/kernel report
 contract remains unchanged: `scope: host-kernel-only` and
 `browser.status: not-run`. The default command remains host-only. Browser
 continuity uses deterministic presentation cadence, with no FPS or end-to-end
-latency claim. No actual 100M browser result is retained yet. The separately
-accepted hosted 100M host report remains historical host-only evidence.
+latency claim. Actual main run 40063864999 retains the same-source 100M
+browser companion and immutable host report as [separate raw evidence](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md).
+The earlier accepted 100M host report remains historical host-only evidence.
 
 The standalone smoke remains a bounded control and refuses more than 1M rows.
 This facility does not establish billion-row, larger-than-RAM, competitive,
 publication, natural-cadence or whole-#11 acceptance. It changes no product
 behavior or dependency. The existing PR, daily and weekly/manual CI commands
-request and verify the companion. Actual trusted 100M browser execution
-remains pending reviewed landing on main.
+request and verify the companion. The retained actual 100M execution uses
+production eligibility and base 4096; its software-renderer and deterministic
+presentation limits remain explicit.
 
 ## Path and assertions
 
@@ -246,7 +248,8 @@ ceilings. Exact workflow-command guards and mutation tests reject omitted
 companion output/verification, a different host report, or an unbound SHA.
 Both hosted companion filenames fit the existing exact-SHA upload glob.
 There is no separate workflow, job, status or second 100M generation.
-Actual 100M browser execution remains pending reviewed landing on main.
+Actual main run 40063864999 completed this command with all six reports and
+both colored host/browser verifier pairs; see the retained authority below.
 
 ### Retained integration control (2026-10-24)
 
@@ -269,4 +272,41 @@ passed **241 tests** in 55.46 seconds. The report records base commit `bc3ad8fa`
 and dirty integration edits, with exact harness manifests. This evidence uses
 the existing host worker's actual 1M columns/store; it does not attach the old
 standalone control or the historical 100M host report as colored-browser proof.
-Actual 100M production-base-4096 browser execution remains outstanding.
+The later clean-main authority below supplies the distinct production-base-4096
+result; this exploratory control is not promoted into authority evidence.
+
+### Retained main 100M authority (2026-10-24)
+
+[Run 40063864999](https://github.com/CurateLabs/xyg/actions/runs/40063864999),
+attempt 1, passed on clean source `885908f2799803c1f9d8f6482d091adbf2c94d76`.
+The [retained receipt](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md)
+contains all six original reports, their decoded hashes, full job log, GitHub
+metadata and digest-matched artifact ZIP, source bindings and browser captures.
+The 100M host SHA-256 is
+`20194b01d6e5112e270ed0df7277e0fdbaca393b38452277a5fe53473c130c24`;
+its exact-byte-bound browser companion is
+`64572c562ffb487599e62994310d0ef5fb9d49952d1fe1d748100a12ef1f6492`.
+
+The actual three f64 mappings total 2.4 GB. Production eligibility stays 2M and
+adaptive base 4096, without overrides or prewarm. The 512-square journey passed
+33 cached/fetch-all framebuffer matches, all eight adjacent level 1/2 fades,
+minimum 3,204 density pixels, minimum 30 seam density pixels and maximum seam
+error zero. Cached/fetch-all replies transferred 9/188 tiles, excluding the
+shared four-tile bootstrap. All 46/225 instrumented textures were deleted;
+all native, mapping, spill, HTTP, browser/process and temporary cleanup passed.
+
+The immutable host report still records browser `not-run`. Its kernel pan p95
+was 0.76844255 ms and slowest zoom 11.230729 ms, within unchanged 16/50 ms gates.
+The complete optional invocation used peak process-tree RSS 4,002,086,912 bytes,
+temporary disk 2,689,169,487 bytes and 22.598387022 seconds under the configured
+12 GiB / 4 GiB / 3600 s caps. Native resident tiles peaked at 16,517,088 bytes
+under 16 MiB; the independent count/mean oracle had zero observed errors.
+
+Chrome 149 used ANGLE Vulkan SwiftShader. Actual WebGL calls prove the recorded
+instrumented ownership and deletion, including 33 seam-oracle textures per
+mode; initial-payload allocations before hooks remain excluded. This is neither
+hardware VRAM telemetry nor a complete allocator audit. Frozen-clock midpoint
+draws prove these scripted fades, not natural cadence, FPS or user latency.
+Physical-GPU ownership evidence, the broader headline behavior, competitive
+scale evidence and final candidate acceptance remain open. No duplicate run is
+needed to validate the retained receipt.

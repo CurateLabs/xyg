@@ -1,0 +1,66 @@
+{
+  "actions_environment_fabricated": false,
+  "all_available_attempts_retained": [
+    1
+  ],
+  "all_job_steps_successful": true,
+  "artifact_id": 12547963402,
+  "artifact_members": {
+    "density-e2e-100m-885908f2799803c1f9d8f6482d091adbf2c94d76.json": {
+      "bytes": 13724,
+      "sha256": "72d969df611add0a2123ebb6ac0c860bcf5201e386f24b3d087f6ccc4f54a09e"
+    },
+    "density-e2e-colored-100m-885908f2799803c1f9d8f6482d091adbf2c94d76.json": {
+      "bytes": 354158,
+      "sha256": "20194b01d6e5112e270ed0df7277e0fdbaca393b38452277a5fe53473c130c24"
+    },
+    "density-e2e-colored-browser-100m-885908f2799803c1f9d8f6482d091adbf2c94d76.json": {
+      "bytes": 600882,
+      "sha256": "64572c562ffb487599e62994310d0ef5fb9d49952d1fe1d748100a12ef1f6492"
+    },
+    "density-e2e-colored-browser-control-885908f2799803c1f9d8f6482d091adbf2c94d76.json": {
+      "bytes": 610084,
+      "sha256": "4f5c3106454b398e1ba81c8a941d514d7ed44a2bb73e720ff599356059c80991"
+    },
+    "density-e2e-colored-control-885908f2799803c1f9d8f6482d091adbf2c94d76.json": {
+      "bytes": 357400,
+      "sha256": "c6c637d11638659ccd1d35719be6a27858bb7cccf6a9dbda4399689b8ce536ab"
+    },
+    "density-e2e-control-885908f2799803c1f9d8f6482d091adbf2c94d76.json": {
+      "bytes": 13442,
+      "sha256": "b235e8ef1ff97eb2abdd51c6588b94e3e0be66386e245ced57e1f406b7e77d38"
+    }
+  },
+  "artifact_zip_bytes": 289604,
+  "artifact_zip_sha256": "7d52c3d13cbee0ce883d5044a332dfe3daba9ecb0c011804846bf33827ec0d68",
+  "browser_observation_checks": "33 cached/fetch-all full framebuffer SHA-256 equalities per companion; eight adjacent fades with surviving sources and retirement; complete instrumented texture creation/upload/deletion with empty ownership and ignored late reply.",
+  "companion_binding_checks": "Exact immutable host report bytes; identical source columns, provenance, environment, spill/oracle/resource and cleanup records; actual run ID/attempt/manual-main context in 100M colored pair.",
+  "conclusion": "success",
+  "full_job_log_decoded_bytes": 82187,
+  "full_job_log_decoded_sha256": "aad07f2c6eca3f9580cd2c766c628ca6650ea1c7bbd9bd31001ca6247057fb37",
+  "full_job_log_endpoint": "repos/CurateLabs/xyg/actions/jobs/120782890456/logs",
+  "github_api_digest_matches": true,
+  "gzip_deterministic_recompression_matches": true,
+  "historical_git_file_matches": 419,
+  "historical_source_workflow_sha256": "8ccf1e7c94ff5504e82e45fd250f3692b3bb5a7f81ef4cc5ace5e9753dd4f8ea",
+  "hosted_verifier_output_lines": [
+    "2026-10-24T04:52:07.6699958Z density end-to-end report OK: 1000000 points, 264320 first-paint bytes",
+    "2026-10-24T04:52:15.4383105Z density end-to-end report OK: 100000000 points, 262424 first-paint bytes",
+    "2026-10-24T04:52:26.1970004Z colored-spill host/kernel slice OK (1000000 rows); browser and whole #11 remain open",
+    "2026-10-24T04:52:26.2719947Z same-source colored-spill browser companion OK; deterministic cadence only",
+    "2026-10-24T04:52:49.5281734Z colored-spill host/kernel slice OK (100000000 rows); browser and whole #11 remain open",
+    "2026-10-24T04:52:49.5902449Z same-source colored-spill browser companion OK; deterministic cadence only"
+  ],
+  "local_authority_verifier_executed": false,
+  "local_control_verifiers_passed": 3,
+  "native_abi_matches_historical_generated_declaration": 395,
+  "new_benchmark_or_browser_runs": 0,
+  "report_count": 6,
+  "reviewed_tree_identical": true,
+  "run_attempt": 1,
+  "run_id": 40063864999,
+  "source_sha": "885908f2799803c1f9d8f6482d091adbf2c94d76",
+  "status": "passed",
+  "unavailable": "Hosted generated native/client/Chromium executables not independently retained; no physical GPU/VRAM or natural-cadence telemetry.",
+  "zip_crc_and_exact_decoded_members_match": true
+}

@@ -1,0 +1,588 @@
+{
+  "100m": {
+    "adjacent_fades": 8,
+    "browser_process_reaped": true,
+    "browser_profile_removed": true,
+    "browser_version": {
+      "jsVersion": "14.9.207.21",
+      "product": "Chrome/149.0.7827.55",
+      "protocolVersion": "1.3",
+      "revision": "@3188f8a607ae7e067593be8aab7f02d2451fec07",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36"
+    },
+    "cached_levels": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      1,
+      2,
+      1,
+      2,
+      1,
+      2
+    ],
+    "cleanup": {
+      "server_stopped": true
+    },
+    "decisions": {
+      "base_dim": 4096,
+      "first_payload_binning": "pyramid-L3-tiles",
+      "first_payload_reduction": "pyramid-count",
+      "native_tile_bootstrap": true,
+      "presentation": "manual draw cadence and frozen clock; product fade/source selection unchanged",
+      "screen": [
+        512,
+        512
+      ],
+      "tile_budget_bytes": 16777216
+    },
+    "framebuffer_matches": 33,
+    "host_browser": {
+      "reason": "host-kernel slice; real-browser colored-spill journey and nonblank/seam/cached-vs-fetch-all pixels remain open",
+      "status": "not-run"
+    },
+    "host_cleanup": {
+      "browser_socket_alias_removed": true,
+      "figure_released": true,
+      "mmap_closed": true,
+      "orphan_pids_after_reap": [],
+      "orphan_pids_before_reap": [],
+      "spill_files_remaining": [],
+      "spill_store_released": true,
+      "temp_tree_removed": true,
+      "tile_budget_restored": true,
+      "worker_exit_code": 0
+    },
+    "host_final_stats": {
+      "budget_bytes": 16777216,
+      "hit": 2334,
+      "miss": 265,
+      "over_budget": false,
+      "resident_bytes": 16517088,
+      "spilled_bytes": 274468864
+    },
+    "host_pan_p95_ms": 0.7684425499999998,
+    "host_peak_sampled_resident_bytes": 16517088,
+    "host_phases": {
+      "admission_seconds": 0.14590304799997966,
+      "build_spill_first_payload_seconds": 2.9617231680000202,
+      "source_creation_seconds": 6.928350239000025
+    },
+    "host_zoom_max_ms": 11.230729,
+    "immutable_host_report_sha256": "20194b01d6e5112e270ed0df7277e0fdbaca393b38452277a5fe53473c130c24",
+    "limits": {
+      "max_disk_bytes": 4294967296,
+      "max_tree_rss_bytes": 12884901888,
+      "timeout_seconds": 3600.0
+    },
+    "max_seam_error": 0,
+    "min_density_pixels": 3204,
+    "min_seam_density_pixels": 30,
+    "min_seam_examined_pixels": 3552,
+    "oracle": {
+      "count": 100000000,
+      "counts_sha256": "9f549036a9c1101907c5ba1100ef4e8a6cb5347495d12d9e4daaabc3a66a3734",
+      "expected_count": 100000000,
+      "grid_dim": 64,
+      "level": 6,
+      "max_count_error": 0.0,
+      "max_rgb_error": 0,
+      "method": "chunked-numpy-histogram-linear-srgb",
+      "nonopaque_occupied_cells": 0,
+      "occupied_cells": 816,
+      "rgb_tolerance": 2,
+      "rgba_sha256": "dab85567d7cd6cb2f5060e3375beea20d988c39ad14b6835aee9dcce3eb6aff7"
+    },
+    "point_count": 100000000,
+    "process_tree": {
+      "browser_process_observed": true,
+      "elapsed_seconds": 22.598387021999997,
+      "max_live_process_count": 12,
+      "observed_process_count": 13,
+      "observed_processes": [
+        {
+          "name": "python",
+          "pid": 5214
+        },
+        {
+          "name": "chrome",
+          "pid": 5283
+        },
+        {
+          "name": "chrome",
+          "pid": 5290
+        },
+        {
+          "name": "chrome",
+          "pid": 5291
+        },
+        {
+          "name": "xdg-settings",
+          "pid": 5311
+        },
+        {
+          "name": "chrome",
+          "pid": 5317
+        },
+        {
+          "name": "chrome",
+          "pid": 5326
+        },
+        {
+          "name": "chrome",
+          "pid": 5339
+        },
+        {
+          "name": "chrome",
+          "pid": 5431
+        },
+        {
+          "name": "chrome",
+          "pid": 5432
+        },
+        {
+          "name": "chrome",
+          "pid": 5453
+        },
+        {
+          "name": "chrome",
+          "pid": 5466
+        },
+        {
+          "name": "chrome",
+          "pid": 5482
+        }
+      ],
+      "peak_pids": [
+        5214,
+        5283,
+        5290,
+        5291,
+        5317,
+        5326,
+        5339,
+        5431,
+        5432,
+        5453,
+        5466,
+        5482
+      ],
+      "peak_process_count": 12,
+      "peak_rss_bytes": 4002086912,
+      "peak_temp_bytes": 2689169487,
+      "worker_peak_rss_bytes": 3436269568
+    },
+    "runs": {
+      "cached": {
+        "canvas": [
+          512,
+          512
+        ],
+        "destroyed": true,
+        "gpu": {
+          "createdTextures": 46,
+          "deletedTextures": 46,
+          "peakInstrumentedBytes": 5832928,
+          "remainingTextures": 0,
+          "uploads": 46
+        },
+        "lateReplyIgnored": true,
+        "max_owned_tile_bytes": 3461328,
+        "renderer": {
+          "renderer": "WebKit WebGL",
+          "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "WebKit",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+        },
+        "reply_bytes": 2424240,
+        "transferred_tiles": 9
+      },
+      "fetch-all": {
+        "canvas": [
+          512,
+          512
+        ],
+        "destroyed": true,
+        "gpu": {
+          "createdTextures": 225,
+          "deletedTextures": 225,
+          "peakInstrumentedBytes": 4767904,
+          "remainingTextures": 0,
+          "uploads": 225
+        },
+        "lateReplyIgnored": true,
+        "max_owned_tile_bytes": 2396304,
+        "renderer": {
+          "renderer": "WebKit WebGL",
+          "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "WebKit",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+        },
+        "reply_bytes": 50078400,
+        "transferred_tiles": 188
+      }
+    },
+    "source": {
+      "backing": "mmap-f64",
+      "bytes": 2400000000,
+      "chunk_points": 1000000,
+      "color_mode": "continuous-mapped-to-u8-index",
+      "colormap": [
+        [
+          240,
+          50,
+          40
+        ],
+        [
+          20,
+          90,
+          230
+        ]
+      ],
+      "columns": {
+        "color": {
+          "bytes": 800000000,
+          "sha256": "ce60af7fb54069ac156301cb1393c0050a1d91493b30c6888c9e7d22bcbed1e5"
+        },
+        "x": {
+          "bytes": 800000000,
+          "sha256": "41c4855cf21754abf3fba69728413c93b2f096a7cfe20e8a241bf24b5ec88d74"
+        },
+        "y": {
+          "bytes": 800000000,
+          "sha256": "1dbf8f48436e65a4d6919d5a14e6e12ef7a6aa33dd373b1f8af2df8e9a3cf10e"
+        }
+      },
+      "generator": "diagonal-band-two-color-v1"
+    },
+    "spill_file": {
+      "bytes": 274468864,
+      "sha256": "45a1acbc078f28074310d17409fc1dab83ee58f39dd73092b50ef21423a47e1b"
+    }
+  },
+  "control": {
+    "adjacent_fades": 8,
+    "browser_process_reaped": true,
+    "browser_profile_removed": true,
+    "browser_version": {
+      "jsVersion": "14.9.207.21",
+      "product": "Chrome/149.0.7827.55",
+      "protocolVersion": "1.3",
+      "revision": "@3188f8a607ae7e067593be8aab7f02d2451fec07",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36"
+    },
+    "cached_levels": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1
+    ],
+    "cleanup": {
+      "server_stopped": true
+    },
+    "decisions": {
+      "base_dim": 2048,
+      "first_payload_binning": "exact",
+      "first_payload_reduction": "bin2d",
+      "native_tile_bootstrap": true,
+      "presentation": "manual draw cadence and frozen clock; product fade/source selection unchanged",
+      "screen": [
+        512,
+        512
+      ],
+      "tile_budget_bytes": 16777216
+    },
+    "framebuffer_matches": 33,
+    "host_browser": {
+      "reason": "host-kernel slice; real-browser colored-spill journey and nonblank/seam/cached-vs-fetch-all pixels remain open",
+      "status": "not-run"
+    },
+    "host_cleanup": {
+      "browser_socket_alias_removed": true,
+      "figure_released": true,
+      "mmap_closed": true,
+      "orphan_pids_after_reap": [],
+      "orphan_pids_before_reap": [],
+      "spill_files_remaining": [],
+      "spill_store_released": true,
+      "temp_tree_removed": true,
+      "tile_budget_restored": true,
+      "worker_exit_code": 0
+    },
+    "host_final_stats": {
+      "budget_bytes": 16777216,
+      "hit": 2334,
+      "miss": 261,
+      "over_budget": false,
+      "resident_bytes": 16517088,
+      "spilled_bytes": 73142272
+    },
+    "host_pan_p95_ms": 0.7252484499999999,
+    "host_peak_sampled_resident_bytes": 16517088,
+    "host_phases": {
+      "admission_seconds": 0.018317340000010063,
+      "build_spill_first_payload_seconds": 0.12731384699998216,
+      "source_creation_seconds": 0.05571609900002272
+    },
+    "host_zoom_max_ms": 11.633186,
+    "immutable_host_report_sha256": "c6c637d11638659ccd1d35719be6a27858bb7cccf6a9dbda4399689b8ce536ab",
+    "limits": {
+      "max_disk_bytes": 2147483648,
+      "max_tree_rss_bytes": 8589934592,
+      "timeout_seconds": 600.0
+    },
+    "max_seam_error": 0,
+    "min_density_pixels": 3172,
+    "min_seam_density_pixels": 30,
+    "min_seam_examined_pixels": 3552,
+    "oracle": {
+      "count": 1000000,
+      "counts_sha256": "f56fe6272c5a7c683e3260de0e070e9447a1c5d2b8fd9ca996d8d216a28d1d76",
+      "expected_count": 1000000,
+      "grid_dim": 64,
+      "level": 5,
+      "max_count_error": 0.0,
+      "max_rgb_error": 0,
+      "method": "chunked-numpy-histogram-linear-srgb",
+      "nonopaque_occupied_cells": 0,
+      "occupied_cells": 817,
+      "rgb_tolerance": 2,
+      "rgba_sha256": "38cf78449df0437213bbcc8115cf68cefd9b5d6cd5b764fd92bb093f56197a99"
+    },
+    "point_count": 1000000,
+    "process_tree": {
+      "browser_process_observed": true,
+      "elapsed_seconds": 10.259359243999995,
+      "max_live_process_count": 12,
+      "observed_process_count": 17,
+      "observed_processes": [
+        {
+          "name": "python",
+          "pid": 4900
+        },
+        {
+          "name": "chrome",
+          "pid": 4901
+        },
+        {
+          "name": "cargo",
+          "pid": 4941
+        },
+        {
+          "name": "chrome",
+          "pid": 4969
+        },
+        {
+          "name": "chrome",
+          "pid": 4976
+        },
+        {
+          "name": "chrome",
+          "pid": 4977
+        },
+        {
+          "name": "xdg-settings",
+          "pid": 4999
+        },
+        {
+          "name": "chrome",
+          "pid": 5004
+        },
+        {
+          "name": "chrome",
+          "pid": 5007
+        },
+        {
+          "name": "xdg-settings",
+          "pid": 5020
+        },
+        {
+          "name": "xdg-mime",
+          "pid": 5022
+        },
+        {
+          "name": "chrome",
+          "pid": 5023
+        },
+        {
+          "name": "chrome",
+          "pid": 5116
+        },
+        {
+          "name": "chrome",
+          "pid": 5117
+        },
+        {
+          "name": "chrome",
+          "pid": 5138
+        },
+        {
+          "name": "chrome",
+          "pid": 5151
+        },
+        {
+          "name": "chrome",
+          "pid": 5167
+        }
+      ],
+      "peak_pids": [
+        4900,
+        4969,
+        4976,
+        4977,
+        5004,
+        5007,
+        5023,
+        5116,
+        5117,
+        5138,
+        5151,
+        5167
+      ],
+      "peak_process_count": 12,
+      "peak_rss_bytes": 1634611200,
+      "peak_temp_bytes": 111731954,
+      "worker_peak_rss_bytes": 301035520
+    },
+    "runs": {
+      "cached": {
+        "canvas": [
+          512,
+          512
+        ],
+        "destroyed": true,
+        "gpu": {
+          "createdTextures": 46,
+          "deletedTextures": 46,
+          "peakInstrumentedBytes": 5832928,
+          "remainingTextures": 0,
+          "uploads": 46
+        },
+        "lateReplyIgnored": true,
+        "max_owned_tile_bytes": 3461328,
+        "renderer": {
+          "renderer": "WebKit WebGL",
+          "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "WebKit",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+        },
+        "reply_bytes": 2424240,
+        "transferred_tiles": 9
+      },
+      "fetch-all": {
+        "canvas": [
+          512,
+          512
+        ],
+        "destroyed": true,
+        "gpu": {
+          "createdTextures": 225,
+          "deletedTextures": 225,
+          "peakInstrumentedBytes": 4767904,
+          "remainingTextures": 0,
+          "uploads": 225
+        },
+        "lateReplyIgnored": true,
+        "max_owned_tile_bytes": 2396304,
+        "renderer": {
+          "renderer": "WebKit WebGL",
+          "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "WebKit",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+        },
+        "reply_bytes": 50078400,
+        "transferred_tiles": 188
+      }
+    },
+    "source": {
+      "backing": "mmap-f64",
+      "bytes": 24000000,
+      "chunk_points": 262144,
+      "color_mode": "continuous-mapped-to-u8-index",
+      "colormap": [
+        [
+          240,
+          50,
+          40
+        ],
+        [
+          20,
+          90,
+          230
+        ]
+      ],
+      "columns": {
+        "color": {
+          "bytes": 8000000,
+          "sha256": "157ffb90462102401bc92274e0513594caae3fb6ee388a57f3773965062172c9"
+        },
+        "x": {
+          "bytes": 8000000,
+          "sha256": "12d5cb8611bdb8ea6d7fd693c0d8ddf98176fddbb6d941453affd0491489dece"
+        },
+        "y": {
+          "bytes": 8000000,
+          "sha256": "fe66db9dfc5170adfff5783224b248fae08546f858e2a6a28308324868f4e910"
+        }
+      },
+      "generator": "diagonal-band-two-color-v1"
+    },
+    "spill_file": {
+      "bytes": 73142272,
+      "sha256": "01eea81f6de81ae0af9842ef79375f31d92bfeda41736713bffc9c5c53fec017"
+    }
+  }
+}
