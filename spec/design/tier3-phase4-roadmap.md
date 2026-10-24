@@ -272,8 +272,13 @@ inside this frame; changing any of it means editing this section first.
 - [x] Bounded count/color spill/fetch/compose benchmark definitions in the
   existing scheduled/manual main CodSpeed suite. Hosted comparison results
   must still be retained after the definitions land.
-- [ ] Dedicated colored-spill 100M memmap pan/zoom latency and browser proof,
-  with independent fixed budgets and raw results (dossier item 9).
+- [x] Dedicated colored-spill 100M memmap **host/kernel** pan/zoom latency,
+  independently pinned budgets and raw results: clean-main run 40055564684,
+  [retained evidence](../../benchmarks/results/colored-spill-2026-10-24/hosted-main/README.md).
+  Pan p95 0.37907085 ms, slowest zoom 8.125563 ms; sampled tile residency fits
+  16 MiB. This does not establish browser continuity or larger-than-RAM behavior.
+- [ ] Same colored-spill source real-browser continuity, pixels and physical
+  GPU ownership (dossier item 9); the host/kernel report explicitly leaves it open.
 - [ ] Comparable live competitive evidence and explicit scale limitations.
 
 ## Exit criteria

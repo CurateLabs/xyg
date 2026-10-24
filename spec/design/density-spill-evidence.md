@@ -160,6 +160,18 @@ this workload.
 This slice also does not establish larger-than-RAM behavior, absence of all
 transient row allocations, the final candidate host matrix, Node parity, or the
 competitive Datashader/HoloViews/hvPlot/Plotly/Bokeh scale evidence required by
-`tier3-testing.md` and #113/#54. The actual main 100M run has not been executed by
-this implementation task. Retain its exact-SHA raw artifacts before making any
-scale or hard-latency claim. Whole #11 stays open.
+`tier3-testing.md` and #113/#54. Whole #11 stays open.
+
+### Retained hosted host/kernel result (2026-10-24)
+
+The actual main-only [run 40055564684](https://github.com/CurateLabs/xyg/actions/runs/40055564684)
+passed both 1M controls and both distinct 100M authority/verifier pairs on clean
+source `71e48b67827709ed251ae05b90d010a8cef824eb`. The
+[raw reports, environment, job log, hashes and reproduction commands](../../benchmarks/results/colored-spill-2026-10-24/hosted-main/README.md)
+retain the colored result: pan p95 0.37907085 ms; slowest zoom 8.125563 ms;
+maximum sampled tile residency 16,517,088 bytes under 16 MiB; canonical three-column
+f64 mappings 2.4 GB; spilled tiles 274,468,864 bytes. The independent count/mean
+overview oracle passed with zero observed count/RGB error and all cleanup checks
+passed. This is historical **host/kernel** evidence only. The same report
+explicitly records browser `not-run`; all browser, competitive, larger-than-RAM
+and final candidate limitations above remain in force.
