@@ -1,0 +1,19 @@
+2026-10-24 06:52:06.155 Uvicorn server started on 127.0.0.1:39353
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://127.0.0.1:39353
+
+2026-10-24 06:52:22.832 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-24 06:52:23.852 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-24 06:52:24.721 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-10-24 06:52:24.873 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+  Stopping...

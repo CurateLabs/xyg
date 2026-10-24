@@ -941,7 +941,9 @@ Angular/polar and secondary-axis ChartView cutovers subsequently shipped under
 packaged Reflex application evidence is retained below as historical
 pre-removal evidence. [#1063](https://github.com/CurateLabs/xyg/issues/1063) supersedes
 the Reflex-specific requirement and retargets #886 to supported Python/
-Streamlit and Node/vanilla-TypeScript consumers; that qualification remains open.
+Streamlit and Node/vanilla-TypeScript consumers. The bounded installed-host
+qualification below covers secondary/polar tick admission and module failures
+and completes the named #886 consumer cases with the shared density proofs.
 Replacement application coverage follows [application-consumers.md](application-consumers.md).
 
 Work outside that claimed subset is tracked independently:
@@ -973,6 +975,7 @@ no JavaScript aggregator fallback.
 | Observer phase | `js/src/60_entries.ts` (`density_no_refinement`) | shipped |
 | Standalone missing WASM | `tests/test_density_pan_no_rebin.py` | green when Chromium is present |
 | Packaged ESM/IIFE overview retention | `scripts/wasm_foundation_smoke.mjs` | three bounded generated-file cases per entry, actual packaged Rust aggregate, exact pixel/grid retention, zoom/home, no new Worker or texture upload, and disposal |
+| Installed supported consumers | `scripts/consumer_apps_smoke.py` / `packaged_consumer_browser.mjs` | hosted Python HTML and Node/vanilla TypeScript secondary/polar tick admission, missing/corrupt tick modules, and one native Node split unsupported-density zoom/home/lifecycle case; bounded receipts below |
 | Bundle / contract probes | `tests/test_static_client_security.py`, `tests/test_wasm_density_chartview_contract.py`, `tests/test_wasm_full_density_source.py` | green |
 | Hosted SHA-keyed visual evidence of this boundary | nightly `hosted-density-browser-<sha>.json` | tracked by [#886: packaged ticks and density no-refinement proof](https://github.com/CurateLabs/xyg/issues/886); current artifacts prove refinement lifecycle, not no-refinement |
 
@@ -1051,9 +1054,47 @@ presentation before reading pixels. Reports, screenshots and a compressed
 copy of the generated document remain under the existing consumer evidence
 upload; generated bundles are not committed (dossier §33).
 
-These bounded shared cases do not close amended #886, the full #54 matrix,
-final-candidate cohort reuse or hosted performance qualification. Supported
+These two shared file-export cases alone do not qualify amended #886; the
+installed-host cases below complete its named consumer requirements. The #54
+matrix, final-candidate cohort reuse and hosted performance remain separate. Supported
 application coverage follows [application-consumers.md](application-consumers.md).
+
+### Installed supported-consumer qualification (#886)
+
+The existing clean installed consumer gate now reuses one shared browser case
+set for Python-hosted public HTML and the installed Node/vanilla TypeScript
+mount. Each admits primary plus `y2` secondary caches or polar degree/radial
+`x`/`y` caches and their Rust-formatted labels. Each also proves both HTTP-404
+module rejection and actual `WebAssembly.compile` rejection of HTTP-200 bytes
+`00 01 02 03`, retaining chart pixels with empty fail-closed tick slots and
+`XYG_WASM_INIT_FAILED`. Explicit same-origin paired assets, generated/host CSP,
+request allowlists, fetched module hashes, Worker termination and full view
+destruction are asserted. Python hosting runs without Node on PATH; Streamlit's
+stock iframe gains no automatic attachment or callback promise.
+
+The one additional density case uses an installed Node native split payload
+directly through the public kernel-less `ChartView` boundary. Actual viewport
+zoom/home and `_scheduleViewRequest` consume its native unsupported-source
+descriptor and report `XYG_WASM_SOURCE_UNSUPPORTED` with the native reason and
+trace IDs. The original Rust grid and texture survive with no replacement
+upload, density attachment or extra Worker; distinct colored zoom pixels and
+restored home ranges/pixels reject blank/stale paint. Home readback permits
+only one integer channel value of presentation rounding; source identity is
+exact. Disposal releases the texture, GL context, listeners, frame and tick
+Worker without late diagnostics. This supplements the existing installed
+Python missing/corrupt optional-inline-density cases, without repeating all
+failure branches on every host or inserting split-only policy into packed HTML.
+
+Receipts, package/harness/input hashes, screenshots and reproduction commands:
+[`application-consumers-886`](../performance/application-consumers-886/README.md).
+This is bounded correctness evidence for amended
+[#886](https://github.com/CurateLabs/xyg/issues/886), following
+[#1063](https://github.com/CurateLabs/xyg/issues/1063) and
+[#869](https://github.com/CurateLabs/xyg/issues/869). Together with the reused
+standalone and installed Python failure cases, it satisfies the named #886
+correctness requirements. Exhaustive unsupported-source/axis combinations and
+final-candidate #54 reuse remain outside this proof. It does not establish
+complete #108 acceptance, release readiness or a performance result.
 
 Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
 typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps

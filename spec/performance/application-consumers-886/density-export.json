@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "browser": "156.0.8078.4",
+  "launchArgs": [
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--ignore-gpu-blocklist"
+  ],
+  "export": {
+    "file": "density.html",
+    "sha256": "b4d76f4f9712e7177fb4d82ddbaa8405b19678d6f3c672bd55ce5aff3b5ca61b"
+  },
+  "faultInjection": "CDP bootstrap setter: missing null; invalid preserves classicWorkerSource and replaces WASM base64 with bytes 00 01 02 03.",
+  "cases": [
+    {
+      "name": "missing-inline-module",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "self-contained Rust/WASM density artifact is unavailable",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "before": {
+        "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+        "alphaPixels": 2846,
+        "inkPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        },
+        "width": 426,
+        "height": 318
+      },
+      "zoomed": {
+        "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+        "alphaPixels": 2843,
+        "inkPixels": 2843,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0.25,
+            0.75
+          ],
+          "y": [
+            0.25,
+            0.75
+          ]
+        },
+        "width": 426,
+        "height": 318
+      },
+      "restored": {
+        "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+        "alphaPixels": 2846,
+        "inkPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        },
+        "width": 426,
+        "height": 318
+      },
+      "zoomMaxChannelDelta": 255,
+      "restoration": {
+        "maxChannelDelta": 1,
+        "changedChannels": 1
+      },
+      "originalModuleSha256": "1e6e2ed9d56aa0bd4ebf097b4de858bf1a3ecebad704408aaeabb79c159e744f",
+      "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+      "replacementUploads": 0,
+      "workers": [],
+      "objectUrls": 0,
+      "sharedHost": true,
+      "disposal": {
+        "destroyed": true,
+        "glReleased": true,
+        "listeners": 0,
+        "liveWorkers": 0,
+        "objectUrls": 0
+      },
+      "external": [],
+      "errors": [],
+      "screenshot": {
+        "file": "density-export.json.missing-inline-module.png",
+        "sha256": "acb0d3d6d1bc81efe07564a55c60d6d99a3a12d26a50e6447f7b2c5e0533d771"
+      }
+    },
+    {
+      "name": "invalid-inline-module",
+      "events": [
+        {
+          "code": "XYG_WASM_INIT_FAILED",
+          "message": "WebAssembly.compile(): expected magic word 00 61 73 6d, found 00 01 02 03 @+0",
+          "traceIds": [
+            0
+          ]
+        },
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "before": {
+        "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+        "alphaPixels": 2846,
+        "inkPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        },
+        "width": 426,
+        "height": 318
+      },
+      "zoomed": {
+        "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+        "alphaPixels": 2843,
+        "inkPixels": 2843,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0.25,
+            0.75
+          ],
+          "y": [
+            0.25,
+            0.75
+          ]
+        },
+        "width": 426,
+        "height": 318
+      },
+      "restored": {
+        "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+        "alphaPixels": 2846,
+        "inkPixels": 2846,
+        "attempts": 1,
+        "ranges": {
+          "x": [
+            0,
+            1
+          ],
+          "y": [
+            0,
+            1
+          ]
+        },
+        "width": 426,
+        "height": 318
+      },
+      "zoomMaxChannelDelta": 255,
+      "restoration": {
+        "maxChannelDelta": 1,
+        "changedChannels": 1
+      },
+      "originalModuleSha256": "1e6e2ed9d56aa0bd4ebf097b4de858bf1a3ecebad704408aaeabb79c159e744f",
+      "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+      "replacementUploads": 0,
+      "workers": [
+        {
+          "url": "blob:null/24ab46cb-c843-419a-b65f-3a2b60b605ad",
+          "terminated": true
+        }
+      ],
+      "objectUrls": 0,
+      "sharedHost": true,
+      "disposal": {
+        "destroyed": true,
+        "glReleased": true,
+        "listeners": 0,
+        "liveWorkers": 0,
+        "objectUrls": 0
+      },
+      "external": [],
+      "errors": [],
+      "screenshot": {
+        "file": "density-export.json.invalid-inline-module.png",
+        "sha256": "acb0d3d6d1bc81efe07564a55c60d6d99a3a12d26a50e6447f7b2c5e0533d771"
+      }
+    }
+  ],
+  "limitations": [
+    "Actual installed-wheel to_html output; only two optional inline-module failure cases.",
+    "Unsupported split-source descriptors remain covered by the shared density-source tests; this public packed-HTML proof covers inline-module failures only."
+  ]
+}
