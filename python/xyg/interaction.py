@@ -1435,9 +1435,11 @@ def density_view(
     entry = {
         "id": trace_id,
         "mode": "density",
-        "tier": plan.tier,
+        # A no-rescan pyramid may serve an aggregate below the direct budget.
+        # Describe the emitted representation, not the unused exact-plan advice (§28).
+        "tier": "density",
         "visible": visible,
-        "reduction": plan.reduction,
+        "reduction": "pyramid-count" if binning.startswith("pyramid-L") else plan.reduction,
         "binning": binning if vis_rows is None else binning + "-masked",
         "density": density,
     }

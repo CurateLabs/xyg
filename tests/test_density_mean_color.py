@@ -516,6 +516,29 @@ def test_no_rescan_exact_grid_reports_in_window_visible_count(monkeypatch):
     assert trace["visible"] == expected
 
 
+def test_no_rescan_sparse_pyramid_reply_discloses_its_actual_density_representation(monkeypatch):
+    from xyg import interaction, scatter, scatter_chart
+
+    n = SCATTER_DENSITY_THRESHOLD * 3
+    # Bounded control of the production no-rescan branch; algorithms and
+    # pyramid geometry are unchanged. The visible window fits the direct budget.
+    monkeypatch.setattr(interaction, "PYRAMID_MIN_POINTS", n)
+    monkeypatch.setattr(interaction, "PYRAMID_NO_RESCAN_ROWS", n - 1)
+    x = np.linspace(0.0, 100.0, n, endpoint=False)
+    fig = scatter_chart(scatter(x, x.copy(), density=True)).figure()
+    try:
+        update, buffers = fig.density_view(0, 20.0, 21.0, 20.0, 21.0, 256, 192)
+        trace = update["traces"][0]
+        assert trace["mode"] == "density"
+        assert trace["binning"].startswith("pyramid-L")
+        assert trace["visible"] < SCATTER_DENSITY_THRESHOLD
+        assert buffers and trace["density"]["enc"] == "log-u8"
+        assert trace["tier"] == "density"
+        assert trace["reduction"] == "pyramid-count"
+    finally:
+        interaction._free_pyramid(fig.traces[0])
+
+
 def test_l0_upsample_label_tracks_source_cells_not_no_rescan_flag():
     from types import SimpleNamespace
 

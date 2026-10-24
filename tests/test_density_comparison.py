@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,47 @@ from benchmarks._ux_comparison_source import (
     load_source,
     windows,
 )
+
+
+@pytest.mark.parametrize("validation", ["", "validateOutput:async()=>{},"])
+def test_producer_cannot_accept_missing_or_failing_xyg_numerical_oracle(validation):
+    pytest.importorskip("websocket")
+    pytest.importorskip("tornado.web")
+    from benchmarks.bench_density_comparison import engine_js
+
+    script = r"""
+let tick=0;
+globalThis.performance={now:()=>++tick};
+globalThis.requestAnimationFrame=callback=>setImmediate(callback);
+globalThis.document={title:''};
+const data=new Uint8Array(6*6*4);for(let i=3;i<data.length;i+=4)data[i]=255;
+globalThis.window={__arm:{ready:()=>true,readbacks:()=>[{data,w:6,h:6}]},
+ __comparison:{VALIDATION state:()=>({axes:[0,1,0,1],plot_shape:[512,512],
+ output:{adopted:true,mode:'density',domain:[0,1,0,1],numerical_oracle:{passed:false}}})}};
+setTimeout(()=>{process.stdout.write(document.title);process.exit(0);},100);
+""".replace("VALIDATION", validation)
+    script += engine_js(
+        {"extents": [0, 1, 0, 1], "actual_rows": 1000, "windows": []}, 0.1, "xy-density"
+    )
+    completed = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=True, timeout=5
+    )
+    assert completed.stdout.startswith("UX_BENCH ")
+    result = json.loads(completed.stdout.removeprefix("UX_BENCH "))
+    assert result["comparison_status"] == "cold_failed"
+
+
+def test_competitor_metrics_do_not_prepare_xyg_oracle(monkeypatch):
+    pytest.importorskip("tornado.web")
+    from benchmarks import _ux_comparison_host as host
+    from benchmarks import _ux_comparison_oracle as numerical
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("XYG source oracle added to competitor preparation")
+
+    monkeypatch.setattr(host, "_comparison_source", (None, None, None))
+    monkeypatch.setattr(numerical, "SourceOracle", forbidden)
+    assert host.metrics_handler({"canonical_admission": {}})
 
 
 def test_same_24_pans_eight_adjacent_zooms_and_f32_source(tmp_path):

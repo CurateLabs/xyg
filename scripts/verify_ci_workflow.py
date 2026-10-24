@@ -3054,6 +3054,65 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     return errors
 
 
+_CEILING_PREFLIGHT_SCRIPT = """\
+.venv/bin/python - <<'PY'
+import importlib
+import importlib.metadata as metadata
+import json
+import os
+import sys
+from pathlib import Path
+
+assert sys.version_info[:2] == (3, 12), sys.version
+aggregation = {"numba": "numba", "llvmlite": "llvmlite", "datashader": "datashader",
+               "pandas": "pandas", "PIL": "pillow"}
+stacks = {
+    "ceiling": {
+        "xy": {}, "xy-exact": {},
+        "plotly": {"plotly.express": "plotly", "pandas": "pandas"},
+        "matplotlib": {"matplotlib.backends.backend_webagg": "matplotlib",
+                       "tornado": "tornado", "PIL": "pillow"},
+        "datashader": aggregation,
+        "plotly-resampler": {"plotly.graph_objects": "plotly", "pandas": "pandas",
+                             "plotly_resampler": "plotly-resampler"},
+    },
+    "density-comparison": {
+        "xy-density": {},
+        "plotly-aggregate": {**aggregation, "plotly.offline": "plotly"},
+        "datashader-aggregate": {**aggregation, "hvplot.pandas": "hvplot",
+                                 "holoviews": "holoviews", "panel": "panel", "bokeh": "bokeh"},
+    },
+}
+experiment = os.environ["INPUT_EXPERIMENT"]
+assert experiment in stacks, ("unknown experiment", experiment)
+raw_arms = os.environ["INPUT_ARMS"].split(",")
+arms = ([arm.strip() for arm in raw_arms if arm.strip()]
+        if experiment == "ceiling" else raw_arms)
+assert arms and set(arms) <= set(stacks[experiment]), ("unknown or empty arms", arms)
+modules = {"numpy": "numpy", "psutil": "psutil", "websocket": "websocket-client"}
+if experiment == "density-comparison":
+    modules["tornado"] = "tornado"
+for arm in arms:
+    modules.update(stacks[experiment][arm])
+pins = dict(line.split("==")
+            for line in Path("benchmarks/requirements-ci.lock").read_text().splitlines()
+            if line and not line.startswith((" ", "#")))
+versions = {}
+for name in modules.values():
+    actual = metadata.version(name)
+    versions[name] = actual
+    expected = pins.get(name)
+    assert expected is None or actual == expected, (name, actual, expected)
+for module in modules:
+    importlib.import_module(module)
+import xyg.kernels as kernels
+assert kernels.BACKEND == "native", kernels.BACKEND
+print(json.dumps({"python": sys.version, "executable": sys.executable, "arms": arms,
+                  "packages": versions, "xy_backend": kernels.BACKEND}, sort_keys=True))
+PY
+"""
+
+
 _CEILING_RUN_CONTRACTS = {
     "Record runner capacity": [
         "{",
@@ -3068,18 +3127,17 @@ _CEILING_RUN_CONTRACTS = {
     ],
     "Build native core": ["cargo build --release"],
     "Install package + comparison deps": [
-        "uv venv",
-        "uv pip install --constraint benchmarks/requirements-ci.lock -e . --group dev",
-        "uv pip install --constraint benchmarks/requirements-ci.lock \\",
+        "uv venv --python 3.12",
+        "uv pip install --python .venv/bin/python --constraint benchmarks/requirements-ci.lock -e . --group dev",
+        "uv pip install --python .venv/bin/python --constraint benchmarks/requirements-ci.lock \\",
         "matplotlib plotly kaleido datashader plotly-resampler \\",
         "psutil websocket-client pillow pandas tornado",
         'if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then',
-        "uv pip install --constraint benchmarks/requirements-ci.lock hvplot",
+        "uv pip install --python .venv/bin/python --constraint benchmarks/requirements-ci.lock hvplot",
         "fi",
     ],
-    "Verify native backend is active": [
-        'uv run python -c "import xyg.kernels as k; assert k.BACKEND '
-        "== 'native', k.BACKEND; print('native')\""
+    "Verify benchmark environment": [
+        line.strip() for line in _CEILING_PREFLIGHT_SCRIPT.splitlines() if line.strip()
     ],
     "Build render client": ["npm ci", "node js/build.mjs"],
     "Install Chromium (Playwright)": ["npx playwright install chromium"],
@@ -3093,19 +3151,19 @@ _CEILING_RUN_CONTRACTS = {
         'HARDWARE=""',
         'if [ "$INPUT_HARDWARE_GL" = "true" ]; then HARDWARE="--hardware"; fi',
         "NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \\",
-        "uv run python benchmarks/bench_density_comparison.py \\",
+        ".venv/bin/python benchmarks/bench_density_comparison.py \\",
         '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS" \\',
         '--profile f64-memmap --repetitions "$INPUT_REPETITIONS" \\',
         '--chunk 1000000 --memory-gib "$INPUT_MEMORY_GIB" --disk-gib 20 \\',
         '--timeout "$INPUT_TIMEOUT" --step-timeout 15 \\',
         '$HARDWARE --chrome "$CHROME" \\',
         '--out "$RUNNER_TEMP/density-comparison-${GITHUB_SHA}.json"',
-        "python3 scripts/verify_density_comparison_report.py \\",
+        ".venv/bin/python scripts/verify_density_comparison_report.py \\",
         '"$RUNNER_TEMP/density-comparison-${GITHUB_SHA}.json" \\',
         '--sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE" \\',
         '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS"',
         "else",
-        "uv run python benchmarks/bench_ceiling.py \\",
+        ".venv/bin/python benchmarks/bench_ceiling.py \\",
         '--sizes "$INPUT_SIZES" \\',
         '--arms "$INPUT_ARMS" \\',
         '--repetitions "$INPUT_REPETITIONS" \\',
@@ -3116,7 +3174,7 @@ _CEILING_RUN_CONTRACTS = {
         "fi",
     ],
     "Summarize": [
-        "uv run python benchmarks/summarize_ceiling.py ceiling-results.json \\",
+        ".venv/bin/python benchmarks/summarize_ceiling.py ceiling-results.json \\",
         '--interactive-budget-ms "$INPUT_BUDGET_MS" \\',
         "| tee ceiling-summary.md",
         "{",
@@ -3127,8 +3185,8 @@ _CEILING_RUN_CONTRACTS = {
         '} >> "$GITHUB_STEP_SUMMARY"',
     ],
     "Plot": [
-        "uv run python benchmarks/plot_ceiling.py ceiling-results.json --out-dir charts",
-        "uv run python benchmarks/plot_ceiling.py ceiling-results.json \\",
+        ".venv/bin/python benchmarks/plot_ceiling.py ceiling-results.json --out-dir charts",
+        ".venv/bin/python benchmarks/plot_ceiling.py ceiling-results.json \\",
         "--arms xy-exact,matplotlib,plotly --suffix=-exact --out-dir charts",
     ],
 }
@@ -3243,7 +3301,7 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
         ("Record runner capacity", None, ["name", "run"]),
         ("Build native core", None, ["name", "run"]),
         ("Install package + comparison deps", None, ["name", "env", "run"]),
-        ("Verify native backend is active", None, ["name", "run"]),
+        ("Verify benchmark environment", None, ["name", "timeout-minutes", "env", "run"]),
         ("Build render client", None, ["name", "run"]),
         ("Install Chromium (Playwright)", None, ["name", "timeout-minutes", "run"]),
         ("Free disk before the sweep", None, ["name", "run"]),
@@ -3279,6 +3337,10 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
         errors.append("ceiling comparison must keep the exact reviewed steps and direct keys")
     named = _named_step_blocks(job)
     expected_environments = {
+        "Verify benchmark environment": {
+            "INPUT_EXPERIMENT": "${{ inputs.experiment }}",
+            "INPUT_ARMS": '"${{ inputs.arms }}"',
+        },
         "Install package + comparison deps": {"INPUT_EXPERIMENT": "${{ inputs.experiment }}"},
         "Run ceiling sweep": {
             "INPUT_EXPERIMENT": "${{ inputs.experiment }}",
@@ -3314,6 +3376,12 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
         named.get("Install Chromium (Playwright)", ""), "timeout-minutes"
     ) != (["10"], False):
         errors.append("ceiling Chromium installation must remain bounded to ten minutes")
+    if _step_direct_key_values(
+        named.get("Verify benchmark environment", ""), "timeout-minutes"
+    ) != (["2"], False):
+        errors.append(
+            "ceiling dependency import/version preflight must remain bounded to two minutes"
+        )
     upload = named.get("Upload ceiling report", "")
     if _step_direct_key_values(upload, "if") != (["always()"], False):
         errors.append("ceiling comparison raw report upload must always run")
@@ -3361,6 +3429,17 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
     ]:
         errors.append(
             "ceiling comparison upload must preserve legacy artifacts and exact-SHA runner-temp output"
+        )
+    # Python indentation changes execution. The generic shell-line contract
+    # strips it, so also preserve the complete preflight heredoc verbatim.
+    preflight = named.get("Verify benchmark environment", "")
+    preflight_body = preflight.partition("        run: |\n")[2]
+    expected_body = "\n".join(
+        "          " + line if line else "" for line in _CEILING_PREFLIGHT_SCRIPT.splitlines()
+    )
+    if preflight_body.rstrip() != expected_body:
+        errors.append(
+            "ceiling dependency preflight must retain exact executable Python indentation"
         )
     for name, commands in _CEILING_RUN_CONTRACTS.items():
         if name not in {"Summarize", "Plot"}:

@@ -40,12 +40,14 @@ from environment import collect_environment_metadata  # noqa: E402
 ARMS = ("xy-density", "plotly-aggregate", "datashader-aggregate")
 
 
-def engine_js(source, step_timeout):
+def engine_js(source, step_timeout, arm):
     cfg = {
         "extents": source["extents"],
         "n": source["actual_rows"],
         "windows": source["windows"],
         "deadline": step_timeout * 1000,
+        "numerical_contract": "source-cell-compose-v1",
+        "arm": arm,
     }
     return (
         "const DC="
@@ -83,7 +85,11 @@ def engine_js(source, step_timeout):
    let axesAt=null,adoptAt=null,stableAt=null,lastHash=null,stable=0,diag=null,lastError=null;
    while(performance.now()-start<DC.deadline) {
      try {
-       const snap=snapshot(), state=window.__comparison.state(),now=performance.now();
+       let state=window.__comparison.state();
+       if(window.__comparison.validateOutput && state.output?.adopted) {
+         await window.__comparison.validateOutput(cold,domain);state=window.__comparison.state();
+       }
+       const snap=snapshot(),now=performance.now();
        const axes=near(state.axes,domain);
        const square=near(state.plot_shape,[512,512]);
        if(axes && axesAt===null)axesAt=now;
@@ -91,7 +97,9 @@ def engine_js(source, step_timeout):
        const covers=out?.domain && out.domain[0]<=domain[0]+1e-9 && out.domain[1]>=domain[1]-1e-9 &&
          out.domain[2]<=domain[2]+1e-9 && out.domain[3]>=domain[3]-1e-9;
        const adopted=cold || (!!out?.adopted && (out.exact_fallback ? covers : near(out.domain,domain)));
-       const oracle=cold || (out?.oracle ? out.oracle.passed && out.oracle.count===count
+       const oracle=DC.arm==='xy-density'
+         ? out?.numerical_oracle?.passed===true && out.numerical_oracle.exact_source_count===count
+         :cold || (out?.oracle ? out.oracle.passed && out.oracle.count===count
            :out?.exact_fallback ? out.exact_count===count : true);
        const painted=snap.surfaces>0 && (count===0?snap.lit===0:snap.lit>0);
        const correct=axes && square && adopted && oracle && painted;
@@ -223,7 +231,7 @@ def run_arm(arm, manifest, args, repetition):
                 ]
             row = drive_browser(
                 url + "/",
-                [*injection, engine_js(source, args.step_timeout)],
+                [*injection, engine_js(source, args.step_timeout, arm)],
                 chrome=args.chrome,
                 timeout_s=args.timeout,
                 memory_limit_bytes=int(args.memory_gib * 2**30),
@@ -342,6 +350,7 @@ def main():
     report = {
         "schema_version": 1,
         "experiment": "programmatic-equal-window-no-gesture-claim",
+        "numerical_contract": "source-cell-compose-v1",
         "argv": sys.argv,
         "repetitions": args.repetitions,
         "arms": arms,

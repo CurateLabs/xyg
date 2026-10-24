@@ -1,0 +1,37 @@
+Retention validation, 2026-10-24 UTC
+
+Measured source: a8b3e10801fa3c1b96eddd7b244a1d64e0778bad
+Run 40066499687, attempt 1, job 120790765112, artifact 12550060246.
+Hosted benchmark outcome: failure. Hosted independent verifier rejected report:
+INVALID: XYG density visible count mismatch
+No hosted acceptance is claimed by the local checks below.
+
+Executed from the isolated worktree, with TMPDIR=$PWD/.task-tmp:
+python3 benchmarks/results/live-aggregation-2026-10-24/hosted-main/inspect_evidence.py
+Result: retention hashes, GitHub ZIP digest/CRC/member bytes, historical Git
+source bindings and exact 18-cell coverage passed. Original producer statuses
+are six ok and twelve host_failed. This is metadata/hash inspection only.
+No local invocation of the large-report authority validator was performed.
+No Actions environment was spoofed; no source was generated or mapped locally.
+
+Mandatory full-worktree checks executed sequentially under set -e:
+export TMPDIR="$PWD/.task-tmp"
+export UV_NO_SYNC=1
+uv run --with pre-commit pre-commit run --all-files
+uv run ruff check .
+uv run ruff format --check .
+
+Output, all exit statuses zero:
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+All checks passed!
+868 files already formatted
+
+UV_NO_SYNC=1 kept lint tooling from building/installing the project after
+uv sync --group dev --no-install-project. No native/browser build or benchmark
+was needed for this evidence-only change. git diff --check also passed.
+
+All tracked additions are confined to this hosted-main evidence directory.
+The parent owns authoritative spec/description reconciliation and independent
+final review. No push, PR/issue/comment mutation, tag or publication occurred.
