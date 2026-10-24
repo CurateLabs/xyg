@@ -4471,6 +4471,7 @@ def test_pipefail_rule_accepts_explicit_pipefail_and_ignores_non_pipes() -> None
         ("release", "publish.yaml", "validate_release_workflow"),
         ("CodSpeed", "codspeed.yml", "validate_codspeed_workflow"),
         ("density authority", "density-100m.yml", "validate_density_workflow"),
+        ("ceiling comparison", "ceiling-benchmark.yml", "validate_ceiling_workflow"),
     ],
 )
 def test_every_validated_workflow_rejects_a_piped_step_without_pipefail(
@@ -4626,6 +4627,7 @@ def test_checker_ok_line_lists_every_validated_workflow(capsys: pytest.CaptureFi
         "ci.yml",
         "codspeed.yml",
         "density-100m.yml",
+        "ceiling-benchmark.yml",
         "final-coderabbit.yml",
         "publish.yaml",
         "merge-queue-ruleset.json",
@@ -5015,3 +5017,129 @@ def test_ci_retains_consumer_evidence_after_failure(tmp_path: Path, condition: s
     path.write_text(workflow.replace(step, step.replace("always()", condition)), encoding="utf-8")
     errors = verify_ci_workflow.validate_ci_workflow(path)
     assert any("Retain consumer application browser evidence" in error for error in errors)
+
+
+def test_ceiling_comparison_accepts_existing_manual_capacity_and_defaults() -> None:
+    assert verify_ci_workflow.validate_ceiling_workflow() == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("on:\n  workflow_dispatch:", "on:\n  pull_request:\n  workflow_dispatch:"),
+        (
+            "on:\n  workflow_dispatch:",
+            "on:\n  schedule:\n    - cron: '0 0 * * *'\n  workflow_dispatch:",
+        ),
+        (
+            "  ceiling:\n",
+            "  extra:\n    runs-on: blacksmith-12vcpu-macos-15\n    steps: []\n  ceiling:\n",
+        ),
+        (
+            "    if: inputs.experiment != 'density-comparison' || github.ref == 'refs/heads/main'",
+            "    if: always()",
+        ),
+        ("    runs-on: blacksmith-12vcpu-macos-15", "    runs-on: blacksmith-6vcpu-macos-15"),
+        ("    timeout-minutes: 720", "    timeout-minutes: 1440"),
+        ("    steps:\n", "    continue-on-error: true\n    steps:\n"),
+        ("    steps:\n", "    strategy:\n      matrix:\n        repeat: [1, 2]\n    steps:\n"),
+        ("    steps:\n", "    env:\n      BASH_ENV: /tmp/override\n    steps:\n"),
+        ("        default: ceiling", "        default: density-comparison"),
+        (
+            "        options: [ceiling, density-comparison]",
+            "        options: [ceiling, density-comparison, unsafe]",
+        ),
+        ('        default: "300"', '        default: "600"'),
+        ('        default: "20"', '        default: "40"'),
+        ('        default: "3"', '        default: "1"'),
+        ("          persist-credentials: false", "          persist-credentials: true"),
+        ("          fetch-depth: 0", "          fetch-depth: 1"),
+        ("          INPUT_ARMS: ${{ inputs.arms }}", "          INPUT_ARMS: ${{ inputs.sizes }}"),
+        (
+            "          INPUT_EXPERIMENT: ${{ inputs.experiment }}",
+            "          INPUT_EXPERIMENT: ceiling",
+        ),
+        (
+            '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS"',
+            '--sizes "${{ inputs.sizes }}" --arms "$INPUT_ARMS"',
+        ),
+        (
+            '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS"',
+            '--sizes $INPUT_SIZES --arms "$INPUT_ARMS"',
+        ),
+        ("--profile f64-memmap", "--profile f32"),
+        ("--chunk 1000000", "--chunk 1000000000"),
+        ("--disk-gib 20", "--disk-gib 40"),
+        ("--step-timeout 15", "--step-timeout 60"),
+        ('--repetitions "$INPUT_REPETITIONS"', "--repetitions 1"),
+        ('--timeout "$INPUT_TIMEOUT"', "--timeout 7200"),
+        ('--memory-gib "$INPUT_MEMORY_GIB"', "--memory-gib 40"),
+        (
+            '--out "$RUNNER_TEMP/density-comparison-${GITHUB_SHA}.json"',
+            "--out density-comparison.json",
+        ),
+        ('--sha "$GITHUB_SHA"', "--sha stale"),
+        ('--artifact-root "$GITHUB_WORKSPACE"', "--artifact-root /tmp/stale"),
+        (
+            '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS"\n          else',
+            "--sizes 1000 --arms xy-density\n          else",
+        ),
+        (
+            "python3 scripts/verify_density_comparison_report.py",
+            "echo scripts/verify_density_comparison_report.py",
+        ),
+        (
+            '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS"\n          else',
+            '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS" || true\n          else',
+        ),
+        (
+            "      - name: Run ceiling sweep\n",
+            "      - name: Run ceiling sweep\n        if: 'false'\n",
+        ),
+        (
+            "      - name: Run ceiling sweep\n",
+            "      - name: Run ceiling sweep\n        continue-on-error: true\n",
+        ),
+        (
+            "      - name: Build native core\n",
+            "      - name: Build native core\n        if: 'false'\n",
+        ),
+        (
+            '          if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then',
+            "          if false; then",
+        ),
+        (
+            "uv pip install --constraint benchmarks/requirements-ci.lock hvplot",
+            "uv pip install hvplot",
+        ),
+        (
+            "NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2",
+            "NUMBA_NUM_THREADS=48 OMP_NUM_THREADS=48 OPENBLAS_NUM_THREADS=48",
+        ),
+        ("uv run python benchmarks/bench_ceiling.py \\", "echo benchmarks/bench_ceiling.py \\"),
+        ("${{ runner.temp }}/density-comparison-${{ github.sha }}.json", "density-comparison.json"),
+        (
+            "      - name: Upload ceiling report\n        if: always()",
+            "      - name: Upload ceiling report\n        if: success()",
+        ),
+        ("          if-no-files-found: warn", "          if-no-files-found: ignore"),
+    ],
+)
+def test_ceiling_comparison_rejects_changed_capacity_or_unbound_evidence(
+    tmp_path: Path, old: str, new: str
+) -> None:
+    workflow = verify_ci_workflow.DEFAULT_CEILING_WORKFLOW.read_text(encoding="utf-8")
+    assert old in workflow, old
+    path = tmp_path / "ceiling-benchmark.yml"
+    path.write_text(workflow.replace(old, new, 1), encoding="utf-8")
+    assert verify_ci_workflow.validate_ceiling_workflow(path)
+
+
+def test_all_workflows_checks_optional_ceiling_comparison(tmp_path: Path) -> None:
+    source = verify_ci_workflow.DEFAULT_CEILING_WORKFLOW.read_text(encoding="utf-8")
+    path = tmp_path / "ceiling-benchmark.yml"
+    path.write_text(source.replace("--profile f64-memmap", "--profile f32"), encoding="utf-8")
+    assert any(
+        "Run ceiling sweep" in error
+        for error in verify_ci_workflow.validate_all_workflows(ceiling_path=path)
+    )

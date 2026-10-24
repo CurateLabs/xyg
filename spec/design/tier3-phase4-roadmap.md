@@ -270,8 +270,11 @@ inside this frame; changing any of it means editing this section first.
 - [x] Independently pinned structural report verification for both bounded
   host harnesses; raw samples and native/source hashes accompany results.
 - [x] Bounded count/color spill/fetch/compose benchmark definitions in the
-  existing scheduled/manual main CodSpeed suite. Hosted comparison results
-  must still be retained after the definitions land.
+  existing scheduled/manual main CodSpeed suite. Actual main run 40055566017
+  passed all 131 Python benchmarks, including these eight cases, and uploaded
+  simulation data. Its [retained execution receipt](../../benchmarks/results/codspeed-spill-2026-10-24/hosted-main/README.md)
+  binds source, full job log and metadata; no numerical CPU-work export or
+  before/after speedup is inferred from that log.
 - [x] Dedicated colored-spill 100M memmap **host/kernel** pan/zoom latency,
   independently pinned budgets and raw results: clean-main run 40055564684,
   [retained evidence](../../benchmarks/results/colored-spill-2026-10-24/hosted-main/README.md).
