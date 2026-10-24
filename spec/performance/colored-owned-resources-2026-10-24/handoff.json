@@ -1,0 +1,155 @@
+{
+  "commit": "a41274b2d29bcb8889fee01034d7c24f55343e3b",
+  "base": "8185de790ea4699ffc93701f5b4b55fb5d838d72",
+  "owned_path_count": 15,
+  "patch_sha256": "e0fb20ecc5f3082838cdfc628f16868e428c670001ab5458e71ee773734e4a32",
+  "path_manifest_sha256": "123eeefdda3e31fdb157d316975bc67595eae457281ee9b244ee96aa82f8189c",
+  "host_sha256": "292fa42483b8a1cdd55ae4f07e393cde0ca2fc5253bc31c3760dcb4b08905424",
+  "companion_sha256": "dda013421de8cdf9d34de087ef8ba5c7476b1ca29542832e24899a761cb9a1f1",
+  "normal_draws": 61,
+  "normal_zoom_transition_frames": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    2,
+    2
+  ],
+  "process_tree": {
+    "browser_process_observed": true,
+    "elapsed_seconds": 22.123995571862906,
+    "max_live_process_count": 14,
+    "observed_process_count": 26,
+    "observed_processes": [
+      {
+        "name": "python",
+        "pid": 2535745
+      },
+      {
+        "name": "chrome",
+        "pid": 2535754
+      },
+      {
+        "name": "chrome",
+        "pid": 2535761
+      },
+      {
+        "name": "chrome",
+        "pid": 2535762
+      },
+      {
+        "name": "chrome",
+        "pid": 2535783
+      },
+      {
+        "name": "chrome",
+        "pid": 2535784
+      },
+      {
+        "name": "chrome",
+        "pid": 2535804
+      },
+      {
+        "name": "chrome",
+        "pid": 2535842
+      },
+      {
+        "name": "chrome",
+        "pid": 2535856
+      },
+      {
+        "name": "chrome",
+        "pid": 2535857
+      },
+      {
+        "name": "chrome",
+        "pid": 2535882
+      },
+      {
+        "name": "chrome",
+        "pid": 2535902
+      },
+      {
+        "name": "chrome",
+        "pid": 2535913
+      },
+      {
+        "name": "chrome",
+        "pid": 2535980
+      },
+      {
+        "name": "chrome",
+        "pid": 2535987
+      },
+      {
+        "name": "chrome",
+        "pid": 2535988
+      },
+      {
+        "name": "chrome",
+        "pid": 2536010
+      },
+      {
+        "name": "chrome",
+        "pid": 2536011
+      },
+      {
+        "name": "chrome",
+        "pid": 2536024
+      },
+      {
+        "name": "chrome",
+        "pid": 2536069
+      },
+      {
+        "name": "chrome",
+        "pid": 2536084
+      },
+      {
+        "name": "chrome",
+        "pid": 2536085
+      },
+      {
+        "name": "chrome",
+        "pid": 2536109
+      },
+      {
+        "name": "chrome",
+        "pid": 2536131
+      },
+      {
+        "name": "chrome",
+        "pid": 2536142
+      },
+      {
+        "name": "chrome",
+        "pid": 2536154
+      }
+    ],
+    "peak_pids": [
+      2535745,
+      2535980,
+      2535987,
+      2535988,
+      2536010,
+      2536011,
+      2536024,
+      2536069,
+      2536084,
+      2536085,
+      2536109,
+      2536131,
+      2536142,
+      2536154
+    ],
+    "peak_process_count": 14,
+    "peak_rss_bytes": 1993695232,
+    "peak_temp_bytes": 111313980,
+    "rss_observer": "linux-proc",
+    "sample_interval_seconds": 0.05,
+    "worker_peak_rss_bytes": 301486080,
+    "worker_rss_measurement": "VmHWM"
+  }
+}

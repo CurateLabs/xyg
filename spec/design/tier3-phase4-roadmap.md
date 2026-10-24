@@ -285,9 +285,14 @@ inside this frame; changing any of it means editing this section first.
   fades and zero seam error at 100M with production base 4096. The
   [raw host/companion receipt](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md)
   records SwiftShader and deterministic presentation, with complete cleanup.
-- [ ] Physical-GPU ownership evidence: instrumented software WebGL allocations
-  exclude pre-hook initial-payload textures and do not establish hardware VRAM
-  or a complete allocator audit. Natural-cadence/headline evidence remains open.
+- [ ] Accelerated owned-allocation/normal-cadence 100M evidence: the retained
+  schema-1 software receipt excludes pre-hook initial textures. The implemented
+  [schema-2 companion](density-spill-browser-evidence.md) accounts all owned
+  texture/buffer storage and deletion and adds a separate normal product-RAF
+  journey. Its optional existing-M4 manual mode fails closed on software or
+  missing renderer/observer before source allocation; actual accelerated hosted
+  execution remains unproven. Total driver VRAM stays unqueryable. No universal
+  FPS gate or new runner/capacity is introduced; broader headline gaps remain.
 - [ ] Comparable live competitive evidence and explicit scale limitations.
 
 ## Exit criteria
