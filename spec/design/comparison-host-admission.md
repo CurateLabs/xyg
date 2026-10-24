@@ -105,6 +105,10 @@ imports are unavailable. The deterministic Node regression holds the old
 available. It requires admission of the later bound 512×512 image, and rejects
 wrong image hashes, backend revisions, grid hashes and extents. The original
 producer admits the bootstrap before frame 35 and fails this regression.
+Separate asynchronous regressions hold a metrics response after image hashing,
+replace both the image and binding, and complete old/fresh validation in both
+orders. Old metrics cannot admit the replacement or invalidate its later
+independently validated admission.
 
 A real bounded browser proof uses 1,000 actual mapped rows, every arm and both
 fresh-process repetitions, all 32 windows, and the separate empty control:

@@ -593,6 +593,70 @@ globalThis.document={set title(t){
         assert result["result"]["comparison_status"] == "cold_failed"
 
 
+@pytest.mark.parametrize("completion_order", ["old-first", "replacement-first"])
+def test_bokeh_replacement_during_metrics_validation(completion_order):
+    pytest.importorskip("tornado.web")
+    from benchmarks._ux_comparison_host import BOKEH_JS
+
+    script = r"""
+const assert=require('node:assert/strict'),cryptoNode=require('node:crypto');
+globalThis.crypto=cryptoNode.webcrypto;
+const domain=[0,1,0,1],pending=[];let changed=()=>{};
+const makeImage=value=>{const a=new Uint32Array(512*512);a.fill(value);return a;};
+const initial=makeImage(0xff000000),replacement=makeImage(0xff0000ff);
+const digest=a=>cryptoNode.createHash('sha256').update(new Uint8Array(a.buffer)).digest('hex');
+const oldHost={domain,grid_shape:[512,512],backend_revision:2,grid_sha256:'a'.repeat(64),
+ count:1000,grid_mass:1000,passed:true};
+const newHost={...oldHost,backend_revision:3,grid_sha256:'b'.repeat(64)};
+const oldBinding={...oldHost,image_sha256:digest(initial)},
+ newBinding={...newHost,image_sha256:digest(replacement)};
+const cds={data:{image:[initial],comparison_backend:[oldBinding]},
+ properties:{data:{change:{connect:f=>changed=f}}}};
+const pv={frame:{bbox:{width:512,height:512}},
+ renderer_views:new Map([[0,{model:{glyph:{type:'ImageRGBA'},data_source:cds}}]])};
+globalThis.window={__arm:{_pv:()=>pv,currentRaster:()=>true,
+ evidence:()=>({domain:{x0:0,x1:1,y0:0,y1:1},
+ rasters:[{x:0,y:0,dw:1,dh:1,shape:[512,512]}]})}};
+// Hold the real validation await after hashing, rather than replacing an
+// image before validation begins. Each response retains its original host.
+globalThis.fetch=()=>new Promise(resolve=>pending.push(resolve));
+const waitForRequests=async n=>{while(pending.length<n)await new Promise(setImmediate);};
+const release=(index,host)=>pending[index]({json:async()=>({last_output:host})});
+"""
+    script += (
+        BOKEH_JS
+        + r"""
+(async()=>{
+ window.__comparison.state(); // Connect the actual data-change observer.
+ const oldValidation=window.__comparison.validateOutput(true,domain);
+ await waitForRequests(1);
+ cds.data={image:[replacement],comparison_backend:[newBinding]};changed();
+ assert.equal(window.__comparison.state().output.adopted,false);
+ const freshValidation=window.__comparison.validateOutput(true,domain);
+ await waitForRequests(2);
+ if(ORDER==='old-first'){
+  release(0,oldHost);await oldValidation;
+  assert.equal(window.__comparison.state().output.adopted,false,
+   'old metrics must not admit the replacement');
+  release(1,newHost);await freshValidation;
+ }else{
+  release(1,newHost);await freshValidation;
+  assert.equal(window.__comparison.state().output.adopted,true);
+  release(0,oldHost);await oldValidation;
+ }
+ const output=window.__comparison.state().output;
+ assert.equal(output.adopted,true,'old completion must not invalidate fresh admission');
+ assert.equal(output.backend_binding.backend_revision,3);
+ process.stdout.write('replacement validated');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+""".replace("ORDER", json.dumps(completion_order))
+    )
+    completed = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=True, timeout=5
+    )
+    assert completed.stdout == "replacement validated"
+
+
 def test_bokeh_checkpoint_rejects_backend_ahead_of_adopted_image():
     pytest.importorskip("websocket")
     pytest.importorskip("tornado.web")
