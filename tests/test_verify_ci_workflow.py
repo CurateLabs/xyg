@@ -5332,7 +5332,7 @@ def test_ceiling_preflight_arm_sets_match_producers(
             "  extra:\n    runs-on: blacksmith-12vcpu-macos-15\n    steps: []\n  ceiling:\n",
         ),
         (
-            "    if: inputs.experiment != 'density-comparison' || github.ref == 'refs/heads/main'",
+            "    if: inputs.experiment == 'ceiling' || github.ref == 'refs/heads/main'",
             "    if: always()",
         ),
         ("    runs-on: blacksmith-12vcpu-macos-15", "    runs-on: blacksmith-6vcpu-macos-15"),
@@ -5342,7 +5342,7 @@ def test_ceiling_preflight_arm_sets_match_producers(
         ("    steps:\n", "    env:\n      BASH_ENV: /tmp/override\n    steps:\n"),
         ("        default: ceiling", "        default: density-comparison"),
         (
-            "        options: [ceiling, density-comparison]",
+            "        options: [ceiling, density-comparison, colored-browser-hardware]",
             "        options: [ceiling, density-comparison, unsafe]",
         ),
         ('        default: "300"', '        default: "600"'),
@@ -5378,7 +5378,7 @@ def test_ceiling_preflight_arm_sets_match_producers(
             "modules.update(stacks[experiment][arm])",
             'modules.update(stacks["ceiling"]["plotly-resampler"])',
         ),
-        ('raw_arms = os.environ["INPUT_ARMS"].split(",")', 'raw_arms = ["xy"]'),
+        ('else os.environ["INPUT_ARMS"].split(","))', 'else ["xy"])'),
         ('INPUT_ARMS: "${{ inputs.arms }}"', 'INPUT_ARMS: "${{ inputs.sizes }}"'),
         (
             "          .venv/bin/python benchmarks/plot_ceiling.py ceiling-results.json --out-dir charts",
@@ -5473,3 +5473,57 @@ def test_all_workflows_checks_optional_ceiling_comparison(tmp_path: Path) -> Non
         "Run ceiling sweep" in error
         for error in verify_ci_workflow.validate_all_workflows(ceiling_path=path)
     )
+
+
+@pytest.mark.parametrize(
+    "old,new",
+    [
+        ("--preflight-only --gl hardware", "--preflight-only --gl software"),
+        ("--preflight-only --gl hardware", "--gl hardware"),
+        ("--colored-browser-gl hardware", "--colored-browser-gl software"),
+        (
+            "--points 16384 --chunk-points 4096 --timeout 180",
+            "--points 1000000 --chunk-points 4096 --timeout 7200",
+        ),
+        ("--authority --points 100000000", "--points 100000000"),
+        (
+            "--timeout 3600 --max-rss-gib 12 --max-disk-gib 4",
+            "--timeout 7200 --max-rss-gib 20 --max-disk-gib 8",
+        ),
+        ('--require-hardware --sha "$GITHUB_SHA"', '--sha "$GITHUB_SHA"'),
+        ('test -z "$(git status --porcelain)"', "true"),
+        ('test "$(git rev-parse HEAD)" = "$GITHUB_SHA"', "true"),
+        (
+            "hardware_context_guard(dict(os.environ), authority=True)",
+            "hardware_context_guard(dict(os.environ), authority=False)",
+        ),
+        ("${{ runner.temp }}/colored-browser-*-${{ github.sha }}.json", "colored-browser.json"),
+        ('if [ "$INPUT_EXPERIMENT" != "colored-browser-hardware" ]; then', "if true; then"),
+    ],
+)
+def test_ceiling_colored_hardware_requires_preflight_limits_exact_source_and_verifiers(
+    tmp_path, old, new
+):
+    workflow = verify_ci_workflow.DEFAULT_CEILING_WORKFLOW.read_text()
+    assert old in workflow
+    path = tmp_path / "ceiling.yml"
+    path.write_text(workflow.replace(old, new, 1))
+    assert verify_ci_workflow.validate_ceiling_workflow(path)
+
+
+def test_colored_hardware_environment_ignores_unrelated_comparison_stacks(ceiling_preflight):
+    state, run = ceiling_preflight
+    state["broken"] = {
+        "websocket",
+        "psutil",
+        "tornado",
+        "pandas",
+        "datashader",
+        "plotly",
+        "matplotlib",
+    }
+    for package in state["broken"] | {"websocket-client"}:
+        state["installed"].pop(package, None)
+    _, evidence = run("colored-browser-hardware", "ignored,comparison,arms")
+    assert state["imports"] == ["numpy"]
+    assert evidence["arms"] == ["xy"] and set(evidence["packages"]) == {"numpy"}

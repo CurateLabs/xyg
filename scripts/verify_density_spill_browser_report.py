@@ -58,6 +58,154 @@ def same_frame(a: dict, b: dict) -> None:
     )
 
 
+def owned_gpu(gpu: dict) -> None:
+    resources, events = gpu["resources"], gpu["events"]
+    require(isinstance(resources, list) and bool(resources), "missing owned resource inventory")
+    by_id = {r["id"]: r for r in resources}
+    require(len(by_id) == len(resources), "duplicate owned resource identity")
+    live, created, deleted = {}, set(), set()
+    peak = tile_peak = uploads = 0
+    for event in events:
+        key, op, size = event["id"], event["op"], event["bytes"]
+        require(key in by_id and integer(size, 0), "invalid owned allocation event")
+        if op == "create":
+            require(key not in created and size == 0, "owned creation identity/size")
+            created.add(key)
+            live[key] = 0
+        elif op == "storage":
+            require(key in created - deleted, "storage after deletion/before creation")
+            live[key] = size  # Reallocation replaces capacity, including shrink.
+            uploads += by_id[key]["kind"] == "texture"
+        elif op == "delete":
+            require(
+                key in created - deleted and size == live[key], "missing/repeated owned deletion"
+            )
+            deleted.add(key)
+            live[key] = 0
+        else:
+            raise ValueError("unknown owned allocation event")
+        peak = max(peak, sum(live.values()))
+        tile_peak = max(
+            tile_peak, sum(v for k, v in live.items() if by_id[k]["category"] == "tiles")
+        )
+    require(created == deleted == set(by_id) and not any(live.values()), "owned resource leak")
+    require(
+        all(
+            integer(r["id"], 1)
+            and r["deleted"] is True
+            and r["kind"] in {"texture", "buffer"}
+            and r["category"] in {"initial", "LUT", "pick", "chart", "oracle", "tiles"}
+            and integer(r["bytes"], 0)
+            and (
+                r["kind"] != "buffer"
+                or (
+                    integer(r["logicalBytes"], 0)
+                    and r["bytes"] == math.ceil(r["logicalBytes"] / 256) * 256
+                )
+            )
+            and r["bytes"] == next(e["bytes"] for e in reversed(events) if e["id"] == r["id"])
+            for r in resources
+        ),
+        "owned inventory/category differs from events",
+    )
+    for kind in ("texture", "buffer"):
+        name = "Textures" if kind == "texture" else "Buffers"
+        require(
+            gpu["created" + name]
+            == gpu["deleted" + name]
+            == sum(r["kind"] == kind for r in resources)
+            > 0,
+            "owned creation/deletion counts",
+        )
+    require(
+        any(r["category"] == "initial" for r in resources)
+        and any(r["category"] == "LUT" for r in resources)
+        and gpu["categories"]
+        == {
+            category: {
+                "created": sum(r["category"] == category for r in resources),
+                "deleted": sum(r["category"] == category and r["deleted"] for r in resources),
+            }
+            for category in ("initial", "LUT", "pick", "chart", "oracle", "tiles")
+        },
+        "initial/LUT/pick/category accounting absent",
+    )
+    require(
+        gpu["peakInstrumentedBytes"] == peak
+        and gpu["tilePeakBytes"] == tile_peak
+        and 0 < tile_peak <= 8 * 512 * 512 * 4
+        and gpu["uploads"] == uploads
+        and gpu["remainingTextures"] == 0,
+        "owned peak/reallocation/tile budget accounting",
+    )
+    require(
+        all(
+            gpu[k] is True
+            for k in ("explicitDeletionBeforeContextLoss", "noReferences", "noGLError")
+        )
+        and gpu["staleReplyEvents"] == 0,
+        "owned destroy/context loss/stale reply failure",
+    )
+
+
+def normal_sample(sample: dict, cached: dict, previous: dict, frame: dict) -> None:
+    frames, adoption = sample["frames"], sample["adoption"]
+    require(
+        number(sample["startedAt"], 0)
+        and number(adoption["at"], sample["startedAt"])
+        and adoption["level"] == frame["level"]
+        and integer(adoption["seq"], 0),
+        "normal asynchronous adoption missing",
+    )
+    require(bool(frames), "normal RAF draws absent")
+    last_at = sample["startedAt"]
+    transition_count = 0
+    previous_keys = {"/".join(map(str, t["key"])) for t in previous["inventory"] if t["active"]}
+    for draw in frames:
+        require(
+            number(draw["at"], last_at)
+            and draw["at"] > last_at
+            and number(draw["clock"], draw["at"])
+            and number(draw["clockEnd"], draw["clock"]),
+            "normal draws require monotonic product clock",
+        )
+        last_at = draw["at"]
+        require(digest(draw["pixelSha256"]) and bool(draw["drawn"]), "normal nonblank draw missing")
+        ink(draw["ink"])
+        for d in draw["drawn"]:
+            require(
+                d["sourceAlive"] is True and number(d["opacity"], 0, 1) and bool(d["keys"]),
+                "normal outgoing source reference lost",
+            )
+        outgoing = [
+            d for d in draw["drawn"] if d["level"] == previous["level"] and 0 < d["opacity"] < 1
+        ]
+        incoming = [
+            d for d in draw["drawn"] if d["level"] == frame["level"] and 0 < d["opacity"] < 1
+        ]
+        if sample["kind"] == "zoom" and outgoing and incoming:
+            require(
+                all(set(d["keys"]) == previous_keys for d in outgoing),
+                "normal outgoing keys differ",
+            )
+            transition_count += 1
+    require(
+        sample["transitionFrames"] == transition_count
+        and (transition_count > 0 if sample["kind"] == "zoom" else transition_count == 0),
+        "normal adjacent transition draws missing",
+    )
+    require(
+        frames[-1]["retired"] is True
+        and frames[-1]["outgoingKeys"] == []
+        and frames[-1]["at"] >= adoption["at"]
+        and sample["cachedPixelEquality"] is True
+        and sample["settledPixelSha256"] == frames[-1]["pixelSha256"] == cached["pixelSha256"],
+        "normal settled pixels/retirement differ from deterministic oracle",
+    )
+    if sample["kind"] == "zoom":
+        require(len({d["pixelSha256"] for d in frames}) > 1, "normal transition pixels unchanged")
+
+
 def validate(
     report: Any,
     host_bytes: bytes,
@@ -65,6 +213,7 @@ def validate(
     expected_sha: str | None = None,
     environ: dict[str, str] | None = None,
     artifact_root: Path | None = None,
+    require_hardware: bool = False,
 ) -> list[str]:
     try:
         _validate(
@@ -74,6 +223,11 @@ def validate(
             dict(os.environ) if environ is None else environ,
             artifact_root,
         )
+        if require_hardware:
+            require(
+                report["schema_version"] == 2 and report["browser"]["requested_gl"] == "hardware",
+                "hardware evidence requires the owned/normal accelerated contract",
+            )
     except (
         ValueError,
         KeyError,
@@ -94,10 +248,16 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
     )
     require(not errors, "matching host report invalid: " + "; ".join(errors))
     require(r["host_report_sha256"] == sha(host_bytes), "immutable host report SHA-256 differs")
+    modern = r["schema_version"] == 2
     require(
-        r["schema_version"] == 1
+        r["schema_version"] in (1, 2)
         and r["report_kind"] == "density-colored-spill-browser-companion"
-        and r["scope"] == "same-source-real-browser-deterministic-cadence"
+        and r["scope"]
+        == (
+            "same-source-real-browser-owned-resources-and-normal-cadence"
+            if modern
+            else "same-source-real-browser-deterministic-cadence"
+        )
         and r["status"] == "ok",
         "must pass the distinct browser companion contract",
     )
@@ -178,7 +338,11 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
         and d["first_payload_binning"] == h["initial_payload"]["binning"]
         and d["first_payload_reduction"] == h["initial_payload"]["reduction"]
         and d["presentation"]
-        == "manual draw cadence and frozen clock; product fade/source selection unchanged",
+        == (
+            "deterministic oracle plus separate product RAF/monotonic-clock journey; readback is not production FPS"
+            if modern
+            else "manual draw cadence and frozen clock; product fade/source selection unchanged"
+        ),
         "browser decisions/presentation scope changed",
     )
     windows = [{"kind": s["kind"], "window": s["window"]} for s in h["samples"]]
@@ -204,12 +368,64 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
     bootstrap = r["bootstrap"]
     pool = host.check_frame(bootstrap, {}, domain, base)
     same_frame(bootstrap, h["seed"])
-    require(len(r["requests"]) == 66, "require all 33 cached and fresh requests")
+    require(
+        len(r["requests"]) == (99 if modern else 66), "require all 33 cached and fresh requests"
+    )
     runs = browser["runs"]
-    require(set(runs) == {"cached", "fetch-all"}, "require both actual browser runs")
+    require(
+        set(runs) == ({"cached", "fetch-all", "normal"} if modern else {"cached", "fetch-all"}),
+        "require both actual browser runs",
+    )
     transferred = {}
     cached_frames = []
-    for mode_index, mode in enumerate(("cached", "fetch-all")):
+    if modern:
+        from scripts.density_spill_browser_smoke import renderer_guard
+
+        mode = browser["requested_gl"]
+        probe = browser["preflight"]
+        require(
+            probe["requested_gl"] == mode
+            and probe["status"] == "ok"
+            and probe["contextLost"] is False
+            and probe["process_reaped"] is True
+            and probe["profile_removed"] is True,
+            "preallocation renderer preflight failed",
+        )
+        renderer_guard(probe["renderer"], probe["gpu_info"], mode)
+        if mode == "hardware":
+            require(
+                browser["hardware_context"] == probe["hardware_context"],
+                "hardware workflow identity differs between preflight and journey",
+            )
+            require(
+                h["environment"]["platform"]["system"] == "Darwin"
+                and h["environment"]["platform"]["machine"] == "arm64",
+                "hardware evidence requires Darwin arm64",
+            )
+            if r["authority"]:
+                require(
+                    browser["hardware_context"]
+                    == {
+                        key: environ.get(key)
+                        for key in (
+                            "GITHUB_REPOSITORY",
+                            "GITHUB_WORKFLOW_REF",
+                            "GITHUB_WORKFLOW_SHA",
+                        )
+                    },
+                    "hardware workflow identity differs from trusted ambient run",
+                )
+                from benchmarks._density_spill import hardware_context_guard
+
+                hardware_context_guard(
+                    environ,
+                    authority=True,
+                    system=h["environment"]["platform"]["system"],
+                    machine=h["environment"]["platform"]["machine"],
+                )
+    for mode_index, mode in enumerate(
+        ("cached", "fetch-all", "normal") if modern else ("cached", "fetch-all")
+    ):
         run = runs[mode]
         require(
             run["destroyed"] is True and run["lateReplyIgnored"] is True,
@@ -228,13 +444,17 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
             "missing WebGL renderer",
         )
         gpu = run["gpu"]
-        require(
-            integer(gpu["createdTextures"], 34)
-            and gpu["deletedTextures"] == gpu["createdTextures"] == gpu["uploads"]
-            and gpu["remainingTextures"] == 0
-            and integer(gpu["peakInstrumentedBytes"], 1, 512 * 512 * 4 * 8 + 2048 * 2048 * 4),
-            "actual GPU allocation/deletion accounting failed",
-        )
+        if modern:
+            renderer_guard(run["renderer"], browser["gpu_info"], browser["requested_gl"])
+            owned_gpu(gpu)
+        else:
+            require(
+                integer(gpu["createdTextures"], 34)
+                and gpu["deletedTextures"] == gpu["createdTextures"] == gpu["uploads"]
+                and gpu["remainingTextures"] == 0
+                and integer(gpu["peakInstrumentedBytes"], 1, 512 * 512 * 4 * 8 + 2048 * 2048 * 4),
+                "actual GPU allocation/deletion accounting failed",
+            )
         samples = run["samples"]
         require(len(samples) == 33, "missing browser framebuffer samples")
         previous, held = bootstrap, dict(pool)
@@ -269,10 +489,11 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
             )
             keys = [struct.unpack_from("<3I", control, 32 + i * 12) for i in range(count)]
             require(
-                len(set(keys)) == count and set(keys) == (set(held) if mode == "cached" else set()),
+                len(set(keys)) == count
+                and set(keys) == (set(held) if mode != "fetch-all" else set()),
                 "client control inventory differs from actual previous ownership",
             )
-            held = host.check_frame(frame, held if mode == "cached" else {}, domain, base)
+            held = host.check_frame(frame, held if mode != "fetch-all" else {}, domain, base)
             host.check_stats(frame["stats"])
             same_frame(frame, h["seed"] if index < 0 else h["samples"][index])
             stats = sample["stats"]
@@ -290,6 +511,10 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
                 "browser failed adjacent level journey",
             )
             transferred[mode] += stats["received"]
+            if mode == "normal":
+                normal_sample(sample, runs["cached"]["samples"][at], previous, frame)
+                previous = frame
+                continue
             require(
                 digest(sample["pixelSha256"])
                 and digest(sample["backgroundPixelSha256"])
@@ -410,6 +635,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
     parser.add_argument("--host-report", type=Path, required=True)
+    parser.add_argument("--require-hardware", action="store_true")
     parser.add_argument("--sha")
     parser.add_argument("--artifact-root", type=Path)
     args = parser.parse_args()
@@ -419,13 +645,14 @@ def main() -> int:
             args.host_report.read_bytes(),
             expected_sha=args.sha,
             artifact_root=args.artifact_root,
+            require_hardware=args.require_hardware,
         )
     except (OSError, ValueError) as exc:
         errors = [str(exc)]
     for error in errors:
         print("- " + error, file=sys.stderr)
     if not errors:
-        print("same-source colored-spill browser companion OK; deterministic cadence only")
+        print("same-source colored-spill browser companion OK; scope is recorded in its schema")
     return int(bool(errors))
 
 

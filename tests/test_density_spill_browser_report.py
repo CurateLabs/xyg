@@ -308,3 +308,117 @@ def test_companion_validation_failure_is_fatal(pair, chrome, tmp_path, monkeypat
     result = json.loads((tmp_path / "browser.json").read_bytes())
     assert result["status"] == "failed" and "negative oracle" in result["failure"]
     assert json.loads((tmp_path / "host.json").read_bytes())["browser"]["status"] == "not-run"
+
+
+@pytest.mark.parametrize(
+    "category,kind", [("initial", "texture"), ("initial", "buffer"), ("tiles", "texture")]
+)
+def test_missing_explicit_owned_deletion_is_rejected(pair, category, kind):
+    report, host = copy.deepcopy(pair)
+    gpu = report["browser"]["runs"]["cached"]["gpu"]
+    resource = next(r for r in gpu["resources"] if r["category"] == category and r["kind"] == kind)
+    gpu["events"] = [
+        e for e in gpu["events"] if not (e["id"] == resource["id"] and e["op"] == "delete")
+    ]
+    # Keep the misleading aggregate success flags: the verifier replays events.
+    assert verify.validate(report, host, environ={})
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("noReferences", False),
+        ("explicitDeletionBeforeContextLoss", False),
+        ("noGLError", False),
+        ("staleReplyEvents", 1),
+        ("deletedBuffers", 0),
+        ("tilePeakBytes", 8 * 512 * 512 * 4 + 1),
+    ],
+)
+def test_owned_lifetime_mutations_fail(pair, field, value):
+    report, host = copy.deepcopy(pair)
+    report["browser"]["runs"]["normal"]["gpu"][field] = value
+    assert verify.validate(report, host, environ={})
+
+
+def test_reallocation_event_cannot_be_omitted_from_peak(pair):
+    report, host = copy.deepcopy(pair)
+    gpu = report["browser"]["runs"]["cached"]["gpu"]
+    resource = next(r for r in gpu["resources"] if r["kind"] == "buffer")
+    at = next(
+        i for i, e in enumerate(gpu["events"]) if e["id"] == resource["id"] and e["op"] == "delete"
+    )
+    gpu["events"][at:at] = [
+        {"id": resource["id"], "op": "storage", "bytes": 64 * 1024**2},
+        {"id": resource["id"], "op": "storage", "bytes": resource["bytes"]},
+    ]
+    assert verify.validate(report, host, environ={})
+
+
+@pytest.mark.parametrize(
+    "mutation", ["frozen", "no-draw", "no-transition", "source", "blank", "settled", "adoption"]
+)
+def test_normal_cadence_mutations_fail(pair, mutation):
+    report, host = copy.deepcopy(pair)
+    sample = report["browser"]["runs"]["normal"]["samples"][25]
+    if mutation == "frozen":
+        sample["frames"][0]["clock"] = 1000
+    elif mutation == "no-draw":
+        sample["frames"] = []
+    elif mutation == "no-transition":
+        sample["transitionFrames"] = 0
+    elif mutation == "source":
+        sample["frames"][0]["drawn"][0]["sourceAlive"] = False
+    elif mutation == "blank":
+        sample["frames"][0]["ink"]["densityPixels"] = 0
+    elif mutation == "settled":
+        sample["settledPixelSha256"] = "0" * 64
+    else:
+        sample["adoption"]["at"] = sample["frames"][-1]["at"] + 1
+    assert verify.validate(report, host, environ={})
+
+
+def test_hardware_request_cannot_promote_software_observations(pair):
+    report, host = copy.deepcopy(pair)
+    assert verify.validate(report, host, environ={}, require_hardware=True)
+    report["browser"]["requested_gl"] = "hardware"
+    report["browser"]["preflight"]["requested_gl"] = "hardware"
+    assert verify.validate(report, host, environ={}, require_hardware=True)
+
+
+def test_hashed_historical_schema1_control_keeps_its_original_scope():
+    import gzip
+
+    root = ROOT / "spec/performance/density-spill-browser-2026-10-24/integration-control"
+    raw = gzip.decompress((root / "host.json.gz").read_bytes())
+    browser_bytes = gzip.decompress((root / "browser.json.gz").read_bytes())
+    assert verify.sha(raw) == "3673f7423277138e86c9a4a324f8eabbbf8735f0a313f67220ca9e8340a1c77b"
+    assert (
+        verify.sha(browser_bytes)
+        == "c9973ae1a61db81859119a97bedacd2fb59bf7648d5268e66c1698cedc708b00"
+    )
+    browser = json.loads(browser_bytes)
+    assert verify.validate(browser, raw, environ={}) == []
+    assert verify.validate(browser, raw, environ={}, require_hardware=True)
+
+
+def test_hashed_historical_main_receipt_is_validated_without_new_exemptions():
+    import gzip
+
+    root = ROOT / "benchmarks/results/colored-spill-browser-2026-10-24/hosted-main"
+    commit = "885908f2799803c1f9d8f6482d091adbf2c94d76"
+    raw = gzip.decompress((root / f"density-e2e-colored-100m-{commit}.json.gz").read_bytes())
+    browser_bytes = gzip.decompress(
+        (root / f"density-e2e-colored-browser-100m-{commit}.json.gz").read_bytes()
+    )
+    assert verify.sha(raw) == "20194b01d6e5112e270ed0df7277e0fdbaca393b38452277a5fe53473c130c24"
+    assert (
+        verify.sha(browser_bytes)
+        == "64572c562ffb487599e62994310d0ef5fb9d49952d1fe1d748100a12ef1f6492"
+    )
+    # Read-only replay of the retained run context, never exported to this
+    # process environment or used to allocate/execute an authority workload.
+    context = json.loads(raw)["authority_context"]
+    assert (
+        verify.validate(json.loads(browser_bytes), raw, expected_sha=commit, environ=context) == []
+    )

@@ -217,3 +217,136 @@ def test_optimized_python_cannot_disable_evidence_assertions(tmp_path):
     )
     assert result.returncode != 0 and "assertions enabled" in result.stderr
     assert not output.exists()
+
+
+def test_darwin_snapshot_counts_group_rss_names_and_excludes_zombies(monkeypatch):
+    calls = []
+
+    def snapshot(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            "0 0 0 R kernel_task\n10 10 100 S /usr/bin/python\n11 10 200 S /Apps/Chromium Helper\n12 10 900 Z zombie\n13 13 700 S other\n",
+            "",
+        )
+
+    monkeypatch.setattr(bench.sys, "platform", "darwin")
+    monkeypatch.setattr(bench.subprocess, "run", snapshot)
+    rss, members = bench._group_snapshot(10)
+    assert rss == 300 * 1024 and set(members) == {10, 11}
+    assert members[11]["name"] == "/Apps/Chromium Helper"
+    assert calls[0][0] == ["/bin/ps", "-axo", "pid=,pgid=,rss=,stat=,comm="]
+    assert calls[0][1]["timeout"] == 2 and calls[0][1]["check"] is True
+
+
+@pytest.mark.parametrize(
+    "output", ["", "bad snapshot", "10 10 -1 S python", "10 10 1 S python\n10 10 2 S duplicate"]
+)
+def test_darwin_invalid_snapshot_cannot_report_zero_success(monkeypatch, output):
+    monkeypatch.setattr(
+        bench.subprocess, "run", lambda argv, **kw: subprocess.CompletedProcess(argv, 0, output, "")
+    )
+    with pytest.raises(RuntimeError, match="observer failed"):
+        bench._darwin_process_snapshot()
+
+
+def test_darwin_timeout_and_missing_group_member_fail_preallocation(monkeypatch, tmp_path):
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired("ps", 2)
+
+    monkeypatch.setattr(bench.subprocess, "run", timeout)
+    with pytest.raises(RuntimeError, match="observer failed"):
+        bench._darwin_process_snapshot()
+    monkeypatch.setattr(
+        bench, "_group_snapshot", lambda pgid: (1024, {os.getpid() + 1: {"name": "other"}})
+    )
+    with pytest.raises(RuntimeError, match="own live group member"):
+        bench._run_supervisor(None, tmp_path)
+    assert not list(tmp_path.iterdir())  # No worker config, process or source.
+
+
+def test_observer_failure_cannot_disable_process_group_kill(monkeypatch):
+    calls = []
+    monkeypatch.setattr(bench.os, "killpg", lambda pgid, sig: calls.append((pgid, sig)))
+    monkeypatch.setattr(
+        bench, "_process_group_rss", lambda pgid: (_ for _ in ()).throw(RuntimeError("ps failed"))
+    )
+    bench._terminate_group(12345)
+    assert calls == [(12345, signal.SIGTERM), (12345, signal.SIGKILL)]
+
+
+def test_failed_renderer_preflight_cannot_reach_source_allocation(monkeypatch, tmp_path):
+    from scripts import density_spill_browser_smoke as smoke
+
+    def failed(*args, **kwargs):
+        raise ValueError("actual software renderer")
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("renderer preflight failure reached canonical source generation")
+
+    monkeypatch.setattr(smoke, "renderer_preflight", failed)
+    monkeypatch.setattr(spill, "generate", forbidden)
+    with pytest.raises(ValueError, match="software renderer"):
+        spill.run_host(
+            {
+                "points": 16384,
+                "chunk_points": 4096,
+                "colored_browser_report": "browser.json",
+                "chrome": "unused",
+                "browser_socket_parent": str(tmp_path),
+                "timeout": 30,
+            },
+            tmp_path,
+            {},
+        )
+
+
+def test_missing_live_worker_membership_fails_and_terminates_bounded_group(monkeypatch, tmp_path):
+    import argparse
+
+    original = bench._group_snapshot
+
+    def missing(pgid):
+        rss, members = original(pgid)
+        if pgid != os.getpgrp():
+            members.pop(pgid, None)
+        return rss, members
+
+    monkeypatch.setattr(bench, "_group_snapshot", missing)
+    args = argparse.Namespace(
+        points=16384,
+        authority=False,
+        chunk_points=4096,
+        chrome=None,
+        workload="colored-spill",
+        timeout=30,
+        max_rss_gib=4,
+        max_disk_gib=1,
+        payload_ceiling_bytes=4 * 1024**2,
+        output=tmp_path / "host.json",
+        colored_browser_report=None,
+    )
+    report, failed = bench._run_supervisor(args, tmp_path)
+    assert failed and "observer_failed" in report["failure"]
+    assert report["cleanup"]["orphan_pids_after_reap"] == []
+    assert report["cleanup"]["worker_exit_code"] != 0
+
+
+def test_hardware_authority_guard_rejects_forged_workflow_identity_without_execution():
+    # Guard-only dictionaries; no Actions environment is installed and no
+    # workload is launched at authority scale.
+    env = {
+        "GITHUB_EVENT_NAME": "workflow_dispatch",
+        "GITHUB_REPOSITORY": "CurateLabs/xyg",
+        "GITHUB_WORKFLOW_REF": "CurateLabs/xyg/.github/workflows/ceiling-benchmark.yml@refs/heads/main",
+        "GITHUB_SHA": "a" * 40,
+        "GITHUB_WORKFLOW_SHA": "a" * 40,
+    }
+    spill.hardware_context_guard(env, authority=True, system="Darwin", machine="arm64")
+    for key in env:
+        invalid = {**env, key: "forged"}
+        with pytest.raises(ValueError, match="workflow identity"):
+            spill.hardware_context_guard(invalid, authority=True, system="Darwin", machine="arm64")
+    with pytest.raises(ValueError, match="Darwin arm64"):
+        spill.hardware_context_guard(env, authority=True, system="Linux", machine="x86_64")

@@ -3083,13 +3083,17 @@ stacks = {
                                  "holoviews": "holoviews", "panel": "panel", "bokeh": "bokeh"},
     },
 }
+stacks["colored-browser-hardware"] = {"xy": {}}
 experiment = os.environ["INPUT_EXPERIMENT"]
 assert experiment in stacks, ("unknown experiment", experiment)
-raw_arms = os.environ["INPUT_ARMS"].split(",")
+raw_arms = (["xy"] if experiment == "colored-browser-hardware"
+            else os.environ["INPUT_ARMS"].split(","))
 arms = ([arm.strip() for arm in raw_arms if arm.strip()]
         if experiment == "ceiling" else raw_arms)
 assert arms and set(arms) <= set(stacks[experiment]), ("unknown or empty arms", arms)
 modules = {"numpy": "numpy", "psutil": "psutil", "websocket": "websocket-client"}
+if experiment == "colored-browser-hardware":
+    modules = {"numpy": "numpy"}
 if experiment == "density-comparison":
     modules["tornado"] = "tornado"
 for arm in arms:
@@ -3129,9 +3133,11 @@ _CEILING_RUN_CONTRACTS = {
     "Install package + comparison deps": [
         "uv venv --python 3.12",
         "uv pip install --python .venv/bin/python --constraint benchmarks/requirements-ci.lock -e . --group dev",
+        'if [ "$INPUT_EXPERIMENT" != "colored-browser-hardware" ]; then',
         "uv pip install --python .venv/bin/python --constraint benchmarks/requirements-ci.lock \\",
         "matplotlib plotly kaleido datashader plotly-resampler \\",
         "psutil websocket-client pillow pandas tornado",
+        "fi",
         'if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then',
         "uv pip install --python .venv/bin/python --constraint benchmarks/requirements-ci.lock hvplot",
         "fi",
@@ -3147,7 +3153,43 @@ _CEILING_RUN_CONTRACTS = {
         "export CHROME",
         'SOFTWARE="--software"',
         'if [ "$INPUT_HARDWARE_GL" = "true" ]; then SOFTWARE=""; fi',
-        'if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then',
+        'if [ "$INPUT_EXPERIMENT" = "colored-browser-hardware" ]; then',
+        'test "$GITHUB_EVENT_NAME" = "workflow_dispatch"',
+        'test "$GITHUB_REF" = "refs/heads/main"',
+        'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"',
+        'test -z "$(git status --porcelain)"',
+        ".venv/bin/python -c 'import os; from benchmarks._density_spill import hardware_context_guard; hardware_context_guard(dict(os.environ), authority=True)'",
+        'mkdir -p "$RUNNER_TEMP/colored-browser-tmp"',
+        'export TMPDIR="$RUNNER_TEMP/colored-browser-tmp"',
+        ".venv/bin/python scripts/density_spill_browser_smoke.py \\",
+        '--preflight-only --gl hardware --chromium "$CHROME" --timeout 30 \\',
+        '--work-root "$TMPDIR" \\',
+        '--output "$RUNNER_TEMP/colored-browser-preflight-${GITHUB_SHA}.json"',
+        ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
+        "--points 16384 --chunk-points 4096 --timeout 180 --max-rss-gib 4 --max-disk-gib 1 \\",
+        '--colored-browser-gl hardware --chrome "$CHROME" --temp-root "$TMPDIR" \\',
+        '--output "$RUNNER_TEMP/colored-browser-control-${GITHUB_SHA}.json" \\',
+        '--colored-browser-report "$RUNNER_TEMP/colored-browser-control-companion-${GITHUB_SHA}.json"',
+        ".venv/bin/python scripts/verify_density_spill_report.py \\",
+        '"$RUNNER_TEMP/colored-browser-control-${GITHUB_SHA}.json" --artifact-root "$GITHUB_WORKSPACE"',
+        ".venv/bin/python scripts/verify_density_spill_browser_report.py \\",
+        '"$RUNNER_TEMP/colored-browser-control-companion-${GITHUB_SHA}.json" \\',
+        '--host-report "$RUNNER_TEMP/colored-browser-control-${GITHUB_SHA}.json" \\',
+        '--require-hardware --artifact-root "$GITHUB_WORKSPACE"',
+        ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
+        "--authority --points 100000000 --chunk-points 1000000 \\",
+        "--timeout 3600 --max-rss-gib 12 --max-disk-gib 4 \\",
+        '--colored-browser-gl hardware --chrome "$CHROME" --temp-root "$TMPDIR" \\',
+        '--output "$RUNNER_TEMP/colored-browser-100m-${GITHUB_SHA}.json" \\',
+        '--colored-browser-report "$RUNNER_TEMP/colored-browser-100m-companion-${GITHUB_SHA}.json"',
+        ".venv/bin/python scripts/verify_density_spill_report.py \\",
+        '"$RUNNER_TEMP/colored-browser-100m-${GITHUB_SHA}.json" \\',
+        '--sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"',
+        ".venv/bin/python scripts/verify_density_spill_browser_report.py \\",
+        '"$RUNNER_TEMP/colored-browser-100m-companion-${GITHUB_SHA}.json" \\',
+        '--host-report "$RUNNER_TEMP/colored-browser-100m-${GITHUB_SHA}.json" \\',
+        '--require-hardware --sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"',
+        'elif [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then',
         'HARDWARE=""',
         'if [ "$INPUT_HARDWARE_GL" = "true" ]; then HARDWARE="--hardware"; fi',
         "NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \\",
@@ -3259,7 +3301,7 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
             or (
                 name == "experiment"
                 and _direct_yaml_key_values(block, "options", indent=8)
-                != (["[ceiling, density-comparison]"], False)
+                != (["[ceiling, density-comparison, colored-browser-hardware]"], False)
             )
         ):
             errors.append(
@@ -3278,7 +3320,7 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
     ]:
         errors.append("ceiling comparison job must keep its exact direct keys")
     for key, expected in {
-        "if": "inputs.experiment != 'density-comparison' || github.ref == 'refs/heads/main'",
+        "if": "inputs.experiment == 'ceiling' || github.ref == 'refs/heads/main'",
         "runs-on": "blacksmith-12vcpu-macos-15",
         "timeout-minutes": "720",
     }.items():
@@ -3350,6 +3392,7 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
             "INPUT_TIMEOUT": "${{ inputs.timeout }}",
             "INPUT_MEMORY_GIB": "${{ inputs.memory_gib }}",
             "INPUT_HARDWARE_GL": "${{ inputs.hardware_gl }}",
+            "XYG_DENSITY_100M_AUTHORITY": "${{ inputs.experiment == 'colored-browser-hardware' && '1' || '0' }}",
         },
         "Summarize": {"INPUT_BUDGET_MS": "${{ inputs.interactive_budget_ms }}"},
     }
@@ -3426,6 +3469,7 @@ def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str
         "ceiling-summary.md",
         "charts/",
         "${{ runner.temp }}/density-comparison-${{ github.sha }}.json",
+        "${{ runner.temp }}/colored-browser-*-${{ github.sha }}.json",
     ]:
         errors.append(
             "ceiling comparison upload must preserve legacy artifacts and exact-SHA runner-temp output"
