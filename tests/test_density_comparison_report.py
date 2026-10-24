@@ -28,6 +28,14 @@ def report():
     r["authority"] = r["authority"][:1]
     r["sources"] = {"1000": r["sources"]["1000"]}
     r["results"] = [c for c in r["results"] if c["n"] == 1000]
+    # Derived reports exercise the current contract; immutable archives above
+    # retain their exact historical binding and bytes.
+    r["environment"].update(
+        browser_renderer="software-gl",
+        browser_renderer_requested="software-gl",
+        browser_renderer_observed=None,
+        browser_renderer_scope="launch-request; actual renderer not measured",
+    )
     return r
 
 
@@ -55,6 +63,80 @@ def test_small_real_evidence_without_optional_dependencies(report):
     assert check(report, expected_sizes=[1000], expected_arms=list(v.ARMS)) == []
     assert "numpy" not in v.__dict__
     assert "psutil" not in v.__dict__
+
+
+@pytest.mark.parametrize("failure", ["timeout", "exit", "source_mismatch"])
+def test_real_silent_host_failures_remain_valid_evidence(report, monkeypatch, tmp_path, failure):
+    pytest.importorskip("websocket")
+    from types import SimpleNamespace
+
+    from benchmarks import bench_density_comparison as runner
+
+    manifest = tmp_path / "source.json"
+    manifest.write_text(json.dumps(report["results"][0]["host_meta"]["source"]))
+    real_popen = subprocess.Popen
+    hosts = []
+    command = {
+        "timeout": "import time; time.sleep(30)",
+        "exit": "pass",
+        "source_mismatch": "print('META {\"source\": {}}', flush=True)",
+    }[failure]
+
+    def launch_host(_argv, **kwargs):
+        child = real_popen([sys.executable, "-c", command], **kwargs)
+        hosts.append(child)
+        return child
+
+    monkeypatch.setattr(runner.subprocess, "Popen", launch_host)
+    row = runner.run_arm(
+        "xy-density",
+        manifest,
+        SimpleNamespace(timeout=0.1 if failure == "timeout" else 5, memory_gib=2),
+        0,
+    )
+    assert row["status"] == {"exit": "host_failed"}.get(failure, failure)
+    assert row["reason"]
+    assert row["host_stderr"] == ""
+    assert all(child.poll() is not None for child in hosts)
+    report["results"][0] = row
+    assert check(report) == []
+
+
+@pytest.mark.parametrize("hardware", [False, True])
+def test_renderer_request_is_distinct_from_unmeasured_actual_renderer(report, hardware):
+    # The producer is exercised separately; independent validation rejects aliases
+    # or invented observations even if an inherited env label was the opposite.
+    requested = "hardware" if hardware else "software-gl"
+    if hardware:
+        report["argv"].append("--hardware")
+    report["environment"].update(
+        browser_renderer=requested,
+        browser_renderer_requested=requested,
+        browser_renderer_observed=None,
+        browser_renderer_scope="launch-request; actual renderer not measured",
+    )
+    assert check(report) == []
+    report["environment"]["browser_renderer"] = (
+        "hardware" if requested == "software-gl" else "software-gl"
+    )
+    assert check(report)
+    report["environment"]["browser_renderer"] = requested
+    report["environment"]["browser_renderer_observed"] = "unverified GPU"
+    assert check(report)
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "browser_renderer",
+        "browser_renderer_requested",
+        "browser_renderer_observed",
+        "browser_renderer_scope",
+    ],
+)
+def test_new_renderer_fields_cannot_be_removed_to_bypass_validation(report, key):
+    del report["environment"][key]
+    assert check(report)
 
 
 @pytest.mark.parametrize(

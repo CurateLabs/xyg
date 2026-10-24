@@ -136,6 +136,21 @@ recorded, rather than relabeled as zero-copy.
 
 ## Failure evidence and artifact binding
 
+Host preparation that is still alive without `META` at its deadline records
+`timeout` in phase `host_prepare` with a reason; silent early exits retain
+their return code and source mismatches retain an explicit diagnostic. These
+cells must pass structural verification as failures after cleanup, even with
+empty stderr. They do not acquire successful timing or output evidence.
+
+New programmatic reports distinguish renderer launch requests from observations.
+`browser_renderer_requested` and its legacy `browser_renderer` alias must match
+the CLI's `--hardware` choice, irrespective of inherited environment flags.
+The currently unmeasured actual renderer is null in `browser_renderer_observed`,
+with `browser_renderer_scope: "launch-request; actual renderer not measured"`.
+The verifier requires all four fields for nonhistorical reports and rejects
+contradictory aliases or invented observed renderers. Only the exact pinned
+historical raw archives may omit these newer fields under their original bindings.
+
 Every failure requires a nonempty known producer status (including typed
 browser supervisor failures), retained sampled guard observations, and a reason
 or diagnostic. Timeout/memory-limit statuses themselves identify the guard

@@ -179,13 +179,27 @@ def run_arm(arm, manifest, args, repetition):
         try:
             line = read_meta(host, timeout_s=args.timeout)
             if line is None:
-                result["status"] = "host_memory_limit" if poller.limit_exceeded else "host_failed"
+                returncode = host.poll()
+                result["phase"] = "host_prepare"
+                if poller.limit_exceeded:
+                    result.update(status="host_memory_limit", reason="host RSS limit before META")
+                elif returncode is None:
+                    result.update(
+                        status="timeout",
+                        reason=f"host preparation timed out after {args.timeout}s before META",
+                    )
+                else:
+                    result.update(
+                        status="host_failed",
+                        reason=f"host exited before META (returncode {returncode})",
+                    )
                 return result
             meta = json.loads(line[5:])
             result["host_meta"] = meta
             result["host_prepare_wall_ms"] = (time.perf_counter() - started) * 1000
             if meta["source"] != source:
                 result["status"] = "source_mismatch"
+                result["reason"] = "host META source differs from shared manifest"
                 return result
             url = f"http://{meta.get('hostname', '127.0.0.1')}:{meta['port']}"
 
@@ -383,6 +397,15 @@ def main():
 
     report["provenance_sha256"]["benchmarks/bench_density_comparison.py"] = (
         __import__("hashlib").sha256(Path(__file__).read_bytes()).hexdigest()
+    )
+    # These are launch flags, never evidence of the renderer Chrome obtained.
+    # Override the shared helper's ambient-env label with this CLI's actual choice.
+    requested_renderer = "hardware" if args.hardware else "software-gl"
+    report["environment"].update(
+        browser_renderer=requested_renderer,
+        browser_renderer_requested=requested_renderer,
+        browser_renderer_observed=None,
+        browser_renderer_scope="launch-request; actual renderer not measured",
     )
 
     def save():

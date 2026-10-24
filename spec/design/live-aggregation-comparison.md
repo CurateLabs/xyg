@@ -299,6 +299,22 @@ check. This is an allocation guard, not permission to dispatch that host.
 The optional existing-lane integration is described below; actual-scale
 measurements remain pending reviewed landing on main.
 
+The programmatic runner records host preparation that remains alive without
+`META` at its deadline as `status: timeout`, `phase: host_prepare`, with an
+explicit reason. Silent exits before `META` retain `host_failed` and their
+return code; a mismatching source retains its reason as well. Cleanup and
+sampled RSS observations are retained, so these remain valid failed cells
+rather than invalid reports or successful measurements.
+
+Its environment renderer fields describe **requested launch flags**:
+`browser_renderer_requested` and the legacy `browser_renderer` alias follow
+`--hardware`, overriding any inherited `XY_BENCH_HARDWARE_GL` value. Software
+requests use SwiftShader flags; hardware requests use the existing Metal flags.
+Neither proves the renderer Chrome obtained. `browser_renderer_observed` is
+explicitly null and `browser_renderer_scope` states that the actual renderer
+was not measured. Do not publish requested hardware as confirmed acceleration.
+Historical report bytes and their producer bindings remain unchanged.
+
 The legacy `bench_ux.py` controller had regenerated both entire identity columns
 before host/browser supervision. Independent review of `51975d5d` identified
 that as blocking P2 (reviewed diff

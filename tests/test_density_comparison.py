@@ -227,6 +227,46 @@ def test_comparison_rejects_invalid_deadlines_before_source_allocation(
     assert not output.parent.exists()
 
 
+@pytest.mark.parametrize("hardware", [False, True])
+@pytest.mark.parametrize("inherited", ["0", "1"])
+def test_saved_renderer_mode_uses_cli_even_with_opposite_ambient_env(
+    monkeypatch, tmp_path, hardware, inherited
+):
+    pytest.importorskip("websocket")
+    from benchmarks import bench_density_comparison as runner
+
+    monkeypatch.setenv("XY_BENCH_HARDWARE_GL", inherited)
+    output = tmp_path / "report.json"
+    # A real bounded source child times out before imports; no browser is launched.
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bench_density_comparison.py",
+            "--sizes",
+            "5",
+            "--arms",
+            "xy-density",
+            "--chrome",
+            "unused",
+            "--timeout",
+            "0.001",
+            "--out",
+            str(output),
+            *(["--hardware"] if hardware else []),
+        ],
+    )
+    runner.main()
+    report = json.loads(output.read_text())
+    expected = "hardware" if hardware else "software-gl"
+    assert report["environment"]["browser_renderer"] == expected
+    assert report["environment"]["browser_renderer_requested"] == expected
+    assert report["environment"]["browser_renderer_observed"] is None
+    assert report["environment"]["browser_renderer_scope"] == (
+        "launch-request; actual renderer not measured"
+    )
+    assert {row["status"] for row in report["results"]} == {"source_timeout"}
+
+
 def test_retained_equal_window_profiles_oracles_modes_and_historical_producers():
     """Offline integrity of actual browser observations; never a stubbed run."""
     root = Path(__file__).resolve().parents[1]

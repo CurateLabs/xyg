@@ -724,6 +724,17 @@ def _validate(r, sha, sizes, arms, root, env, host, historical):
         ),
         "missing component versions",
     )
+    if historical is None:
+        requested = "hardware" if "--hardware" in r["argv"] else "software-gl"
+        require(
+            environment.get("browser_renderer_requested") == requested
+            and environment["browser_renderer"] == requested
+            and "browser_renderer_observed" in environment
+            and environment["browser_renderer_observed"] is None
+            and environment.get("browser_renderer_scope")
+            == "launch-request; actual renderer not measured",
+            "renderer launch request differs from CLI or claims unmeasured observation",
+        )
     if sha is not None:
         require(
             digest(sha, 40) and environment["git"]["commit"] == sha,
