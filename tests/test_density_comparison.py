@@ -23,6 +23,8 @@ from benchmarks._ux_comparison_source import (
 
 @pytest.mark.parametrize("validation", ["", "validateOutput:async()=>{},"])
 def test_producer_cannot_accept_missing_or_failing_xyg_numerical_oracle(validation):
+    pytest.importorskip("websocket")
+    pytest.importorskip("tornado.web")
     from benchmarks.bench_density_comparison import engine_js
 
     script = r"""
@@ -48,6 +50,7 @@ setTimeout(()=>{process.stdout.write(document.title);process.exit(0);},100);
 
 
 def test_competitor_metrics_do_not_prepare_xyg_oracle(monkeypatch):
+    pytest.importorskip("tornado.web")
     from benchmarks import _ux_comparison_host as host
     from benchmarks import _ux_comparison_oracle as numerical
 

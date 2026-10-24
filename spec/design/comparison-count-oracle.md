@@ -118,6 +118,13 @@ evidence. Neither new fields nor a filename/flag can grant it an exemption.
 
 Bounded regression commands (native core required; no hosted source):
 
+The source/grid and stdlib report checks run in the normal development
+environment. Tests importing live browser/HTTP harness modules require the
+optional benchmark `websocket-client` and/or Tornado dependencies and skip
+individually when those imports are absent. Run the same focused suite in the
+constrained benchmark environment to exercise those harness guards; missing
+optional packages must not fail the supported Python floor suite.
+
 ```bash
 uv run pytest tests/test_density_comparison_oracle.py \
   tests/test_density_comparison.py tests/test_density_comparison_report.py -q
