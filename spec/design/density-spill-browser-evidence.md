@@ -13,8 +13,9 @@ accepted hosted 100M host report remains historical host-only evidence.
 The standalone smoke remains a bounded control and refuses more than 1M rows.
 This facility does not establish billion-row, larger-than-RAM, competitive,
 publication, natural-cadence or whole-#11 acceptance. It changes no product
-behavior, dependency or CI workflow. Parent-owned workflow wiring and actual
-trusted authority execution remain separate work.
+behavior or dependency. The existing PR, daily and weekly/manual CI commands
+request and verify the companion. Actual trusted 100M browser execution
+remains pending reviewed landing on main.
 
 ## Path and assertions
 
