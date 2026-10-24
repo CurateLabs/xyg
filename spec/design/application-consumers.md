@@ -182,6 +182,16 @@ off-origin requests and CSP violations.
 
 The report adds fetched module statuses/hashes, input and harness hashes,
 events, lifecycle diagnostics and screenshots to the existing schema-1 evidence.
+Module evidence captures the single upstream HTTP response body before fulfilling
+the intercepted request with those same bytes; it never refetches the module or
+reads its body through a Worker CDP target that compile failure may already have
+terminated. Collection explicitly awaits the browser response event and transfer
+completion, including delayed delivery, and requires exactly one expected module
+response with matching status. Missing, duplicate, unexpected or unreadable
+responses fail the proof; corrupt bytes must still reach real Worker compilation
+and retain their exact four-byte hash. Counts are checked again after cleanup.
+The deterministic collector regression runs with
+`node --test packages/xy-node/test/packaged-consumer-browser.test.mjs`.
 Bounded local receipts and their remaining limitations are recorded in
 [`application-consumers-886`](../performance/application-consumers-886/README.md).
 Together with the reused public file-export and standalone failure cases,
