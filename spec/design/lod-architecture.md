@@ -757,7 +757,7 @@ contract entry before it lands.
    built from them.
 
 **Phase 3 — pyramid (build + serve and client tile cache shipped; dedicated
-100M latency gate still open)**
+100M host/kernel results retained; broader headline evidence remains open)**
 6. **Done (count + mean-color planes):** `crates/xyg-engine/src/tiles.rs` builds a square count
    pyramid over the trace's full data bounds — finest level is
    `PYRAMID_BASE_DIM`² (2048², `python/xyg/config.py`), each coarser level an
@@ -841,6 +841,12 @@ contract entry before it lands.
    within 1.5× finest level. CI uses
    `benchmarks/bench_tier3_pyramid.{py,mjs}` (build-once / compose-many at
    ≤1M) as the structural gate; item 9 remains a dedicated perf job.
+   Actual main run 40063864999 retains resident-count and colored-spill 100M
+   reports plus a separate same-source colored browser companion in its
+   [execution receipt](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md).
+   Colored host pan p95 0.76844255 ms and slowest zoom 11.230729 ms satisfy
+   the kernel limits. The 33 framebuffer matches/eight fades are scripted
+   SwiftShader observations, not physical-GPU or natural-cadence performance.
 
 **Phase 4 — Tier-3 residency (disk-resident 256² tiles)**
 

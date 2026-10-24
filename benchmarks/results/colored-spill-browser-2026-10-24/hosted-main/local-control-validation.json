@@ -1,0 +1,40 @@
+[
+  {
+    "command": [
+      "python3",
+      "scripts/verify_density_spill_browser_report.py",
+      "target/colored-spill-browser-retention/density-e2e-colored-browser-control-885908f2799803c1f9d8f6482d091adbf2c94d76.json",
+      "--host-report",
+      "target/colored-spill-browser-retention/density-e2e-colored-control-885908f2799803c1f9d8f6482d091adbf2c94d76.json",
+      "--sha",
+      "885908f2799803c1f9d8f6482d091adbf2c94d76"
+    ],
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "same-source colored-spill browser companion OK; deterministic cadence only\n"
+  },
+  {
+    "command": [
+      "python3",
+      "scripts/verify_density_spill_report.py",
+      "target/colored-spill-browser-retention/density-e2e-colored-control-885908f2799803c1f9d8f6482d091adbf2c94d76.json",
+      "--sha",
+      "885908f2799803c1f9d8f6482d091adbf2c94d76"
+    ],
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "colored-spill host/kernel slice OK (1000000 rows); browser and whole #11 remain open\n"
+  },
+  {
+    "command": [
+      "python3",
+      "scripts/verify_density_e2e_report.py",
+      "target/colored-spill-browser-retention/density-e2e-control-885908f2799803c1f9d8f6482d091adbf2c94d76.json",
+      "--sha",
+      "885908f2799803c1f9d8f6482d091adbf2c94d76"
+    ],
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "density end-to-end report OK: 1000000 points, 264320 first-paint bytes\n"
+  }
+]

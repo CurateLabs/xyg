@@ -161,8 +161,9 @@ The existing colored-spill CI contract now includes the
 rows. Its separate verifier binds source/windows/native/client identities to
 the exact host report bytes and enforces cached/fetch-all framebuffer equality,
 nonblank endpoint colors, gutter/seam checks, adjacent fade ownership and
-cleanup. This bounded control leaves the actual main-only 100M browser and
-competitive evidence gates open.
+cleanup. This bounded control cannot substitute for the separately retained
+[main-only 100M browser result](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md).
+Competitive scale, physical-GPU ownership and broader headline evidence remain open.
 
 - Do not allocate 1B points to “prove” Tier-3.
 - Do not substitute these bounded spill/reuse checks for complete Phase-4
@@ -203,11 +204,14 @@ append refusal/rebuild, predicate bypass, and shared-budget pressure. The
 [distinct colored-spill mode](density-spill-evidence.md) reuses #876's
 supervisor for mapped source, repeated pans/adjacent zooms and count/color
 oracles. Its PR control and scheduled/manual workflow commands are implemented;
-only an actual accepted main run can establish its 100M latency result.
-It explicitly records browser coverage as not run. Scheduled or manual main
-performance runs must still retain comparable spill/fetch/compose measurements,
-the real 100M colored memmap pan/zoom/browser gate, and competitive
-Datashader/HoloViews/hvPlot/Plotly/Bokeh evidence with environment, source and
-artifact hashes, raw results, and reproduction commands. Reuse #876's
+actual main runs 40055564684 and 40063864999 retain the 100M kernel latency
+result. The host report explicitly records browser coverage as not run; the
+second run's separate [same-source companion](density-spill-browser-evidence.md)
+supplies 33 framebuffer matches, eight adjacent fades and zero seam error.
+Its SwiftShader/manual-cadence scope does not establish physical-GPU ownership
+or the broader headline claim. Comparable spill/fetch/compose measurements and
+competitive Datashader/HoloViews/hvPlot/Plotly/Bokeh scale evidence must retain
+environment, source and artifact hashes, raw results and reproduction commands.
+Reuse #876's
 resource-authorized harness and feed the accepted results into #113/#54;
 neither these timings nor integer-only planner cases close that scope.
