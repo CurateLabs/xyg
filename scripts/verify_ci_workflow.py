@@ -2256,12 +2256,18 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         test_job,
         spill_name,
         "exact bounded colored spill PR control",
+        "CHROME=$(node -e 'process.stdout.write(require(\"playwright\").chromium.executablePath())')",
         ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
-        "--points 16384 --chunk-points 4096 \\",
+        '--points 16384 --chunk-points 4096 --chrome "$CHROME" \\',
         "--timeout 180 --max-rss-gib 4 --max-disk-gib 1 \\",
-        '--output "$RUNNER_TEMP/density-spill-pr.json"',
+        '--output "$RUNNER_TEMP/density-spill-pr.json" \\',
+        '--colored-browser-report "$RUNNER_TEMP/density-spill-browser-pr.json"',
         "python3 scripts/verify_density_spill_report.py \\",
         '"$RUNNER_TEMP/density-spill-pr.json" --artifact-root "$GITHUB_WORKSPACE"',
+        "python3 scripts/verify_density_spill_browser_report.py \\",
+        '"$RUNNER_TEMP/density-spill-browser-pr.json" \\',
+        '--host-report "$RUNNER_TEMP/density-spill-pr.json" \\',
+        '--sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"',
         forbid_environment=True,
     )
     _require_step_runs_exactly(
@@ -3294,12 +3300,18 @@ def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str
         density,
         "Run daily 1M colored spill control",
         "exact 1M colored spill control",
+        chrome_command,
         ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
-        "--points 1000000 --chunk-points 262144 \\",
+        '--points 1000000 --chunk-points 262144 --chrome "$CHROME" \\',
         "--timeout 600 --max-rss-gib 8 --max-disk-gib 2 \\",
-        '--output "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json"',
+        '--output "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json" \\',
+        '--colored-browser-report "$RUNNER_TEMP/density-e2e-colored-browser-control-${GITHUB_SHA}.json"',
         "python3 scripts/verify_density_spill_report.py \\",
         '"$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json" --artifact-root "$GITHUB_WORKSPACE"',
+        "python3 scripts/verify_density_spill_browser_report.py \\",
+        '"$RUNNER_TEMP/density-e2e-colored-browser-control-${GITHUB_SHA}.json" \\',
+        '--host-report "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json" \\',
+        '--sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"',
         allow_job_gate=True,
         forbid_environment=True,
     )
@@ -3317,12 +3329,18 @@ def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str
         if indent == 10 and not unsafe
     ]
     colored_commands = [
+        chrome_command,
         ".venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \\",
-        "--points 100000000 --authority \\",
+        '--points 100000000 --authority --chrome "$CHROME" \\',
         "--timeout 3600 --max-rss-gib 12 --max-disk-gib 4 \\",
-        '--output "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json"',
+        '--output "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json" \\',
+        '--colored-browser-report "$RUNNER_TEMP/density-e2e-colored-browser-100m-${GITHUB_SHA}.json"',
         "python3 scripts/verify_density_spill_report.py \\",
         '"$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json" --sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"',
+        "python3 scripts/verify_density_spill_browser_report.py \\",
+        '"$RUNNER_TEMP/density-e2e-colored-browser-100m-${GITHUB_SHA}.json" \\',
+        '--host-report "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json" \\',
+        '--sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"',
     ]
     if (
         colored_if_unsafe

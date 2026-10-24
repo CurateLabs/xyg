@@ -1,0 +1,29 @@
+Product base: 71e48b67827709ed251ae05b90d010a8cef824eb
+Browser: explicit cached Playwright Chrome 156; ANGLE SwiftShader, software Vulkan.
+All allocations local controls <=1M; no authority environment spoofing.
+
+Setup commands completed successfully:
+PATH="$HOME/.cargo/bin:$PATH" cargo build --release --offline
+npm ci && node js/build.mjs
+uv sync --group dev
+
+Retained browser execution (exit 0):
+PATH="$HOME/.cargo/bin:$PATH" uv run python scripts/density_spill_browser_smoke.py --points 1000000 --chunk-points 262144 --chromium /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome --work-root target/t --timeout 300 --output target/browser-1m/report.json
+ok: 1000000 mapped colored rows, 32 windows, report target/browser-1m/report.json
+
+Focused test execution (exit 0; stdout copied from tool result):
+XYG_TEST_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome uv run pytest tests/test_density_spill_browser.py -q --basetemp=target/pytest-browser-final
+.........                                                                [100%]
+9 passed in 32.85s
+Includes successful 16,384-row browser journey and rejection of blank/gutter-corrupt native paint.
+
+TMPDIR="$PWD/target/t" uv run --with pre-commit pre-commit run --all-files (exit 0)
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+
+uv run ruff check . (exit 0)
+All checks passed!
+
+uv run ruff format --check . (exit 0)
+856 files already formatted

@@ -1273,6 +1273,57 @@ def test_colored_pr_control_cannot_run_authority_or_skip_verification(tmp_path, 
     assert verify_ci_workflow.validate_ci_workflow(path)
 
 
+@pytest.mark.parametrize(
+    ("filename", "step", "validate"),
+    [
+        (
+            "ci.yml",
+            "Colored spill harness contract (small scale only)",
+            verify_ci_workflow.validate_ci_workflow,
+        ),
+        (
+            "density-100m.yml",
+            "Run daily 1M colored spill control",
+            verify_ci_workflow.validate_density_workflow,
+        ),
+        (
+            "density-100m.yml",
+            "Run weekly/manual 100M colored spill authority",
+            verify_ci_workflow.validate_density_workflow,
+        ),
+    ],
+)
+@pytest.mark.parametrize("mutation", ["output", "verifier", "host", "sha"])
+def test_colored_browser_companion_cannot_be_omitted_or_rebound(
+    tmp_path, filename, step, validate, mutation
+):
+    source = (Path(".github/workflows") / filename).read_text()
+    start = source.index("      - name: " + step)
+    end = source.find("\n      - ", start + 1)
+    end = len(source) if end < 0 else end
+    block = source[start:end]
+    verifier = "python3 scripts/verify_density_spill_browser_report.py"
+    if mutation == "output":
+        assert "--colored-browser-report " in block
+        block = block.replace("--colored-browser-report ", "--unbound-browser-report ", 1)
+    else:
+        before, after = block.split(verifier, 1)
+        if mutation == "verifier":
+            verifier = "true # skipped companion verification"
+        elif mutation == "host":
+            assert '--host-report "$RUNNER_TEMP/' in after
+            after = after.replace(
+                '--host-report "$RUNNER_TEMP/', '--host-report "$RUNNER_TEMP/wrong-', 1
+            )
+        else:
+            assert '--sha "$GITHUB_SHA"' in after
+            after = after.replace('--sha "$GITHUB_SHA"', '--sha "unbound-source"', 1)
+        block = before + verifier + after
+    path = tmp_path / filename
+    path.write_text(source[:start] + block + source[end:])
+    assert validate(path)
+
+
 def test_density_authority_rejects_pull_request_and_unguarded_100m(tmp_path: Path) -> None:
     source = verify_ci_workflow.DEFAULT_DENSITY_WORKFLOW.read_text(encoding="utf-8")
     source = source.replace("  workflow_dispatch:\n", "  pull_request:\n  workflow_dispatch:\n")

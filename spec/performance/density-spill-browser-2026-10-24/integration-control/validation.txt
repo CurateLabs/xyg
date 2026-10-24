@@ -1,0 +1,22 @@
+Supervised 1M same-source integration control, 2026-10-24
+
+Base checkout: bc3ad8fad3e4a8d8d2a0af759b2e536555d8aa0f (dirty; exact source/harness hashes in raw reports).
+Command (exit 0):
+TMPDIR="$PWD/target/t" PATH="$HOME/.cargo/bin:$PATH" uv run python benchmarks/bench_density_e2e.py --workload colored-spill --points 1000000 --chunk-points 262144 --timeout 600 --max-rss-gib 8 --max-disk-gib 2 --chrome /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome --temp-root target/t --output target/integration-control/host.json --colored-browser-report target/integration-control/browser.json
+
+uv run python scripts/verify_density_spill_report.py target/integration-control/host.json --artifact-root "$PWD"
+=> colored-spill host/kernel slice OK (1000000 rows); browser and whole #11 remain open
+uv run python scripts/verify_density_spill_browser_report.py target/integration-control/browser.json --host-report target/integration-control/host.json --artifact-root "$PWD"
+=> same-source colored-spill browser companion OK; deterministic cadence only
+
+TMPDIR="$PWD/target/t" PATH="$HOME/.cargo/bin:$PATH" XYG_TEST_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome uv run pytest tests/test_density_spill_browser_report.py tests/test_density_spill_browser.py tests/test_density_spill_report.py tests/test_density_spill_harness.py tests/test_density_e2e_report.py -q --basetemp=target/pytest-integrated-final2
+=> 241 passed in 55.46s
+
+No authority/100M workload executed. All timings are control/advisory.
+33 cached/fresh pixel matches; eight adjacent surviving-source fades.
+Minimum density ink 3172 pixels; minimum seam ink 30 pixels; maximum seam error 0.
+Cached/fresh transfers 9/188; all 46/225 instrumented textures deleted.
+Actual Chromium PID 2294307 in worker group 2294023 observed by supervisor.
+Full invocation elapsed 21.048009688965976s; peak RSS 2001313792 bytes; peak disk 111269917 bytes.
+All store, mmap, spill, process, profile, HTTP server, temporary tree and short-alias cleanup passed.
+Native ABI 395; software ANGLE SwiftShader (allocation/readback, no physical-GPU performance claim).

@@ -156,6 +156,14 @@ use the platform's existing positioned-I/O implementation.
 
 ### 5. Explicit non-goals for CI
 
+The existing colored-spill CI contract now includes the
+[same-source browser companion](density-spill-browser-evidence.md) at 16,384
+rows. Its separate verifier binds source/windows/native/client identities to
+the exact host report bytes and enforces cached/fetch-all framebuffer equality,
+nonblank endpoint colors, gutter/seam checks, adjacent fade ownership and
+cleanup. This bounded control leaves the actual main-only 100M browser and
+competitive evidence gates open.
+
 - Do not allocate 1B points to “prove” Tier-3.
 - Do not substitute these bounded spill/reuse checks for complete Phase-4
   product/host acceptance or large-scale measured evidence.
