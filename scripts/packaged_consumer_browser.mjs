@@ -72,6 +72,54 @@ async function screenshot(page, output, name) {
   return { file: filename, sha256: createHash('sha256').update(png).digest('hex') };
 }
 
+export async function captureModuleResponses(context, moduleUrl, external, errors, timeoutMs = 10_000) {
+  const assetResponses = [], observed = [], tasks = [];
+  let received, failed;
+  const responseSeen = new Promise((resolve, reject) => { received = resolve; failed = reject; });
+  // Navigation/tick admission can fail before the caller reaches wait().
+  responseSeen.catch(() => {});
+  context.on('response', response => {
+    if (!response.url().endsWith('.wasm')) return;
+    observed.push({ url: response.url(), status: response.status() });
+    received();
+  });
+  await context.route('**/*', route => {
+    const url = route.request().url();
+    if (new URL(url).origin !== new URL(moduleUrl).origin) {
+      external.push(url); return route.abort();
+    }
+    if (!url.endsWith('.wasm')) return route.continue();
+    const task = (async () => {
+      assert.equal(url, moduleUrl, 'unexpected module request');
+      // Read the one upstream transfer before delivering it to the real Worker.
+      // CDP response.body() can lose its target when corrupt compile terminates
+      // that Worker. APIResponse bytes survive it; fulfill sends these same bytes.
+      const response = await route.fetch({ timeout: timeoutMs, maxRedirects: 0, maxRetries: 0 });
+      const bytes = await response.body();
+      assetResponses.push({ url, status: response.status(), bytes: response.ok() ? bytes.length : null,
+        sha256: response.ok() ? createHash('sha256').update(bytes).digest('hex') : null });
+      await route.fulfill({ response, body: bytes });
+    })();
+    tasks.push(task);
+    return task.catch(error => { errors.push(error.message); failed(error); return route.abort(); });
+  });
+  return { assetResponses, async wait() {
+    let timeout;
+    try {
+      await Promise.race([(async () => {
+        // The response event follows registration of its transfer task, even if
+        // Playwright delivers the event after the tick/termination diagnostics.
+        await responseSeen;
+        await Promise.all(tasks);
+      })(), new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(Error('module response collection timed out')), timeoutMs);
+      })]);
+      assert.equal(assetResponses.length, 1);
+      assert.deepEqual(observed, assetResponses.map(({ url, status }) => ({ url, status })));
+    } finally { clearTimeout(timeout); }
+  } };
+}
+
 export async function qualifyPackagedConsumers(browser, origins, output) {
   const cases = [];
   for (const host of ['python', 'node']) {
@@ -80,46 +128,25 @@ export async function qualifyPackagedConsumers(browser, origins, output) {
       const name = `${host}-${kind}`;
       const context = await browser.newContext({ viewport: { width: 800, height: 600 }, serviceWorkers: 'block' });
       const page = await context.newPage();
-      const errors = [], requests = [], external = [], assetResponses = [], responseTasks = [];
+      const errors = [], requests = [], external = [];
       page.on('pageerror', error => errors.push(error.message));
       context.on('request', request => requests.push({ url: request.url(), method: request.method() }));
-      context.on('response', response => {
-        if (!response.url().endsWith('.wasm')) return;
-        responseTasks.push((async () => {
-          // Failed fetches terminate their Worker before consuming the HTTP
-          // error body; asking CDP for that body can wait indefinitely.
-          let bytes = null;
-          if (response.ok()) {
-            let timeout;
-            try {
-              bytes = await Promise.race([response.body(), new Promise((_, reject) => {
-                timeout = setTimeout(() => reject(Error('module response body timed out')), 10_000);
-              })]);
-            } finally { clearTimeout(timeout); }
-          }
-          assetResponses.push({ url: response.url(), status: response.status(), bytes: bytes?.length ?? null,
-            sha256: bytes ? createHash('sha256').update(bytes).digest('hex') : null });
-        })().catch(error => errors.push(error.message)));
-      });
-      await context.route('**/*', route => {
-        if (new URL(route.request().url()).origin !== origin) {
-          external.push(route.request().url()); return route.abort();
-        }
-        return route.continue();
-      });
+      const failure = ['missing', 'corrupt'].includes(kind);
+      const moduleUrl = `${origin}${host === 'python' ? '' : '/assets'}/${failure ? kind : 'xyg-wasm'}.wasm`;
+      const modules = await captureModuleResponses(context, moduleUrl, external, errors);
+      const { assetResponses } = modules;
       await context.addInitScript(observe);
       try {
         const response = await page.goto(`${origin}${host === 'python' ? `/${kind}.html` : `/?kind=${kind}`}`);
         const csp = response.headers()['content-security-policy']
           ?? await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
         assert.match(csp, /worker-src 'self'/); assert.match(csp, /connect-src 'self'/);
-        const failure = ['missing', 'corrupt'].includes(kind);
         await page.waitForFunction(failure => {
           const proof = globalThis.consumerProof;
           return proof.view && proof.events.some(event => event.phase === (failure ? 'ticks_error' : 'ticks_ready'));
         }, failure);
         if (failure) await page.waitForFunction(() => globalThis.consumerProof.workers.every(worker => worker.terminated));
-        await Promise.all(responseTasks);
+        await modules.wait();
         assert.equal(assetResponses.length, 1);
         assert.equal(assetResponses[0].status, kind === 'missing' ? 404 : 200);
         if (kind === 'corrupt') {
@@ -184,6 +211,7 @@ export async function qualifyPackagedConsumers(browser, origins, output) {
         assert.ok(coloredPixels > 5, `${name}: blank plot`);
         const image = await screenshot(page, output, name);
         const lifecycle = await dispose(page);
+        await modules.wait();
         assert.deepEqual(errors, []); assert.deepEqual(external, []); assert.deepEqual(ticks.violations, []);
         const paths = requests.map(request => new URL(request.url).pathname);
         const allowed = host === 'python' ? [`/${kind}.html`, '/wasm-worker.js', `/${failure ? kind : 'xyg-wasm'}.wasm`]

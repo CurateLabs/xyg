@@ -1,0 +1,11 @@
+{
+  "base": "959e1004924774711a35df7ab1317cca30b18d68",
+  "commit": "e70e6f83ebf5f293bf2b2c014a9c8cf35b63bd75",
+  "files": {
+    "benchmarks/_ux_comparison_host.py": "d4bf76038d2439e42aaa727cae8805bba8d139eed52d7f7fea6cc7498eb9a7d5",
+    "benchmarks/_ux_live_host.py": "5acaf4cc97a2b0bd40438b7841837ed12f093a4cb274162eaa8a62caa5899863",
+    "benchmarks/bench_density_comparison.py": "fb428d5860adf610d778e37c12bfe1967a9c2506f7788c150f2a50fd151407e2",
+    "spec/design/comparison-host-admission.md": "cf068c05605988c2e93a92b155d8fe076a6547d571ffdfc1197a24ab28d2d59a",
+    "tests/test_density_comparison.py": "cc7a701813a4832ba875626ad3894c1498e6e103a309ee02046f596969265317"
+  }
+}

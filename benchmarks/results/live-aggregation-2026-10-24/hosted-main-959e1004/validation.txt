@@ -1,0 +1,20 @@
+$ uv run --with pre-commit pre-commit run --all-files
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+Exit status: 0
+
+$ uv run ruff check .
+All checks passed!
+Exit status: 0
+
+$ uv run ruff format --check .
+875 files already formatted
+Exit status: 0
+
+$ python3 benchmarks/results/live-aggregation-2026-10-24/hosted-main-959e1004/inspect_evidence.py
+Actual input argv, Python target, pinned package versions and source metadata match.
+Retained cell statuses: ['host_failed', 'host_failed', 'ok', 'ok', 'ok', 'ok', 'host_failed', 'host_failed', 'ok', 'ok', 'ok', 'ok', 'host_failed', 'host_failed', 'ok', 'ok', 'ok', 'ok']
+Retention hashes, GitHub ZIP digest/CRC/member bytes and historical source bindings OK.
+Metadata inspection only; hosted verifier output remains the authority-context evidence.
+Exit status: 0

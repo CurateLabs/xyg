@@ -1,0 +1,44 @@
+# Retain ONE already dispatched run, attempt 1. No dispatch/retry/cancel.
+# Work only under this evidence directory; no benchmark execution locally.
+export TMPDIR="$PWD/benchmarks/results/live-aggregation-2026-10-24/hosted-main-959e1004/task-tmp"
+mkdir -p "$TMPDIR"
+
+# Bounded status observations (read only):
+gh api repos/CurateLabs/xyg/actions/runs/40075049750
+gh api repos/CurateLabs/xyg/actions/runs/40075049750/attempts/1/jobs
+
+# Run only once terminal; exact API endpoints are in retain_receipt.py.
+# Job logs: gh api repos/CurateLabs/xyg/actions/jobs/120816502776/logs
+# stdout goes directly into this directory, then lossless deterministic gzip.
+# No gh run view --log, shared /tmp cache, local source arrays, Darwin emulation,
+# GITHUB_ACTIONS spoofing, native grid execution or local large-report verifier.
+python3 benchmarks/results/live-aggregation-2026-10-24/hosted-main-959e1004/retain_receipt.py
+python3 benchmarks/results/live-aggregation-2026-10-24/hosted-main-959e1004/build_bindings.py
+python3 benchmarks/results/live-aggregation-2026-10-24/hosted-main-959e1004/summarize_evidence.py
+
+# Source snapshots came from immutable historical Git objects:
+git show 959e1004924774711a35df7ab1317cca30b18d68:.github/workflows/ceiling-benchmark.yml
+git show 959e1004924774711a35df7ab1317cca30b18d68:scripts/verify_density_comparison_report.py
+git show 959e1004924774711a35df7ab1317cca30b18d68:spec/design/comparison-count-oracle.md
+
+# Metadata/hash inspection, from repository root:
+python3 benchmarks/results/live-aggregation-2026-10-24/hosted-main-959e1004/inspect_evidence.py
+
+# Local tools only; no project build/install:
+uv sync --group dev --no-install-project
+export UV_NO_SYNC=1
+uv run --with pre-commit pre-commit run --all-files
+uv run ruff check .
+uv run ruff format --check .
+# Output is retained in validation.txt. Identity:
+# David Spencer <1526975+DecisionNerd@users.noreply.github.com>
+# Only assigned evidence path staged/committed. No push/GitHub mutation/publication.
+
+# Historical producer invocation, provenance only. DO NOT execute locally:
+# NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
+# .venv/bin/python benchmarks/bench_density_comparison.py --sizes 1000000,100000000,1000000000 --arms xy-density,plotly-aggregate,datashader-aggregate --profile f64-memmap --repetitions 2 --chunk 1000000 --memory-gib 20 --disk-gib 20 --timeout 300 --step-timeout 15 --chrome '/Users/runner/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing' --out /Users/runner/_work/_temp/density-comparison-959e1004924774711a35df7ab1317cca30b18d68.json
+# Historical hosted independent verifier invocation, DO NOT execute locally:
+# .venv/bin/python scripts/verify_density_comparison_report.py /Users/runner/_work/_temp/density-comparison-959e1004924774711a35df7ab1317cca30b18d68.json --sha 959e1004924774711a35df7ab1317cca30b18d68 --artifact-root /Users/runner/_work/xyg/xyg --sizes 1000000,100000000,1000000000 --arms xy-density,plotly-aggregate,datashader-aggregate
+# Hosted result: INVALID: Bokeh actual backend output mismatch
+# Additional source records: gh api repos/CurateLabs/xyg/commits/959e1004924774711a35df7ab1317cca30b18d68
+# git cat-file -p 959e1004924774711a35df7ab1317cca30b18d68

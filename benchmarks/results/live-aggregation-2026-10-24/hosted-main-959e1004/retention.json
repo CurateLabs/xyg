@@ -1,0 +1,35 @@
+{
+  "retrieved_at_utc": "2026-10-24T07:57:49.065427+00:00",
+  "run_id": 40075049750,
+  "attempt": 1,
+  "source_commit": "959e1004924774711a35df7ab1317cca30b18d68",
+  "artifact_archives": [
+    {
+      "artifact_id": 12552978274,
+      "file": "ceiling-benchmark-12552978274.zip",
+      "bytes": 152055,
+      "github_digest": "sha256:33b458b35d403af9ccb7d437688c3ec7f9822c5ca3484f7db2fd9dd3d98a9d4f",
+      "sha256": "33b458b35d403af9ccb7d437688c3ec7f9822c5ca3484f7db2fd9dd3d98a9d4f",
+      "digest_match": true,
+      "members": [
+        {
+          "name": "_temp/density-comparison-959e1004924774711a35df7ab1317cca30b18d68.json",
+          "crc32": "e8693e8c",
+          "bytes": 3209979,
+          "sha256": "0f75c84180113672331f3c80f1cb8f42f69782bb458cf9e1c14277be07bc5b4e",
+          "compressed_bytes_in_zip": 151801,
+          "retained": "density-comparison-959e1004924774711a35df7ab1317cca30b18d68.json.gz"
+        }
+      ]
+    }
+  ],
+  "job_logs": [
+    {
+      "job_id": 120816502776,
+      "endpoint": "repos/CurateLabs/xyg/actions/jobs/120816502776/logs",
+      "retained": "job-120816502776.log.gz",
+      "decoded_bytes": 96544,
+      "decoded_sha256": "dcc363aec594668204644a424af2320ff570caf28fbeff43b9c761d341c7f25f"
+    }
+  ]
+}

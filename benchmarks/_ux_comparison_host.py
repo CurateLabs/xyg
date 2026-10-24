@@ -114,11 +114,53 @@ def observe_datashader(meta, x, y, state):
             "passed": count == mass,
             "backend_revision": state["backend_frames"],
         }
+        # Only bounded metadata, never retained source or raster arrays. Repeated
+        # windows may reuse HoloViews' cached image; bind it to its own grid.
+        key = (tuple(domain), tuple(grid.shape))
+        state.setdefault("backend_outputs", {})[str(key)] = dict(state["last_output"])
         if mass != count:
             raise AssertionError("actual Datashader grid mass differs from shared source count")
         return grid
 
     ds.Canvas.points = observed
+
+    from holoviews.plotting.bokeh.raster import RGBPlot
+
+    original_get_data = RGBPlot.get_data
+
+    def bound_data(plot, *args, **kwargs):
+        data, mapping, style = original_get_data(plot, *args, **kwargs)
+        if "image" in data:
+            data["comparison_backend"] = [datashader_binding(data, state)]
+        return data, mapping, style
+
+    # Add metadata before the real CDS update. An after-update hook would send
+    # the entire image a second time, changing the measured transport workload.
+    RGBPlot.get_data = bound_data
+
+
+def datashader_binding(data, state):
+    """Bind the actual shaded image to its observed source grid (dossier §12).
+
+    A browser must see this binding and its image bytes together before admission;
+    the 400px bootstrap and later 512px response have separate bindings.
+    """
+    image = np.asarray(data["image"][0])
+    domain = [
+        data["x"][0],
+        data["x"][0] + data["dw"][0],
+        data["y"][0],
+        data["y"][0] + data["dh"][0],
+    ]
+    matches = [
+        out
+        for out in state.get("backend_outputs", {}).values()
+        if list(image.shape) == out["grid_shape"]
+        and np.allclose(domain, out["domain"], rtol=0, atol=1e-10)
+    ]
+    if not matches:
+        raise AssertionError("Bokeh image has no observed source-grid binding")
+    return dict(matches[-1], image_sha256=hashlib.sha256(image.tobytes()).hexdigest())
 
 
 XY_JS = r"""
@@ -244,28 +286,66 @@ bkArm.readbacks=function() {
   return [{data:img.data,w:512,h:512,cssW:512,cssH:512,topDown:true}];
 };
 bkArm.__kicked=true; // no legacy wheel nudge in this programmatic profile
-let bkRevision=0,bkTarget=null,bkDataRevision=0,bkConnected=false;
+let bkRevision=0,bkDataRevision=0,bkConnected=false,bkRequestDataRevision=-1;
+let bkValidated=null;
+const bkNear=(a,b)=>a && b && a.length===b.length && a.every((v,i)=>
+  Number.isFinite(v) && Math.abs(v-b[i])<=1e-9*Math.max(1,Math.abs(b[i])));
+function bkImage() {
+  const pv=bkArm._pv();if(!pv)return null;
+  for(const rv of pv.renderer_views.values()) {
+    const data=rv.model.data_source?.data;
+    if(data?.image && /Image/.test(rv.model.glyph?.type || ''))
+      return {image:data.image[0],binding:data.comparison_backend?.[0]};
+  }
+  return null;
+}
 window.__comparison={
   setWindow(d) {
     const pv=bkArm._pv();
-    bkRevision++;bkTarget=[...d];
+    bkRevision++;bkRequestDataRevision=bkDataRevision;bkValidated=null;
     pv.model.x_range.setv({start:d[0],end:d[1]});
     pv.model.y_range.setv({start:d[2],end:d[3]});
     pv.trigger_ranges_update_event();
   },
+  async validateOutput(cold,target) {
+    const current=bkImage(),b=current?.binding;
+    if(!b || !bkNear(b.domain,target) || !bkNear(b.grid_shape,[512,512]) ||
+       !b.passed || bkDataRevision<=bkRequestDataRevision)return;
+    if(bkValidated?.image===current.image && bkValidated.binding===b)return;
+    const raw=ArrayBuffer.isView(current.image)?current.image:current.image.data;
+    const bytes=new Uint8Array(raw.buffer,raw.byteOffset,raw.byteLength);
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),
+      v=>v.toString(16).padStart(2,'0')).join('');
+    const metrics=await (await fetch('/comparison_metrics',
+      {signal:AbortSignal.timeout(1000)})).json();
+    const host=metrics.last_output;
+    if(digest!==b.image_sha256 || !host || !host.passed ||
+       host.backend_revision!==b.backend_revision || host.grid_sha256!==b.grid_sha256 ||
+       host.count!==b.count || host.grid_mass!==b.grid_mass ||
+       !bkNear(host.domain,b.domain) || !bkNear(host.grid_shape,b.grid_shape))return;
+    // Never validate a newly replaced image using the previous async result.
+    const after=bkImage();
+    if(after?.image===current.image && after.binding===b)
+      bkValidated={...current,revision:bkDataRevision};
+  },
   state() {
     const pv=bkArm._pv();if(!pv)return {};
     const evidence=bkArm.evidence(),d=evidence.domain;
-    const r=evidence.rasters[0];
+    const r=evidence.rasters[0],current=bkImage(),b=current?.binding;
     if(!bkConnected) {
       for(const rv of pv.renderer_views.values()) if(rv.model.data_source) {
-        rv.model.data_source.properties.data.change.connect(()=>bkDataRevision++);
+        rv.model.data_source.properties.data.change.connect(()=>{
+          bkDataRevision++;bkValidated=null;
+        });
       }
       bkConnected=true;
     }
+    const valid=bkValidated?.image===current?.image && bkValidated?.binding===b &&
+      bkValidated?.revision===bkDataRevision && bkDataRevision>bkRequestDataRevision;
     return {axes:[d.x0,d.x1,d.y0,d.y1],plot_shape:[pv.frame.bbox.width,pv.frame.bbox.height],
       output:r?{domain:[r.x,r.x+r.dw,r.y,r.y+r.dh],revision:bkDataRevision,
-        requested_revision:bkRevision,adopted:bkArm.currentRaster(),mode:"density",
+        requested_revision:bkRevision,adopted:!!valid && bkArm.currentRaster(),mode:"density",
+        backend_binding:b,oracle:b?{passed:!!valid && b.passed,count:b.count,grid_mass:b.grid_mass}:null,
         exact_fallback:false,raster_shape:r.shape}:null};
   }
 };
