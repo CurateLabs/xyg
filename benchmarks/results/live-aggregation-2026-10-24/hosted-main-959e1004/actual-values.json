@@ -1,0 +1,1564 @@
+{
+  "scope": "Actual values observed in retained hosted log and raw report; original dispatch request payload is not exposed by these REST responses. Requested inputs separately retained in dispatch-receipt.json.",
+  "log_input_environment": {
+    "INPUT_EXPERIMENT": "density-comparison",
+    "INPUT_ARMS": "xy-density,plotly-aggregate,datashader-aggregate",
+    "INPUT_SIZES": "1000000,100000000,1000000000",
+    "INPUT_REPETITIONS": "2",
+    "INPUT_TIMEOUT": "300",
+    "INPUT_MEMORY_GIB": "20",
+    "INPUT_HARDWARE_GL": "false"
+  },
+  "report_argv": [
+    "benchmarks/bench_density_comparison.py",
+    "--sizes",
+    "1000000,100000000,1000000000",
+    "--arms",
+    "xy-density,plotly-aggregate,datashader-aggregate",
+    "--profile",
+    "f64-memmap",
+    "--repetitions",
+    "2",
+    "--chunk",
+    "1000000",
+    "--memory-gib",
+    "20",
+    "--disk-gib",
+    "20",
+    "--timeout",
+    "300",
+    "--step-timeout",
+    "15",
+    "--chrome",
+    "/Users/runner/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+    "--out",
+    "/Users/runner/_work/_temp/density-comparison-959e1004924774711a35df7ab1317cca30b18d68.json"
+  ],
+  "hosted_environment_check": {
+    "arms": [
+      "xy-density",
+      "plotly-aggregate",
+      "datashader-aggregate"
+    ],
+    "executable": "/Users/runner/_work/xyg/xyg/.venv/bin/python",
+    "packages": {
+      "bokeh": "3.9.1",
+      "datashader": "0.19.1",
+      "holoviews": "1.23.1",
+      "hvplot": "0.12.2",
+      "llvmlite": "0.48.0",
+      "numba": "0.66.0",
+      "numpy": "2.4.6",
+      "pandas": "3.0.3",
+      "panel": "1.9.3",
+      "pillow": "12.3.0",
+      "plotly": "6.9.0",
+      "psutil": "7.2.2",
+      "tornado": "6.5.7",
+      "websocket-client": "1.9.2"
+    },
+    "python": "3.12.10 (v3.12.10:0cc81280367, Apr  8 2025, 08:46:59) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "xy_backend": "native"
+  },
+  "report_environment": {
+    "generated_at_utc": "2026-10-24T07:42:19.630163Z",
+    "python": {
+      "version": "3.12.10",
+      "implementation": "CPython",
+      "compiler": "Clang 13.0.0 (clang-1300.0.29.30)"
+    },
+    "platform": {
+      "system": "Darwin",
+      "release": "24.6.0",
+      "version": "Darwin Kernel Version 24.6.0: Mon Jan 19 22:02:01 PST 2026; root:xnu-11417.140.69.708.3~1/RELEASE_ARM64_VMAPPLE",
+      "machine": "arm64",
+      "processor": "arm"
+    },
+    "cpu_count": 12,
+    "package_versions": {
+      "numpy": "2.4.6",
+      "plotly": "6.9.0",
+      "datashader": "0.19.1",
+      "hvplot": "0.12.2",
+      "holoviews": "1.23.1",
+      "bokeh": "3.9.1",
+      "panel": "1.9.3",
+      "pandas": "3.0.3",
+      "numba": "0.66.0",
+      "llvmlite": "0.48.0",
+      "tornado": "6.5.7",
+      "psutil": "7.2.2",
+      "websocket-client": "1.9.2"
+    },
+    "executables": {
+      "node": "v22.23.4",
+      "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+      "chromium": "Google Chrome for Testing 149.0.7827.55"
+    },
+    "xy_backend": "native",
+    "browser_renderer": "software-gl",
+    "git": {
+      "commit": "959e1004924774711a35df7ab1317cca30b18d68",
+      "branch": "main",
+      "dirty": false
+    },
+    "browser_renderer_requested": "software-gl",
+    "browser_renderer_observed": null,
+    "browser_renderer_scope": "launch-request; actual renderer not measured"
+  },
+  "limits": {
+    "host_or_browser_timeout_s": 300.0,
+    "step_timeout_s": 15.0,
+    "rss_bytes_per_tree": 21474836480,
+    "rss_poll_ms": 50
+  },
+  "source_counts_windows": {
+    "1000000": [
+      {
+        "kind": "pan",
+        "window": [
+          -5.5512094117860356,
+          -0.024385434183826327,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 374385,
+          "half_open": 374385,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 374385
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.860356414585759,
+          0.6664675630164494,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 490227,
+          "half_open": 490227,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 490227
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 531842,
+          "half_open": 531842,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 531842
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.478650420185207,
+          2.0481735574170026,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 539193,
+          "half_open": 539193,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 539193
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -2.787797422984931,
+          2.7390265546172783,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 537345,
+          "half_open": 537345,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 537345
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.478650420185207,
+          2.0481735574170026,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 539193,
+          "half_open": 539193,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 539193
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 531842,
+          "half_open": 531842,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 531842
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.860356414585759,
+          0.6664675630164494,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 490227,
+          "half_open": 490227,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 490227
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.5512094117860356,
+          -0.024385434183826327,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 374385,
+          "half_open": 374385,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 374385
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.860356414585759,
+          0.6664675630164494,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 490227,
+          "half_open": 490227,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 490227
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 531842,
+          "half_open": 531842,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 531842
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.478650420185207,
+          2.0481735574170026,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 539193,
+          "half_open": 539193,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 539193
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -2.787797422984931,
+          2.7390265546172783,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 537345,
+          "half_open": 537345,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 537345
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.478650420185207,
+          2.0481735574170026,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 539193,
+          "half_open": 539193,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 539193
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 531842,
+          "half_open": 531842,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 531842
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.860356414585759,
+          0.6664675630164494,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 490227,
+          "half_open": 490227,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 490227
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.5512094117860356,
+          -0.024385434183826327,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 374385,
+          "half_open": 374385,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 374385
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.860356414585759,
+          0.6664675630164494,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 490227,
+          "half_open": 490227,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 490227
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 531842,
+          "half_open": 531842,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 531842
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.478650420185207,
+          2.0481735574170026,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 539193,
+          "half_open": 539193,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 539193
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -2.787797422984931,
+          2.7390265546172783,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 537345,
+          "half_open": 537345,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 537345
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.478650420185207,
+          2.0481735574170026,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 539193,
+          "half_open": 539193,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 539193
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 531842,
+          "half_open": 531842,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 531842
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.860356414585759,
+          0.6664675630164494,
+          -4.314843366813583,
+          0.07794760121697131
+        ],
+        "source_counts": {
+          "inclusive": 490227,
+          "half_open": 490227,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 490227
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          -1.4060914285843786,
+          -3.2166456248059445,
+          -1.020250140790667
+        ],
+        "source_counts": {
+          "inclusive": 35462,
+          "half_open": 35462,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 35462
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -3.2166456248059445,
+          1.1761453432246096
+        ],
+        "source_counts": {
+          "inclusive": 875718,
+          "half_open": 875718,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 875718
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          -1.4060914285843786,
+          -3.2166456248059445,
+          -1.020250140790667
+        ],
+        "source_counts": {
+          "inclusive": 35462,
+          "half_open": 35462,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 35462
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -3.2166456248059445,
+          1.1761453432246096
+        ],
+        "source_counts": {
+          "inclusive": 875718,
+          "half_open": 875718,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 875718
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          -1.4060914285843786,
+          -3.2166456248059445,
+          -1.020250140790667
+        ],
+        "source_counts": {
+          "inclusive": 35462,
+          "half_open": 35462,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 35462
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -3.2166456248059445,
+          1.1761453432246096
+        ],
+        "source_counts": {
+          "inclusive": 875718,
+          "half_open": 875718,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 875718
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          -1.4060914285843786,
+          -3.2166456248059445,
+          -1.020250140790667
+        ],
+        "source_counts": {
+          "inclusive": 35462,
+          "half_open": 35462,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 35462
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.169503417385483,
+          1.357320560216726,
+          -3.2166456248059445,
+          1.1761453432246096
+        ],
+        "source_counts": {
+          "inclusive": 875718,
+          "half_open": 875718,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 875718
+      }
+    ],
+    "100000000": [
+      {
+        "kind": "pan",
+        "window": [
+          -6.032507630659307,
+          0.05782594118964823,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 36450230,
+          "half_open": 36450230,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 36450230
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.271215934178187,
+          0.8191176376707681,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 45904844,
+          "half_open": 45904844,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 45904844
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48339073,
+          "half_open": 48339073,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48339073
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.7486325412159487,
+          2.341701030633006,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48599532,
+          "half_open": 48599532,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48599532
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -2.9873408447348293,
+          3.1029927271141258,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48481342,
+          "half_open": 48481342,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48481342
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.7486325412159487,
+          2.341701030633006,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48599532,
+          "half_open": 48599532,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48599532
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48339073,
+          "half_open": 48339073,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48339073
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.271215934178187,
+          0.8191176376707681,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 45904844,
+          "half_open": 45904844,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 45904844
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -6.032507630659307,
+          0.05782594118964823,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 36450230,
+          "half_open": 36450230,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 36450230
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.271215934178187,
+          0.8191176376707681,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 45904844,
+          "half_open": 45904844,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 45904844
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48339073,
+          "half_open": 48339073,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48339073
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.7486325412159487,
+          2.341701030633006,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48599532,
+          "half_open": 48599532,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48599532
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -2.9873408447348293,
+          3.1029927271141258,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48481342,
+          "half_open": 48481342,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48481342
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.7486325412159487,
+          2.341701030633006,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48599532,
+          "half_open": 48599532,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48599532
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48339073,
+          "half_open": 48339073,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48339073
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.271215934178187,
+          0.8191176376707681,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 45904844,
+          "half_open": 45904844,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 45904844
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -6.032507630659307,
+          0.05782594118964823,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 36450230,
+          "half_open": 36450230,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 36450230
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.271215934178187,
+          0.8191176376707681,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 45904844,
+          "half_open": 45904844,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 45904844
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48339073,
+          "half_open": 48339073,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48339073
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.7486325412159487,
+          2.341701030633006,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48599532,
+          "half_open": 48599532,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48599532
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -2.9873408447348293,
+          3.1029927271141258,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48481342,
+          "half_open": 48481342,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48481342
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.7486325412159487,
+          2.341701030633006,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48599532,
+          "half_open": 48599532,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48599532
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 48339073,
+          "half_open": 48339073,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 48339073
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.271215934178187,
+          0.8191176376707681,
+          -4.9314485030734465,
+          -0.02703772557700823
+        ],
+        "source_counts": {
+          "inclusive": 45904844,
+          "half_open": 45904844,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 45904844
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          -1.4647574517725905,
+          -3.705345808699337,
+          -1.2531404199511176
+        ],
+        "source_counts": {
+          "inclusive": 2258089,
+          "half_open": 2258089,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 2258089
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -3.705345808699337,
+          1.1990649687971011
+        ],
+        "source_counts": {
+          "inclusive": 90200409,
+          "half_open": 90200409,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 90200409
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          -1.4647574517725905,
+          -3.705345808699337,
+          -1.2531404199511176
+        ],
+        "source_counts": {
+          "inclusive": 2258089,
+          "half_open": 2258089,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 2258089
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -3.705345808699337,
+          1.1990649687971011
+        ],
+        "source_counts": {
+          "inclusive": 90200409,
+          "half_open": 90200409,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 90200409
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          -1.4647574517725905,
+          -3.705345808699337,
+          -1.2531404199511176
+        ],
+        "source_counts": {
+          "inclusive": 2258089,
+          "half_open": 2258089,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 2258089
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -3.705345808699337,
+          1.1990649687971011
+        ],
+        "source_counts": {
+          "inclusive": 90200409,
+          "half_open": 90200409,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 90200409
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          -1.4647574517725905,
+          -3.705345808699337,
+          -1.2531404199511176
+        ],
+        "source_counts": {
+          "inclusive": 2258089,
+          "half_open": 2258089,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 2258089
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -4.509924237697068,
+          1.580409334151887,
+          -3.705345808699337,
+          1.1990649687971011
+        ],
+        "source_counts": {
+          "inclusive": 90200409,
+          "half_open": 90200409,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 90200409
+      }
+    ],
+    "1000000000": [
+      {
+        "kind": "pan",
+        "window": [
+          -6.826720559118933,
+          -0.07528047940698013,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 315425558,
+          "half_open": 315425558,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 315425558
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.982790549154939,
+          0.7686495305570142,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 414791813,
+          "half_open": 414791813,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 414791813
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 436996096,
+          "half_open": 436996096,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 436996096
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.294930529226951,
+          2.456509550485003,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438759451,
+          "half_open": 438759451,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438759451
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.4510005192629567,
+          3.3004395604489956,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438537906,
+          "half_open": 438537906,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438537906
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.294930529226951,
+          2.456509550485003,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438759451,
+          "half_open": 438759451,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438759451
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 436996096,
+          "half_open": 436996096,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 436996096
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.982790549154939,
+          0.7686495305570142,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 414791813,
+          "half_open": 414791813,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 414791813
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -6.826720559118933,
+          -0.07528047940698013,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 315425558,
+          "half_open": 315425558,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 315425558
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.982790549154939,
+          0.7686495305570142,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 414791813,
+          "half_open": 414791813,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 414791813
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 436996096,
+          "half_open": 436996096,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 436996096
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.294930529226951,
+          2.456509550485003,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438759451,
+          "half_open": 438759451,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438759451
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.4510005192629567,
+          3.3004395604489956,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438537906,
+          "half_open": 438537906,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438537906
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.294930529226951,
+          2.456509550485003,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438759451,
+          "half_open": 438759451,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438759451
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 436996096,
+          "half_open": 436996096,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 436996096
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.982790549154939,
+          0.7686495305570142,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 414791813,
+          "half_open": 414791813,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 414791813
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -6.826720559118933,
+          -0.07528047940698013,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 315425558,
+          "half_open": 315425558,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 315425558
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.982790549154939,
+          0.7686495305570142,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 414791813,
+          "half_open": 414791813,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 414791813
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 436996096,
+          "half_open": 436996096,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 436996096
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.294930529226951,
+          2.456509550485003,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438759451,
+          "half_open": 438759451,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438759451
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -3.4510005192629567,
+          3.3004395604489956,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438537906,
+          "half_open": 438537906,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438537906
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -4.294930529226951,
+          2.456509550485003,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 438759451,
+          "half_open": 438759451,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 438759451
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 436996096,
+          "half_open": 436996096,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 436996096
+      },
+      {
+        "kind": "pan",
+        "window": [
+          -5.982790549154939,
+          0.7686495305570142,
+          -5.369787777223938,
+          -0.12028432671272782
+        ],
+        "source_counts": {
+          "inclusive": 414791813,
+          "half_open": 414791813,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 414791813
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          -1.7631404993349689,
+          -4.057411914596136,
+          -1.4326601893405302
+        ],
+        "source_counts": {
+          "inclusive": 11156154,
+          "half_open": 11156154,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 11156154
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -4.057411914596136,
+          1.1920915359150746
+        ],
+        "source_counts": {
+          "inclusive": 903843799,
+          "half_open": 903843799,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 903843799
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          -1.7631404993349689,
+          -4.057411914596136,
+          -1.4326601893405302
+        ],
+        "source_counts": {
+          "inclusive": 11156154,
+          "half_open": 11156154,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 11156154
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -4.057411914596136,
+          1.1920915359150746
+        ],
+        "source_counts": {
+          "inclusive": 903843799,
+          "half_open": 903843799,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 903843799
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          -1.7631404993349689,
+          -4.057411914596136,
+          -1.4326601893405302
+        ],
+        "source_counts": {
+          "inclusive": 11156154,
+          "half_open": 11156154,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 11156154
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -4.057411914596136,
+          1.1920915359150746
+        ],
+        "source_counts": {
+          "inclusive": 903843799,
+          "half_open": 903843799,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 903843799
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          -1.7631404993349689,
+          -4.057411914596136,
+          -1.4326601893405302
+        ],
+        "source_counts": {
+          "inclusive": 11156154,
+          "half_open": 11156154,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 11156154
+      },
+      {
+        "kind": "zoom",
+        "window": [
+          -5.138860539190945,
+          1.6125795405210086,
+          -4.057411914596136,
+          1.1920915359150746
+        ],
+        "source_counts": {
+          "inclusive": 903843799,
+          "half_open": 903843799,
+          "upper_boundary_excluded": 0
+        },
+        "expected_count": 903843799
+      }
+    ]
+  }
+}

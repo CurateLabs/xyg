@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/benchmarks/_ux_live_host.py", line 445, in <module>
+    main()
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/benchmarks/_ux_live_host.py", line 441, in main
+    asyncio.run(serve())
+  File "/home/ubuntu/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/benchmarks/_ux_live_host.py", line 410, in serve
+    (r"/comparison_metrics", metrics_handler(comparison_state)),
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/benchmarks/_ux_comparison_host.py", line 58, in metrics_handler
+    from benchmarks._ux_comparison_oracle import SourceOracle
+ModuleNotFoundError: No module named 'benchmarks'

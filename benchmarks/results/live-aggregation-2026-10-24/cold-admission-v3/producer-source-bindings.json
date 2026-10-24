@@ -1,0 +1,16 @@
+{
+  "benchmarks/_launch_interactive.py": "648238080613b27e17cbabc2e76bb30dcfc87861a6e50ad054360baeee0608ec",
+  "benchmarks/_ux_comparison_data.py": "5901917503f238adfca0ef726d2cbe6b77f0292435a14bcfd60df7d9e20caa46",
+  "benchmarks/_ux_comparison_host.py": "d4bf76038d2439e42aaa727cae8805bba8d139eed52d7f7fea6cc7498eb9a7d5",
+  "benchmarks/_ux_comparison_oracle.py": "a7765b2fea5cce98a37e06b20b9efec20f50a84d86794b92a0304dcb9d6cc04b",
+  "benchmarks/_ux_comparison_source.py": "e8e993c1a64bea396bd986b84466f8ba37b186fb316aef99602b67cc3dfa9d20",
+  "benchmarks/_ux_datashader_host.py": "2e5e7d87172937e67d985df5bea76e6ce92dd6f9c685427c7cc0904ee308ed43",
+  "benchmarks/_ux_live_host.py": "5acaf4cc97a2b0bd40438b7841837ed12f093a4cb274162eaa8a62caa5899863",
+  "benchmarks/_ux_plotly_aggregate_host.py": "f560b12a2d80c67cc1de9920021826e1d719d81e965213879f54c56c0fb927ee",
+  "benchmarks/_ux_probe.py": "01a1bc50a06250890efddbe595aa263d117fbf45c7436518a7a44e91701c523e",
+  "benchmarks/_ux_webagg_host.py": "aeded9108250025115b85cb8bc73ba000f427981578362e4a114447f7bc95ebf",
+  "benchmarks/bench_ux.py": "a9df5ddf931a01c8806fccede64f85e6b4e5db1082ff5bf645180bbcfad10ce4",
+  "benchmarks/environment.py": "d169edf752862847fa4e595e8518e486312a89648d05d6e5e00829c13a405165",
+  "benchmarks/requirements-ci.lock": "9a257a064c44b18b53d0b96b33e9c48e259b633a2ffde341ca8bac4ae447558b",
+  "benchmarks/bench_density_comparison.py": "fb428d5860adf610d778e37c12bfe1967a9c2506f7788c150f2a50fd151407e2"
+}

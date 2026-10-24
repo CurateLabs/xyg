@@ -82,11 +82,11 @@ def engine_js(source, step_timeout, arm):
    document.title='UX_STAGE '+JSON.stringify({completed:name});
  }
  async function settle(domain,count,start,cold=false) {
-   let axesAt=null,adoptAt=null,stableAt=null,lastHash=null,stable=0,diag=null,lastError=null;
+   let axesAt=null,adoptAt=null,stableAt=null,lastHash=null,lastIdentity=null,stable=0,diag=null,lastError=null;
    while(performance.now()-start<DC.deadline) {
      try {
        let state=window.__comparison.state();
-       if(window.__comparison.validateOutput && state.output?.adopted) {
+       if(window.__comparison.validateOutput && state.output) {
          await window.__comparison.validateOutput(cold,domain);state=window.__comparison.state();
        }
        const snap=snapshot(),now=performance.now();
@@ -96,24 +96,25 @@ def engine_js(source, step_timeout, arm):
        const out=state.output;
        const covers=out?.domain && out.domain[0]<=domain[0]+1e-9 && out.domain[1]>=domain[1]-1e-9 &&
          out.domain[2]<=domain[2]+1e-9 && out.domain[3]>=domain[3]-1e-9;
-       const adopted=cold || (!!out?.adopted && (out.exact_fallback ? covers : near(out.domain,domain)));
+       const adopted=!!out?.adopted && (out.exact_fallback ? covers : near(out.domain,domain));
        const oracle=DC.arm==='xy-density'
          ? out?.numerical_oracle?.passed===true && out.numerical_oracle.exact_source_count===count
-         :cold || (out?.oracle ? out.oracle.passed && out.oracle.count===count
+         :(out?.oracle ? out.oracle.passed && out.oracle.count===count
            :out?.exact_fallback ? out.exact_count===count : true);
        const painted=snap.surfaces>0 && (count===0?snap.lit===0:snap.lit>0);
        const correct=axes && square && adopted && oracle && painted;
+       const identity=JSON.stringify([out?.revision,out?.backend_binding,out?.domain,out?.raster_shape]);
        if(axes && square && adopted && adoptAt===null)adoptAt=now;
        diag={state,snap,axes,square,adopted,oracle,painted,lastError};
-       if(correct && snap.hash===lastHash){
+       if(correct && snap.hash===lastHash && identity===lastIdentity){
          if(stable===0)stableAt=now;
          if(++stable>=10)return {ok:true,axes_adopt_ms:axesAt-start,
            output_adopt_ms:adoptAt-start,paint_stable_ms:stableAt-start,
            stability_confirmed_ms:now-start,paint_hash32:snap.hash,lit_pixels:snap.lit,
            expected_count:count,state};
        }else{stable=0;stableAt=null;}
-       lastHash=snap.hash;
-     }catch(e){lastError=String(e);}
+       lastHash=snap.hash;lastIdentity=identity;
+     }catch(e){lastError=String(e);stable=0;stableAt=null;lastHash=null;lastIdentity=null;}
      await raf();
    }
    return {ok:false,reason:'window_not_adopted_or_painted',elapsed_ms:performance.now()-start,diag,lastError};
@@ -242,6 +243,24 @@ def run_arm(arm, manifest, args, repetition):
             if row.get("status") == "ok":
                 result["status"] = row.get("comparison_status", "missing_comparison_status")
             cps = row.get("transport", {}).get("checkpoints", {})
+            if arm == "datashader-aggregate":
+                paints = [("visible-complete", result.get("cold"), "cold_failed")]
+                paints += [
+                    (f"step-{s['index']}", s, "step_failed") for s in result.get("steps", [])
+                ]
+                paints.append(
+                    ("empty-control", result.get("empty_control"), "empty_control_failed")
+                )
+                for name, paint, failure in paints:
+                    if (
+                        paint
+                        and paint["ok"]
+                        and not datashader_checkpoint_matches(
+                            paint, cps.get(name, {}).get("host_observation", {})
+                        )
+                    ):
+                        paint.update(ok=False, reason="backend_output_binding_not_current")
+                        result["status"] = failure
             previous = cps.get("visible-complete")
             for step in result.get("steps", []):
                 cp = cps.get(f"step-{step['index']}")
@@ -293,6 +312,21 @@ def run_arm(arm, manifest, args, repetition):
 def np_equal(a, b):
     return len(a) == len(b) and all(
         abs(x - y) <= 1e-9 * max(1, abs(y)) for x, y in zip(a, b, strict=True)
+    )
+
+
+def datashader_checkpoint_matches(paint, observation):
+    """Fail producer admission if the screenshot checkpoint outran its binding."""
+    out = observation.get("last_output")
+    browser = paint["state"]["output"]
+    binding = browser.get("backend_binding", {})
+    return bool(
+        out
+        and out["passed"]
+        and out["count"] == out["grid_mass"] == paint["expected_count"]
+        and out["grid_shape"] == browser["raster_shape"] == [512, 512]
+        and np_equal(out["domain"], browser["domain"])
+        and all(binding.get(key) == value for key, value in out.items())
     )
 
 

@@ -1,0 +1,4729 @@
+{
+  "report": "density-comparison-959e1004924774711a35df7ab1317cca30b18d68.json.gz",
+  "decoded_report_sha256": "0f75c84180113672331f3c80f1cb8f42f69782bb458cf9e1c14277be07bc5b4e",
+  "scope": "Descriptive retained metadata only. Hosted verifier log is authoritative; no competitive acceptance or winner.",
+  "hosted_verifier_output": "2026-10-24T07:56:35.1790250Z INVALID: Bokeh actual backend output mismatch\n",
+  "quantiles": "Per repetition, all recorded steps: median p50; p95 at sorted index floor(.95*(n-1)); no best-of-N selection.",
+  "producer_status_counts": {
+    "host_failed": 6,
+    "ok": 12
+  },
+  "environment": {
+    "generated_at_utc": "2026-10-24T07:42:19.630163Z",
+    "python": {
+      "version": "3.12.10",
+      "implementation": "CPython",
+      "compiler": "Clang 13.0.0 (clang-1300.0.29.30)"
+    },
+    "platform": {
+      "system": "Darwin",
+      "release": "24.6.0",
+      "version": "Darwin Kernel Version 24.6.0: Mon Jan 19 22:02:01 PST 2026; root:xnu-11417.140.69.708.3~1/RELEASE_ARM64_VMAPPLE",
+      "machine": "arm64",
+      "processor": "arm"
+    },
+    "cpu_count": 12,
+    "package_versions": {
+      "numpy": "2.4.6",
+      "plotly": "6.9.0",
+      "datashader": "0.19.1",
+      "hvplot": "0.12.2",
+      "holoviews": "1.23.1",
+      "bokeh": "3.9.1",
+      "panel": "1.9.3",
+      "pandas": "3.0.3",
+      "numba": "0.66.0",
+      "llvmlite": "0.48.0",
+      "tornado": "6.5.7",
+      "psutil": "7.2.2",
+      "websocket-client": "1.9.2"
+    },
+    "executables": {
+      "node": "v22.23.4",
+      "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+      "chromium": "Google Chrome for Testing 149.0.7827.55"
+    },
+    "xy_backend": "native",
+    "browser_renderer": "software-gl",
+    "git": {
+      "commit": "959e1004924774711a35df7ab1317cca30b18d68",
+      "branch": "main",
+      "dirty": false
+    },
+    "browser_renderer_requested": "software-gl",
+    "browser_renderer_observed": null,
+    "browser_renderer_scope": "launch-request; actual renderer not measured"
+  },
+  "argv": [
+    "benchmarks/bench_density_comparison.py",
+    "--sizes",
+    "1000000,100000000,1000000000",
+    "--arms",
+    "xy-density,plotly-aggregate,datashader-aggregate",
+    "--profile",
+    "f64-memmap",
+    "--repetitions",
+    "2",
+    "--chunk",
+    "1000000",
+    "--memory-gib",
+    "20",
+    "--disk-gib",
+    "20",
+    "--timeout",
+    "300",
+    "--step-timeout",
+    "15",
+    "--chrome",
+    "/Users/runner/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+    "--out",
+    "/Users/runner/_work/_temp/density-comparison-959e1004924774711a35df7ab1317cca30b18d68.json"
+  ],
+  "runtime": {
+    "temp_root": "/var/folders/pm/cmklcsfj60nd7nfc79g8xmbc0000gn/T",
+    "thread_environment": {
+      "NUMBA_NUM_THREADS": "2",
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    }
+  },
+  "limits": {
+    "host_or_browser_timeout_s": 300.0,
+    "step_timeout_s": 15.0,
+    "rss_bytes_per_tree": 21474836480,
+    "rss_poll_ms": 50
+  },
+  "sources": {
+    "1000000": {
+      "schema_version": 1,
+      "profile": "f64-memmap",
+      "actual_rows": 1000000,
+      "dtype": "<f8",
+      "seed": 20260713,
+      "generator": "independent-streams-f64-v1",
+      "columns": {
+        "x": {
+          "file": "x.f64-memmap",
+          "bytes": 8000000,
+          "sha256": "a2896f582bc8f7eb9aa94da35458ddbac80585f0f4dcb40262c639f201513659"
+        },
+        "y": {
+          "file": "y.f64-memmap",
+          "bytes": 8000000,
+          "sha256": "eee0bf59b32d9b4bc9a364b8647695d8dea39f4612ddb59eda6e5c1a6406d77c"
+        }
+      },
+      "sha256_x_then_y": "b2018aea04e035ae4d87d6b5f21fb08f921d7736074df520d1074c8694ee5baf",
+      "extents": [
+        -5.5512094117860356,
+        5.502438543418383,
+        -4.314843366813583,
+        4.470738569247525
+      ],
+      "source_bounds": [
+        -5.048770868367653,
+        5.0,
+        -3.9154987333562596,
+        4.071393935790202
+      ],
+      "generation_chunk_rows": 1000000,
+      "authority": {
+        "authority": "manual-main-macos-M4",
+        "actual_rows": 1000000,
+        "source_file_bytes": 16000000,
+        "per_tree_rss_guard_bytes": 21474836480,
+        "disk_guard_bytes": 21474836480,
+        "mapped_bytes_are_not_rss": true,
+        "facts": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "memory": 51539607552,
+          "GITHUB_ACTIONS": "true",
+          "GITHUB_EVENT_NAME": "workflow_dispatch",
+          "GITHUB_REF": "refs/heads/main",
+          "GITHUB_WORKFLOW": "Interactive ceiling benchmark",
+          "RUNNER_OS": "macOS"
+        }
+      },
+      "windows": [
+        {
+          "kind": "pan",
+          "window": [
+            -5.5512094117860356,
+            -0.024385434183826327,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 374385,
+            "half_open": 374385,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 374385
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 490227,
+            "half_open": 490227,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 531842,
+            "half_open": 531842,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 539193,
+            "half_open": 539193,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.787797422984931,
+            2.7390265546172783,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 537345,
+            "half_open": 537345,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 537345
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 539193,
+            "half_open": 539193,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 531842,
+            "half_open": 531842,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 490227,
+            "half_open": 490227,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.5512094117860356,
+            -0.024385434183826327,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 374385,
+            "half_open": 374385,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 374385
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 490227,
+            "half_open": 490227,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 531842,
+            "half_open": 531842,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 539193,
+            "half_open": 539193,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.787797422984931,
+            2.7390265546172783,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 537345,
+            "half_open": 537345,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 537345
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 539193,
+            "half_open": 539193,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 531842,
+            "half_open": 531842,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 490227,
+            "half_open": 490227,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.5512094117860356,
+            -0.024385434183826327,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 374385,
+            "half_open": 374385,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 374385
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 490227,
+            "half_open": 490227,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 531842,
+            "half_open": 531842,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 539193,
+            "half_open": 539193,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.787797422984931,
+            2.7390265546172783,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 537345,
+            "half_open": 537345,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 537345
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 539193,
+            "half_open": 539193,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 531842,
+            "half_open": 531842,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "source_counts": {
+            "inclusive": 490227,
+            "half_open": 490227,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 490227
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "source_counts": {
+            "inclusive": 35462,
+            "half_open": 35462,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "source_counts": {
+            "inclusive": 875718,
+            "half_open": 875718,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 875718
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "source_counts": {
+            "inclusive": 35462,
+            "half_open": 35462,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "source_counts": {
+            "inclusive": 875718,
+            "half_open": 875718,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 875718
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "source_counts": {
+            "inclusive": 35462,
+            "half_open": 35462,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "source_counts": {
+            "inclusive": 875718,
+            "half_open": 875718,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 875718
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "source_counts": {
+            "inclusive": 35462,
+            "half_open": 35462,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "source_counts": {
+            "inclusive": 875718,
+            "half_open": 875718,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 875718
+        }
+      ],
+      "creation_wall_ms": 312.81495800000414,
+      "source_peak_rss_bytes": 76644352
+    },
+    "100000000": {
+      "schema_version": 1,
+      "profile": "f64-memmap",
+      "actual_rows": 100000000,
+      "dtype": "<f8",
+      "seed": 20260713,
+      "generator": "independent-streams-f64-v1",
+      "columns": {
+        "x": {
+          "file": "x.f64-memmap",
+          "bytes": 800000000,
+          "sha256": "b95264f8932bf198c1b46c28d51d8b3a7a0766b6882ae24647cdd1ca9b79f579"
+        },
+        "y": {
+          "file": "y.f64-memmap",
+          "bytes": 800000000,
+          "sha256": "0a7fdea739f8b50ac7aa426e1b84335c148d60eff3aaa38ca3d7cc5c41ca46ab"
+        }
+      },
+      "sha256_x_then_y": "ec8552f33e7a364fece94e1055e0ab85fc0c508bb2876092ecd31025e8368af4",
+      "extents": [
+        -6.032507630659307,
+        6.148159513038603,
+        -4.9314485030734465,
+        4.87737305191943
+      ],
+      "source_bounds": [
+        -5.478840942309402,
+        5.5944928246886985,
+        -4.485592977846498,
+        4.431517526692481
+      ],
+      "generation_chunk_rows": 1000000,
+      "authority": {
+        "authority": "manual-main-macos-M4",
+        "actual_rows": 100000000,
+        "source_file_bytes": 1600000000,
+        "per_tree_rss_guard_bytes": 21474836480,
+        "disk_guard_bytes": 21474836480,
+        "mapped_bytes_are_not_rss": true,
+        "facts": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "memory": 51539607552,
+          "GITHUB_ACTIONS": "true",
+          "GITHUB_EVENT_NAME": "workflow_dispatch",
+          "GITHUB_REF": "refs/heads/main",
+          "GITHUB_WORKFLOW": "Interactive ceiling benchmark",
+          "RUNNER_OS": "macOS"
+        }
+      },
+      "windows": [
+        {
+          "kind": "pan",
+          "window": [
+            -6.032507630659307,
+            0.05782594118964823,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 36450230,
+            "half_open": 36450230,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 36450230
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 45904844,
+            "half_open": 45904844,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48339073,
+            "half_open": 48339073,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48599532,
+            "half_open": 48599532,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.9873408447348293,
+            3.1029927271141258,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48481342,
+            "half_open": 48481342,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48481342
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48599532,
+            "half_open": 48599532,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48339073,
+            "half_open": 48339073,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 45904844,
+            "half_open": 45904844,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.032507630659307,
+            0.05782594118964823,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 36450230,
+            "half_open": 36450230,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 36450230
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 45904844,
+            "half_open": 45904844,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48339073,
+            "half_open": 48339073,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48599532,
+            "half_open": 48599532,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.9873408447348293,
+            3.1029927271141258,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48481342,
+            "half_open": 48481342,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48481342
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48599532,
+            "half_open": 48599532,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48339073,
+            "half_open": 48339073,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 45904844,
+            "half_open": 45904844,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.032507630659307,
+            0.05782594118964823,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 36450230,
+            "half_open": 36450230,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 36450230
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 45904844,
+            "half_open": 45904844,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48339073,
+            "half_open": 48339073,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48599532,
+            "half_open": 48599532,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.9873408447348293,
+            3.1029927271141258,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48481342,
+            "half_open": 48481342,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48481342
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48599532,
+            "half_open": 48599532,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 48339073,
+            "half_open": 48339073,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "source_counts": {
+            "inclusive": 45904844,
+            "half_open": 45904844,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 45904844
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "source_counts": {
+            "inclusive": 2258089,
+            "half_open": 2258089,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "source_counts": {
+            "inclusive": 90200409,
+            "half_open": 90200409,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 90200409
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "source_counts": {
+            "inclusive": 2258089,
+            "half_open": 2258089,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "source_counts": {
+            "inclusive": 90200409,
+            "half_open": 90200409,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 90200409
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "source_counts": {
+            "inclusive": 2258089,
+            "half_open": 2258089,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "source_counts": {
+            "inclusive": 90200409,
+            "half_open": 90200409,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 90200409
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "source_counts": {
+            "inclusive": 2258089,
+            "half_open": 2258089,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "source_counts": {
+            "inclusive": 90200409,
+            "half_open": 90200409,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 90200409
+        }
+      ],
+      "creation_wall_ms": 7439.336249999997,
+      "source_peak_rss_bytes": 1674182656
+    },
+    "1000000000": {
+      "schema_version": 1,
+      "profile": "f64-memmap",
+      "actual_rows": 1000000000,
+      "dtype": "<f8",
+      "seed": 20260713,
+      "generator": "independent-streams-f64-v1",
+      "columns": {
+        "x": {
+          "file": "x.f64-memmap",
+          "bytes": 8000000000,
+          "sha256": "1356988f65d9e22bf235ae04e1174a665615cbea83301b1ef58be8825c9fb7d1"
+        },
+        "y": {
+          "file": "y.f64-memmap",
+          "bytes": 8000000000,
+          "sha256": "72b41dd566b0b2cdd51fb4d3b91b91539c4ea94abce18ca9d13ca4ba7c87ec7e"
+        }
+      },
+      "sha256_x_then_y": "080c3cc0d77c3d1d05bdfef5cdbb90c58065c8502e75b551ffcd86d7df63f7df",
+      "extents": [
+        -6.826720559118933,
+        6.676159600304974,
+        -5.369787777223938,
+        5.1292191237984825
+      ],
+      "source_bounds": [
+        -6.212953279145119,
+        6.06239232033116,
+        -4.892560190813828,
+        4.651991537388373
+      ],
+      "generation_chunk_rows": 1000000,
+      "authority": {
+        "authority": "manual-main-macos-M4",
+        "actual_rows": 1000000000,
+        "source_file_bytes": 16000000000,
+        "per_tree_rss_guard_bytes": 21474836480,
+        "disk_guard_bytes": 21474836480,
+        "mapped_bytes_are_not_rss": true,
+        "facts": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "memory": 51539607552,
+          "GITHUB_ACTIONS": "true",
+          "GITHUB_EVENT_NAME": "workflow_dispatch",
+          "GITHUB_REF": "refs/heads/main",
+          "GITHUB_WORKFLOW": "Interactive ceiling benchmark",
+          "RUNNER_OS": "macOS"
+        }
+      },
+      "windows": [
+        {
+          "kind": "pan",
+          "window": [
+            -6.826720559118933,
+            -0.07528047940698013,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 315425558,
+            "half_open": 315425558,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 315425558
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 414791813,
+            "half_open": 414791813,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 436996096,
+            "half_open": 436996096,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438759451,
+            "half_open": 438759451,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.4510005192629567,
+            3.3004395604489956,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438537906,
+            "half_open": 438537906,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438537906
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438759451,
+            "half_open": 438759451,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 436996096,
+            "half_open": 436996096,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 414791813,
+            "half_open": 414791813,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.826720559118933,
+            -0.07528047940698013,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 315425558,
+            "half_open": 315425558,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 315425558
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 414791813,
+            "half_open": 414791813,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 436996096,
+            "half_open": 436996096,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438759451,
+            "half_open": 438759451,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.4510005192629567,
+            3.3004395604489956,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438537906,
+            "half_open": 438537906,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438537906
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438759451,
+            "half_open": 438759451,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 436996096,
+            "half_open": 436996096,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 414791813,
+            "half_open": 414791813,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.826720559118933,
+            -0.07528047940698013,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 315425558,
+            "half_open": 315425558,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 315425558
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 414791813,
+            "half_open": 414791813,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 436996096,
+            "half_open": 436996096,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438759451,
+            "half_open": 438759451,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.4510005192629567,
+            3.3004395604489956,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438537906,
+            "half_open": 438537906,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438537906
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 438759451,
+            "half_open": 438759451,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 436996096,
+            "half_open": 436996096,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "source_counts": {
+            "inclusive": 414791813,
+            "half_open": 414791813,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 414791813
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "source_counts": {
+            "inclusive": 11156154,
+            "half_open": 11156154,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "source_counts": {
+            "inclusive": 903843799,
+            "half_open": 903843799,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 903843799
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "source_counts": {
+            "inclusive": 11156154,
+            "half_open": 11156154,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "source_counts": {
+            "inclusive": 903843799,
+            "half_open": 903843799,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 903843799
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "source_counts": {
+            "inclusive": 11156154,
+            "half_open": 11156154,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "source_counts": {
+            "inclusive": 903843799,
+            "half_open": 903843799,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 903843799
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "source_counts": {
+            "inclusive": 11156154,
+            "half_open": 11156154,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "source_counts": {
+            "inclusive": 903843799,
+            "half_open": 903843799,
+            "upper_boundary_excluded": 0
+          },
+          "expected_count": 903843799
+        }
+      ],
+      "creation_wall_ms": 74351.403334,
+      "source_peak_rss_bytes": 16187277312
+    }
+  },
+  "cells": [
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "producer_status": "host_failed",
+      "comparison_status": null,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 63471616,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "host_build_ms": null,
+      "host_meta": {},
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "cold": null,
+      "empty_control": null,
+      "warm_paint_stable_ms": null,
+      "output_modes": {},
+      "exact_fallback_steps": 0,
+      "raster_shapes": [],
+      "binning": [],
+      "warm_application_body_bytes": null,
+      "transport": null,
+      "last_host_observation": null
+    },
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "producer_status": "host_failed",
+      "comparison_status": null,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 51265536,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "host_build_ms": null,
+      "host_meta": {},
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "cold": null,
+      "empty_control": null,
+      "warm_paint_stable_ms": null,
+      "output_modes": {},
+      "exact_fallback_steps": 0,
+      "raster_shapes": [],
+      "binning": [],
+      "warm_application_body_bytes": null,
+      "transport": null,
+      "last_host_observation": null
+    },
+    {
+      "n": 1000000,
+      "arm": "plotly-aggregate",
+      "repetition": 0,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 371736576,
+      "browser_peak_rss_bytes": 1361051648,
+      "host_prepare_wall_ms": 1085.352792000009,
+      "host_build_ms": 821.0064170000066,
+      "host_meta": {
+        "port": 49369,
+        "n": 1000000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 821.0064170000066,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 392.6000000000058,
+        "output_adopt_ms": 392.6000000000058,
+        "paint_stable_ms": 402.1000000000058,
+        "stability_confirmed_ms": 549.8000000000029,
+        "paint_hash32": 3811466501,
+        "lit_pixels": 52546,
+        "expected_count": 1000000,
+        "state": {
+          "axes": [
+            -5.5512094117860356,
+            5.502438543418383,
+            -4.314843366813583,
+            4.470738569247525
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -5.5512094117860356,
+              5.502438543418383,
+              -4.314843366813583,
+              4.470738569247525
+            ],
+            "revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 1000000,
+              "grid_mass": 1000000,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "e71218f0be381963dabf4c51f16343cc3a3b5acbfb7039baaf35619828ca5699"
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          16.5560864986228,
+          22.08291047622501,
+          13.256320505308633,
+          17.64911147333919
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.6000000000058208,
+        "output_adopt_ms": 102.5,
+        "paint_stable_ms": 118.89999999999418,
+        "stability_confirmed_ms": 268.8999999999942,
+        "paint_hash32": 3535803653,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            16.5560864986228,
+            22.08291047622501,
+            13.256320505308633,
+            17.64911147333919
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              16.5560864986228,
+              22.08291047622501,
+              13.256320505308633,
+              17.64911147333919
+            ],
+            "revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 0,
+              "grid_mass": 0,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "b262bd68d44f93637b9949caf7ff7ce0b6b6ed839c3a2468681952b215ec4d95"
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 135.59999999999127,
+        "p95": 138.89999999999418,
+        "max": 229.1999999999971,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 4307412,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 103517,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 103517,
+            "binary_frame_bytes": 0,
+            "total_bytes": 103517
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 4412813,
+          "to_host": {
+            "json_bytes": 3226,
+            "binary_frame_bytes": 0,
+            "total_bytes": 3226
+          },
+          "from_host": {
+            "json_bytes": 4409587,
+            "binary_frame_bytes": 0,
+            "total_bytes": 4409587
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "last_output": {
+          "seq": 32,
+          "domain": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "oracle": {
+            "count": 875718,
+            "grid_mass": 875718,
+            "passed": true
+          },
+          "png_sha256": "559c72b3b5d9a37afd1958517e625aa77e2b3513ae6dc23e8816b5d011506be5",
+          "grid_shape": [
+            512,
+            512
+          ],
+          "aggregate_encode_oracle_ms": 19.665833000004795
+        }
+      }
+    },
+    {
+      "n": 1000000,
+      "arm": "plotly-aggregate",
+      "repetition": 1,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 374538240,
+      "browser_peak_rss_bytes": 1369669632,
+      "host_prepare_wall_ms": 707.0594580000034,
+      "host_build_ms": 431.27212499999246,
+      "host_meta": {
+        "port": 49415,
+        "n": 1000000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 431.27212499999246,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 346.5999999999767,
+        "output_adopt_ms": 346.5999999999767,
+        "paint_stable_ms": 369.5999999999767,
+        "stability_confirmed_ms": 505,
+        "paint_hash32": 3811466501,
+        "lit_pixels": 52546,
+        "expected_count": 1000000,
+        "state": {
+          "axes": [
+            -5.5512094117860356,
+            5.502438543418383,
+            -4.314843366813583,
+            4.470738569247525
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -5.5512094117860356,
+              5.502438543418383,
+              -4.314843366813583,
+              4.470738569247525
+            ],
+            "revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 1000000,
+              "grid_mass": 1000000,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "e71218f0be381963dabf4c51f16343cc3a3b5acbfb7039baaf35619828ca5699"
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          16.5560864986228,
+          22.08291047622501,
+          13.256320505308633,
+          17.64911147333919
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.5999999999767169,
+        "output_adopt_ms": 105.5,
+        "paint_stable_ms": 119.69999999998254,
+        "stability_confirmed_ms": 270.69999999998254,
+        "paint_hash32": 3535803653,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            16.5560864986228,
+            22.08291047622501,
+            13.256320505308633,
+            17.64911147333919
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              16.5560864986228,
+              22.08291047622501,
+              13.256320505308633,
+              17.64911147333919
+            ],
+            "revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 0,
+              "grid_mass": 0,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "b262bd68d44f93637b9949caf7ff7ce0b6b6ed839c3a2468681952b215ec4d95"
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 137.8000000000029,
+        "p95": 139.10000000000582,
+        "max": 236.29999999998836,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 4307412,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 103517,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 103517,
+            "binary_frame_bytes": 0,
+            "total_bytes": 103517
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 4412813,
+          "to_host": {
+            "json_bytes": 3226,
+            "binary_frame_bytes": 0,
+            "total_bytes": 3226
+          },
+          "from_host": {
+            "json_bytes": 4409587,
+            "binary_frame_bytes": 0,
+            "total_bytes": 4409587
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "last_output": {
+          "seq": 32,
+          "domain": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "oracle": {
+            "count": 875718,
+            "grid_mass": 875718,
+            "passed": true
+          },
+          "png_sha256": "559c72b3b5d9a37afd1958517e625aa77e2b3513ae6dc23e8816b5d011506be5",
+          "grid_shape": [
+            512,
+            512
+          ],
+          "aggregate_encode_oracle_ms": 22.978250000022626
+        }
+      }
+    },
+    {
+      "n": 1000000,
+      "arm": "datashader-aggregate",
+      "repetition": 0,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 433635328,
+      "browser_peak_rss_bytes": 1356824576,
+      "host_prepare_wall_ms": 2168.7052910000093,
+      "host_build_ms": 21.54729099999031,
+      "host_meta": {
+        "port": 49461,
+        "hostname": "localhost",
+        "n": 1000000,
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 21.54729099999031,
+        "mode": "density"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 336.1000000000058,
+        "output_adopt_ms": 336.1000000000058,
+        "paint_stable_ms": 427.80000000001746,
+        "stability_confirmed_ms": 577.8000000000175,
+        "paint_hash32": 3539429606,
+        "lit_pixels": 52546,
+        "expected_count": 1000000,
+        "state": {
+          "axes": [
+            -5.5512094117860356,
+            5.502438543418383,
+            -4.314843366813583,
+            4.470738569247525
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -5.5512094117860356,
+              5.502438543418383,
+              -4.314843366813583,
+              4.470738569247525
+            ],
+            "revision": 1,
+            "requested_revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          16.5560864986228,
+          22.08291047622501,
+          13.256320505308633,
+          17.64911147333919
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.3000000000174623,
+        "output_adopt_ms": 135,
+        "paint_stable_ms": 151.5,
+        "stability_confirmed_ms": 304.70000000001164,
+        "paint_hash32": 4127322086,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            16.5560864986228,
+            22.08291047622501,
+            13.256320505308633,
+            17.64911147333919
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              16.5560864986228,
+              22.08291047622501,
+              13.256320505308633,
+              17.64911147333919
+            ],
+            "revision": 34,
+            "requested_revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 184.75,
+        "p95": 203.89999999999418,
+        "max": 231,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 33597888,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 1702880,
+          "to_host": {
+            "json_bytes": 1778,
+            "binary_frame_bytes": 0,
+            "total_bytes": 1778
+          },
+          "from_host": {
+            "json_bytes": 12526,
+            "binary_frame_bytes": 1688576,
+            "total_bytes": 1701102
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 36350975,
+          "to_host": {
+            "json_bytes": 22578,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22578
+          },
+          "from_host": {
+            "json_bytes": 36813,
+            "binary_frame_bytes": 36291584,
+            "total_bytes": 36328397
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_input": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_frames": 34,
+        "last_output": {
+          "domain": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "9b3800c53b3ffad2217fc273afc1065ec1792c20c2abdc96d7147678ae8a4088",
+          "count": 875718,
+          "grid_mass": 875718,
+          "passed": true,
+          "backend_revision": 34
+        }
+      }
+    },
+    {
+      "n": 1000000,
+      "arm": "datashader-aggregate",
+      "repetition": 1,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 433504256,
+      "browser_peak_rss_bytes": 1362526208,
+      "host_prepare_wall_ms": 2123.930250000001,
+      "host_build_ms": 10.311416999996936,
+      "host_meta": {
+        "port": 49525,
+        "hostname": "localhost",
+        "n": 1000000,
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 10.311416999996936,
+        "mode": "density"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 302.3999999999942,
+        "output_adopt_ms": 302.3999999999942,
+        "paint_stable_ms": 399.29999999998836,
+        "stability_confirmed_ms": 554.1000000000058,
+        "paint_hash32": 3539429606,
+        "lit_pixels": 52546,
+        "expected_count": 1000000,
+        "state": {
+          "axes": [
+            -5.5512094117860356,
+            5.502438543418383,
+            -4.314843366813583,
+            4.470738569247525
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -5.5512094117860356,
+              5.502438543418383,
+              -4.314843366813583,
+              4.470738569247525
+            ],
+            "revision": 1,
+            "requested_revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          16.5560864986228,
+          22.08291047622501,
+          13.256320505308633,
+          17.64911147333919
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.20000000001164153,
+        "output_adopt_ms": 148.5,
+        "paint_stable_ms": 164.5,
+        "stability_confirmed_ms": 313.6000000000058,
+        "paint_hash32": 4127322086,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            16.5560864986228,
+            22.08291047622501,
+            13.256320505308633,
+            17.64911147333919
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              16.5560864986228,
+              22.08291047622501,
+              13.256320505308633,
+              17.64911147333919
+            ],
+            "revision": 34,
+            "requested_revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 185.10000000000582,
+        "p95": 199.39999999999418,
+        "max": 240,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 33597888,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 1702880,
+          "to_host": {
+            "json_bytes": 1778,
+            "binary_frame_bytes": 0,
+            "total_bytes": 1778
+          },
+          "from_host": {
+            "json_bytes": 12526,
+            "binary_frame_bytes": 1688576,
+            "total_bytes": 1701102
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 36350975,
+          "to_host": {
+            "json_bytes": 22578,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22578
+          },
+          "from_host": {
+            "json_bytes": 36813,
+            "binary_frame_bytes": 36291584,
+            "total_bytes": 36328397
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_input": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_frames": 34,
+        "last_output": {
+          "domain": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "9b3800c53b3ffad2217fc273afc1065ec1792c20c2abdc96d7147678ae8a4088",
+          "count": 875718,
+          "grid_mass": 875718,
+          "passed": true,
+          "backend_revision": 34
+        }
+      }
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "producer_status": "host_failed",
+      "comparison_status": null,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 1926840320,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "host_build_ms": null,
+      "host_meta": {},
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "cold": null,
+      "empty_control": null,
+      "warm_paint_stable_ms": null,
+      "output_modes": {},
+      "exact_fallback_steps": 0,
+      "raster_shapes": [],
+      "binning": [],
+      "warm_application_body_bytes": null,
+      "transport": null,
+      "last_host_observation": null
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "producer_status": "host_failed",
+      "comparison_status": null,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 2010923008,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "host_build_ms": null,
+      "host_meta": {},
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "cold": null,
+      "empty_control": null,
+      "warm_paint_stable_ms": null,
+      "output_modes": {},
+      "exact_fallback_steps": 0,
+      "raster_shapes": [],
+      "binning": [],
+      "warm_application_body_bytes": null,
+      "transport": null,
+      "last_host_observation": null
+    },
+    {
+      "n": 100000000,
+      "arm": "plotly-aggregate",
+      "repetition": 0,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 1964638208,
+      "browser_peak_rss_bytes": 1322598400,
+      "host_prepare_wall_ms": 1572.9615410000122,
+      "host_build_ms": 775.1209580000022,
+      "host_meta": {
+        "port": 49583,
+        "n": 100000000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 775.1209580000022,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 374.3999999999942,
+        "output_adopt_ms": 374.3999999999942,
+        "paint_stable_ms": 384,
+        "stability_confirmed_ms": 527.3999999999942,
+        "paint_hash32": 4147368453,
+        "lit_pixels": 82495,
+        "expected_count": 100000000,
+        "state": {
+          "axes": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.032507630659307,
+              6.148159513038603,
+              -4.9314485030734465,
+              4.87737305191943
+            ],
+            "revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 100000000,
+              "grid_mass": 100000000,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "59283cdb6ef6d70a34c021a8731e1c1fdf9b70f51778daa1a5b724c7041fb5f3"
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          18.328826656736513,
+          24.41916022858547,
+          14.686194606912306,
+          19.590605384408747
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.5,
+        "output_adopt_ms": 255.60000000000582,
+        "paint_stable_ms": 271.20000000001164,
+        "stability_confirmed_ms": 420.80000000001746,
+        "paint_hash32": 3535803653,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            18.328826656736513,
+            24.41916022858547,
+            14.686194606912306,
+            19.590605384408747
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              18.328826656736513,
+              24.41916022858547,
+              14.686194606912306,
+              19.590605384408747
+            ],
+            "revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 0,
+              "grid_mass": 0,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "b262bd68d44f93637b9949caf7ff7ce0b6b6ed839c3a2468681952b215ec4d95"
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 650.0000000000146,
+        "p95": 671.6000000000058,
+        "max": 689.8999999999942,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 5712610,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 113968,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 113968,
+            "binary_frame_bytes": 0,
+            "total_bytes": 113968
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5828468,
+          "to_host": {
+            "json_bytes": 3267,
+            "binary_frame_bytes": 0,
+            "total_bytes": 3267
+          },
+          "from_host": {
+            "json_bytes": 5825201,
+            "binary_frame_bytes": 0,
+            "total_bytes": 5825201
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "last_output": {
+          "seq": 32,
+          "domain": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "oracle": {
+            "count": 90200409,
+            "grid_mass": 90200409,
+            "passed": true
+          },
+          "png_sha256": "df07e0b846264fcc8982df13ef607afde85cfdcb3775705d8cfadfedc74cf8e5",
+          "grid_shape": [
+            512,
+            512
+          ],
+          "aggregate_encode_oracle_ms": 318.45508300000347
+        }
+      }
+    },
+    {
+      "n": 100000000,
+      "arm": "plotly-aggregate",
+      "repetition": 1,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 1953906688,
+      "browser_peak_rss_bytes": 1321025536,
+      "host_prepare_wall_ms": 1561.1315830000194,
+      "host_build_ms": 771.3169579999999,
+      "host_meta": {
+        "port": 49630,
+        "n": 100000000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 771.3169579999999,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 356.69999999998254,
+        "output_adopt_ms": 356.69999999998254,
+        "paint_stable_ms": 374.8999999999942,
+        "stability_confirmed_ms": 511.79999999998836,
+        "paint_hash32": 4147368453,
+        "lit_pixels": 82495,
+        "expected_count": 100000000,
+        "state": {
+          "axes": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.032507630659307,
+              6.148159513038603,
+              -4.9314485030734465,
+              4.87737305191943
+            ],
+            "revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 100000000,
+              "grid_mass": 100000000,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "59283cdb6ef6d70a34c021a8731e1c1fdf9b70f51778daa1a5b724c7041fb5f3"
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          18.328826656736513,
+          24.41916022858547,
+          14.686194606912306,
+          19.590605384408747
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.5,
+        "output_adopt_ms": 234.20000000001164,
+        "paint_stable_ms": 251,
+        "stability_confirmed_ms": 401.30000000001746,
+        "paint_hash32": 3535803653,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            18.328826656736513,
+            24.41916022858547,
+            14.686194606912306,
+            19.590605384408747
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              18.328826656736513,
+              24.41916022858547,
+              14.686194606912306,
+              19.590605384408747
+            ],
+            "revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 0,
+              "grid_mass": 0,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "b262bd68d44f93637b9949caf7ff7ce0b6b6ed839c3a2468681952b215ec4d95"
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 647.5,
+        "p95": 671.5,
+        "max": 684.9000000000233,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 5712614,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 113968,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 113968,
+            "binary_frame_bytes": 0,
+            "total_bytes": 113968
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5828471,
+          "to_host": {
+            "json_bytes": 3267,
+            "binary_frame_bytes": 0,
+            "total_bytes": 3267
+          },
+          "from_host": {
+            "json_bytes": 5825204,
+            "binary_frame_bytes": 0,
+            "total_bytes": 5825204
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "last_output": {
+          "seq": 32,
+          "domain": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "oracle": {
+            "count": 90200409,
+            "grid_mass": 90200409,
+            "passed": true
+          },
+          "png_sha256": "df07e0b846264fcc8982df13ef607afde85cfdcb3775705d8cfadfedc74cf8e5",
+          "grid_shape": [
+            512,
+            512
+          ],
+          "aggregate_encode_oracle_ms": 295.1394589999836
+        }
+      }
+    },
+    {
+      "n": 100000000,
+      "arm": "datashader-aggregate",
+      "repetition": 0,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 2031321088,
+      "browser_peak_rss_bytes": 1335508992,
+      "host_prepare_wall_ms": 2769.849250000021,
+      "host_build_ms": 10.287083000008579,
+      "host_meta": {
+        "port": 49676,
+        "hostname": "localhost",
+        "n": 100000000,
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 10.287083000008579,
+        "mode": "density"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 307.3999999999942,
+        "output_adopt_ms": 307.3999999999942,
+        "paint_stable_ms": 316.6000000000058,
+        "stability_confirmed_ms": 465.79999999998836,
+        "paint_hash32": 2876507141,
+        "lit_pixels": 86717,
+        "expected_count": 100000000,
+        "state": {
+          "axes": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.032507630659307,
+              6.148159513038603,
+              -4.9314485030734465,
+              4.87737305191943
+            ],
+            "revision": 0,
+            "requested_revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              400,
+              400
+            ]
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          18.328826656736513,
+          24.41916022858547,
+          14.686194606912306,
+          19.590605384408747
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.20000000001164153,
+        "output_adopt_ms": 269,
+        "paint_stable_ms": 284.70000000001164,
+        "stability_confirmed_ms": 437.5999999999767,
+        "paint_hash32": 4127322086,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            18.328826656736513,
+            24.41916022858547,
+            14.686194606912306,
+            19.590605384408747
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              18.328826656736513,
+              24.41916022858547,
+              14.686194606912306,
+              19.590605384408747
+            ],
+            "revision": 34,
+            "requested_revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 615.1499999999942,
+        "p95": 634.9000000000233,
+        "max": 652.5,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 34647070,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 653753,
+          "to_host": {
+            "json_bytes": 1778,
+            "binary_frame_bytes": 0,
+            "total_bytes": 1778
+          },
+          "from_host": {
+            "json_bytes": 11975,
+            "binary_frame_bytes": 640000,
+            "total_bytes": 651975
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 36351038,
+          "to_host": {
+            "json_bytes": 22621,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22621
+          },
+          "from_host": {
+            "json_bytes": 36833,
+            "binary_frame_bytes": 36291584,
+            "total_bytes": 36328417
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_input": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_frames": 34,
+        "last_output": {
+          "domain": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "3b5c68b30454796af03ae1258d798e0b6d830e4439f6a0a8542d35f2df4ccf01",
+          "count": 90200409,
+          "grid_mass": 90200409,
+          "passed": true,
+          "backend_revision": 34
+        }
+      }
+    },
+    {
+      "n": 100000000,
+      "arm": "datashader-aggregate",
+      "repetition": 1,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 2027634688,
+      "browser_peak_rss_bytes": 1337163776,
+      "host_prepare_wall_ms": 2779.5419170000173,
+      "host_build_ms": 10.373249999986456,
+      "host_meta": {
+        "port": 49734,
+        "hostname": "localhost",
+        "n": 100000000,
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 10.373249999986456,
+        "mode": "density"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 299.70000000001164,
+        "output_adopt_ms": 299.70000000001164,
+        "paint_stable_ms": 308.6000000000349,
+        "stability_confirmed_ms": 440.9000000000233,
+        "paint_hash32": 2876507141,
+        "lit_pixels": 86717,
+        "expected_count": 100000000,
+        "state": {
+          "axes": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.032507630659307,
+              6.148159513038603,
+              -4.9314485030734465,
+              4.87737305191943
+            ],
+            "revision": 0,
+            "requested_revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              400,
+              400
+            ]
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          18.328826656736513,
+          24.41916022858547,
+          14.686194606912306,
+          19.590605384408747
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.20000000001164153,
+        "output_adopt_ms": 269.1000000000349,
+        "paint_stable_ms": 286.4000000000233,
+        "stability_confirmed_ms": 435.4000000000233,
+        "paint_hash32": 4127322086,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            18.328826656736513,
+            24.41916022858547,
+            14.686194606912306,
+            19.590605384408747
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              18.328826656736513,
+              24.41916022858547,
+              14.686194606912306,
+              19.590605384408747
+            ],
+            "revision": 34,
+            "requested_revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 617.0500000000175,
+        "p95": 636.1999999999534,
+        "max": 637.7000000000116,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 34647070,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 653753,
+          "to_host": {
+            "json_bytes": 1778,
+            "binary_frame_bytes": 0,
+            "total_bytes": 1778
+          },
+          "from_host": {
+            "json_bytes": 11975,
+            "binary_frame_bytes": 640000,
+            "total_bytes": 651975
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 36351038,
+          "to_host": {
+            "json_bytes": 22621,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22621
+          },
+          "from_host": {
+            "json_bytes": 36833,
+            "binary_frame_bytes": 36291584,
+            "total_bytes": 36328417
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_input": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_frames": 34,
+        "last_output": {
+          "domain": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "3b5c68b30454796af03ae1258d798e0b6d830e4439f6a0a8542d35f2df4ccf01",
+          "count": 90200409,
+          "grid_mass": 90200409,
+          "passed": true,
+          "backend_revision": 34
+        }
+      }
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "producer_status": "host_failed",
+      "comparison_status": null,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 19377995776,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "host_build_ms": null,
+      "host_meta": {},
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "cold": null,
+      "empty_control": null,
+      "warm_paint_stable_ms": null,
+      "output_modes": {},
+      "exact_fallback_steps": 0,
+      "raster_shapes": [],
+      "binning": [],
+      "warm_application_body_bytes": null,
+      "transport": null,
+      "last_host_observation": null
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "producer_status": "host_failed",
+      "comparison_status": null,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 19371212800,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "host_build_ms": null,
+      "host_meta": {},
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "cold": null,
+      "empty_control": null,
+      "warm_paint_stable_ms": null,
+      "output_modes": {},
+      "exact_fallback_steps": 0,
+      "raster_shapes": [],
+      "binning": [],
+      "warm_application_body_bytes": null,
+      "transport": null,
+      "last_host_observation": null
+    },
+    {
+      "n": 1000000000,
+      "arm": "plotly-aggregate",
+      "repetition": 0,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 16327245824,
+      "browser_peak_rss_bytes": 1286258688,
+      "host_prepare_wall_ms": 10487.417166999989,
+      "host_build_ms": 4808.549916000004,
+      "host_meta": {
+        "port": 49797,
+        "n": 1000000000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 4808.549916000004,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 383.8999999999651,
+        "output_adopt_ms": 383.8999999999651,
+        "paint_stable_ms": 393.0999999999767,
+        "stability_confirmed_ms": 533.5999999999767,
+        "paint_hash32": 3400295429,
+        "lit_pixels": 86965,
+        "expected_count": 1000000000,
+        "state": {
+          "axes": [
+            -6.826720559118933,
+            6.676159600304974,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.826720559118933,
+              6.676159600304974,
+              -5.369787777223938,
+              5.1292191237984825
+            ],
+            "revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 1000000000,
+              "grid_mass": 1000000000,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "d81334903059e0e8c794065f507dd619e539c32b201d1fb6953c151ab8d8ec70"
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          20.17903975972888,
+          26.93047983944083,
+          15.628226024820904,
+          20.877729475332114
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.5,
+        "output_adopt_ms": 1486.0999999999767,
+        "paint_stable_ms": 1500.2999999999302,
+        "stability_confirmed_ms": 1649.4000000000233,
+        "paint_hash32": 3535803653,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            20.17903975972888,
+            26.93047983944083,
+            15.628226024820904,
+            20.877729475332114
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              20.17903975972888,
+              26.93047983944083,
+              15.628226024820904,
+              20.877729475332114
+            ],
+            "revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 0,
+              "grid_mass": 0,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "b262bd68d44f93637b9949caf7ff7ce0b6b6ed839c3a2468681952b215ec4d95"
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 4998.699999999953,
+        "p95": 5304.900000000023,
+        "max": 5403.400000000023,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 4935761,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 101471,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 101471,
+            "binary_frame_bytes": 0,
+            "total_bytes": 101471
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5039120,
+          "to_host": {
+            "json_bytes": 3249,
+            "binary_frame_bytes": 0,
+            "total_bytes": 3249
+          },
+          "from_host": {
+            "json_bytes": 5035871,
+            "binary_frame_bytes": 0,
+            "total_bytes": 5035871
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "last_output": {
+          "seq": 32,
+          "domain": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "oracle": {
+            "count": 903843799,
+            "grid_mass": 903843799,
+            "passed": true
+          },
+          "png_sha256": "aa35bf9a6a313e227e9b21613edcfb6e6bc89ad2aaa9cd58d03bf9d626ab165f",
+          "grid_shape": [
+            512,
+            512
+          ],
+          "aggregate_encode_oracle_ms": 2931.4319999999725
+        }
+      }
+    },
+    {
+      "n": 1000000000,
+      "arm": "plotly-aggregate",
+      "repetition": 1,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 16342728704,
+      "browser_peak_rss_bytes": 1277247488,
+      "host_prepare_wall_ms": 10415.05912499997,
+      "host_build_ms": 4737.790792000055,
+      "host_meta": {
+        "port": 49847,
+        "n": 1000000000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 4737.790792000055,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 367.5999999999767,
+        "output_adopt_ms": 367.5999999999767,
+        "paint_stable_ms": 377.79999999993015,
+        "stability_confirmed_ms": 516.4000000000233,
+        "paint_hash32": 3400295429,
+        "lit_pixels": 86965,
+        "expected_count": 1000000000,
+        "state": {
+          "axes": [
+            -6.826720559118933,
+            6.676159600304974,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.826720559118933,
+              6.676159600304974,
+              -5.369787777223938,
+              5.1292191237984825
+            ],
+            "revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 1000000000,
+              "grid_mass": 1000000000,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "d81334903059e0e8c794065f507dd619e539c32b201d1fb6953c151ab8d8ec70"
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          20.17903975972888,
+          26.93047983944083,
+          15.628226024820904,
+          20.877729475332114
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.5999999999767169,
+        "output_adopt_ms": 1682.3999999999069,
+        "paint_stable_ms": 1700.0999999999767,
+        "stability_confirmed_ms": 1856,
+        "paint_hash32": 3535803653,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            20.17903975972888,
+            26.93047983944083,
+            15.628226024820904,
+            20.877729475332114
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              20.17903975972888,
+              26.93047983944083,
+              15.628226024820904,
+              20.877729475332114
+            ],
+            "revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "oracle": {
+              "count": 0,
+              "grid_mass": 0,
+              "passed": true
+            },
+            "raster_shape": [
+              512,
+              512
+            ],
+            "png_sha256": "b262bd68d44f93637b9949caf7ff7ce0b6b6ed839c3a2468681952b215ec4d95"
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 5087.100000000093,
+        "p95": 5316.20000000007,
+        "max": 5347,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 4935770,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 101471,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 101471,
+            "binary_frame_bytes": 0,
+            "total_bytes": 101471
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5039128,
+          "to_host": {
+            "json_bytes": 3249,
+            "binary_frame_bytes": 0,
+            "total_bytes": 3249
+          },
+          "from_host": {
+            "json_bytes": 5035879,
+            "binary_frame_bytes": 0,
+            "total_bytes": 5035879
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "last_output": {
+          "seq": 32,
+          "domain": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "oracle": {
+            "count": 903843799,
+            "grid_mass": 903843799,
+            "passed": true
+          },
+          "png_sha256": "aa35bf9a6a313e227e9b21613edcfb6e6bc89ad2aaa9cd58d03bf9d626ab165f",
+          "grid_shape": [
+            512,
+            512
+          ],
+          "aggregate_encode_oracle_ms": 2927.664166999989
+        }
+      }
+    },
+    {
+      "n": 1000000000,
+      "arm": "datashader-aggregate",
+      "repetition": 0,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 16415752192,
+      "browser_peak_rss_bytes": 1270890496,
+      "host_prepare_wall_ms": 9637.063915999988,
+      "host_build_ms": 10.724875000050815,
+      "host_meta": {
+        "port": 49905,
+        "hostname": "localhost",
+        "n": 1000000000,
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 10.724875000050815,
+        "mode": "density"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 308.79999999993015,
+        "output_adopt_ms": 308.79999999993015,
+        "paint_stable_ms": 316,
+        "stability_confirmed_ms": 460.5,
+        "paint_hash32": 1758107141,
+        "lit_pixels": 90428,
+        "expected_count": 1000000000,
+        "state": {
+          "axes": [
+            -6.826720559118933,
+            6.676159600304974,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.826720559118933,
+              6.676159600304973,
+              -5.369787777223938,
+              5.1292191237984825
+            ],
+            "revision": 0,
+            "requested_revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              400,
+              400
+            ]
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          20.17903975972888,
+          26.93047983944083,
+          15.628226024820904,
+          20.877729475332114
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.2999999999301508,
+        "output_adopt_ms": 1483.0999999999767,
+        "paint_stable_ms": 1499.7999999999302,
+        "stability_confirmed_ms": 1654.5,
+        "paint_hash32": 4127322086,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            20.17903975972888,
+            26.93047983944083,
+            15.628226024820904,
+            20.877729475332114
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              20.17903975972888,
+              26.93047983944083,
+              15.628226024820904,
+              20.877729475332114
+            ],
+            "revision": 34,
+            "requested_revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 4116.049999999988,
+        "p95": 4370.300000000047,
+        "max": 4399.599999999977,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 34647002,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 653755,
+          "to_host": {
+            "json_bytes": 1778,
+            "binary_frame_bytes": 0,
+            "total_bytes": 1778
+          },
+          "from_host": {
+            "json_bytes": 11977,
+            "binary_frame_bytes": 640000,
+            "total_bytes": 651977
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 36350970,
+          "to_host": {
+            "json_bytes": 22609,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22609
+          },
+          "from_host": {
+            "json_bytes": 36777,
+            "binary_frame_bytes": 36291584,
+            "total_bytes": 36328361
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_input": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_frames": 34,
+        "last_output": {
+          "domain": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "71eb3c58d4f3abc9ba87bc5a864b26e10d0e2c12c2082888a5729f01586044d3",
+          "count": 903843799,
+          "grid_mass": 903843799,
+          "passed": true,
+          "backend_revision": 34
+        }
+      }
+    },
+    {
+      "n": 1000000000,
+      "arm": "datashader-aggregate",
+      "repetition": 1,
+      "producer_status": "ok",
+      "comparison_status": "ok",
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 16427057152,
+      "browser_peak_rss_bytes": 1277657088,
+      "host_prepare_wall_ms": 9598.165207999955,
+      "host_build_ms": 10.558500000001914,
+      "host_meta": {
+        "port": 49966,
+        "hostname": "localhost",
+        "n": 1000000000,
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 10.558500000001914,
+        "mode": "density"
+      },
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 304.80000000004657,
+        "output_adopt_ms": 304.80000000004657,
+        "paint_stable_ms": 312.5,
+        "stability_confirmed_ms": 446.9000000000233,
+        "paint_hash32": 1758107141,
+        "lit_pixels": 90428,
+        "expected_count": 1000000000,
+        "state": {
+          "axes": [
+            -6.826720559118933,
+            6.676159600304974,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              -6.826720559118933,
+              6.676159600304973,
+              -5.369787777223938,
+              5.1292191237984825
+            ],
+            "revision": 0,
+            "requested_revision": 0,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              400,
+              400
+            ]
+          }
+        }
+      },
+      "empty_control": {
+        "requested_window": [
+          20.17903975972888,
+          26.93047983944083,
+          15.628226024820904,
+          20.877729475332114
+        ],
+        "ok": true,
+        "axes_adopt_ms": 0.39999999990686774,
+        "output_adopt_ms": 1516.0999999999767,
+        "paint_stable_ms": 1532.8999999999069,
+        "stability_confirmed_ms": 1685.5999999999767,
+        "paint_hash32": 4127322086,
+        "lit_pixels": 0,
+        "expected_count": 0,
+        "state": {
+          "axes": [
+            20.17903975972888,
+            26.93047983944083,
+            15.628226024820904,
+            20.877729475332114
+          ],
+          "plot_shape": [
+            512,
+            512
+          ],
+          "output": {
+            "domain": [
+              20.17903975972888,
+              26.93047983944083,
+              15.628226024820904,
+              20.877729475332114
+            ],
+            "revision": 34,
+            "requested_revision": 33,
+            "adopted": true,
+            "mode": "density",
+            "exact_fallback": false,
+            "raster_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "warm_paint_stable_ms": {
+        "p50": 4110.100000000035,
+        "p95": 4354,
+        "max": 4371.400000000023,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [],
+      "warm_application_body_bytes": 34647002,
+      "transport": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 653755,
+          "to_host": {
+            "json_bytes": 1778,
+            "binary_frame_bytes": 0,
+            "total_bytes": 1778
+          },
+          "from_host": {
+            "json_bytes": 11977,
+            "binary_frame_bytes": 640000,
+            "total_bytes": 651977
+          }
+        },
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 36350970,
+          "to_host": {
+            "json_bytes": 22609,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22609
+          },
+          "from_host": {
+            "json_bytes": 36777,
+            "binary_frame_bytes": 36291584,
+            "total_bytes": 36328361
+          }
+        },
+        "empty_control_delta": null
+      },
+      "last_host_observation": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_input": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "backend_frames": 34,
+        "last_output": {
+          "domain": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "71eb3c58d4f3abc9ba87bc5a864b26e10d0e2c12c2082888a5729f01586044d3",
+          "count": 903843799,
+          "grid_mass": 903843799,
+          "passed": true,
+          "backend_revision": 34
+        }
+      }
+    }
+  ],
+  "producer_completed_warm_windows": 384,
+  "producer_completed_empty_controls": 12
+}

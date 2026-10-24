@@ -203,7 +203,11 @@ before reopening canonical maps, avoiding needless duplicate source mappings.
 The new runner requires actual browser axes to equal each requested window.
 For Plotly it also requires the currently applied PNG revision and domain;
 for Bokeh it requires the actual Image glyph extent and observed data revision,
-plus a matching host-observed Datashader grid count/domain. Merely transforming
+plus a matching host-observed Datashader grid count/domain. Current
+[host-admission checks](comparison-host-admission.md) carry the backend revision,
+grid shape/hash and shaded-image hash in the same actual image update. The
+adopted bytes and current host observation must match that binding; cold and
+warm admission both require it before stable frames count. Merely transforming
 an old image cannot pass. The Bokeh adapter sets the real range models and
 calls the pinned Bokeh plot view's `trigger_ranges_update_event()` so the
 existing HoloViews RangeXY callback receives the completed range change.
@@ -415,8 +419,45 @@ The 1B source used actual 16,000,000,000-byte x/y files, smaller than the
 runner's 48 GiB RAM. Source creation and XYG's recorded timings, mapped-pointer
 observations and RSS remain diagnostics subject to the rejected report, not
 accepted competitive or larger-than-RAM results. Actual renderer remains
-unmeasured. Dependency and count/grid contract repairs require reviewed landing
-and a subsequently accepted main execution before checking competitive acceptance.
+unmeasured. Dependency and count/grid contract repairs landed in #1072;
+the subsequent main attempt below exposed separate host-admission failures.
+An accepted main execution remains required before checking competitive acceptance.
+
+## Repaired-environment hosted attempt: rejected, 2026-10-24
+
+[Run 40075049750](https://github.com/CurateLabs/xyg/actions/runs/40075049750),
+attempt 1 on clean main `959e1004924774711a35df7ab1317cca30b18d68`, retained
+the same 1M/100M/1B × three arms × two repetitions under unchanged limits.
+Its [immutable receipt](../../benchmarks/results/live-aggregation-2026-10-24/hosted-main-959e1004/README.md)
+preserves all 18 attempts, original report/ZIP, complete job log, execution
+metadata, historical source bindings and the independent hosted rejection.
+
+The constrained Python 3.12.10 environment retained NumPy 2.4.6 and Numba
+0.66.0; the earlier dependency incompatibility did not recur. All six XYG
+hosts instead failed before `META`: the file-launched host could not resolve
+the package-qualified `benchmarks._ux_comparison_oracle` import. There is no
+XYG emitted estimate, encoded/adopted grid proof or browser measurement from
+this run. Source-generation C/H counts cannot substitute for those proofs.
+
+All twelve competitor attempts retain producer status `ok`, with 384 warm
+windows and twelve empty controls. The hosted verifier nevertheless rejected
+`Bokeh actual backend output mismatch`: four 100M/1B cold checkpoints record
+a 512×512 backend grid (backend revision 2) beside an adopted 400×400 raster
+(browser revision 0). Matching source counts and grid mass do not bind that
+backend observation to the displayed raster. The producer's cold predicates
+bypassed adoption/oracle checks; a bounded delayed-response regression
+reproduces premature acceptance of unchanged bootstrap frames. No verifier
+relaxation or accepted result follows.
+
+The [host-admission repair](comparison-host-admission.md) establishes the
+package context at actual file entry and binds actual Bokeh image bytes to
+their backend observation. A retained [1,000-row six-cell control](../../benchmarks/results/live-aggregation-2026-10-24/cold-admission-v3/README.md)
+completes every 32-window sequence and empty control and passes the unchanged
+independent verifier. These local dirty-source proofs require reviewed main
+landing before another actual-scale run. Retained hosted competitor timings are diagnostics
+subject to the rejected report, not rankings. Actual renderer remains
+unmeasured, the true 1B source remains 16 GB of files on a 48 GiB host, and
+competitive, larger-than-RAM and whole-#11/#108 acceptance remain open.
 
 ## Primary API references inspected
 

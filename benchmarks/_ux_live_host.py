@@ -28,10 +28,18 @@ import argparse
 import asyncio
 import json
 import struct
+import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+# The runner launches this file from arbitrary working directories. Establish
+# the checkout package context before any benchmark import, including deferred
+# SourceOracle preparation and HTTP validation imports (dossier §12).
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    __package__ = "benchmarks"
 
 import numpy as np
 import tornado.httpserver
@@ -335,7 +343,7 @@ def main() -> None:
     parser.add_argument("--n", type=int, required=True)
     parser.add_argument("--density", choices=("auto", "off", "on"), default="auto")
     parser.add_argument("--port", type=int, default=0)
-    from _ux_comparison_host import XY_JS, add_arguments, inventory, load_source, metrics_handler
+    from ._ux_comparison_host import XY_JS, add_arguments, inventory, load_source, metrics_handler
 
     add_arguments(parser)
     args = parser.parse_args()

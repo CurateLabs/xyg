@@ -407,3 +407,250 @@ def test_retained_equal_window_profiles_oracles_modes_and_historical_producers()
     for line in (directory / "SHA256SUMS").read_text().splitlines():
         digest, path = line.split("  ", 1)
         assert hashlib.sha256((directory / path).read_bytes()).hexdigest() == digest
+
+
+def test_live_host_real_file_entry_prepares_and_posts_without_checkout_path(tmp_path):
+    """Match the Actions file launch, with installed XYG but no checkout import path."""
+    pytest.importorskip("tornado.web")
+    import base64
+    import os
+    import sys
+    import threading
+    import urllib.request
+
+    import xyg
+
+    root = Path(__file__).resolve().parents[1]
+    meta = create_source(tmp_path / "source", 1000, "f64-memmap")
+    x, y, _ = load_source(tmp_path / "source/source.json", 1000)
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "PYTHONHOME")}
+    paths = subprocess.check_output(
+        [sys.executable, "-c", "import json,sys;print(json.dumps(sys.path))"],
+        cwd=tmp_path,
+        env=env,
+        text=True,
+    )
+    assert str(root) not in json.loads(paths)
+    # The subprocess starts at the actual file entry, not runpy/importlib or -m.
+    with (tmp_path / "stderr").open("w+") as errors:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                str(root / "benchmarks/_ux_live_host.py"),
+                "--n",
+                "1000",
+                "--density",
+                "on",
+                "--comparison-source",
+                str(tmp_path / "source/source.json"),
+            ],
+            cwd=tmp_path,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=errors,
+            text=True,
+        )
+        lines = []
+
+        def read():
+            for line in process.stdout:
+                if line.startswith("META "):
+                    lines.append(line)
+                    return
+
+        reader = threading.Thread(target=read, daemon=True)
+        reader.start()
+        try:
+            reader.join(30)
+            errors.seek(0)
+            assert lines, errors.read()
+            host_meta = json.loads(lines[0][5:])
+            assert host_meta["source"] == meta
+            url = f"http://127.0.0.1:{host_meta['port']}/comparison_metrics"
+            with urllib.request.urlopen(url, timeout=5) as response:
+                metrics = json.load(response)
+            assert metrics["numerical_oracle_preparation"]["version"] == "source-cell-compose-v1"
+            fig = xyg.scatter_chart(
+                xyg.scatter(x, y, density=True),
+                xyg.x_axis(
+                    domain=tuple(meta["extents"][:2]), show=False, tick_label_strategy="none"
+                ),
+                xyg.y_axis(
+                    domain=tuple(meta["extents"][2:]), show=False, tick_label_strategy="none"
+                ),
+                width=512,
+                height=512,
+                padding=0,
+            ).figure()
+            spec, buffers = fig.build_payload_split()
+            trace = spec["traces"][0]
+            density = trace["density"]
+            wire = bytes(buffers[density["buf"]])
+            maximum = density["max"]
+            decoded = (
+                np.expm1(
+                    np.frombuffer(wire, dtype=np.uint8).astype(float) / 255 * np.log1p(maximum)
+                )
+                .astype("<f4")
+                .tobytes()
+            )
+            output = {
+                "mode": "density",
+                "tier": trace["tier"],
+                "reduction": density["reduction"],
+                "visible": trace["n_points"],
+                "domain": [*density["x_range"], *density["y_range"]],
+                "raster_shape": [density["h"], density["w"]],
+                "binning": density["binning"],
+                "encoding": density["enc"],
+                "reply_max": maximum,
+                "adopted_max": maximum,
+            }
+            body = {
+                "output": output,
+                "cold": True,
+                "target": meta["extents"],
+                "wire": base64.b64encode(wire).decode(),
+                "decoded": base64.b64encode(decoded).decode(),
+            }
+            request = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST")
+            with urllib.request.urlopen(request, timeout=5) as response:
+                proof = json.load(response)
+            assert proof["passed"], proof
+            assert proof["source_sha256"] == meta["sha256_x_then_y"]
+            assert proof["validation_http_request_bytes"] == len(request.data)
+        finally:
+            process.terminate()
+            process.wait(timeout=5)
+            reader.join(5)
+
+
+@pytest.mark.parametrize("fault", ["none", "image_hash", "backend_revision", "grid_hash", "extent"])
+def test_bokeh_cold_admission_waits_for_bound_512_image(fault):
+    """Ten stable bootstrap paints cannot stand in for a delayed real response."""
+    pytest.importorskip("websocket")
+    pytest.importorskip("tornado.web")
+    from benchmarks._ux_comparison_host import BOKEH_JS
+    from benchmarks.bench_density_comparison import engine_js
+
+    script = r"""
+const cryptoNode=require('node:crypto');globalThis.crypto=cryptoNode.webcrypto;
+let frame=0,now=0,changed=()=>{};
+globalThis.performance={now:()=>now};
+const domain=[0,1,0,1];
+const makeImage=n=>{const a=new Uint32Array(n*n);a.fill(0xff000000);a.shape=[n,n];return a;};
+const digest=a=>cryptoNode.createHash('sha256').update(new Uint8Array(a.buffer)).digest('hex');
+const initial=makeImage(400),final=makeImage(512);
+const host={domain,grid_shape:[512,512],backend_revision:2,grid_sha256:'a'.repeat(64),
+ count:1000,grid_mass:1000,passed:true};
+let binding={...host,grid_shape:[400,400],backend_revision:1,image_sha256:digest(initial)};
+const cds={data:{image:[initial],comparison_backend:[binding]},
+ properties:{data:{change:{connect:f=>changed=f}}}};
+const pixels=new Uint8ClampedArray(final.buffer);
+const pv={frame:{bbox:{width:512,height:512,x0:0,y0:0}},
+ canvas_view:{primary:{el:{getContext:()=>({getImageData:()=>({data:pixels})})}}},
+ renderer_views:new Map([[0,{model:{glyph:{type:'ImageRGBA'},data_source:cds}}]])};
+globalThis.window={__arm:{_pv:()=>pv,ready:()=>true,currentRaster:()=>true,
+ evidence:()=>({domain:{x0:0,x1:1,y0:0,y1:1},rasters:[{x:0,y:0,dw:1,dh:1,
+ shape:cds.data.image[0].shape}]})}};
+globalThis.fetch=async()=>({json:async()=>({last_output:host})});
+globalThis.requestAnimationFrame=f=>setImmediate(()=>{
+ frame++;now+=16;
+ if(frame===35){
+   binding={...host,image_sha256:digest(final)};
+   if(FAULT==='image_hash')binding.image_sha256='f'.repeat(64);
+   if(FAULT==='backend_revision')binding.backend_revision=1;
+   if(FAULT==='grid_hash')binding.grid_sha256='b'.repeat(64);
+   if(FAULT==='extent')binding.domain=[0,2,0,1];
+   cds.data={image:[final],comparison_backend:[binding]};changed();
+ }
+ f();
+});
+globalThis.document={set title(t){
+ if(t==='UX_SHOT visible-complete'){
+  process.stdout.write(JSON.stringify({status:'admitted',frame,state:window.__comparison.state()}));process.exit(0);
+ }
+ if(t.startsWith('UX_BENCH ')){
+  process.stdout.write(JSON.stringify({status:'rejected',frame,result:JSON.parse(t.slice(9))}));process.exit(0);
+ }
+}};
+""".replace("FAULT", json.dumps(fault))
+    script += BOKEH_JS + engine_js(
+        {"extents": [0, 1, 0, 1], "actual_rows": 1000, "windows": []}, 2, "datashader-aggregate"
+    )
+    completed = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=True, timeout=10
+    )
+    result = json.loads(completed.stdout)
+    assert result["frame"] >= 35
+    if fault == "none":
+        assert result["status"] == "admitted"
+        out = result["state"]["output"]
+        assert out["raster_shape"] == [512, 512]
+        assert out["revision"] > 0 and out["backend_binding"]["backend_revision"] == 2
+    else:
+        assert result["status"] == "rejected"
+        assert result["result"]["comparison_status"] == "cold_failed"
+
+
+def test_bokeh_checkpoint_rejects_backend_ahead_of_adopted_image():
+    pytest.importorskip("websocket")
+    pytest.importorskip("tornado.web")
+    from benchmarks.bench_density_comparison import datashader_checkpoint_matches
+
+    out = {
+        "domain": [0, 1, 0, 1],
+        "grid_shape": [512, 512],
+        "grid_sha256": "a" * 64,
+        "count": 1000,
+        "grid_mass": 1000,
+        "passed": True,
+        "backend_revision": 2,
+    }
+    browser = {
+        "domain": out["domain"],
+        "raster_shape": [512, 512],
+        "backend_binding": dict(out),
+    }
+    paint = {"expected_count": 1000, "state": {"output": browser}}
+    assert datashader_checkpoint_matches(paint, {"last_output": out})
+    for key, bad in [
+        ("grid_shape", [400, 400]),
+        ("backend_revision", 1),
+        ("grid_sha256", "b" * 64),
+    ]:
+        browser["backend_binding"] = dict(out, **{key: bad})
+        assert not datashader_checkpoint_matches(paint, {"last_output": out})
+
+
+def test_bokeh_image_binding_uses_matching_grid_not_latest_backend():
+    pytest.importorskip("tornado.web")
+    from benchmarks._ux_comparison_host import datashader_binding
+
+    initial = {
+        "domain": [0, 1, 0, 1],
+        "grid_shape": [400, 400],
+        "grid_sha256": "a" * 64,
+        "count": 1000,
+        "grid_mass": 1000,
+        "passed": True,
+        "backend_revision": 1,
+    }
+    final = dict(initial, grid_shape=[512, 512], grid_sha256="b" * 64, backend_revision=2)
+    state = {"last_output": final, "backend_outputs": {"initial": initial, "final": final}}
+    data = {
+        "x": [0],
+        "y": [0],
+        "dw": [1],
+        "dh": [1],
+        "image": [np.zeros((400, 400), dtype=np.uint32)],
+    }
+    binding = datashader_binding(data, state)
+    assert binding["backend_revision"] == 1
+    assert binding["grid_sha256"] == initial["grid_sha256"]
+    assert binding["image_sha256"] == hashlib.sha256(data["image"][0].tobytes()).hexdigest()
+    data["image"] = [np.zeros((512, 512), dtype=np.uint32)]
+    assert datashader_binding(data, state)["backend_revision"] == 2
+    data["dw"] = [2]
+    with pytest.raises(AssertionError, match="no observed source-grid binding"):
+        datashader_binding(data, state)

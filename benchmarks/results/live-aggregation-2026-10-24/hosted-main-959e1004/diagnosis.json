@@ -1,0 +1,314 @@
+{
+  "scope": "Metadata-only extraction, no native/oracle execution or benchmark repetition.",
+  "failures": [
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "cell": {
+        "arm": "xy-density",
+        "n": 1000000,
+        "repetition": 0,
+        "phase": "host_prepare",
+        "status": "host_failed",
+        "reason": "host exited before META (returncode 1)",
+        "host_peak_rss_bytes": 63471616,
+        "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 445, in <module>\n    main()\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 441, in main\n    asyncio.run(serve())\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 410, in serve\n    (r\"/comparison_metrics\", metrics_handler(comparison_state)),\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 58, in metrics_handler\n    from benchmarks._ux_comparison_oracle import SourceOracle\nModuleNotFoundError: No module named 'benchmarks'\n"
+      }
+    },
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "cell": {
+        "arm": "xy-density",
+        "n": 1000000,
+        "repetition": 1,
+        "phase": "host_prepare",
+        "status": "host_failed",
+        "reason": "host exited before META (returncode 1)",
+        "host_peak_rss_bytes": 51265536,
+        "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 445, in <module>\n    main()\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 441, in main\n    asyncio.run(serve())\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 410, in serve\n    (r\"/comparison_metrics\", metrics_handler(comparison_state)),\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 58, in metrics_handler\n    from benchmarks._ux_comparison_oracle import SourceOracle\nModuleNotFoundError: No module named 'benchmarks'\n"
+      }
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "cell": {
+        "arm": "xy-density",
+        "n": 100000000,
+        "repetition": 0,
+        "phase": "host_prepare",
+        "status": "host_failed",
+        "reason": "host exited before META (returncode 1)",
+        "host_peak_rss_bytes": 1926840320,
+        "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 445, in <module>\n    main()\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 441, in main\n    asyncio.run(serve())\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 410, in serve\n    (r\"/comparison_metrics\", metrics_handler(comparison_state)),\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 58, in metrics_handler\n    from benchmarks._ux_comparison_oracle import SourceOracle\nModuleNotFoundError: No module named 'benchmarks'\n"
+      }
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "cell": {
+        "arm": "xy-density",
+        "n": 100000000,
+        "repetition": 1,
+        "phase": "host_prepare",
+        "status": "host_failed",
+        "reason": "host exited before META (returncode 1)",
+        "host_peak_rss_bytes": 2010923008,
+        "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 445, in <module>\n    main()\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 441, in main\n    asyncio.run(serve())\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 410, in serve\n    (r\"/comparison_metrics\", metrics_handler(comparison_state)),\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 58, in metrics_handler\n    from benchmarks._ux_comparison_oracle import SourceOracle\nModuleNotFoundError: No module named 'benchmarks'\n"
+      }
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "cell": {
+        "arm": "xy-density",
+        "n": 1000000000,
+        "repetition": 0,
+        "phase": "host_prepare",
+        "status": "host_failed",
+        "reason": "host exited before META (returncode 1)",
+        "host_peak_rss_bytes": 19377995776,
+        "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 445, in <module>\n    main()\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 441, in main\n    asyncio.run(serve())\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 410, in serve\n    (r\"/comparison_metrics\", metrics_handler(comparison_state)),\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 58, in metrics_handler\n    from benchmarks._ux_comparison_oracle import SourceOracle\nModuleNotFoundError: No module named 'benchmarks'\n"
+      }
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "cell": {
+        "arm": "xy-density",
+        "n": 1000000000,
+        "repetition": 1,
+        "phase": "host_prepare",
+        "status": "host_failed",
+        "reason": "host exited before META (returncode 1)",
+        "host_peak_rss_bytes": 19371212800,
+        "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 445, in <module>\n    main()\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 441, in main\n    asyncio.run(serve())\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_live_host.py\", line 410, in serve\n    (r\"/comparison_metrics\", metrics_handler(comparison_state)),\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 58, in metrics_handler\n    from benchmarks._ux_comparison_oracle import SourceOracle\nModuleNotFoundError: No module named 'benchmarks'\n"
+      }
+    }
+  ],
+  "xyg_count_grid_checkpoints": [],
+  "xyg_host_blocker": {
+    "failed_cells": 6,
+    "phase": "host_prepare",
+    "return_code": 1,
+    "message": "ModuleNotFoundError: No module named 'benchmarks'",
+    "historical_source": "benchmarks/_ux_comparison_host.py:58 imports benchmarks._ux_comparison_oracle; benchmarks/bench_density_comparison.py:171-185 launches _ux_live_host.py by file path. Existing sibling-module fallback does not cover this import.",
+    "inference": "Package-qualified import is unavailable in the script-launched child context shown in stderr. No local reproduction or source arrays were executed.",
+    "C_H_E_grid_proof": "UNAVAILABLE for all six XYG cells: no META or browser checkpoints. Source manifests retain C/H and exclusions, but no XYG E/emitted/adopted grid proof was obtained."
+  },
+  "bokeh_backend_binding_blocker": {
+    "hosted_message": "INVALID: Bokeh actual backend output mismatch",
+    "historical_verifier": "scripts/verify_density_comparison_report.py:725-731 requires SHA256, backend grid shape equal to adopted raster shape and positive backend revision.",
+    "mismatch_count": 4,
+    "mismatches": [
+      {
+        "n": 100000000,
+        "arm": "datashader-aggregate",
+        "repetition": 0,
+        "checkpoint": "visible-complete",
+        "host_last_output": {
+          "domain": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "520e5b8179bda691ee31233e5fecff005aa266b0e342083948785568cccf721e",
+          "count": 100000000,
+          "grid_mass": 100000000,
+          "passed": true,
+          "backend_revision": 2
+        },
+        "browser_adopted_output": {
+          "domain": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "revision": 0,
+          "requested_revision": 0,
+          "adopted": true,
+          "mode": "density",
+          "exact_fallback": false,
+          "raster_shape": [
+            400,
+            400
+          ]
+        },
+        "paint": {
+          "ok": true,
+          "axes_adopt_ms": 307.3999999999942,
+          "output_adopt_ms": 307.3999999999942,
+          "paint_stable_ms": 316.6000000000058,
+          "stability_confirmed_ms": 465.79999999998836,
+          "paint_hash32": 2876507141,
+          "lit_pixels": 86717,
+          "expected_count": 100000000
+        }
+      },
+      {
+        "n": 100000000,
+        "arm": "datashader-aggregate",
+        "repetition": 1,
+        "checkpoint": "visible-complete",
+        "host_last_output": {
+          "domain": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "520e5b8179bda691ee31233e5fecff005aa266b0e342083948785568cccf721e",
+          "count": 100000000,
+          "grid_mass": 100000000,
+          "passed": true,
+          "backend_revision": 2
+        },
+        "browser_adopted_output": {
+          "domain": [
+            -6.032507630659307,
+            6.148159513038603,
+            -4.9314485030734465,
+            4.87737305191943
+          ],
+          "revision": 0,
+          "requested_revision": 0,
+          "adopted": true,
+          "mode": "density",
+          "exact_fallback": false,
+          "raster_shape": [
+            400,
+            400
+          ]
+        },
+        "paint": {
+          "ok": true,
+          "axes_adopt_ms": 299.70000000001164,
+          "output_adopt_ms": 299.70000000001164,
+          "paint_stable_ms": 308.6000000000349,
+          "stability_confirmed_ms": 440.9000000000233,
+          "paint_hash32": 2876507141,
+          "lit_pixels": 86717,
+          "expected_count": 100000000
+        }
+      },
+      {
+        "n": 1000000000,
+        "arm": "datashader-aggregate",
+        "repetition": 0,
+        "checkpoint": "visible-complete",
+        "host_last_output": {
+          "domain": [
+            -6.826720559118933,
+            6.676159600304974,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "bdd72e989994092467ec56df811c0a20a2668c5dd4cf15045cf3e485187858a3",
+          "count": 1000000000,
+          "grid_mass": 1000000000,
+          "passed": true,
+          "backend_revision": 2
+        },
+        "browser_adopted_output": {
+          "domain": [
+            -6.826720559118933,
+            6.676159600304973,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "revision": 0,
+          "requested_revision": 0,
+          "adopted": true,
+          "mode": "density",
+          "exact_fallback": false,
+          "raster_shape": [
+            400,
+            400
+          ]
+        },
+        "paint": {
+          "ok": true,
+          "axes_adopt_ms": 308.79999999993015,
+          "output_adopt_ms": 308.79999999993015,
+          "paint_stable_ms": 316,
+          "stability_confirmed_ms": 460.5,
+          "paint_hash32": 1758107141,
+          "lit_pixels": 90428,
+          "expected_count": 1000000000
+        }
+      },
+      {
+        "n": 1000000000,
+        "arm": "datashader-aggregate",
+        "repetition": 1,
+        "checkpoint": "visible-complete",
+        "host_last_output": {
+          "domain": [
+            -6.826720559118933,
+            6.676159600304974,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "grid_shape": [
+            512,
+            512
+          ],
+          "grid_sha256": "bdd72e989994092467ec56df811c0a20a2668c5dd4cf15045cf3e485187858a3",
+          "count": 1000000000,
+          "grid_mass": 1000000000,
+          "passed": true,
+          "backend_revision": 2
+        },
+        "browser_adopted_output": {
+          "domain": [
+            -6.826720559118933,
+            6.676159600304973,
+            -5.369787777223938,
+            5.1292191237984825
+          ],
+          "revision": 0,
+          "requested_revision": 0,
+          "adopted": true,
+          "mode": "density",
+          "exact_fallback": false,
+          "raster_shape": [
+            400,
+            400
+          ]
+        },
+        "paint": {
+          "ok": true,
+          "axes_adopt_ms": 304.80000000004657,
+          "output_adopt_ms": 304.80000000004657,
+          "paint_stable_ms": 312.5,
+          "stability_confirmed_ms": 446.9000000000233,
+          "paint_hash32": 1758107141,
+          "lit_pixels": 90428,
+          "expected_count": 1000000000
+        }
+      }
+    ],
+    "interpretation": "At four 100M/1B cold checkpoints, latest observed backend grid is 512x512 at revision 2 while adopted browser output remains 400x400 at revision 0. Backend mass/count equals N. This is an output-binding mismatch; it does not alone establish wrong counts or a Datashader capacity limit. A cold adoption/observation sequencing disagreement is a hypothesis, not a verified cause.",
+    "scope": "Metadata predicate inspection only; no local large-report authority verifier, tolerance change, retry or repair."
+  }
+}

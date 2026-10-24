@@ -1,0 +1,7 @@
+{"arm": "xy-density", "n": 1000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 61755392, "browser_peak_rss_bytes": 1424523264}
+{"arm": "xy-density", "n": 1000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 61812736, "browser_peak_rss_bytes": 1414258688}
+{"arm": "plotly-aggregate", "n": 1000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 268083200, "browser_peak_rss_bytes": 1546317824}
+{"arm": "plotly-aggregate", "n": 1000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 268136448, "browser_peak_rss_bytes": 1539985408}
+{"arm": "datashader-aggregate", "n": 1000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 347631616, "browser_peak_rss_bytes": 1604747264}
+{"arm": "datashader-aggregate", "n": 1000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 350932992, "browser_peak_rss_bytes": 1619341312}
+target/comparison-host-admission-2026-10-24/report.json

@@ -1,0 +1,41 @@
+Base: 959e1004924774711a35df7ab1317cca30b18d68; local dirty harness measurement.
+All commands from /home/ubuntu/.t3/worktrees/xyg/t3-ed35ea0d unless stated otherwise.
+TMPDIR=$PWD/target/task-tmp
+Optional Python: /home/ubuntu/.t3/worktrees/xyg/t3-31481cde/.venv-ux/bin/python
+Chrome: /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+
+$ <optional-python> -m pytest tests/test_density_comparison.py tests/test_density_comparison_oracle.py tests/test_density_comparison_report.py -q
+143 passed in 15.52s
+$ uv run pytest tests/test_density_comparison.py tests/test_density_comparison_oracle.py tests/test_density_comparison_report.py -q
+114 passed, 29 skipped in 12.04s
+$ <optional-python> -m pytest tests/test_ux_live_host_transport.py tests/test_ux_comparison_evidence.py -q
+40 passed in 1.85s
+
+$ env -u PYTHONPATH -u PYTHONHOME <optional-python> /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/benchmarks/_ux_live_host.py --n 1000 --density on --comparison-source /home/ubuntu/.t3/worktrees/xyg/t3-ed35ea0d/target/task-tmp/bokeh-probe-source/source.json
+CWD: /home/ubuntu/.t3/worktrees/xyg/t3-ed35ea0d/target/task-tmp
+Exit 1, reproduced exact original ModuleNotFoundError benchmarks at preparation.
+Full stderr retained in entry-baseline.stderr.
+The fixed actual-file test also validates the real POST handler with valid native wire/grid bytes.
+
+AST-extracted engine_js and BOKEH_JS from git show 959e1004 (without editing worktree):
+Called test_bokeh_cold_admission_waits_for_bound_512_image('none').
+BASELINE REPRODUCED: old cold engine admitted before delayed frame 35
+The fixed Node regressions and the real six-cell report pass.
+
+$ NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 <optional-python> benchmarks/bench_density_comparison.py --sizes 1000 --arms xy-density,plotly-aggregate,datashader-aggregate --repetitions 2 --profile f64-memmap --timeout 180 --step-timeout 15 --chrome <chrome-above> --out target/comparison-host-admission-2026-10-24/report.json
+Single final six-cell run; full stdout is run.log, argv/environment/source/manifests in report.json.
+All six cells ok, each with 32 warm windows and passing zero-pixel empty control.
+Bokeh cold adopted 512x512/data revision 1/backend revision 2 in both repetitions.
+Every Bokeh warm update contains 1,048,576 binary bytes, one actual 512x512 RGBA image.
+All 14 benchmark source hashes in provenance_sha256 equal the actual producer files.
+Actual source snapshots retained under producer/.
+
+$ python3 scripts/verify_density_comparison_report.py target/comparison-host-admission-2026-10-24/report.json --sha 959e1004924774711a35df7ab1317cca30b18d68 --artifact-root "$PWD" --sizes 1000 --arms xy-density,plotly-aggregate,datashader-aggregate
+Valid evidence: 6 successful cells, 0 failed cells. Programmatic clocks only; no gesture, kernel-win or competitive acceptance claim.
+
+$ uv run --with pre-commit pre-commit run --all-files
+ruff check Passed; ruff format Passed; docs app codespell Passed
+$ uv run ruff check .
+All checks passed!
+$ uv run ruff format --check .
+870 files already formatted

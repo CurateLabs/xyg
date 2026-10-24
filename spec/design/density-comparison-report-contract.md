@@ -10,6 +10,9 @@ The allocation guard remains unchanged. Current reports require the
 `source-cell-compose-v1` numerical contract described in
 [comparison-count-oracle.md](comparison-count-oracle.md). Only the three
 digest-pinned historical bounded archives retain their original contract.
+The producer's [file-entry and cold-admission contract](comparison-host-admission.md)
+requires an actually adopted, source-bound image before stable paint is admitted;
+it does not relax this independent verifier.
 
 ## Invocation and result
 
