@@ -1,0 +1,4 @@
+(node:2483242) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+XYG_CONSUMER_PACKAGE=/home/ubuntu/.t3/worktrees/xyg/t3-c5ada8e1/.consumer-smoke-9qkygdr6/node/node_modules/@curatelabs/xyg-node/src/index.js
+XYG_CONSUMER_URL=http://127.0.0.1:43901

@@ -145,3 +145,48 @@ checkout conftest/source-path injection, and rejects zero tests, failures, error
 or skips in the resulting JUnit record. Browser checks then exercise the same
 installed environment. This boundary isolates framework dependencies without
 softening the required Streamlit tests or changing pandas/pyplot product policy.
+
+## Packaged tick and density qualification (#886)
+
+The same clean-install gate also runs `tests/fixtures/packaged_consumer_ticks.py`
+with the installed wheel and hosts its public `Chart.to_html(wasm_ticks=True)`
+documents with Python's standard HTTP server, with Node absent from its PATH.
+The installed Node fixture uses the unchanged vanilla TypeScript `app.ts` mount
+for secondary Cartesian and degree-based polar ticks. Both hosts serve explicit
+paired local Worker/WASM URLs under CSP; neither infers iframe asset URLs.
+The shared `scripts/packaged_consumer_browser.mjs` checks actual admitted Rust
+cache slots, formatted labels and colored plot pixels. Angular/radial slots
+retain the painter's `x`/`y` identities, with explicit polar coordinates and
+degree units; the secondary Cartesian case additionally requires `y2`.
+
+Each host also serves a missing module (HTTP 404) and a genuinely corrupt
+four-byte module (HTTP 200, bytes `00 01 02 03`). The latter reaches
+`WebAssembly.compile` rejection with valid HTML/Worker framing. These tick
+failures leave empty fail-closed slots, preserve chart paint, emit
+`XYG_WASM_INIT_FAILED` and terminate the failed Worker. They are distinct from
+the optional inline-density failures already covered by the public file export.
+
+One ordinary installed Node split-density payload qualifies the applicable
+unsupported-source boundary through the public kernel-less `ChartView` API.
+Its native `wasm_density.unsupported` descriptor is consumed unchanged alongside
+its raw split buffers; the fixture does not synthesize that descriptor into
+packed HTML or promise a host callback. Actual public zoom/home state and live
+refinement scheduling must report `XYG_WASM_SOURCE_UNSUPPORTED` with the native
+reason and trace identity. Overview/grid/texture identity and zero replacement
+uploads remain exact; zoom pixels must change by more than one channel value,
+while restored home pixels allow at most one value of presentation rounding.
+Only the explicit tick Worker exists. Every new case checks GL/context release,
+listener/frame cleanup, actual Worker termination, zero object URLs and no
+late events after destruction. Request allowlists reject hidden asset fetches,
+off-origin requests and CSP violations.
+
+The report adds fetched module statuses/hashes, input and harness hashes,
+events, lifecycle diagnostics and screenshots to the existing schema-1 evidence.
+Bounded local receipts and their remaining limitations are recorded in
+[`application-consumers-886`](../performance/application-consumers-886/README.md).
+Together with the reused public file-export and standalone failure cases,
+this gate satisfies amended #886's named supported-consumer correctness
+requirements: installed tick admission, local CSP/assets, missing/invalid
+modules, unsupported refinement, overview retention and resource cleanup.
+This disposition does not claim exhaustive source-family/axis combinations,
+complete #108 acceptance or #54's final-candidate artifact qualification.
