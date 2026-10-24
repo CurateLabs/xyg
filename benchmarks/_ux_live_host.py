@@ -28,6 +28,7 @@ import argparse
 import asyncio
 import json
 import struct
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -41,26 +42,10 @@ import tornado.websocket
 import xyg
 from xyg.channel import FrameLimits, decode_frame, encode_frame, handle_message
 
-SEED = 20260713
-# Sentinels sit in the far Gaussian tail: guaranteed sparse (drillable), and
-# they stretch the autoscaled home domain so their home-view pixels are
-# interior, not clipped at the frame edge.
-SENTINELS = [(4.6, 2.2), (4.9, 2.45), (4.75, 2.05), (5.0, 2.3), (4.55, 2.5)]
-
-
-def make_data(n: int) -> tuple[np.ndarray, np.ndarray]:
-    """The ceiling workload plus planted sentinel rows (replacing, not
-    appending, so every arm still receives exactly n rows)."""
-    rng = np.random.default_rng(SEED)
-    x = rng.standard_normal(n, dtype=np.float32)
-    y = rng.standard_normal(n, dtype=np.float32)
-    y *= np.float32(1.2)
-    y += x
-    y *= np.float32(0.5)
-    for i, (sx, sy) in enumerate(SENTINELS):
-        x[i] = np.float32(sx)
-        y[i] = np.float32(sy)
-    return x, y
+try:
+    from ._ux_comparison_data import SENTINELS, make_data, source_identity
+except ImportError:  # direct script execution
+    from _ux_comparison_data import SENTINELS, make_data, source_identity
 
 
 # Control ingress stays small even when first paint or replies are much larger.
@@ -272,6 +257,10 @@ ws.onmessage = (ev) => {
 
 window.__arm = {
   applicationBytes: applicationBytesSnapshot,
+  evidence: () => ({traces: (window.__view?.gpuTraces || []).map(g => ({
+    initial_tier: g.tier, binning: g.trace?.binning,
+    drill: g.drill ? {exact: g.drill.exact, count: g.drill.count, window: g.drill.win} : null,
+  }))}),
   ready: () => !!window.__view && !!window.__view.gl,
   domain: () => {
     const v = window.__view && window.__view.view;
@@ -344,21 +333,54 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", type=int, required=True)
-    parser.add_argument("--density", choices=("auto", "off"), default="auto")
+    parser.add_argument("--density", choices=("auto", "off", "on"), default="auto")
     parser.add_argument("--port", type=int, default=0)
+    from _ux_comparison_host import XY_JS, add_arguments, inventory, load_source, metrics_handler
+
+    add_arguments(parser)
     args = parser.parse_args()
 
-    x, y = make_data(args.n)
-    mark = xyg.scatter(x=x, y=y, density=False) if args.density == "off" else xyg.scatter(x=x, y=y)
-    fig = xyg.scatter_chart(mark, width=900, height=420).figure()
+    comparison_state = {}
+    if args.comparison_source:
+        x, y, source = load_source(args.comparison_source, args.n)
+    else:
+        x, y = make_data(args.n)
+        source = source_identity(x, y)
+    t0 = time.perf_counter()
+    density = {"off": False, "on": True, "auto": None}[args.density]
+    mark = xyg.scatter(x=x, y=y, density=density)
+    if args.comparison_source:
+        e = source["extents"]
+        fig = xyg.scatter_chart(
+            mark,
+            xyg.x_axis(domain=tuple(e[:2]), show=False, tick_label_strategy="none"),
+            xyg.y_axis(domain=tuple(e[2:]), show=False, tick_label_strategy="none"),
+            width=512,
+            height=512,
+            padding=0,
+        ).figure()
+        comparison_state["canonical_admission"] = inventory(
+            (x, y), (fig.traces[0].x.values, fig.traces[0].y.values)
+        )
+    else:
+        fig = xyg.scatter_chart(mark, width=900, height=420).figure()
     spec, bufs = fig.build_payload_split()
+    build_ms = (time.perf_counter() - t0) * 1000
+    page = PAGE
+    if args.comparison_source:
+        comparison_state["canonical_after_build"] = inventory(
+            (x, y), (fig.traces[0].x.values, fig.traces[0].y.values)
+        )
+        page = PAGE.replace("width:900px;height:420px", "width:512px;height:512px").replace(
+            "</script>", XY_JS + "</script>"
+        )
 
     static_dir = Path(xyg.__file__).resolve().parent / "static"
 
     class PageHandler(tornado.web.RequestHandler):
         def get(self) -> None:
             self.set_header("Content-Type", "text/html")
-            self.write(PAGE)
+            self.write(page)
 
     class OracleHandler(tornado.web.RequestHandler):
         def get(self) -> None:
@@ -385,6 +407,7 @@ def main() -> None:
                     {"fig": fig, "spec": spec, "buffers": bufs, "accounting": accounting},
                 ),
                 (r"/transport_metrics", MetricsHandler),
+                (r"/comparison_metrics", metrics_handler(comparison_state)),
                 (r"/oracle", OracleHandler),
                 (
                     r"/static/(.*)",
@@ -404,6 +427,9 @@ def main() -> None:
                 {
                     "port": port,
                     "n": args.n,
+                    "source": source,
+                    "build_ms": build_ms,
+                    "components": ["XYG", "Rust", "ChartView", "Tornado", "XYBF"],
                     "sentinels": [list(s) for s in SENTINELS],
                     "mode": "density" if fig.traces[0].use_density() else "direct",
                 }

@@ -29,6 +29,7 @@ DEFAULT_RULESET = ROOT / ".github" / "merge-queue-ruleset.json"
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
 DEFAULT_DENSITY_WORKFLOW = ROOT / ".github" / "workflows" / "density-100m.yml"
+DEFAULT_CEILING_WORKFLOW = ROOT / ".github" / "workflows" / "ceiling-benchmark.yml"
 DEFAULT_FINAL_REVIEW_WORKFLOW = ROOT / ".github" / "workflows" / "final-coderabbit.yml"
 DEFAULT_CODERABBIT_CONFIG = ROOT / ".coderabbit.yaml"
 DEFAULT_FINAL_REVIEW_SCRIPT = ROOT / "scripts" / "request_final_coderabbit.py"
@@ -3047,6 +3048,331 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     return errors
 
 
+_CEILING_RUN_CONTRACTS = {
+    "Record runner capacity": [
+        "{",
+        'echo "### Runner capacity"',
+        "echo '```'",
+        "sysctl -n machdep.cpu.brand_string",
+        'echo "cores: $(sysctl -n hw.ncpu)"',
+        'echo "RAM: $(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 )) GiB"',
+        "df -h /",
+        "echo '```'",
+        '} >> "$GITHUB_STEP_SUMMARY"',
+    ],
+    "Build native core": ["cargo build --release"],
+    "Install package + comparison deps": [
+        "uv venv",
+        "uv pip install --constraint benchmarks/requirements-ci.lock -e . --group dev",
+        "uv pip install --constraint benchmarks/requirements-ci.lock \\",
+        "matplotlib plotly kaleido datashader plotly-resampler \\",
+        "psutil websocket-client pillow pandas tornado",
+        'if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then',
+        "uv pip install --constraint benchmarks/requirements-ci.lock hvplot",
+        "fi",
+    ],
+    "Verify native backend is active": [
+        'uv run python -c "import xyg.kernels as k; assert k.BACKEND '
+        "== 'native', k.BACKEND; print('native')\""
+    ],
+    "Build render client": ["npm ci", "node js/build.mjs"],
+    "Install Chromium (Playwright)": ["npx playwright install chromium"],
+    "Free disk before the sweep": ["df -h /"],
+    "Run ceiling sweep": [
+        'CHROME="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
+        "export CHROME",
+        'SOFTWARE="--software"',
+        'if [ "$INPUT_HARDWARE_GL" = "true" ]; then SOFTWARE=""; fi',
+        'if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then',
+        'HARDWARE=""',
+        'if [ "$INPUT_HARDWARE_GL" = "true" ]; then HARDWARE="--hardware"; fi',
+        "NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \\",
+        "uv run python benchmarks/bench_density_comparison.py \\",
+        '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS" \\',
+        '--profile f64-memmap --repetitions "$INPUT_REPETITIONS" \\',
+        '--chunk 1000000 --memory-gib "$INPUT_MEMORY_GIB" --disk-gib 20 \\',
+        '--timeout "$INPUT_TIMEOUT" --step-timeout 15 \\',
+        '$HARDWARE --chrome "$CHROME" \\',
+        '--out "$RUNNER_TEMP/density-comparison-${GITHUB_SHA}.json"',
+        "python3 scripts/verify_density_comparison_report.py \\",
+        '"$RUNNER_TEMP/density-comparison-${GITHUB_SHA}.json" \\',
+        '--sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE" \\',
+        '--sizes "$INPUT_SIZES" --arms "$INPUT_ARMS"',
+        "else",
+        "uv run python benchmarks/bench_ceiling.py \\",
+        '--sizes "$INPUT_SIZES" \\',
+        '--arms "$INPUT_ARMS" \\',
+        '--repetitions "$INPUT_REPETITIONS" \\',
+        '--timeout "$INPUT_TIMEOUT" \\',
+        '--memory-gib "$INPUT_MEMORY_GIB" \\',
+        '$SOFTWARE --chrome "$CHROME" \\',
+        "--out ceiling-results.json",
+        "fi",
+    ],
+    "Summarize": [
+        "uv run python benchmarks/summarize_ceiling.py ceiling-results.json \\",
+        '--interactive-budget-ms "$INPUT_BUDGET_MS" \\',
+        "| tee ceiling-summary.md",
+        "{",
+        'echo "### Ceiling results"',
+        'echo "Runner: blacksmith-12vcpu-macos-15 (Apple Silicon M4, 48 GB RAM)."',
+        'echo "Compare only with reference runs that record the same hardware."',
+        "cat ceiling-summary.md",
+        '} >> "$GITHUB_STEP_SUMMARY"',
+    ],
+    "Plot": [
+        "uv run python benchmarks/plot_ceiling.py ceiling-results.json --out-dir charts",
+        "uv run python benchmarks/plot_ceiling.py ceiling-results.json \\",
+        "--arms xy-exact,matplotlib,plotly --suffix=-exact --out-dir charts",
+    ],
+}
+
+
+def validate_ceiling_workflow(path: Path = DEFAULT_CEILING_WORKFLOW) -> list[str]:
+    """Keep the optional mapped comparison on the existing manual capacity only."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"cannot read ceiling comparison workflow {path}: {exc}"]
+    errors: list[str] = []
+    label = "ceiling comparison"
+    _require_unique_workflow_structure(errors, text, label, {"ceiling"})
+    _require_pipefail_for_piped_steps(errors, text, label)
+    top_keys = [
+        key for indent, key, unsafe in _yaml_mapping_keys(text) if indent == 0 and not unsafe
+    ]
+    if top_keys != ["name", "on", "permissions", "jobs"]:
+        errors.append("ceiling comparison must keep only its reviewed top-level keys")
+    permissions = _unique_mapping_block(text, "permissions", indent=0) or ""
+    if [
+        key for indent, key, unsafe in _yaml_mapping_keys(permissions) if indent == 2 and not unsafe
+    ] != ["contents"] or _direct_yaml_key_values(permissions, "contents", indent=2) != (
+        ["read"],
+        False,
+    ):
+        errors.append("ceiling comparison permissions must be exactly contents: read")
+    on = _unique_mapping_block(text, "on", indent=0) or ""
+    if [key for indent, key, unsafe in _yaml_mapping_keys(on) if indent == 2 and not unsafe] != [
+        "workflow_dispatch"
+    ]:
+        errors.append("ceiling comparison must remain manual-only")
+    dispatch = _unique_mapping_block(on, "workflow_dispatch", indent=2) or ""
+    if [
+        key for indent, key, unsafe in _yaml_mapping_keys(dispatch) if indent == 4 and not unsafe
+    ] != ["inputs"]:
+        errors.append("ceiling comparison dispatch must contain only reviewed inputs")
+    inputs = _unique_mapping_block(dispatch, "inputs", indent=4) or ""
+    input_keys = [
+        key for indent, key, unsafe in _yaml_mapping_keys(inputs) if indent == 6 and not unsafe
+    ]
+    defaults = {
+        "experiment": ("choice", "ceiling"),
+        "sizes": (
+            "string",
+            '"10,10000,100000,500000,1000000,2500000,5000000,10000000,25000000,50000000,100000000"',
+        ),
+        "arms": ("string", '"xy,xy-exact,plotly,matplotlib,datashader,plotly-resampler"'),
+        "repetitions": ("string", '"3"'),
+        "timeout": ("string", '"300"'),
+        "memory_gib": ("string", '"20"'),
+        "interactive_budget_ms": ("string", '"100"'),
+        "hardware_gl": ("boolean", "false"),
+    }
+    if input_keys != list(defaults):
+        errors.append("ceiling comparison must preserve the existing dispatch inputs")
+    for name, (kind, default) in defaults.items():
+        block = _unique_mapping_block(inputs, name, indent=6) or ""
+        expected_keys = (
+            ["description", "type", "options", "default"]
+            if name == "experiment"
+            else ["description", "type", "default"]
+        )
+        if (
+            [key for indent, key, unsafe in _yaml_mapping_keys(block) if indent == 8 and not unsafe]
+            != expected_keys
+            or _direct_yaml_key_values(block, "type", indent=8) != ([kind], False)
+            or _direct_yaml_key_values(block, "default", indent=8) != ([default], False)
+            or (
+                name == "experiment"
+                and _direct_yaml_key_values(block, "options", indent=8)
+                != (["[ceiling, density-comparison]"], False)
+            )
+        ):
+            errors.append(
+                f"ceiling comparison input {name!r} must retain its reviewed defaults and choice"
+            )
+    jobs = _job_blocks(text)
+    if set(jobs) != {"ceiling"}:
+        errors.append("ceiling comparison must use exactly the one existing ceiling job")
+    job = jobs.get("ceiling", "")
+    if [key for indent, key, unsafe in _yaml_mapping_keys(job) if indent == 4 and not unsafe] != [
+        "name",
+        "if",
+        "runs-on",
+        "timeout-minutes",
+        "steps",
+    ]:
+        errors.append("ceiling comparison job must keep its exact direct keys")
+    for key, expected in {
+        "if": "inputs.experiment != 'density-comparison' || github.ref == 'refs/heads/main'",
+        "runs-on": "blacksmith-12vcpu-macos-15",
+        "timeout-minutes": "720",
+    }.items():
+        if _direct_yaml_key_values(job, key, indent=4) != ([expected], False):
+            errors.append(f"ceiling comparison must keep exact {key}: {expected}")
+    if _has_shell_init_environment(text) or re.search(r"\bGITHUB_(?:ENV|PATH)\b", text):
+        errors.append("ceiling comparison must not override shell initialization or runner state")
+
+    steps = _step_sequence_blocks(job)
+    expected_steps = [
+        (None, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", ["uses", "with"]),
+        (None, "dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30", ["uses"]),
+        (None, "astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990", ["uses", "with"]),
+        (None, "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020", ["uses", "with"]),
+        (
+            "Cache Playwright Chromium",
+            "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+            ["name", "uses", "with"],
+        ),
+        ("Record runner capacity", None, ["name", "run"]),
+        ("Build native core", None, ["name", "run"]),
+        ("Install package + comparison deps", None, ["name", "env", "run"]),
+        ("Verify native backend is active", None, ["name", "run"]),
+        ("Build render client", None, ["name", "run"]),
+        ("Install Chromium (Playwright)", None, ["name", "timeout-minutes", "run"]),
+        ("Free disk before the sweep", None, ["name", "run"]),
+        ("Run ceiling sweep", None, ["name", "env", "run"]),
+        ("Summarize", None, ["name", "if", "env", "shell", "run"]),
+        ("Plot", None, ["name", "if", "run"]),
+        (
+            "Upload ceiling report",
+            "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+            ["name", "if", "uses", "with"],
+        ),
+    ]
+    actual_steps = []
+    for step in steps:
+        names, name_unsafe = _step_direct_key_values(step, "name")
+        uses, uses_unsafe = _step_direct_key_values(step, "uses")
+        keys, keys_unsafe = _step_direct_keys(step)
+        actual_steps.append(
+            (
+                names[0] if len(names) == 1 and not name_unsafe else None,
+                uses[0].split(" #", 1)[0] if len(uses) == 1 and not uses_unsafe else None,
+                keys if not keys_unsafe else [],
+            )
+        )
+        if any(
+            "${{ inputs." in line or "${{ github.event.inputs." in line
+            for line in _step_run_lines(step)
+        ):
+            errors.append(
+                "ceiling comparison inputs must pass through quoted environment variables, never shell interpolation"
+            )
+    if actual_steps != expected_steps:
+        errors.append("ceiling comparison must keep the exact reviewed steps and direct keys")
+    named = _named_step_blocks(job)
+    expected_environments = {
+        "Install package + comparison deps": {"INPUT_EXPERIMENT": "${{ inputs.experiment }}"},
+        "Run ceiling sweep": {
+            "INPUT_EXPERIMENT": "${{ inputs.experiment }}",
+            "INPUT_SIZES": "${{ inputs.sizes }}",
+            "INPUT_ARMS": "${{ inputs.arms }}",
+            "INPUT_REPETITIONS": "${{ inputs.repetitions }}",
+            "INPUT_TIMEOUT": "${{ inputs.timeout }}",
+            "INPUT_MEMORY_GIB": "${{ inputs.memory_gib }}",
+            "INPUT_HARDWARE_GL": "${{ inputs.hardware_gl }}",
+        },
+        "Summarize": {"INPUT_BUDGET_MS": "${{ inputs.interactive_budget_ms }}"},
+    }
+    for name, expected in expected_environments.items():
+        env = _unique_mapping_block(named.get(name, ""), "env", indent=8) or ""
+        if [
+            key for indent, key, unsafe in _yaml_mapping_keys(env) if indent == 10 and not unsafe
+        ] != list(expected) or any(
+            _direct_yaml_key_values(env, key, indent=10) != ([value], False)
+            for key, value in expected.items()
+        ):
+            errors.append(
+                f"ceiling comparison step {name!r} must bind only its reviewed input environment"
+            )
+    for name in ("Summarize", "Plot"):
+        if _step_direct_key_values(named.get(name, ""), "if") != (
+            ["always() && hashFiles('ceiling-results.json') != ''"],
+            False,
+        ):
+            errors.append(f"legacy ceiling {name} must retain its report-existence condition")
+    if _step_direct_key_values(named.get("Summarize", ""), "shell") != (["bash"], False):
+        errors.append("ceiling summary must use bash with pipefail")
+    if _step_direct_key_values(
+        named.get("Install Chromium (Playwright)", ""), "timeout-minutes"
+    ) != (["10"], False):
+        errors.append("ceiling Chromium installation must remain bounded to ten minutes")
+    upload = named.get("Upload ceiling report", "")
+    if _step_direct_key_values(upload, "if") != (["always()"], False):
+        errors.append("ceiling comparison raw report upload must always run")
+    with_contracts = {
+        0: {"persist-credentials": "false", "fetch-depth": "0"},
+        2: {"enable-cache": "false"},
+        3: {"node-version": '"22"'},
+        4: {
+            "path": "~/Library/Caches/ms-playwright",
+            "key": "playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}",
+        },
+        15: {
+            "name": "ceiling-benchmark",
+            "if-no-files-found": "warn",
+            "path": "|",
+        },
+    }
+    for index, expected in with_contracts.items():
+        block = (
+            _unique_mapping_block(steps[index] if index < len(steps) else "", "with", indent=8)
+            or ""
+        )
+        if [
+            key for indent, key, unsafe in _yaml_mapping_keys(block) if indent == 10 and not unsafe
+        ] != list(expected) or any(
+            _direct_yaml_key_values(block, key, indent=10) != ([value], False)
+            for key, value in expected.items()
+        ):
+            errors.append(
+                f"ceiling comparison action {index + 1} must keep its exact reviewed inputs"
+            )
+    upload_with = _unique_mapping_block(upload, "with", indent=8) or ""
+    path_lines = []
+    in_path = False
+    for line in upload_with.splitlines():
+        if line.strip() == "path: |":
+            in_path = True
+        elif in_path and line.strip():
+            path_lines.append(line.strip())
+    if path_lines != [
+        "ceiling-results.json",
+        "ceiling-summary.md",
+        "charts/",
+        "${{ runner.temp }}/density-comparison-${{ github.sha }}.json",
+    ]:
+        errors.append(
+            "ceiling comparison upload must preserve legacy artifacts and exact-SHA runner-temp output"
+        )
+    for name, commands in _CEILING_RUN_CONTRACTS.items():
+        if name not in {"Summarize", "Plot"}:
+            _require_step_runs_exactly(
+                errors,
+                job,
+                name,
+                "exact guarded legacy/comparison commands",
+                *commands,
+                allow_job_gate=True,
+            )
+        # Legacy summary/plot intentionally run after a failed sweep only when a
+        # report exists. Compare commands directly without weakening that condition.
+        if name in {"Summarize", "Plot"} and _step_run_lines(named.get(name, "")) != commands:
+            errors.append(f"legacy ceiling {name} must retain exact reviewed commands")
+    return errors
+
+
 def validate_density_workflow(path: Path = DEFAULT_DENSITY_WORKFLOW) -> list[str]:
     """Keep the expensive #876 authority off PRs and non-main refs."""
     try:
@@ -3795,6 +4121,7 @@ def validate_all_workflows(
     coderabbit_config_path: Path = DEFAULT_CODERABBIT_CONFIG,
     density_path: Path = DEFAULT_DENSITY_WORKFLOW,
     ruleset_path: Path = DEFAULT_RULESET,
+    ceiling_path: Path = DEFAULT_CEILING_WORKFLOW,
 ) -> list[str]:
     return [
         *validate_workflow_hosting_policy(),
@@ -3802,6 +4129,7 @@ def validate_all_workflows(
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
         *validate_density_workflow(density_path),
+        *validate_ceiling_workflow(ceiling_path),
         *validate_final_review_policy(final_review_path, coderabbit_config_path),
         *validate_release_workflow(release_path),
     ]
@@ -3990,6 +4318,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             args.ci_workflow,
             args.codspeed_workflow,
             DEFAULT_DENSITY_WORKFLOW,
+            DEFAULT_CEILING_WORKFLOW,
             DEFAULT_FINAL_REVIEW_WORKFLOW,
             args.release_workflow,
             args.ruleset,

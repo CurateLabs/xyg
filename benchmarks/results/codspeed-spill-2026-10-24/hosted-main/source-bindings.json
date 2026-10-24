@@ -1,0 +1,26 @@
+{
+  ".github/workflows/codspeed.yml": {
+    "current_checkout_matches": true,
+    "sha256": "5a95579d95519a90a1f483b77fd0b2c8ce3ca5d1cd7ca5acf879cdd060cf68d2"
+  },
+  "Cargo.lock": {
+    "current_checkout_matches": true,
+    "sha256": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a"
+  },
+  "benchmarks/test_codspeed_kernels.py": {
+    "current_checkout_matches": true,
+    "sha256": "51a081cc40baf00c3193de515409e80ddd74bf5298e6757576f47308168e1d83"
+  },
+  "pyproject.toml": {
+    "current_checkout_matches": true,
+    "sha256": "07f8799e3d616e73c24bd3ef5a7c679d190855d82f65d853467a7343ee90e825"
+  },
+  "rust-toolchain.toml": {
+    "current_checkout_matches": true,
+    "sha256": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+  },
+  "uv.lock": {
+    "current_checkout_matches": true,
+    "sha256": "9c897f644d4b241ab192c38d0afc26f4a49665dbf7734410e893b763ed9a0bef"
+  }
+}

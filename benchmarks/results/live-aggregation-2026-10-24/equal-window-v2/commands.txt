@@ -1,0 +1,15 @@
+# Exact recorded commands, run sequentially from the repository root.
+
+# For reproduction replace --out/redirection paths with fresh paths under .ux-tmp.
+
+export TMPDIR="$PWD/.ux-tmp" PYTHONPATH="$PWD/python:$PWD" PATH="$HOME/.cargo/bin:$PATH"
+
+export NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
+
+
+
+timeout 1800 .venv-ux/bin/python benchmarks/bench_density_comparison.py --sizes 1000,100000,1000000 --arms xy-density,plotly-aggregate,datashader-aggregate --profile f32 --repetitions 2 --memory-gib 2 --disk-gib 0.25 --timeout 180 --step-timeout 15 --chrome /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome --out benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f32.json > benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f32-console.jsonl 2> benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f32-stderr.log
+
+timeout 600 .venv-ux/bin/python benchmarks/bench_density_comparison.py --sizes 1000000 --arms xy-density --profile f32 --repetitions 2 --memory-gib 2 --disk-gib 0.25 --timeout 180 --step-timeout 15 --chrome /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome --out benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f32-xy-cache-followup.json > benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f32-xy-cache-console.jsonl 2> benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f32-xy-cache-stderr.log
+
+timeout 1800 .venv-ux/bin/python benchmarks/bench_density_comparison.py --sizes 1000,100000,1000000 --arms xy-density,plotly-aggregate,datashader-aggregate --profile f64-memmap --repetitions 2 --memory-gib 2 --disk-gib 0.25 --timeout 180 --step-timeout 15 --chrome /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome --out benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f64-memmap.json > benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f64-console.jsonl 2> benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f64-stderr.log

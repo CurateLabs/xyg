@@ -1,0 +1,5456 @@
+{
+  "schema_version": 1,
+  "argv": [
+    "benchmarks/bench_ux.py",
+    "--sizes",
+    "1000,100000,1000000",
+    "--arms",
+    "xy-exact,plotly,xy-density,plotly-aggregate,datashader-aggregate,datashader",
+    "--chrome",
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "--software",
+    "--timeout",
+    "70",
+    "--memory-gib",
+    "2",
+    "--no-grid",
+    "--out",
+    "benchmarks/results/live-aggregation-2026-10-24/bounded.json"
+  ],
+  "provenance_sha256": {
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "benchmarks/_launch_interactive.py": "648238080613b27e17cbabc2e76bb30dcfc87861a6e50ad054360baeee0608ec",
+    "benchmarks/_ux_comparison_data.py": "5901917503f238adfca0ef726d2cbe6b77f0292435a14bcfd60df7d9e20caa46",
+    "benchmarks/_ux_datashader_host.py": "062c6a3f5f4a95564ea30a20678a91e9b4e7164f897d7c2b2618d76a3c3395fc",
+    "benchmarks/_ux_live_host.py": "d4c1e7af87517ba683923ee4a802f8eff02938b9d7bd89267c10abba5554c604",
+    "benchmarks/_ux_plotly_aggregate_host.py": "9df546a666b9a5def5f46f96c03de2eb5eb02bd43d44dd912be0d3eed62db4e7",
+    "benchmarks/_ux_probe.py": "01a1bc50a06250890efddbe595aa263d117fbf45c7436518a7a44e91701c523e",
+    "benchmarks/_ux_webagg_host.py": "aeded9108250025115b85cb8bc73ba000f427981578362e4a114447f7bc95ebf",
+    "benchmarks/bench_ux.py": "aeff2922914a5bfee74fe7229c4fb0bac718cae841e5f3d2f6ef014ecf0deaed",
+    "benchmarks/environment.py": "d169edf752862847fa4e595e8518e486312a89648d05d6e5e00829c13a405165",
+    "benchmarks/requirements-ci.lock": "9a257a064c44b18b53d0b96b33e9c48e259b633a2ffde341ca8bac4ae447558b",
+    "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "python/xyg/static/index.js": "b7bf5702e7d28647b651777c364a8ec6c82403e145d16475ef8e06484b8ddfce",
+    "target/release/libxyg_core.so": "cc59e76471dea30c864aed3e183355dd5ba675f6ab47892dbae21add8da8cb6d",
+    "python/xyg:tree_sha256": "51bb5f57927a80868bbdb391b3d9daba4bfc7fae2c5d283d0a98301291c3d315",
+    "crates:tree_sha256": "77181fb49701393a0201128203b313beac77d08c8e5f3b2b1fad7172a094fc15",
+    "js/src:tree_sha256": "2c1f8f1042cedbc702963eb66cf6bb6d7c0e4a0304389a21573d6e48daa045b5",
+    "loaded_native:/home/ubuntu/.t3/worktrees/xyg/t3-31481cde/target/release/libxyg_core.so": "cc59e76471dea30c864aed3e183355dd5ba675f6ab47892dbae21add8da8cb6d"
+  },
+  "limits": {
+    "timeout_s_per_host_prepare_and_browser": 70.0,
+    "rss_bytes_per_host_or_browser_tree": 2147483648,
+    "rss_sampling_ms": 50
+  },
+  "timing_scope": {
+    "python_build_ms": "cold chart build in fresh process; source generation excluded; JIT/cache state not controlled",
+    "host_prepare_wall_ms": "spawn through META; imports, source generation/hash, chart build, server startup",
+    "visible_complete_ms": "fresh browser navigation to sentinel-correct stable paint; host preparation excluded",
+    "gesture_frame_p95_ms": "warm animation-frame interval, NOT input-to-pixel latency",
+    "zoom_to_final_ms": "warm fixed-cadence gesture sequence to final correct stable pixels; includes host refine",
+    "settle_ms": "last input to final correct stable pixels"
+  },
+  "generated_at_utc": "2026-10-24T02:58:31.263980Z",
+  "contract": "correct(sentinels+domain) then pixel-stable; fixed-cadence inputs",
+  "screencast": "on (uniform across arms)",
+  "sizes": [
+    1000,
+    100000,
+    1000000
+  ],
+  "sources": {
+    "1000": {
+      "id": "ux-correlated-gaussian-f32-sentinels-v1",
+      "seed": 20260713,
+      "actual_rows": 1000,
+      "columns": [
+        "x",
+        "y"
+      ],
+      "dtype": "little-endian float32",
+      "source_bytes": 8000,
+      "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+      "sentinels": [
+        [
+          4.6,
+          2.2
+        ],
+        [
+          4.9,
+          2.45
+        ],
+        [
+          4.75,
+          2.05
+        ],
+        [
+          5.0,
+          2.3
+        ],
+        [
+          4.55,
+          2.5
+        ]
+      ],
+      "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+    },
+    "100000": {
+      "id": "ux-correlated-gaussian-f32-sentinels-v1",
+      "seed": 20260713,
+      "actual_rows": 100000,
+      "columns": [
+        "x",
+        "y"
+      ],
+      "dtype": "little-endian float32",
+      "source_bytes": 800000,
+      "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+      "sentinels": [
+        [
+          4.6,
+          2.2
+        ],
+        [
+          4.9,
+          2.45
+        ],
+        [
+          4.75,
+          2.05
+        ],
+        [
+          5.0,
+          2.3
+        ],
+        [
+          4.55,
+          2.5
+        ]
+      ],
+      "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+    },
+    "1000000": {
+      "id": "ux-correlated-gaussian-f32-sentinels-v1",
+      "seed": 20260713,
+      "actual_rows": 1000000,
+      "columns": [
+        "x",
+        "y"
+      ],
+      "dtype": "little-endian float32",
+      "source_bytes": 8000000,
+      "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+      "sentinels": [
+        [
+          4.6,
+          2.2
+        ],
+        [
+          4.9,
+          2.45
+        ],
+        [
+          4.75,
+          2.05
+        ],
+        [
+          5.0,
+          2.3
+        ],
+        [
+          4.55,
+          2.5
+        ]
+      ],
+      "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+    }
+  },
+  "viewport_css_px": [
+    900,
+    420
+  ],
+  "runtime": {
+    "temp_root": "/home/ubuntu/.t3/worktrees/xyg/t3-31481cde/.ux-tmp",
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "physical_cpu_count": 4,
+    "system_memory_bytes": 33319313408,
+    "thread_environment": {
+      "NUMBA_NUM_THREADS": "2",
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    }
+  },
+  "arms": [
+    "xy-exact",
+    "plotly",
+    "xy-density",
+    "plotly-aggregate",
+    "datashader-aggregate",
+    "datashader"
+  ],
+  "environment": {
+    "generated_at_utc": "2026-10-24T02:58:31.264619Z",
+    "python": {
+      "version": "3.12.15",
+      "implementation": "CPython",
+      "compiler": "Clang 22.1.3 "
+    },
+    "platform": {
+      "system": "Linux",
+      "release": "7.0.0-31-generic",
+      "version": "#31-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug  1 04:26:38 UTC 2026",
+      "machine": "x86_64",
+      "processor": ""
+    },
+    "cpu_count": 8,
+    "package_versions": {
+      "numpy": "2.4.6",
+      "plotly": "6.9.0",
+      "datashader": "0.19.1",
+      "holoviews": "1.23.1",
+      "hvplot": "0.12.2",
+      "bokeh": "3.9.1",
+      "panel": "1.9.3",
+      "tornado": "6.5.7",
+      "pandas": "3.0.3",
+      "numba": "0.66.0",
+      "llvmlite": "0.48.0",
+      "pillow": "12.3.0",
+      "psutil": "7.2.2",
+      "websocket-client": "1.9.0"
+    },
+    "executables": {
+      "node": "v24.21.0",
+      "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+      "chromium": "Google Chrome for Testing 156.0.8078.4"
+    },
+    "xy_backend": "native",
+    "browser_renderer": "software-gl",
+    "git": {
+      "commit": "71e48b67827709ed251ae05b90d010a8cef824eb",
+      "branch": "t3/live-aggregation-comparison",
+      "dirty": true
+    }
+  },
+  "scale_gaps": {
+    "100M": "requires retained actual-source competitive host/browser evidence; not established by planner integers",
+    "1B": "true 3xf64 source alone is 24,000,000,000 bytes (>12 GiB lane); this two-f32 workload is not that acceptance"
+  },
+  "results": [
+    {
+      "first_frame_ms": 3064.699999809265,
+      "visible_complete_ms": 3153.800000190735,
+      "render_stable": true,
+      "gesture_wall_ms": 1352.9000000953674,
+      "gesture_frames": 79,
+      "gesture_frame_p50_ms": 16.699999809265137,
+      "gesture_frame_p95_ms": 26.09999990463257,
+      "gesture_frame_max_ms": 46.10000038146973,
+      "gesture_achieved_fps": 58.4,
+      "gesture_dropped_pct": 94.9,
+      "settle_ms": 68.5,
+      "zoom_to_final_ms": 1421.4000000953674,
+      "final_span_fraction": 0.0005,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1399283712,
+      "recorded_frames": 14,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9176,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": -3.335134258270264,
+              "x1": 5.242770900726319,
+              "y0": -2.561980674266815,
+              "y1": 2.6474363303184507
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9176,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              },
+              "total_bytes": 9176
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9459,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595825752576194,
+              "x1": 4.600319151190333,
+              "y0": 2.1975242756458315,
+              "y1": 2.200253145540635
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9459,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              },
+              "total_bytes": 9459
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9459,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595825752576194,
+              "x1": 4.600319151190333,
+              "y0": 2.1975242756458315,
+              "y1": 2.200253145540635
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9459,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 9176,
+                "total_bytes": 9176
+              },
+              "total_bytes": 9459
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 283,
+          "to_host": {
+            "json_bytes": 283,
+            "binary_frame_bytes": 0,
+            "total_bytes": 283
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          }
+        }
+      },
+      "host_meta": {
+        "port": 35911,
+        "n": 1000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000,
+          "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 15.65057085826993,
+        "components": [
+          "XYG",
+          "Rust",
+          "ChartView",
+          "Tornado",
+          "XYBF"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "mode": "direct"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000,
+        "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "python_build_ms": 15.65057085826993,
+      "host_prepare_wall_ms": 188.42647736892104,
+      "mode": "direct",
+      "python_peak_rss_bytes": 62799872,
+      "arm": "xy-exact",
+      "n": 1000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 62799872,
+      "comparison_contract": "raw markers"
+    },
+    {
+      "status": "unsupported_svg_readback",
+      "mode": "scatter-svg",
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000,
+        "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "python_build_ms": 406.95205610245466,
+      "html_bytes": 4872757,
+      "python_peak_rss_bytes": 131047424,
+      "detail": "raw px.scatter SVG has no canvas surface for the existing pixel oracle",
+      "arm": "plotly",
+      "n": 1000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 131047424,
+      "comparison_contract": "raw markers"
+    },
+    {
+      "first_frame_ms": 2136.2999997138977,
+      "visible_complete_ms": 2288.2999997138977,
+      "render_stable": true,
+      "gesture_wall_ms": 1354.4000000953674,
+      "gesture_frames": 81,
+      "gesture_frame_p50_ms": 16.699999809265137,
+      "gesture_frame_p95_ms": 20.199999809265137,
+      "gesture_frame_max_ms": 25.5,
+      "gesture_achieved_fps": 59.8,
+      "gesture_dropped_pct": 6.2,
+      "settle_ms": 1098.3999996185303,
+      "zoom_to_final_ms": 2452.7999997138977,
+      "final_span_fraction": 0.0005,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1505361920,
+      "recorded_frames": 14,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 206736,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 206736,
+                "total_bytes": 206736
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": -3.335134258270264,
+              "x1": 5.242770900726319,
+              "y0": -2.561980674266815,
+              "y1": 2.6474363303184507
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 206736,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 206736,
+                "total_bytes": 206736
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 206736,
+                "total_bytes": 206736
+              },
+              "total_bytes": 206736
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 207762,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 207328,
+                "total_bytes": 207328
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": {
+                    "exact": true,
+                    "window": {
+                      "x0": 4.5890596732497215,
+                      "x1": 4.620670467615128,
+                      "y0": 2.1928409785032272,
+                      "y1": 2.2120384173467755
+                    }
+                  }
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595825752576194,
+              "x1": 4.600319151190333,
+              "y0": 2.1975242756458315,
+              "y1": 2.200253145540635
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 207762,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 207328,
+                "total_bytes": 207328
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 207328,
+                "total_bytes": 207328
+              },
+              "total_bytes": 207762
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 207762,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 207328,
+                "total_bytes": 207328
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": {
+                    "exact": true,
+                    "window": {
+                      "x0": 4.5890596732497215,
+                      "x1": 4.620670467615128,
+                      "y0": 2.1928409785032272,
+                      "y1": 2.2120384173467755
+                    }
+                  }
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595825752576194,
+              "x1": 4.600319151190333,
+              "y0": 2.1975242756458315,
+              "y1": 2.200253145540635
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 207762,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 207328,
+                "total_bytes": 207328
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 207328,
+                "total_bytes": 207328
+              },
+              "total_bytes": 207762
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 1026,
+          "to_host": {
+            "json_bytes": 434,
+            "binary_frame_bytes": 0,
+            "total_bytes": 434
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 592,
+            "total_bytes": 592
+          }
+        }
+      },
+      "host_meta": {
+        "port": 38547,
+        "n": 1000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000,
+          "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 14.651640318334103,
+        "components": [
+          "XYG",
+          "Rust",
+          "ChartView",
+          "Tornado",
+          "XYBF"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "mode": "density"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000,
+        "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "python_build_ms": 14.651640318334103,
+      "host_prepare_wall_ms": 179.00428967550397,
+      "mode": "density",
+      "python_peak_rss_bytes": 64921600,
+      "arm": "xy-density",
+      "n": 1000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 64921600,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 2578.9000000953674,
+      "visible_complete_ms": 2626.199999809265,
+      "render_stable": true,
+      "gesture_wall_ms": 1353.8000001907349,
+      "gesture_frames": 80,
+      "gesture_frame_p50_ms": 16.699999809265137,
+      "gesture_frame_p95_ms": 20.399999618530273,
+      "gesture_frame_max_ms": 34.700000286102295,
+      "gesture_achieved_fps": 59.1,
+      "gesture_dropped_pct": 2.5,
+      "settle_ms": 239.69999980926514,
+      "zoom_to_final_ms": 1593.5,
+      "final_span_fraction": 0.015,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1526517760,
+      "recorded_frames": 4,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 5780,
+                "binary_frame_bytes": 0,
+                "total_bytes": 5780
+              },
+              "total_bytes": 5780
+            },
+            "evidence": {
+              "revision": 0,
+              "applied": 0,
+              "domain": [
+                -3.4969815254211425,
+                5.404618167877198,
+                -2.6602715492248534,
+                2.745727205276489
+              ],
+              "raster": {
+                "domain": [
+                  -3.4969815254211425,
+                  5.404618167877198,
+                  -2.6602715492248534,
+                  2.745727205276489
+                ],
+                "oracle": {
+                  "count": 1000,
+                  "grid_mass": 1000,
+                  "passed": true
+                },
+                "png_sha256": "671196933721a13e2f0272b334180dd724a65177ff171b6a41394c7620daf47e",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": -3.4969815254211425,
+              "x1": 5.404618167877198,
+              "y0": -2.6602715492248534,
+              "y1": 2.745727205276489
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 5780,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 5780,
+                "binary_frame_bytes": 0,
+                "total_bytes": 5780
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 5780,
+                "binary_frame_bytes": 0,
+                "total_bytes": 5780
+              },
+              "total_bytes": 5780,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -3.4969815254211425,
+                    5.404618167877198,
+                    -2.6602715492248534,
+                    2.745727205276489
+                  ],
+                  "oracle": {
+                    "count": 1000,
+                    "grid_mass": 1000,
+                    "passed": true
+                  },
+                  "png_sha256": "671196933721a13e2f0272b334180dd724a65177ff171b6a41394c7620daf47e",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                }
+              ]
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 88,
+                "binary_frame_bytes": 0,
+                "total_bytes": 88
+              },
+              "from_host": {
+                "json_bytes": 8178,
+                "binary_frame_bytes": 0,
+                "total_bytes": 8178
+              },
+              "total_bytes": 8266
+            },
+            "evidence": {
+              "revision": 1,
+              "applied": 1,
+              "domain": [
+                4.478366364594004,
+                4.61185098662,
+                2.12743007984299,
+                2.2084961494575213
+              ],
+              "raster": {
+                "domain": [
+                  4.478366364594004,
+                  4.61185098662,
+                  2.12743007984299,
+                  2.2084961494575213
+                ],
+                "oracle": {
+                  "count": 1,
+                  "grid_mass": 1,
+                  "passed": true
+                },
+                "png_sha256": "70276267897011718afc597a05cbdd90d3f3ff8c5ae459f4aa083e38c8b387b4",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": 4.478366364594004,
+              "x1": 4.61185098662,
+              "y0": 2.12743007984299,
+              "y1": 2.2084961494575213
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8266,
+              "to_host": {
+                "json_bytes": 88,
+                "binary_frame_bytes": 0,
+                "total_bytes": 88
+              },
+              "from_host": {
+                "json_bytes": 8178,
+                "binary_frame_bytes": 0,
+                "total_bytes": 8178
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 88,
+                "binary_frame_bytes": 0,
+                "total_bytes": 88
+              },
+              "from_host": {
+                "json_bytes": 8178,
+                "binary_frame_bytes": 0,
+                "total_bytes": 8178
+              },
+              "total_bytes": 8266,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -3.4969815254211425,
+                    5.404618167877198,
+                    -2.6602715492248534,
+                    2.745727205276489
+                  ],
+                  "oracle": {
+                    "count": 1000,
+                    "grid_mass": 1000,
+                    "passed": true
+                  },
+                  "png_sha256": "671196933721a13e2f0272b334180dd724a65177ff171b6a41394c7620daf47e",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                },
+                {
+                  "seq": 1,
+                  "domain": [
+                    4.478366364594004,
+                    4.61185098662,
+                    2.12743007984299,
+                    2.2084961494575213
+                  ],
+                  "oracle": {
+                    "count": 1,
+                    "grid_mass": 1,
+                    "passed": true
+                  },
+                  "png_sha256": "70276267897011718afc597a05cbdd90d3f3ff8c5ae459f4aa083e38c8b387b4",
+                  "grid_shape": [
+                    420,
+                    900
+                  ],
+                  "aggregate_encode_oracle_ms": 36.560002248734236
+                }
+              ]
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 88,
+                "binary_frame_bytes": 0,
+                "total_bytes": 88
+              },
+              "from_host": {
+                "json_bytes": 8178,
+                "binary_frame_bytes": 0,
+                "total_bytes": 8178
+              },
+              "total_bytes": 8266
+            },
+            "evidence": {
+              "revision": 1,
+              "applied": 1,
+              "domain": [
+                4.478366364594004,
+                4.61185098662,
+                2.12743007984299,
+                2.2084961494575213
+              ],
+              "raster": {
+                "domain": [
+                  4.478366364594004,
+                  4.61185098662,
+                  2.12743007984299,
+                  2.2084961494575213
+                ],
+                "oracle": {
+                  "count": 1,
+                  "grid_mass": 1,
+                  "passed": true
+                },
+                "png_sha256": "70276267897011718afc597a05cbdd90d3f3ff8c5ae459f4aa083e38c8b387b4",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": 4.478366364594004,
+              "x1": 4.61185098662,
+              "y0": 2.12743007984299,
+              "y1": 2.2084961494575213
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8266,
+              "to_host": {
+                "json_bytes": 88,
+                "binary_frame_bytes": 0,
+                "total_bytes": 88
+              },
+              "from_host": {
+                "json_bytes": 8178,
+                "binary_frame_bytes": 0,
+                "total_bytes": 8178
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 88,
+                "binary_frame_bytes": 0,
+                "total_bytes": 88
+              },
+              "from_host": {
+                "json_bytes": 8178,
+                "binary_frame_bytes": 0,
+                "total_bytes": 8178
+              },
+              "total_bytes": 8266,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -3.4969815254211425,
+                    5.404618167877198,
+                    -2.6602715492248534,
+                    2.745727205276489
+                  ],
+                  "oracle": {
+                    "count": 1000,
+                    "grid_mass": 1000,
+                    "passed": true
+                  },
+                  "png_sha256": "671196933721a13e2f0272b334180dd724a65177ff171b6a41394c7620daf47e",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                },
+                {
+                  "seq": 1,
+                  "domain": [
+                    4.478366364594004,
+                    4.61185098662,
+                    2.12743007984299,
+                    2.2084961494575213
+                  ],
+                  "oracle": {
+                    "count": 1,
+                    "grid_mass": 1,
+                    "passed": true
+                  },
+                  "png_sha256": "70276267897011718afc597a05cbdd90d3f3ff8c5ae459f4aa083e38c8b387b4",
+                  "grid_shape": [
+                    420,
+                    900
+                  ],
+                  "aggregate_encode_oracle_ms": 36.560002248734236
+                }
+              ]
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 2486,
+          "to_host": {
+            "json_bytes": 88,
+            "binary_frame_bytes": 0,
+            "total_bytes": 88
+          },
+          "from_host": {
+            "json_bytes": 2398,
+            "binary_frame_bytes": 0,
+            "total_bytes": 2398
+          }
+        }
+      },
+      "host_meta": {
+        "port": 36313,
+        "n": 1000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000,
+          "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 1379.0596229955554,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000,
+        "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 1930.8161023072898,
+      "mode": "density",
+      "python_build_ms": 1379.0596229955554,
+      "python_peak_rss_bytes": 289062912,
+      "arm": "plotly-aggregate",
+      "n": 1000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 289062912,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 5172.300000190735,
+      "visible_complete_ms": 5475.200000286102,
+      "render_stable": true,
+      "gesture_wall_ms": 1359,
+      "gesture_frames": 58,
+      "gesture_frame_p50_ms": 24.799999713897705,
+      "gesture_frame_p95_ms": 43.30000019073486,
+      "gesture_frame_max_ms": 60.69999980926514,
+      "gesture_achieved_fps": 42.7,
+      "gesture_dropped_pct": 91.4,
+      "settle_ms": 955,
+      "zoom_to_final_ms": 2314,
+      "final_span_fraction": 0.0001,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1499942912,
+      "recorded_frames": 7,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "evidence": {
+              "domain": {
+                "x0": -3.0923633575439453,
+                "x1": 5,
+                "y0": -2.4145443439483643,
+                "y1": 2.5
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": -3.0923633575439453,
+                  "y": -2.4145443439483643,
+                  "dw": 8.092363357543945,
+                  "dh": 4.914544105529785
+                }
+              ]
+            },
+            "domain": {
+              "x0": -3.0923633575439453,
+              "x1": 5,
+              "y0": -2.4145443439483643,
+              "y1": 2.5
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 2718975,
+              "to_host": {
+                "json_bytes": 1778,
+                "binary_frame_bytes": 0,
+                "total_bytes": 1778
+              },
+              "from_host": {
+                "json_bytes": 12377,
+                "binary_frame_bytes": 2704820,
+                "total_bytes": 2717197
+              }
+            }
+          },
+          "settle-complete": {
+            "evidence": {
+              "domain": {
+                "x0": 4.599342303270077,
+                "x1": 4.600030725409399,
+                "y0": 2.1996107131817646,
+                "y1": 2.2000287963771887
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": 4.599342303270077,
+                  "y": 2.1996107131817646,
+                  "dw": 0.0006884221393219647,
+                  "dh": 0.00041808319542413486
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.599342303270077,
+              "x1": 4.600030725409399,
+              "y0": 2.1996107131817646,
+              "y1": 2.2000287963771887
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8616264,
+              "to_host": {
+                "json_bytes": 23961,
+                "binary_frame_bytes": 0,
+                "total_bytes": 23961
+              },
+              "from_host": {
+                "json_bytes": 22663,
+                "binary_frame_bytes": 8569640,
+                "total_bytes": 8592303
+              }
+            }
+          },
+          "terminal": {
+            "evidence": {
+              "domain": {
+                "x0": 4.599342303270077,
+                "x1": 4.600030725409399,
+                "y0": 2.1996107131817646,
+                "y1": 2.2000287963771887
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": 4.599342303270077,
+                  "y": 2.1996107131817646,
+                  "dw": 0.0006884221393219647,
+                  "dh": 0.00041808319542413486
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.599342303270077,
+              "x1": 4.600030725409399,
+              "y0": 2.1996107131817646,
+              "y1": 2.2000287963771887
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8616264,
+              "to_host": {
+                "json_bytes": 23961,
+                "binary_frame_bytes": 0,
+                "total_bytes": 23961
+              },
+              "from_host": {
+                "json_bytes": 22663,
+                "binary_frame_bytes": 8569640,
+                "total_bytes": 8592303
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5897289,
+          "to_host": {
+            "json_bytes": 22183,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22183
+          },
+          "from_host": {
+            "json_bytes": 10286,
+            "binary_frame_bytes": 5864820,
+            "total_bytes": 5875106
+          }
+        }
+      },
+      "host_meta": {
+        "port": 36885,
+        "hostname": "localhost",
+        "n": 1000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000,
+          "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 305.4592008702457,
+        "mode": "density"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000,
+        "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 5257.754046004266,
+      "mode": "density",
+      "python_build_ms": 305.4592008702457,
+      "python_peak_rss_bytes": 359182336,
+      "arm": "datashader-aggregate",
+      "n": 1000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 359182336,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 4225.300000190735,
+      "visible_complete_ms": 5155.199999809265,
+      "render_stable": true,
+      "gesture_wall_ms": 1353.3000001907349,
+      "gesture_frames": 40,
+      "gesture_frame_p50_ms": 39.799999713897705,
+      "gesture_frame_p95_ms": 60.19999980926514,
+      "gesture_frame_max_ms": 64.7999997138977,
+      "gesture_achieved_fps": 29.6,
+      "gesture_dropped_pct": 85,
+      "settle_ms": 157.5,
+      "zoom_to_final_ms": 1510.8000001907349,
+      "final_span_fraction": 0.0001,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1560072192,
+      "recorded_frames": 18,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "domain": {
+              "x0": -2.925988313172263,
+              "x1": 4.8426805100699255,
+              "y0": -2.325678610605736,
+              "y1": 2.392283959584693
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 1221933,
+              "to_host": {
+                "json_bytes": 3443,
+                "binary_frame_bytes": 0,
+                "total_bytes": 3443
+              },
+              "from_host": {
+                "json_bytes": 17726,
+                "binary_frame_bytes": 1200764,
+                "total_bytes": 1218490
+              }
+            }
+          },
+          "settle-complete": {
+            "domain": {
+              "x0": 4.599356946070978,
+              "x1": 4.6000178313247275,
+              "y0": 2.199619754834599,
+              "y1": 2.2000211147022064
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 7119601,
+              "to_host": {
+                "json_bytes": 25621,
+                "binary_frame_bytes": 0,
+                "total_bytes": 25621
+              },
+              "from_host": {
+                "json_bytes": 28388,
+                "binary_frame_bytes": 7065592,
+                "total_bytes": 7093980
+              }
+            }
+          },
+          "terminal": {
+            "domain": {
+              "x0": 4.599356946070978,
+              "x1": 4.6000178313247275,
+              "y0": 2.199619754834599,
+              "y1": 2.2000211147022064
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 7119601,
+              "to_host": {
+                "json_bytes": 25621,
+                "binary_frame_bytes": 0,
+                "total_bytes": 25621
+              },
+              "from_host": {
+                "json_bytes": 28388,
+                "binary_frame_bytes": 7065592,
+                "total_bytes": 7093980
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5897668,
+          "to_host": {
+            "json_bytes": 22178,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22178
+          },
+          "from_host": {
+            "json_bytes": 10662,
+            "binary_frame_bytes": 5864828,
+            "total_bytes": 5875490
+          }
+        }
+      },
+      "host_meta": {
+        "port": 37951,
+        "hostname": "localhost",
+        "n": 1000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000,
+          "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 298.7094479613006,
+        "mode": "datashade+resample"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000,
+        "sha256_x_then_y": "c63deced8d649438a75118fae2ea9f32f9049ae942117e4fc92268114a50a6cf",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 4226.170709822327,
+      "mode": "datashade+resample",
+      "python_build_ms": 298.7094479613006,
+      "python_peak_rss_bytes": 296075264,
+      "arm": "datashader",
+      "n": 1000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 296075264,
+      "comparison_contract": "adaptive navigation"
+    },
+    {
+      "first_frame_ms": 1448,
+      "visible_complete_ms": 1714.0999999046326,
+      "render_stable": true,
+      "gesture_wall_ms": 1353.0999999046326,
+      "gesture_frames": 68,
+      "gesture_frame_p50_ms": 16.700000286102295,
+      "gesture_frame_p95_ms": 50.89999961853027,
+      "gesture_frame_max_ms": 69.40000009536743,
+      "gesture_achieved_fps": 50.3,
+      "gesture_dropped_pct": 76.5,
+      "settle_ms": 83.40000009536743,
+      "zoom_to_final_ms": 1436.5,
+      "final_span_fraction": 0.0005,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1395052544,
+      "recorded_frames": 14,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 801184,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": -4.427549109458924,
+              "x1": 5.274588809013367,
+              "y0": -3.593865075111389,
+              "y1": 3.5135394716262818
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 801184,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              },
+              "total_bytes": 801184
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 801469,
+              "to_host": {
+                "json_bytes": 285,
+                "binary_frame_bytes": 0,
+                "total_bytes": 285
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595261026411044,
+              "x1": 4.600343336400366,
+              "y0": 2.1969902082644306,
+              "y1": 2.2007133086191746
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 801469,
+              "to_host": {
+                "json_bytes": 285,
+                "binary_frame_bytes": 0,
+                "total_bytes": 285
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 285,
+                "binary_frame_bytes": 0,
+                "total_bytes": 285
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              },
+              "total_bytes": 801469
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 801469,
+              "to_host": {
+                "json_bytes": 285,
+                "binary_frame_bytes": 0,
+                "total_bytes": 285
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595261026411044,
+              "x1": 4.600343336400366,
+              "y0": 2.1969902082644306,
+              "y1": 2.2007133086191746
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 801469,
+              "to_host": {
+                "json_bytes": 285,
+                "binary_frame_bytes": 0,
+                "total_bytes": 285
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 285,
+                "binary_frame_bytes": 0,
+                "total_bytes": 285
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 801184,
+                "total_bytes": 801184
+              },
+              "total_bytes": 801469
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 285,
+          "to_host": {
+            "json_bytes": 285,
+            "binary_frame_bytes": 0,
+            "total_bytes": 285
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          }
+        }
+      },
+      "host_meta": {
+        "port": 38883,
+        "n": 100000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 100000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 800000,
+          "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 17.772516701370478,
+        "components": [
+          "XYG",
+          "Rust",
+          "ChartView",
+          "Tornado",
+          "XYBF"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "mode": "direct"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 100000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 800000,
+        "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "python_build_ms": 17.772516701370478,
+      "host_prepare_wall_ms": 211.72930719330907,
+      "mode": "direct",
+      "python_peak_rss_bytes": 68100096,
+      "arm": "xy-exact",
+      "n": 100000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 68100096,
+      "comparison_contract": "raw markers"
+    },
+    {
+      "first_frame_ms": 1514,
+      "visible_complete_ms": 1777.3000001907349,
+      "render_stable": true,
+      "gesture_wall_ms": 1359.7999997138977,
+      "gesture_frames": 3,
+      "gesture_frame_p50_ms": 16.90000009536743,
+      "gesture_frame_p95_ms": 253.39999961853027,
+      "gesture_frame_max_ms": 253.39999961853027,
+      "gesture_achieved_fps": 2.2,
+      "gesture_dropped_pct": 33.3,
+      "settle_ms": 906.4000000953674,
+      "zoom_to_final_ms": 2266.199999809265,
+      "final_span_fraction": 0.015,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1947013120,
+      "recorded_frames": 3,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "domain": {
+              "x0": -4.754760442523781,
+              "x1": 5.601800142078225,
+              "y0": -3.951470335324605,
+              "y1": 3.8711447318394976
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 0,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              }
+            }
+          },
+          "settle-complete": {
+            "domain": {
+              "x0": 4.498216937456268,
+              "x1": 4.6535195372986005,
+              "y0": 2.1307452865735925,
+              "y1": 2.248049911750278
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 0,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              }
+            }
+          },
+          "terminal": {
+            "domain": {
+              "x0": 4.498216937456268,
+              "x1": 4.6535195372986005,
+              "y0": 2.1307452865735925,
+              "y1": 2.248049911750278
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 0,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 0,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          }
+        }
+      },
+      "mode": "scattergl",
+      "python_build_ms": 170.63855426386,
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 100000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 800000,
+        "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "html_bytes": 6206831,
+      "python_peak_rss_bytes": 159801344,
+      "arm": "plotly",
+      "n": 100000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 159801344,
+      "comparison_contract": "raw markers"
+    },
+    {
+      "first_frame_ms": 1407.4000000953674,
+      "visible_complete_ms": 1534.2000002861023,
+      "render_stable": true,
+      "gesture_wall_ms": 1352.9000000953674,
+      "gesture_frames": 80,
+      "gesture_frame_p50_ms": 16.699999809265137,
+      "gesture_frame_p95_ms": 22.300000190734863,
+      "gesture_frame_max_ms": 45.30000019073486,
+      "gesture_achieved_fps": 59.1,
+      "gesture_dropped_pct": 5,
+      "settle_ms": 850,
+      "zoom_to_final_ms": 2202.9000000953674,
+      "final_span_fraction": 0.0005,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1413226496,
+      "recorded_frames": 14,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 264568,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 264568,
+                "total_bytes": 264568
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": -4.427549109458924,
+              "x1": 5.274588809013367,
+              "y0": -3.593865075111389,
+              "y1": 3.5135394716262818
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 264568,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 264568,
+                "total_bytes": 264568
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 264568,
+                "total_bytes": 264568
+              },
+              "total_bytes": 264568
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 265597,
+              "to_host": {
+                "json_bytes": 437,
+                "binary_frame_bytes": 0,
+                "total_bytes": 437
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 265160,
+                "total_bytes": 265160
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": {
+                    "exact": true,
+                    "window": {
+                      "x0": 4.5709549859166145,
+                      "x1": 4.60670873709023,
+                      "y0": 2.186139477416873,
+                      "y1": 2.2123312689363956
+                    }
+                  }
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595261026411042,
+              "x1": 4.600343336400364,
+              "y0": 2.1969902082644306,
+              "y1": 2.2007133086191746
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 265597,
+              "to_host": {
+                "json_bytes": 437,
+                "binary_frame_bytes": 0,
+                "total_bytes": 437
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 265160,
+                "total_bytes": 265160
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 437,
+                "binary_frame_bytes": 0,
+                "total_bytes": 437
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 265160,
+                "total_bytes": 265160
+              },
+              "total_bytes": 265597
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 265597,
+              "to_host": {
+                "json_bytes": 437,
+                "binary_frame_bytes": 0,
+                "total_bytes": 437
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 265160,
+                "total_bytes": 265160
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": {
+                    "exact": true,
+                    "window": {
+                      "x0": 4.5709549859166145,
+                      "x1": 4.60670873709023,
+                      "y0": 2.186139477416873,
+                      "y1": 2.2123312689363956
+                    }
+                  }
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.595261026411042,
+              "x1": 4.600343336400364,
+              "y0": 2.1969902082644306,
+              "y1": 2.2007133086191746
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 265597,
+              "to_host": {
+                "json_bytes": 437,
+                "binary_frame_bytes": 0,
+                "total_bytes": 437
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 265160,
+                "total_bytes": 265160
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 437,
+                "binary_frame_bytes": 0,
+                "total_bytes": 437
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 265160,
+                "total_bytes": 265160
+              },
+              "total_bytes": 265597
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 1029,
+          "to_host": {
+            "json_bytes": 437,
+            "binary_frame_bytes": 0,
+            "total_bytes": 437
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 592,
+            "total_bytes": 592
+          }
+        }
+      },
+      "host_meta": {
+        "port": 41253,
+        "n": 100000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 100000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 800000,
+          "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 18.82356498390436,
+        "components": [
+          "XYG",
+          "Rust",
+          "ChartView",
+          "Tornado",
+          "XYBF"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "mode": "density"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 100000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 800000,
+        "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "python_build_ms": 18.82356498390436,
+      "host_prepare_wall_ms": 233.46362775191665,
+      "mode": "density",
+      "python_peak_rss_bytes": 67903488,
+      "arm": "xy-density",
+      "n": 100000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 67903488,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 2388.5,
+      "visible_complete_ms": 2412.699999809265,
+      "render_stable": true,
+      "gesture_wall_ms": 1353.4000000953674,
+      "gesture_frames": 79,
+      "gesture_frame_p50_ms": 16.600000381469727,
+      "gesture_frame_p95_ms": 22.40000009536743,
+      "gesture_frame_max_ms": 37.09999990463257,
+      "gesture_achieved_fps": 58.4,
+      "gesture_dropped_pct": 7.6,
+      "settle_ms": 209.19999980926514,
+      "zoom_to_final_ms": 1562.5999999046326,
+      "final_span_fraction": 0.015,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1541652480,
+      "recorded_frames": 4,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 90334,
+                "binary_frame_bytes": 0,
+                "total_bytes": 90334
+              },
+              "total_bytes": 90334
+            },
+            "evidence": {
+              "revision": 0,
+              "applied": 0,
+              "domain": [
+                -4.610608291625977,
+                5.45764799118042,
+                -3.727967047691345,
+                3.6476414442062377
+              ],
+              "raster": {
+                "domain": [
+                  -4.610608291625977,
+                  5.45764799118042,
+                  -3.727967047691345,
+                  3.6476414442062377
+                ],
+                "oracle": {
+                  "count": 100000,
+                  "grid_mass": 100000,
+                  "passed": true
+                },
+                "png_sha256": "5ee32ccb222af664242d75b15243433c4e870a5c688d1f3934be30c4fa21b5c2",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": -4.610608291625977,
+              "x1": 5.45764799118042,
+              "y0": -3.727967047691345,
+              "y1": 3.6476414442062377
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 90334,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 90334,
+                "binary_frame_bytes": 0,
+                "total_bytes": 90334
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 90334,
+                "binary_frame_bytes": 0,
+                "total_bytes": 90334
+              },
+              "total_bytes": 90334,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -4.610608291625977,
+                    5.45764799118042,
+                    -3.727967047691345,
+                    3.6476414442062377
+                  ],
+                  "oracle": {
+                    "count": 100000,
+                    "grid_mass": 100000,
+                    "passed": true
+                  },
+                  "png_sha256": "5ee32ccb222af664242d75b15243433c4e870a5c688d1f3934be30c4fa21b5c2",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                }
+              ]
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 92,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92
+              },
+              "from_host": {
+                "json_bytes": 92740,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92740
+              },
+              "total_bytes": 92832
+            },
+            "evidence": {
+              "revision": 1,
+              "applied": 1,
+              "domain": [
+                4.461746597537267,
+                4.612725908074348,
+                2.1115408982400026,
+                2.22214240197802
+              ],
+              "raster": {
+                "domain": [
+                  4.461746597537267,
+                  4.612725908074348,
+                  2.1115408982400026,
+                  2.22214240197802
+                ],
+                "oracle": {
+                  "count": 1,
+                  "grid_mass": 1,
+                  "passed": true
+                },
+                "png_sha256": "9a5e6d8c5f11d305aafeabe161c50fb7ad256f7c65a827c664e1e9e500d48de2",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": 4.461746597537267,
+              "x1": 4.612725908074348,
+              "y0": 2.1115408982400026,
+              "y1": 2.22214240197802
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 92832,
+              "to_host": {
+                "json_bytes": 92,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92
+              },
+              "from_host": {
+                "json_bytes": 92740,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92740
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 92,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92
+              },
+              "from_host": {
+                "json_bytes": 92740,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92740
+              },
+              "total_bytes": 92832,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -4.610608291625977,
+                    5.45764799118042,
+                    -3.727967047691345,
+                    3.6476414442062377
+                  ],
+                  "oracle": {
+                    "count": 100000,
+                    "grid_mass": 100000,
+                    "passed": true
+                  },
+                  "png_sha256": "5ee32ccb222af664242d75b15243433c4e870a5c688d1f3934be30c4fa21b5c2",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                },
+                {
+                  "seq": 1,
+                  "domain": [
+                    4.461746597537267,
+                    4.612725908074348,
+                    2.1115408982400026,
+                    2.22214240197802
+                  ],
+                  "oracle": {
+                    "count": 1,
+                    "grid_mass": 1,
+                    "passed": true
+                  },
+                  "png_sha256": "9a5e6d8c5f11d305aafeabe161c50fb7ad256f7c65a827c664e1e9e500d48de2",
+                  "grid_shape": [
+                    420,
+                    900
+                  ],
+                  "aggregate_encode_oracle_ms": 33.769781701266766
+                }
+              ]
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 92,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92
+              },
+              "from_host": {
+                "json_bytes": 92740,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92740
+              },
+              "total_bytes": 92832
+            },
+            "evidence": {
+              "revision": 1,
+              "applied": 1,
+              "domain": [
+                4.461746597537267,
+                4.612725908074348,
+                2.1115408982400026,
+                2.22214240197802
+              ],
+              "raster": {
+                "domain": [
+                  4.461746597537267,
+                  4.612725908074348,
+                  2.1115408982400026,
+                  2.22214240197802
+                ],
+                "oracle": {
+                  "count": 1,
+                  "grid_mass": 1,
+                  "passed": true
+                },
+                "png_sha256": "9a5e6d8c5f11d305aafeabe161c50fb7ad256f7c65a827c664e1e9e500d48de2",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": 4.461746597537267,
+              "x1": 4.612725908074348,
+              "y0": 2.1115408982400026,
+              "y1": 2.22214240197802
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 92832,
+              "to_host": {
+                "json_bytes": 92,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92
+              },
+              "from_host": {
+                "json_bytes": 92740,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92740
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 92,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92
+              },
+              "from_host": {
+                "json_bytes": 92740,
+                "binary_frame_bytes": 0,
+                "total_bytes": 92740
+              },
+              "total_bytes": 92832,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -4.610608291625977,
+                    5.45764799118042,
+                    -3.727967047691345,
+                    3.6476414442062377
+                  ],
+                  "oracle": {
+                    "count": 100000,
+                    "grid_mass": 100000,
+                    "passed": true
+                  },
+                  "png_sha256": "5ee32ccb222af664242d75b15243433c4e870a5c688d1f3934be30c4fa21b5c2",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                },
+                {
+                  "seq": 1,
+                  "domain": [
+                    4.461746597537267,
+                    4.612725908074348,
+                    2.1115408982400026,
+                    2.22214240197802
+                  ],
+                  "oracle": {
+                    "count": 1,
+                    "grid_mass": 1,
+                    "passed": true
+                  },
+                  "png_sha256": "9a5e6d8c5f11d305aafeabe161c50fb7ad256f7c65a827c664e1e9e500d48de2",
+                  "grid_shape": [
+                    420,
+                    900
+                  ],
+                  "aggregate_encode_oracle_ms": 33.769781701266766
+                }
+              ]
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 2498,
+          "to_host": {
+            "json_bytes": 92,
+            "binary_frame_bytes": 0,
+            "total_bytes": 92
+          },
+          "from_host": {
+            "json_bytes": 2406,
+            "binary_frame_bytes": 0,
+            "total_bytes": 2406
+          }
+        }
+      },
+      "host_meta": {
+        "port": 44329,
+        "n": 100000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 100000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 800000,
+          "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 1204.1383823379874,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 100000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 800000,
+        "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 1604.7466909512877,
+      "mode": "density",
+      "python_build_ms": 1204.1383823379874,
+      "python_peak_rss_bytes": 290275328,
+      "arm": "plotly-aggregate",
+      "n": 100000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 290275328,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 3952.1000003814697,
+      "visible_complete_ms": 4308.300000190735,
+      "render_stable": true,
+      "gesture_wall_ms": 1362.7999997138977,
+      "gesture_frames": 58,
+      "gesture_frame_p50_ms": 22,
+      "gesture_frame_p95_ms": 45.09999990463257,
+      "gesture_frame_max_ms": 83.69999980926514,
+      "gesture_achieved_fps": 42.6,
+      "gesture_dropped_pct": 82.8,
+      "settle_ms": 956.6000003814697,
+      "zoom_to_final_ms": 2319.4000000953674,
+      "final_span_fraction": 0.0001,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1584001024,
+      "recorded_frames": 7,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "evidence": {
+              "domain": {
+                "x0": -4.152960300445557,
+                "x1": 5,
+                "y0": -3.392712116241455,
+                "y1": 3.3123865127563477
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": -4.152960300445557,
+                  "y": -3.392712116241455,
+                  "dw": 9.152959823608398,
+                  "dh": 6.705098628997803
+                }
+              ]
+            },
+            "domain": {
+              "x0": -4.152960300445557,
+              "x1": 5,
+              "y0": -3.392712116241455,
+              "y1": 3.3123865127563477
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 2718997,
+              "to_host": {
+                "json_bytes": 1778,
+                "binary_frame_bytes": 0,
+                "total_bytes": 1778
+              },
+              "from_host": {
+                "json_bytes": 12399,
+                "binary_frame_bytes": 2704820,
+                "total_bytes": 2717219
+              }
+            }
+          },
+          "settle-complete": {
+            "evidence": {
+              "domain": {
+                "x0": 4.599250917356962,
+                "x1": 4.600029565105803,
+                "y0": 2.1995296479168767,
+                "y1": 2.200100054624855
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": 4.599250917356962,
+                  "y": 2.1995296479168767,
+                  "dw": 0.000778647748841621,
+                  "dh": 0.0005704067079781439
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.599250917356962,
+              "x1": 4.600029565105803,
+              "y0": 2.1995296479168767,
+              "y1": 2.200100054624855
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8616279,
+              "to_host": {
+                "json_bytes": 23964,
+                "binary_frame_bytes": 0,
+                "total_bytes": 23964
+              },
+              "from_host": {
+                "json_bytes": 22675,
+                "binary_frame_bytes": 8569640,
+                "total_bytes": 8592315
+              }
+            }
+          },
+          "terminal": {
+            "evidence": {
+              "domain": {
+                "x0": 4.599250917356962,
+                "x1": 4.600029565105803,
+                "y0": 2.1995296479168767,
+                "y1": 2.200100054624855
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": 4.599250917356962,
+                  "y": 2.1995296479168767,
+                  "dw": 0.000778647748841621,
+                  "dh": 0.0005704067079781439
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.599250917356962,
+              "x1": 4.600029565105803,
+              "y0": 2.1995296479168767,
+              "y1": 2.200100054624855
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8616279,
+              "to_host": {
+                "json_bytes": 23964,
+                "binary_frame_bytes": 0,
+                "total_bytes": 23964
+              },
+              "from_host": {
+                "json_bytes": 22675,
+                "binary_frame_bytes": 8569640,
+                "total_bytes": 8592315
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5897282,
+          "to_host": {
+            "json_bytes": 22186,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22186
+          },
+          "from_host": {
+            "json_bytes": 10276,
+            "binary_frame_bytes": 5864820,
+            "total_bytes": 5875096
+          }
+        }
+      },
+      "host_meta": {
+        "port": 42857,
+        "hostname": "localhost",
+        "n": 100000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 100000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 800000,
+          "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 421.0819359868765,
+        "mode": "density"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 100000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 800000,
+        "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 6667.696970049292,
+      "mode": "density",
+      "python_build_ms": 421.0819359868765,
+      "python_peak_rss_bytes": 361177088,
+      "arm": "datashader-aggregate",
+      "n": 100000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 361177088,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 3894.5,
+      "visible_complete_ms": 6253.39999961853,
+      "render_stable": true,
+      "gesture_wall_ms": 1353.4000000953674,
+      "gesture_frames": 3,
+      "gesture_frame_p50_ms": 17.5,
+      "gesture_frame_p95_ms": 1226.7999997138977,
+      "gesture_frame_max_ms": 1226.7999997138977,
+      "gesture_achieved_fps": 2.2,
+      "gesture_dropped_pct": 33.3,
+      "settle_ms": 4390.599999904633,
+      "zoom_to_final_ms": 5744,
+      "final_span_fraction": 0.0001,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1531842560,
+      "recorded_frames": 12,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "domain": {
+              "x0": -3.9750545359766756,
+              "x1": 4.811787352451059,
+              "y0": -3.2714692369225906,
+              "y1": 3.1654254469153
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 2012540,
+              "to_host": {
+                "json_bytes": 3123,
+                "binary_frame_bytes": 0,
+                "total_bytes": 3123
+              },
+              "from_host": {
+                "json_bytes": 16645,
+                "binary_frame_bytes": 1992772,
+                "total_bytes": 2009417
+              }
+            }
+          },
+          "settle-complete": {
+            "domain": {
+              "x0": 4.599266438802209,
+              "x1": 4.600013940641097,
+              "y0": 2.1995425863496045,
+              "y1": 2.2000901767892636
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 4364225,
+              "to_host": {
+                "json_bytes": 24699,
+                "binary_frame_bytes": 0,
+                "total_bytes": 24699
+              },
+              "from_host": {
+                "json_bytes": 25346,
+                "binary_frame_bytes": 4314180,
+                "total_bytes": 4339526
+              }
+            }
+          },
+          "terminal": {
+            "domain": {
+              "x0": 4.599266438802209,
+              "x1": 4.600013940641097,
+              "y0": 2.1995425863496045,
+              "y1": 2.2000901767892636
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 4364225,
+              "to_host": {
+                "json_bytes": 24699,
+                "binary_frame_bytes": 0,
+                "total_bytes": 24699
+              },
+              "from_host": {
+                "json_bytes": 25346,
+                "binary_frame_bytes": 4314180,
+                "total_bytes": 4339526
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 2351685,
+          "to_host": {
+            "json_bytes": 21576,
+            "binary_frame_bytes": 0,
+            "total_bytes": 21576
+          },
+          "from_host": {
+            "json_bytes": 8701,
+            "binary_frame_bytes": 2321408,
+            "total_bytes": 2330109
+          }
+        }
+      },
+      "host_meta": {
+        "port": 44063,
+        "hostname": "localhost",
+        "n": 100000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 100000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 800000,
+          "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 520.270069129765,
+        "mode": "datashade+resample"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 100000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 800000,
+        "sha256_x_then_y": "fae52f30bbd314c945ff701917d2a2675927d4f42d179f69e584fb0ef6d3ed30",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 5738.1435399875045,
+      "mode": "datashade+resample",
+      "python_build_ms": 520.270069129765,
+      "python_peak_rss_bytes": 295907328,
+      "arm": "datashader",
+      "n": 100000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 295907328,
+      "comparison_contract": "adaptive navigation"
+    },
+    {
+      "first_frame_ms": 2512.3999996185303,
+      "visible_complete_ms": 4348.39999961853,
+      "render_stable": true,
+      "gesture_wall_ms": 1353.2000002861023,
+      "gesture_frames": 11,
+      "gesture_frame_p50_ms": 16.90000009536743,
+      "gesture_frame_p95_ms": 598.8000001907349,
+      "gesture_frame_max_ms": 598.8000001907349,
+      "gesture_achieved_fps": 8.1,
+      "gesture_dropped_pct": 90.9,
+      "settle_ms": 419.69999980926514,
+      "zoom_to_final_ms": 1772.9000000953674,
+      "final_span_fraction": 0.0005,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1418813440,
+      "recorded_frames": 14,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8001192,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": -5.344781370162964,
+              "x1": 5.301304311752319,
+              "y0": -3.9251467752456666,
+              "y1": 3.7251770067214967
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8001192,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              },
+              "total_bytes": 8001192
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8001475,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.5946930688260235,
+              "x1": 4.60026985077481,
+              "y0": 2.1970023913242374,
+              "y1": 2.201009891249034
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8001475,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              },
+              "total_bytes": 8001475
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8001475,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "direct",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.5946930688260235,
+              "x1": 4.60026985077481,
+              "y0": 2.1970023913242374,
+              "y1": 2.201009891249034
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8001475,
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 283,
+                "binary_frame_bytes": 0,
+                "total_bytes": 283
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 8001192,
+                "total_bytes": 8001192
+              },
+              "total_bytes": 8001475
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 283,
+          "to_host": {
+            "json_bytes": 283,
+            "binary_frame_bytes": 0,
+            "total_bytes": 283
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          }
+        }
+      },
+      "host_meta": {
+        "port": 32875,
+        "n": 1000000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000000,
+          "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 51.783787086606026,
+        "components": [
+          "XYG",
+          "Rust",
+          "ChartView",
+          "Tornado",
+          "XYBF"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "mode": "direct"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000000,
+        "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "python_build_ms": 51.783787086606026,
+      "host_prepare_wall_ms": 256.2750391662121,
+      "mode": "direct",
+      "python_peak_rss_bytes": 103002112,
+      "arm": "xy-exact",
+      "n": 1000000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 103002112,
+      "comparison_contract": "raw markers"
+    },
+    {
+      "status": "memory_limit",
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "domain": {
+              "x0": -5.703827996501865,
+              "x1": 5.66035093809122,
+              "y0": -4.310068726539612,
+              "y1": 4.110098958015442
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 0,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "last_cdp_application_bytes": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 0,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          }
+        }
+      },
+      "browser_peak_rss_bytes": 2151563264,
+      "error": "Connection to remote host was lost.",
+      "mode": "scattergl",
+      "python_build_ms": 278.5295802168548,
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000000,
+        "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "html_bytes": 18337941,
+      "python_peak_rss_bytes": 254849024,
+      "arm": "plotly",
+      "n": 1000000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 254849024,
+      "comparison_contract": "raw markers"
+    },
+    {
+      "first_frame_ms": 1659.6000003814697,
+      "visible_complete_ms": 1791.8000001907349,
+      "render_stable": true,
+      "gesture_wall_ms": 1352.9000000953674,
+      "gesture_frames": 81,
+      "gesture_frame_p50_ms": 16.699999809265137,
+      "gesture_frame_p95_ms": 18.600000381469727,
+      "gesture_frame_max_ms": 20.799999713897705,
+      "gesture_achieved_fps": 59.9,
+      "gesture_dropped_pct": 0,
+      "settle_ms": 667,
+      "zoom_to_final_ms": 2019.9000000953674,
+      "final_span_fraction": 0.0005,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1493065728,
+      "recorded_frames": 14,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 266464,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 266464,
+                "total_bytes": 266464
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": null
+                }
+              ]
+            },
+            "domain": {
+              "x0": -5.344781370162964,
+              "x1": 5.301304311752319,
+              "y0": -3.9251467752456666,
+              "y1": 3.7251770067214967
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 266464,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 266464,
+                "total_bytes": 266464
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 266464,
+                "total_bytes": 266464
+              },
+              "total_bytes": 266464
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 267482,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 267048,
+                "total_bytes": 267048
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": {
+                    "exact": true,
+                    "window": {
+                      "x0": 4.568444345146418,
+                      "x1": 4.607676677405834,
+                      "y0": 2.183609699830413,
+                      "y1": 2.21180222555995
+                    }
+                  }
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.594771060037022,
+              "x1": 4.600347841985809,
+              "y0": 2.1968260395927555,
+              "y1": 2.200833539517552
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 267482,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 267048,
+                "total_bytes": 267048
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 267048,
+                "total_bytes": 267048
+              },
+              "total_bytes": 267482
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 267482,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 267048,
+                "total_bytes": 267048
+              }
+            },
+            "evidence": {
+              "traces": [
+                {
+                  "initial_tier": "density",
+                  "drill": {
+                    "exact": true,
+                    "window": {
+                      "x0": 4.568444345146418,
+                      "x1": 4.607676677405834,
+                      "y0": 2.183609699830413,
+                      "y1": 2.21180222555995
+                    }
+                  }
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.594771060037022,
+              "x1": 4.600347841985809,
+              "y0": 2.1968260395927555,
+              "y1": 2.200833539517552
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 267482,
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 267048,
+                "total_bytes": 267048
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 434,
+                "binary_frame_bytes": 0,
+                "total_bytes": 434
+              },
+              "from_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 267048,
+                "total_bytes": 267048
+              },
+              "total_bytes": 267482
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 1018,
+          "to_host": {
+            "json_bytes": 434,
+            "binary_frame_bytes": 0,
+            "total_bytes": 434
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 584,
+            "total_bytes": 584
+          }
+        }
+      },
+      "host_meta": {
+        "port": 39089,
+        "n": 1000000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000000,
+          "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 28.22081884369254,
+        "components": [
+          "XYG",
+          "Rust",
+          "ChartView",
+          "Tornado",
+          "XYBF"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "mode": "density"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000000,
+        "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "python_build_ms": 28.22081884369254,
+      "host_prepare_wall_ms": 231.17439495399594,
+      "mode": "density",
+      "python_peak_rss_bytes": 92700672,
+      "arm": "xy-density",
+      "n": 1000000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 92700672,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 2183.9000000953674,
+      "visible_complete_ms": 2204.9000000953674,
+      "render_stable": true,
+      "gesture_wall_ms": 1353.7999997138977,
+      "gesture_frames": 81,
+      "gesture_frame_p50_ms": 16.699999809265137,
+      "gesture_frame_p95_ms": 16.90000009536743,
+      "gesture_frame_max_ms": 18.200000286102295,
+      "gesture_achieved_fps": 59.8,
+      "gesture_dropped_pct": 0,
+      "settle_ms": 227.2000002861023,
+      "zoom_to_final_ms": 1581,
+      "final_span_fraction": 0.015,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1542819840,
+      "recorded_frames": 4,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 158788,
+                "binary_frame_bytes": 0,
+                "total_bytes": 158788
+              },
+              "total_bytes": 158788
+            },
+            "evidence": {
+              "revision": 0,
+              "applied": 0,
+              "domain": [
+                -5.545650911331177,
+                5.502173852920532,
+                -4.069492506980896,
+                3.869522738456726
+              ],
+              "raster": {
+                "domain": [
+                  -5.545650911331177,
+                  5.502173852920532,
+                  -4.069492506980896,
+                  3.869522738456726
+                ],
+                "oracle": {
+                  "count": 1000000,
+                  "grid_mass": 1000000,
+                  "passed": true
+                },
+                "png_sha256": "23e6e147c9efcb2af04d0c0821ba13a2ef84e41797810c766ccf460198428190",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": -5.545650911331177,
+              "x1": 5.502173852920532,
+              "y0": -4.069492506980896,
+              "y1": 3.869522738456726
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 158788,
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 158788,
+                "binary_frame_bytes": 0,
+                "total_bytes": 158788
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 0,
+                "binary_frame_bytes": 0,
+                "total_bytes": 0
+              },
+              "from_host": {
+                "json_bytes": 158788,
+                "binary_frame_bytes": 0,
+                "total_bytes": 158788
+              },
+              "total_bytes": 158788,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -5.545650911331177,
+                    5.502173852920532,
+                    -4.069492506980896,
+                    3.869522738456726
+                  ],
+                  "oracle": {
+                    "count": 1000000,
+                    "grid_mass": 1000000,
+                    "passed": true
+                  },
+                  "png_sha256": "23e6e147c9efcb2af04d0c0821ba13a2ef84e41797810c766ccf460198428190",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                }
+              ]
+            }
+          },
+          "settle-complete": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 93,
+                "binary_frame_bytes": 0,
+                "total_bytes": 93
+              },
+              "from_host": {
+                "json_bytes": 161197,
+                "binary_frame_bytes": 0,
+                "total_bytes": 161197
+              },
+              "total_bytes": 161290
+            },
+            "evidence": {
+              "revision": 1,
+              "applied": 1,
+              "domain": [
+                4.447661965439713,
+                4.613330470391225,
+                2.106494726148126,
+                2.2255448391400297
+              ],
+              "raster": {
+                "domain": [
+                  4.447661965439713,
+                  4.613330470391225,
+                  2.106494726148126,
+                  2.2255448391400297
+                ],
+                "oracle": {
+                  "count": 2,
+                  "grid_mass": 2,
+                  "passed": true
+                },
+                "png_sha256": "95564980683e19abe17769ec914a8710d37511dd453a3396c6cab80b82ecd7c9",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": 4.447661965439713,
+              "x1": 4.613330470391225,
+              "y0": 2.106494726148126,
+              "y1": 2.2255448391400297
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 161290,
+              "to_host": {
+                "json_bytes": 93,
+                "binary_frame_bytes": 0,
+                "total_bytes": 93
+              },
+              "from_host": {
+                "json_bytes": 161197,
+                "binary_frame_bytes": 0,
+                "total_bytes": 161197
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 93,
+                "binary_frame_bytes": 0,
+                "total_bytes": 93
+              },
+              "from_host": {
+                "json_bytes": 161197,
+                "binary_frame_bytes": 0,
+                "total_bytes": 161197
+              },
+              "total_bytes": 161290,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -5.545650911331177,
+                    5.502173852920532,
+                    -4.069492506980896,
+                    3.869522738456726
+                  ],
+                  "oracle": {
+                    "count": 1000000,
+                    "grid_mass": 1000000,
+                    "passed": true
+                  },
+                  "png_sha256": "23e6e147c9efcb2af04d0c0821ba13a2ef84e41797810c766ccf460198428190",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                },
+                {
+                  "seq": 1,
+                  "domain": [
+                    4.447661965439713,
+                    4.613330470391225,
+                    2.106494726148126,
+                    2.2255448391400297
+                  ],
+                  "oracle": {
+                    "count": 2,
+                    "grid_mass": 2,
+                    "passed": true
+                  },
+                  "png_sha256": "95564980683e19abe17769ec914a8710d37511dd453a3396c6cab80b82ecd7c9",
+                  "grid_shape": [
+                    420,
+                    900
+                  ],
+                  "aggregate_encode_oracle_ms": 47.9397801682353
+                }
+              ]
+            }
+          },
+          "terminal": {
+            "applicationBytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 93,
+                "binary_frame_bytes": 0,
+                "total_bytes": 93
+              },
+              "from_host": {
+                "json_bytes": 161197,
+                "binary_frame_bytes": 0,
+                "total_bytes": 161197
+              },
+              "total_bytes": 161290
+            },
+            "evidence": {
+              "revision": 1,
+              "applied": 1,
+              "domain": [
+                4.447661965439713,
+                4.613330470391225,
+                2.106494726148126,
+                2.2255448391400297
+              ],
+              "raster": {
+                "domain": [
+                  4.447661965439713,
+                  4.613330470391225,
+                  2.106494726148126,
+                  2.2255448391400297
+                ],
+                "oracle": {
+                  "count": 2,
+                  "grid_mass": 2,
+                  "passed": true
+                },
+                "png_sha256": "95564980683e19abe17769ec914a8710d37511dd453a3396c6cab80b82ecd7c9",
+                "grid_shape": [
+                  420,
+                  900
+                ]
+              }
+            },
+            "domain": {
+              "x0": 4.447661965439713,
+              "x1": 4.613330470391225,
+              "y0": 2.106494726148126,
+              "y1": 2.2255448391400297
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 161290,
+              "to_host": {
+                "json_bytes": 93,
+                "binary_frame_bytes": 0,
+                "total_bytes": 93
+              },
+              "from_host": {
+                "json_bytes": 161197,
+                "binary_frame_bytes": 0,
+                "total_bytes": 161197
+              }
+            },
+            "host_application_bytes": {
+              "layer": "websocket_application_messages",
+              "to_host": {
+                "json_bytes": 93,
+                "binary_frame_bytes": 0,
+                "total_bytes": 93
+              },
+              "from_host": {
+                "json_bytes": 161197,
+                "binary_frame_bytes": 0,
+                "total_bytes": 161197
+              },
+              "total_bytes": 161290,
+              "frames": [
+                {
+                  "seq": 0,
+                  "domain": [
+                    -5.545650911331177,
+                    5.502173852920532,
+                    -4.069492506980896,
+                    3.869522738456726
+                  ],
+                  "oracle": {
+                    "count": 1000000,
+                    "grid_mass": 1000000,
+                    "passed": true
+                  },
+                  "png_sha256": "23e6e147c9efcb2af04d0c0821ba13a2ef84e41797810c766ccf460198428190",
+                  "grid_shape": [
+                    420,
+                    900
+                  ]
+                },
+                {
+                  "seq": 1,
+                  "domain": [
+                    4.447661965439713,
+                    4.613330470391225,
+                    2.106494726148126,
+                    2.2255448391400297
+                  ],
+                  "oracle": {
+                    "count": 2,
+                    "grid_mass": 2,
+                    "passed": true
+                  },
+                  "png_sha256": "95564980683e19abe17769ec914a8710d37511dd453a3396c6cab80b82ecd7c9",
+                  "grid_shape": [
+                    420,
+                    900
+                  ],
+                  "aggregate_encode_oracle_ms": 47.9397801682353
+                }
+              ]
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 2502,
+          "to_host": {
+            "json_bytes": 93,
+            "binary_frame_bytes": 0,
+            "total_bytes": 93
+          },
+          "from_host": {
+            "json_bytes": 2409,
+            "binary_frame_bytes": 0,
+            "total_bytes": 2409
+          }
+        }
+      },
+      "host_meta": {
+        "port": 39203,
+        "n": 1000000,
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000000,
+          "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "build_ms": 948.9146368578076,
+        "mode": "density",
+        "components": [
+          "Plotly",
+          "Datashader",
+          "Tornado"
+        ],
+        "aggregation": "Datashader Canvas.points count; log shade; PNG; no raw drill"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000000,
+        "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 1318.429782986641,
+      "mode": "density",
+      "python_build_ms": 948.9146368578076,
+      "python_peak_rss_bytes": 311054336,
+      "arm": "plotly-aggregate",
+      "n": 1000000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 311054336,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 3343,
+      "visible_complete_ms": 3628.800000190735,
+      "render_stable": true,
+      "gesture_wall_ms": 1361.5999999046326,
+      "gesture_frames": 71,
+      "gesture_frame_p50_ms": 17.09999990463257,
+      "gesture_frame_p95_ms": 39,
+      "gesture_frame_max_ms": 61.59999990463257,
+      "gesture_achieved_fps": 52.1,
+      "gesture_dropped_pct": 85.9,
+      "settle_ms": 936,
+      "zoom_to_final_ms": 2297.5999999046326,
+      "final_span_fraction": 0.0001,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1504694272,
+      "recorded_frames": 7,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "evidence": {
+              "domain": {
+                "x0": -5.0434770584106445,
+                "x1": 5,
+                "y0": -3.7086281776428223,
+                "y1": 3.5086584091186523
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": -5.0434770584106445,
+                  "y": -3.7086281776428223,
+                  "dw": 10.043477058410645,
+                  "dh": 7.217286586761475
+                }
+              ]
+            },
+            "domain": {
+              "x0": -5.0434770584106445,
+              "x1": 5,
+              "y0": -3.7086281776428223,
+              "y1": 3.5086584091186523
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 2719007,
+              "to_host": {
+                "json_bytes": 1778,
+                "binary_frame_bytes": 0,
+                "total_bytes": 1778
+              },
+              "from_host": {
+                "json_bytes": 12409,
+                "binary_frame_bytes": 2704820,
+                "total_bytes": 2717229
+              }
+            }
+          },
+          "settle-complete": {
+            "evidence": {
+              "domain": {
+                "x0": 4.599175991874547,
+                "x1": 4.600030396410935,
+                "y0": 2.1995040601371585,
+                "y1": 2.200118038977781
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": 4.599175991874547,
+                  "y": 2.1995040601371585,
+                  "dw": 0.0008544045363878539,
+                  "dh": 0.000613978840622309
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.599175991874547,
+              "x1": 4.600030396410935,
+              "y0": 2.1995040601371585,
+              "y1": 2.200118038977781
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8616294,
+              "to_host": {
+                "json_bytes": 23957,
+                "binary_frame_bytes": 0,
+                "total_bytes": 23957
+              },
+              "from_host": {
+                "json_bytes": 22697,
+                "binary_frame_bytes": 8569640,
+                "total_bytes": 8592337
+              }
+            }
+          },
+          "terminal": {
+            "evidence": {
+              "domain": {
+                "x0": 4.599175991874547,
+                "x1": 4.600030396410935,
+                "y0": 2.1995040601371585,
+                "y1": 2.200118038977781
+              },
+              "rasters": [
+                {
+                  "glyph": "ImageRGBA",
+                  "x": 4.599175991874547,
+                  "y": 2.1995040601371585,
+                  "dw": 0.0008544045363878539,
+                  "dh": 0.000613978840622309
+                }
+              ]
+            },
+            "domain": {
+              "x0": 4.599175991874547,
+              "x1": 4.600030396410935,
+              "y0": 2.1995040601371585,
+              "y1": 2.200118038977781
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 8616294,
+              "to_host": {
+                "json_bytes": 23957,
+                "binary_frame_bytes": 0,
+                "total_bytes": 23957
+              },
+              "from_host": {
+                "json_bytes": 22697,
+                "binary_frame_bytes": 8569640,
+                "total_bytes": 8592337
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 5897287,
+          "to_host": {
+            "json_bytes": 22179,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22179
+          },
+          "from_host": {
+            "json_bytes": 10288,
+            "binary_frame_bytes": 5864820,
+            "total_bytes": 5875108
+          }
+        }
+      },
+      "host_meta": {
+        "port": 36847,
+        "hostname": "localhost",
+        "n": 1000000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000000,
+          "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 294.5497971959412,
+        "mode": "density"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000000,
+        "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 4311.902054119855,
+      "mode": "density",
+      "python_build_ms": 294.5497971959412,
+      "python_peak_rss_bytes": 378228736,
+      "arm": "datashader-aggregate",
+      "n": 1000000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 378228736,
+      "comparison_contract": "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+    },
+    {
+      "first_frame_ms": 3775.8999996185303,
+      "visible_complete_ms": 4190.599999904633,
+      "render_stable": true,
+      "gesture_wall_ms": 1352.8000001907349,
+      "gesture_frames": 45,
+      "gesture_frame_p50_ms": 33,
+      "gesture_frame_p95_ms": 45.80000019073486,
+      "gesture_frame_max_ms": 51.5,
+      "gesture_achieved_fps": 33.3,
+      "gesture_dropped_pct": 86.7,
+      "settle_ms": 84.2999997138977,
+      "zoom_to_final_ms": 1437.0999999046326,
+      "final_span_fraction": 0.0001,
+      "status": "ok",
+      "browser_peak_rss_bytes": 1522647040,
+      "recorded_frames": 12,
+      "transport": {
+        "checkpoints": {
+          "visible-complete": {
+            "domain": {
+              "x0": -4.848262351326725,
+              "x1": 4.793475624747493,
+              "y0": -3.578123817443848,
+              "y1": 3.3504713058471682
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 2723807,
+              "to_host": {
+                "json_bytes": 3128,
+                "binary_frame_bytes": 0,
+                "total_bytes": 3128
+              },
+              "from_host": {
+                "json_bytes": 15859,
+                "binary_frame_bytes": 2704820,
+                "total_bytes": 2720679
+              }
+            }
+          },
+          "settle-complete": {
+            "domain": {
+              "x0": 4.599191729483619,
+              "x1": 4.600011957838551,
+              "y0": 2.199515744060551,
+              "y1": 2.2001051637475486
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9815232,
+              "to_host": {
+                "json_bytes": 25317,
+                "binary_frame_bytes": 0,
+                "total_bytes": 25317
+              },
+              "from_host": {
+                "json_bytes": 27447,
+                "binary_frame_bytes": 9762468,
+                "total_bytes": 9789915
+              }
+            }
+          },
+          "terminal": {
+            "domain": {
+              "x0": 4.599191729483619,
+              "x1": 4.600011957838551,
+              "y0": 2.199515744060551,
+              "y1": 2.2001051637475486
+            },
+            "cdp_application_bytes": {
+              "layer": "websocket_application_messages",
+              "total_bytes": 9815232,
+              "to_host": {
+                "json_bytes": 25317,
+                "binary_frame_bytes": 0,
+                "total_bytes": 25317
+              },
+              "from_host": {
+                "json_bytes": 27447,
+                "binary_frame_bytes": 9762468,
+                "total_bytes": 9789915
+              }
+            }
+          }
+        },
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "warm_gesture_cdp_delta": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 7091425,
+          "to_host": {
+            "json_bytes": 22189,
+            "binary_frame_bytes": 0,
+            "total_bytes": 22189
+          },
+          "from_host": {
+            "json_bytes": 11588,
+            "binary_frame_bytes": 7057648,
+            "total_bytes": 7069236
+          }
+        }
+      },
+      "host_meta": {
+        "port": 37625,
+        "hostname": "localhost",
+        "n": 1000000,
+        "source": {
+          "id": "ux-correlated-gaussian-f32-sentinels-v1",
+          "seed": 20260713,
+          "actual_rows": 1000000,
+          "columns": [
+            "x",
+            "y"
+          ],
+          "dtype": "little-endian float32",
+          "source_bytes": 8000000,
+          "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+          "sentinels": [
+            [
+              4.6,
+              2.2
+            ],
+            [
+              4.9,
+              2.45
+            ],
+            [
+              4.75,
+              2.05
+            ],
+            [
+              5.0,
+              2.3
+            ],
+            [
+              4.55,
+              2.5
+            ]
+          ],
+          "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+        },
+        "components": [
+          "hvPlot",
+          "HoloViews",
+          "Datashader",
+          "Bokeh",
+          "Panel"
+        ],
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "build_ms": 302.9133779928088,
+        "mode": "datashade+resample"
+      },
+      "source": {
+        "id": "ux-correlated-gaussian-f32-sentinels-v1",
+        "seed": 20260713,
+        "actual_rows": 1000000,
+        "columns": [
+          "x",
+          "y"
+        ],
+        "dtype": "little-endian float32",
+        "source_bytes": 8000000,
+        "sha256_x_then_y": "36b5431d6fee501bdf558ce4f4cdd1bb0f7755ab1e589c1806a7c3a68903d72f",
+        "sentinels": [
+          [
+            4.6,
+            2.2
+          ],
+          [
+            4.9,
+            2.45
+          ],
+          [
+            4.75,
+            2.05
+          ],
+          [
+            5.0,
+            2.3
+          ],
+          [
+            4.55,
+            2.5
+          ]
+        ],
+        "scope": "two real resident f32 columns; no color, mmap, spill or synthetic row multiplier"
+      },
+      "host_prepare_wall_ms": 4278.419175185263,
+      "mode": "datashade+resample",
+      "python_build_ms": 302.9133779928088,
+      "python_peak_rss_bytes": 431169536,
+      "arm": "datashader",
+      "n": 1000000,
+      "source_matches_shared_workload": true,
+      "host_peak_rss_bytes": 431169536,
+      "comparison_contract": "adaptive navigation"
+    }
+  ]
+}

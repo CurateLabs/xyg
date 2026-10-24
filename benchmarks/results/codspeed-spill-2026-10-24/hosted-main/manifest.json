@@ -1,0 +1,26 @@
+{
+  "README.md": {
+    "bytes": 2081,
+    "sha256": "f52cd997d18c36ea3a200051653f3ad5062da98b0ad2ffb296fd20df73032d96"
+  },
+  "benchmarks.log.gz": {
+    "bytes": 22385,
+    "sha256": "3f2441ddb80d7570ead353c9586a74678b77f9816d4cfe56858fa5cb8cd8df4a"
+  },
+  "jobs.json": {
+    "bytes": 10932,
+    "sha256": "6b4d969dc337b64077809df8fb6d90d40476d9fc043c30db34374d21bcce4f04"
+  },
+  "source-bindings.json": {
+    "bytes": 910,
+    "sha256": "db66c76326ead22b20e5db3ca01d78c007abf43e3aafe6efb06b06f132b661aa"
+  },
+  "spill-case-collection.txt": {
+    "bytes": 619,
+    "sha256": "bacd9c9b0269a4c7886440c4b76e0fe39e551ef57b73b7b2506caf9664cf26ee"
+  },
+  "workflow-run.json": {
+    "bytes": 11990,
+    "sha256": "7b5b13180398680295ec54d171b1be529a351a280ad8d859cffea31c4a3075d1"
+  }
+}

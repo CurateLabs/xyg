@@ -1,0 +1,19 @@
+{"arm": "xy-density", "n": 1000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 62849024, "browser_peak_rss_bytes": 1454997504}
+{"arm": "xy-density", "n": 1000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 62701568, "browser_peak_rss_bytes": 1456906240}
+{"arm": "plotly-aggregate", "n": 1000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 284233728, "browser_peak_rss_bytes": 1540464640}
+{"arm": "plotly-aggregate", "n": 1000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 284344320, "browser_peak_rss_bytes": 1532829696}
+{"arm": "datashader-aggregate", "n": 1000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 365842432, "browser_peak_rss_bytes": 1580834816}
+{"arm": "datashader-aggregate", "n": 1000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 359227392, "browser_peak_rss_bytes": 1594150912}
+{"arm": "xy-density", "n": 100000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 70344704, "browser_peak_rss_bytes": 1463750656}
+{"arm": "xy-density", "n": 100000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 70352896, "browser_peak_rss_bytes": 1453199360}
+{"arm": "plotly-aggregate", "n": 100000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 285110272, "browser_peak_rss_bytes": 1551097856}
+{"arm": "plotly-aggregate", "n": 100000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 285237248, "browser_peak_rss_bytes": 1562017792}
+{"arm": "datashader-aggregate", "n": 100000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 364724224, "browser_peak_rss_bytes": 1589612544}
+{"arm": "datashader-aggregate", "n": 100000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 366092288, "browser_peak_rss_bytes": 1591476224}
+{"arm": "xy-density", "n": 1000000, "repetition": 0, "status": "step_failed", "host_peak_rss_bytes": 94384128, "browser_peak_rss_bytes": 1448046592}
+{"arm": "xy-density", "n": 1000000, "repetition": 1, "status": "step_failed", "host_peak_rss_bytes": 94740480, "browser_peak_rss_bytes": 1452666880}
+{"arm": "plotly-aggregate", "n": 1000000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 292405248, "browser_peak_rss_bytes": 1540550656}
+{"arm": "plotly-aggregate", "n": 1000000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 292380672, "browser_peak_rss_bytes": 1614647296}
+{"arm": "datashader-aggregate", "n": 1000000, "repetition": 0, "status": "ok", "host_peak_rss_bytes": 369438720, "browser_peak_rss_bytes": 1575776256}
+{"arm": "datashader-aggregate", "n": 1000000, "repetition": 1, "status": "ok", "host_peak_rss_bytes": 372748288, "browser_peak_rss_bytes": 1596342272}
+benchmarks/results/live-aggregation-2026-10-24/equal-window-v2/f32.json

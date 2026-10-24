@@ -20,6 +20,11 @@ name: Interactive ceiling benchmark
 on:
   workflow_dispatch:
     inputs:
+      experiment:
+        description: Existing ceiling ladder or equal-window mapped density comparison.
+        type: choice
+        options: [ceiling, density-comparison]
+        default: ceiling
       sizes:
         description: Row counts to sweep.
         type: string
@@ -59,6 +64,7 @@ permissions:
 jobs:
   ceiling:
     name: Ceiling sweep (Blacksmith macOS M4, 48 GB)
+    if: inputs.experiment != 'density-comparison' || github.ref == 'refs/heads/main'
     runs-on: blacksmith-12vcpu-macos-15
     timeout-minutes: 720
     steps:
@@ -103,12 +109,17 @@ jobs:
       - name: Install package + comparison deps
         # tornado is required for Matplotlib's WebAgg backend; without it the
         # matplotlib arm fails at backend switch rather than at a real ceiling.
+        env:
+          INPUT_EXPERIMENT: ${{ inputs.experiment }}
         run: |
           uv venv
           uv pip install --constraint benchmarks/requirements-ci.lock -e . --group dev
           uv pip install --constraint benchmarks/requirements-ci.lock \
             matplotlib plotly kaleido datashader plotly-resampler \
             psutil websocket-client pillow pandas tornado
+          if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then
+            uv pip install --constraint benchmarks/requirements-ci.lock hvplot
+          fi
 
       - name: Verify native backend is active
         run: uv run python -c "import xyg.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native')"
@@ -134,6 +145,7 @@ jobs:
         # source: `${{ }}` expands before the shell parses, so an input
         # containing shell syntax would execute on the runner.
         env:
+          INPUT_EXPERIMENT: ${{ inputs.experiment }}
           INPUT_SIZES: ${{ inputs.sizes }}
           INPUT_ARMS: ${{ inputs.arms }}
           INPUT_REPETITIONS: ${{ inputs.repetitions }}
@@ -145,14 +157,31 @@ jobs:
           export CHROME
           SOFTWARE="--software"
           if [ "$INPUT_HARDWARE_GL" = "true" ]; then SOFTWARE=""; fi
-          uv run python benchmarks/bench_ceiling.py \
-            --sizes "$INPUT_SIZES" \
-            --arms "$INPUT_ARMS" \
-            --repetitions "$INPUT_REPETITIONS" \
-            --timeout "$INPUT_TIMEOUT" \
-            --memory-gib "$INPUT_MEMORY_GIB" \
-            $SOFTWARE --chrome "$CHROME" \
-            --out ceiling-results.json
+          if [ "$INPUT_EXPERIMENT" = "density-comparison" ]; then
+            HARDWARE=""
+            if [ "$INPUT_HARDWARE_GL" = "true" ]; then HARDWARE="--hardware"; fi
+            NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \
+              uv run python benchmarks/bench_density_comparison.py \
+                --sizes "$INPUT_SIZES" --arms "$INPUT_ARMS" \
+                --profile f64-memmap --repetitions "$INPUT_REPETITIONS" \
+                --chunk 1000000 --memory-gib "$INPUT_MEMORY_GIB" --disk-gib 20 \
+                --timeout "$INPUT_TIMEOUT" --step-timeout 15 \
+                $HARDWARE --chrome "$CHROME" \
+                --out "$RUNNER_TEMP/density-comparison-${GITHUB_SHA}.json"
+            python3 scripts/verify_density_comparison_report.py \
+              "$RUNNER_TEMP/density-comparison-${GITHUB_SHA}.json" \
+              --sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE" \
+              --sizes "$INPUT_SIZES" --arms "$INPUT_ARMS"
+          else
+            uv run python benchmarks/bench_ceiling.py \
+              --sizes "$INPUT_SIZES" \
+              --arms "$INPUT_ARMS" \
+              --repetitions "$INPUT_REPETITIONS" \
+              --timeout "$INPUT_TIMEOUT" \
+              --memory-gib "$INPUT_MEMORY_GIB" \
+              $SOFTWARE --chrome "$CHROME" \
+              --out ceiling-results.json
+          fi
 
       - name: Summarize
         # The report only exists if the sweep got far enough to write it; skip
@@ -160,6 +189,7 @@ jobs:
         if: always() && hashFiles('ceiling-results.json') != ''
         env:
           INPUT_BUDGET_MS: ${{ inputs.interactive_budget_ms }}
+        shell: bash
         run: |
           uv run python benchmarks/summarize_ceiling.py ceiling-results.json \
             --interactive-budget-ms "$INPUT_BUDGET_MS" \
@@ -190,3 +220,4 @@ jobs:
             ceiling-results.json
             ceiling-summary.md
             charts/
+            ${{ runner.temp }}/density-comparison-${{ github.sha }}.json

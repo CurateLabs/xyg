@@ -16,7 +16,7 @@ import argparse
 import json
 import time
 
-from _ux_live_host import SENTINELS, make_data
+from _ux_comparison_data import SENTINELS, make_data, source_identity
 
 WIDTH = 900
 HEIGHT = 420
@@ -28,6 +28,16 @@ RESAMPLE_WHEN = 200_000
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", type=int, required=True)
+    parser.add_argument("--aggregate-only", action="store_true")
+    from _ux_comparison_host import (
+        add_arguments,
+        inventory,
+        load_source,
+        metrics_handler,
+        observe_datashader,
+    )
+
+    add_arguments(parser)
     args = parser.parse_args()
 
     import holoviews as hv
@@ -35,17 +45,37 @@ def main() -> None:
     import pandas as pd
     import panel as pn
 
-    x, y = make_data(args.n)
-    frame = pd.DataFrame({"x": x, "y": y})
+    state = {}
+    if args.comparison_source:
+        x, y, source = load_source(args.comparison_source, args.n)
+    else:
+        x, y = make_data(args.n)
+        source = source_identity(x, y)
+    frame = pd.DataFrame({"x": x, "y": y}, copy=False if args.comparison_source else None)
+    if args.comparison_source:
+        state["canonical_admission"] = inventory((x, y), (frame.x.to_numpy(), frame.y.to_numpy()))
+        observe_datashader(source, x, y, state)
 
     t0 = time.perf_counter()
+    options = {} if args.aggregate_only else {"resample_when": RESAMPLE_WHEN}
     plot = frame.hvplot.scatter(
         x="x",
         y="y",
         datashade=True,
-        resample_when=RESAMPLE_WHEN,
-        width=WIDTH,
-        height=HEIGHT,
+        **options,
+        **(
+            {
+                "frame_width": 512,
+                "frame_height": 512,
+                "xlim": tuple(source["extents"][:2]),
+                "ylim": tuple(source["extents"][2:]),
+                "xaxis": None,
+                "yaxis": None,
+                "toolbar": None,
+            }
+            if args.comparison_source
+            else {"width": WIDTH, "height": HEIGHT}
+        ),
     ).opts(active_tools=["wheel_zoom"])
     app = pn.panel(plot)
     build_ms = (time.perf_counter() - t0) * 1e3
@@ -78,21 +108,25 @@ def main() -> None:
 
     import threading
 
-    threading.Thread(target=_kick_loop, daemon=True).start()
+    if not args.aggregate_only:
+        threading.Thread(target=_kick_loop, daemon=True).start()
 
     # Port 0 makes Bokeh bind an ephemeral port atomically and retain the
-    # socket; ``server.port`` is the actual bound port.  Restrict the server to
-    # loopback and allow only that host as the websocket origin (on any
-    # ephemeral port).
+    # socket; ``server.port`` is the actual bound port. Bokeh defaults to the
+    # exact localhost:<bound port> origin; navigate there (no wildcard port).
     server = pn.serve(
         app,
         port=0,
         address="127.0.0.1",
-        websocket_origin=["127.0.0.1:*"],
         show=False,
         start=False,
         threaded=False,
         verbose=False,
+        **(
+            {"extra_patterns": [(r"/comparison_metrics", metrics_handler(state))]}
+            if args.comparison_source
+            else {}
+        ),
     )
     port = server.port
     if port is None:
@@ -103,10 +137,13 @@ def main() -> None:
         + json.dumps(
             {
                 "port": port,
+                "hostname": "localhost",
                 "n": args.n,
+                "source": source,
+                "components": ["hvPlot", "HoloViews", "Datashader", "Bokeh", "Panel"],
                 "sentinels": [list(s) for s in SENTINELS],
                 "build_ms": build_ms,
-                "mode": "datashade+resample",
+                "mode": "density" if args.aggregate_only else "datashade+resample",
             }
         ),
         flush=True,

@@ -1,0 +1,223 @@
+"""Optional file sources and allocation authority for equal-window comparisons.
+
+The legacy f32 generator is unchanged. f64 maps use two independent RNG streams
+and bounded chunks, with no row-sized generation, hashing or oracle scratch.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import platform
+import shutil
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import psutil
+
+try:
+    from ._ux_comparison_data import SEED, SENTINELS, make_data
+except ImportError:
+    from _ux_comparison_data import SEED, SENTINELS, make_data
+
+LOCAL_MAX_ROWS = 1_000_000
+
+
+def allocation_guard(
+    n: int, profile: str, rss_gib: float = 2, disk_gib: float = 0.25, *, facts: dict | None = None
+) -> dict:
+    """Refuse large source allocation outside the existing manual main host."""
+    facts = (
+        facts
+        if facts is not None
+        else {
+            "system": platform.system(),
+            "machine": platform.machine(),
+            "memory": psutil.virtual_memory().total,
+            **{
+                k: os.environ.get(k)
+                for k in (
+                    "GITHUB_ACTIONS",
+                    "GITHUB_EVENT_NAME",
+                    "GITHUB_REF",
+                    "GITHUB_WORKFLOW",
+                    "RUNNER_OS",
+                )
+            },
+        }
+    )
+    hosted = (
+        facts.get("GITHUB_ACTIONS") == "true"
+        and facts.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+        and facts.get("GITHUB_REF") == "refs/heads/main"
+        and facts.get("GITHUB_WORKFLOW") == "Interactive ceiling benchmark"
+        and facts.get("RUNNER_OS") == "macOS"
+        and facts.get("system") == "Darwin"
+        and facts.get("machine") == "arm64"
+        and facts.get("memory", 0) >= 44 * 2**30
+    )
+    if n < 5 or n > 1_000_000_000 or profile not in ("f32", "f64-memmap"):
+        raise ValueError("source requires 5..1B real rows and an explicit known profile")
+    if n > LOCAL_MAX_ROWS and (not hosted or profile != "f64-memmap"):
+        raise ValueError(
+            "over 1M requires f64-memmap on the existing manual main Blacksmith macOS M4 lane"
+        )
+    if not (0 < rss_gib <= (20 if hosted else 2)):
+        raise ValueError("per-tree RSS guard exceeds documented host allowance")
+    if not (0 < disk_gib <= (200 if hosted else 0.25)):
+        raise ValueError("disk guard exceeds documented host allowance")
+    needed = n * (16 if profile == "f64-memmap" else 8)
+    if needed > disk_gib * 2**30:
+        raise ValueError("actual source files exceed configured disk guard")
+    return {
+        "authority": "manual-main-macos-M4" if hosted else "bounded-local",
+        "actual_rows": n,
+        "source_file_bytes": needed,
+        "per_tree_rss_guard_bytes": int(rss_gib * 2**30),
+        "disk_guard_bytes": int(disk_gib * 2**30),
+        "mapped_bytes_are_not_rss": True,
+        "facts": facts,
+    }
+
+
+def windows(domain: list[float]) -> list[dict]:
+    # Same 24 overlapping/reversing pans + eight alternating adjacent zooms.
+    from benchmarks._density_spill import windows as spill_windows
+
+    return spill_windows(domain)
+
+
+def count_window(x, y, domain, chunk=65536) -> int:
+    total = 0
+    for start in range(0, len(x), chunk):
+        a = np.asarray(x[start : start + chunk], dtype=np.float64)
+        b = np.asarray(y[start : start + chunk], dtype=np.float64)
+        total += int(
+            np.count_nonzero(
+                (a >= domain[0]) & (a <= domain[1]) & (b >= domain[2]) & (b <= domain[3])
+            )
+        )
+    return total
+
+
+def create_source(
+    directory: Path, n: int, profile: str, chunk=65536, rss_gib=2, disk_gib=0.25
+) -> dict:
+    authority = allocation_guard(n, profile, rss_gib, disk_gib)
+    if not 1 <= chunk <= 1_000_000:
+        raise ValueError("source chunk must be 1..1M")
+    # Guard before mkdir/mapping/generation. Free-disk check includes headroom.
+    parent = directory.parent
+    if shutil.disk_usage(parent).free < authority["source_file_bytes"] + 64 * 2**20:
+        raise ValueError("insufficient source disk space with 64 MiB reserve")
+    directory.mkdir(parents=True, exist_ok=False)
+    dtype = "<f8" if profile == "f64-memmap" else "<f4"
+    paths = [directory / f"{name}.{profile}" for name in ("x", "y")]
+    if profile == "f32":
+        values = make_data(n)
+        for path, col in zip(paths, values, strict=True):
+            col.tofile(path)
+        del values
+    else:
+        maps = [np.memmap(path, dtype=dtype, mode="w+", shape=(n,)) for path in paths]
+        rx, ry = np.random.default_rng(SEED), np.random.default_rng(SEED + 1)
+        for start in range(0, n, chunk):
+            length = min(chunk, n - start)
+            x = rx.standard_normal(length)
+            y = ry.standard_normal(length)
+            y *= 1.2
+            y += x
+            y *= 0.5
+            maps[0][start : start + length] = x
+            maps[1][start : start + length] = y
+        for i, (x, y) in enumerate(SENTINELS):
+            maps[0][i], maps[1][i] = x, y
+        for col in maps:
+            col.flush()
+        del maps
+    digest = hashlib.sha256()
+    columns = {}
+    bounds = []
+    for name, path in zip(("x", "y"), paths, strict=True):
+        col = np.memmap(path, dtype=dtype, mode="r", shape=(n,))
+        own = hashlib.sha256()
+        lo, hi = float("inf"), float("-inf")
+        for start in range(0, n, chunk):
+            block = col[start : start + chunk]
+            raw = memoryview(block).cast("B")
+            digest.update(raw)
+            own.update(raw)
+            lo = min(lo, float(block.min()))
+            hi = max(hi, float(block.max()))
+        bounds.extend([lo - 0.05 * (hi - lo), hi + 0.05 * (hi - lo)])
+        columns[name] = {"file": path.name, "bytes": path.stat().st_size, "sha256": own.hexdigest()}
+        del col
+    x, y = [np.memmap(path, dtype=dtype, mode="r", shape=(n,)) for path in paths]
+    trajectory = windows(bounds)
+    for step in trajectory:
+        step["expected_count"] = count_window(x, y, step["window"], chunk)
+    result = {
+        "schema_version": 1,
+        "profile": profile,
+        "actual_rows": n,
+        "dtype": dtype,
+        "seed": SEED,
+        "generator": "legacy-f32-v1" if profile == "f32" else "independent-streams-f64-v1",
+        "columns": columns,
+        "sha256_x_then_y": digest.hexdigest(),
+        "extents": bounds,
+        "generation_chunk_rows": chunk,
+        "authority": authority,
+        "windows": trajectory,
+    }
+    (directory / "source.json").write_text(json.dumps(result, indent=2))
+    return result
+
+
+def load_source(path: Path, n: int):
+    meta = json.loads(path.read_text())
+    if meta["actual_rows"] != n:
+        raise ValueError("source actual row count differs from requested N")
+    allocation_guard(
+        n,
+        meta["profile"],
+        meta["authority"]["per_tree_rss_guard_bytes"] / 2**30,
+        meta["authority"]["disk_guard_bytes"] / 2**30,
+    )
+    cols = []
+    for name in ("x", "y"):
+        entry = meta["columns"][name]
+        file = path.parent / entry["file"]
+        if file.stat().st_size != n * np.dtype(meta["dtype"]).itemsize:
+            raise ValueError("source file extent differs from actual N")
+        digest = hashlib.sha256()
+        with file.open("rb") as stream:
+            while raw := stream.read(1024 * 1024):
+                digest.update(raw)
+        if digest.hexdigest() != entry["sha256"]:
+            raise ValueError("source file hash mismatch")
+        col = (
+            np.memmap(file, dtype=meta["dtype"], mode="r", shape=(n,))
+            if meta["profile"] == "f64-memmap"
+            else np.fromfile(file, dtype=meta["dtype"])
+        )
+        cols.append(col)
+    return *cols, meta
+
+
+def inventory(originals, held) -> dict[str, Any]:
+    from xyg._ooc import is_memmapped
+
+    return {
+        name: {
+            "dtype": str(value.dtype),
+            "bytes": value.nbytes,
+            "pointer_equal": value.ctypes.data == original.ctypes.data,
+            "shares_memory": bool(np.shares_memory(original, value)),
+            "source_mapped": bool(is_memmapped(original)),
+            "retained_mapped": bool(is_memmapped(value)),
+        }
+        for name, original, value in zip(("x", "y"), originals, held, strict=True)
+    }

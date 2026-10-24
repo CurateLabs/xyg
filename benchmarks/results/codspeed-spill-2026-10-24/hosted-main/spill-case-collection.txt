@@ -1,0 +1,10 @@
+benchmarks/test_codspeed_kernels.py::test_tile_spill_snapshot[counts]
+benchmarks/test_codspeed_kernels.py::test_tile_spill_snapshot[mean-color]
+benchmarks/test_codspeed_kernels.py::test_tile_fetch[counts-hit]
+benchmarks/test_codspeed_kernels.py::test_tile_fetch[counts-miss-with-eviction]
+benchmarks/test_codspeed_kernels.py::test_tile_fetch[mean-color-hit]
+benchmarks/test_codspeed_kernels.py::test_tile_fetch[mean-color-miss-with-eviction]
+benchmarks/test_codspeed_kernels.py::test_tile_compose[counts]
+benchmarks/test_codspeed_kernels.py::test_tile_compose[mean-color]
+
+8/88 tests collected (80 deselected) in 0.25s

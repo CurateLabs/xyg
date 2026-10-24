@@ -19,6 +19,8 @@ Usage (plumbing check):
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import json
 import os
 import subprocess
@@ -26,6 +28,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -37,13 +40,102 @@ import websocket  # noqa: E402
 
 import _launch_interactive as interactive  # noqa: E402
 import _ux_probe  # noqa: E402
-from _ux_live_host import SENTINELS, make_data  # noqa: E402
+from _ux_comparison_data import SENTINELS, make_data, source_identity  # noqa: E402
 from environment import collect_environment_metadata  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 ARTIFACTS = Path(tempfile.gettempdir()) / "xy-ux-artifacts"
 DEFAULT_SIZES = [100_000]
-ARMS = ("xy", "xy-exact", "plotly", "matplotlib", "datashader")
+ARMS = (
+    "xy",
+    "xy-exact",
+    "xy-density",
+    "plotly",
+    "plotly-aggregate",
+    "matplotlib",
+    "datashader",
+    "datashader-aggregate",
+)
+
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def provenance() -> dict[str, Any]:
+    files = [
+        Path(__file__),
+        *Path(__file__).parent.glob("_ux*.py"),
+        Path(__file__).parent / "environment.py",
+        Path(__file__).parent / "_launch_interactive.py",
+        ROOT / "benchmarks/requirements-ci.lock",
+        ROOT / "package-lock.json",
+        ROOT / "Cargo.lock",
+    ]
+    result = {str(p.relative_to(ROOT)): sha256_file(p) for p in sorted(set(files))}
+    for name in ("python/xyg/static/index.js", "target/release/libxyg_core.so"):
+        path = ROOT / name
+        if path.exists():
+            result[name] = sha256_file(path)
+    # Product tree hashes cover a dirty checkout without copying every source into JSON.
+    for folder, pattern in (("python/xyg", "*.py"), ("crates", "*.rs"), ("js/src", "*.ts")):
+        digest = hashlib.sha256()
+        paths = sorted((ROOT / folder).rglob(pattern))
+        for path in paths:
+            digest.update(str(path.relative_to(ROOT)).encode() + b"\0")
+            digest.update(bytes.fromhex(sha256_file(path)))
+        result[folder + ":tree_sha256"] = digest.hexdigest()
+    try:
+        from xyg import _native
+
+        loaded = Path(_native._lib._name)
+        result["loaded_native:" + str(loaded)] = sha256_file(loaded)
+    except ImportError:
+        pass
+    native_path = os.environ.get("XYG_NATIVE_LIB")
+    if native_path:
+        result["XYG_NATIVE_LIB:" + native_path] = sha256_file(Path(native_path))
+    return result
+
+
+class SocketBytes:
+    """CDP delivered WebSocket message bodies; never HTTP/TLS/network bytes."""
+
+    def __init__(self) -> None:
+        self.counts = {
+            d: {"json_bytes": 0, "binary_frame_bytes": 0} for d in ("to_host", "from_host")
+        }
+
+    def record(self, method: str, response: dict[str, Any]) -> None:
+        direction = {
+            "Network.webSocketFrameSent": "to_host",
+            "Network.webSocketFrameReceived": "from_host",
+        }.get(method)
+        if direction is None or response.get("opcode") not in (1, 2):
+            return
+        binary = response["opcode"] == 2
+        payload = response.get("payloadData", "")
+        size = len(base64.b64decode(payload)) if binary else len(payload.encode("utf-8"))
+        key = "binary_frame_bytes" if binary else "json_bytes"
+        self.counts[direction][key] += size
+
+    def snapshot(self) -> dict[str, Any]:
+        result: dict[str, Any] = {"layer": "websocket_application_messages", "total_bytes": 0}
+        for direction, counts in self.counts.items():
+            result[direction] = {**counts, "total_bytes": sum(counts.values())}
+            result["total_bytes"] += result[direction]["total_bytes"]
+        return result
+
+
+def byte_delta(after: dict, before: dict) -> dict:
+    if after["layer"] != before["layer"]:
+        raise ValueError("transport layers differ")
+    result = {"layer": after["layer"], "total_bytes": after["total_bytes"] - before["total_bytes"]}
+    for direction in ("to_host", "from_host"):
+        result[direction] = {k: v - before[direction][k] for k, v in after[direction].items()}
+    if result["total_bytes"] < 0:
+        raise ValueError("non-monotonic transport snapshots")
+    return result
 
 
 def read_meta(host: subprocess.Popen[str], timeout_s: float = 120.0) -> str | None:
@@ -76,11 +168,13 @@ class TreePeakPoller:
     the moment the process exists until the probe is done.
     """
 
-    def __init__(self, pid: int) -> None:
+    def __init__(self, pid: int, limit: int | None = None) -> None:
         import threading
 
         self._proc = psutil.Process(pid)
         self.peak = 0
+        self.limit = limit
+        self.limit_exceeded = False
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
@@ -89,6 +183,10 @@ class TreePeakPoller:
         while not self._stop.is_set():
             try:
                 self.peak = max(self.peak, interactive.tree_rss(self._proc))
+                if self.limit is not None and self.peak > self.limit:
+                    self.limit_exceeded = True
+                    interactive.terminate_tree(self._proc)
+                    return
             except psutil.NoSuchProcess:
                 return
             self._stop.wait(0.05)
@@ -387,8 +485,37 @@ window.__arm = {
 """
 
 
-def plotly_artifact(n: int, path: Path) -> float:
-    """Build the plotly arm's chart; returns build seconds (data excluded).
+DATASHADER_AGGREGATE_GUARD_JS = r"""
+// Aggregate-only evidence: do not accept a transformed stale raster as settled.
+const aggregateArm = window.__arm;
+aggregateArm.evidence = function () {
+  const pv = this._pv();
+  const rasters = [];
+  if (pv) for (const rv of pv.renderer_views.values()) {
+    const m = rv.model, data = m.data_source?.data;
+    if (!data || !/Image/.test(m.glyph?.type || "")) continue;
+    const first = k => data[k]?.[0];
+    rasters.push({glyph: m.glyph.type, x: first("x"), y: first("y"),
+      dw: first("dw"), dh: first("dh"), shape:first("image")?.shape});
+  }
+  return {domain: this.domain(), rasters};
+};
+aggregateArm.currentRaster = function () {
+  const {domain:d, rasters} = this.evidence();
+  if (!d) return false;
+  const near = (a,b) => Number.isFinite(a) && Math.abs(a-b)<=1e-6*Math.max(1,Math.abs(b));
+  return rasters.some(r=>near(r.x,d.x0) && near(r.y,d.y0) &&
+    near(r.dw,d.x1-d.x0) && near(r.dh,d.y1-d.y0));
+};
+const aggregateReadbacks = aggregateArm.readbacks;
+aggregateArm.readbacks = function () {
+  return this.currentRaster() ? aggregateReadbacks.call(this) : [];
+};
+"""
+
+
+def plotly_artifact(n: int, path: Path) -> dict[str, Any]:
+    """Build raw Plotly HTML; return build duration, source identity and HTML bytes.
 
     Runs in its own child process (--plotly-build-child) so the build's peak
     RSS is attributable — a 10M to_html holds the figure plus a >1 GB HTML
@@ -401,7 +528,11 @@ def plotly_artifact(n: int, path: Path) -> float:
     fig = px.scatter(x=x, y=y, width=900, height=420)
     html = fig.to_html(include_plotlyjs=True, full_html=True, config={"scrollZoom": True})
     path.write_text(html, encoding="utf-8")
-    return time.perf_counter() - t0
+    return {
+        "build_ms": (time.perf_counter() - t0) * 1000,
+        "source": source_identity(x, y),
+        "html_bytes": path.stat().st_size,
+    }
 
 
 def drive_browser(
@@ -414,6 +545,8 @@ def drive_browser(
     software: bool,
     shots_prefix: Path | None = None,
     record_dir: Path | None = None,
+    metrics_url: str | None = None,
+    checkpoint_details: Callable[[str], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Navigate, inject the arm adapter + probe engine, await UX_BENCH title.
 
@@ -456,6 +589,12 @@ def drive_browser(
         start = time.monotonic()
         peak = 0
         ws = None
+        browser_poller = TreePeakPoller(popen.pid, memory_limit_bytes)
+        socket_bytes = SocketBytes()
+        transport: dict[str, Any] = {
+            "checkpoints": {},
+            "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        }
         try:
             port = interactive.wait_devtools(profile, popen)
             target = None
@@ -484,6 +623,9 @@ def drive_browser(
             def on_event(msg: dict[str, Any]) -> None:
                 """Persist screencast frames; ack so Chrome keeps sending."""
                 nonlocal frame_count
+                socket_bytes.record(
+                    msg.get("method", ""), msg.get("params", {}).get("response", {})
+                )
                 if msg.get("method") != "Page.screencastFrame":
                     return
                 params = msg.get("params", {})
@@ -535,6 +677,38 @@ def drive_browser(
                     if msg.get("id") == call_id:
                         return msg.get("result", {})
 
+            def checkpoint(name: str) -> None:
+                observed = evaluate(
+                    "JSON.stringify({applicationBytes: window.__arm?.applicationBytes?.(), "
+                    "evidence: window.__arm?.evidence?.(), domain: window.__arm?.domain?.()})"
+                )
+                snap = json.loads(observed) if observed else {}
+                snap["cdp_application_bytes"] = socket_bytes.snapshot()
+                if checkpoint_details is not None:
+                    snap["browser_rss_bytes"] = interactive.tree_rss(proc)
+                    browser_poller.peak = max(browser_poller.peak, snap["browser_rss_bytes"])
+                    snap["browser_peak_rss_bytes"] = browser_poller.peak
+                    snap.update(checkpoint_details(name))
+                if metrics_url:
+                    try:
+                        with urllib.request.urlopen(metrics_url, timeout=2) as response:
+                            snap["host_application_bytes"] = json.load(response)
+                    except (OSError, ValueError) as exc:
+                        snap["host_metrics_error"] = str(exc)
+                transport["checkpoints"][name] = snap
+
+            def finish(row: dict[str, Any]) -> dict[str, Any]:
+                checkpoint("terminal")
+                checkpoints = transport["checkpoints"]
+                if "visible-complete" in checkpoints and "settle-complete" in checkpoints:
+                    transport["warm_gesture_cdp_delta"] = byte_delta(
+                        checkpoints["settle-complete"]["cdp_application_bytes"],
+                        checkpoints["visible-complete"]["cdp_application_bytes"],
+                    )
+                row["transport"] = transport
+                row["browser_peak_rss_bytes"] = browser_poller.peak
+                return row
+
             def capture(name: str) -> None:
                 if shots_prefix is None:
                     return
@@ -552,6 +726,7 @@ def drive_browser(
             # "when the probe started looking" (measured: xy's first observed
             # frame was already complete and stable).
             command("Page.enable", {})
+            command("Network.enable", {})
             for script in inject_js:
                 command("Page.addScriptToEvaluateOnNewDocument", {"source": script})
 
@@ -573,7 +748,8 @@ def drive_browser(
                 if rss > memory_limit_bytes:
                     return {
                         "status": "memory_limit",
-                        "browser_peak_rss_bytes": peak,
+                        "transport": transport,
+                        "browser_peak_rss_bytes": max(peak, browser_poller.peak),
                         "stage": last_stage,
                     }
                 title = evaluate("document.title") or ""
@@ -582,20 +758,23 @@ def drive_browser(
                     result.update({"status": "ok", "browser_peak_rss_bytes": peak})
                     if record_dir is not None:
                         result["recorded_frames"] = frame_count
-                    return result
+                    return finish(result)
                 if title.startswith("UX_ERROR "):
                     detail = title[len("UX_ERROR ") :]
                     try:
                         parsed = json.loads(detail)
                     except ValueError:
                         parsed = {"why": detail}
-                    return {
-                        "status": str(parsed.get("why", "error")),
-                        "browser_peak_rss_bytes": peak,
-                        "detail": parsed,
-                    }
+                    return finish(
+                        {
+                            "status": str(parsed.get("why", "error")),
+                            "browser_peak_rss_bytes": peak,
+                            "detail": parsed,
+                        }
+                    )
                 if title.startswith("UX_SHOT "):
                     name = title[len("UX_SHOT ") :].strip()
+                    checkpoint(name)
                     capture(name)
                     if name == "visible-complete" and record_dir is not None:
                         # The video is the load race: it ends the moment this
@@ -609,16 +788,21 @@ def drive_browser(
                 time.sleep(0.02)
             return {
                 "status": "timeout",
-                "browser_peak_rss_bytes": peak,
+                "transport": transport,
+                "browser_peak_rss_bytes": max(peak, browser_poller.peak),
                 "stage": last_stage,
             }
         except Exception as exc:  # noqa: BLE001 — report, don't crash the sweep
             return {
-                "status": f"failed({type(exc).__name__})",
-                "browser_peak_rss_bytes": peak,
+                "status": "memory_limit"
+                if browser_poller.limit_exceeded
+                else f"failed({type(exc).__name__})",
+                "transport": {**transport, "last_cdp_application_bytes": socket_bytes.snapshot()},
+                "browser_peak_rss_bytes": max(peak, browser_poller.peak),
                 "error": str(exc)[:500],
             }
         finally:
+            browser_poller.stop()
             if ws is not None:
                 ws.close()
             interactive.terminate_tree(proc)
@@ -640,7 +824,8 @@ def run_xy_arm(
     record_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Spawn the live host, probe it, tear it down. Host tree = python pool."""
-    density = "off" if arm == "xy-exact" else "auto"
+    density = {"xy-exact": "off", "xy-density": "on"}.get(arm, "auto")
+    host_started = time.perf_counter()
     host = subprocess.Popen(
         [
             sys.executable,
@@ -654,13 +839,18 @@ def run_xy_arm(
         stderr=subprocess.PIPE,
         text=True,
     )
-    poller = TreePeakPoller(host.pid)
+    poller = TreePeakPoller(host.pid, limit)
     try:
-        meta_line = read_meta(host)
+        meta_line = read_meta(host, timeout_s=timeout_s)
         if meta_line is None:
             err = host.stderr.read()[:800] if host.poll() is not None else "no META within timeout"
-            return {"status": "host_failed", "detail": err}
+            return {
+                "status": "host_memory_limit" if poller.limit_exceeded else "host_failed",
+                "detail": err,
+                "python_peak_rss_bytes": poller.stop(),
+            }
         meta = json.loads(meta_line[len("META ") :])
+        prepare_ms = (time.perf_counter() - host_started) * 1000
         probe = _ux_probe.engine_js({"sentinels": meta["sentinels"]})
         row = drive_browser(
             f"http://127.0.0.1:{meta['port']}/",
@@ -671,9 +861,18 @@ def run_xy_arm(
             software=software,
             shots_prefix=shots_prefix,
             record_dir=record_dir,
+            metrics_url=f"http://127.0.0.1:{meta['port']}/transport_metrics",
+        )
+        row.update(
+            host_meta=meta,
+            source=meta["source"],
+            python_build_ms=meta["build_ms"],
+            host_prepare_wall_ms=prepare_ms,
         )
         row["mode"] = meta["mode"]
         row["python_peak_rss_bytes"] = poller.stop()
+        if poller.limit_exceeded:
+            row["status"] = "host_memory_limit"
         return row
     finally:
         poller.stop()
@@ -703,12 +902,16 @@ def run_webagg_arm(
         stderr=subprocess.PIPE,
         text=True,
     )
-    poller = TreePeakPoller(host.pid)
+    poller = TreePeakPoller(host.pid, limit)
     try:
-        meta_line = read_meta(host)
+        meta_line = read_meta(host, timeout_s=timeout_s)
         if meta_line is None:
             err = host.stderr.read()[:800] if host.poll() is not None else "no META within timeout"
-            return {"status": "host_failed", "detail": err}
+            return {
+                "status": "host_memory_limit" if poller.limit_exceeded else "host_failed",
+                "detail": err,
+                "python_peak_rss_bytes": poller.stop(),
+            }
         meta = json.loads(meta_line[len("META ") :])
         # WebAgg draws on demand: give the tornado app a beat to accept.
         time.sleep(0.3)
@@ -736,7 +939,8 @@ def run_webagg_arm(
         host.wait(timeout=5)
 
 
-def run_datashader_arm(
+def run_aggregate_arm(
+    arm: str,
     n: int,
     *,
     chrome: str,
@@ -747,39 +951,61 @@ def run_datashader_arm(
     record_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Spawn the hvPlot/Bokeh host, probe its page, tear it down."""
+    host_started = time.perf_counter()
+    script = (
+        "_ux_plotly_aggregate_host.py" if arm == "plotly-aggregate" else "_ux_datashader_host.py"
+    )
+    extra = ["--aggregate-only"] if arm == "datashader-aggregate" else []
     host = subprocess.Popen(
         [
             sys.executable,
-            str(Path(__file__).resolve().parent / "_ux_datashader_host.py"),
+            str(Path(__file__).resolve().parent / script),
             "--n",
             str(n),
+            *extra,
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
     )
-    poller = TreePeakPoller(host.pid)
+    poller = TreePeakPoller(host.pid, limit)
     try:
-        meta_line = read_meta(host)
+        meta_line = read_meta(host, timeout_s=timeout_s)
         if meta_line is None:
             err = host.stderr.read()[:800] if host.poll() is not None else "no META within timeout"
-            return {"status": "host_failed", "detail": err}
+            return {
+                "status": "host_memory_limit" if poller.limit_exceeded else "host_failed",
+                "detail": err,
+                "python_peak_rss_bytes": poller.stop(),
+            }
         meta = json.loads(meta_line[len("META ") :])
+        prepare_ms = (time.perf_counter() - host_started) * 1000
         arm_js = DATASHADER_ARM_JS.replace("__SENTINEL0__", json.dumps(meta["sentinels"][0]))
+        if arm == "datashader-aggregate":
+            arm_js = arm_js.replace("if (ok && !this.__kicked)", "if (false)")
+            arm_js += DATASHADER_AGGREGATE_GUARD_JS
         probe = _ux_probe.engine_js({"sentinels": meta["sentinels"]})
         row = drive_browser(
-            f"http://127.0.0.1:{meta['port']}/",
-            [arm_js, probe],
+            f"http://{meta.get('hostname', '127.0.0.1')}:{meta['port']}/",
+            [probe] if arm == "plotly-aggregate" else [arm_js, probe],
             chrome=chrome,
             timeout_s=timeout_s,
             memory_limit_bytes=limit,
             software=software,
             shots_prefix=shots_prefix,
             record_dir=record_dir,
+            metrics_url=(
+                f"http://127.0.0.1:{meta['port']}/transport_metrics"
+                if arm == "plotly-aggregate"
+                else None
+            ),
         )
+        row.update(host_meta=meta, source=meta["source"], host_prepare_wall_ms=prepare_ms)
         row["mode"] = meta["mode"]
         row["python_build_ms"] = meta["build_ms"]
         row["python_peak_rss_bytes"] = poller.stop()
+        if poller.limit_exceeded:
+            row["status"] = "host_memory_limit"
         return row
     finally:
         poller.stop()
@@ -813,7 +1039,7 @@ def run_plotly_arm(
         stderr=subprocess.PIPE,
         text=True,
     )
-    build_poller = TreePeakPoller(builder.pid)
+    build_poller = TreePeakPoller(builder.pid, limit)
     try:
         out, err = builder.communicate(timeout=timeout_s)
     except subprocess.TimeoutExpired:
@@ -823,11 +1049,26 @@ def run_plotly_arm(
         return {"status": "build_timeout", "detail": err[-500:]}
     python_peak = build_poller.stop()
     if builder.returncode != 0:
-        return {"status": "build_failed", "detail": err[-500:]}
+        return {
+            "status": "host_memory_limit" if build_poller.limit_exceeded else "build_failed",
+            "detail": err[-500:],
+            "python_peak_rss_bytes": python_peak,
+        }
     try:
-        build_s = float(out.strip().splitlines()[-1])
+        build_meta = json.loads(out.strip().splitlines()[-1])
     except (IndexError, ValueError):
         return {"status": "build_failed", "detail": f"unparseable build output: {out[-200:]!r}"}
+    if n <= 1000:
+        artifact.unlink(missing_ok=True)
+        return {
+            "status": "unsupported_svg_readback",
+            "mode": "scatter-svg",
+            "source": build_meta["source"],
+            "python_build_ms": build_meta["build_ms"],
+            "html_bytes": build_meta["html_bytes"],
+            "python_peak_rss_bytes": python_peak,
+            "detail": "raw px.scatter SVG has no canvas surface for the existing pixel oracle",
+        }
     probe = _ux_probe.engine_js({"sentinels": [list(s) for s in SENTINELS]})
     row = drive_browser(
         artifact.resolve().as_uri(),
@@ -840,7 +1081,9 @@ def run_plotly_arm(
         record_dir=record_dir,
     )
     row["mode"] = "scattergl" if n > 1000 else "scatter-svg"
-    row["python_build_ms"] = build_s * 1e3
+    row["python_build_ms"] = build_meta["build_ms"]
+    row["source"] = build_meta["source"]
+    row["html_bytes"] = build_meta["html_bytes"]
     row["python_peak_rss_bytes"] = python_peak
     artifact.unlink(missing_ok=True)
     return row
@@ -873,7 +1116,11 @@ def main() -> None:
     if args.plotly_build_child:
         if args.build_n is None or args.build_artifact is None:
             parser.error("--plotly-build-child requires --build-n and --build-artifact")
-        print(plotly_artifact(args.build_n, args.build_artifact))
+        if not len(SENTINELS) <= args.build_n <= 1_000_000:
+            parser.error(
+                "legacy resident UX source is bounded to 5..1M before allocation; use the supervised mapped comparison for larger sources"
+            )
+        print(json.dumps(plotly_artifact(args.build_n, args.build_artifact)))
         return
     if args.out is None:
         parser.error("--out is required")
@@ -883,16 +1130,26 @@ def main() -> None:
     unknown = sorted(set(arms) - set(ARMS))
     if unknown:
         parser.error(f"unknown arms: {', '.join(unknown)}")
+    if not sizes or min(sizes) < len(SENTINELS) or args.timeout <= 0 or args.memory_gib <= 0:
+        parser.error("sizes must be >=5; timeout and memory-gib must be positive")
+    if max(sizes) > 1_000_000:
+        parser.error(
+            "legacy resident UX source is bounded to <=1M before controller allocation; use the supervised mapped comparison for larger sources"
+        )
     limit = int(args.memory_gib * 2**30)
 
     shots_dir = args.out.parent / (args.out.stem + "-shots")
     video_dir = args.out.parent / (args.out.stem + "-video")
     rows = []
+    sources = {}
     for n in sizes:
+        x, y = make_data(n)
+        sources[str(n)] = source_identity(x, y)
+        del x, y
         for arm in arms:
             prefix = shots_dir / f"{arm}-{n}"
             rec = None if args.no_record else (video_dir / f"{arm}-{n}")
-            if arm in ("xy", "xy-exact"):
+            if arm in ("xy", "xy-exact", "xy-density"):
                 row = run_xy_arm(
                     arm,
                     n,
@@ -923,8 +1180,9 @@ def main() -> None:
                     shots_prefix=prefix,
                     record_dir=rec,
                 )
-            elif arm == "datashader":
-                row = run_datashader_arm(
+            elif arm in ("datashader", "datashader-aggregate", "plotly-aggregate"):
+                row = run_aggregate_arm(
+                    arm,
                     n,
                     chrome=args.chrome,
                     timeout_s=args.timeout,
@@ -936,6 +1194,19 @@ def main() -> None:
             else:
                 row = {"status": "not_implemented"}
             row.update({"arm": arm, "n": n})
+            row["source_matches_shared_workload"] = (
+                row.get("source") == sources[str(n)] if row.get("source") else None
+            )
+            if row["source_matches_shared_workload"] is False:
+                row["status"] = "source_mismatch"
+            row["host_peak_rss_bytes"] = row.get("python_peak_rss_bytes")
+            row["comparison_contract"] = (
+                "count-density navigation; styles/grid/tiering differ; not pixel equivalence"
+                if arm in ("xy-density", "plotly-aggregate", "datashader-aggregate")
+                else "raw markers"
+                if arm in ("xy-exact", "plotly")
+                else "adaptive navigation"
+            )
             rows.append(row)
             print(
                 json.dumps(
@@ -948,26 +1219,79 @@ def main() -> None:
                         "gesture_frame_p95_ms": row.get("gesture_frame_p95_ms"),
                         "settle_ms": row.get("settle_ms"),
                         "zoom_to_final_ms": row.get("zoom_to_final_ms"),
-                        "python_peak_gib": round(
-                            (row.get("python_peak_rss_bytes") or 0) / 2**30, 3
-                        ),
-                        "browser_peak_gib": round(
-                            (row.get("browser_peak_rss_bytes") or 0) / 2**30, 3
-                        ),
+                        "python_peak_gib": round(row["python_peak_rss_bytes"] / 2**30, 3)
+                        if row.get("python_peak_rss_bytes") is not None
+                        else None,
+                        "browser_peak_gib": round(row["browser_peak_rss_bytes"] / 2**30, 3)
+                        if row.get("browser_peak_rss_bytes") is not None
+                        else None,
                     }
                 ),
                 flush=True,
             )
 
     report = {
+        "schema_version": 1,
+        "argv": sys.argv,
+        "provenance_sha256": provenance(),
+        "limits": {
+            "timeout_s_per_host_prepare_and_browser": args.timeout,
+            "rss_bytes_per_host_or_browser_tree": limit,
+            "rss_sampling_ms": 50,
+        },
+        "timing_scope": {
+            "python_build_ms": "cold chart build in fresh process; source generation excluded; JIT/cache state not controlled",
+            "host_prepare_wall_ms": "spawn through META; imports, source generation/hash, chart build, server startup",
+            "visible_complete_ms": "fresh browser navigation to sentinel-correct stable paint; host preparation excluded",
+            "gesture_frame_p95_ms": "warm animation-frame interval, NOT input-to-pixel latency",
+            "zoom_to_final_ms": "warm fixed-cadence gesture sequence to final correct stable pixels; includes host refine",
+            "settle_ms": "last input to final correct stable pixels",
+        },
         "generated_at_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "contract": "correct(sentinels+domain) then pixel-stable; fixed-cadence inputs",
         "screencast": "off" if args.no_record else "on (uniform across arms)",
         "sizes": sizes,
+        "sources": sources,
+        "viewport_css_px": [900, 420],
+        "runtime": {
+            "temp_root": tempfile.gettempdir(),
+            "cpu_affinity": sorted(os.sched_getaffinity(0))
+            if hasattr(os, "sched_getaffinity")
+            else None,
+            "physical_cpu_count": psutil.cpu_count(logical=False),
+            "system_memory_bytes": psutil.virtual_memory().total,
+            "thread_environment": {
+                key: os.environ.get(key)
+                for key in ("NUMBA_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS")
+            },
+        },
         "arms": arms,
-        "environment": collect_environment_metadata(chromium=args.chrome),
+        "environment": collect_environment_metadata(
+            chromium=args.chrome,
+            package_names=(
+                "numpy",
+                "plotly",
+                "datashader",
+                "holoviews",
+                "hvplot",
+                "bokeh",
+                "panel",
+                "tornado",
+                "pandas",
+                "numba",
+                "llvmlite",
+                "pillow",
+                "psutil",
+                "websocket-client",
+            ),
+        ),
+        "scale_gaps": {
+            "100M": "requires retained actual-source competitive host/browser evidence; not established by planner integers",
+            "1B": "true 3xf64 source alone is 24,000,000,000 bytes (>12 GiB lane); this two-f32 workload is not that acceptance",
+        },
         "results": rows,
     }
+    args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     if not args.no_record and not args.no_grid and video_dir.exists():
