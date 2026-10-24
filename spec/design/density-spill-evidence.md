@@ -153,9 +153,13 @@ The report deliberately requires `scope: host-kernel-only` and
 source/windows, nonblank pixels, seam tests, actual adjacent crossfades,
 GPU allocation and cached/fetch-all **pixel** equality remains open. The existing
 `scripts/density_tile_smoke.py` provides bounded count/mean browser coverage and
-is the facility to extend; its separate fixture is not evidence that this
-100M source reached the browser. Do not attach its result as a success flag for
-this workload.
+its separate fixture is not evidence that this 100M source reached the browser.
+The [same-source browser companion](density-spill-browser-evidence.md) borrows
+this worker's actual figure, store, mappings and windows after host timing.
+Its separate independently validated artifact links the finalized host bytes;
+it never changes this report's scope or browser flag. A retained supervised 1M
+integration control passes, but actual 100M browser execution remains pending.
+Do not attach a separate fixture as a success flag for this workload.
 
 This slice also does not establish larger-than-RAM behavior, absence of all
 transient row allocations, the final candidate host matrix, Node parity, or the

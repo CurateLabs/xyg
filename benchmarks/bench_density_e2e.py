@@ -1145,6 +1145,12 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         "max_rss_bytes": int(args.max_rss_gib * 1024**3),
         "max_disk_bytes": int(args.max_disk_gib * 1024**3),
         "payload_ceiling": args.payload_ceiling_bytes,
+        "colored_browser_report": str(args.colored_browser_report.resolve())
+        if getattr(args, "colored_browser_report", None)
+        else None,
+        "host_output": str(args.output.resolve()),
+        "browser_result": str(tmp / "browser-worker-report.json"),
+        "browser_socket_parent": getattr(args, "browser_socket_parent", None),
     }
     config_path = tmp / "config.json"
     config_path.write_text(json.dumps(config), encoding="utf-8")
@@ -1275,6 +1281,10 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
     if config["workload"] == "colored-spill" and failed:
         report["status"] = "failed"
         report["failure"] = reason or report.get("failure") or "worker_or_cleanup_failed"
+    if config["colored_browser_report"]:
+        browser_result = Path(config["browser_result"])
+        if browser_result.is_file():
+            report["_browser_companion"] = json.loads(browser_result.read_text())
     return report, failed
 
 
@@ -1292,6 +1302,19 @@ def _supervise(args: argparse.Namespace) -> int:
         )
     else:
         _authority_guard(args.points, args.authority, dict(os.environ))
+    from benchmarks._density_spill import browser_guard
+
+    browser_guard(
+        {
+            "workload": getattr(args, "workload", "resident-count"),
+            "authority": args.authority,
+            "colored_browser_report": str(args.colored_browser_report)
+            if getattr(args, "colored_browser_report", None)
+            else None,
+            "host_output": str(args.output),
+            "chrome": str(args.chrome) if args.chrome else None,
+        }
+    )
     source_bytes = args.points * (24 if getattr(args, "workload", "") == "colored-spill" else 16)
     if source_bytes > args.max_disk_gib * 1024**3:
         raise ValueError("configured disk ceiling is smaller than the two canonical f64 sources")
@@ -1299,9 +1322,16 @@ def _supervise(args: argparse.Namespace) -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     temp_parent = args.temp_root.resolve() if args.temp_root else None
     tmp = Path(tempfile.mkdtemp(prefix="xyg-density-e2e-", dir=temp_parent))
+    # Short alias points into the owned tree: Chrome singleton sockets stay on
+    # the same disk, count toward the watchdog, and are removed even on cancel.
+    socket_alias = None
     report: dict[str, Any] | None = None
     failed = True
     try:
+        if getattr(args, "colored_browser_report", None):
+            socket_alias = Path(tempfile.mkdtemp(prefix=".xyb-", dir=Path.home()))
+            (socket_alias / "s").symlink_to(tmp, target_is_directory=True)
+            args.browser_socket_parent = str(socket_alias / "s")
         report, failed = _run_supervisor(args, tmp)
     except Exception as exc:
         report = {
@@ -1315,19 +1345,26 @@ def _supervise(args: argparse.Namespace) -> int:
         }
     finally:
         cleanup_error = None
-        try:
-            shutil.rmtree(tmp)
-        except OSError as exc:
-            cleanup_error = str(exc)
+        for owned in (tmp, socket_alias):
+            if owned is not None:
+                try:
+                    shutil.rmtree(owned)
+                except OSError as exc:
+                    cleanup_error = str(exc)
 
     assert report is not None
     cleanup = report.setdefault("cleanup", {})
     cleanup["temp_tree_removed"] = not tmp.exists()
+    if socket_alias is not None:
+        cleanup["browser_socket_alias_removed"] = not socket_alias.exists()
+        if socket_alias.exists():
+            failed = True
     if cleanup_error is not None:
         report["temp_cleanup_error"] = cleanup_error
         failed = True
     if not cleanup["temp_tree_removed"]:
         failed = True
+    companion = report.pop("_browser_companion", None)
     if getattr(args, "workload", "resident-count") == "colored-spill" and not failed:
         from scripts.verify_density_spill_report import validate
 
@@ -1338,7 +1375,40 @@ def _supervise(args: argparse.Namespace) -> int:
             report["status"] = "failed"
             report["failure"] = "report_validation: " + "; ".join(errors)
             failed = True
+    # Host report is finalized first and never gains a browser success flag or
+    # a companion hash. The one-way link hashes these exact immutable bytes.
     _atomic_write_json(output, report)
+    if getattr(args, "colored_browser_report", None):
+        from scripts.verify_density_spill_browser_report import validate as validate_browser
+
+        if companion is None:
+            companion = {
+                "schema_version": 1,
+                "report_kind": "density-colored-spill-browser-companion",
+                "status": "failed",
+                "failure": report.get("failure", "missing browser result"),
+            }
+        companion.update(
+            {
+                "host_report_sha256": _sha256(output.read_bytes()),
+                "process_tree": report.get("process_tree"),
+                "host_cleanup": cleanup,
+            }
+        )
+        if failed:
+            companion["status"] = "failed"
+            companion["failure"] = report.get("failure", "supervisor cleanup failed")
+        else:
+            errors = validate_browser(
+                companion,
+                output.read_bytes(),
+                expected_sha=os.environ.get("GITHUB_SHA") if args.authority else None,
+            )
+            if errors:
+                companion["status"] = "failed"
+                companion["failure"] = "browser_report_validation: " + "; ".join(errors)
+                failed = True
+        _atomic_write_json(args.colored_browser_report.resolve(), companion)
     return int(failed)
 
 
@@ -1350,6 +1420,11 @@ def main() -> int:
     parser.add_argument("--points", type=int, default=1_000_000)
     parser.add_argument("--output", type=Path, default=Path("density-e2e.json"))
     parser.add_argument("--chrome", type=Path)
+    parser.add_argument(
+        "--colored-browser-report",
+        type=Path,
+        help="opt-in separate same-source colored browser companion",
+    )
     parser.add_argument("--authority", action="store_true")
     parser.add_argument("--chunk-points", type=int, default=1_000_000)
     parser.add_argument("--timeout", type=float, default=900)

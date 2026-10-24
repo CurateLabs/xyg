@@ -79,23 +79,35 @@ jobs:
             "$RUNNER_TEMP/density-e2e-100m-${GITHUB_SHA}.json" --sha "$GITHUB_SHA"
       - name: Run daily 1M colored spill control
         run: |
+          CHROME=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')
           .venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \
-            --points 1000000 --chunk-points 262144 \
+            --points 1000000 --chunk-points 262144 --chrome "$CHROME" \
             --timeout 600 --max-rss-gib 8 --max-disk-gib 2 \
-            --output "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json"
+            --output "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json" \
+            --colored-browser-report "$RUNNER_TEMP/density-e2e-colored-browser-control-${GITHUB_SHA}.json"
           python3 scripts/verify_density_spill_report.py \
             "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json" --artifact-root "$GITHUB_WORKSPACE"
+          python3 scripts/verify_density_spill_browser_report.py \
+            "$RUNNER_TEMP/density-e2e-colored-browser-control-${GITHUB_SHA}.json" \
+            --host-report "$RUNNER_TEMP/density-e2e-colored-control-${GITHUB_SHA}.json" \
+            --sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"
       - name: Run weekly/manual 100M colored spill authority
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '43 5 * * 0'
         env:
           XYG_DENSITY_100M_AUTHORITY: "1"
         run: |
+          CHROME=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')
           .venv/bin/python benchmarks/bench_density_e2e.py --workload colored-spill \
-            --points 100000000 --authority \
+            --points 100000000 --authority --chrome "$CHROME" \
             --timeout 3600 --max-rss-gib 12 --max-disk-gib 4 \
-            --output "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json"
+            --output "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json" \
+            --colored-browser-report "$RUNNER_TEMP/density-e2e-colored-browser-100m-${GITHUB_SHA}.json"
           python3 scripts/verify_density_spill_report.py \
             "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json" --sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"
+          python3 scripts/verify_density_spill_browser_report.py \
+            "$RUNNER_TEMP/density-e2e-colored-browser-100m-${GITHUB_SHA}.json" \
+            --host-report "$RUNNER_TEMP/density-e2e-colored-100m-${GITHUB_SHA}.json" \
+            --sha "$GITHUB_SHA" --artifact-root "$GITHUB_WORKSPACE"
       - name: Upload exact-SHA raw reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

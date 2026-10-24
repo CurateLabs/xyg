@@ -76,6 +76,43 @@ def guard(
         raise ValueError("colored-spill ceilings are pinned at 12GiB RSS / 4GiB disk / 3600s")
 
 
+def browser_guard(config: dict) -> None:
+    """Optional browser admission, run by both entries before source allocation."""
+    if not config.get("colored_browser_report"):
+        return
+    if config.get("workload") != WORKLOAD:
+        raise ValueError("--colored-browser-report requires --workload colored-spill")
+    chrome = Path(config.get("chrome") or "")
+    if not chrome.is_file() or not os.access(chrome, os.X_OK):
+        raise ValueError("browser companion requires an executable --chrome")
+    import subprocess
+
+    try:
+        version = subprocess.run(
+            [str(chrome), "--version"], capture_output=True, text=True, timeout=10, check=True
+        ).stdout
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise ValueError("browser companion --chrome could not report its version") from exc
+    if not re.search(r"Chrom(?:e|ium)", version):
+        raise ValueError("browser companion --chrome must identify Chrome/Chromium")
+    if config.get("authority"):
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        dirty = subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=ROOT, text=True
+        ).strip()
+        if commit != os.environ.get("GITHUB_SHA") or dirty:
+            raise ValueError("authority browser requires a clean checkout at the actual run SHA")
+    output = Path(config["colored_browser_report"]).resolve()
+    if output == Path(config["host_output"]).resolve():
+        raise ValueError("browser companion and host outputs must be distinct")
+    if output.exists() and not output.is_file():
+        raise ValueError("browser companion output must be a file")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    # Probe actual output access before allocating mappings or native stores.
+    with tempfile.TemporaryFile(dir=output.parent):
+        pass
+
+
 def file_hash(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -554,7 +591,7 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
             if config["authority"]:
                 assert environment["git"]["dirty"] is False
                 assert environment["git"]["commit"] == os.environ["GITHUB_SHA"]
-            return {
+            report = {
                 "schema_version": 1,
                 "report_kind": KIND,
                 "workload": WORKLOAD,
@@ -622,6 +659,52 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
                 },
                 "cleanup": cleanup,
             }
+            if config.get("colored_browser_report"):
+                from scripts.density_spill_browser_smoke import run_existing
+
+                browser_failure = None
+                try:
+                    companion = run_existing(
+                        fig=fig,
+                        sources=sources,
+                        source=source,
+                        spec=spec,
+                        buffers=buffers,
+                        domain=domain,
+                        journey=windows(domain),
+                        spill_file=spill_file,
+                        chromium=config["chrome"],
+                        timeout=config["timeout"],
+                        socket_parent=Path(config["browser_socket_parent"]),
+                        authority=config["authority"],
+                    )
+                except BaseException as exc:
+                    # Do not retain the helper traceback's borrowed figure in
+                    # the host finally block. It already stopped HTTP/Chrome.
+                    browser_failure = f"{type(exc).__name__}: {exc}"
+                if browser_failure is not None:
+                    raise RuntimeError(browser_failure)
+                companion.update(
+                    {
+                        "authority": report["authority"],
+                        "authority_context": report["authority_context"],
+                        "environment": environment,
+                        "provenance": report["provenance"],
+                        "limits": report["limits"],
+                        "browser_artifacts": {
+                            "harness_sha256": file_hash(
+                                ROOT / "scripts/density_spill_browser_smoke.py"
+                            ),
+                            "verifier_sha256": file_hash(
+                                ROOT / "scripts/verify_density_spill_browser_report.py"
+                            ),
+                            "chromium_sha256": file_hash(Path(config["chrome"])),
+                        },
+                        "count_color_oracle": oracle,
+                    }
+                )
+                supervisor._atomic_write_json(Path(config["browser_result"]), companion)
+            return report
     finally:
         reference = weakref.ref(fig) if fig is not None else None
         if trace is not None:
@@ -656,6 +739,7 @@ def worker(config: dict) -> int:
         config["max_rss_bytes"] / 1024**3,
         config["max_disk_bytes"] / 1024**3,
     )
+    browser_guard(config)
     tmp, result = Path(config["tmp"]), Path(config["result"])
     runtime = tmp / "runtime-tmp"
     runtime.mkdir()
