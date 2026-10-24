@@ -798,6 +798,13 @@ contract entry before it lands.
    (including the pyramid's upper-edge epsilon), rather than approximating
    this from span fractions. No-rescan is a cost policy, not itself evidence
    that a sufficiently fine L0 is blurry.
+   A no-rescan trace can retain pyramid density below the direct point budget.
+   Its wire metadata describes that emitted representation: `mode` and `tier`
+   remain `density`, with `reduction: pyramid-count` and the actual pyramid
+   `binning` label. An unused exact-plan recommendation must not publish
+   `tier: direct` / `reduction: none` beside an aggregate payload. The visible
+   count remains the documented whole-cell-center estimate; labels do not
+   replace it with an exact source count or change the serving policy.
    When *downsampling* (the coarsest adequate level packs 1–2 source cells per
    output bin), `compose` **area-weights** each source cell across the bins its
    extent overlaps rather than assigning it to the bin under its center;

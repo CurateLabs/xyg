@@ -6,7 +6,10 @@
 [benchmark methodology](../benchmarks/methodology.md), and dossier §§5, 12,
 17, 28–29. It adds no product behavior, allocation authority, workflow, job,
 capacity, dispatch, competitive acceptance gate, or performance winner.
-The producer and its allocation guard remain unchanged.
+The allocation guard remains unchanged. Current reports require the
+`source-cell-compose-v1` numerical contract described in
+[comparison-count-oracle.md](comparison-count-oracle.md). Only the three
+digest-pinned historical bounded archives retain their original contract.
 
 ## Invocation and result
 
@@ -110,8 +113,36 @@ host build and navigation remain separate records. These are observed
 adapter/probe/oracle clocks, never real-wheel input-to-pixel latency or pure
 aggregation-kernel timings.
 
-XYG density retains its actual visible count, reduction disclosure, requested
-reply and rendered revisions. A retained raster with a different rendered
+XYG retains raw `visible`, `tier`, `mode`, `reduction`, `binning`, encoding,
+reply maximum and adopted maximum. The exact inclusive source-window count
+is separate from the actual reply count: a pyramid reply's `visible` is a
+whole-cell-center estimate, and a no-rescan `bin2d-oversized` reply's count
+uses half-open upper edges. Neither is relabeled as an exact inclusive count.
+Source manifests retain inclusive and half-open counts and explicit upper-edge
+exclusions. An independent source-derived finest grid must reproduce the
+pyramid estimate **exactly**; source mass in boundary cells bounds its
+difference from the inclusive count. No percentage count tolerance is admitted.
+
+The independent oracle also constructs the documented composed grid and
+log-u8 encoding. Its expected encoded hash and maximum must equal the actual
+reply buffer and maximum; its independently decoded f32 hash must equal the
+actual adopted/drawn density object's CPU grid bytes, and the adopted maximum
+must match. Equal totals with misplaced cells fail. Native count, compose,
+binning or encoding functions are not used to calculate these expectations.
+Missing/failing numerical evidence fails both producer and verifier. Density
+with `tier=direct` or `reduction=none` fails; adapters do not normalize product
+metadata. Exact points instead retain the clipped GPU count and their raw
+padded payload count under the existing exact-fallback checks.
+
+Oracle preparation is a separately recorded subphase of host preparation,
+completed before `META`, outside the warm clock. The existing host poller,
+300-second phase deadline and RSS cap include it. Grid storage and bounded
+source chunk size are recorded. Per-output validation and its HTTP round-trip
+are inside the observed paint clock; validation time and HTTP request-body
+bytes are separately recorded. These HTTP oracle bytes are **not** part of the
+existing WebSocket application-body totals. No cap or deadline is increased.
+
+Requested/reply and rendered revisions remain separate. A retained raster with a different rendered
 revision requires explicit equivalent-cache adoption and grid-value equality.
 Exact fallback requires the actual clipped GPU count and covering subset,
 with payload count recorded. Its rendered revision identifies the drill subset
@@ -122,8 +153,10 @@ actual backend grid hash, dimensions, domain and count conservation oracle.
 Backend/empty checkpoints and retained column copy/mapping observations are
 required. Mode, resolution, shading, oracle work and exact fallback may differ
 between arms; those differences remain explicit and do not yield a raster-only
-or mixed-mode ranking. XYG quantized raster evidence does not acquire an
-invented independent per-cell conservation proof.
+or mixed-mode ranking. The current XYG proof checks the documented approximate
+source-cell representation, not exact per-screen-pixel source binning or
+pixel-identical rendering across libraries. Partial-window grid mass remains
+diagnostic, not interchangeable with either visible estimate or exact count.
 
 Transport totals must be nonnegative and internally sum correctly at each
 checkpoint; cumulative counters cannot decrease and per-step deltas must
@@ -170,6 +203,10 @@ harness/lock/client files, product trees (same path-plus-file-digest algorithm
 independently implemented), and available native binary paths with the report.
 Unavailable artifacts cannot be reconstructed; their recorded hashes remain
 identity evidence rather than a claim that the verifier checked absent bytes.
+Current reports additionally require `benchmarks/_ux_comparison_oracle.py`
+in harness provenance/source bindings. A self-declared historical filename,
+flag or commit does not waive this requirement. Failed hosted run 40066499687
+and its receipt at `82641839` remain rejected and receive no historical exemption.
 A file/tree that exists and differs is an error.
 
 The three retained equal-window archives have independently pinned decoded

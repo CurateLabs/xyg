@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import os
@@ -7,6 +8,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -5024,6 +5026,300 @@ def test_ceiling_comparison_accepts_existing_manual_capacity_and_defaults() -> N
 
 
 @pytest.mark.parametrize(
+    "command",
+    [
+        "- <<'PY'",
+        "benchmarks/bench_density_comparison.py",
+        "scripts/verify_density_comparison_report.py",
+        "benchmarks/bench_ceiling.py",
+        "benchmarks/summarize_ceiling.py",
+        "benchmarks/plot_ceiling.py ceiling-results.json --out-dir charts",
+        "benchmarks/plot_ceiling.py ceiling-results.json \\",
+    ],
+)
+@pytest.mark.parametrize("replacement", ["uv run python", "python3"])
+def test_ceiling_python_steps_cannot_leave_constrained_interpreter(
+    tmp_path: Path, command: str, replacement: str
+) -> None:
+    workflow = verify_ci_workflow.DEFAULT_CEILING_WORKFLOW.read_text(encoding="utf-8")
+    original = f".venv/bin/python {command}"
+    assert workflow.count(original) == 1
+    path = tmp_path / "ceiling-benchmark.yml"
+    path.write_text(workflow.replace(original, f"{replacement} {command}"), encoding="utf-8")
+    assert verify_ci_workflow.validate_ceiling_workflow(path)
+
+
+def _ceiling_preflight_python() -> str:
+    workflow = verify_ci_workflow.DEFAULT_CEILING_WORKFLOW.read_text(encoding="utf-8")
+    block = workflow.split("      - name: Verify benchmark environment\n", 1)[1].split(
+        "      - name:", 1
+    )[0]
+    body = "\n".join(line[10:] for line in block.split("        run: |\n", 1)[1].splitlines())
+    return body.split(".venv/bin/python - <<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+
+
+@pytest.fixture
+def ceiling_preflight(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys):
+    """Run the actual heredoc without loading optional stacks or allocating sources."""
+    import importlib
+    import importlib.metadata as metadata
+
+    lock = verify_ci_workflow.ROOT / "benchmarks" / "requirements-ci.lock"
+    pins = dict(
+        line.split("==")
+        for line in lock.read_text().splitlines()
+        if line and not line.startswith((" ", "#"))
+    )
+    state = {
+        "installed": {**pins, "websocket-client": "1.9.2"},
+        "broken": set(),
+        "imports": [],
+        "versions": [],
+    }
+    (tmp_path / "benchmarks").mkdir()
+    (tmp_path / "benchmarks" / lock.name).write_bytes(lock.read_bytes())
+
+    def version(name: str) -> str:
+        state["versions"].append(name)
+        if name not in state["installed"]:
+            raise metadata.PackageNotFoundError(name)
+        return state["installed"][name]
+
+    def import_module(name: str):
+        state["imports"].append(name)
+        if name in state["broken"]:
+            raise ImportError(f"broken {name}")
+        return ModuleType(name)
+
+    package = ModuleType("xyg")
+    kernels = ModuleType("xyg.kernels")
+    kernels.BACKEND = "native"
+    package.kernels = kernels
+    code = compile(_ceiling_preflight_python(), "ceiling-preflight", "exec")
+
+    def run(experiment: str, arms: str):
+        scope = {}
+        with monkeypatch.context() as patch:
+            patch.chdir(tmp_path)
+            patch.setenv("INPUT_EXPERIMENT", experiment)
+            patch.setenv("INPUT_ARMS", arms)
+            patch.setattr(sys, "version_info", (3, 12))
+            patch.setattr(metadata, "version", version)
+            patch.setattr(importlib, "import_module", import_module)
+            patch.setitem(sys.modules, "xyg", package)
+            patch.setitem(sys.modules, "xyg.kernels", kernels)
+            exec(code, scope)
+        return scope, json.loads(capsys.readouterr().out)
+
+    return state, run
+
+
+@pytest.mark.parametrize(
+    ("experiment", "arms", "shared"),
+    [
+        ("ceiling", "xy", {"numpy", "psutil", "websocket"}),
+        ("ceiling", " xy-exact,xy, ", {"numpy", "psutil", "websocket"}),
+        ("density-comparison", "xy-density", {"numpy", "psutil", "websocket", "tornado"}),
+    ],
+)
+@pytest.mark.parametrize("unused", ["drift", "missing"])
+def test_ceiling_preflight_narrow_arms_ignore_unused_stacks(
+    ceiling_preflight, experiment: str, arms: str, shared: set[str], unused: str
+) -> None:
+    state, run = ceiling_preflight
+    state["broken"] = {
+        "numba",
+        "llvmlite",
+        "datashader",
+        "pandas",
+        "PIL",
+        "plotly.express",
+        "plotly.offline",
+        "plotly.graph_objects",
+        "plotly_resampler",
+        "matplotlib.backends.backend_webagg",
+        "kaleido",
+        "hvplot.pandas",
+        "holoviews",
+        "bokeh",
+        "panel",
+    }
+    for package in (
+        "numba",
+        "llvmlite",
+        "datashader",
+        "pandas",
+        "pillow",
+        "plotly",
+        "plotly-resampler",
+        "matplotlib",
+        "kaleido",
+        "hvplot",
+        "holoviews",
+        "bokeh",
+        "panel",
+        "ipython",
+    ):
+        if unused == "drift":
+            state["installed"][package] = "unrelated-drift"
+        else:
+            state["installed"].pop(package)
+    _, evidence = run(experiment, arms)
+    assert set(state["imports"]) == shared
+    distributions = (shared - {"websocket"}) | {"websocket-client"}
+    assert set(state["versions"]) == distributions
+    assert set(evidence["packages"]) == distributions
+    assert evidence["xy_backend"] == "native"
+
+
+@pytest.mark.parametrize(
+    ("experiment", "arm", "modules"),
+    [
+        ("ceiling", "xy", set()),
+        ("ceiling", "xy-exact", set()),
+        ("ceiling", "plotly", {"plotly.express", "pandas"}),
+        ("ceiling", "matplotlib", {"matplotlib.backends.backend_webagg", "tornado", "PIL"}),
+        ("ceiling", "datashader", {"numba", "llvmlite", "datashader", "pandas", "PIL"}),
+        ("ceiling", "plotly-resampler", {"plotly.graph_objects", "plotly_resampler", "pandas"}),
+        ("density-comparison", "xy-density", set()),
+        (
+            "density-comparison",
+            "plotly-aggregate",
+            {"numba", "llvmlite", "datashader", "pandas", "PIL", "plotly.offline"},
+        ),
+        (
+            "density-comparison",
+            "datashader-aggregate",
+            {
+                "numba",
+                "llvmlite",
+                "datashader",
+                "pandas",
+                "PIL",
+                "hvplot.pandas",
+                "holoviews",
+                "panel",
+                "bokeh",
+            },
+        ),
+    ],
+)
+def test_ceiling_preflight_imports_only_selected_arm_stack(
+    ceiling_preflight, experiment: str, arm: str, modules: set[str]
+) -> None:
+    state, run = ceiling_preflight
+    state["broken"] = {"kaleido"}
+    _, evidence = run(experiment, arm)
+    shared = {"numpy", "psutil", "websocket"}
+    if experiment == "density-comparison":
+        shared.add("tornado")
+    assert set(state["imports"]) == modules | shared
+    assert evidence["arms"] == [arm]
+    assert evidence["packages"]["numpy"] == "2.4.6"
+
+
+@pytest.mark.parametrize(
+    ("experiment", "arms", "module", "distribution"),
+    [
+        ("ceiling", "xy,plotly-resampler", "plotly_resampler", "plotly-resampler"),
+        ("ceiling", "matplotlib", "matplotlib.backends.backend_webagg", "matplotlib"),
+        ("ceiling", "plotly", "plotly.express", "plotly"),
+        ("ceiling", "datashader", "numba", "numba"),
+        ("density-comparison", "xy-density,plotly-aggregate", "numba", "numba"),
+        ("density-comparison", "datashader-aggregate", "numba", "numba"),
+        ("density-comparison", "datashader-aggregate", "hvplot.pandas", "hvplot"),
+        ("density-comparison", "datashader-aggregate", "bokeh", "bokeh"),
+    ],
+)
+@pytest.mark.parametrize("failure", ["import", "version", "missing"])
+def test_ceiling_preflight_rejects_selected_broken_stack(
+    ceiling_preflight, experiment: str, arms: str, module: str, distribution: str, failure: str
+) -> None:
+    state, run = ceiling_preflight
+    if failure == "import":
+        state["broken"].add(module)
+    elif failure == "version":
+        state["installed"][distribution] = "drift"
+    else:
+        state["installed"].pop(distribution)
+    with pytest.raises((ImportError, AssertionError)) as error:
+        run(experiment, arms)
+    assert (module if failure == "import" else distribution) in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "experiment,arms",
+    [
+        ("ceiling", "xy"),
+        ("density-comparison", "xy-density"),
+        ("ceiling", "datashader"),
+        ("density-comparison", "plotly-aggregate"),
+    ],
+)
+def test_ceiling_preflight_rejects_shared_numpy_drift(ceiling_preflight, experiment, arms) -> None:
+    state, run = ceiling_preflight
+    state["installed"]["numpy"] = "2.5.1"
+    with pytest.raises(AssertionError, match="numpy"):
+        run(experiment, arms)
+    assert not state["imports"]
+
+
+@pytest.mark.parametrize(
+    ("experiment", "arms"),
+    [
+        ("ceiling", ""),
+        ("ceiling", " , , "),
+        ("ceiling", "xy-density"),
+        ("ceiling", "xy,unknown"),
+        ("density-comparison", ""),
+        ("density-comparison", "xy"),
+        ("density-comparison", "xy-density,"),
+        ("density-comparison", " xy-density "),
+        ("unknown", "xy"),
+        ("ceiling", "xy; touch injected"),
+        ("ceiling", "$(touch injected)"),
+        ("density-comparison", "xy-density,`touch injected`"),
+        ("ceiling", "xy\nimport os; os.system('touch injected')"),
+    ],
+)
+def test_ceiling_preflight_rejects_invalid_arms_as_data(
+    ceiling_preflight, tmp_path: Path, experiment: str, arms: str
+) -> None:
+    state, run = ceiling_preflight
+    with pytest.raises(AssertionError):
+        run(experiment, arms)
+    assert not state["imports"] and not state["versions"]
+    assert not (tmp_path / "injected").exists()
+
+
+@pytest.mark.parametrize(
+    ("experiment", "producer"),
+    [("ceiling", "bench_ceiling.py"), ("density-comparison", "bench_density_comparison.py")],
+)
+def test_ceiling_preflight_arm_sets_match_producers(
+    ceiling_preflight, experiment, producer
+) -> None:
+    source = (verify_ci_workflow.ROOT / "benchmarks" / producer).read_text()
+    arms = next(
+        ast.literal_eval(node.value)
+        for node in ast.parse(source).body
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "ARMS"
+        )
+        or (
+            isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "ARMS" for target in node.targets)
+        )
+    )
+    _, run = ceiling_preflight
+    scope, evidence = run(experiment, ",".join(arms))
+    assert set(scope["stacks"][experiment]) == set(arms)
+    assert set(evidence["arms"]) == set(arms)
+
+
+@pytest.mark.parametrize(
     ("old", "new"),
     [
         ("on:\n  workflow_dispatch:", "on:\n  pull_request:\n  workflow_dispatch:"),
@@ -5054,6 +5350,40 @@ def test_ceiling_comparison_accepts_existing_manual_capacity_and_defaults() -> N
         ('        default: "3"', '        default: "1"'),
         ("          persist-credentials: false", "          persist-credentials: true"),
         ("          fetch-depth: 0", "          fetch-depth: 1"),
+        ("uv venv --python 3.12", "uv venv"),
+        ("uv venv --python 3.12", "uv venv --python 3.14"),
+        ("--python .venv/bin/python --constraint", "--constraint"),
+        ("        timeout-minutes: 2\n", "        timeout-minutes: 20\n"),
+        (
+            "      - name: Verify benchmark environment\n",
+            "      - name: Verify benchmark environment\n        if: 'false'\n",
+        ),
+        (
+            "      - name: Verify benchmark environment\n",
+            "      - name: Verify benchmark environment\n        continue-on-error: true\n",
+        ),
+        (
+            "              assert expected is None or actual == expected, (name, actual, expected)",
+            "                  assert expected is None or actual == expected, (name, actual, expected)",
+        ),
+        ("expected is None or actual == expected", "True"),
+        ('"numba": "numba", "llvmlite": "llvmlite",', '"llvmlite": "llvmlite",'),
+        (
+            '"datashader-aggregate": {**aggregation, "hvplot.pandas": "hvplot",',
+            '"datashader-aggregate": {**aggregation,',
+        ),
+        ("for name in modules.values():", "for name in pins:"),
+        ("assert arms and set(arms) <= set(stacks[experiment])", "assert arms"),
+        (
+            "modules.update(stacks[experiment][arm])",
+            'modules.update(stacks["ceiling"]["plotly-resampler"])',
+        ),
+        ('raw_arms = os.environ["INPUT_ARMS"].split(",")', 'raw_arms = ["xy"]'),
+        ('INPUT_ARMS: "${{ inputs.arms }}"', 'INPUT_ARMS: "${{ inputs.sizes }}"'),
+        (
+            "          .venv/bin/python benchmarks/plot_ceiling.py ceiling-results.json --out-dir charts",
+            "          uv sync\n          .venv/bin/python benchmarks/plot_ceiling.py ceiling-results.json --out-dir charts",
+        ),
         ("          INPUT_ARMS: ${{ inputs.arms }}", "          INPUT_ARMS: ${{ inputs.sizes }}"),
         (
             "          INPUT_EXPERIMENT: ${{ inputs.experiment }}",
@@ -5085,7 +5415,7 @@ def test_ceiling_comparison_accepts_existing_manual_capacity_and_defaults() -> N
             "--sizes 1000 --arms xy-density\n          else",
         ),
         (
-            "python3 scripts/verify_density_comparison_report.py",
+            ".venv/bin/python scripts/verify_density_comparison_report.py",
             "echo scripts/verify_density_comparison_report.py",
         ),
         (
@@ -5109,14 +5439,14 @@ def test_ceiling_comparison_accepts_existing_manual_capacity_and_defaults() -> N
             "          if false; then",
         ),
         (
-            "uv pip install --constraint benchmarks/requirements-ci.lock hvplot",
+            "uv pip install --python .venv/bin/python --constraint benchmarks/requirements-ci.lock hvplot",
             "uv pip install hvplot",
         ),
         (
             "NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2",
             "NUMBA_NUM_THREADS=48 OMP_NUM_THREADS=48 OPENBLAS_NUM_THREADS=48",
         ),
-        ("uv run python benchmarks/bench_ceiling.py \\", "echo benchmarks/bench_ceiling.py \\"),
+        (".venv/bin/python benchmarks/bench_ceiling.py \\", "echo benchmarks/bench_ceiling.py \\"),
         ("${{ runner.temp }}/density-comparison-${{ github.sha }}.json", "density-comparison.json"),
         (
             "      - name: Upload ceiling report\n        if: always()",

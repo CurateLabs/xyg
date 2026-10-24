@@ -1,6 +1,7 @@
 # Live aggregation comparison foundation (#11)
 
-Status: bounded local evidence foundation, not competitive scale acceptance.
+Status: bounded local evidence plus a rejected hosted scale attempt; competitive
+scale acceptance remains open.
 Extends the [benchmark methodology](../benchmarks/methodology.md) without changing
 its measurement or publication gates. See dossier §§5, 12, 17, 28–29 and
 [tier-3 testing](tier3-testing.md). The original real-wheel run is
@@ -165,9 +166,9 @@ scope, not a billion-row impossibility claim. Three f64 columns require 24 GB
 of file data; the new optional two-f64 source requires **16,000,000,000 bytes**
 at a true billion rows. Neither mapped-file size is itself RSS. The existing
 manual `ceiling-benchmark.yml` lane documents Blacksmith macOS 15 M4, 48 GB RAM,
-250 GB SSD and a 20 GiB per-process-tree RSS guard. Root may wire the optional
-comparison into that existing lane after review. No new workflow, job, paid
-capacity, cap increase or hosted dispatch is introduced here. Whether a true
+250 GB SSD and a 20 GiB per-process-tree RSS guard. The optional comparison now
+runs in that existing lane; the first actual dispatch is retained below. No new
+workflow, job, paid capacity or cap increase is introduced. Whether a true
 1B mapped source plus each backend's derived state fits must be measured;
 record strict memory/disk/timeout failures rather than promising it fits.
 Do not extrapolate local timings or close #11 from these results.
@@ -256,10 +257,18 @@ observes its **actual** `Canvas.points` result without replacing it: its grid
 sum must equal the independent source-window count and it records the raw grid
 hash and dimensions. Retained DataFrame and actual Datashader backend-input
 pointer/copy observations are separate. XYG exact-point output has the clipped
-point-count oracle above; its quantized density grid does not gain an invented
-independent per-cell conservation proof from this experiment. Revisions,
-extents, mode, source count and rendered pixels are still required. Missing
-oracles and exact fallbacks remain explicit limits.
+point-count oracle above. The retained local v2 archives did not independently
+validate every XYG density cell. Current reports additionally require the
+[source-derived count and grid oracle](comparison-count-oracle.md): independent
+chunked source binning, pyramid reduction and screen-grid composition must
+match the raw encoded reply and adopted decoded grid. Exact inclusive source
+counts, half-open bin counts and whole-cell-center estimates remain distinct;
+the estimate must match exactly and its difference from the exact source count
+must fit the independently computed boundary-cell mass. This is not an
+arbitrary error tolerance or a cross-library pixel-equivalence claim.
+Revisions, extents, mode, source count and rendered pixels remain required.
+Missing oracles and exact fallbacks remain explicit limits. The three pinned
+historical archive digests preserve their original contract and limitations.
 
 ## Optional chunked f64 mapped sources and allocation guards
 
@@ -296,8 +305,8 @@ sizes above 1M require all of: f64-memmap; actual Darwin/arm64 with at least
 or 0.25 GiB source disk. Actual source file bytes must fit the chosen disk cap
 and free disk must include 64 MiB reserve. Host loaders repeat the same authority
 check. This is an allocation guard, not permission to dispatch that host.
-The optional existing-lane integration is described below; actual-scale
-measurements remain pending reviewed landing on main.
+The existing-lane integration and rejected actual-scale attempt are described
+below; accepted measurements under the repaired contract remain pending.
 
 The programmatic runner records host preparation that remains alive without
 `META` at its deadline as `status: timeout`, `phase: host_prepare`, with an
@@ -337,7 +346,11 @@ ceiling ladder. The optional comparison uses the same single documented
 Blacksmith macOS M4 job (48 GB RAM, 250 GB SSD, 720-minute job timeout), with
 no runner, job or capacity addition. It is main-only and reuses the prepared
 native core, client and Chromium. The optional hvPlot dependencies use the
-existing comparison lock.
+existing comparison lock. The repaired lane fixes Python to 3.12, targets the
+constrained environment explicitly for every later Python command, and checks
+shared and selected-arm versions/imports before large allocation. It does not
+resynchronize that environment with the product lock. See the
+[dependency environment contract](comparison-dependency-environment.md).
 
 The mapped profile fixes source-generation chunks at 1M rows, source disk at
 20 GiB, and each step deadline at 15 seconds. The controller rejects nonfinite
@@ -359,13 +372,51 @@ gh workflow run ceiling-benchmark.yml --repo CurateLabs/xyg --ref main \
   -f repetitions=2 -f timeout=300 -f memory_gib=20 -f hardware_gl=false
 ```
 
-This command has **not** been dispatched by the bounded implementation task.
-Retain its exact-SHA JSON, execution metadata, environment, source identities
-and complete success/failure cells before making actual 100M/1B comparisons.
+The initial actual dispatch is retained below as **failed evidence**, not an
+accepted comparison. Retain exact-SHA JSON, execution metadata, environment,
+source identities and complete success/failure cells for any later attempt.
 File size is not RSS: 1B two-f64 rows require 16 GB of mapped source files;
 source-plus-derived costs and supported outcomes must be measured rather than
 inferred from machine capacity. Larger-than-RAM and whole-#11/#108 acceptance
 remain separate outstanding requirements.
+
+## Initial hosted scale attempt: rejected, 2026-10-24
+
+[Run 40066499687](https://github.com/CurateLabs/xyg/actions/runs/40066499687),
+attempt 1 on clean main `a8b3e10801fa3c1b96eddd7b244a1d64e0778bad`,
+completed the real f64-memmap source generation and all 18 configured attempts
+at 1M/100M/1B, but **failed independent report verification**. The
+[immutable retained receipt](../../benchmarks/results/live-aggregation-2026-10-24/hosted-main/README.md)
+preserves the original report, complete job log, GitHub metadata and ZIP digest,
+historical producer bindings, every repetition and the hosted rejection.
+
+All 12 combined-competitor attempts failed during imports before `META`:
+Numba 0.66.0 rejected NumPy 2.5.1. The constrained install logged NumPy 2.4.6;
+the following `uv run` resynchronized the project environment with its lock.
+These are dependency-environment failures, not competitor speed or capacity
+limits. Neither competitor produced an aggregation/browser measurement.
+
+The producer labeled all six XYG attempts `ok`, but the independent verifier
+rejected `XYG density visible count mismatch`. All 128 warm windows at
+100M/1B compared an exact inclusive source count with the product's whole-cell
+pyramid estimate; maximum absolute differences were 9,885 and 107,116 at those
+sizes. The 1M route used exact `bin2d-oversized` counts and exposed no mismatch.
+The product source documents approximate cell-center pyramid counting. The
+repaired experimental contract independently calculates the exact expected
+estimate, its boundary-mass bound and every encoded/adopted grid value; bounded
+native regressions also distinguish inclusive and half-open endpoints. A
+separate metadata correction labels an emitted no-rescan density grid as
+`density`/`pyramid-count` even when the sparse estimate would otherwise produce
+direct-tier planner labels; its grid, count and route are unchanged. These
+repairs do not establish that the rejected run passed, change product
+approximation policy, or accept discrepancies behind a tolerance.
+
+The 1B source used actual 16,000,000,000-byte x/y files, smaller than the
+runner's 48 GiB RAM. Source creation and XYG's recorded timings, mapped-pointer
+observations and RSS remain diagnostics subject to the rejected report, not
+accepted competitive or larger-than-RAM results. Actual renderer remains
+unmeasured. Dependency and count/grid contract repairs require reviewed landing
+and a subsequently accepted main execution before checking competitive acceptance.
 
 ## Primary API references inspected
 

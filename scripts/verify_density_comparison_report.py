@@ -165,6 +165,8 @@ def tree_hash(root: Path, folder: str, pattern: str) -> str:
 def check_provenance(p: dict, root: Path | None, historical: str | None) -> None:
     require(all(digest(v) for v in p.values()), "provenance hashes must be SHA256")
     require(all(k in p for k in HARNESS), "missing harness/lock provenance")
+    if not historical:
+        require("benchmarks/_ux_comparison_oracle.py" in p, "missing independent oracle provenance")
     for folder in ("python/xyg", "crates", "js/src"):
         require(folder + ":tree_sha256" in p, "missing product tree identity")
     require("python/xyg/static/index.js" in p, "missing built client identity")
@@ -341,6 +343,116 @@ def check_inventory(obs: dict, n: int, arm: str) -> None:
             )
 
 
+def check_numerical(o: dict, target: list, count: int) -> None:
+    a = o["numerical_oracle"]
+    require(
+        a["version"] == "source-cell-compose-v1" and a["passed"] is True,
+        "missing/failing independent numerical oracle",
+    )
+    require(
+        a["domain"] == target
+        and integer(a["exact_source_count"])
+        and a["exact_source_count"] == count,
+        "numerical source count/domain mismatch",
+    )
+    require(
+        integer(a["half_open_source_count"], 0, count)
+        and integer(a["upper_boundary_excluded"], 0, count)
+        and a["upper_boundary_excluded"] == count - a["half_open_source_count"],
+        "upper-boundary exclusions mismatch",
+    )
+    require(
+        a["emitted_visible"] == o["visible"] and integer(o["visible"]),
+        "oracle substituted for emitted visible",
+    )
+    require(digest(a["source_sha256"]), "missing numerical source identity")
+    require(
+        number(a["validation_wall_ms"], 0, 15000)
+        and integer(a["validation_http_request_bytes"], 1, 8 * 2**20),
+        "missing numerical validation time/HTTP request-body accounting",
+    )
+    if o["exact_fallback"]:
+        require(
+            a["points_allowed"] is True
+            and o["tier"] == "direct"
+            and o["reduction"] == "none"
+            and o["exact_count"] == count
+            and a["count_exact"] is True
+            and a["count_method"] == "inclusive-source"
+            and a["expected_visible"] == count
+            and a["base_geometry"] is None
+            and a["served_level"] is None,
+            "invalid exact fallback numerical disclosure",
+        )
+        return
+    require(
+        o["tier"] == "density"
+        and a["raster_shape"] == o["raster_shape"]
+        and o["encoding"] == "log-u8",
+        "incompatible density labels/shape/encoding",
+    )
+    require(
+        integer(a["expected_visible"]) and o["visible"] == a["expected_visible"],
+        "independent source-derived visible count mismatch",
+    )
+    require(integer(a["boundary_mass_bound"], 0, 1_000_000_000), "invalid boundary-mass bound")
+    geometry = a["base_geometry"]
+    if a["count_method"] == "whole-cell-center":
+        require(
+            a["count_exact"] is False
+            and isinstance(geometry, dict)
+            and abs(o["visible"] - count) <= a["boundary_mass_bound"],
+            "pyramid estimate outside source boundary-mass bound",
+        )
+    else:
+        require(
+            a["count_exact"] is True
+            and a["count_method"] in ("inclusive-source", "half-open-source"),
+            "missing count method/exactness",
+        )
+        require(
+            o["visible"]
+            == (a["half_open_source_count"] if a["count_method"] == "half-open-source" else count),
+            "exact-route visible count mismatch",
+        )
+    if geometry is not None:
+        dim = geometry["dimension"]
+        require(
+            domain(geometry["domain"])
+            and integer(dim, 2, 16384)
+            and dim & (dim - 1) == 0
+            and geometry["upper_edge_relative_epsilon"] == 1e-9
+            and integer(a["served_level"], 0, int(math.log2(dim)))
+            and isinstance(a["upsampled"], bool)
+            and o["binning"]
+            == f"pyramid-L{a['served_level']}" + ("-upsampled" if a["upsampled"] else "")
+            and o["reduction"] == "pyramid-count",
+            "invalid pyramid geometry/served level/disclosure",
+        )
+    else:
+        require(
+            a["served_level"] is None
+            and a["count_method"] != "whole-cell-center"
+            and (o["binning"], o["reduction"])
+            in (("exact", "bin2d"), ("exact", "count"), ("bin2d-oversized", "bin2d-oversized")),
+            "invalid exact aggregation disclosure",
+        )
+    require(
+        digest(a["grid_sha256"]) and number(a["grid_mass_diagnostic"]),
+        "missing independent grid observation",
+    )
+    require(
+        digest(a["expected_encoded_sha256"])
+        and a["actual_encoded_sha256"] == a["expected_encoded_sha256"]
+        and digest(a["expected_decoded_sha256"])
+        and a["adopted_decoded_sha256"] == a["expected_decoded_sha256"]
+        and a["encoded_bytes"] == math.prod(o["raster_shape"])
+        and number(a["expected_max"])
+        and a["actual_max"] == a["expected_max"] == o["reply_max"] == o["adopted_max"],
+        "emitted/adopted grid or encoding differs from independent source oracle",
+    )
+
+
 def check_output(o: dict, target: list, count: int, arm: str, historical: bool) -> None:
     require(
         o["adopted"] is True and integer(o["revision"]),
@@ -380,7 +492,9 @@ def check_output(o: dict, target: list, count: int, arm: str, historical: bool) 
             "invalid actual raster dimensions",
         )
     if arm == "xy-density":
-        if o["mode"] == "density":
+        if not historical:
+            check_numerical(o, target, count)
+        elif o["mode"] == "density":
             require(o["visible"] == count, "XYG density visible count mismatch")
         require(integer(o["visible"]) and text(o["reduction"]), "missing XYG reduction disclosure")
         if not historical or "rendered_revision" in o:
@@ -450,7 +564,7 @@ def check_paint(
         near(p["state"]["axes"], target) and near(p["state"]["plot_shape"], [512, 512]),
         "actual axes/plot dimensions mismatch",
     )
-    if not cold:
+    if not cold or (arm == "xy-density" and not historical):
         check_output(p["state"]["output"], target, count, arm, historical)
 
 
@@ -478,6 +592,17 @@ def check_cell(c: dict, s: dict, cap: int, step_timeout: float, historical: bool
     )
     require(c["transport"]["scope"] == TRANSPORT_SCOPE, "transport scope changed")
     cps = c["transport"]["checkpoints"]
+    if arm == "xy-density" and not historical:
+        prep = cps["visible-complete"]["host_observation"]["numerical_oracle_preparation"]
+        require(
+            prep["version"] == "source-cell-compose-v1"
+            and number(prep["wall_ms"], 0, c["host_prepare_wall_ms"])
+            and integer(prep["chunk_rows"], 1, 1_000_000)
+            and integer(prep["grid_storage_upper_bound_bytes"], 1, cap)
+            and prep["scope"]
+            == "host_prepare before META; host process-tree RSS/watchdog includes oracle",
+            "missing/out-of-phase numerical oracle preparation",
+        )
     names = ["visible-complete", *[f"step-{i}" for i in range(32)], "empty-control", "terminal"]
     previous = None
     for name in names:
@@ -562,6 +687,36 @@ def check_cell(c: dict, s: dict, cap: int, step_timeout: float, historical: bool
         ("empty-control", c["empty_control"], empty, 0),
     ]:
         if arm == "xy-density":
+            if not historical:
+                a = paint["state"]["output"]["numerical_oracle"]
+                require(
+                    a == cps[name]["host_observation"]["numerical_oracle"]
+                    and a["source_sha256"] == s["sha256_x_then_y"],
+                    "numerical oracle differs from host/source binding",
+                )
+                if name.startswith("step-"):
+                    counts = s["windows"][int(name.split("-")[1])]["source_counts"]
+                    require(
+                        counts
+                        == {
+                            "inclusive": count,
+                            "half_open": a["half_open_source_count"],
+                            "upper_boundary_excluded": a["upper_boundary_excluded"],
+                        },
+                        "numerical endpoint counts differ from source manifest",
+                    )
+                geometry = a["base_geometry"]
+                if geometry is not None:
+                    bounds = list(s["source_bounds"])
+                    for edge in (1, 3):
+                        bounds[edge] += (bounds[edge] - bounds[edge - 1]) * 1e-9
+                    dim = max(2048, 2 ** math.ceil(math.log2(math.sqrt(max(2, n / 16)))))
+                    require(
+                        n >= 2_000_000
+                        and geometry["domain"] == bounds
+                        and geometry["dimension"] == min(16384, dim),
+                        "pyramid geometry differs from source/policy",
+                    )
             continue
         out = cps[name]["host_observation"]["last_output"]
         require(near(out["domain"], target), "backend actual output domain mismatch")
@@ -644,6 +799,11 @@ def validate(
 
 
 def _validate(r, sha, sizes, arms, root, env, host, historical):
+    if not historical:
+        require(
+            r["numerical_contract"] == "source-cell-compose-v1",
+            "missing current numerical contract",
+        )
     require(
         r["schema_version"] == 1
         and r["experiment"] == "programmatic-equal-window-no-gesture-claim",
@@ -777,6 +937,25 @@ def _validate(r, sha, sizes, arms, root, env, host, historical):
         check_authority(a, n, r["profile"], cap, hosted)
         if str(n) in r["sources"]:
             check_source(r["sources"][str(n)], n, r["profile"], a, cap)
+            if not historical:
+                s = r["sources"][str(n)]
+                require(domain(s["source_bounds"]), "missing exact source extrema")
+                repeated_counts = {}
+                for w in s["windows"]:
+                    counts = w["source_counts"]
+                    require(
+                        counts["inclusive"] == w["expected_count"]
+                        and integer(counts["half_open"], 0, counts["inclusive"])
+                        and counts["upper_boundary_excluded"]
+                        == counts["inclusive"] - counts["half_open"],
+                        "source endpoint counts inconsistent",
+                    )
+                    key = tuple(w["window"])
+                    require(
+                        key not in repeated_counts or repeated_counts[key] == counts,
+                        "repeated source endpoint counts changed",
+                    )
+                    repeated_counts[key] = counts
             require(
                 r["sources"][str(n)]["creation_wall_ms"]
                 <= limits["host_or_browser_timeout_s"] * 1000,

@@ -90,6 +90,7 @@ def windows(domain: list[float]) -> list[dict]:
 
 
 def count_window(x, y, domain, chunk=65536) -> int:
+    # Keep legacy request-path oracle work unchanged (notably Plotly's host).
     total = 0
     for start in range(0, len(x), chunk):
         a = np.asarray(x[start : start + chunk], dtype=np.float64)
@@ -100,6 +101,30 @@ def count_window(x, y, domain, chunk=65536) -> int:
             )
         )
     return total
+
+
+def window_counts(x, y, domain, chunk=65536) -> dict[str, int]:
+    """Keep the source/range oracle inclusive; disclose binning's upper edges."""
+    total = 0
+    half_open = 0
+    for start in range(0, len(x), chunk):
+        a = np.asarray(x[start : start + chunk], dtype=np.float64)
+        b = np.asarray(y[start : start + chunk], dtype=np.float64)
+        total += int(
+            np.count_nonzero(
+                (a >= domain[0]) & (a <= domain[1]) & (b >= domain[2]) & (b <= domain[3])
+            )
+        )
+        half_open += int(
+            np.count_nonzero(
+                (a >= domain[0]) & (a < domain[1]) & (b >= domain[2]) & (b < domain[3])
+            )
+        )
+    return {
+        "inclusive": total,
+        "half_open": half_open,
+        "upper_boundary_excluded": total - half_open,
+    }
 
 
 def create_source(
@@ -141,6 +166,7 @@ def create_source(
     digest = hashlib.sha256()
     columns = {}
     bounds = []
+    source_bounds = []
     for name, path in zip(("x", "y"), paths, strict=True):
         col = np.memmap(path, dtype=dtype, mode="r", shape=(n,))
         own = hashlib.sha256()
@@ -153,12 +179,14 @@ def create_source(
             lo = min(lo, float(block.min()))
             hi = max(hi, float(block.max()))
         bounds.extend([lo - 0.05 * (hi - lo), hi + 0.05 * (hi - lo)])
+        source_bounds.extend([lo, hi])
         columns[name] = {"file": path.name, "bytes": path.stat().st_size, "sha256": own.hexdigest()}
         del raw, block, col  # release the hash scan mapping before reopening canonical maps
     x, y = [np.memmap(path, dtype=dtype, mode="r", shape=(n,)) for path in paths]
     trajectory = windows(bounds)
     for step in trajectory:
-        step["expected_count"] = count_window(x, y, step["window"], chunk)
+        step["source_counts"] = window_counts(x, y, step["window"], chunk)
+        step["expected_count"] = step["source_counts"]["inclusive"]
     result = {
         "schema_version": 1,
         "profile": profile,
@@ -169,6 +197,7 @@ def create_source(
         "columns": columns,
         "sha256_x_then_y": digest.hexdigest(),
         "extents": bounds,
+        "source_bounds": source_bounds,
         "generation_chunk_rows": chunk,
         "authority": authority,
         "windows": trajectory,

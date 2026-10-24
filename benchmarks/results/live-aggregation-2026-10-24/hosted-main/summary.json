@@ -1,0 +1,2238 @@
+{
+  "report": "density-comparison-a8b3e10801fa3c1b96eddd7b244a1d64e0778bad.json.gz",
+  "decoded_report_sha256": "0a19faac8773d6b0dc659652cd775cab872aa9f7f30250c3354c6910aaa87eb9",
+  "scope": "Descriptive metadata extraction from a hosted report rejected by its independent verifier. No acceptance, gesture latency, kernel comparison, or winner.",
+  "hosted_verifier": {
+    "result": "rejected",
+    "message": "INVALID: XYG density visible count mismatch",
+    "source": "hosted-verifier-output.txt",
+    "accepted_reports": 0
+  },
+  "quantiles": "Per repetition: p50 is the median of all 32 paint_stable_ms observations; p95 uses sorted index floor(.95*(n-1)); no fastest repetition selection.",
+  "producer_status_counts": {
+    "ok": 6,
+    "host_failed": 12
+  },
+  "environment": {
+    "generated_at_utc": "2026-10-24T05:32:13.957961Z",
+    "python": {
+      "version": "3.14.6",
+      "implementation": "CPython",
+      "compiler": "Clang 17.0.0 (clang-1700.6.4.2)"
+    },
+    "platform": {
+      "system": "Darwin",
+      "release": "24.6.0",
+      "version": "Darwin Kernel Version 24.6.0: Mon Jan 19 22:02:01 PST 2026; root:xnu-11417.140.69.708.3~1/RELEASE_ARM64_VMAPPLE",
+      "machine": "arm64",
+      "processor": "arm"
+    },
+    "cpu_count": 12,
+    "package_versions": {
+      "numpy": "2.5.1",
+      "plotly": "6.9.0",
+      "datashader": "0.19.1",
+      "hvplot": "0.12.2",
+      "holoviews": "1.23.1",
+      "bokeh": "3.9.1",
+      "panel": "1.9.3",
+      "pandas": "3.0.3",
+      "numba": "0.66.0",
+      "llvmlite": "0.48.0",
+      "tornado": "6.5.7",
+      "psutil": "7.2.2",
+      "websocket-client": "1.9.2"
+    },
+    "executables": {
+      "node": "v22.23.4",
+      "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+      "chromium": "Google Chrome for Testing 149.0.7827.55"
+    },
+    "xy_backend": "native",
+    "browser_renderer": "software-gl",
+    "git": {
+      "commit": "a8b3e10801fa3c1b96eddd7b244a1d64e0778bad",
+      "branch": "main",
+      "dirty": false
+    },
+    "browser_renderer_requested": "software-gl",
+    "browser_renderer_observed": null,
+    "browser_renderer_scope": "launch-request; actual renderer not measured"
+  },
+  "argv": [
+    "benchmarks/bench_density_comparison.py",
+    "--sizes",
+    "1000000,100000000,1000000000",
+    "--arms",
+    "xy-density,plotly-aggregate,datashader-aggregate",
+    "--profile",
+    "f64-memmap",
+    "--repetitions",
+    "2",
+    "--chunk",
+    "1000000",
+    "--memory-gib",
+    "20",
+    "--disk-gib",
+    "20",
+    "--timeout",
+    "300",
+    "--step-timeout",
+    "15",
+    "--chrome",
+    "/Users/runner/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+    "--out",
+    "/Users/runner/_work/_temp/density-comparison-a8b3e10801fa3c1b96eddd7b244a1d64e0778bad.json"
+  ],
+  "runtime": {
+    "temp_root": "/var/folders/pm/cmklcsfj60nd7nfc79g8xmbc0000gn/T",
+    "thread_environment": {
+      "NUMBA_NUM_THREADS": "2",
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    }
+  },
+  "limits": {
+    "host_or_browser_timeout_s": 300.0,
+    "step_timeout_s": 15.0,
+    "rss_bytes_per_tree": 21474836480,
+    "rss_poll_ms": 50
+  },
+  "sources": {
+    "1000000": {
+      "schema_version": 1,
+      "profile": "f64-memmap",
+      "actual_rows": 1000000,
+      "dtype": "<f8",
+      "seed": 20260713,
+      "generator": "independent-streams-f64-v1",
+      "columns": {
+        "x": {
+          "file": "x.f64-memmap",
+          "bytes": 8000000,
+          "sha256": "a2896f582bc8f7eb9aa94da35458ddbac80585f0f4dcb40262c639f201513659"
+        },
+        "y": {
+          "file": "y.f64-memmap",
+          "bytes": 8000000,
+          "sha256": "eee0bf59b32d9b4bc9a364b8647695d8dea39f4612ddb59eda6e5c1a6406d77c"
+        }
+      },
+      "sha256_x_then_y": "b2018aea04e035ae4d87d6b5f21fb08f921d7736074df520d1074c8694ee5baf",
+      "extents": [
+        -5.5512094117860356,
+        5.502438543418383,
+        -4.314843366813583,
+        4.470738569247525
+      ],
+      "generation_chunk_rows": 1000000,
+      "authority": {
+        "authority": "manual-main-macos-M4",
+        "actual_rows": 1000000,
+        "source_file_bytes": 16000000,
+        "per_tree_rss_guard_bytes": 21474836480,
+        "disk_guard_bytes": 21474836480,
+        "mapped_bytes_are_not_rss": true,
+        "facts": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "memory": 51539607552,
+          "GITHUB_ACTIONS": "true",
+          "GITHUB_EVENT_NAME": "workflow_dispatch",
+          "GITHUB_REF": "refs/heads/main",
+          "GITHUB_WORKFLOW": "Interactive ceiling benchmark",
+          "RUNNER_OS": "macOS"
+        }
+      },
+      "windows": [
+        {
+          "kind": "pan",
+          "window": [
+            -5.5512094117860356,
+            -0.024385434183826327,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 374385
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.787797422984931,
+            2.7390265546172783,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 537345
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.5512094117860356,
+            -0.024385434183826327,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 374385
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.787797422984931,
+            2.7390265546172783,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 537345
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.5512094117860356,
+            -0.024385434183826327,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 374385
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 490227
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.787797422984931,
+            2.7390265546172783,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 537345
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.478650420185207,
+            2.0481735574170026,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 539193
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 531842
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.860356414585759,
+            0.6664675630164494,
+            -4.314843366813583,
+            0.07794760121697131
+          ],
+          "expected_count": 490227
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "expected_count": 875718
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "expected_count": 875718
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "expected_count": 875718
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            -1.4060914285843786,
+            -3.2166456248059445,
+            -1.020250140790667
+          ],
+          "expected_count": 35462
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.169503417385483,
+            1.357320560216726,
+            -3.2166456248059445,
+            1.1761453432246096
+          ],
+          "expected_count": 875718
+        }
+      ],
+      "creation_wall_ms": 433.61633299998914,
+      "source_peak_rss_bytes": 78168064
+    },
+    "100000000": {
+      "schema_version": 1,
+      "profile": "f64-memmap",
+      "actual_rows": 100000000,
+      "dtype": "<f8",
+      "seed": 20260713,
+      "generator": "independent-streams-f64-v1",
+      "columns": {
+        "x": {
+          "file": "x.f64-memmap",
+          "bytes": 800000000,
+          "sha256": "b95264f8932bf198c1b46c28d51d8b3a7a0766b6882ae24647cdd1ca9b79f579"
+        },
+        "y": {
+          "file": "y.f64-memmap",
+          "bytes": 800000000,
+          "sha256": "0a7fdea739f8b50ac7aa426e1b84335c148d60eff3aaa38ca3d7cc5c41ca46ab"
+        }
+      },
+      "sha256_x_then_y": "ec8552f33e7a364fece94e1055e0ab85fc0c508bb2876092ecd31025e8368af4",
+      "extents": [
+        -6.032507630659307,
+        6.148159513038603,
+        -4.9314485030734465,
+        4.87737305191943
+      ],
+      "generation_chunk_rows": 1000000,
+      "authority": {
+        "authority": "manual-main-macos-M4",
+        "actual_rows": 100000000,
+        "source_file_bytes": 1600000000,
+        "per_tree_rss_guard_bytes": 21474836480,
+        "disk_guard_bytes": 21474836480,
+        "mapped_bytes_are_not_rss": true,
+        "facts": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "memory": 51539607552,
+          "GITHUB_ACTIONS": "true",
+          "GITHUB_EVENT_NAME": "workflow_dispatch",
+          "GITHUB_REF": "refs/heads/main",
+          "GITHUB_WORKFLOW": "Interactive ceiling benchmark",
+          "RUNNER_OS": "macOS"
+        }
+      },
+      "windows": [
+        {
+          "kind": "pan",
+          "window": [
+            -6.032507630659307,
+            0.05782594118964823,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 36450230
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.9873408447348293,
+            3.1029927271141258,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48481342
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.032507630659307,
+            0.05782594118964823,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 36450230
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.9873408447348293,
+            3.1029927271141258,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48481342
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.032507630659307,
+            0.05782594118964823,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 36450230
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 45904844
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -2.9873408447348293,
+            3.1029927271141258,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48481342
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.7486325412159487,
+            2.341701030633006,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48599532
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 48339073
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.271215934178187,
+            0.8191176376707681,
+            -4.9314485030734465,
+            -0.02703772557700823
+          ],
+          "expected_count": 45904844
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "expected_count": 90200409
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "expected_count": 90200409
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "expected_count": 90200409
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            -1.4647574517725905,
+            -3.705345808699337,
+            -1.2531404199511176
+          ],
+          "expected_count": 2258089
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -4.509924237697068,
+            1.580409334151887,
+            -3.705345808699337,
+            1.1990649687971011
+          ],
+          "expected_count": 90200409
+        }
+      ],
+      "creation_wall_ms": 5300.344874999979,
+      "source_peak_rss_bytes": 1677262848
+    },
+    "1000000000": {
+      "schema_version": 1,
+      "profile": "f64-memmap",
+      "actual_rows": 1000000000,
+      "dtype": "<f8",
+      "seed": 20260713,
+      "generator": "independent-streams-f64-v1",
+      "columns": {
+        "x": {
+          "file": "x.f64-memmap",
+          "bytes": 8000000000,
+          "sha256": "1356988f65d9e22bf235ae04e1174a665615cbea83301b1ef58be8825c9fb7d1"
+        },
+        "y": {
+          "file": "y.f64-memmap",
+          "bytes": 8000000000,
+          "sha256": "72b41dd566b0b2cdd51fb4d3b91b91539c4ea94abce18ca9d13ca4ba7c87ec7e"
+        }
+      },
+      "sha256_x_then_y": "080c3cc0d77c3d1d05bdfef5cdbb90c58065c8502e75b551ffcd86d7df63f7df",
+      "extents": [
+        -6.826720559118933,
+        6.676159600304974,
+        -5.369787777223938,
+        5.1292191237984825
+      ],
+      "generation_chunk_rows": 1000000,
+      "authority": {
+        "authority": "manual-main-macos-M4",
+        "actual_rows": 1000000000,
+        "source_file_bytes": 16000000000,
+        "per_tree_rss_guard_bytes": 21474836480,
+        "disk_guard_bytes": 21474836480,
+        "mapped_bytes_are_not_rss": true,
+        "facts": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "memory": 51539607552,
+          "GITHUB_ACTIONS": "true",
+          "GITHUB_EVENT_NAME": "workflow_dispatch",
+          "GITHUB_REF": "refs/heads/main",
+          "GITHUB_WORKFLOW": "Interactive ceiling benchmark",
+          "RUNNER_OS": "macOS"
+        }
+      },
+      "windows": [
+        {
+          "kind": "pan",
+          "window": [
+            -6.826720559118933,
+            -0.07528047940698013,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 315425558
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.4510005192629567,
+            3.3004395604489956,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438537906
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.826720559118933,
+            -0.07528047940698013,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 315425558
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.4510005192629567,
+            3.3004395604489956,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438537906
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -6.826720559118933,
+            -0.07528047940698013,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 315425558
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 414791813
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -3.4510005192629567,
+            3.3004395604489956,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438537906
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -4.294930529226951,
+            2.456509550485003,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 438759451
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 436996096
+        },
+        {
+          "kind": "pan",
+          "window": [
+            -5.982790549154939,
+            0.7686495305570142,
+            -5.369787777223938,
+            -0.12028432671272782
+          ],
+          "expected_count": 414791813
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "expected_count": 903843799
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "expected_count": 903843799
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "expected_count": 903843799
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            -1.7631404993349689,
+            -4.057411914596136,
+            -1.4326601893405302
+          ],
+          "expected_count": 11156154
+        },
+        {
+          "kind": "zoom",
+          "window": [
+            -5.138860539190945,
+            1.6125795405210086,
+            -4.057411914596136,
+            1.1920915359150746
+          ],
+          "expected_count": 903843799
+        }
+      ],
+      "creation_wall_ms": 48506.169583,
+      "source_peak_rss_bytes": 16190701568
+    }
+  },
+  "cells": [
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 118751232,
+      "browser_peak_rss_bytes": 1162330112,
+      "host_prepare_wall_ms": 265.92249999998785,
+      "producer_status": "ok",
+      "host_build_ms": 40.93487500000492,
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "empty_control": {
+        "ok": true,
+        "expected_count": 0,
+        "lit_pixels": 0,
+        "paint_stable_ms": 34.90000000000873,
+        "stability_confirmed_ms": 171.70000000001164
+      },
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 491.3999999999942,
+        "output_adopt_ms": 491.3999999999942,
+        "paint_stable_ms": 522.1999999999971,
+        "stability_confirmed_ms": 651.2999999999884
+      },
+      "warm_paint_stable_ms": {
+        "p50": 37.25,
+        "p95": 49.30000000000291,
+        "max": 243.5,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          250,
+          250
+        ]
+      ],
+      "binning": [
+        "bin2d-oversized"
+      ],
+      "application_body_bytes": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 267456,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 267456,
+            "total_bytes": 267456
+          }
+        },
+        "warm_32_total": 2027204,
+        "empty_control_delta": 63322,
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 2357982,
+          "to_host": {
+            "json_bytes": 14710,
+            "binary_frame_bytes": 0,
+            "total_bytes": 14710
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 2343272,
+            "total_bytes": 2343272
+          }
+        }
+      },
+      "retained_array_observations": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "canonical_after_build": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        }
+      },
+      "equivalent_cached_raster_steps": 22,
+      "exact_visible_count_mismatch_steps": 0,
+      "maximum_absolute_visible_count_difference": 0
+    },
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 97583104,
+      "browser_peak_rss_bytes": 1142587392,
+      "host_prepare_wall_ms": 151.91074999999898,
+      "producer_status": "ok",
+      "host_build_ms": 9.713791999999444,
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "empty_control": {
+        "ok": true,
+        "expected_count": 0,
+        "lit_pixels": 0,
+        "paint_stable_ms": 37.29999999998836,
+        "stability_confirmed_ms": 172.79999999998836
+      },
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 460.3999999999942,
+        "output_adopt_ms": 460.3999999999942,
+        "paint_stable_ms": 489.6999999999971,
+        "stability_confirmed_ms": 629.8000000000029
+      },
+      "warm_paint_stable_ms": {
+        "p50": 36.650000000001455,
+        "p95": 46,
+        "max": 245.29999999998836,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          250,
+          250
+        ]
+      ],
+      "binning": [
+        "bin2d-oversized"
+      ],
+      "application_body_bytes": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 267456,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 267456,
+            "total_bytes": 267456
+          }
+        },
+        "warm_32_total": 2027204,
+        "empty_control_delta": 63322,
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 2357982,
+          "to_host": {
+            "json_bytes": 14710,
+            "binary_frame_bytes": 0,
+            "total_bytes": 14710
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 2343272,
+            "total_bytes": 2343272
+          }
+        }
+      },
+      "retained_array_observations": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "canonical_after_build": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        }
+      },
+      "equivalent_cached_raster_steps": 22,
+      "exact_visible_count_mismatch_steps": 0,
+      "maximum_absolute_visible_count_difference": 0
+    },
+    {
+      "n": 1000000,
+      "arm": "plotly-aggregate",
+      "repetition": 0,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 190627840,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 290, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 196, in main\n    initial = {\"seq\": 0, **aggregate(frame, home, *size)}\n                           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 39, in aggregate\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 1000000,
+      "arm": "plotly-aggregate",
+      "repetition": 1,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 140967936,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 290, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 196, in main\n    initial = {\"seq\": 0, **aggregate(frame, home, *size)}\n                           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 39, in aggregate\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 1000000,
+      "arm": "datashader-aggregate",
+      "repetition": 0,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 310132736,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 155, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 57, in main\n    observe_datashader(source, x, y, state)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 54, in observe_datashader\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 1000000,
+      "arm": "datashader-aggregate",
+      "repetition": 1,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 214712320,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 155, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 57, in main\n    observe_datashader(source, x, y, state)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 54, in observe_datashader\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 2306490368,
+      "browser_peak_rss_bytes": 1151041536,
+      "host_prepare_wall_ms": 959.9499589999994,
+      "producer_status": "ok",
+      "host_build_ms": 289.55341599998974,
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "empty_control": {
+        "ok": true,
+        "expected_count": 0,
+        "lit_pixels": 0,
+        "paint_stable_ms": 38.29999999998836,
+        "stability_confirmed_ms": 170.69999999998254
+      },
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 462.29999999998836,
+        "output_adopt_ms": 462.29999999998836,
+        "paint_stable_ms": 485,
+        "stability_confirmed_ms": 617
+      },
+      "warm_paint_stable_ms": {
+        "p50": 38.49999999998545,
+        "p95": 48.89999999999418,
+        "max": 240.09999999997672,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          376,
+          376
+        ],
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [
+        "pyramid-L1",
+        "pyramid-L2"
+      ],
+      "application_body_bytes": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 265592,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 265592,
+            "total_bytes": 265592
+          }
+        },
+        "warm_32_total": 7932934,
+        "empty_control_delta": 13379,
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 8211905,
+          "to_host": {
+            "json_bytes": 14833,
+            "binary_frame_bytes": 0,
+            "total_bytes": 14833
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 8197072,
+            "total_bytes": 8197072
+          }
+        }
+      },
+      "retained_array_observations": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "canonical_after_build": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        }
+      },
+      "equivalent_cached_raster_steps": 21,
+      "exact_visible_count_mismatch_steps": 32,
+      "maximum_absolute_visible_count_difference": 9885
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 2306244608,
+      "browser_peak_rss_bytes": 1160757248,
+      "host_prepare_wall_ms": 922.5252500000067,
+      "producer_status": "ok",
+      "host_build_ms": 236.16541600000573,
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "empty_control": {
+        "ok": true,
+        "expected_count": 0,
+        "lit_pixels": 0,
+        "paint_stable_ms": 52,
+        "stability_confirmed_ms": 202.60000000000582
+      },
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 446.5,
+        "output_adopt_ms": 446.5,
+        "paint_stable_ms": 472.3999999999942,
+        "stability_confirmed_ms": 597.6999999999825
+      },
+      "warm_paint_stable_ms": {
+        "p50": 37.80000000000291,
+        "p95": 51.40000000002328,
+        "max": 237.59999999997672,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          376,
+          376
+        ],
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [
+        "pyramid-L1",
+        "pyramid-L2"
+      ],
+      "application_body_bytes": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 265592,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 265592,
+            "total_bytes": 265592
+          }
+        },
+        "warm_32_total": 7932934,
+        "empty_control_delta": 13379,
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 8211905,
+          "to_host": {
+            "json_bytes": 14833,
+            "binary_frame_bytes": 0,
+            "total_bytes": 14833
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 8197072,
+            "total_bytes": 8197072
+          }
+        }
+      },
+      "retained_array_observations": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "canonical_after_build": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 800000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        }
+      },
+      "equivalent_cached_raster_steps": 21,
+      "exact_visible_count_mismatch_steps": 32,
+      "maximum_absolute_visible_count_difference": 9885
+    },
+    {
+      "n": 100000000,
+      "arm": "plotly-aggregate",
+      "repetition": 0,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 1724858368,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 290, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 196, in main\n    initial = {\"seq\": 0, **aggregate(frame, home, *size)}\n                           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 39, in aggregate\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 100000000,
+      "arm": "plotly-aggregate",
+      "repetition": 1,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 1736458240,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 290, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 196, in main\n    initial = {\"seq\": 0, **aggregate(frame, home, *size)}\n                           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 39, in aggregate\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 100000000,
+      "arm": "datashader-aggregate",
+      "repetition": 0,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 209600512,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 155, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 57, in main\n    observe_datashader(source, x, y, state)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 54, in observe_datashader\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 100000000,
+      "arm": "datashader-aggregate",
+      "repetition": 1,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 216006656,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 155, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 57, in main\n    observe_datashader(source, x, y, state)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 54, in observe_datashader\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 19395346432,
+      "browser_peak_rss_bytes": 1155284992,
+      "host_prepare_wall_ms": 7736.120624999984,
+      "producer_status": "ok",
+      "host_build_ms": 2155.7625410000014,
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "empty_control": {
+        "ok": true,
+        "expected_count": 0,
+        "lit_pixels": 0,
+        "paint_stable_ms": 106.5,
+        "stability_confirmed_ms": 254.79999999998836
+      },
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 457.29999999998836,
+        "output_adopt_ms": 457.29999999998836,
+        "paint_stable_ms": 487.8999999999942,
+        "stability_confirmed_ms": 627.3999999999942
+      },
+      "warm_paint_stable_ms": {
+        "p50": 38.30000000001746,
+        "p95": 50.80000000001746,
+        "max": 244.79999999998836,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [
+        "pyramid-L2",
+        "pyramid-L3"
+      ],
+      "application_body_bytes": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 265528,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 265528,
+            "total_bytes": 265528
+          }
+        },
+        "warm_32_total": 8415779,
+        "empty_control_delta": 13376,
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 8694683,
+          "to_host": {
+            "json_bytes": 14779,
+            "binary_frame_bytes": 0,
+            "total_bytes": 14779
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 8679904,
+            "total_bytes": 8679904
+          }
+        }
+      },
+      "retained_array_observations": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "canonical_after_build": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        }
+      },
+      "equivalent_cached_raster_steps": 21,
+      "exact_visible_count_mismatch_steps": 32,
+      "maximum_absolute_visible_count_difference": 107116
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "phase": null,
+      "reason": null,
+      "error": null,
+      "host_peak_rss_bytes": 19398410240,
+      "browser_peak_rss_bytes": 1161117696,
+      "host_prepare_wall_ms": 7306.830125000005,
+      "producer_status": "ok",
+      "host_build_ms": 1742.5487909999902,
+      "warm_steps_recorded": 32,
+      "warm_steps_producer_ok": 32,
+      "empty_control": {
+        "ok": true,
+        "expected_count": 0,
+        "lit_pixels": 0,
+        "paint_stable_ms": 107.5,
+        "stability_confirmed_ms": 254.80000000001746
+      },
+      "cold": {
+        "ok": true,
+        "axes_adopt_ms": 439.70000000001164,
+        "output_adopt_ms": 439.70000000001164,
+        "paint_stable_ms": 465.30000000001746,
+        "stability_confirmed_ms": 599.3000000000175
+      },
+      "warm_paint_stable_ms": {
+        "p50": 36.20000000001164,
+        "p95": 47.5,
+        "max": 236.40000000002328,
+        "sample_count": 32
+      },
+      "output_modes": {
+        "density": 32
+      },
+      "exact_fallback_steps": 0,
+      "raster_shapes": [
+        [
+          512,
+          512
+        ]
+      ],
+      "binning": [
+        "pyramid-L2",
+        "pyramid-L3"
+      ],
+      "application_body_bytes": {
+        "scope": "WebSocket application message bodies only; HTTP/bootstrap assets, headers, TLS, TCP/IP excluded",
+        "cold_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 265528,
+          "to_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 0,
+            "total_bytes": 0
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 265528,
+            "total_bytes": 265528
+          }
+        },
+        "warm_32_total": 8415779,
+        "empty_control_delta": 13376,
+        "terminal_cumulative": {
+          "layer": "websocket_application_messages",
+          "total_bytes": 8694683,
+          "to_host": {
+            "json_bytes": 14779,
+            "binary_frame_bytes": 0,
+            "total_bytes": 14779
+          },
+          "from_host": {
+            "json_bytes": 0,
+            "binary_frame_bytes": 8679904,
+            "total_bytes": 8679904
+          }
+        }
+      },
+      "retained_array_observations": {
+        "canonical_admission": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        },
+        "canonical_after_build": {
+          "x": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          },
+          "y": {
+            "dtype": "float64",
+            "bytes": 8000000000,
+            "pointer_equal": true,
+            "shares_memory": true,
+            "source_mapped": true,
+            "retained_mapped": true
+          }
+        }
+      },
+      "equivalent_cached_raster_steps": 21,
+      "exact_visible_count_mismatch_steps": 32,
+      "maximum_absolute_visible_count_difference": 107116
+    },
+    {
+      "n": 1000000000,
+      "arm": "plotly-aggregate",
+      "repetition": 0,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 16127262720,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 290, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 196, in main\n    initial = {\"seq\": 0, **aggregate(frame, home, *size)}\n                           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 39, in aggregate\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 1000000000,
+      "arm": "plotly-aggregate",
+      "repetition": 1,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 16138190848,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 290, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 196, in main\n    initial = {\"seq\": 0, **aggregate(frame, home, *size)}\n                           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_plotly_aggregate_host.py\", line 39, in aggregate\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 1000000000,
+      "arm": "datashader-aggregate",
+      "repetition": 0,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 216956928,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 155, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 57, in main\n    observe_datashader(source, x, y, state)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 54, in observe_datashader\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    },
+    {
+      "n": 1000000000,
+      "arm": "datashader-aggregate",
+      "repetition": 1,
+      "phase": "host_prepare",
+      "reason": "host exited before META (returncode 1)",
+      "error": null,
+      "host_peak_rss_bytes": 212189184,
+      "browser_peak_rss_bytes": null,
+      "host_prepare_wall_ms": null,
+      "producer_status": "host_failed",
+      "host_build_ms": null,
+      "warm_steps_recorded": 0,
+      "warm_steps_producer_ok": 0,
+      "empty_control": {
+        "ok": null,
+        "expected_count": null,
+        "lit_pixels": null,
+        "paint_stable_ms": null,
+        "stability_confirmed_ms": null
+      },
+      "host_stderr": "Traceback (most recent call last):\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 155, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_datashader_host.py\", line 57, in main\n    observe_datashader(source, x, y, state)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/benchmarks/_ux_comparison_host.py\", line 54, in observe_datashader\n    import datashader as ds\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/__init__.py\", line 7, in <module>\n    from .core import Canvas                                 # noqa (API import)\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/core.py\", line 13, in <module>\n    from .utils import Dispatcher, ngjit, calc_res, calc_bbox, orient_array, \\\n        dshape_from_xarray_dataset\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/datashader/utils.py\", line 8, in <module>\n    import numba as nb\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 59, in <module>\n    _ensure_critical_deps()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/Users/runner/_work/xyg/xyg/.venv/lib/python3.14/site-packages/numba/__init__.py\", line 45, in _ensure_critical_deps\n    raise ImportError(msg)\nImportError: Numba needs NumPy 2.4 or less. Got NumPy 2.5.\n"
+    }
+  ],
+  "producer_completed_warm_windows": 192,
+  "producer_completed_empty_controls": 6
+}

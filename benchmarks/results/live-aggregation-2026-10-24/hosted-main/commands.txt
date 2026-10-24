@@ -1,0 +1,70 @@
+# Historical retention task, from an isolated worktree at the measured source.
+# These commands inspect/download the ONE existing run; they do not dispatch it.
+# Worktree-local temporary storage avoids the exhausted shared /tmp quota.
+mkdir -p .task-tmp
+export TMPDIR="$PWD/.task-tmp"
+
+# This yielded watch completed with exit status 1. No retry/cancel/PR watch ran.
+timeout 43200 gh run watch 40066499687 --exit-status --interval 50
+
+# Original API response bytes retained under the corresponding names below.
+gh api repos/CurateLabs/xyg/actions/runs/40066499687 > workflow-run.json
+gh api repos/CurateLabs/xyg/actions/runs/40066499687/attempts/1 > workflow-attempt-1.json
+gh api repos/CurateLabs/xyg/actions/runs/40066499687/attempts/1/jobs > jobs-attempt-1.json
+gh api repos/CurateLabs/xyg/actions/jobs/120790765112 > job-120790765112.json
+gh api repos/CurateLabs/xyg/actions/runs/40066499687/artifacts > artifacts.json
+gh api repos/CurateLabs/xyg/actions/artifacts/12550060246 > artifact-12550060246.json
+gh api repos/CurateLabs/xyg/actions/artifacts/12550060246/zip > ceiling-benchmark-12550060246.zip
+gh api repos/CurateLabs/xyg/actions/jobs/120790765112/logs > job-120790765112.log
+# The task captured the last command's stdout directly, then gzip-compressed it.
+# It did NOT use gh run view --log or that command's broken /tmp cache path.
+
+# Lossless retention for report-member and job-log bytes used stdlib gzip:
+# gzip.GzipFile(filename='', mode='wb', fileobj=stream, mtime=0, compresslevel=9)
+# Every ZIP member was read with zipfile, CRC checked, and compared byte-for-byte
+# to gzip.decompress(retained_member). Original artifact ZIP remains unmodified.
+
+# Historical producer command below is provenance ONLY, copied from raw argv.
+# It already ran on the existing authorized hosted lane. Do not execute locally.
+# Thread env: NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
+# Browser path (CHROME):
+# /Users/runner/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing
+# uv run python benchmarks/bench_density_comparison.py \
+#   --sizes 1000000,100000000,1000000000 \
+#   --arms xy-density,plotly-aggregate,datashader-aggregate \
+#   --profile f64-memmap --repetitions 2 --chunk 1000000 \
+#   --memory-gib 20 --disk-gib 20 --timeout 300 --step-timeout 15 \
+#   --chrome "$CHROME" \
+#   --out /Users/runner/_work/_temp/density-comparison-a8b3e10801fa3c1b96eddd7b244a1d64e0778bad.json
+
+# Historical independent verifier command (hosted authority context only):
+# python3 scripts/verify_density_comparison_report.py \
+#   /Users/runner/_work/_temp/density-comparison-a8b3e10801fa3c1b96eddd7b244a1d64e0778bad.json \
+#   --sha a8b3e10801fa3c1b96eddd7b244a1d64e0778bad \
+#   --artifact-root /Users/runner/_work/xyg/xyg \
+#   --sizes 1000000,100000000,1000000000 \
+#   --arms xy-density,plotly-aggregate,datashader-aggregate
+# Hosted result: INVALID: XYG density visible count mismatch
+# No local authority verification or Actions-environment spoof was performed.
+
+# Inspect retained evidence safely from repository root:
+python3 benchmarks/results/live-aggregation-2026-10-24/hosted-main/inspect_evidence.py
+gzip -dc benchmarks/results/live-aggregation-2026-10-24/hosted-main/density-comparison-a8b3e10801fa3c1b96eddd7b244a1d64e0778bad.json.gz | python3 -m json.tool
+gzip -dc benchmarks/results/live-aggregation-2026-10-24/hosted-main/job-120790765112.log.gz
+git show a8b3e10801fa3c1b96eddd7b244a1d64e0778bad:.github/workflows/ceiling-benchmark.yml
+git show a8b3e10801fa3c1b96eddd7b244a1d64e0778bad:scripts/verify_density_comparison_report.py
+git show a8b3e10801fa3c1b96eddd7b244a1d64e0778bad:benchmarks/requirements-ci.lock
+git show a8b3e10801fa3c1b96eddd7b244a1d64e0778bad:uv.lock
+
+# Local lint tooling setup (no native/browser build or benchmark):
+uv sync --group dev --no-install-project
+# UV_NO_SYNC=1 prevents tool invocations from building/installing the project.
+export UV_NO_SYNC=1
+set -e
+uv run --with pre-commit pre-commit run --all-files
+uv run ruff check .
+uv run ruff format --check .
+
+# Human identity confirmed before committing ONLY the evidence directory:
+# David Spencer <1526975+DecisionNerd@users.noreply.github.com>
+# No push, PR/issue mutation, tags or publication was performed.

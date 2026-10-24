@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import subprocess
@@ -36,6 +37,90 @@ def report():
         browser_renderer_observed=None,
         browser_renderer_scope="launch-request; actual renderer not measured",
     )
+    # Synthetic current-contract metadata on retained pixels, for structural
+    # mutations only. These hashes are fixture values, never measured evidence.
+    r["numerical_contract"] = "source-cell-compose-v1"
+    r["provenance_sha256"]["benchmarks/_ux_comparison_oracle.py"] = hashlib.sha256(
+        (ROOT / "benchmarks/_ux_comparison_oracle.py").read_bytes()
+    ).hexdigest()
+    s = r["sources"]["1000"]
+    s["source_bounds"] = list(s["extents"])
+    for w in s["windows"]:
+        w["source_counts"] = {
+            "inclusive": w["expected_count"],
+            "half_open": w["expected_count"],
+            "upper_boundary_excluded": 0,
+        }
+    for c in r["results"]:
+        c["host_meta"]["source"] = {
+            k: copy.deepcopy(value)
+            for k, value in s.items()
+            if k not in ("creation_wall_ms", "source_peak_rss_bytes")
+        }
+        if c["arm"] != "xy-density":
+            continue
+        cold = c["cold"]["state"]
+        cold["output"] = copy.deepcopy(c["steps"][0]["state"]["output"])
+        cold["output"].update(
+            revision=0,
+            rendered_revision=0,
+            domain=s["extents"],
+            reply_domain=s["extents"],
+            visible=1000,
+        )
+        for name, paint in [
+            ("visible-complete", c["cold"]),
+            *[(f"step-{i}", p) for i, p in enumerate(c["steps"])],
+            ("empty-control", c["empty_control"]),
+        ]:
+            out = paint["state"]["output"]
+            out.update(
+                tier="density",
+                encoding="log-u8",
+                reply_max=out["reply_norm_max"],
+                adopted_max=out["reply_norm_max"],
+            )
+            proof = {
+                "version": "source-cell-compose-v1",
+                "passed": True,
+                "domain": out["domain"],
+                "exact_source_count": paint["expected_count"],
+                "half_open_source_count": paint["expected_count"],
+                "upper_boundary_excluded": 0,
+                "emitted_visible": out["visible"],
+                "expected_visible": out["visible"],
+                "count_method": "half-open-source",
+                "count_exact": True,
+                "boundary_mass_bound": 0,
+                "base_geometry": None,
+                "served_level": None,
+                "raster_shape": out["raster_shape"],
+                "expected_encoded_sha256": "1" * 64,
+                "actual_encoded_sha256": "1" * 64,
+                "expected_decoded_sha256": "2" * 64,
+                "adopted_decoded_sha256": "2" * 64,
+                "grid_sha256": "3" * 64,
+                "encoded_bytes": out["raster_shape"][0] * out["raster_shape"][1],
+                "expected_max": out["reply_max"],
+                "actual_max": out["reply_max"],
+                "grid_mass_diagnostic": paint["expected_count"],
+                "source_sha256": s["sha256_x_then_y"],
+                "points_allowed": False,
+                "validation_wall_ms": 1,
+                "validation_http_request_bytes": 100,
+            }
+            out["numerical_oracle"] = proof
+            cp = c["transport"]["checkpoints"][name]
+            cp["host_observation"]["numerical_oracle"] = copy.deepcopy(proof)
+            cp["host_observation"]["numerical_oracle_preparation"] = {
+                "version": "source-cell-compose-v1",
+                "wall_ms": 1,
+                "chunk_rows": 65536,
+                "grid_storage_upper_bound_bytes": 1024,
+                "scope": "host_prepare before META; host process-tree RSS/watchdog includes oracle",
+            }
+            if "host_observation" in paint:
+                paint["host_observation"] = copy.deepcopy(cp["host_observation"])
     return r
 
 
@@ -59,10 +144,55 @@ def test_retained_raw_archives_bind_to_their_producers(name, successes, failures
     assert sum(c["status"] != "ok" for c in r["results"]) == failures
 
 
-def test_small_real_evidence_without_optional_dependencies(report):
+def test_structural_fixture_without_verifier_optional_dependencies(report):
     assert check(report, expected_sizes=[1000], expected_arms=list(v.ARMS)) == []
     assert "numpy" not in v.__dict__
     assert "psutil" not in v.__dict__
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("passed", False),
+        ("count_exact", False),
+        ("expected_visible", 0),
+        ("actual_encoded_sha256", "4" * 64),
+        ("adopted_decoded_sha256", "4" * 64),
+        ("source_sha256", "4" * 64),
+        ("upper_boundary_excluded", 1),
+        ("actual_max", -1),
+    ],
+)
+def test_current_numerical_contract_rejects_mutations_even_if_host_agrees(report, field, value):
+    c = report["results"][0]
+    proof = c["steps"][0]["state"]["output"]["numerical_oracle"]
+    proof[field] = value
+    cp = c["transport"]["checkpoints"]["step-0"]["host_observation"]
+    cp["numerical_oracle"] = copy.deepcopy(proof)
+    c["steps"][0]["host_observation"] = copy.deepcopy(cp)
+    assert check(report)
+
+
+def test_current_report_cannot_omit_oracle_or_claim_historical_flag(report):
+    del report["results"][0]["steps"][0]["state"]["output"]["numerical_oracle"]
+    report["historical_archive_commit"] = (
+        "21965ee46178049d37001c9028e80b72259cb1109b19593920560a3e697e06ce"
+    )
+    assert check(report)
+
+
+def test_oracle_preparation_stays_inside_host_phase_and_provenance(report):
+    c = report["results"][0]
+    c["transport"]["checkpoints"]["visible-complete"]["host_observation"][
+        "numerical_oracle_preparation"
+    ]["wall_ms"] = c["host_prepare_wall_ms"] + 1
+    assert check(report)
+    c["transport"]["checkpoints"]["visible-complete"]["host_observation"][
+        "numerical_oracle_preparation"
+    ]["wall_ms"] = 1
+    assert check(report) == []
+    del report["provenance_sha256"]["benchmarks/_ux_comparison_oracle.py"]
+    assert check(report) == ["missing independent oracle provenance"]
 
 
 @pytest.mark.parametrize("failure", ["timeout", "exit", "source_mismatch"])

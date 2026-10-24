@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import time
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +18,7 @@ try:
         inventory as inventory,
     )
     from ._ux_comparison_source import (
-        load_source as load_source,
+        load_source as _load_source,
     )
 except ImportError:
     from _ux_comparison_source import (
@@ -26,7 +28,7 @@ except ImportError:
         inventory as inventory,
     )
     from _ux_comparison_source import (
-        load_source as load_source,
+        load_source as _load_source,
     )
 
 
@@ -41,10 +43,48 @@ def expected_count(meta, x, y, domain):
     return count_window(x, y, domain)
 
 
+_comparison_source = None
+
+
+def load_source(path, n):
+    global _comparison_source
+    _comparison_source = _load_source(path, n)
+    return _comparison_source
+
+
 def metrics_handler(state):
+    oracle = None
+    if "canonical_after_build" in state and _comparison_source is not None:
+        from benchmarks._ux_comparison_oracle import SourceOracle
+
+        oracle = SourceOracle(*_comparison_source)
+        state["numerical_oracle_preparation"] = oracle.preparation
+
     class Metrics(tornado.web.RequestHandler):
         def get(self):
             self.write(state)
+
+        def post(self):
+            from benchmarks._ux_comparison_oracle import decode_attachment
+
+            if oracle is None:
+                raise tornado.web.HTTPError(400, "no source-derived XYG oracle")
+            started = time.perf_counter()
+            try:
+                request = json.loads(self.request.body)
+                result = oracle.validate(
+                    request["output"],
+                    decode_attachment(request["wire"]),
+                    decode_attachment(request["decoded"]),
+                    cold=request["cold"],
+                    target=request["target"],
+                )
+            except (KeyError, ValueError, TypeError) as exc:
+                result = {"passed": False, "reason": str(exc)}
+            result["validation_wall_ms"] = (time.perf_counter() - started) * 1000
+            result["validation_http_request_bytes"] = len(self.request.body)
+            state["numerical_oracle"] = result
+            self.write(result)
 
     return Metrics
 
@@ -85,7 +125,7 @@ XY_JS = r"""
 // Explicit range/round-trip experiment. Suppress automatic request scheduling
 // only here so every measured reply belongs to this exact requested window.
 // The production dispatcher still owns density vs exact-points policy.
-const comparison = {last:null, request:null};
+const comparison = {last:null, request:null, initial:null, buffers:null, initialBuffers:null};
 const originalMessage = ws.onmessage;
 ws.onmessage = ev => {
   originalMessage(ev);
@@ -93,14 +133,32 @@ ws.onmessage = ev => {
     const decoded=decodeFrame(ev.data), m=decoded.message;
     if (m.type==="density_update") {
       comparison.last=m;
+      comparison.buffers=decoded.buffers;
       if(m.traces?.[0]?.mode==="density" && window.__view.gpuTraces[0].density)
         window.__view.gpuTraces[0].density._comparisonRevision=m.seq;
     }
-    if(m.type==="init" && window.__view?.gpuTraces?.[0]?.density)
-      window.__view.gpuTraces[0].density._comparisonRevision=0;
+    if(m.type==="init") {
+      comparison.initial=m;comparison.initialBuffers=decoded.buffers;
+      if(window.__view?.gpuTraces?.[0]?.density)
+        window.__view.gpuTraces[0].density._comparisonRevision=0;
+    }
   }
 };
 window.__comparison = {
+  async validateOutput(cold,target) {
+    const state=this.state(),out=state.output;
+    if(!out?.adopted || comparison.validated===out.revision)return;
+    const g=window.__view.gpuTraces[0],u=cold?comparison.initial.spec.traces[0]:comparison.last.traces[0];
+    const buffers=cold?comparison.initialBuffers:comparison.buffers;
+    const bytes=v=>v instanceof ArrayBuffer?new Uint8Array(v):new Uint8Array(v.buffer,v.byteOffset,v.byteLength);
+    const b64=v=>{let s='';for(let i=0;i<v.length;i+=8192)s+=String.fromCharCode(...v.subarray(i,i+8192));return btoa(s);};
+    const wire=out.mode==='density'?bytes(buffers[u.density.buf]):new Uint8Array();
+    const shown=g._shownDensity;
+    const decoded=out.mode==='density'?bytes(shown.grid):new Uint8Array();
+    const response=await fetch('/comparison_metrics',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({output:out,wire:b64(wire),decoded:b64(decoded),cold,target})});
+    comparison.numerical=await response.json();comparison.validated=out.revision;
+  },
   setWindow(d) {
     const v=window.__view;
     v._scheduleViewRequest=()=>{};
@@ -114,12 +172,13 @@ window.__comparison = {
       x0:d[0],x1:d[1],y0:d[2],y1:d[3],w:512,h:512});
   },
   state() {
-    const v=window.__view,g=v?.gpuTraces?.[0], r=comparison.last,
-      u=r?.traces?.[0], d=g?.density, drill=g?.drill;
+    const v=window.__view,g=v?.gpuTraces?.[0], cold=!comparison.request && comparison.initial,
+      r=comparison.last || (cold?{seq:0}:null),
+      u=cold?comparison.initial.spec.traces[0]:r?.traces?.[0], d=g?.density, drill=g?.drill;
     const axes=v?[v.view.x0,v.view.x1,v.view.y0,v.view.y1]:null;
     let output=null;
-    if (r && r.seq===comparison.request?.seq && u) {
-      const points=u.mode==="points";
+    if (r && (cold || r.seq===comparison.request?.seq) && u) {
+      const points=!cold && u.mode==="points";
       let displayed=null;
       if(points && drill && comparison.countSeq!==r.seq) {
         const target=comparison.request.domain;let count=0;
@@ -136,7 +195,11 @@ window.__comparison = {
         sameRange(shown.xRange,d.xRange) && sameRange(shown.yRange,d.yRange) &&
         !!shown.grid && !!d.grid && shown.grid.length===d.grid.length &&
         shown.grid.every((value,i)=>value===d.grid[i]);
-      output={revision:r.seq,mode:u.mode,reduction:u.reduction,visible:u.visible,
+      output={revision:r.seq,mode:points?'points':'density',tier:u.tier,
+        reduction:cold?u.density.reduction:u.reduction,visible:cold?u.n_points:u.visible,
+        encoding:u.density?.enc,reply_max:u.density?.max,
+        adopted_max:shown?.max,
+        numerical_oracle:comparison.validated===r.seq?comparison.numerical:null,
         rendered_revision:points?drill?.seq:shown?._comparisonRevision,
         equivalent_cached_raster:!points && shown!==d && equivalent,
         grid_value_equality_verified:!points && equivalent,
