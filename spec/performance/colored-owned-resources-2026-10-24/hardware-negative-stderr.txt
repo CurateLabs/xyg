@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-b21dd7ff/scripts/density_spill_browser_smoke.py", line 826, in renderer_preflight
+    renderer_guard(result["renderer"], result["gpu_info"], gl_mode)
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-b21dd7ff/scripts/density_spill_browser_smoke.py", line 431, in renderer_guard
+    raise ValueError("hardware requires actual Apple M4 Metal accelerated WebGL: " + actual)
+ValueError: hardware requires actual Apple M4 Metal accelerated WebGL: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-b21dd7ff/scripts/density_spill_browser_smoke.py", line 874, in <module>
+    main()
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-b21dd7ff/scripts/density_spill_browser_smoke.py", line 849, in main
+    report = renderer_preflight(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-b21dd7ff/scripts/density_spill_browser_smoke.py", line 829, in renderer_preflight
+    raise RendererAdmissionError(result) from exc
+RendererAdmissionError: hardware requires actual Apple M4 Metal accelerated WebGL: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)

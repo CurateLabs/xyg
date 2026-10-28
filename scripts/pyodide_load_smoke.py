@@ -48,6 +48,7 @@ try {
 import xyg.kernels as k
 import numpy as np
 import json
+import struct
 mn, mx = k.min_max(np.array([3.0, 1.0, 2.0]))
 from xyg import _native
 abi = _native._lib.xyg_abi_version()
@@ -59,7 +60,39 @@ for case in fixture["successful"]:
     assert _native.scene_svg(scene).startswith('<svg xmlns="http://www.w3.org/2000/svg"')
     assert _native.scene_browser_painter(scene) == bytes.fromhex(case["painter_hex"])
 lib = _native._lib
+# ABI 396: all five additions must operate on the actual Emscripten library.
+# Validation is store-independent, not an unavailable-filesystem stub.
+control = struct.pack("<4sIQdiI", b"XYDC", 1, 7, 0.5, 2, 1) + struct.pack("<III", 2, 1, 3)
+assert _native.tile_paint_control_valid(b"")
+assert _native.tile_paint_control_valid(control)
+assert not _native.tile_paint_control_valid(control[:-1])
+assert not _native.tile_paint_control_valid(control + b"x")
+assert not _native.tile_paint_control_valid(b"bogus")
+assert not _native.tile_paint_control_valid(struct.pack("<4sIQdiI", b"XYDC", 1, 7, np.nan, 2, 0))
+assert lib.xyg_tile_paint_control_valid(None, 0) == 1
+assert lib.xyg_tile_paint_control_valid(None, 1) == 0
+assert lib.xyg_tile_paint_control_valid(None, 3105) == 0
+limits = np.zeros(2, dtype=np.uint64)
+assert lib.xyg_canonical_drill_limits(0, limits.ctypes.data) == 1
+assert tuple(limits) == (200_000, 80_000_000)
+assert lib.xyg_canonical_drill_limits(2, limits.ctypes.data) == 0
+estimate = _native.canonical_drill_estimate(2_000_000, (0, 100, 0, 100), (0, 10, 0, 10))
+assert estimate == 20_000
+assert _native.canonical_drill_admit(estimate)
+assert not _native.canonical_drill_admit(2_000_000)
+assert _native.canonical_drill_admit(2_000_000, refinement=True)
+x = np.array([1e12, 1e12 + 0.001, np.nan, 1e12 + 0.003, 2e12, np.inf])
+y = np.array([0., 1., 2., 3., 100., 101.])
+zx, zy = k.zone_maps(x, 2), k.zone_maps(y, 2)
+drill = _native.canonical_drill_query(x, y, zx[0], zx[1], zy[0], zy[1],
+    1e12, 1e12 + 0.003, 0., 3., chunk_size=2)
+assert drill["status"] == "complete" and drill["count"] == 3
+assert drill["indices"].tolist() == [0, 1, 3]
+assert drill["candidate_chunks"] == 2 and drill["rows_read"] == 4
+assert drill["read_bytes"] == 64
 usize_max = (1 << (8 * __import__("ctypes").sizeof(__import__("ctypes").c_size_t))) - 1
+assert lib.xyg_tile_store_paint_capacity(256, 256) == 0
+assert lib.xyg_tile_store_paint(0, 0, 1, 0, 1, 256, 256, 1, None, 0, None, 0) == 0
 assert lib.xyg_pyramid_spill(0) == 0
 assert lib.xyg_tile_store_fetch(0, 0, 0, 0, None, None) == 0
 assert lib.xyg_tile_store_compose(0, 0, 1, 0, 1, 1, 1, 1, None) == -1
@@ -75,7 +108,7 @@ assert lib.xyg_chunked_columns_overview(0, 0, None, None, None, None) == usize_m
 assert lib.xyg_chunked_columns_read(0, 0, 1, 0, 1, 0, 0, 0, None, None, 0, None) == usize_max
 assert lib.xyg_chunked_columns_read_page(0, 0, 1, 0, 1, 0, 0, 0, 0, None, None, 0, None) == usize_max
 assert lib.xyg_chunked_columns_free(0) == 0
-f"{k.BACKEND}|{abi}|{mn}|{mx}|{len(fixture['successful'])}|{fixture['scene_version']}|{fixture['painter_version']}|15"
+f"{k.BACKEND}|{abi}|{mn}|{mx}|{len(fixture['successful'])}|{fixture['scene_version']}|{fixture['painter_version']}|17"
 `);
   const [backend, abi, mn, mx, cases, sceneVersion, painterVersion, filesystemStubs] = r.split("|");
   out({ ok: true, backend, abi: Number(abi), min: Number(mn), max: Number(mx), cases: Number(cases), sceneVersion: Number(sceneVersion), painterVersion: Number(painterVersion), filesystemStubs: Number(filesystemStubs) });

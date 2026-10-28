@@ -78,6 +78,11 @@ def guard(
 
 def browser_guard(config: dict) -> None:
     """Optional browser admission, run by both entries before source allocation."""
+    mode = config.get("colored_browser_gl", "software")
+    if mode not in {"software", "hardware"}:
+        raise ValueError("colored browser GL must be software or hardware")
+    if mode == "hardware" and not config.get("colored_browser_report"):
+        raise ValueError("hardware requires the colored browser companion")
     if not config.get("colored_browser_report"):
         return
     if config.get("workload") != WORKLOAD:
@@ -102,6 +107,8 @@ def browser_guard(config: dict) -> None:
         ).strip()
         if commit != os.environ.get("GITHUB_SHA") or dirty:
             raise ValueError("authority browser requires a clean checkout at the actual run SHA")
+    if mode == "hardware":
+        hardware_context_guard(dict(os.environ), authority=bool(config.get("authority")))
     output = Path(config["colored_browser_report"]).resolve()
     if output == Path(config["host_output"]).resolve():
         raise ValueError("browser companion and host outputs must be distinct")
@@ -111,6 +118,31 @@ def browser_guard(config: dict) -> None:
     # Probe actual output access before allocating mappings or native stores.
     with tempfile.TemporaryFile(dir=output.parent):
         pass
+
+
+def hardware_context_guard(
+    environ: dict[str, str],
+    *,
+    authority: bool,
+    system: str | None = None,
+    machine: str | None = None,
+) -> None:
+    import platform
+
+    if (system or platform.system()) != "Darwin" or (machine or platform.machine()) != "arm64":
+        raise ValueError(
+            "colored hardware experiment requires Darwin arm64 on the existing M4 runner"
+        )
+    if authority and (
+        environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch"
+        or environ.get("GITHUB_WORKFLOW_REF")
+        != f"{environ.get('GITHUB_REPOSITORY')}/.github/workflows/ceiling-benchmark.yml@refs/heads/main"
+        or environ.get("GITHUB_WORKFLOW_SHA") != environ.get("GITHUB_SHA")
+        or environ.get("GITHUB_REPOSITORY") != "CurateLabs/xyg"
+    ):
+        raise ValueError(
+            "hardware authority requires the exact manual-main ceiling workflow identity"
+        )
 
 
 def file_hash(path: Path) -> str:
@@ -262,6 +294,56 @@ def control(state: dict[str, Any] | None) -> bytes:
         state["level"],
         len(state["inventory"]),
     ) + b"".join(struct.pack("<3I", *tile["key"]) for tile in state["inventory"])
+
+
+def request_path(authority: bool) -> str:
+    return "product-density-view" if authority else "native-tile-painter-fixture"
+
+
+def tile_request(fig, store: int, window, *, authority: bool, tile_cache: bytes):
+    """Keep bounded tile-protocol controls distinct from product LOD acceptance."""
+    from xyg import kernels
+    from xyg._paint import fill_opacity
+
+    if not kernels.tile_paint_control_valid(tile_cache):
+        raise ValueError("invalid tile painter control")
+    trace = fig.traces[0]
+    if authority:
+        message, replies = fig.density_view(
+            trace.id, *window, SCREEN, SCREEN, tile_cache=tile_cache
+        )
+    else:
+        packet = kernels.tile_store_paint(
+            store, *window, SCREEN, SCREEN, opacity=fill_opacity(trace.style), control=tile_cache
+        )
+        if packet is None:
+            raise RuntimeError("native tile fixture returned no frame")
+        level = int.from_bytes(packet[8:12], "little")
+        message = {
+            "traces": [
+                {
+                    "id": trace.id,
+                    "mode": "density",
+                    "tier": "density",
+                    "reduction": "pyramid-count",
+                    "binning": f"pyramid-L{level}-tiles",
+                    "density": {
+                        "tile_frame": 0,
+                        "x_range": list(window[:2]),
+                        "y_range": list(window[2:]),
+                    },
+                }
+            ]
+        }
+        replies = [packet]
+    if (
+        len(replies) != 1
+        or replies[0][:8] != b"XYDT\x01\0\0\0"
+        or message["traces"][0].get("mode") != "density"
+        or message["traces"][0].get("density", {}).get("tile_frame") != 0
+    ):
+        raise RuntimeError(f"{request_path(authority)} did not return one density tile frame")
+    return message, replies
 
 
 def parse_frame(packet: bytes, pool: dict[tuple[int, int, int], str]) -> tuple[dict, dict]:
@@ -417,6 +499,18 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
     old_budget = interaction.PYRAMID_RESIDENT_BYTES
     started = time.perf_counter()
     try:
+        supervisor._observer_preflight()
+        preflight = None
+        if config.get("colored_browser_report"):
+            from scripts.density_spill_browser_smoke import renderer_preflight
+
+            preflight = renderer_preflight(
+                config["chrome"],
+                config.get("colored_browser_gl", "software"),
+                Path(config["browser_socket_parent"]),
+                min(config["timeout"], 30),
+            )
+        started = time.perf_counter()  # Preflights are not source-generation timing.
         x, y, color, source = generate(tmp, points, chunk)
         creation_seconds = time.perf_counter() - started
         sources = (x, y, color)
@@ -515,8 +609,12 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
                 previous = state
                 rx0, rx1, ry0, ry1 = request["window"]
                 with patch.object(kernels, "tile_store_paint", timed_paint):
-                    message, replies = fig.density_view(
-                        trace.id, rx0, rx1, ry0, ry1, SCREEN, SCREEN, tile_cache=control(previous)
+                    message, replies = tile_request(
+                        fig,
+                        store,
+                        (rx0, rx1, ry0, ry1),
+                        authority=config["authority"],
+                        tile_cache=control(previous),
                     )
                 assert len(times) == len(samples) + 1 and len(replies) == 1
                 pool, state = parse_frame(replies[0], pool)
@@ -592,12 +690,13 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
                 assert environment["git"]["dirty"] is False
                 assert environment["git"]["commit"] == os.environ["GITHUB_SHA"]
             report = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "report_kind": KIND,
                 "workload": WORKLOAD,
                 "status": "ok",
                 "scope": SCOPE,
                 "authority": bool(config["authority"]),
+                "request_path": request_path(config["authority"]),
                 "authority_context": authority_context(dict(os.environ)),
                 "point_count": points,
                 "limits": {
@@ -677,6 +776,8 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
                         timeout=config["timeout"],
                         socket_parent=Path(config["browser_socket_parent"]),
                         authority=config["authority"],
+                        gl_mode=config.get("colored_browser_gl", "software"),
+                        preflight=preflight,
                     )
                 except BaseException as exc:
                     # Do not retain the helper traceback's borrowed figure in
@@ -759,16 +860,19 @@ def worker(config: dict) -> int:
         )
     except BaseException as exc:
         report = {
-            "schema_version": 1,
+            "schema_version": 2,
             "report_kind": KIND,
             "workload": WORKLOAD,
             "scope": SCOPE,
             "status": "failed",
             "authority": bool(config["authority"]),
+            "request_path": request_path(config["authority"]),
             "point_count": config["points"],
             "failure": f"{type(exc).__name__}: {exc}",
             "cleanup": cleanup,
         }
+        if hasattr(exc, "evidence"):
+            report["renderer_preflight"] = exc.evidence
         supervisor._atomic_write_json(result, report)
         raise
     supervisor._atomic_write_json(result, report)

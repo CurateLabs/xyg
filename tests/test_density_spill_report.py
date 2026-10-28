@@ -56,6 +56,8 @@ def test_real_colored_spill_report_has_valid_artifact_hashes(colored_report):
 @pytest.mark.parametrize(
     ("path", "replacement"),
     [
+        (("schema_version",), 1),
+        (("request_path",), "product-density-view"),
         (("report_kind",), "density-e2e"),
         (("status",), "failed"),
         (("scope",), "phase4-complete"),
@@ -143,6 +145,12 @@ def test_authority_cannot_be_spoofed_by_report_fields(colored_report):
     }
     assert "ambient" in verify.validate(report, environ={}, expected_sha=sha)[0]
     assert "--sha" in verify.validate(report, environ={})[0]
+
+
+def test_missing_request_path_is_not_accepted_as_legacy(colored_report):
+    report = copy.deepcopy(colored_report)
+    del report["request_path"]
+    assert verify.validate(report, environ={})
 
 
 def test_control_latency_is_advisory_but_budget_is_not_editable(colored_report):

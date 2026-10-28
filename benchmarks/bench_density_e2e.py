@@ -100,8 +100,56 @@ def _rss_snapshot() -> dict[str, int]:
     return values
 
 
+def _darwin_process_snapshot() -> dict[int, dict[str, Any]]:
+    """One bounded ps snapshot; RSS is KiB, not Linux VmHWM.
+
+    Failure or malformed output must never become an empty, successful sample.
+    Only live entries count, matching the Linux observer's zombie exclusion.
+    """
+    try:
+        result = subprocess.run(
+            ["/bin/ps", "-axo", "pid=,pgid=,rss=,stat=,comm="],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=2,
+        )
+        if not result.stdout or len(result.stdout) > 4 * 1024**2:
+            raise ValueError("empty/oversized process snapshot")
+        entries = {}
+        for line in result.stdout.splitlines():
+            pid, pgid, rss, state, name = line.strip().split(None, 4)
+            pid, pgid, rss = int(pid), int(pgid), int(rss)
+            if pid < 0 or pgid < 0 or rss < 0 or not state or not name or pid in entries:
+                raise ValueError("invalid process snapshot entry")
+            if not state.startswith("Z"):
+                entries[pid] = {"pgid": pgid, "rss_bytes": rss * 1024, "name": name}
+        return entries
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        raise RuntimeError("Darwin process RSS observer failed") from exc
+
+
+def _group_snapshot(pgid: int) -> tuple[int, dict[int, dict[str, Any]]]:
+    if sys.platform == "darwin":
+        members = {pid: p for pid, p in _darwin_process_snapshot().items() if p["pgid"] == pgid}
+        return sum(p["rss_bytes"] for p in members.values()), members
+    if not Path("/proc").is_dir():
+        raise RuntimeError("process RSS observer requires Linux /proc or Darwin ps")
+    rss, pids = _process_group_rss(pgid)
+    return rss, {pid: {"name": _process_name(pid) or "unknown", "pgid": pgid} for pid in pids}
+
+
+def _observer_preflight() -> None:
+    rss, members = _group_snapshot(os.getpgrp())
+    if os.getpid() not in members or rss <= 0 or not members[os.getpid()]["name"]:
+        raise RuntimeError("process RSS observer did not observe its own live group member")
+
+
 def _process_group_rss(pgid: int) -> tuple[int, list[int]]:
-    """Return resident bytes and live pids for one Linux process group."""
+    """Return resident bytes and live pids for one supported process group."""
+    if sys.platform == "darwin":
+        rss, members = _group_snapshot(pgid)
+        return rss, sorted(members)
     total = 0
     pids: list[int] = []
     page = os.sysconf("SC_PAGE_SIZE")
@@ -1124,14 +1172,19 @@ def _terminate_group(pgid: int) -> None:
         return
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
-        if not _process_group_rss(pgid)[1]:
-            return
+        try:
+            if not _process_group_rss(pgid)[1]:
+                return
+        except RuntimeError:
+            # An unavailable observer cannot disable process-group termination.
+            break
         time.sleep(0.05)
     with contextlib.suppress(ProcessLookupError):
         os.killpg(pgid, signal.SIGKILL)
 
 
 def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any], bool]:
+    _observer_preflight()  # Must work before launching any source-allocating worker.
     result_path = tmp / "worker-report.json"
     config = {
         "tmp": str(tmp),
@@ -1141,6 +1194,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         "chunk_points": args.chunk_points,
         "chrome": str(args.chrome.resolve()) if args.chrome else None,
         "workload": getattr(args, "workload", "resident-count"),
+        "colored_browser_gl": getattr(args, "colored_browser_gl", "software"),
         "timeout": args.timeout,
         "max_rss_bytes": int(args.max_rss_gib * 1024**3),
         "max_disk_bytes": int(args.max_disk_gib * 1024**3),
@@ -1182,12 +1236,24 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
     }
     try:
         while proc.poll() is None:
-            rss, pids = _process_group_rss(pgid)
+            try:
+                rss, members = _group_snapshot(pgid)
+                if proc.pid not in members and proc.poll() is None:
+                    raise RuntimeError("RSS observer missed the live worker group member")
+            except RuntimeError as exc:
+                reason = "observer_failed: " + str(exc)
+                break
+            pids = sorted(members)
             temp_bytes = _tree_disk_usage(tmp)
             max_live_process_count = max(max_live_process_count, len(pids))
-            worker_peak_rss_bytes = max(worker_peak_rss_bytes, _pid_peak_rss_bytes(proc.pid))
+            worker_rss = (
+                members.get(proc.pid, {}).get("rss_bytes", 0)
+                if sys.platform == "darwin"
+                else _pid_peak_rss_bytes(proc.pid)
+            )
+            worker_peak_rss_bytes = max(worker_peak_rss_bytes, worker_rss)
             for pid in pids:
-                observed_processes[pid] = _process_name(pid) or "unknown"
+                observed_processes[pid] = members[pid]["name"]
             if rss > peak_tree_rss:
                 peak_tree_rss, peak_pids = rss, pids
             peak_temp_bytes = max(peak_temp_bytes, temp_bytes)
@@ -1213,15 +1279,28 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
     finally:
         for signum, handler in old_handlers.items():
             signal.signal(signum, handler)
-        orphan_before = _process_group_rss(pgid)[1]
+        try:
+            orphan_before = _process_group_rss(pgid)[1]
+        except RuntimeError as exc:
+            reason = "observer_failed: " + str(exc)
+            orphan_before = [-1]  # Unknown is a failed cleanup, never an empty group.
         if orphan_before:
             _terminate_group(pgid)
-        orphan_after = _process_group_rss(pgid)[1]
+        try:
+            orphan_after = _process_group_rss(pgid)[1]
+        except RuntimeError as exc:
+            reason = "observer_failed: " + str(exc)
+            orphan_after = [-1]
 
     report: dict[str, Any]
     report_kind = (
         "density-colored-spill" if config["workload"] == "colored-spill" else "density-e2e"
     )
+    failure_identity = {"schema_version": SCHEMA_VERSION, "report_kind": report_kind}
+    if config["workload"] == "colored-spill":
+        from benchmarks._density_spill import request_path
+
+        failure_identity.update(schema_version=2, request_path=request_path(args.authority))
     if result_path.is_file():
         try:
             decoded = json.loads(result_path.read_text(encoding="utf-8"))
@@ -1230,8 +1309,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
             report = decoded
         except (OSError, ValueError) as exc:
             report = {
-                "schema_version": SCHEMA_VERSION,
-                "report_kind": report_kind,
+                **failure_identity,
                 "status": "failed",
                 "authority": args.authority,
                 "point_count": args.points,
@@ -1239,8 +1317,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
             }
     else:
         report = {
-            "schema_version": SCHEMA_VERSION,
-            "report_kind": report_kind,
+            **failure_identity,
             "status": "failed",
             "authority": args.authority,
             "point_count": args.points,
@@ -1256,6 +1333,9 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
         }
     )
     report["process_tree"] = {
+        "rss_observer": "darwin-ps-sampled-group-rss" if sys.platform == "darwin" else "linux-proc",
+        "worker_rss_measurement": "sampled-high-water" if sys.platform == "darwin" else "VmHWM",
+        "sample_interval_seconds": 0.05,
         "elapsed_seconds": time.monotonic() - start,
         "peak_rss_bytes": peak_tree_rss,
         "peak_temp_bytes": peak_temp_bytes,
@@ -1308,6 +1388,7 @@ def _supervise(args: argparse.Namespace) -> int:
         {
             "workload": getattr(args, "workload", "resident-count"),
             "authority": args.authority,
+            "colored_browser_gl": getattr(args, "colored_browser_gl", "software"),
             "colored_browser_report": str(args.colored_browser_report)
             if getattr(args, "colored_browser_report", None)
             else None,
@@ -1343,6 +1424,14 @@ def _supervise(args: argparse.Namespace) -> int:
             "failure": f"supervisor_error: {type(exc).__name__}: {exc}",
             "cleanup": {},
         }
+        if getattr(args, "workload", "resident-count") == "colored-spill":
+            from benchmarks._density_spill import request_path
+
+            report.update(
+                schema_version=2,
+                report_kind="density-colored-spill",
+                request_path=request_path(args.authority),
+            )
     finally:
         cleanup_error = None
         for owned in (tmp, socket_alias):
@@ -1382,9 +1471,12 @@ def _supervise(args: argparse.Namespace) -> int:
         from scripts.verify_density_spill_browser_report import validate as validate_browser
 
         if companion is None:
+            from benchmarks._density_spill import request_path
+
             companion = {
-                "schema_version": 1,
+                "schema_version": 3,
                 "report_kind": "density-colored-spill-browser-companion",
+                "request_path": request_path(args.authority),
                 "status": "failed",
                 "failure": report.get("failure", "missing browser result"),
             }
@@ -1424,6 +1516,9 @@ def main() -> int:
         "--colored-browser-report",
         type=Path,
         help="opt-in separate same-source colored browser companion",
+    )
+    parser.add_argument(
+        "--colored-browser-gl", choices=("software", "hardware"), default="software"
     )
     parser.add_argument("--authority", action="store_true")
     parser.add_argument("--chunk-points", type=int, default=1_000_000)

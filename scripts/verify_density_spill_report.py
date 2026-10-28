@@ -211,7 +211,7 @@ def _validate(
     r: dict, expected_sha: str | None, environ: dict[str, str], artifact_root: Path | None
 ) -> None:
     require(
-        r["schema_version"] == 1
+        r["schema_version"] == 2
         and r["report_kind"] == "density-colored-spill"
         and r["workload"] == "colored-spill",
         "must be a distinct colored-spill report; resident reports cannot be relabeled",
@@ -279,6 +279,13 @@ def _validate(
         and integer(tree["observed_process_count"], 1),
         "supervisor must observe worker RSS/processes",
     )
+    if env["platform"]["system"] == "Darwin":
+        require(
+            tree["rss_observer"] == "darwin-ps-sampled-group-rss"
+            and tree["worker_rss_measurement"] == "sampled-high-water"
+            and tree["sample_interval_seconds"] == 0.05,
+            "Darwin requires sampled group RSS observation, not VmHWM",
+        )
     require(
         r["latency_policy"]
         == {
@@ -326,6 +333,11 @@ def _validate(
         "native build must borrow canonical x/y with bounded indexed colors",
     )
     d = r["decisions"]
+    require(
+        r["request_path"]
+        == ("product-density-view" if authority else "native-tile-painter-fixture"),
+        "request path must distinguish native tile fixtures from product authority",
+    )
     base = 4096 if authority else 2048
     require(
         d["base_dim"] == base

@@ -104,6 +104,7 @@ use xyg_engine::temporal_controller;
 use xyg_engine::temporal_graph;
 use xyg_engine::textblock;
 use xyg_engine::tick_layout;
+use xyg_engine::tile_paint_control;
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::tile_store;
 use xyg_engine::tiles;
@@ -12966,9 +12967,8 @@ pub extern "C" fn xyg_tile_store_paint_capacity(width: usize, height: usize) -> 
 /// # Safety
 /// `control` addresses `len` readable bytes when len is nonzero.
 #[no_mangle]
-#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_paint_control_valid(control: *const u8, len: usize) -> i32 {
-    if len > 32 + tile_store::MAX_PAINT_KEYS * 12 || (len > 0 && control.is_null()) {
+    if len > 32 + tile_paint_control::MAX_PAINT_KEYS * 12 || (len > 0 && control.is_null()) {
         return 0;
     }
     ffi_guard(0, || {
@@ -12977,7 +12977,7 @@ pub unsafe extern "C" fn xyg_tile_paint_control_valid(control: *const u8, len: u
         } else {
             std::slice::from_raw_parts(control, len)
         };
-        i32::from(tile_store::PaintObservation::decode(raw).is_some())
+        i32::from(tile_paint_control::PaintObservation::decode(raw).is_some())
     })
 }
 
@@ -13301,7 +13301,9 @@ mod wasm_tile_store_stubs {
         _h: usize,
         _max_upsample: usize,
         _out: *mut f32,
+        _out_capacity: usize,
         _out_rgba: *mut u8,
+        _out_rgba_capacity: usize,
     ) -> i32 {
         -1
     }

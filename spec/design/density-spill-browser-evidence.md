@@ -5,21 +5,136 @@
 --colored-browser-report PATH --chrome CHROMIUM` opts into a separate companion
 inside the existing supervised host worker. The existing host/kernel report
 contract remains unchanged: `scope: host-kernel-only` and
-`browser.status: not-run`. The default command remains host-only. Browser
-continuity uses deterministic presentation cadence, with no FPS or end-to-end
-latency claim. Actual main run 40063864999 retains the same-source 100M
+`browser.status: not-run`. The default command remains host-only. Schema 2 adds complete owned texture/buffer accounting and a separate
+normal-clock product-RAF journey alongside the deterministic oracle. Neither
+readback journey establishes production FPS or end-to-end interaction latency. Actual main run 40063864999 retains the same-source 100M
 browser companion and immutable host report as [separate raw evidence](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md).
 The earlier accepted 100M host report remains historical host-only evidence.
 
 The standalone smoke remains a bounded control and refuses more than 1M rows.
 This facility does not establish billion-row, larger-than-RAM, competitive,
-publication, natural-cadence or whole-#11 acceptance. It changes no product
+publication or whole-#11 acceptance. New bounded normal-RAF observations do not
+upgrade the retained deterministic 100M receipt. It changes no product
 behavior or dependency. The existing PR, daily and weekly/manual CI commands
 request and verify the companion. The retained actual 100M execution uses
 production eligibility and base 4096; its software-renderer and deterministic
 presentation limits remain explicit.
 
-## Path and assertions
+## Owned-resource and normal-cadence contract (current schema 3)
+
+Hooks install **before `renderStandalone`**. They observe every created texture
+and buffer, every mutable/immutable storage allocation and reallocation, and
+explicit deletion. Actual R8, sized RGBA8 and unsized RGBA/UNSIGNED_BYTE storage
+are supported; unsupported formats, storage targets, overloads or storage APIs
+fail closed. Buffer capacities round up to 256-byte accounting granularity.
+Reallocation replaces the live capacity; event replay retains its transient
+peak. Initial payload, LUT, pick (including an honest zero when unused), other
+chart, test oracle and keyed-tile resources are separate categories. Tile peak
+includes bootstrap, gutters, outgoing/retained levels and replacement overlap:
+`8 * 512 * 512 * 4 = 8 MiB`. The independent native CPU tile cache remains
+16 MiB. Total driver VRAM and browser framebuffer overhead are unqueryable and
+are not claimed as measured owned allocations.
+
+Destroy must explicitly delete **all** created texture/buffer objects before
+intentional context loss, leave no owned handles in trace/view resource fields,
+and have no GL error. A real saved reply is delivered after destroy; even a
+new creation attempt or storage event fails. Context loss alone cannot supply
+deletion evidence. The independent verifier replays creation/storage/deletion
+events, category counts, capacity changes and peaks rather than trusting the
+aggregate cleanup flags.
+For each current journey, the category-derived keyed-tile peak must also be
+at least the largest sampled allocation independently bound to the native
+tile inventory. Relabeling tile resources as another category cannot lower
+the accepted peak below those observed bytes.
+
+The existing cached/fetch-all deterministic journey and monolithic seam oracle
+remain intact. A **third browser chart over the same host figure/source/store**
+replays the bootstrap plus identical 24 pans/eight zooms with asynchronous reply
+adoption. Its clock, product RAF scheduling, draw implementation and actual
+reduced-motion preference remain active; reduced motion is refused for this
+pass. Transparent observation hooks record actual draw times, tile levels,
+opacities, outgoing keys/live source references, nonblank colored pixels,
+transition hashes and settled framebuffer equality to the deterministic oracle.
+Each zoom must draw both adjacent levels and retire. Reads occur after real
+product draws and add overhead; their cadence is not production FPS and adds
+no 60-FPS gate. The independent host pan-p95 `<16 ms` / every-zoom `<50 ms`
+authority gates retain their original kernel-only scope and values.
+
+Schemas 1 and 2 remain evidence under their recorded original validators,
+preserving the historical hashed reports below. They cannot satisfy current
+schema-3 path/owned/normal or `--require-hardware` acceptance. No historical
+artifact is rewritten or assigned new proof it never recorded.
+
+## Renderer admission and existing Mac experiment
+
+`--colored-browser-gl software|hardware` flows through the existing supervisor
+and worker (software stays default). Both preallocation preflight and the
+journey record actual WebGL vendor/version/unmasked vendor and renderer plus
+`SystemInfo.getInfo` Browser GPU devices/feature status. A request is not proof.
+Missing identification, software/request mismatch and context loss fail.
+Hardware additionally requires an actual **Apple M4 Metal** renderer, an actual
+WebGL2 context/version/readback and Browser GPU `webgl: enabled`. Chromium may
+publish one WebGL feature status; if it also publishes `webgl2`, that status must
+be `enabled` too. Software fallback fails before generating
+canonical rows. Failed admission retains actual renderer/GPU features and
+cleanup in the preflight artifact (or failed supervised host report). No
+alternative runner or capacity is selected.
+
+The existing manual `ceiling-benchmark.yml` has the optional experiment
+`colored-browser-hardware` in the **same job, M4 runner, 48-GB capacity and
+720-minute outer timeout**. Existing defaults and legacy/comparison commands
+stay unchanged. This mode skips unrelated comparison dependencies, requires
+manual main, clean exact `GITHUB_SHA`, Darwin arm64 and exact repository/workflow
+ref/SHA identity. It runs a tiny accelerated preflight with a 30-second active
+probe budget and bounded browser cleanup, one 16,384-row 180-second/4-GiB-RSS/1-GiB-disk control and both verifiers, then one supervised
+production-eligibility/base-4096 100M worker capped at **3600 s / 12 GiB RSS /
+4 GiB disk**, with both verifiers and `--require-hardware`. Raw exact-SHA JSON
+files use the existing upload-artifact action. This is an available fail-closed
+execution path, **not a hosted M4 acceleration receipt**. Actual acceleration
+remains unproven until the parent reviews, lands and explicitly runs it.
+
+Darwin observation uses a bounded `/bin/ps` snapshot of PID, process group, RSS
+(KiB), state and full process name, excludes zombies, and records sampled group
+RSS and worker **sampled high-water** (never Linux `VmHWM`). Snapshot timeout,
+malformed output, missing live observer/worker membership or unavailable cleanup
+observation fail closed. Observer preflight precedes source allocation. Linux
+keeps its `/proc` group RSS and worker `VmHWM` behavior. Both use the existing
+process-group TERM/KILL, wall/RSS/disk caps, alias/profile/tree cleanup and actual
+browser PID/group observations; an observer failure cannot disable termination.
+
+The current implementation is locally exercised only at <=1M using explicit
+Chrome and `TMPDIR` under `target/`. No local 100M, hosted dispatch or hardware
+success is inferred. The broad colored exact-drill headline still conflicts
+with the detailed keep-colored-pyramid policy; that product gap is preserved,
+not relabeled, relocated or closed by this evidence.
+
+## Local schema-2 control (2026-10-24)
+
+The final bounded **1M** supervised control on base `8185de79` with dirty
+implementation files passed both independent verifiers with `--artifact-root`.
+It retained 99 actual binary requests (33 per journey), 33 cached/fresh pixel
+matches, zero maximum seam error, 61 normal product draws and all eight normal
+adjacent transitions. All 48 cached / 227 fetch-all / 15 normal textures and four
+buffers per chart were explicitly deleted with no retained product references
+or late-reply events. Keyed texture peak was 3,461,328 bytes in every journey,
+below 8 MiB. The invocation took 22.124 seconds, sampled peak group RSS
+1,993,695,232 bytes and owned disk 111,313,980 bytes, under the configured
+600-second / 8-GiB / 2-GiB control caps. These are software/readback observations,
+not production FPS or new 100M evidence.
+
+The immutable [bounded control receipt](../performance/colored-owned-resources-2026-10-24/README.md)
+retains the raw host/companion bytes, final embedded captures, commands,
+validation and implementation fingerprints.
+Exact host bytes SHA-256:
+`292fa42483b8a1cdd55ae4f07e393cde0ca2fc5253bc31c3760dcb4b08905424`;
+companion SHA-256:
+`dda013421de8cdf9d34de087ef8ba5c7476b1ca29542832e24899a761cb9a1f1`.
+The report records exact source/harness/native/browser hashes; it is not a
+clean-main authority receipt. A separate tiny hardware-request preflight on
+this host obtained SwiftShader and correctly refused admission before source
+generation, retaining actual GPU features and successful browser cleanup.
+
+## Shared path and deterministic assertions
 
 The harness imports the actual `benchmarks/_density_spill.py` generator, endpoint
 colormap, mapped-pointer inventory, native frame parser, count/mean oracle and
@@ -37,16 +152,23 @@ to one; the store is explicitly prewarmed, with adaptive base 2048 and native
 tile budget 16 MiB. Production eligibility remains 2M. Native first-payload
 policy stays unchanged: it truthfully emits `exact` / `bin2d` with a mean-color
 plane. It does not advertise tile discovery below production eligibility.
-Therefore the bounded browser receives one genuine public `density_view`
-bootstrap reply with empty XYDC observations. Product XYDT admission enables
+Canonical drill now correctly returns exact points for small colored requests.
+The bounded tile-only control therefore calls the existing native tile painter
+on that same real forced-spill store, including its bootstrap with empty XYDC
+observations. It records `request_path: native-tile-painter-fixture`; it does not
+claim production LOD selected tiles. Product XYDT admission enables
 the client's normal tile-inventory requests; no fabricated `tiles` metadata,
 fixture store, or success flag enables the path.
 
 The actual generated standalone bundle paints the public initial payload. A
 real chart resize gives a 512-square plot, matching the host workload. The
 client schedules each shared window and sends its own binary XYDC observations
-over loopback HTTP. The server forwards them to the same figure's
-`density_view(..., tile_cache=...)`; actual Rust XYDT bytes and host reply
+over loopback HTTP. One shared dispatcher handles the host samples, browser
+bootstrap and HTTP requests. Controls use the native tile-painter fixture;
+authority uses the same figure's full `density_view(..., tile_cache=...)` and
+records `request_path: product-density-view`. An authority point reply fails
+this tile-only journey; it never falls back to the fixture. Rust validates XYDC
+before either route. Actual Rust XYDT bytes and thin transport reply
 metadata go to the product `_onKernelMsg` receiver. Requests must match the
 scripted windows exactly. Rust chooses levels, retained keys, gutters, tone,
 color and texture budget. Every pan preserves its level; all eight zooms must
@@ -54,12 +176,11 @@ change the served level by exactly one without resource coarsening/refine debt.
 
 The checks exercise dossier §§5/27/28/29/32b:
 
-- **Actual WebGL allocation:** wrap real `createTexture`, `texImage2D` and
-  `deleteTexture` calls, check RGBA8 dimensions, GL errors and `isTexture`, and
-  reconcile every retained tile against native byte accounting and the eight
-  screen budget. Reported instrumented peak bytes include the separate stitched
-  oracle textures; they exclude first-payload textures allocated before the
-  hooks. They are allocation accounting, not hardware VRAM telemetry.
+- **Actual WebGL allocation:** schema 3 uses the complete accounting above;
+  retained schema-1 reports below observe only post-constructor textures and
+  exclude first-payload allocation. Both reconcile every retained tile against
+  native byte accounting and the eight-screen budget. Test oracle allocation
+  stays separate. Neither reports driver VRAM telemetry.
 - **Nonblank colored density:** read real framebuffer pixels, then draw the
   same chart with density drawing suppressed. Every frame must differ in over
   100 pixels and contain both red and blue density ink. Opaque chart background
@@ -88,8 +209,9 @@ The checks exercise dossier §§5/27/28/29/32b:
   pixels, and retire the fade at completion. This is deterministic continuity
   evidence, not natural animation cadence, interaction latency or frame-rate
   evidence.
-- **Lifetime:** destruction deletes every instrumented texture, clears tile
-  ownership and ignores a real saved late reply without allocating. Chromium
+- **Lifetime:** destruction deletes every instrumented texture and (schema 3)
+  buffer, clears ownership/references and ignores a real saved late reply
+  without allocating. Chromium
   exits and its profile disappears. The HTTP thread stops; native store stats
   become unavailable; spill files disappear; mappings close; the old tile
   budget returns; the owned temporary tree is removed. Failed assertions raise
@@ -128,6 +250,14 @@ harness used for execution; the product source manifest matches that base.
 
 ## Supervised integration contract
 
+Current host reports use schema 2 and browser companions use schema 3, with
+mandatory, independently pinned `request_path` matching between both reports.
+The finalized host bytes include that declaration before the companion hashes
+them. Missing paths and older versions fail current validation. Frozen host
+schema-1/browser schema-1 receipts, and the allocator-format schema-2 browser
+receipts, remain unchanged evidence under their recorded historical producer
+and verifier contracts; regenerating them would destroy that binding.
+
 The opt-in guard runs in both public supervisor and internal worker entry points
 before allocating source columns. It requires the colored-spill workload, an
 executable Chrome/Chromium that successfully reports its version, and distinct,
@@ -143,7 +273,7 @@ native tile store, actual mapped x/y/color, original split payload and exact
 production domain and 32 windows. It repacks only the bounded initial split
 buffers for standalone paint. It never changes host timers or retimes a request.
 The existing 24-pan p95 **<16 ms** and every-zoom **<50 ms** hard authority gates
-remain enforced independently by the unchanged host verifier; controls are
+remain enforced independently by the host verifier; controls are
 advisory. Browser network, readback, seam or fade time never becomes a host
 kernel sample. The helper itself refuses local scale above 1M and additionally
 requires the authority worker to be its supervised process-group leader.
@@ -194,8 +324,10 @@ and **33 cached/fresh framebuffer hash matches**. All **eight** zooms require
 adjacent outgoing textures from the preceding active frame, retained keys,
 source survival, actual intermediate draws at both levels, changed/nonblank
 midpoint pixels and eventual retirement. Browser captures, controls, native tile
-and pixel hashes remain inspectable. Deterministic cadence is the only
-presentation claim; software WebGL allocation is not physical VRAM telemetry.
+and pixel hashes remain inspectable. The retained schema-1 receipt claims
+deterministic cadence only. Schema 2 introduced bounded normal-RAF observations;
+schema 3 retains them and pins the request route. Software allocation remains distinct from
+accelerated WebGL evidence and neither exposes total driver VRAM.
 
 ## Reproduction and integration control
 

@@ -46,6 +46,21 @@ is points. The [XYDT contract](density-tile-painter.md) records the browser
 mean-color handoff correction; opacity, outgoing texture owners, point-window
 cache and disposal retain their existing lifetimes.
 
+## Wheel platform contract
+
+The five ABI 396 additions are required on every supported native wheel target,
+including the CP314 Pyodide wheel built for `wasm32-unknown-emscripten`.
+Canonical drill limits, estimate, admission and query use the same in-memory
+Rust implementation there. XYDC validation shares `tile_paint_control.rs` with
+the native tile painter and works independently of filesystem support.
+File-backed tile/XYGC operations retain their documented Emscripten fail-closed
+stubs ([host parity](host-parity.md)); valid XYDC is not refused merely because
+a spill store is unavailable. Availability fixes retain ABI 396 and generated
+signatures. `scripts/pyodide_load_smoke.py` exercises all five additions through
+the exact packaged wheel in real Pyodide, alongside the existing Scene/kernel
+and unavailable-filesystem checks. This is distinct from the standalone browser
+WASM ABI and supplies no scale or performance claim.
+
 ## Finite proof and reproduction
 
 Environment used: Linux x86-64, Rust 1.96.0, uv CPython 3.12.15,
