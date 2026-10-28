@@ -362,8 +362,53 @@ Rules:
   schedule ticks (thread / `worker_threads`).
 - **Never run force on the JS main thread.**
 - Coalesce uploads to animation frames; cancel drops the handle.
+- Node worker checkpoints require parent acceptance **after** the synchronous
+  `onTick` callback returns successfully, including the complete checkpoint.
+  Until that acceptance, the worker cannot enter another native tick. Callback
+  failure or synchronous signal abort sends cancellation instead of acceptance;
+  queued checkpoints are ignored once cancellation or a terminal reply wins.
+- Node cancellation (callback failure, AbortSignal, or wall timeout) is
+  cooperative at the bounded native chunk boundary. `graphForceDestroy` runs
+  before the worker acknowledges cancellation or reports completion/error, and
+  the public promise settles only after the actual worker `exit` event. A
+  callback exception retains its exact identity; cancellation and cleanup must
+  not replace the first failure. A pre-aborted signal allocates no worker.
+- The existing Node wall budget remains 30 s by default, configurable through
+  `maxWallMs` in `(0, 300000]`. Cancellation allows a further **1,000 ms cleanup
+  grace**, then emergency termination for an unresponsive worker; rejection
+  still waits for exit. Emergency termination cannot guarantee cooperative
+  handle destruction and is not the normal cancellation path. Native calls
+  remain synchronous and cannot be interrupted cooperatively within a chunk.
 - First paint: `grid`/`circle` seed or N quick ticks, then refine.
 - Same ABI for Python and Node → parity at scale.
+
+Node lifecycle regression gate:
+`packages/xy-node/test/force-worker-lifecycle.test.mjs` runs isolated real Worker
+processes with a private ABI-loader seam. A parent callback waits for two
+explicit worker task turns before throwing/aborting; the old unacknowledged
+loop advances native ticks during that callback, whereas the accepted-checkpoint
+loop cannot. Traces assert no next tick, no callbacks after settlement, exact
+exception identity, destroy-before-terminal-reply, and exit-before-settlement.
+The timeout case cancels during a simulated synchronous chunk; normal completion,
+complete-callback failure, native failure, no callback, pre-abort, and an
+unresponsive checkpoint exercise the remaining lifecycle paths. The same
+callback/abort/timeout/completion cases also wrap the actual ABI/Koffi functions
+and observe real destroy return and worker exit, without a public debug API.
+
+Reproduce against a freshly built native core with either supported Node binary:
+
+```bash
+mkdir -p target/task-tmp
+TMPDIR="$PWD/target/task-tmp" XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so" \
+  XYG_FORCE_LIFECYCLE_TRACE=1 /path/to/node --test \
+  packages/xy-node/test/force-worker-lifecycle.test.mjs \
+  packages/xy-node/test/composition.test.mjs
+```
+
+The lifecycle fix does not change graph algorithms, ABI, chunk-size limits,
+position buffers, or public scheduler options/errors. A bounded stress pass is
+regression evidence for this teardown sequence, not a proof that arbitrary
+native calls or emergency termination are interruption-safe.
 
 ---
 

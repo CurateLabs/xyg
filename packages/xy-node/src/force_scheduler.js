@@ -65,7 +65,7 @@ function yieldEventLoop() {
   });
 }
 
-async function runForceTicksImmediate(args) {
+async function runForceTicksImmediate(args, acceptTick) {
   const nNodes = Number(args.nNodes);
   const totalSteps = Number(args.totalSteps ?? 300);
   const chunkSteps = Number(args.chunkSteps ?? 10);
@@ -98,8 +98,13 @@ async function runForceTicksImmediate(args) {
       last = graphForceTick(handle, nNodes, take);
       step += take;
       const phase = step >= totalSteps || last.alpha < 0.001 ? "complete" : step === 1 ? "initial" : "update";
-      if (typeof args.onTick === "function") {
-        args.onTick({ x: last.x, y: last.y, alpha: last.alpha, step, phase, revision, jobId: args.jobId });
+      const state = { x: last.x, y: last.y, alpha: last.alpha, step, phase, revision, jobId: args.jobId };
+      if (acceptTick) {
+        // A worker must not enter the next native chunk until the parent has
+        // accepted this checkpoint (graph-mark.md §5).
+        await acceptTick(state);
+      } else if (typeof args.onTick === "function") {
+        args.onTick(state);
       }
       if (phase === "complete") break;
       if (step < totalSteps) {
@@ -112,6 +117,10 @@ async function runForceTicksImmediate(args) {
   return { x: last.x, y: last.y, alpha: last.alpha, steps: step, phase: "complete", revision, jobId: args.jobId };
 }
 
+// Cancellation normally finishes at a native chunk boundary. Only an
+// unresponsive worker may be terminated after this additional cleanup grace.
+const WORKER_CLEANUP_GRACE_MS = 1_000;
+
 function runForceTicksInWorker(args) {
   const {
     onTick: _onTick,
@@ -120,22 +129,42 @@ function runForceTicksInWorker(args) {
     ...serializable
   } = args;
   return new Promise((resolve, reject) => {
-    let settled = false;
+    let outcome;
     let worker;
-    const finish = (operation, value) => {
-      if (settled) return;
-      settled = true;
+    let cleanupTimeout;
+    const stopListening = () => {
       clearTimeout(timeout);
       if (signal) signal.removeEventListener("abort", onAbort);
-      operation(value);
     };
-    const onAbort = () => {
-      worker?.terminate().catch(() => {});
-      finish(reject, new Error("force ticks aborted"));
+    const finish = () => {
+      stopListening();
+      clearTimeout(cleanupTimeout);
+      if (outcome.failed) reject(outcome.value);
+      else resolve(outcome.value);
     };
+    const awaitExit = () => {
+      if (cleanupTimeout !== undefined) return;
+      cleanupTimeout = setTimeout(() => {
+        // Emergency escape only: normal cancellation must never interrupt FFI.
+        worker.terminate().catch(() => {});
+      }, WORKER_CLEANUP_GRACE_MS);
+    };
+    const cancel = (cause) => {
+      if (outcome) return;
+      // Keep the first cause, including the exact object thrown by onTick.
+      // Suppress all further callbacks while the worker destroys its handle.
+      outcome = { failed: true, value: cause };
+      stopListening();
+      if (!worker) {
+        finish();
+        return;
+      }
+      worker.postMessage({ type: "cancel" });
+      awaitExit();
+    };
+    const onAbort = () => cancel(new Error("force ticks aborted"));
     const timeout = setTimeout(() => {
-      worker?.terminate().catch(() => {});
-      finish(reject, new Error("force ticks exceeded maxWallMs"));
+      cancel(new Error("force ticks exceeded maxWallMs"));
     }, Number(args.maxWallMs ?? 30_000));
     if (signal) {
       if (signal.aborted) {
@@ -149,47 +178,76 @@ function runForceTicksInWorker(args) {
         workerData: { type: "force_ticks", args: serializable },
       });
     } catch (cause) {
-      finish(reject, cause);
+      outcome = { failed: true, value: cause };
+      finish();
       return;
     }
     worker.on("message", (msg) => {
-      if (msg?.type === "done") {
-        finish(resolve, msg.result);
-      } else if (msg?.type === "tick" && typeof args.onTick === "function") {
+      if (outcome) return;
+      if (msg?.type === "done" || msg?.type === "error") {
+        // These are sent only after graphForceDestroy. Still wait for exit so
+        // no native environment remains live when the public promise settles.
+        outcome = msg.type === "done"
+          ? { failed: false, value: msg.result }
+          : { failed: true, value: new Error(msg.message ?? "worker force tick failed") };
+        stopListening();
+        awaitExit();
+      } else if (msg?.type === "tick") {
         try {
-          args.onTick(msg.state);
+          if (typeof args.onTick === "function") args.onTick(msg.state);
         } catch (cause) {
-          worker.terminate().catch(() => {});
-          finish(reject, cause);
+          cancel(cause);
         }
-      } else if (msg?.type === "error") {
-        worker.terminate().catch(() => {});
-        finish(reject, new Error(msg.message ?? "worker force tick failed"));
+        // The callback can synchronously abort the signal as well as throw.
+        if (!outcome) worker.postMessage({ type: "accept", step: msg.state.step });
       }
     });
-    worker.on("error", (cause) => finish(reject, cause));
+    worker.on("error", (cause) => {
+      if (!outcome) outcome = { failed: true, value: cause };
+      stopListening();
+      awaitExit();
+    });
     worker.on("exit", (code) => {
-      if (code !== 0) {
-        finish(reject, new Error(`force tick worker exited with code ${code}`));
-      }
+      if (!outcome || (!outcome.failed && code !== 0)) outcome = { failed: true, value: new Error(`force tick worker exited with code ${code}`) };
+      finish();
     });
   });
 }
 
 // Worker entry — only active when this module is loaded as a Worker.
 if (!isMainThread && parentPort && workerData?.type === "force_ticks") {
+  const controller = new AbortController();
+  let checkpoint;
+  parentPort.on("message", (msg) => {
+    if (msg?.type === "cancel") {
+      controller.abort();
+      checkpoint?.reject(new Error("force ticks aborted"));
+      checkpoint = undefined;
+    } else if (msg?.type === "accept" && msg.step === checkpoint?.step) {
+      checkpoint.resolve();
+      checkpoint = undefined;
+    }
+  });
   runForceTicksImmediate({
     ...workerData.args,
-    onTick: (state) => parentPort.postMessage({ type: "tick", state }),
-  })
+    signal: controller.signal,
+  }, (state) => new Promise((resolve, reject) => {
+    checkpoint = { step: state.step, resolve, reject };
+    parentPort.postMessage({ type: "tick", state });
+  }))
     .then((result) => {
-      // Transfer typed-array buffers back to the parent.
+      // Transfer typed-array buffers back to the parent after handle cleanup.
       parentPort.postMessage(
         { type: "done", result },
         [result.x.buffer, result.y.buffer],
       );
     })
     .catch((err) => {
-      parentPort.postMessage({ type: "error", message: String(err?.message ?? err) });
-    });
+      // runForceTicksImmediate's finally destroys the native handle before
+      // acknowledging cancellation or reporting any native/validation error.
+      parentPort.postMessage(controller.signal.aborted
+        ? { type: "cancelled" }
+        : { type: "error", message: String(err?.message ?? err) });
+    })
+    .finally(() => parentPort.close());
 }
