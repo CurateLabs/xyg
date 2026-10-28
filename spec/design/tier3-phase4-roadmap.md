@@ -289,6 +289,13 @@ inside this frame; changing any of it means editing this section first.
   exclude pre-hook initial-payload textures and do not establish hardware VRAM
   or a complete allocator audit. Natural-cadence/headline evidence remains open.
 - [ ] Comparable live competitive evidence and explicit scale limitations.
+  Actual-main run 40618320164 now passes the structural contract for all
+  1M/100M/1B × three arms × two repetitions; the
+  [raw receipt](../../benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/README.md)
+  preserves 576 warm windows, 18 empty controls and numerical source/grid
+  proofs. Programmatic clocks and unequal grid/shading/validation work do not
+  establish a normalized winner; colored competitive and natural-gesture
+  parity, cold-disk and larger-than-RAM evidence remain outstanding.
 
 ## Exit criteria
 

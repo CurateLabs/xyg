@@ -1,0 +1,172 @@
+{
+  "scope": "Arithmetic summaries of recorded metadata, not source/grid recomputation or local verifier execution.",
+  "checkpoints": 204,
+  "cells": [
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "recorded_checkpoints": 34,
+      "preparation": {
+        "version": "source-cell-compose-v1",
+        "wall_ms": 188.1611249999935,
+        "chunk_rows": 65536,
+        "grid_storage_upper_bound_bytes": 37748736,
+        "scope": "host_prepare before META; host process-tree RSS/watchdog includes oracle"
+      },
+      "count_methods": {
+        "inclusive-source": 1,
+        "half-open-source": 33
+      },
+      "max_abs_emitted_minus_exact_source_count": 0,
+      "max_boundary_mass_bound": 0,
+      "max_upper_boundary_excluded": 0,
+      "all_recorded_oracles_passed": true,
+      "all_recorded_emitted_match_expected": true,
+      "all_recorded_encoded_hashes_match": true,
+      "all_recorded_adopted_hashes_match": true,
+      "all_recorded_source_hashes_match": true,
+      "validation_wall_ms_sum": 34.00762499995835,
+      "validation_http_request_bytes_sum": 15087991
+    },
+    {
+      "n": 1000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "recorded_checkpoints": 34,
+      "preparation": {
+        "version": "source-cell-compose-v1",
+        "wall_ms": 194.65354199999751,
+        "chunk_rows": 65536,
+        "grid_storage_upper_bound_bytes": 37748736,
+        "scope": "host_prepare before META; host process-tree RSS/watchdog includes oracle"
+      },
+      "count_methods": {
+        "inclusive-source": 1,
+        "half-open-source": 33
+      },
+      "max_abs_emitted_minus_exact_source_count": 0,
+      "max_boundary_mass_bound": 0,
+      "max_upper_boundary_excluded": 0,
+      "all_recorded_oracles_passed": true,
+      "all_recorded_emitted_match_expected": true,
+      "all_recorded_encoded_hashes_match": true,
+      "all_recorded_adopted_hashes_match": true,
+      "all_recorded_source_hashes_match": true,
+      "validation_wall_ms_sum": 33.972586000061256,
+      "validation_http_request_bytes_sum": 15087991
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "recorded_checkpoints": 34,
+      "preparation": {
+        "version": "source-cell-compose-v1",
+        "wall_ms": 4134.873125000013,
+        "chunk_rows": 65536,
+        "grid_storage_upper_bound_bytes": 306184188,
+        "scope": "host_prepare before META; host process-tree RSS/watchdog includes oracle"
+      },
+      "count_methods": {
+        "inclusive-source": 1,
+        "whole-cell-center": 32,
+        "half-open-source": 1
+      },
+      "max_abs_emitted_minus_exact_source_count": 9885,
+      "max_boundary_mass_bound": 113492,
+      "max_upper_boundary_excluded": 0,
+      "all_recorded_oracles_passed": true,
+      "all_recorded_emitted_match_expected": true,
+      "all_recorded_encoded_hashes_match": true,
+      "all_recorded_adopted_hashes_match": true,
+      "all_recorded_source_hashes_match": true,
+      "validation_wall_ms_sum": 121.31791900003464,
+      "validation_http_request_bytes_sum": 54126791
+    },
+    {
+      "n": 100000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "recorded_checkpoints": 34,
+      "preparation": {
+        "version": "source-cell-compose-v1",
+        "wall_ms": 4137.001083000001,
+        "chunk_rows": 65536,
+        "grid_storage_upper_bound_bytes": 306184188,
+        "scope": "host_prepare before META; host process-tree RSS/watchdog includes oracle"
+      },
+      "count_methods": {
+        "inclusive-source": 1,
+        "whole-cell-center": 32,
+        "half-open-source": 1
+      },
+      "max_abs_emitted_minus_exact_source_count": 9885,
+      "max_boundary_mass_bound": 113492,
+      "max_upper_boundary_excluded": 0,
+      "all_recorded_oracles_passed": true,
+      "all_recorded_emitted_match_expected": true,
+      "all_recorded_encoded_hashes_match": true,
+      "all_recorded_adopted_hashes_match": true,
+      "all_recorded_source_hashes_match": true,
+      "validation_wall_ms_sum": 115.74287500002356,
+      "validation_http_request_bytes_sum": 54126791
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 0,
+      "recorded_checkpoints": 34,
+      "preparation": {
+        "version": "source-cell-compose-v1",
+        "wall_ms": 65227.31741699994,
+        "chunk_rows": 65536,
+        "grid_storage_upper_bound_bytes": 1111490556,
+        "scope": "host_prepare before META; host process-tree RSS/watchdog includes oracle"
+      },
+      "count_methods": {
+        "inclusive-source": 1,
+        "whole-cell-center": 32,
+        "half-open-source": 1
+      },
+      "max_abs_emitted_minus_exact_source_count": 107116,
+      "max_boundary_mass_bound": 601740,
+      "max_upper_boundary_excluded": 0,
+      "all_recorded_oracles_passed": true,
+      "all_recorded_emitted_match_expected": true,
+      "all_recorded_encoded_hashes_match": true,
+      "all_recorded_adopted_hashes_match": true,
+      "all_recorded_source_hashes_match": true,
+      "validation_wall_ms_sum": 131.39375200012182,
+      "validation_http_request_bytes_sum": 57346851
+    },
+    {
+      "n": 1000000000,
+      "arm": "xy-density",
+      "repetition": 1,
+      "recorded_checkpoints": 34,
+      "preparation": {
+        "version": "source-cell-compose-v1",
+        "wall_ms": 64412.16208399999,
+        "chunk_rows": 65536,
+        "grid_storage_upper_bound_bytes": 1111490556,
+        "scope": "host_prepare before META; host process-tree RSS/watchdog includes oracle"
+      },
+      "count_methods": {
+        "inclusive-source": 1,
+        "whole-cell-center": 32,
+        "half-open-source": 1
+      },
+      "max_abs_emitted_minus_exact_source_count": 107116,
+      "max_boundary_mass_bound": 601740,
+      "max_upper_boundary_excluded": 0,
+      "all_recorded_oracles_passed": true,
+      "all_recorded_emitted_match_expected": true,
+      "all_recorded_encoded_hashes_match": true,
+      "all_recorded_adopted_hashes_match": true,
+      "all_recorded_source_hashes_match": true,
+      "validation_wall_ms_sum": 125.77491900003679,
+      "validation_http_request_bytes_sum": 57346851
+    }
+  ]
+}
