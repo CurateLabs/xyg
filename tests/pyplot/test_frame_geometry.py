@@ -317,7 +317,8 @@ def test_get_position_keeps_subplot_cells_stable_after_an_axes_is_removed():
 
     fig.delaxes(flat[0])
 
-    assert [ax.get_position().bounds for ax in fig.axes] == pytest.approx(expected[1:])
+    for want, ax in zip(expected[1:], fig.axes, strict=True):
+        assert ax.get_position().bounds == pytest.approx(want)
     for want, got in zip(_reported_rects(fig), _plot_rects(fig), strict=True):
         assert got == pytest.approx(want, abs=1.0)
 
