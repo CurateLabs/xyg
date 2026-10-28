@@ -6,6 +6,15 @@
 
 This ledger answers ownership file by file without treating language percentages as a quality target. Rust owns row scans and every parity-affecting decision. Python and Node own host ergonomics. TypeScript owns browser painting and interaction. Files marked for migration remain supported, but must not gain new canonical policy while their named issue is open.
 
+ABI 396's [capped canonical drill](canonical-drill.md) keeps admission, point and
+candidate caps, paired zone pruning, row membership and exact/refusal status in
+Rust. `_native.py` and Node `encode.js` borrow typed inputs and pack that same
+ABI. `interaction.py` orders the existing predicate, drill and tile lifecycles;
+it does not certify an estimate or expand candidate rows. TypeScript recognizes
+the existing keyed RGBA representation for opacity handoff and retains its
+texture/cache ownership. Finite seams prove these boundaries; finer unordered
+row localization and massive-source evidence remain open.
+
 The keep-host inventory is an advisory source map, not behavioral evidence.
 `scripts/audit_python_host_core.py` parses Python imports/calls and Node ESM
 imports/calls to report syntactic call expressions and referenced entries on the generated
@@ -747,6 +756,7 @@ Forbidden:
 | `crates/xyg-engine/src/legend_fit.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/legend_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 124 static legend box packing | — |
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/canonical_drill.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 396 capped canonical-row admission/query, zone-map preflight, complete/overflow/scan-budget observations; Python/Node borrow f64/maps and pack the same ABI | — |
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 122 compile-time payload tier + visible mask; ABI 204 line M4 emit indices; ABI 205 emit visible/even/sample indices | — |
 | `crates/xyg-engine/src/packed_ticks.rs` | Rust safe engine | `rust-engine` | `keep-rust`; packed XYTK/XYTO resolution introduced in WASM ABI 23/native ABI 360 and carried by current WASM ABI 27/native ABI 361 | — |
 | `crates/xyg-engine/src/density_emit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 132 first-paint density emit policy | — |
@@ -833,6 +843,7 @@ Forbidden:
 | `crates/xyg-engine/src/temporal_graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/textblock.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 125 newline-delimited chrome measure | — |
 | `crates/xyg-engine/src/tick_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 123 tick-label collision thinning; ABI 128 authored tick-window; ABI 199 Scene product-path authored filter/pairing; ABI 200 Scene product-path authored minor filter; ABI 201 Scene polar modular theta window / angular labels; ABI 202 Scene product-path ABI 130 time/angular formats; ABI 203 Scene cartesian ABI 123 collision emit; ABI 130 tick-label formatting (`format_axis_tick` in `scene.rs`) | — |
+| `crates/xyg-engine/src/tile_paint_control.rs` | Rust safe engine | `rust-engine` | `keep-rust`; shared bounded XYDC inventory decoder for native painting and every C ABI wheel target, including Pyodide; independent of filesystem storage | — |
 | `crates/xyg-engine/src/tile_store.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/tile_store/paint.rs` | Rust safe engine | `rust-engine` | `keep-rust`; density paint levels, retention, encoding, normalization, and resource budgets | — |
 | `crates/xyg-engine/src/tiles.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

@@ -112,6 +112,23 @@ as fail-closed stubs so supported in-memory kernels and Scene consumers still
 load. The Pyodide gate calls every stub and checks its documented sentinel and
 signature; it never emulates filesystem policy in Python or JavaScript. These
 stubs are Emscripten-specific, not a blanket policy for every WASM target.
+The capacity-aware `xyg_tile_store_compose_color` stub takes both declared
+output capacities even though it returns `-1` without touching output.
+Tile paint capacity/paint also remain unavailable (both return zero).
+
+All five ABI 396 additions are supported in-memory operations on the native
+wheel targets **and** `wasm32-unknown-emscripten`: `xyg_tile_paint_control_valid`
+and `xyg_canonical_drill_limits`, `_estimate`, `_admit`, `_query`. XYDC decoding
+lives in the store-independent `xyg-engine::tile_paint_control`; native painting
+and validation use that one decoder with unchanged bounds and empty-inventory
+semantics. Emscripten validation must not depend on the file-backed store or
+return an unavailable-operation sentinel for valid controls. Canonical drill
+uses the same f64/zone-map engine and capped output on Pyodide, not a stub.
+The exact-wheel Pyodide gate binds every generated ABI declaration and exercises
+all five additions, including valid/malformed XYDC and a finite canonical query
+with NaNs and pruned chunks. It also calls all 17 filesystem stubs. Native ABI
+396 and its 529 declared symbols/signatures are unchanged; this availability
+repair does not change the standalone `wasm32-unknown-unknown` compute ABI.
 
 The #58 scene migration is active: scene schema version 25 provides one
 backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,

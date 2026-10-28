@@ -104,6 +104,7 @@ use xyg_engine::temporal_controller;
 use xyg_engine::temporal_graph;
 use xyg_engine::textblock;
 use xyg_engine::tick_layout;
+use xyg_engine::tile_paint_control;
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::tile_store;
 use xyg_engine::tiles;
@@ -199,7 +200,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 395;
+pub const ABI_VERSION: u32 = 396;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -12312,6 +12313,134 @@ pub unsafe extern "C" fn xyg_valid_indices_f64(
     })
 }
 
+/// Rust-owned capped canonical drill allocation limits: [point cap, scan rows].
+/// # Safety
+/// `out` addresses two writable u64 values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_canonical_drill_limits(in_drill: i32, out: *mut u64) -> i32 {
+    if !(0..=1).contains(&in_drill) || out.is_null() {
+        return 0;
+    }
+    *out = xyg_engine::canonical_drill::point_cap(in_drill != 0) as u64;
+    *out.add(1) = xyg_engine::canonical_drill::SCAN_ROW_BUDGET;
+    1
+}
+
+/// Rust-owned clipped-area estimate for query admission only; -1 on invalid.
+#[no_mangle]
+pub extern "C" fn xyg_canonical_drill_estimate(
+    rows: u64,
+    ex0: f64,
+    ex1: f64,
+    ey0: f64,
+    ey1: f64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+) -> f64 {
+    xyg_engine::canonical_drill::estimate(rows, [ex0, ex1, ey0, ey1], [x0, x1, y0, y1]).unwrap_or(-1.0)
+}
+
+/// Approximate counts admit query work only, never certify exact counts.
+/// Estimate -1 denotes unknown. Returns 0/1 admission, -1 invalid input.
+#[no_mangle]
+pub extern "C" fn xyg_canonical_drill_admit(estimate: f64, in_drill: i32, refinement: i32) -> i32 {
+    if !(0..=1).contains(&in_drill) || !(0..=1).contains(&refinement) {
+        return -1;
+    }
+    xyg_engine::canonical_drill::admit(estimate, in_drill != 0, refinement != 0)
+        .map(i32::from)
+        .unwrap_or(-1)
+}
+
+/// Capped f64 canonical row query over existing zone-map planes (ABI 396).
+/// Returns 0 complete, 1 output overflow, 2 candidate scan-budget refusal,
+/// -1 malformed. Only complete validates output IDs/count. Stats are
+/// [count (u64::MAX unless complete), candidate rows, candidate chunks,
+/// rows read, coordinate bytes read, point cap, scan-row budget].
+/// Budget admission precedes every canonical coordinate read. No source-sized
+/// candidate or output allocation; IDs ascend in canonical order.
+/// # Safety
+/// x/y address len f64 values, each zone plane addresses n_chunks f64 values,
+/// out addresses out_capacity u32 values, stats addresses seven u64 values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_canonical_drill_query(
+    x: *const f64,
+    y: *const f64,
+    len: usize,
+    chunk_size: usize,
+    x_min: *const f64,
+    x_max: *const f64,
+    y_min: *const f64,
+    y_max: *const f64,
+    n_chunks: usize,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    in_drill: i32,
+    out: *mut u32,
+    out_capacity: usize,
+    stats: *mut u64,
+) -> i32 {
+    if !(0..=1).contains(&in_drill)
+        || chunk_size == 0
+        || len > u32::MAX as usize
+        || n_chunks != len.div_ceil(chunk_size)
+        || stats.is_null()
+        || out.is_null()
+        || out_capacity != xyg_engine::canonical_drill::point_cap(in_drill != 0)
+        || (len > 0 && (x.is_null() || y.is_null()))
+        || (n_chunks > 0
+            && (x_min.is_null() || x_max.is_null() || y_min.is_null() || y_max.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let x = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(x, len)
+        };
+        let y = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(y, len)
+        };
+        let planes = [x_min, x_max, y_min, y_max].map(|p| {
+            if n_chunks == 0 {
+                &[][..]
+            } else {
+                std::slice::from_raw_parts(p, n_chunks)
+            }
+        });
+        let output = std::slice::from_raw_parts_mut(out, out_capacity);
+        let Some(obs) = xyg_engine::canonical_drill::query(
+            x,
+            y,
+            chunk_size,
+            planes,
+            [lo_x, hi_x, lo_y, hi_y],
+            in_drill != 0,
+            output,
+        ) else {
+            return -1;
+        };
+        let values = [
+            obs.count.map(|v| v as u64).unwrap_or(u64::MAX),
+            obs.candidate_rows,
+            obs.candidate_chunks,
+            obs.rows_read,
+            obs.rows_read * 16,
+            out_capacity as u64,
+            xyg_engine::canonical_drill::SCAN_ROW_BUDGET,
+        ];
+        std::slice::from_raw_parts_mut(stats, 7).copy_from_slice(&values);
+        obs.status as i32
+    })
+}
+
 /// Canonical row indices inside an inclusive rectangular window. Returns the
 /// count written. `out` must hold `len` u32s.
 ///
@@ -12834,6 +12963,24 @@ pub extern "C" fn xyg_tile_store_paint_capacity(width: usize, height: usize) -> 
     tile_store::paint_capacity(width, height).unwrap_or(0)
 }
 
+/// Validate bounded XYDC inventory independently of a tile store or state.
+/// # Safety
+/// `control` addresses `len` readable bytes when len is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tile_paint_control_valid(control: *const u8, len: usize) -> i32 {
+    if len > 32 + tile_paint_control::MAX_PAINT_KEYS * 12 || (len > 0 && control.is_null()) {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let raw = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(control, len)
+        };
+        i32::from(tile_paint_control::PaintObservation::decode(raw).is_some())
+    })
+}
+
 /// Rust-owned tile-keyed density paint reply (#10). The output is XYDT v1;
 /// 0 means refused/stale, usize::MAX means invalid or insufficient capacity.
 /// Caller owns `out_capacity` writable bytes; known is bounded XYDC v1 inventory.
@@ -13154,7 +13301,9 @@ mod wasm_tile_store_stubs {
         _h: usize,
         _max_upsample: usize,
         _out: *mut f32,
+        _out_capacity: usize,
         _out_rgba: *mut u8,
+        _out_rgba_capacity: usize,
     ) -> i32 {
         -1
     }

@@ -45,7 +45,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use crate::tiles::{self, LevelView, Pyramid};
 
 mod paint;
-pub use paint::{paint_capacity, PaintObservation, PaintRequest, MAX_PAINT_BYTES, MAX_PAINT_KEYS};
+pub use crate::tile_paint_control::{PaintObservation, MAX_PAINT_KEYS};
+pub use paint::{paint_capacity, PaintRequest, MAX_PAINT_BYTES};
 static PAINT_GENERATION: AtomicU64 = AtomicU64::new(1);
 
 /// Cells per tile side (D1). Re-export of [`tiles::TILE_DIM`] for ABI sizing.

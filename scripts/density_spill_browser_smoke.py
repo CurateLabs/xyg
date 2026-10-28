@@ -278,7 +278,8 @@ BROWSER_PROOF = r"""
   let clock=1000,requests=0,inflight,lastRaw,lastMessage;
   if(!normal)v._now=()=>clock;
   // Bounded first-payload policy truthfully emits exact/bin2d, without tile
-  // discovery metadata. Bootstrap with a real public density_view XYDT reply;
+  // discovery metadata. Bootstrap with an actual native XYDT reply from the
+  // report's explicit fixture or product route;
   // admission itself enables the product's binary inventory request path.
   v._onKernelMsg({...input.seed.message,type:'density_update',seq:v.seq},[Uint8Array.from(atob(input.seed.raw),c=>c.charCodeAt(0))]);
   assert(g._tileCapable,'native bootstrap not admitted');audit.inventory(g);
@@ -545,8 +546,8 @@ def run_existing(
     assert store and trace._pyr_colored
     assert journey == spill.windows(domain)
     mapped = {"before_browser": spill.mapping_inventory(fig, sources)}
-    seed_message, seed_replies = fig.density_view(
-        trace.id, *journey[0]["window"], 512, 512, tile_cache=spill.control(None)
+    seed_message, seed_replies = spill.tile_request(
+        fig, store, journey[0]["window"], authority=authority, tile_cache=spill.control(None)
     )
     seed_pool, seed_frame = spill.parse_frame(seed_replies[0], {})
     records, errors = [], []
@@ -583,11 +584,11 @@ def run_existing(
                 expected = journey[max(index, 0)]["window"]
                 window = [req[k] for k in ("x0", "x1", "y0", "y1")]
                 assert window == expected, "browser changed scripted source window"
-                msg, replies = fig.density_view(
-                    trace.id,
-                    *window,
-                    spill.SCREEN,
-                    spill.SCREEN,
+                msg, replies = spill.tile_request(
+                    fig,
+                    store,
+                    window,
+                    authority=authority,
                     tile_cache=control,
                 )
                 assert len(replies) == 1 and msg["traces"][0]["density"]["tile_frame"] == 0
@@ -668,10 +669,11 @@ def run_existing(
             assert sample["stats"]["received"] == record["transferred_tiles"]
         mapped["after_browser"] = spill.mapping_inventory(fig, sources)
         return {
-            "schema_version": 2,
+            "schema_version": 3,
             "report_kind": "density-colored-spill-browser-companion",
             "scope": "same-source-real-browser-owned-resources-and-normal-cadence",
             "status": "ok",
+            "request_path": spill.request_path(authority),
             "point_count": len(sources[0]),
             "source": source,
             "domain": domain,

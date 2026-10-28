@@ -938,6 +938,8 @@ def _padded_drill_window(
     hi_x: float,
     lo_y: float,
     hi_y: float,
+    *,
+    observations: list[dict[str, Any]] | None = None,
 ) -> Optional[tuple[float, float, float, float, np.ndarray]]:
     """The widest aligned window around the view that still drills (T13).
 
@@ -952,9 +954,13 @@ def _padded_drill_window(
     zero), non-finite extents, or every rung over budget.
     """
     if fig._axis_scale(t.x_axis) != "linear" or fig._axis_scale(t.y_axis) != "linear":
+        if observations is not None:
+            observations.append({"status": "skipped", "reason": "nonlinear-axis"})
         return None
     ex0, ex1, ey0, ey1 = t.x.min, t.x.max, t.y.min, t.y.max
     if not all(np.isfinite(v) for v in (ex0, ex1, ey0, ey1)):
+        if observations is not None:
+            observations.append({"status": "skipped", "reason": "nonfinite-extent"})
         return None
     span_x, span_y = hi_x - lo_x, hi_y - lo_y
     budget = SCATTER_DENSITY_THRESHOLD
@@ -962,12 +968,16 @@ def _padded_drill_window(
         px0, px1 = lod.aligned_window(lo_x, hi_x, ex0, ex1, pad)
         py0, py1 = lod.aligned_window(lo_y, hi_y, ey0, ey1, pad)
         if px0 == lo_x and px1 == hi_x and py0 == lo_y and py1 == hi_y:
+            if observations is not None:
+                observations.append({"status": "skipped", "reason": "same-window"})
             continue
         # §16 precision guard: the shipped offset encoding centers on THIS
         # window, and the client re-requests precision only below 1/256 of the
         # window span — a window unboundedly wider than the view (tiny view
         # over a small dataset) would let deep zooms outrun f32 first.
         if px1 - px0 > span_x * DRILL_PAD_SPAN_CAP or py1 - py0 > span_y * DRILL_PAD_SPAN_CAP:
+            if observations is not None:
+                observations.append({"status": "skipped", "reason": "precision-span-cap"})
             continue
         if pyr is not None:
             # Cheap center-in-cell estimate gates the exact O(N) verify scan;
@@ -975,11 +985,49 @@ def _padded_drill_window(
             # scan on a window the exact count then rejects.
             est = kernels.pyramid_count(pyr, px0, px1, py0, py1)
             if est is not None and est > budget * 0.85:
+                if observations is not None:
+                    observations.append({"status": "skipped", "reason": "pyramid-estimate"})
                 continue
-        sel = kernels.range_indices(t.x.values, t.y.values, px0, px1, py0, py1)
-        if len(sel) <= budget:
+        query = _canonical_drill_query(t, px0, px1, py0, py1, in_drill=False)
+        if observations is not None:
+            observations.append(
+                {"x_range": [px0, px1], "y_range": [py0, py1], **_drill_query_observation(query)}
+            )
+        sel = query["indices"]
+        if query["status"] == "complete" and lod.drill_decision(len(sel), budget, False):
             return px0, px1, py0, py1, sel
     return None
+
+
+def _canonical_drill_query(
+    t: Any,
+    lo_x: float,
+    hi_x: float,
+    lo_y: float,
+    hi_y: float,
+    *,
+    in_drill: bool,
+) -> dict[str, Any]:
+    """Borrow canonical columns/maps; Rust owns cap, pruning and scan budget."""
+    return kernels.canonical_drill_query(
+        t.x.values,
+        t.y.values,
+        t.x.zone.mins,
+        t.x.zone.maxs,
+        t.y.zone.mins,
+        t.y.zone.maxs,
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        chunk_size=columns.ZONE_CHUNK,
+        in_drill=in_drill,
+    )
+
+
+def _drill_query_observation(query: dict[str, Any]) -> dict[str, Any]:
+    """Bounded control facts; row IDs stay host-side for pick translation."""
+    return {key: value for key, value in query.items() if key != "indices"}
 
 
 def _quantize_dval(dval: np.ndarray) -> np.ndarray:
@@ -1090,6 +1138,10 @@ def density_view(
     lo_x, hi_x = request.x_range
     lo_y, hi_y = request.y_range
     w, h = request.width, request.height
+    # T6: validate the bounded binary inventory even when a canonical points
+    # reply will bypass the tile painter. No lazy build or drill may precede it.
+    if tile_cache is not None and not kernels.tile_paint_control_valid(tile_cache):
+        raise ValueError("invalid tile painter control")
     if not t.use_density() or t.hidden:
         return {"traces": []}, []
     xv, yv = t.x.values, t.y.values
@@ -1144,6 +1196,69 @@ def density_view(
     # takes the honest Tier-B re-bin below, recorded via the binning label.
     pyr = None if (nonlinear or vis_rows is not None) else _ensure_pyramid(t)
     store = None if (nonlinear or vis_rows is not None) else _tile_store_of(t)
+    canonical_query = None
+    # The legacy f32 SpatialIndex has no row IDs. Channel-bearing drills use
+    # canonical f64 rows instead, before either spilled-density early return.
+    # Wide views still use tiles: estimates only admit the bounded Rust query;
+    # only its complete result certifies a count or changes drill bookkeeping.
+    canonical_source = (
+        not nonlinear
+        and vis_rows is None
+        and _has_point_channels(t)
+        and len(xv) <= 0xFFFF_FFFF
+        and (pyr is not None or store is not None)
+    )
+    if canonical_source:
+        aggregate_plan = lod.plan_view_lod(
+            request,
+            SCATTER_DENSITY_THRESHOLD * 2,
+            SCATTER_DENSITY_THRESHOLD,
+            False,
+            aggregate_reduction="pyramid-count",
+        )
+        source = _pyramid_source_shape(t, lo_x, hi_x, lo_y, hi_y)
+        refinement = source is None or _pyramid_grid_is_upsampled(
+            0, aggregate_plan.grid_w, aggregate_plan.grid_h, source
+        )
+        estimate = kernels.pyramid_count(pyr, lo_x, hi_x, lo_y, hi_y) if pyr is not None else None
+        if estimate is None:
+            extent = (t.x.min, t.x.max, t.y.min, t.y.max)
+            estimate = (
+                kernels.canonical_drill_estimate(len(xv), extent, (lo_x, hi_x, lo_y, hi_y))
+                if all(np.isfinite(v) for v in extent)
+                and extent[1] > extent[0]
+                and extent[3] > extent[2]
+                else -1.0
+            )
+        if kernels.canonical_drill_admit(estimate, in_drill=t.drill_mode, refinement=refinement):
+            canonical_query = _canonical_drill_query(
+                t, lo_x, hi_x, lo_y, hi_y, in_drill=t.drill_mode
+            )
+            if canonical_query["status"] == "complete":
+                sel = canonical_query["indices"]
+                visible = len(sel)
+                padding_queries: list[dict[str, Any]] = []
+                padded = _padded_drill_window(
+                    fig, t, pyr, lo_x, hi_x, lo_y, hi_y, observations=padding_queries
+                )
+                if padded is not None:
+                    lo_x, hi_x, lo_y, hi_y, sel = padded
+                reply, reply_buffers = _drill_points(
+                    fig, t, sel, len(sel), lo_x, hi_x, lo_y, hi_y, w, h, blend_visible=visible
+                )
+                reply["traces"][0].update(
+                    binning="canonical-points",
+                    canonical_query=_drill_query_observation(canonical_query),
+                    padding={
+                        "applied": padded is not None,
+                        "fallback": "raw-view" if padded is None else None,
+                        "queries": padding_queries,
+                    },
+                )
+                return reply, reply_buffers
+    # A refused query is not a tier decision. Retain existing mappings/history
+    # while the aggregate stands; never adopt a partial prefix as an exact row set.
+    retain_drill = canonical_query is not None
     # Tile framing replaces only the aggregate painter, never the existing
     # exact spatial refinement. Use the same Rust LOD plan and finest-source
     # resolution predicate as the legacy compose path below; eligible index
@@ -1184,25 +1299,25 @@ def density_view(
         )
         if frame is not None:
             level = int.from_bytes(frame[8:12], "little")
-            lod.exit_drill(t)
-            return {
-                "traces": [
-                    {
-                        "id": trace_id,
-                        "mode": "density",
-                        "tier": "density",
-                        "visible": SCATTER_DENSITY_THRESHOLD * 2,
-                        "reduction": "pyramid-count",
-                        "binning": f"pyramid-L{level}-tiles",
-                        "density": {
-                            "tile_frame": 0,
-                            "x_range": [lo_x, hi_x],
-                            "y_range": [lo_y, hi_y],
-                        },
-                        "tiles": _tiles_stats_dict(store),
-                    }
-                ]
-            }, [frame]
+            if not retain_drill:
+                lod.exit_drill(t)
+            entry = {
+                "id": trace_id,
+                "mode": "density",
+                "tier": "density",
+                "visible": SCATTER_DENSITY_THRESHOLD * 2,
+                "reduction": "pyramid-count",
+                "binning": f"pyramid-L{level}-tiles",
+                "density": {
+                    "tile_frame": 0,
+                    "x_range": [lo_x, hi_x],
+                    "y_range": [lo_y, hi_y],
+                },
+                "tiles": _tiles_stats_dict(store),
+            }
+            if canonical_query is not None:
+                entry["canonical_query"] = _drill_query_observation(canonical_query)
+            return {"traces": [entry]}, [frame]
     if store is not None:
         # Spilled path: no pyramid_count; treat like no-rescan for the serve
         # gate (compose is the cheap O(tiles) answer).
@@ -1235,14 +1350,17 @@ def density_view(
             upsampled = _pyramid_grid_is_upsampled(level, requested_gw, requested_gh, source)
             binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
             tiles_meta = _tiles_stats_dict(store)
-            lod.exit_drill(t)
+            if not retain_drill:
+                lod.exit_drill(t)
     elif pyr is not None:
         est = kernels.pyramid_count(pyr, lo_x, hi_x, lo_y, hi_y)
         # Serve from the pyramid when the window is clearly aggregate territory,
         # or unconditionally for no-rescan traces (drilling to exact points is
         # unavailable there — the exact path is what we are avoiding).
-        if no_rescan or (
-            est is not None and est > SCATTER_DENSITY_THRESHOLD * DRILL_EXIT_FACTOR * 1.5
+        if (
+            canonical_source
+            or no_rescan
+            or (est is not None and est > SCATTER_DENSITY_THRESHOLD * DRILL_EXIT_FACTOR * 1.5)
         ):
             plan = lod.plan_view_lod(
                 request,
@@ -1261,6 +1379,10 @@ def density_view(
             if source is not None:
                 gw = max(16, min(gw, source[0]))
                 gh = max(16, min(gh, source[1]))
+            if canonical_source:
+                # A capped/over-budget query cannot fall through to the old
+                # N-sized exact scan. Its truthful aggregate floor stands.
+                max_upsample = _PYRAMID_UNBOUNDED_UPSAMPLE
             # Colored pyramids compose the mean-color plane with the counts
             # (same level, same max_upsample); both refusals (outresolved
             # window, missing planes) fall through to the paths below.
@@ -1278,7 +1400,23 @@ def density_view(
                 w, h = gw, gh
                 upsampled = _pyramid_grid_is_upsampled(level, requested_gw, requested_gh, source)
                 binning = f"pyramid-L{level}{'-upsampled' if upsampled else ''}"
-                lod.exit_drill(t)
+                if not retain_drill:
+                    lod.exit_drill(t)
+    if canonical_source and grid is None:
+        # An unavailable aggregate (I/O/stale handle/missing planes) cannot
+        # turn a refused bounded query into an unbounded exact fallback. The
+        # client retains its already-painted frame; diagnostics certify no rows.
+        return {
+            "traces": [],
+            "canonical_query": {
+                "id": trace_id,
+                **(
+                    _drill_query_observation(canonical_query)
+                    if canonical_query is not None
+                    else {"status": "not-admitted"}
+                ),
+            },
+        }, []
     # Tier-3 spatial index: when the pyramid can only serve this window blurry
     # (upsampled), re-bin it *exactly* from just its in-window points — as long
     # as that count is affordable to read. This is what turns a blocky deep zoom
@@ -1295,6 +1433,7 @@ def density_view(
     if (
         sidx is not None
         and not mean_colors
+        and canonical_query is None
         and (grid is None or binning.endswith("-upsampled"))
         and sidx.window_count(lo_x, hi_x, lo_y, hi_y) <= SPATIAL_EXACT_MAX_POINTS
     ):
@@ -1365,13 +1504,21 @@ def density_view(
             # locally; the raw view window is the floor. `visible` describes
             # the SHIPPED window; the view's own count keeps driving the
             # density→points intensity handoff.
-            padded = _padded_drill_window(fig, t, pyr, lo_x, hi_x, lo_y, hi_y)
+            padding_queries = []
+            padded = _padded_drill_window(
+                fig, t, pyr, lo_x, hi_x, lo_y, hi_y, observations=padding_queries
+            )
             if padded is not None:
                 lo_x, hi_x, lo_y, hi_y, sel = padded
                 sel = _drop_hidden_rows(t, sel)
             reply, reply_buffers = _drill_points(
                 fig, t, sel, len(sel), lo_x, hi_x, lo_y, hi_y, w, h, blend_visible=visible
             )
+            reply["traces"][0]["padding"] = {
+                "applied": padded is not None,
+                "fallback": "raw-view" if padded is None else None,
+                "queries": padding_queries,
+            }
             if vis_rows is not None:
                 reply["traces"][0]["filter"] = _legend_filter_spec(t)
             return reply, reply_buffers
@@ -1446,6 +1593,8 @@ def density_view(
     if tiles_meta is not None:
         entry["tiles"] = tiles_meta
         density["tiles"] = tiles_meta
+    if canonical_query is not None:
+        entry["canonical_query"] = _drill_query_observation(canonical_query)
     if vis_rows is not None:
         entry["filter"] = _legend_filter_spec(t)
     return {"traces": [entry]}, writer.buffers

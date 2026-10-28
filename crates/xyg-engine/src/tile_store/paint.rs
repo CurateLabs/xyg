@@ -6,7 +6,6 @@ use std::collections::HashSet;
 
 pub const PAINT_HEADER: usize = 128;
 pub const PAINT_DESCRIPTOR: usize = 96;
-pub const MAX_PAINT_KEYS: usize = 256;
 pub const MAX_PAINT_BYTES: usize = 64 * 1024 * 1024;
 
 /// Allocation bound only; no store reads or frame/residency decisions.
@@ -18,51 +17,6 @@ pub fn paint_capacity(width: usize, height: usize) -> Option<usize> {
         (PAINT_HEADER + MAX_PAINT_KEYS * PAINT_DESCRIPTOR + width * height * 4 * 4)
             .min(MAX_PAINT_BYTES),
     )
-}
-
-/// Bounded binary XYDC v1 observations. This is inventory, never policy.
-pub struct PaintObservation {
-    pub generation: u64,
-    pub opacity: f64,
-    pub level: i32,
-    pub keys: Vec<u32>,
-}
-impl PaintObservation {
-    pub fn decode(raw: &[u8]) -> Option<Self> {
-        if raw.is_empty() {
-            return Some(Self {
-                generation: 0,
-                opacity: -1.0,
-                level: -1,
-                keys: Vec::new(),
-            });
-        }
-        if raw.len() < 32
-            || &raw[..4] != b"XYDC"
-            || u32::from_le_bytes(raw[4..8].try_into().ok()?) != 1
-        {
-            return None;
-        }
-        let count = u32::from_le_bytes(raw[28..32].try_into().ok()?) as usize;
-        if count > MAX_PAINT_KEYS || raw.len() != 32 + count * 12 {
-            return None;
-        }
-        let generation = u64::from_le_bytes(raw[8..16].try_into().ok()?);
-        let opacity = f64::from_le_bytes(raw[16..24].try_into().ok()?);
-        let level = i32::from_le_bytes(raw[24..28].try_into().ok()?);
-        if !opacity.is_finite() || !(-1.0..=1.0).contains(&opacity) || !(-1..=31).contains(&level) {
-            return None;
-        }
-        Some(Self {
-            generation,
-            opacity,
-            level,
-            keys: raw[32..]
-                .chunks_exact(4)
-                .map(|v| u32::from_le_bytes(v.try_into().unwrap()))
-                .collect(),
-        })
-    }
 }
 
 pub struct PaintRequest<'a> {

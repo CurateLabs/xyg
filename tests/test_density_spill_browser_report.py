@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import gzip
 import json
 import os
 import signal
@@ -83,6 +82,9 @@ def test_actual_supervised_browser_keeps_host_scope(pair):
 @pytest.mark.parametrize(
     ("path", "replacement"),
     [
+        (("schema_version",), 1),
+        (("schema_version",), 2),
+        (("request_path",), "product-density-view"),
         (("status",), "failed"),
         (("scope",), "FPS"),
         (("report_kind",), "density-e2e"),
@@ -154,6 +156,13 @@ def test_browser_artifact_content_is_verified(pair):
     report = copy.deepcopy(browser)
     report["browser_artifacts"]["harness_sha256"] = "0" * 64
     assert verify.validate(report, host, environ={}, artifact_root=ROOT)
+
+
+def test_missing_browser_request_path_is_rejected(pair):
+    browser, host = pair
+    report = copy.deepcopy(browser)
+    del report["request_path"]
+    assert verify.validate(report, host, environ={})
 
 
 def test_untrusted_host_cannot_self_authorize(pair):
@@ -343,11 +352,10 @@ def test_owned_lifetime_mutations_fail(pair, field, value):
 
 
 @pytest.mark.parametrize("mode", ["cached", "fetch-all", "normal"])
-def test_relabelled_tile_resources_cannot_understate_native_inventory(mode):
-    # Reuse authentic bounded bytes; this metadata mutation needs no browser.
-    retained = ROOT / "spec/performance/colored-owned-resources-2026-10-24"
-    report = json.loads(gzip.decompress((retained / "browser.json.gz").read_bytes()))
-    host = gzip.decompress((retained / "host.json.gz").read_bytes())
+def test_relabelled_tile_resources_cannot_understate_native_inventory(pair, mode):
+    # Current-schema bytes must come from the real current producer; frozen
+    # schema-2 receipts retain their original validator and are never rewritten.
+    report, host = copy.deepcopy(pair)
     assert verify.validate(report, host, environ={}) == []
     run = report["browser"]["runs"][mode]
     gpu = run["gpu"]
@@ -417,7 +425,7 @@ def test_hardware_request_cannot_promote_software_observations(pair):
     assert verify.validate(report, host, environ={}, require_hardware=True)
 
 
-def test_hashed_historical_schema1_control_keeps_its_original_scope():
+def test_hashed_historical_schema1_control_requires_its_original_validator():
     import gzip
 
     root = ROOT / "spec/performance/density-spill-browser-2026-10-24/integration-control"
@@ -429,11 +437,11 @@ def test_hashed_historical_schema1_control_keeps_its_original_scope():
         == "c9973ae1a61db81859119a97bedacd2fb59bf7648d5268e66c1698cedc708b00"
     )
     browser = json.loads(browser_bytes)
-    assert verify.validate(browser, raw, environ={}) == []
+    assert verify.validate(browser, raw, environ={})
     assert verify.validate(browser, raw, environ={}, require_hardware=True)
 
 
-def test_hashed_historical_main_receipt_is_validated_without_new_exemptions():
+def test_hashed_historical_main_receipt_does_not_bypass_current_schema():
     import gzip
 
     root = ROOT / "benchmarks/results/colored-spill-browser-2026-10-24/hosted-main"
@@ -447,9 +455,7 @@ def test_hashed_historical_main_receipt_is_validated_without_new_exemptions():
         verify.sha(browser_bytes)
         == "64572c562ffb487599e62994310d0ef5fb9d49952d1fe1d748100a12ef1f6492"
     )
-    # Read-only replay of the retained run context, never exported to this
-    # process environment or used to allocate/execute an authority workload.
+    # Frozen bytes keep their recorded historical verifier; replaying context
+    # cannot promote the old report to this new path/allocator contract.
     context = json.loads(raw)["authority_context"]
-    assert (
-        verify.validate(json.loads(browser_bytes), raw, expected_sha=commit, environ=context) == []
-    )
+    assert verify.validate(json.loads(browser_bytes), raw, expected_sha=commit, environ=context)

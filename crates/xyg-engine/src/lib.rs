@@ -44,6 +44,7 @@ pub mod autorange;
 pub use autorange::{auto_domain, figure_autorange, rect_zero_baseline_flags};
 #[cfg(not(target_family = "wasm"))]
 pub mod chunked_columns;
+pub mod canonical_drill;
 pub mod colormap;
 pub mod compat_layout;
 pub mod css;
@@ -285,6 +286,7 @@ pub mod temporal_controller;
 pub mod temporal_graph;
 pub mod textblock;
 pub mod tick_layout;
+pub mod tile_paint_control;
 #[cfg(not(target_family = "wasm"))]
 pub mod tile_store;
 pub mod tiles;

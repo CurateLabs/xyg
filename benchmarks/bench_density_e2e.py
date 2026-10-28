@@ -1296,6 +1296,11 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
     report_kind = (
         "density-colored-spill" if config["workload"] == "colored-spill" else "density-e2e"
     )
+    failure_identity = {"schema_version": SCHEMA_VERSION, "report_kind": report_kind}
+    if config["workload"] == "colored-spill":
+        from benchmarks._density_spill import request_path
+
+        failure_identity.update(schema_version=2, request_path=request_path(args.authority))
     if result_path.is_file():
         try:
             decoded = json.loads(result_path.read_text(encoding="utf-8"))
@@ -1304,8 +1309,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
             report = decoded
         except (OSError, ValueError) as exc:
             report = {
-                "schema_version": SCHEMA_VERSION,
-                "report_kind": report_kind,
+                **failure_identity,
                 "status": "failed",
                 "authority": args.authority,
                 "point_count": args.points,
@@ -1313,8 +1317,7 @@ def _run_supervisor(args: argparse.Namespace, tmp: Path) -> tuple[dict[str, Any]
             }
     else:
         report = {
-            "schema_version": SCHEMA_VERSION,
-            "report_kind": report_kind,
+            **failure_identity,
             "status": "failed",
             "authority": args.authority,
             "point_count": args.points,
@@ -1421,6 +1424,14 @@ def _supervise(args: argparse.Namespace) -> int:
             "failure": f"supervisor_error: {type(exc).__name__}: {exc}",
             "cleanup": {},
         }
+        if getattr(args, "workload", "resident-count") == "colored-spill":
+            from benchmarks._density_spill import request_path
+
+            report.update(
+                schema_version=2,
+                report_kind="density-colored-spill",
+                request_path=request_path(args.authority),
+            )
     finally:
         cleanup_error = None
         for owned in (tmp, socket_alias):
@@ -1460,9 +1471,12 @@ def _supervise(args: argparse.Namespace) -> int:
         from scripts.verify_density_spill_browser_report import validate as validate_browser
 
         if companion is None:
+            from benchmarks._density_spill import request_path
+
             companion = {
-                "schema_version": 1,
+                "schema_version": 3,
                 "report_kind": "density-colored-spill-browser-companion",
+                "request_path": request_path(args.authority),
                 "status": "failed",
                 "failure": report.get("failure", "missing browser result"),
             }

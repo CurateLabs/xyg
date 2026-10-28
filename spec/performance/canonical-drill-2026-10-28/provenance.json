@@ -1,0 +1,261 @@
+{
+  "base_commit": "d005b0063d9909392786a18262ff1306e3e8f54c",
+  "environment": {
+    "chromium_executable": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "node": "24.21.0",
+    "numpy": "2.5.1",
+    "platform": "Linux x86-64",
+    "playwright": "1.61.1",
+    "python": "3.12.15",
+    "rust": "1.96.0"
+  },
+  "limitations": [
+    "Generated executable/client bytes are identified, not included.",
+    "Logs and observations were copied losslessly from the implementing checkout. Local source bindings do not prove hosted authority.",
+    "Browser fixture has 262144 rows; host padding fixture has 600000 rows. Sparse mapping refusal is metadata-only.",
+    "The baseline log records the pre-fix keyed-color handoff failure, not a final-code failure.",
+    "Unordered massive-source localization and actual 100M/larger-than-RAM/competitor evidence remain open."
+  ],
+  "outputs": [
+    {
+      "bytes": 833,
+      "decoded_bytes": 833,
+      "decoded_sha256": "0c01d1a041ec910c2b4d54c1aed3667da26ed3fcd42f10787065007d22abddcc",
+      "retained": "native-query.json",
+      "sha256": "0c01d1a041ec910c2b4d54c1aed3667da26ed3fcd42f10787065007d22abddcc",
+      "source": "target/canonical-query-proof.json"
+    },
+    {
+      "bytes": 995,
+      "decoded_bytes": 995,
+      "decoded_sha256": "2170b9628fc6145acdbe047e7ffe8b504c2a2492c8a795587fc33ab8c49e8bf7",
+      "retained": "host-query.json",
+      "sha256": "2170b9628fc6145acdbe047e7ffe8b504c2a2492c8a795587fc33ab8c49e8bf7",
+      "source": "target/canonical-interaction-proof.json"
+    },
+    {
+      "bytes": 1544,
+      "decoded_bytes": 1544,
+      "decoded_sha256": "c2f9d5970da5c0f9ad4d8fbc878a3ad073a6b2ba5d87b9d528c956de4339e992",
+      "retained": "browser-direct-rgba.json",
+      "sha256": "c2f9d5970da5c0f9ad4d8fbc878a3ad073a6b2ba5d87b9d528c956de4339e992",
+      "source": "target/task-tmp/pytest-of-ubuntu/pytest-13/test_keyed_mean_color_drill_ca0/observations.json"
+    },
+    {
+      "bytes": 1544,
+      "decoded_bytes": 1544,
+      "decoded_sha256": "060060806cdec2be75f9686d125db539c553aa9ed92dda5cecee89611d1dd9d1",
+      "retained": "browser-continuous.json",
+      "sha256": "060060806cdec2be75f9686d125db539c553aa9ed92dda5cecee89611d1dd9d1",
+      "source": "target/task-tmp/pytest-of-ubuntu/pytest-13/test_keyed_mean_color_drill_ca1/observations.json"
+    },
+    {
+      "bytes": 1544,
+      "decoded_bytes": 1544,
+      "decoded_sha256": "060060806cdec2be75f9686d125db539c553aa9ed92dda5cecee89611d1dd9d1",
+      "retained": "browser-custom.json",
+      "sha256": "060060806cdec2be75f9686d125db539c553aa9ed92dda5cecee89611d1dd9d1",
+      "source": "target/task-tmp/pytest-of-ubuntu/pytest-13/test_keyed_mean_color_drill_ca2/observations.json"
+    },
+    {
+      "bytes": 1544,
+      "decoded_bytes": 1544,
+      "decoded_sha256": "060060806cdec2be75f9686d125db539c553aa9ed92dda5cecee89611d1dd9d1",
+      "retained": "browser-categorical.json",
+      "sha256": "060060806cdec2be75f9686d125db539c553aa9ed92dda5cecee89611d1dd9d1",
+      "source": "target/task-tmp/pytest-of-ubuntu/pytest-13/test_keyed_mean_color_drill_ca3/observations.json"
+    },
+    {
+      "bytes": 33818,
+      "decoded_bytes": 154601,
+      "decoded_sha256": "e381fd742f22d0b9384551c133dc9eab6d816d9605da0c34b06d5da8657ed959",
+      "retained": "canonical-workspace-tests.log.gz",
+      "sha256": "23a927c5aeb01bed6b6f7c64ffdf6ed23dc62f6244631c326fe4f76c5b08e745",
+      "source": "target/canonical-workspace-tests.log"
+    },
+    {
+      "bytes": 511,
+      "decoded_bytes": 1798,
+      "decoded_sha256": "7c3671b740939cc91cb05aaa77e161501f9b2c358f2cf8e06bdb6f20736b4982",
+      "retained": "canonical-final-python.log.gz",
+      "sha256": "fd09694b8185b21577748c56e9ac30760a10945b29249676e99abf9bd497794c",
+      "source": "target/canonical-final-python.log"
+    },
+    {
+      "bytes": 1119,
+      "decoded_bytes": 2069,
+      "decoded_sha256": "1fb1b11780e297ae68300586c33875f98e18f6a9dfab651217439d4acdff9075",
+      "retained": "canonical-final-node.log.gz",
+      "sha256": "c36696427a648e53fa9ba2b0adf2e26e0c1a9df6b8736e0d696d32a10b6231ec",
+      "source": "target/canonical-final-node.log"
+    },
+    {
+      "bytes": 72,
+      "decoded_bytes": 52,
+      "decoded_sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "retained": "canonical-final-abi-smoke.log.gz",
+      "sha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "source": "target/canonical-final-abi-smoke.log"
+    },
+    {
+      "bytes": 1447,
+      "decoded_bytes": 3750,
+      "decoded_sha256": "62b4b0d075f284bef088298532e995cab29f7a7efcacebc41afeb905c70c922b",
+      "retained": "keyed-drill-baseline.log.gz",
+      "sha256": "9c8d28a8ab733482f0e18481f955fdc8e85920edbcd5cca7ff29a607e0cc2202",
+      "source": "target/keyed-drill-baseline.log"
+    },
+    {
+      "bytes": 889,
+      "decoded_bytes": 1626,
+      "decoded_sha256": "ad5d2219068dfc60b3ab02238ac10d10cfa033b897cb21f321bf5cbd0095d128",
+      "retained": "canonical-render-smoke.log.gz",
+      "sha256": "e86d5855e5a476bcce1d748f6a7a764f18a66ba69084968e77a1b7b5026f30b7",
+      "source": "target/canonical-render-smoke.log"
+    },
+    {
+      "bytes": 332,
+      "decoded_bytes": 463,
+      "decoded_sha256": "548972063af5f6a904d7d159e16782ced0d669677eda6cb6cd184f43c773ad75",
+      "retained": "canonical-append-smoke.log.gz",
+      "sha256": "fd0cd87c74cb396f642d4077bb59a12cc38e9f75b26f24a69a7239440fe07bbe",
+      "source": "target/canonical-append-smoke.log"
+    }
+  ],
+  "recorded_generated_artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757051,
+      "sha256": "e4bc81021292895f54738a7e4a7455444ab4bbbd5821c31487aaf3a62fbfd176"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757082,
+      "sha256": "d34043125ca949199c315bbed97f30719be2d462540a51946afbcd3af4b33f99"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1542357,
+      "sha256": "1e6e2ed9d56aa0bd4ebf097b4de858bf1a3ecebad704408aaeabb79c159e744f"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 5602792,
+      "sha256": "5434b871394b214da20e7a3f3ad01b8245cd1b837b3defb060fe0e0080391e6b"
+    }
+  },
+  "scope": "Finite local correctness observations; no hosted, 100M, performance-win or release authority.",
+  "source_commit": "eddb7a9d981de2bb6a921bf37e98cd3e8e1ee469",
+  "source_files": {
+    "crates/xyg-core/src/lib.rs": {
+      "git_blob": "3c1cbb45ac1516bf7a57992741da4dfb8899f4fe",
+      "sha256": "31ab47fe043960ec9c0b64b69579c7dacb84b7498c0e1a7f93a3f4e1d805fdcb"
+    },
+    "crates/xyg-engine/src/canonical_drill.rs": {
+      "git_blob": "5ec03effb99841f4a77b9845ac4aba51cc489e12",
+      "sha256": "7b00041eb70d8d0ab29f065febb23a6790a62478ece4a224336cebdb042f0b9f"
+    },
+    "crates/xyg-engine/src/lib.rs": {
+      "git_blob": "f9d52745223c257a19bb36cdd9eca6f09d6efafd",
+      "sha256": "4f6d8f52656840da58663516f3a5072bb4c72dda0fdd65a01811646c7c617f32"
+    },
+    "js/src/45_lod.ts": {
+      "git_blob": "71779ba90b2cd4061f6b10386ac554728ccf4d41",
+      "sha256": "8bbde3d6b5e38aaa9214e404bd53e13e5a1ec5d424a90e287ab95e896772b498"
+    },
+    "packages/xy-node/package.json": {
+      "git_blob": "0cf05c0943a0787b14a375faecead20f3a4f0f94",
+      "sha256": "85411b35aadd42b57a87d7441a859de56ab8d265098a80e34edc8664b39d4c4a"
+    },
+    "packages/xy-node/src/_abi_generated.js": {
+      "git_blob": "c1c552e55506104ce60e13e3b4a01e43fcedd004",
+      "sha256": "34f534188fd4e2d0ae3686dda76120ea78b2abe08eead46e5db6fb94142336d3"
+    },
+    "packages/xy-node/src/encode.js": {
+      "git_blob": "dfc4f173ec7f957419ea22b2d818a596b25e41a5",
+      "sha256": "b28f71e761cd564d3cedda0c25f91489b5dcdef4d984ad6af7297777da3f3948"
+    },
+    "packages/xy-node/src/index.js": {
+      "git_blob": "03bc83dc09e84ef7f9946c1b2199609a15b53f9e",
+      "sha256": "9131f13abc34eec2fc461c661a00dfd7beb1423e0832b1a49351edb0ea52667d"
+    },
+    "packages/xy-node/test/canonical-drill.test.mjs": {
+      "git_blob": "d72a1a7ea4f9d1c10d4b35ac18e52040a7a1db0e",
+      "sha256": "d588b9be480b888ba76a89246dafafc666b32d2ca1fb402bbe311502e617b317"
+    },
+    "python/xyg/_abi_generated.py": {
+      "git_blob": "278fc0110283fe9d02d0fa9cd7cf44ba3415473c",
+      "sha256": "c902e6c2f2fdd9c13109f00a97b4bb9c329d39f7f4713f9b3e59b9265b468f1e"
+    },
+    "python/xyg/_native.py": {
+      "git_blob": "87b9f3d2cb436037079bff5397e5c8f4cd87afd3",
+      "sha256": "d5011561c5e0c11373fe2afe644c41ac25eb0416352cb423908afa2cd8270fa7"
+    },
+    "python/xyg/interaction.py": {
+      "git_blob": "04df05d084d10b4a4985b00d541609ad8ef15d22",
+      "sha256": "5cc9d01a26f4e1973d9a16f0fb29588b55e4148f8105ffddb9478267e1811228"
+    },
+    "python/xyg/kernels.py": {
+      "git_blob": "bcd4d102d2d422686a08955161a616e0dc5c54b4",
+      "sha256": "e3cdc65379e9e4e841bd26b4c69e0b2c2471ba180b64acd2799de75a05f5090a"
+    },
+    "spec/abi/xyg-abi.json": {
+      "git_blob": "08d905a118408bedc55fefd854361147c7f418af",
+      "sha256": "8cef8a124b4ab94a96d185416610e4fe7cdedb9300ef2a6725746f66ecb2677f"
+    },
+    "spec/abi/xyg.h": {
+      "git_blob": "3991bf3fb3d09c36222a7cb690754158af7170ef",
+      "sha256": "df94fbbab24ca60dd64331b155235adfe85efe6d689c7845dcbb62fa8f035d31"
+    },
+    "spec/design-dossier.md": {
+      "git_blob": "3e90f76464f39ae5704e782f3f4547ba25e3c534",
+      "sha256": "f1eab5fa449b4f87b03495fcc9b0703f1b38d065578f2664109515833d8cd933"
+    },
+    "spec/design/canonical-drill.md": {
+      "git_blob": "f7912d1645d3945a5d609caa2d4e147945c8740d",
+      "sha256": "b4783b61486cef55319a8309f2854bbc7ff17d6d5114848c426381a289938fdf"
+    },
+    "spec/design/density-tile-painter.md": {
+      "git_blob": "2b887ad98aed401822450da32294bd57f8b4beec",
+      "sha256": "659efd59a09911e8b22c55ca89ff5328a24b3f4e8f7f731a295517ae63be974e"
+    },
+    "spec/design/lod-architecture.md": {
+      "git_blob": "e53cb11f3fac9311fca81087f8e1e19ca629d564",
+      "sha256": "d90e200b02f208223a14719899bde2c6aa5221db4c98d6656719093c91223b45"
+    },
+    "spec/design/ownership-audit.json": {
+      "git_blob": "2289d85e80a7b4bf087f2532fe98dc01c9e09928",
+      "sha256": "a9a929f83b9e66da40d6bee6afe3d3ac11b12167d50c88168c37dc2563a50e9c"
+    },
+    "spec/design/ownership-audit.md": {
+      "git_blob": "aa72d056ac22dc669c825f500cc6bd50c0d18624",
+      "sha256": "4cb038bef5aef794cac9ead0273aa0e7f255b0bab64c214652e833622ae4f49c"
+    },
+    "spec/design/tier3-phase4-roadmap.md": {
+      "git_blob": "2905fa1e5272cbb327835ef3b2a5277cbee0e88b",
+      "sha256": "5729dcf161af3195b09b54e040fb4cc92d4a3ce454a23982ce2e7af8f2b7098f"
+    },
+    "tests/test_canonical_drill_interaction.py": {
+      "git_blob": "02c2afe8471ff815d6e8ea87879cd2e83a62a1a0",
+      "sha256": "0b01318e78247af01ab9a27cf49d8ced4d4c4a79bdcd4449013385b9a3231ec9"
+    },
+    "tests/test_canonical_drill_native.py": {
+      "git_blob": "3a540393b5e0b38d4ea9a7b1ce67a06fdf0d2541",
+      "sha256": "8afb226f8c66505c8d4e044832fe3376bcd9d5786c97a87649a7dabd4013b82b"
+    },
+    "tests/test_keyed_colored_drill_browser.py": {
+      "git_blob": "e6b446afb7524dd767e7ca7311f40d85d871f405",
+      "sha256": "755b06b1ae1fae3fb3c000d057988c1b057c1085e0125725cdaf51cb4fb13651"
+    },
+    "tests/test_phase4_tile_spill_hosts.py": {
+      "git_blob": "a31f6394c86d18f92990b02bcbcb38fea2fb4cbd",
+      "sha256": "4c3d6163cf45ab959a0a91c2d308f420c81343140d93e8559e4c57d2f258403d"
+    },
+    "tests/test_spatial.py": {
+      "git_blob": "a18d6c0e1cefaa4c942059f5cda55daf252aa320",
+      "sha256": "131ff55d85c73b3866c6414e1370410590a7401c2b22e5e6f3b743fd0daeb44a"
+    }
+  },
+  "source_trees": {
+    "crates": "2bb14854194ef1b708e49267356e70c7f2fcab89",
+    "js/src": "28b69a230d1cf73ac6e4f6ac32f53a2c48fe8a29",
+    "packages/xy-node/src": "9253c8fe81380d2e7d900f5024c40d356788a6b9",
+    "python/xyg": "67bbd65ad2ba71f9414a3e0d7a43071033a2d57f"
+  }
+}

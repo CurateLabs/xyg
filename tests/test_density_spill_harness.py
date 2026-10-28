@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -16,6 +17,72 @@ from benchmarks import _density_spill as spill
 from benchmarks import bench_density_e2e as bench
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_tile_fixture_does_not_override_product_point_admission(monkeypatch):
+    import xyg
+    from xyg import interaction, kernels
+
+    monkeypatch.setattr(interaction, "PYRAMID_MIN_POINTS", 1)
+    monkeypatch.setattr(interaction, "PYRAMID_BASE_DIM", 256)
+    x = np.linspace(0, 1, 16384)
+    fig = xyg.scatter_chart(xyg.scatter(x, x, color=x, density=True, pyramid_spill=True)).figure()
+    trace = fig.traces[0]
+    interaction._ensure_pyramid(trace)
+    store = interaction._tile_store_of(trace)
+    window = (0.1, 0.2, 0.1, 0.2)
+    try:
+        product, _ = fig.density_view(trace.id, *window, 512, 512, tile_cache=spill.control(None))
+        assert product["traces"][0]["mode"] == "points"
+        assert product["traces"][0]["binning"] == "canonical-points"
+
+        def forbidden(*_args, **_kwargs):
+            pytest.fail("tile fixture used product density_view")
+
+        monkeypatch.setattr(type(fig), "density_view", forbidden)
+        msg, frames = spill.tile_request(
+            fig, store, window, authority=False, tile_cache=spill.control(None)
+        )
+        assert msg["traces"][0]["id"] == trace.id
+        assert msg["traces"][0]["mode"] == "density"
+        assert len(frames) == 1 and frames[0][:8] == b"XYDT\x01\0\0\0"
+        assert trace.drill_mode  # the fixture never changes product LOD state
+        with pytest.raises(ValueError, match="control"):
+            spill.tile_request(fig, store, window, authority=False, tile_cache=b"invalid")
+    finally:
+        kernels.tile_store_free(store)
+        trace._tile_store = None
+
+
+@pytest.mark.parametrize("points_reply", [False, True])
+def test_authority_forwards_product_reply_without_native_fallback(monkeypatch, points_reply):
+    from xyg import kernels
+
+    observed = []
+    packet = b"XYDT\x01\0\0\0"
+    result = (
+        {"traces": [{"mode": "points"}]}
+        if points_reply
+        else {"traces": [{"mode": "density", "density": {"tile_frame": 0}}]},
+        [b"points" if points_reply else packet],
+    )
+
+    def product(*args, **kwargs):
+        observed.append((args, kwargs))
+        return result
+
+    def forbidden(*_args, **_kwargs):
+        pytest.fail("authority fell back to native tile fixture")
+
+    monkeypatch.setattr(kernels, "tile_store_paint", forbidden)
+    fig = SimpleNamespace(traces=[SimpleNamespace(id=7)], density_view=product)
+    window, control = (0.1, 0.2, 0.3, 0.4), spill.control(None)
+    if points_reply:
+        with pytest.raises(RuntimeError, match="product-density-view"):
+            spill.tile_request(fig, 99, window, authority=True, tile_cache=control)
+    else:
+        assert spill.tile_request(fig, 99, window, authority=True, tile_cache=control) is not None
+    assert observed == [((7, *window, 512, 512), {"tile_cache": control})]
 
 
 def test_controls_allow_only_up_to_one_million():
@@ -140,6 +207,8 @@ def test_supervisor_timeout_cleans_colored_worker(tmp_path):
     report = json.loads(output.read_text())
     assert result.returncode == 1
     assert report["failure"] == "timeout" and report["report_kind"] == "density-colored-spill"
+    assert report["schema_version"] == 2
+    assert report["request_path"] == "native-tile-painter-fixture"
     assert (
         report["cleanup"]["orphan_pids_after_reap"] == []
         and report["cleanup"]["temp_tree_removed"] is True

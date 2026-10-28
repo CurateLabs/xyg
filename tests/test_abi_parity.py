@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -603,3 +604,29 @@ def test_rejection_diagnostic_keeps_prose_spacing_and_cannot_close_the_header_co
     comment = next(line for line in header.splitlines() if "Rejection diagnostic" in line)
     assert comment.startswith("/* ") and comment.endswith(" */")
     assert "*/" not in comment[3:-3]
+
+
+def test_emscripten_stubs_match_declared_abi_signatures() -> None:
+    source = gen_abi_manifest.CORE_LIB.read_text(encoding="utf-8")
+    # The generator intentionally reads canonical no_mangle declarations.
+    # Parse the alternate exports through that same type parser for comparison.
+    stubs = re.sub(
+        r'#\[export_name = "(xyg_[A-Za-z0-9_]+)"\]'
+        r'\s*pub\s+(unsafe\s+)?extern "C" fn [A-Za-z0-9_]+',
+        lambda match: f'#[no_mangle] pub {match[2] or ""}extern "C" fn {match[1]}',
+        source.split("mod wasm_tile_store_stubs {", 1)[1].split("/// Open a checked local XYGC", 1)[
+            0
+        ],
+    )
+    manifest = gen_abi_manifest.generate_manifest()
+    declared = {item["name"]: item for item in manifest["symbols"]}
+    alternate = gen_abi_manifest.parse_rust_abi(
+        f"pub const ABI_VERSION: u32 = {manifest['abi_version']};\n" + stubs
+    )
+    assert alternate["symbols"]
+    for symbol in alternate["symbols"]:
+        canonical = declared[symbol["name"]]
+        assert symbol["returns"]["rust"] == canonical["returns"]["rust"], symbol["name"]
+        assert [arg["type"]["rust"] for arg in symbol["arguments"]] == [
+            arg["type"]["rust"] for arg in canonical["arguments"]
+        ], symbol["name"]

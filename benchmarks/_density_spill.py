@@ -296,6 +296,56 @@ def control(state: dict[str, Any] | None) -> bytes:
     ) + b"".join(struct.pack("<3I", *tile["key"]) for tile in state["inventory"])
 
 
+def request_path(authority: bool) -> str:
+    return "product-density-view" if authority else "native-tile-painter-fixture"
+
+
+def tile_request(fig, store: int, window, *, authority: bool, tile_cache: bytes):
+    """Keep bounded tile-protocol controls distinct from product LOD acceptance."""
+    from xyg import kernels
+    from xyg._paint import fill_opacity
+
+    if not kernels.tile_paint_control_valid(tile_cache):
+        raise ValueError("invalid tile painter control")
+    trace = fig.traces[0]
+    if authority:
+        message, replies = fig.density_view(
+            trace.id, *window, SCREEN, SCREEN, tile_cache=tile_cache
+        )
+    else:
+        packet = kernels.tile_store_paint(
+            store, *window, SCREEN, SCREEN, opacity=fill_opacity(trace.style), control=tile_cache
+        )
+        if packet is None:
+            raise RuntimeError("native tile fixture returned no frame")
+        level = int.from_bytes(packet[8:12], "little")
+        message = {
+            "traces": [
+                {
+                    "id": trace.id,
+                    "mode": "density",
+                    "tier": "density",
+                    "reduction": "pyramid-count",
+                    "binning": f"pyramid-L{level}-tiles",
+                    "density": {
+                        "tile_frame": 0,
+                        "x_range": list(window[:2]),
+                        "y_range": list(window[2:]),
+                    },
+                }
+            ]
+        }
+        replies = [packet]
+    if (
+        len(replies) != 1
+        or replies[0][:8] != b"XYDT\x01\0\0\0"
+        or message["traces"][0].get("mode") != "density"
+        or message["traces"][0].get("density", {}).get("tile_frame") != 0
+    ):
+        raise RuntimeError(f"{request_path(authority)} did not return one density tile frame")
+    return message, replies
+
+
 def parse_frame(packet: bytes, pool: dict[tuple[int, int, int], str]) -> tuple[dict, dict]:
     """Observe every Rust-retained tile, never invent a client cache key."""
     assert packet[:8] == b"XYDT\x01\0\0\0" and len(packet) >= 128
@@ -559,8 +609,12 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
                 previous = state
                 rx0, rx1, ry0, ry1 = request["window"]
                 with patch.object(kernels, "tile_store_paint", timed_paint):
-                    message, replies = fig.density_view(
-                        trace.id, rx0, rx1, ry0, ry1, SCREEN, SCREEN, tile_cache=control(previous)
+                    message, replies = tile_request(
+                        fig,
+                        store,
+                        (rx0, rx1, ry0, ry1),
+                        authority=config["authority"],
+                        tile_cache=control(previous),
                     )
                 assert len(times) == len(samples) + 1 and len(replies) == 1
                 pool, state = parse_frame(replies[0], pool)
@@ -636,12 +690,13 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
                 assert environment["git"]["dirty"] is False
                 assert environment["git"]["commit"] == os.environ["GITHUB_SHA"]
             report = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "report_kind": KIND,
                 "workload": WORKLOAD,
                 "status": "ok",
                 "scope": SCOPE,
                 "authority": bool(config["authority"]),
+                "request_path": request_path(config["authority"]),
                 "authority_context": authority_context(dict(os.environ)),
                 "point_count": points,
                 "limits": {
@@ -805,12 +860,13 @@ def worker(config: dict) -> int:
         )
     except BaseException as exc:
         report = {
-            "schema_version": 1,
+            "schema_version": 2,
             "report_kind": KIND,
             "workload": WORKLOAD,
             "scope": SCOPE,
             "status": "failed",
             "authority": bool(config["authority"]),
+            "request_path": request_path(config["authority"]),
             "point_count": config["points"],
             "failure": f"{type(exc).__name__}: {exc}",
             "cleanup": cleanup,

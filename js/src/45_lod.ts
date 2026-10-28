@@ -954,7 +954,7 @@ export function lodApplyDrill(view, g, upd, buffers) {
   // running the count-alpha ramp against a physically-composited backdrop
   // would re-introduce the lightness step it exists to avoid. Count-only
   // surfaces keep the ramp (their texture still wears the log tone curve).
-  const meanColorSurface = !!(g.density && g.density.rgba);
+  const meanColorSurface = !!(g.density && (g.density.rgba || g.density.tileSetRGBA));
   if (!meanColorSurface && upd.density_val && upd.density_val.buf !== undefined) {
     const dvalValues = upd.density_val.dtype === "u8"
       ? view._asU8(buffers[upd.density_val.buf])
@@ -1248,7 +1248,7 @@ export function lodApplyTileFrame(view, g, bytes) {
   const current=g.density;
   const previous = retainedFrame(current)?current:null;
   const set = rows.slice(0,active).map((row)=>next.get(row.key));
-  const frame:any = {tileSet:set,level,tex:set[0]?.tex || null,w:u(72),h:u(76),max,normMax:view._prefersReducedMotion()?max:lodNormMax(g,max),xRange:xr,yRange:yr,visible:Infinity,lut:current?.lut,color:current?.color,_filterKey:""};
+  const frame:any = {tileSet:set,tileSetRGBA:!!(flags&1),level,tex:set[0]?.tex || null,w:u(72),h:u(76),max,normMax:view._prefersReducedMotion()?max:lodNormMax(g,max),xRange:xr,yRange:yr,visible:Infinity,lut:current?.lut,color:current?.color,_filterKey:""};
   if (interruptedFade || (previous?.tileSet && Math.abs(previous.level-level)>1)) {
     // Complete a fade whose source no longer fits Rust's byte budget. Reset
     // every outgoing alias so the next draw cannot restart it from a hole.

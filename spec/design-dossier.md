@@ -417,6 +417,28 @@ tier keyed on the *actual* in-window count:
   keeps its upsampled *colored* pyramid grid instead — blurry beats mis-colored (§28,
   recorded per update by the `binning` value).
 
+**Canonical channel-preserving drill (native ABI 396).** Before resident or
+spilled density returns, unfiltered linear-axis traces carrying point channels
+can query their existing canonical f64 columns through the paired chunk zone
+maps. Rust admits a query when its approximate count is near the existing
+points budget, or the requested grid outresolves the finest source. Resident
+`pyramid_count` or Rust's clipped-area estimate admits work only; neither
+certifies an exact count. Rust preflights every overlapping chunk and refuses
+more than the existing 80,000,000 candidate-row allowance before reading any
+coordinates. It scans admitted chunks in canonical order, retaining at most
+200,000 IDs on entry (the existing 1.15 hysteresis comparison while drilled).
+Only a complete query ships `binning: "canonical-points"`, through the ordinary
+`_drill_points` channel/offset/hover/history path. Overflow or scan-budget refusal
+reports no exact count or usable prefix, preserves drill bookkeeping, and keeps
+the truthful aggregate. Padding uses the same bounded query with the entry cap;
+the raw view ships when no padded window completes affordably, with the attempts
+recorded on the reply. The legacy position-only index guard remains intact.
+
+This is a bounded localization baseline, not a 100M drilldown completion:
+unordered 100M chunk zones can all overlap a tiny view, causing a zero-coordinate-read
+refusal. A finer canonical-row locator and actual scale/latency evidence remain
+required. There is no new ingest sort, index format, or larger-than-RAM claim.
+
 The sorted columns are a derived **f32** cache (§27: canonical stays f64, every derived
 buffer is rebuildable). Disk tile fetch and pan-time texture reuse are implemented
 for spilled stores (#10); construction still builds the resident pyramid before
@@ -1345,6 +1367,18 @@ Rules that make the mode targets in §2 real:
    dossier §32); the two compose (canonical on disk, screen-bounded aggregates over
    the wire).
 
+6. **Canonical drill scratch is capped (ABI 396).** The zone-map row query borrows
+   contiguous f64 x/y and O(chunks) min/max planes without copying canonical
+   columns or expanding candidate IDs. Hosts allocate the Rust-reported point
+   cap of u32 IDs (800,000 bytes at entry; 919,996 under the current floating
+   hysteresis comparison), then retain a bounded copy only for a complete
+   result. There is no N-u32 scratch. `rows_read` / `read_bytes` count logical
+   coordinate accesses (16 bytes per read row), not OS page faults, physical I/O
+   or RSS. Query observations are transient; existing bounded drill subset
+   history owns successful mappings. Append invalidates that history and reads
+   fresh column zone maps on the next query. Existing tile-store ownership and
+   finalizers remain unchanged.
+
 ## 28. LOD / Tiling Contract — exact rules per trace kind
 
 For each kind: *canonical requirement → tier ladder → what hover/select means → what
@@ -1353,7 +1387,7 @@ recomputes on zoom.*
 | Trace kind | Canonical requirement | Tier ladder | Hover/select | On zoom |
 |---|---|---|---|---|
 | **Line / area / time series** | x sorted (or engine sorts once at ingest, stated) | direct → min-max per-px-column decimation → zone-map-pruned chunk streaming | exact point (binary search on x in canonical) at every tier | recompute decimation for visible x-range only; zone maps prune chunks |
-| **Scatter** | none for Tiers 0–1; spatial bucketing pass at ingest for Tiers 2–3 | direct instanced → *no Tier 1 (decimating unordered points misleads)* → density pyramid → out-of-core tiles | Tier 0: GPU pick, exact row. Tiers 2–3: bin summary + async drill to top-k rows | pan = tile reuse; zoom = adjacent pyramid level; below pyramid floor = re-bin visible via tile index; inside an exact drill window = nothing recomputes and no request is sent — the client already holds every point (§16, LOD doc T12) |
+| **Scatter** | no mandatory source sort for resident/spilled pyramids or capped canonical drill; finer unordered spatial localization remains a Tier-3 companion | direct instanced → *no Tier 1 (decimating unordered points misleads)* → density pyramid → out-of-core tiles | Tier 0: GPU pick, exact row. Tiers 2–3: bin summary + complete capped canonical drill, exact row identity; refused queries retain density | pan = tile reuse; zoom = adjacent pyramid level; below pyramid floor = re-bin visible via tile index; inside an exact drill window = nothing recomputes and no request is sent — the client already holds every point (§16, LOD doc T12) |
 | **Heatmap / image** | gridded input | direct texture → mip pyramid (same machinery, degenerate case) | cell value (exact, from canonical grid) | mip level selection; nothing recomputes |
 | **Bar / histogram** | histogram: raw column; bar: categories | bars are visually bounded (≤ ~10⁴ on screen) → direct; histogram re-bins from canonical on range change (cheap: 1-D, visible range only, zone-map-pruned) | exact bar/bin | 1-D re-bin, worker, stale-while-revalidate |
 | **Streaming (any kind)** | ring capacity declared up front | ring buffer + incremental decimation (Tier-1 buckets updated, not rebuilt); pyramid tiles updated incrementally for touched cells | same as base kind, within retained window | append is O(appended); eviction from ring updates affected buckets only |
@@ -2461,6 +2495,14 @@ Rust alone lowers them to that painter format; (b) the copies that do happen are
 number-parse-shaped; (c) every binding reports its actual copy count at ingest in debug
 mode, so "zero-copy" regressions are observable rather than folklore; (d) the Jupyter
 live path still has no text encoding of numbers, DOM payload, or main-thread data parse.
+ABI 396 canonical drill queries keep source f64 columns and canonical u32 row
+IDs at the native host. Only complete subsets pass through the existing
+offset-f32/u8 channel painter encoding; refusal observations are bounded
+control metadata with a nullable exact count. No numerical source arrays or
+row-ID lists enter JSON. The XYDT color flag also identifies mean-color
+surfaces during point handoff, preserving native mark alpha just like the
+legacy RGBA grid. This changes neither texture retention nor §29 paint formats.
+
 For density scatter specifically, the ordinary Python/Node split first paint is
 the screen-bounded u8 grid plus offset-f32 sample geometry; canonical f64 source
 stays at the host and is not part of the paint payload. The optional

@@ -568,9 +568,16 @@ scope, not the kernels module alone. The suite asserts `xyg.kernels.BACKEND ==
 - The native adaptive drilldown cycles: `test_adaptive_drilldown_cycle` (a
   warmed large scatter viewport moves from density overview, to exact visible
   points, and back out to density) and its channel-bearing twin
-  `test_adaptive_drilldown_cycle_mean_color`, which adds a mid-band exact
-  re-bin leg and guards the once-per-trace bin-color resolution (LOD doc §2):
-  re-resolving the color column per request multiplied per-reply cost by
+  `test_adaptive_drilldown_cycle_mean_color`. Under ABI 396 its mid-band
+  query exceeds point capacity, explicitly reports `overflow` with a null
+  exact count, and retains the mean-color pyramid. The deep leg checks the
+  complete canonical query and exact padded point count against independent
+  fixture counts. Warm-cycle tripwires reject full-column color resolution
+  and mean-color re-binning; bounded canonical coordinate reads remain timed.
+  The former exact-re-bin leg is a different workload: its timings are not
+  directly comparable to this cycle, and no new performance result is claimed.
+  Historical full-column color regression measurements (LOD doc §2) showed
+  that re-resolving the color column per request multiplied per-reply cost by
   ~10-100× on the 100M FastAPI drilldown demo (measured 1.3-7 s/reply against
   0.02-0.45 s with the trace-cached resolution on a 4-core host, and
   223 ms → 99 ms for the 2.1M benchmark cycle itself).
