@@ -185,12 +185,18 @@ reported).
 5. `drilldown_truth`: CodSpeed native cycles cover density overview → exact
    points → density zoom-out, twice — a plain trace and a channel-bearing
    twin (`test_adaptive_drilldown_cycle_mean_color`, which adds a mid-band
-   exact re-bin leg). The twin exists because per-request cost on a colored
-   trace must exclude full-column channel work: the bin-color resolution is
-   cached per trace (LOD doc §2), and re-resolving it per reply multiplies
+   bounded canonical overflow leg). Under ABI 396, this over-capacity view
+   retains the prebuilt mean-color pyramid and reports a null exact query
+   count; it must not fall through to the legacy exact re-bin. The deep view
+   completes a canonical query, restores real point channels and checks both
+   raw-view and padded-window counts against NumPy counts computed outside
+   timing. The twin rejects full-column color resolution and mean-color
+   re-binning during the warmed cycle (LOD doc §2). Coordinate reads within
+   the canonical candidate allowance remain timed. Re-resolving color per reply multiplies
    the row by the column length (the 100M FastAPI demo's 1–2 s/request
    regression). The 10M+ exact-hover oracle remains the larger
-   browser/widget follow-up.
+   browser/widget follow-up. Historical timings for the former exact-re-bin
+   leg are a different workload and cannot be directly compared with this row.
 6. `core_2d_payloads`: CodSpeed tracks native histogram, area, bar, heatmap,
    and composed/layered `xyg.chart(...)` payload prep;
    `benchmarks/bench_2d_charts.py` stays the Plotly/Seaborn chart-to-pixels
