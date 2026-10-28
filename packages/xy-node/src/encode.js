@@ -3348,20 +3348,20 @@ export function canonicalDrillAdmit(estimate, { inDrill = false, refinement = fa
   return status === 1;
 }
 
-export function canonicalDrillEstimate(rows, extent, window) {
-  if (!Number.isSafeInteger(rows) || rows < 0 || rows > 0xffffffff || extent.length !== 4 || window.length !== 4) {
+export function canonicalDrillEstimate(rows, extent, bounds) {
+  if (!Number.isSafeInteger(rows) || rows < 0 || rows > 0xffffffff || extent.length !== 4 || bounds.length !== 4) {
     throw new RangeError("invalid canonical drill estimate");
   }
-  const result = Number(xyCanonicalDrillEstimate(BigInt(rows), ...extent, ...window));
+  const result = Number(xyCanonicalDrillEstimate(BigInt(rows), ...extent, ...bounds));
   if (result < 0) throw new RangeError("invalid canonical drill estimate");
   return result;
 }
 
 /** Capped canonical f64 row query. Only complete supplies valid IDs/count. */
-export function canonicalDrillQuery(x, y, xMins, xMaxs, yMins, yMaxs, window, { chunkSize = 65536, inDrill = false } = {}) {
+export function canonicalDrillQuery(x, y, xMins, xMaxs, yMins, yMaxs, bounds, { chunkSize = 65536, inDrill = false } = {}) {
   const arrays = [x, y, xMins, xMaxs, yMins, yMaxs];
   if (arrays.some(a => !(a instanceof Float64Array)) || x.length !== y.length || x.length > 0xffffffff
-      || !Number.isSafeInteger(chunkSize) || chunkSize <= 0 || window.length !== 4) {
+      || !Number.isSafeInteger(chunkSize) || chunkSize <= 0 || bounds.length !== 4) {
     throw new TypeError("canonical drill requires f64 columns and valid chunk/window shape");
   }
   const chunks = Math.ceil(x.length / chunkSize);
@@ -3370,7 +3370,7 @@ export function canonicalDrillQuery(x, y, xMins, xMaxs, yMins, yMaxs, window, { 
   if (Number(xyCanonicalDrillLimits(inDrill ? 1 : 0, pointer(limits, "uint64_t *"))) !== 1) throw new Error("invalid canonical drill limits");
   const out = new Uint32Array(Number(limits[0])), stats = new BigUint64Array(7);
   const status = Number(xyCanonicalDrillQuery(pointer(x, "const double *"), pointer(y, "const double *"), BigInt(x.length), BigInt(chunkSize),
-    ...arrays.slice(2).map(a => pointer(a, "const double *")), BigInt(chunks), ...window, inDrill ? 1 : 0,
+    ...arrays.slice(2).map(a => pointer(a, "const double *")), BigInt(chunks), ...bounds, inDrill ? 1 : 0,
     pointer(out, "uint32_t *"), BigInt(out.length), pointer(stats, "uint64_t *")));
   if (![0, 1, 2].includes(status)) throw new RangeError("invalid canonical drill query");
   const count = status === 0 ? Number(stats[0]) : null;

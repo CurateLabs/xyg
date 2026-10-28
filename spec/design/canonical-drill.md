@@ -71,6 +71,13 @@ python3 scripts/abi_smoke.py
 python3 scripts/verify_ownership.py
 ```
 
+The ABI bump also regenerates the current GeoColumn, mark, payload, attachment,
+chrome, animation, default-style, density, force, palette and tooltip cross-host
+goldens through their existing Python fixture writers and Node emitters. Only
+their top-level `abi_version` changes from 395 to 396; canonical planes,
+metadata bytes, payload values and stable error statuses remain unchanged.
+These current fixtures are distinct from immutable historical run receipts.
+
 Raw finite native observations (same Rust ABI through Python and Node):
 
 ```json
