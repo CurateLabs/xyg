@@ -761,10 +761,13 @@ Before tagging an `xyg-v*` release:
   micropip, loads the C ABI through `ctypes`, verifies `xyg_abi_version`, and
   calls the native `min_max` kernel. It then disables network access and makes
   the actual Pyodide runtime consume every Rust-generated XYTS conformance
-  Scene, exercising Scene v16 SVG, raster-command, and exact painter-v11
+  Scene, exercising Scene v34 SVG, raster-command, and exact painter-v17
   lowering through the native `xyg_scene_browser_painter` ABI. It directly
   calls every Emscripten-only filesystem stub and verifies its fail-closed
-  sentinel and generated signature. Dependency and
+  sentinel and generated signature (including both compose-color capacities).
+  It also exercises all five ABI 396 in-memory additions: shared XYDC validation
+  and canonical-drill limits, estimate, admission and query. A valid control must
+  pass even though filesystem operations are unavailable. Dependency and
   wheel provisioning precede that offline boundary; browser CSP is separately
   proven by the local-only direct-WASM smoke because CSP does not apply to the
   Node-hosted Pyodide runtime. Filesystem-backed XYGC/tile-store ABI entries

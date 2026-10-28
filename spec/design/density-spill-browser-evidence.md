@@ -20,7 +20,7 @@ request and verify the companion. The retained actual 100M execution uses
 production eligibility and base 4096; its software-renderer and deterministic
 presentation limits remain explicit.
 
-## Owned-resource and normal-cadence contract (schema 2)
+## Owned-resource and normal-cadence contract (current schema 3)
 
 Hooks install **before `renderStandalone`**. They observe every created texture
 and buffer, every mutable/immutable storage allocation and reallocation, and
@@ -42,7 +42,7 @@ new creation attempt or storage event fails. Context loss alone cannot supply
 deletion evidence. The independent verifier replays creation/storage/deletion
 events, category counts, capacity changes and peaks rather than trusting the
 aggregate cleanup flags.
-For each schema-2 journey, the category-derived keyed-tile peak must also be
+For each current journey, the category-derived keyed-tile peak must also be
 at least the largest sampled allocation independently bound to the native
 tile inventory. Relabeling tile resources as another category cannot lower
 the accepted peak below those observed bytes.
@@ -60,9 +60,9 @@ product draws and add overhead; their cadence is not production FPS and adds
 no 60-FPS gate. The independent host pan-p95 `<16 ms` / every-zoom `<50 ms`
 authority gates retain their original kernel-only scope and values.
 
-Schema 1 remains verifiable under its existing deterministic-only scope and
-original checks, preserving the historical hashed reports below. It cannot
-satisfy schema-2 owned/normal or `--require-hardware` acceptance. No historical
+Schemas 1 and 2 remain evidence under their recorded original validators,
+preserving the historical hashed reports below. They cannot satisfy current
+schema-3 path/owned/normal or `--require-hardware` acceptance. No historical
 artifact is rewritten or assigned new proof it never recorded.
 
 ## Renderer admission and existing Mac experiment
@@ -152,16 +152,23 @@ to one; the store is explicitly prewarmed, with adaptive base 2048 and native
 tile budget 16 MiB. Production eligibility remains 2M. Native first-payload
 policy stays unchanged: it truthfully emits `exact` / `bin2d` with a mean-color
 plane. It does not advertise tile discovery below production eligibility.
-Therefore the bounded browser receives one genuine public `density_view`
-bootstrap reply with empty XYDC observations. Product XYDT admission enables
+Canonical drill now correctly returns exact points for small colored requests.
+The bounded tile-only control therefore calls the existing native tile painter
+on that same real forced-spill store, including its bootstrap with empty XYDC
+observations. It records `request_path: native-tile-painter-fixture`; it does not
+claim production LOD selected tiles. Product XYDT admission enables
 the client's normal tile-inventory requests; no fabricated `tiles` metadata,
 fixture store, or success flag enables the path.
 
 The actual generated standalone bundle paints the public initial payload. A
 real chart resize gives a 512-square plot, matching the host workload. The
 client schedules each shared window and sends its own binary XYDC observations
-over loopback HTTP. The server forwards them to the same figure's
-`density_view(..., tile_cache=...)`; actual Rust XYDT bytes and host reply
+over loopback HTTP. One shared dispatcher handles the host samples, browser
+bootstrap and HTTP requests. Controls use the native tile-painter fixture;
+authority uses the same figure's full `density_view(..., tile_cache=...)` and
+records `request_path: product-density-view`. An authority point reply fails
+this tile-only journey; it never falls back to the fixture. Rust validates XYDC
+before either route. Actual Rust XYDT bytes and thin transport reply
 metadata go to the product `_onKernelMsg` receiver. Requests must match the
 scripted windows exactly. Rust chooses levels, retained keys, gutters, tone,
 color and texture budget. Every pan preserves its level; all eight zooms must
@@ -169,7 +176,7 @@ change the served level by exactly one without resource coarsening/refine debt.
 
 The checks exercise dossier §§5/27/28/29/32b:
 
-- **Actual WebGL allocation:** schema 2 uses the complete accounting above;
+- **Actual WebGL allocation:** schema 3 uses the complete accounting above;
   retained schema-1 reports below observe only post-constructor textures and
   exclude first-payload allocation. Both reconcile every retained tile against
   native byte accounting and the eight-screen budget. Test oracle allocation
@@ -202,7 +209,7 @@ The checks exercise dossier §§5/27/28/29/32b:
   pixels, and retire the fade at completion. This is deterministic continuity
   evidence, not natural animation cadence, interaction latency or frame-rate
   evidence.
-- **Lifetime:** destruction deletes every instrumented texture and (schema 2)
+- **Lifetime:** destruction deletes every instrumented texture and (schema 3)
   buffer, clears ownership/references and ignores a real saved late reply
   without allocating. Chromium
   exits and its profile disappears. The HTTP thread stops; native store stats
@@ -243,6 +250,14 @@ harness used for execution; the product source manifest matches that base.
 
 ## Supervised integration contract
 
+Current host reports use schema 2 and browser companions use schema 3, with
+mandatory, independently pinned `request_path` matching between both reports.
+The finalized host bytes include that declaration before the companion hashes
+them. Missing paths and older versions fail current validation. Frozen host
+schema-1/browser schema-1 receipts, and the allocator-format schema-2 browser
+receipts, remain unchanged evidence under their recorded historical producer
+and verifier contracts; regenerating them would destroy that binding.
+
 The opt-in guard runs in both public supervisor and internal worker entry points
 before allocating source columns. It requires the colored-spill workload, an
 executable Chrome/Chromium that successfully reports its version, and distinct,
@@ -258,7 +273,7 @@ native tile store, actual mapped x/y/color, original split payload and exact
 production domain and 32 windows. It repacks only the bounded initial split
 buffers for standalone paint. It never changes host timers or retimes a request.
 The existing 24-pan p95 **<16 ms** and every-zoom **<50 ms** hard authority gates
-remain enforced independently by the unchanged host verifier; controls are
+remain enforced independently by the host verifier; controls are
 advisory. Browser network, readback, seam or fade time never becomes a host
 kernel sample. The helper itself refuses local scale above 1M and additionally
 requires the authority worker to be its supervised process-group leader.
@@ -309,8 +324,9 @@ and **33 cached/fresh framebuffer hash matches**. All **eight** zooms require
 adjacent outgoing textures from the preceding active frame, retained keys,
 source survival, actual intermediate draws at both levels, changed/nonblank
 midpoint pixels and eventual retirement. Browser captures, controls, native tile
-and pixel hashes remain inspectable. The retained schema-1 receipt claims deterministic cadence only. Schema 2 adds
-bounded normal-RAF observations; software allocation remains distinct from
+and pixel hashes remain inspectable. The retained schema-1 receipt claims
+deterministic cadence only. Schema 2 introduced bounded normal-RAF observations;
+schema 3 retains them and pins the request route. Software allocation remains distinct from
 accelerated WebGL evidence and neither exposes total driver VRAM.
 
 ## Reproduction and integration control

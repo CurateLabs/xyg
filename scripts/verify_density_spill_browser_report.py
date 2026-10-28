@@ -225,7 +225,7 @@ def validate(
         )
         if require_hardware:
             require(
-                report["schema_version"] == 2 and report["browser"]["requested_gl"] == "hardware",
+                report["schema_version"] == 3 and report["browser"]["requested_gl"] == "hardware",
                 "hardware evidence requires the owned/normal accelerated contract",
             )
     except (
@@ -248,9 +248,9 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
     )
     require(not errors, "matching host report invalid: " + "; ".join(errors))
     require(r["host_report_sha256"] == sha(host_bytes), "immutable host report SHA-256 differs")
-    modern = r["schema_version"] == 2
+    modern = r["schema_version"] == 3
     require(
-        r["schema_version"] in (1, 2)
+        r["schema_version"] == 3
         and r["report_kind"] == "density-colored-spill-browser-companion"
         and r["scope"]
         == (
@@ -264,6 +264,7 @@ def _validate(r: dict, host_bytes: bytes, expected_sha, environ, artifact_root) 
     for key in (
         "authority",
         "authority_context",
+        "request_path",
         "point_count",
         "source",
         "environment",

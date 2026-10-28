@@ -161,7 +161,12 @@ The existing colored-spill CI contract now includes the
 rows. Its separate verifier binds source/windows/native/client identities to
 the exact host report bytes and enforces cached/fetch-all framebuffer equality,
 nonblank endpoint colors, gutter/seam checks, adjacent fade ownership and
-cleanup. This bounded control cannot substitute for the separately retained
+cleanup. Its explicitly recorded native tile-painter fixture uses the genuine
+small forced-spill store without suppressing canonical product point admission.
+Actual authority must use the full product `density_view` route and cannot
+fall back to that fixture. Current host/browser schema 2/3 reports require
+matching request paths; frozen older receipts keep their historical contracts.
+This bounded control cannot substitute for the separately retained
 [main-only 100M browser result](../../benchmarks/results/colored-spill-browser-2026-10-24/hosted-main/README.md).
 Competitive scale, physical-GPU ownership and broader headline evidence remain open.
 

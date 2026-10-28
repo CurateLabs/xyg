@@ -47,7 +47,10 @@ Local controls accept 1..1M rows and are structural/advisory. Because production
 eligibility starts at 2M, the control temporarily lowers only the Python lazy
 pyramid eligibility threshold to 1 and explicitly prewarms the store. The native
 first-payload planner remains unchanged and emits its truthful `exact` / `bin2d`
-mean-color payload. The resulting store drives all measured interactive requests.
+mean-color payload. The resulting real store drives a named native tile-painter
+fixture for measured control requests. This isolates tile protocol, cache and
+seam conformance: small genuine product requests may now select exact points
+through canonical drill, independently covered by its product tests.
 The override, prewarm and first-payload distinction are required report fields.
 The normal adaptive mapped-source base is 2048 for controls.
 
@@ -80,8 +83,14 @@ recorded. After an untimed seed frame, the workload records 24 deterministic
 half-domain overlapping/reversing pans and eight alternating quarter/half-domain
 zooms. Each zoom must **actually** change the observed served level by exactly
 one; pans must retain their level. A resource-coarsened jump or unfinished adjacent
-refine cannot substitute for that journey. Every response comes through the host's
-`density_view(..., tile_cache=XYDC)` tile painter. The inventory sent back is only
+refine cannot substitute for that journey. The shared dispatcher records a
+mandatory `request_path`: controls use `native-tile-painter-fixture`, while
+authority uses the full host `density_view(..., tile_cache=XYDC)` route as
+`product-density-view`. Authority never falls back to the native fixture; an
+exact point reply fails this tile-only contract. Rust validates controls on
+both routes. Host schema 2 and browser schema 3 require those declarations;
+historical receipts retain their original bytes and historical validators.
+The inventory sent back is only
 what the preceding Rust frame retained, with its observed generation, opacity,
 keys and previous level.
 
