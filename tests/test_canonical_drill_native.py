@@ -1,5 +1,7 @@
 """ABI 396 canonical f64 drill localization: bounded output and honest refusal."""
 
+from __future__ import annotations
+
 import ctypes
 import struct
 from typing import Any
