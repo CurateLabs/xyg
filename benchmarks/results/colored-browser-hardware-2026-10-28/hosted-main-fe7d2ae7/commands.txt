@@ -1,0 +1,39 @@
+Read-only retrieval, run 40639793475 attempt 1 only (executed 2026-10-28 UTC):
+gh api repos/CurateLabs/xyg/actions/runs/40639793475
+gh api repos/CurateLabs/xyg/actions/runs/40639793475/attempts/1
+gh api repos/CurateLabs/xyg/actions/runs/40639793475/jobs
+gh api repos/CurateLabs/xyg/actions/jobs/122655020139
+gh api repos/CurateLabs/xyg/actions/runs/40639793475/artifacts
+gh api repos/CurateLabs/xyg/actions/artifacts/12794149653
+gh api repos/CurateLabs/xyg/actions/workflows/337755509
+gh api repos/CurateLabs/xyg/git/commits/fe7d2ae71d316fd96b9851f3ce6232f76dd19134
+gh api repos/CurateLabs/xyg/actions/artifacts/12794149653/zip > ceiling-benchmark.zip
+gh api repos/CurateLabs/xyg/actions/runs/40639793475/logs > logs.zip
+gh api repos/CurateLabs/xyg/actions/jobs/122655020139/logs > job.log
+API response bytes were written directly into this receipt. job.log was compressed
+without byte changes into job-122655020139.log.gz using gzip.compress(raw, mtime=0).
+The sole artifact member was copied without byte changes into preflight.json.gz.
+No credential values or encoded binary payloads were printed.
+
+Source ancestry (local only):
+git fetch origin main
+git rev-parse HEAD HEAD^{tree} fe7d2ae71d316fd96b9851f3ce6232f76dd19134^{tree}
+git merge --no-ff --no-commit fe7d2ae71d316fd96b9851f3ce6232f76dd19134
+Starting parent 9f3c19566e5e08317c3809782844a7fdc6c26e57 and accepted main
+had identical trees. A normal merge incorporates accepted main ancestry; the
+ancestry-only merge b22f5d7eb35ed8a45afbc403ea9adc367edbaaaa preserves that exact
+accepted tree. Receipt/spec changes are committed afterward, with separate
+full-worktree hook and Ruff passes before each commit.
+No force, rebase, push, PR or other remote mutation is part of this task.
+
+Local archival verification (from repository root):
+python3 benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7/inspect_evidence.py
+(cd benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7 && sha256sum -c SHA256SUMS)
+uv run pytest tests/test_density_spill_browser.py -q -k 'renderer_admission_uses_actual_gpu_not_request or positive_hardware_renderer_requires_accelerated_webgl2 or hardware_admits_chromium_single_webgl_feature'
+uv run python scripts/verify_ci_workflow.py
+uv run --with pre-commit pre-commit run --all-files
+uv run ruff check .
+uv run ruff format --check .
+
+No host/browser success validator was run against nonexistent control/authority
+reports. No Actions capability was exported and no local benchmark was executed.

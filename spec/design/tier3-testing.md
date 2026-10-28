@@ -240,6 +240,11 @@ M4 ceiling job, with accelerated preflight and bounded control before a single
 100M worker and both verifiers. Darwin process RSS is bounded sampled `ps` group
 RSS, with accurate sampled high-water labels and fail-closed preallocation
 observation. Linux `/proc` and fixed 12-GiB/4-GiB/3600-s maxima remain. Historical
-schema-1 evidence keeps its original scope. Actual M4 acceleration, new 100M
-normal-RAF proof, comparative scale and the colored exact-drill headline gap
-remain open. No CI fixture allocates 100M or invents a 60-FPS acceptance gate.
+schema-1 evidence keeps its original scope. Actual accepted-main run 40639793475
+on `fe7d2ae7` failed renderer admission before source allocation: the
+[retained preflight](../../benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7/README.md)
+identified Apple Paravirtual Metal rather than Apple M4. Browser/profile cleanup
+passed, but neither the control nor 100M worker or their verifier pairs ran.
+Actual M4 acceleration, new 100M normal-RAF proof, comparative scale and massive
+canonical-row localization evidence remain open. No CI fixture allocates 100M
+or invents a 60-FPS acceptance gate.

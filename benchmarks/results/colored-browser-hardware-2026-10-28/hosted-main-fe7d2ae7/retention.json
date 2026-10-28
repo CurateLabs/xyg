@@ -1,0 +1,165 @@
+{
+  "archives": {
+    "ceiling-benchmark.zip": {
+      "bytes": 3057,
+      "crc_verified": true,
+      "members": [
+        {
+          "bytes": 7913,
+          "crc32": "9ce160bd",
+          "name": "_temp/colored-browser-preflight-fe7d2ae71d316fd96b9851f3ce6232f76dd19134.json",
+          "sha256": "a491ac8fe4b925c1e3c1bfdebd70a1e761aa993644a039a5ceb044752bcf6ade"
+        }
+      ],
+      "sha256": "64dbf69c6bd1a9471099c3c19750bf5dd7986fe68479dc1c7b9a929e29f062e9"
+    },
+    "logs.zip": {
+      "bytes": 47416,
+      "crc_verified": true,
+      "members": [
+        {
+          "bytes": 86364,
+          "crc32": "70c22394",
+          "name": "0_Ceiling sweep (Blacksmith macOS M4, 48 GB).txt",
+          "sha256": "29dc91cfaceb4ca749679175a0828917c6d6ab150e5fb0315f39356db2ee5acb"
+        },
+        {
+          "bytes": 723,
+          "crc32": "da2ee3ed",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/system.txt",
+          "sha256": "55024c3e02120928e547ce9dce49247d53ee2fc640173460fdd67da3a28c78fc"
+        },
+        {
+          "bytes": 1992,
+          "crc32": "ef0b2ef8",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/1_Set up job.txt",
+          "sha256": "a49ece6aae37e16befa79c84d710c286a7eba3f6cae4a64c392c09a38ec4534b"
+        },
+        {
+          "bytes": 2196,
+          "crc32": "c61cfa3f",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/2_Set up runner.txt",
+          "sha256": "515836561daf7b0daff8e13acd75601decf28f8c6ba02f3c87701edcffec4460"
+        },
+        {
+          "bytes": 20165,
+          "crc32": "85b73f49",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/3_Run actions_checkout@3d3c42e5aac5ba805825da76410c181273ba90b1.txt",
+          "sha256": "587bc2da20e1837f1431331a1fe3fd42f40635a62282131b3518260d601e940c"
+        },
+        {
+          "bytes": 16976,
+          "crc32": "77d9db54",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/4_Run dtolnay_rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30.txt",
+          "sha256": "77f85a8ed8fcfbc103c5142d7e3c28637ba900cd71df53e21daef214440db654"
+        },
+        {
+          "bytes": 2830,
+          "crc32": "415efc7b",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/5_Run astral-sh_setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990.txt",
+          "sha256": "c2aab4034560998b5b733567c6ca9bc89f8b9c3d975ad167a7fa69c18075a341"
+        },
+        {
+          "bytes": 1141,
+          "crc32": "26cef0bb",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/6_Run actions_setup-node@820762786026740c76f36085b0efc47a31fe5020.txt",
+          "sha256": "994c42c5f40ec1e84e96af279987bfc6819910df5009892f6f574aebd5a01fdf"
+        },
+        {
+          "bytes": 1756,
+          "crc32": "d513c944",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/7_Cache Playwright Chromium.txt",
+          "sha256": "f78bae0c79caa5e7fb03b5ca01f9d8ca0ed12cb53ebf391d9c5f4b8f4a0a0d25"
+        },
+        {
+          "bytes": 1177,
+          "crc32": "df7b9976",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/8_Record runner capacity.txt",
+          "sha256": "482f44f4f07c21a1fc76e3cd9d0a297a29d7352f943095773ec22419279e5fb8"
+        },
+        {
+          "bytes": 2789,
+          "crc32": "52354192",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/9_Build native core.txt",
+          "sha256": "f1ee68f653f9179de153ed6f44ebc2ac7029a2ed2a84765c6202bef1e80cd112"
+        },
+        {
+          "bytes": 5209,
+          "crc32": "8c0f2c4f",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/10_Install package + comparison deps.txt",
+          "sha256": "6e956b5501f14cd028c08fa501e73b7aa79dd5412d34d306bbe8dd825769b2a3"
+        },
+        {
+          "bytes": 5971,
+          "crc32": "e08bae74",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/11_Verify benchmark environment.txt",
+          "sha256": "dfd793d9643c940c517f23fb68c17978b8cc826872214cd243c36627a124f369"
+        },
+        {
+          "bytes": 7877,
+          "crc32": "a879da96",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/12_Build render client.txt",
+          "sha256": "0cd4ab3c040802a5d4de0c1e4c1b444c2382f0ce5b6291e1401c912ef8b63dad"
+        },
+        {
+          "bytes": 680,
+          "crc32": "fc74e484",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/13_Install Chromium (Playwright).txt",
+          "sha256": "f35b32de1fe311962d7164ad287c31095ee5747abebbe21e48d9c4166d49cfac"
+        },
+        {
+          "bytes": 839,
+          "crc32": "7a69a628",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/14_Free disk before the sweep.txt",
+          "sha256": "25113c1602a76b0d5507013b42fd975edba0aab3101e46dd571cab21d5211833"
+        },
+        {
+          "bytes": 9489,
+          "crc32": "3d06f1e0",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/15_Run ceiling sweep.txt",
+          "sha256": "aad9a1b8f44b2dd0c1b1435f6c3d8092f0ac58d0189a7eb13f8818d594ef1876"
+        },
+        {
+          "bytes": 2489,
+          "crc32": "df6f61a2",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/18_Upload ceiling report.txt",
+          "sha256": "2428e689ecb3e3c58bc1841d8934d6c026270160ff96d5c0f059c009772866a8"
+        },
+        {
+          "bytes": 1952,
+          "crc32": "78b9445d",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/35_Post Run actions_checkout@3d3c42e5aac5ba805825da76410c181273ba90b1.txt",
+          "sha256": "ce1ad1e1ed9ea5ddc3abead8f841412a6955dce6188eaab256e8a4163454c49e"
+        },
+        {
+          "bytes": 829,
+          "crc32": "806bc7a0",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/36_Complete runner.txt",
+          "sha256": "2d79b524f6c772744a9f6b260891940acd0f7d1f126a668fdd8d3f3c1ab4de2e"
+        },
+        {
+          "bytes": 61,
+          "crc32": "c22fea17",
+          "name": "Ceiling sweep (Blacksmith macOS M4, 48 GB)/37_Complete job.txt",
+          "sha256": "49566da12a4fe21ad8d98439a34d5db4a354dd98f038dfdd7d6fbc12ed576d73"
+        }
+      ],
+      "sha256": "65eeab881572fef40d0f092e5b7263d403a2c46d08ea3121460752ef2e994b03"
+    }
+  },
+  "artifact_id": 12794149653,
+  "authority_100m": "not-started",
+  "control": "not-started",
+  "host_browser_validator_pairs_executed": 0,
+  "job_id": 122655020139,
+  "job_log_decoded_bytes": 86364,
+  "job_log_decoded_sha256": "29dc91cfaceb4ca749679175a0828917c6d6ab150e5fb0315f39356db2ee5acb",
+  "preflight_decoded_sha256": "a491ac8fe4b925c1e3c1bfdebd70a1e761aa993644a039a5ceb044752bcf6ade",
+  "repository": "CurateLabs/xyg",
+  "retrieved_at_utc": "2026-10-28T05:49:13.442975+00:00",
+  "run_attempt": 1,
+  "run_id": 40639793475,
+  "source": "fe7d2ae71d316fd96b9851f3ce6232f76dd19134",
+  "source_commit_git_object_sha1": "fe7d2ae71d316fd96b9851f3ce6232f76dd19134",
+  "terminal_phase": "renderer-preflight"
+}

@@ -172,6 +172,10 @@ it never changes this report's scope or browser flag. Actual clean-main run
 instrumented cleanup at production base 4096. Its SwiftShader/manual-cadence
 scope leaves physical-GPU ownership and broader headline evidence open.
 Do not attach a separate fixture as a success flag for this workload.
+The later accepted-main hardware attempt 40639793475 on `fe7d2ae7`
+[failed renderer preflight](../../benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7/README.md)
+before either control or 100M source allocation; it adds no host/kernel or
+accelerated browser result to these historical receipts.
 
 This slice also does not establish larger-than-RAM behavior, absence of all
 transient row allocations, the final candidate host matrix, Node parity, or the

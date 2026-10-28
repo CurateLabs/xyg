@@ -1,0 +1,102 @@
+{
+  "actual_browser_version": {
+    "jsVersion": "14.9.207.21",
+    "product": "Chrome/149.0.7827.55",
+    "protocolVersion": "1.3",
+    "revision": "@3188f8a607ae7e067593be8aab7f02d2451fec07",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36"
+  },
+  "actual_gpu_devices": [
+    {
+      "deviceId": 0,
+      "deviceString": "ANGLE (Apple, ANGLE Metal Renderer: Apple Paravirtual device, Version 15.7.4 (Build 24G517))",
+      "driverVendor": "Apple",
+      "driverVersion": "15.7.4",
+      "vendorId": 0,
+      "vendorString": "Google Inc. (Apple)"
+    }
+  ],
+  "actual_gpu_features": {
+    "2d_canvas": "enabled",
+    "direct_rendering_display_compositor": "enabled_on",
+    "gpu_compositing": "enabled",
+    "multiple_raster_threads": "enabled_on",
+    "opengl": "enabled_on",
+    "rasterization": "enabled",
+    "raw_draw": "disabled_off_ok",
+    "skia_graphite": "enabled_on",
+    "trees_in_viz": "disabled_off",
+    "video_decode": "enabled",
+    "video_encode": "enabled",
+    "webgl": "enabled",
+    "webgpu": "enabled",
+    "webnn": "disabled_off"
+  },
+  "actual_hardware_context": {
+    "GITHUB_REPOSITORY": "CurateLabs/xyg",
+    "GITHUB_WORKFLOW_REF": "CurateLabs/xyg/.github/workflows/ceiling-benchmark.yml@refs/heads/main",
+    "GITHUB_WORKFLOW_SHA": "fe7d2ae71d316fd96b9851f3ce6232f76dd19134"
+  },
+  "actual_log_observations": [
+    "2026-10-28T05:45:43.9582580Z Host: production-205.234.200.125-arm64",
+    "2026-10-28T05:45:43.9584260Z Host CPU Manufacturer: Apple",
+    "2026-10-28T05:45:43.9586510Z Rootfs Version: 15-20260730",
+    "2026-10-28T05:45:43.9694990Z OS Version: macOS 15.7.4",
+    "2026-10-28T05:45:54.1797800Z   stable-aarch64-apple-darwin updated - rustc 1.99.1 (58cf8f9c3 2026-10-13) (from rustc 1.96.0 (ac68faa20 2026-05-25))",
+    "2026-10-28T05:45:54.2321150Z   stable-aarch64-apple-darwin unchanged - rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "2026-10-28T05:45:54.2360710Z \u001b[36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \\(20[0-9][0-9]\\)-\\([01][0-9]\\)-\\([0-3][0-9]\\)$/\\1\\2\\3/p')\u001b[0m",
+    "2026-10-28T05:45:54.2361100Z \u001b[36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')\u001b[0m",
+    "2026-10-28T05:45:54.3409430Z \u001b[36;1m  if rustc +stable --version --verbose | grep -q '^release: 1\\.6[89]\\.'; then\u001b[0m",
+    "2026-10-28T05:45:54.3410240Z \u001b[36;1m  elif rustc +stable --version --verbose | grep -q '^release: 1\\.6[67]\\.'; then\u001b[0m",
+    "2026-10-28T05:45:54.3946810Z \u001b[36;1mif rustc +stable --version --verbose | grep -q '^release: 1\\.7[01]\\.'; then\u001b[0m",
+    "2026-10-28T05:45:54.4304560Z ##[start-action display=Run rustc +stable --version --verbose;id=__dtolnay_rust-toolchain.__run_10]",
+    "2026-10-28T05:45:54.4318540Z ##[group]Run rustc +stable --version --verbose",
+    "2026-10-28T05:45:54.4318780Z \u001b[36;1mrustc +stable --version --verbose\u001b[0m",
+    "2026-10-28T05:45:54.4655200Z rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "2026-10-28T05:45:55.2408890Z node: v22.23.4",
+    "2026-10-28T05:45:55.2409190Z npm: 10.9.9",
+    "2026-10-28T05:45:55.5544440Z Cache hit for: playwright-chromium-macOS-ARM64-0ff9921fec0c564be7f74620c22d25b15db822e75eb113ebbbfd7f79893245a9",
+    "2026-10-28T05:45:56.5926580Z ##[group]Run cargo build --release",
+    "2026-10-28T05:45:56.5926770Z \u001b[36;1mcargo build --release\u001b[0m",
+    "2026-10-28T05:46:59.9010350Z Using CPython 3.12.10 interpreter at: /usr/local/bin/python3.12",
+    "2026-10-28T05:47:04.4298630Z {\"arms\": [\"xy\"], \"executable\": \"/Users/runner/_work/xyg/xyg/.venv/bin/python\", \"packages\": {\"numpy\": \"2.4.6\"}, \"python\": \"3.12.10 (v3.12.10:0cc81280367, Apr  8 2025, 08:46:59) [Clang 13.0.0 (clang-1300.0.29.30)]\", \"xy_backend\": \"native\"}"
+  ],
+  "actual_renderer": {
+    "renderer": "WebKit WebGL",
+    "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple Paravirtual device, Unspecified Version)",
+    "unmaskedVendor": "Google Inc. (Apple)",
+    "vendor": "WebKit",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "actual_workflow_inputs_from_log": {
+    "INPUT_ARMS": "xy,xy-exact,plotly,matplotlib,datashader,plotly-resampler",
+    "INPUT_EXPERIMENT": "colored-browser-hardware",
+    "INPUT_HARDWARE_GL": "true",
+    "INPUT_MEMORY_GIB": "20",
+    "INPUT_REPETITIONS": "3",
+    "INPUT_SIZES": "10,10000,100000,500000,1000000,2500000,5000000,10000000,25000000,50000000,100000000",
+    "INPUT_TIMEOUT": "300"
+  },
+  "configured_lane": {
+    "architecture": "arm64",
+    "cpu": "Apple M4",
+    "os": "macOS 15",
+    "outer_timeout_minutes": 720,
+    "ram_gib": 48,
+    "vcpus": 12
+  },
+  "identity_limits": {
+    "generated_client_build": "completed successfully in logs",
+    "measured_chromium_binary_sha256": null,
+    "measured_client_sha256": null,
+    "measured_native_binary_sha256": null,
+    "native_build_and_import": "completed successfully in logs",
+    "reason": "preflight-only report has no product provenance manifest; binaries were not uploaded"
+  },
+  "job_id": 122655020139,
+  "runner_labels": [
+    "blacksmith-12vcpu-macos-15"
+  ],
+  "runner_name": "blacksmith-12vcpu-macos-15-y2dz3gvea6jfo6cs",
+  "scope": "derived from retained actual job log and preflight; no whole-machine capacity or binary hash attestation"
+}
