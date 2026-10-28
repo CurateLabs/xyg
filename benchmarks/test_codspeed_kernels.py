@@ -280,10 +280,10 @@ def colored_drilldown_figure() -> Figure:
     100M-demo shape, where every grid reply carries the mean-color plane
     (LOD doc §2) and drills restore per-point channels.
 
-    Warm calls build the colored pyramid AND the trace's cached full-column
-    color resolution (`interaction.trace_bin_colors`), so the measured region
-    tracks steady-state per-request cost. That cost must stay free of any
-    O(N) full-column channel pass: before the resolution was cached, every
+    Warm calls build the colored pyramid and establish the canonical drill
+    state, so the measured region tracks steady-state per-request cost.
+    That cost must stay free of any O(N) full-column channel pass; bounded
+    canonical coordinate reads remain part of the workload. Historically, every
     reply of every tier re-quantized the whole color column, costing the 100M
     drilldown demo 1-2 s per request against ~10-400 ms of real tier work.
     """
@@ -296,6 +296,10 @@ def colored_drilldown_figure() -> Figure:
     fig.density_view(0, 0.0, 100.0, 0.0, 100.0, GRID_W, GRID_H)
     _expect_drill_window(fig, x, y)
     fig.density_view(0, 0.0, 100.0, 0.0, 100.0, GRID_W, GRID_H)
+    # Independent raw-view counts stay outside the measured cycle. The source
+    # is finite and uniform on [0,100], so these include both lower bounds.
+    fig._benchmark_mid_expected = int(np.count_nonzero((x <= 39.0) & (y <= 32.0)))
+    fig._benchmark_deep_view_expected = int(np.count_nonzero((x <= 10.0) & (y <= 10.0)))
     return fig
 
 
@@ -1372,8 +1376,8 @@ def test_adaptive_drilldown_cycle(benchmark, drilldown_figure):
 
 def _colored_drilldown_cycle(fig: Figure) -> int:
     wide, wide_buffers = fig.density_view(0, 0.0, 100.0, 0.0, 100.0, GRID_W, GRID_H)
-    # ~12.5% of the uniform domain: between the drill budget and the pyramid
-    # margin, so this window takes the exact re-bin plus its mean-color scan.
+    # ~12.5% of the uniform domain exceeds canonical point capacity. The
+    # bounded query must refuse and retain the existing mean-color aggregate.
     mid, mid_buffers = fig.density_view(0, 0.0, 39.0, 0.0, 32.0, GRID_W, GRID_H)
     deep, deep_buffers = fig.density_view(0, 0.0, 10.0, 0.0, 10.0, GRID_W, GRID_H)
 
@@ -1384,9 +1388,16 @@ def _colored_drilldown_cycle(fig: Figure) -> int:
     assert str(wide_trace.get("binning", "")).startswith("pyramid-L")
     assert wide_trace["density"].get("color_agg") == "mean"  # prebuilt planes rode along
     assert mid_trace["mode"] == "density"
-    assert mid_trace["binning"] == "exact"
-    assert mid_trace["density"].get("color_agg") == "mean"  # cached-idx mean-color scan
+    assert str(mid_trace["binning"]).startswith("pyramid-L")
+    assert mid_trace["reduction"] == "pyramid-count"
+    assert mid_trace["density"].get("color_agg") == "mean"
+    mid_query = mid_trace["canonical_query"]
+    assert mid_query["status"] == "overflow" and mid_query["count"] is None
+    assert fig._benchmark_mid_expected > mid_query["point_cap"]
     assert deep_trace["mode"] == "points"
+    assert deep_trace["binning"] == "canonical-points"
+    assert deep_trace["canonical_query"]["status"] == "complete"
+    assert deep_trace["canonical_query"]["count"] == fig._benchmark_deep_view_expected
     # T13: the shipped window is the deterministic padded aligned superset of
     # the view, so both the window and its exact count repeat every cycle.
     assert tuple(deep_trace["x_range"]) == fig._benchmark_deep_window[:2]
@@ -1407,15 +1418,22 @@ def _colored_drilldown_cycle(fig: Figure) -> int:
     )
 
 
-def test_adaptive_drilldown_cycle_mean_color(benchmark, colored_drilldown_figure):
+def test_adaptive_drilldown_cycle_mean_color(benchmark, colored_drilldown_figure, monkeypatch):
     """The drilldown cycle on a channel-bearing trace (the FastAPI demo shape).
 
     Regression tripwire for per-request full-column channel work: every reply
-    here must reuse the trace's cached bin-color resolution (LOD doc §2), so
-    the cycle costs the tier work itself — pyramid compose, one exact re-bin
-    with its mean-color scan, one drill gather. Re-resolving the channel per
-    request multiplies this row by the column length and shows up as a
-    step-function regression."""
+    here must use prebuilt mean-color planes or exact gathered channels (LOD
+    doc §2). The current cycle measures pyramid composition, bounded canonical
+    overflow and a complete padded drill. Legacy exact re-binning and per-view
+    full-column color resolution are forbidden after fixture warmup.
+    """
+    from xyg import interaction
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("full-column color work in a warm canonical drill cycle")
+
+    monkeypatch.setattr(interaction, "trace_bin_colors", forbidden)
+    monkeypatch.setattr(k, "bin_2d_mean_color", forbidden)
     result = benchmark(_colored_drilldown_cycle, colored_drilldown_figure)
     assert result > DRILL_N
 

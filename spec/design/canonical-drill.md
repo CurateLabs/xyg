@@ -29,6 +29,13 @@ and preserves the already-painted frame instead of invoking a full-column scan.
 `read_bytes` is 16 × logical coordinate rows read, not physical I/O or RSS.
 An admitted query can still read up to 80M rows; this cap is not a latency proof.
 
+The channel-bearing CodSpeed drill cycle follows the same contract: its
+over-capacity mid-band query retains the mean-color pyramid with `overflow`
+and a null exact count; its deep view completes and restores exact channels.
+Independent raw-view/padded counts and warm-cycle full-column color tripwires
+guard correctness. This replaces the old exact-re-bin benchmark leg; historical
+timings are not directly comparable ([methodology](../benchmarks/methodology.md)).
+
 Only complete unfiltered linear-axis results enter `_drill_points`, before
 keyed/spilled density returns. That path preserves global color/size domains,
 custom colormaps, categories, direct RGBA alpha, stroke/style, canonical f64
