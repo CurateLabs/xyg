@@ -1,0 +1,19 @@
+Local receipt tooling checks at 2026-10-28T02:23:53.339541+00:00
+Host benchmark/verifier were NOT executed locally.
+TMPDIR=/home/ubuntu/.t3/worktrees/xyg/t3-7101d81f/target/task-tmp
+UV_NO_SYNC=1 after uv sync --group dev --no-install-project
+
+$ uv run --with pre-commit pre-commit run --all-files
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+Exit: 0
+
+$ uv run ruff check .
+All checks passed!
+Exit: 0
+
+$ uv run ruff format --check .
+880 files already formatted
+Exit: 0
+

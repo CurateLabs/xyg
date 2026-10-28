@@ -1,7 +1,8 @@
 # Live aggregation comparison foundation (#11)
 
-Status: bounded local evidence plus a rejected hosted scale attempt; competitive
-scale acceptance remains open.
+Status: accepted actual-main structural evidence at 1M/100M/1B, alongside
+immutable rejected attempts and bounded local controls. Competitive,
+larger-than-RAM and complete #11/#108 acceptance remain open.
 Extends the [benchmark methodology](../benchmarks/methodology.md) without changing
 its measurement or publication gates. See dossier §§5, 12, 17, 28–29 and
 [tier-3 testing](tier3-testing.md). The original real-wheel run is
@@ -49,7 +50,9 @@ microbenchmarks. Raw marker rows must not be ranked against density rows as a
 same-output win. No winner or universal speedup follows from a single local
 trajectory. The optional programmatic profile below adds bounded equal-window pans/zooms.
 Real-gesture equal-window latency, hover, selection, exact drill parity,
-cold disk, colored competitive sources and massive-scale evidence remain gaps.
+cold disk, colored competitive sources and larger-than-RAM evidence remain gaps.
+The later accepted mapped profile supplies the retained 1M/100M/1B
+programmatic count-density evidence described below.
 
 ## Source and provenance
 
@@ -421,7 +424,9 @@ observations and RSS remain diagnostics subject to the rejected report, not
 accepted competitive or larger-than-RAM results. Actual renderer remains
 unmeasured. Dependency and count/grid contract repairs landed in #1072;
 the subsequent main attempt below exposed separate host-admission failures.
-An accepted main execution remains required before checking competitive acceptance.
+That attempt did not satisfy the hosted contract. The later 2026-10-28
+execution below supplies accepted structural evidence without establishing
+competitive acceptance.
 
 ## Repaired-environment hosted attempt: rejected, 2026-10-24
 
@@ -453,11 +458,49 @@ The [host-admission repair](comparison-host-admission.md) establishes the
 package context at actual file entry and binds actual Bokeh image bytes to
 their backend observation. A retained [1,000-row six-cell control](../../benchmarks/results/live-aggregation-2026-10-24/cold-admission-v3/README.md)
 completes every 32-window sequence and empty control and passes the unchanged
-independent verifier. These local dirty-source proofs require reviewed main
-landing before another actual-scale run. Retained hosted competitor timings are diagnostics
-subject to the rejected report, not rankings. Actual renderer remains
+independent verifier. The repairs subsequently landed in #1075; the accepted
+actual-main execution below follows that landing. Timings from this rejected
+hosted attempt remain diagnostics, not rankings. Actual renderer remains
 unmeasured, the true 1B source remains 16 GB of files on a 48 GiB host, and
 competitive, larger-than-RAM and whole-#11/#108 acceptance remain open.
+
+## Repaired actual-main evidence: accepted structural contract, 2026-10-28
+
+[Run 40618320164](https://github.com/CurateLabs/xyg/actions/runs/40618320164),
+attempt 1 on clean main `d005b0063d9909392786a18262ff1306e3e8f54c`,
+passed the actual hosted independent verifier: **18 successful cells, zero
+failed cells**. The [retained receipt](../../benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/README.md)
+contains the exact artifact ZIP, lossless original report, complete job log,
+terminal execution metadata, source bindings, versions and reproduction commands.
+The earlier rejected receipts retain their original bytes and dispositions.
+
+The existing M4 lane executed actual f64-mapped sources at 1M/100M/1B rows,
+all three arms and both repetitions, with unchanged 300s phase / 15s step
+limits and 20 GiB per-tree RSS / source-disk guards. Every cell completed its
+cold checkpoint, 32 warm windows and separate empty control: 576 warm windows,
+18 empty controls and 612 checkpoints overall. All 204 XYG checkpoints retain
+passing source-derived count, encoded-grid and adopted-grid bindings. The
+file-entry and Bokeh cold-image failures from the preceding run did not recur.
+
+Warm p95 programmatic request-to-stable-paint observations across the two
+repetitions were 53.0–58.1 / 73.8–94.5 / 74.1–85.1 ms for XYG at
+1M/100M/1B respectively. The receipt preserves each repetition, all individual
+samples, preparation/build/cold clocks, actual grid geometry, socket body
+bytes, numerical-validation HTTP costs and sampled host/browser RSS. These
+clocks include adapter, hashing, validation and readback work; they do not
+measure natural gestures or pure kernel latency.
+
+This accepts the structural report contract, not an equal-work kernel ranking
+or universal speedup. XYG adapts its grid dimensions; the competitor arms use
+512×512 grids, different shading, caching and validation paths. The Plotly arm
+is Plotly + Datashader + Tornado, and the Bokeh arm is the combined
+hvPlot/HoloViews/Datashader/Panel/Bokeh stack. Software GL was requested; the
+actual renderer remains unmeasured. The true 1B source occupies 16 GB of
+files on a 48 GiB host and does not prove larger-than-RAM behavior. Source
+columns were not uploaded, so retention inspection verifies their hosted
+identities and bindings rather than independently rehashing absent source bytes.
+Colored competitive sources, natural gestures, hover/selection/exact-drill
+parity, cold-disk behavior and complete #11/#108 acceptance remain open.
 
 ## Primary API references inspected
 

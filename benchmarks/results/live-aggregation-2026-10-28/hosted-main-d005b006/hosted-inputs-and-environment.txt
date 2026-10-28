@@ -1,0 +1,11 @@
+2026-10-28T02:02:02.1860960Z   INPUT_EXPERIMENT: density-comparison
+2026-10-28T02:02:09.0385370Z   INPUT_EXPERIMENT: density-comparison
+2026-10-28T02:02:09.0385540Z   INPUT_ARMS: xy-density,plotly-aggregate,datashader-aggregate
+2026-10-28T02:02:14.1695040Z {"arms": ["xy-density", "plotly-aggregate", "datashader-aggregate"], "executable": "/Users/runner/_work/xyg/xyg/.venv/bin/python", "packages": {"bokeh": "3.9.1", "datashader": "0.19.1", "holoviews": "1.23.1", "hvplot": "0.12.2", "llvmlite": "0.48.0", "numba": "0.66.0", "numpy": "2.4.6", "pandas": "3.0.3", "panel": "1.9.3", "pillow": "12.3.0", "plotly": "6.9.0", "psutil": "7.2.2", "tornado": "6.5.7", "websocket-client": "1.9.2"}, "python": "3.12.10 (v3.12.10:0cc81280367, Apr  8 2025, 08:46:59) [Clang 13.0.0 (clang-1300.0.29.30)]", "xy_backend": "native"}
+2026-10-28T02:02:22.6217990Z   INPUT_EXPERIMENT: density-comparison
+2026-10-28T02:02:22.6218140Z   INPUT_SIZES: 1000000,100000000,1000000000
+2026-10-28T02:02:22.6218330Z   INPUT_ARMS: xy-density,plotly-aggregate,datashader-aggregate
+2026-10-28T02:02:22.6218510Z   INPUT_REPETITIONS: 2
+2026-10-28T02:02:22.6218640Z   INPUT_TIMEOUT: 300
+2026-10-28T02:02:22.6218750Z   INPUT_MEMORY_GIB: 20
+2026-10-28T02:02:22.6218860Z   INPUT_HARDWARE_GL: false

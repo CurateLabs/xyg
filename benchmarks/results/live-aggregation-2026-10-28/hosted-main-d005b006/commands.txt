@@ -1,0 +1,50 @@
+# Receipt of the already-dispatched run 40618320164, attempt 1 only.
+# All GitHub access below is read-only. No dispatch, retry, cancel, push or PR.
+# From repository root, keep temporary tooling under this checkout:
+export TMPDIR="$PWD/target/task-tmp"
+mkdir -p "$TMPDIR"
+
+# Bounded status queries, roughly one minute apart while waiting:
+gh run view 40618320164 --repo CurateLabs/xyg --json status,conclusion,jobs
+# Full initial observations:
+gh api repos/CurateLabs/xyg/actions/runs/40618320164
+gh api repos/CurateLabs/xyg/actions/runs/40618320164/attempts/1/jobs
+
+# Once terminal: downloads original ZIP, all job logs and terminal API records.
+# Each gh call has a 55-second subprocess bound. Job-log stdout goes directly
+# to the owned receipt path before lossless deterministic gzip, never gh's
+# shared /tmp log cache. Source files are not generated or downloaded.
+python3 benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/retain_receipt.py
+python3 benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/build_bindings.py
+python3 benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/summarize_evidence.py
+
+# Immutable source records and exact signed commit bytes:
+gh api repos/CurateLabs/xyg/commits/d005b0063d9909392786a18262ff1306e3e8f54c
+git cat-file -p d005b0063d9909392786a18262ff1306e3e8f54c
+git show d005b0063d9909392786a18262ff1306e3e8f54c:.github/workflows/ceiling-benchmark.yml
+# Snapshot byte equality and historical Git/product trees are checked below.
+
+# Local development tools only; no native/client build or benchmark execution:
+uv sync --group dev --no-install-project
+export UV_NO_SYNC=1
+uv run --with pre-commit pre-commit run --all-files
+uv run ruff check .
+uv run ruff format --check .
+# Complete check output is in validation.txt. After final receipt edits:
+python3 benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/seal_manifest.py
+python3 benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/inspect_evidence.py
+(cd benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006 && sha256sum -c SHA256SUMS)
+
+# The inspection script is read-only and stdlib-only. It checks retained bytes,
+# GitHub ZIP digest/member CRC, exact decoded report equality, actual metadata,
+# exact 18-cell coverage, requested argv and historical source hash bindings.
+# It does not run the large independent verifier or fabricate Actions/Darwin,
+# clean-main authority, renderer observations or source arrays.
+# The actual hosted producer argv is retained in actual-values.json; the exact
+# hosted producer/verifier shell invocation is in the original complete log.
+# The historical verifier source is retained as .py.txt, never invoked here.
+
+# Commit identity if committing:
+# David Spencer <1526975+DecisionNerd@users.noreply.github.com>
+# Only this new evidence directory may be committed. Parent owns independent
+# review, spec reconciliation, integration and any subsequent execution.

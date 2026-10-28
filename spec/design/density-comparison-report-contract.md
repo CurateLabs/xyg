@@ -14,6 +14,15 @@ The producer's [file-entry and cold-admission contract](comparison-host-admissio
 requires an actually adopted, source-bound image before stable paint is admitted;
 it does not relax this independent verifier.
 
+Accepted actual-main structural evidence is retained for
+[run 40618320164](../../benchmarks/results/live-aggregation-2026-10-28/hosted-main-d005b006/README.md)
+on `d005b0063d9909392786a18262ff1306e3e8f54c`: the hosted verifier accepted
+18 successful cells and zero failures across 1M/100M/1B, three arms and two
+repetitions. This outcome does not exempt future reports from any check or
+retroactively accept the preceding rejected runs. Programmatic clocks,
+unequal adaptive grids and the unmeasured actual renderer retain their stated
+limits; no competitive winner or whole-release acceptance follows.
+
 ## Invocation and result
 
 ```bash

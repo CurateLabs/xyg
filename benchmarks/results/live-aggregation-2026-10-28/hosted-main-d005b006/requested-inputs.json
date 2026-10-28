@@ -1,0 +1,20 @@
+{
+  "scope": "User-supplied task constraints, not an original workflow dispatch API request body. Compare with hosted log environment and report argv after completion.",
+  "run_id": 40618320164,
+  "source_commit": "d005b0063d9909392786a18262ff1306e3e8f54c",
+  "inputs": {
+    "experiment": "density-comparison",
+    "sizes": "1000000,100000000,1000000000",
+    "arms": "xy-density,plotly-aggregate,datashader-aggregate",
+    "repetitions": "2",
+    "timeout": "300",
+    "memory_gib": "20",
+    "hardware_gl": "false"
+  },
+  "fixed_workflow_values": {
+    "profile": "f64-memmap",
+    "chunk_rows": 1000000,
+    "source_disk_gib": 20,
+    "step_timeout_s": 15
+  }
+}
