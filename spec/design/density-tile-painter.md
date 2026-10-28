@@ -67,6 +67,20 @@ the existing linear-u16 mean → sRGB conversion and physical alpha
 and do not use count exposure. Existing approximate categorical legend dim
 operates on the same allocation and restores the immutable Rust bytes.
 
+An admitted mean-color XYDT frame retains header bit 0 as `tileSetRGBA`,
+including when no legacy window `rgba` plane exists. Exact point drills use
+that fact for the same native-opacity handoff as legacy mean-color grids:
+`density_val` and the count-only `lod_blend` ramp are ignored. Entry/exit
+layer fades, outgoing tile ownership, point-window caching and disposal keep
+their existing T7/T10/T12/T13 rules. The bounded
+`tests/test_keyed_colored_drill_browser.py` regression feeds actual
+`density_view` replies from a forced-spill 262,144-row canonical source through
+the real browser: native XYDT → canonical points → cached points → XYDT.
+It covers continuous,
+custom-colormap, categorical and direct-RGBA alpha channels, with per-row size,
+stroke and width, cache promotion, painted mark ink, density return and GPU
+cleanup. It does not establish a 100M localization or latency result.
+
 ## Binary controls and reply
 
 All multibyte fields below are little-endian. Numeric inventories and pixel

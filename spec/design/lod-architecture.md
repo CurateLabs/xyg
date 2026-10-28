@@ -338,11 +338,39 @@ reply = legacy window compose, or native XYDT keyed source textures (#10)
 - **Below the floor** (view finer than level 0): ordinary in-RAM traces can
   re-bin or ship real points. Huge/no-rescan/spilled traces retain an
   explicitly upsampled pyramid unless the existing position-only spatial
-  index can serve exact points or a screen-resolution grid affordably.
-  Color-bearing spatial refinement remains unavailable, as recorded in §4.1.
-- **Drill-in unchanged:** tile observations never bypass eligible spatial
-  point/grid refinement. The painter changes aggregated representation,
-  preserving the existing exact-query decisions.
+  index can serve exact points or a screen-resolution grid affordably, or
+  the capped canonical query below completes. The legacy index remains
+  position-only and cannot restore channels.
+- **Channel-preserving canonical drill (ABI 396):** unfiltered linear traces
+  with point channels query existing f64 x/y and paired chunk zone maps before
+  keyed or composed density returns. Rust owns admission (existing conservative
+  near-budget margin or finest-source refinement), entry/hysteresis point cap,
+  the existing 80M candidate-row budget, and inclusive finite-row membership.
+  Resident pyramid counts and the spilled path's Rust clipped-area estimate
+  admit work only. The complete result is ascending canonical u32 IDs, routed
+  through `_drill_points` with global color/size domains, custom LUT, categorical
+  or RGBA alpha, stroke/style, exact f64 hover and bounded subset history.
+  Metadata preflight scans O(chunks); coordinate reads occur only after the
+  full candidate set fits the scan budget. Output is capped at 200k on entry
+  or the existing floating 1.15 hysteresis limit (currently 229,999).
+  `canonical_query` records `status`, nullable exact `count`, candidate rows /
+  chunks, logical `rows_read` / `read_bytes`, and the Rust allocation/scan caps.
+  Overflow or scan-budget refusal publishes no row prefix or exact count and
+  preserves drill state. Density still paints; if aggregate composition is
+  unavailable too, an empty trace update with query diagnostics preserves the
+  already-painted frame rather than falling through to a full-column scan.
+  Non-admitted views also retain the aggregate and never use `range_indices`
+  on this route. Predicate and nonlinear routes retain their existing behavior.
+- **Drill-in precedes the painter:** tile observations never bypass either
+  eligible canonical drill or legacy position-only refinement. XYDC is decoded
+  by Rust before lazy pyramid work or drill mutation (T6), including when the
+  reply becomes points. The legacy `_ship_index_points` channel guard stays.
+
+This is the D5 bounded baseline, not a finer spatial locator: unordered 100M
+chunk zones may all overlap a small view and correctly refuse without reading
+coordinates. No new ingest sort/index format is required. Finer row localization
+and real massive-source latency/memory/payload proofs remain open; finite seam
+and browser regressions do not close #11/#108.
 
 ### 4.3 Truthfulness across levels
 
@@ -596,8 +624,12 @@ invariants so future kinds don't regress them:
   power-of-two grid over the trace's extent, per dimension
   (`lod.aligned_window`), from a ladder of span targets
   (`DRILL_PAD_TARGETS`, coarsest first, pyramid-count-gated then
-  exact-verified), floored at the raw view window. Alignment makes
-  consecutive pans resolve to the SAME window — dedupable, cacheable — and
+  verified by the capped Rust canonical query), floored at the raw view window.
+  Queries use the entry cap even for an already-drilled trace. An overflow or
+  scan-budget result cannot certify padding: the exact raw view remains the
+  floor. Replies record each attempted query's status/count/read observations
+  or the reason a rung was skipped, plus `padding.applied` and the explicit
+  `raw-view` fallback. Alignment makes consecutive pans resolve to the SAME window — dedupable, cacheable — and
   neighboring windows tile; the padded span is hard-capped per axis
   (`DRILL_PAD_SPAN_CAP`, well under the 1/256 re-encode bound) so the §16
   offset encoding centered on the padded window can always be re-tightened

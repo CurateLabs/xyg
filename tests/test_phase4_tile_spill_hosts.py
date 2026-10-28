@@ -157,8 +157,9 @@ def _small_colored_spill(monkeypatch, *, categorical=True):
 
     monkeypatch.setattr(interaction, "PYRAMID_MIN_POINTS", 1)
     monkeypatch.setattr(interaction, "PYRAMID_BASE_DIM", 512)
-    monkeypatch.setattr(interaction, "SCATTER_DENSITY_THRESHOLD", 32)
-    x, y = _scatter_points(32_768, seed=13)
+    # Preserve production Rust drill thresholds: each visible category must
+    # remain aggregate territory, including after the canonical drill probe.
+    x, y = _scatter_points(600_000, seed=13)
     categories = np.where(x < 0.5, "left", "right")
     fig = xyg.scatter_chart(
         xyg.scatter(

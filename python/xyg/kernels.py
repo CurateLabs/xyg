@@ -223,6 +223,10 @@ indexed_triangles = _impl.indexed_triangles
 normalize_f32 = _impl.normalize_f32
 valid_indices_f64 = _impl.valid_indices_f64
 remap_u8 = _impl.remap_u8
+canonical_drill_query = _impl.canonical_drill_query
+canonical_drill_admit = _impl.canonical_drill_admit
+canonical_drill_estimate = _impl.canonical_drill_estimate
+tile_paint_control_valid = _impl.tile_paint_control_valid
 range_indices = _impl.range_indices
 range_indices_rows = _impl.range_indices_rows
 polygon_select = _impl.polygon_select
@@ -382,6 +386,9 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "canonical_drill_admit",
+    "canonical_drill_estimate",
+    "canonical_drill_query",
     "categorical_palette",
     "category_code_width",
     "category_label_kind_from_probe",
@@ -642,6 +649,7 @@ __all__ = [
     "stream_zone_maps",
     "streamlines",
     "tile_budget_set",
+    "tile_paint_control_valid",
     "tile_store_append",
     "tile_store_compose",
     "tile_store_compose_color",

@@ -160,6 +160,19 @@ inside this frame; changing any of it means editing this section first.
 
 ### D5 — Zone-map-pruned tile index (companion, not replacement)
 
+- **Bounded baseline shipped (ABI 396):** `canonical_drill.rs` queries existing
+  f64 columns and paired chunk min/max maps without expanding candidate IDs or
+  allocating N output rows. Rust returns ascending canonical u32 IDs only on
+  `complete`; `overflow` / `scan-budget` return unknown exact count and no usable
+  prefix. The 200k/1.15 drill policy and existing 80M candidate allowance own
+  output/read bounds. Complete channel-bearing point replies and padded windows
+  use the usual global-channel, canonical hover/selection and subset-history path,
+  before legacy or XYDC spilled-density early returns. Predicates bypass this
+  unfiltered route. See [LOD §4.2](lod-architecture.md#42-serving-a-viewport).
+  **Remaining:** unordered massive chunk zones can all overlap, so this baseline
+  may refuse even a sparse tiny view. Finer canonical-row localization plus
+  actual massive-source scale/latency/memory evidence are still required; this
+  finite implementation does not complete #11/#108 or prove a competitor win.
 - Dirty-tile rebuilds (D4) and below-floor re-bins locate rows through the
   **existing** §22 chunk zone maps: `xy_zone_maps_pair` per-chunk x/y
   min/max prune the candidate ~64k-row chunks intersecting a tile’s

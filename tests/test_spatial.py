@@ -184,8 +184,12 @@ def test_spilled_binary_tile_inventory_preserves_spatial_refinement(
     assert (
         after["binning"]
         == before["binning"]
-        == ("spatial-exact" if channelled else "spatial-points")
+        == ("canonical-points" if channelled else "spatial-points")
     )
     for key in ("mode", "tier", "visible", "reduction"):
         assert after[key] == before[key]
     assert observed_buffers == baseline_buffers
+    if channelled:
+        assert after["canonical_query"]["status"] == "complete"
+        assert len(trace.shipped_sel) == after["visible"]
+        assert after["size"]["mode"] == "continuous"

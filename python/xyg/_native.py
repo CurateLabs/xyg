@@ -10499,6 +10499,118 @@ def valid_indices_f64(
     return output[:written].copy()
 
 
+def canonical_drill_admit(
+    estimate: float, *, in_drill: bool = False, refinement: bool = False
+) -> bool:
+    """Rust query admission only; an estimate never certifies exact count."""
+    result = int(_lib.xyg_canonical_drill_admit(float(estimate), int(in_drill), int(refinement)))
+    if result < 0:
+        raise ValueError("invalid canonical drill admission")
+    return bool(result)
+
+
+def canonical_drill_estimate(
+    rows: int, extent: tuple[float, float, float, float], window: tuple[float, float, float, float]
+) -> float:
+    """Rust clipped-area estimate, exclusively for bounded query admission."""
+    n = _bounded_nonnegative_int(rows, "rows", max_value=0xFFFF_FFFF)
+    if len(extent) != 4 or len(window) != 4:
+        raise ValueError("extent and window require four bounds")
+    result = float(_lib.xyg_canonical_drill_estimate(n, *extent, *window))
+    if result < 0:
+        raise ValueError("invalid canonical drill estimate")
+    return result
+
+
+def canonical_drill_query(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x_mins: npt.NDArray[np.float64],
+    x_maxs: npt.NDArray[np.float64],
+    y_mins: npt.NDArray[np.float64],
+    y_maxs: npt.NDArray[np.float64],
+    lo_x: float,
+    hi_x: float,
+    lo_y: float,
+    hi_y: float,
+    *,
+    chunk_size: int = 65_536,
+    in_drill: bool = False,
+) -> dict[str, Any]:
+    """Capped canonical rows plus exact/refusal observations from Rust.
+
+    Complete alone supplies indices/count. Refused prefixes are discarded.
+    Canonical arrays must already be contiguous f64: this route never copies
+    or widens a source-sized column, including disk-backed memmaps.
+    """
+    lo_x, hi_x = _finite_ordered(lo_x, hi_x, "x range")
+    lo_y, hi_y = _finite_ordered(lo_y, hi_y, "y range")
+    chunk = _positive_int(chunk_size, "chunk_size")
+    for array in (x, y):
+        if (
+            not isinstance(array, np.ndarray)
+            or array.dtype != np.float64
+            or array.ndim != 1
+            or not array.flags.c_contiguous
+        ):
+            raise ValueError("canonical drill requires contiguous f64 canonical columns")
+    if len(x) != len(y) or len(x) > 0xFFFF_FFFF:
+        raise ValueError("canonical drill requires equal uint32-addressable column lengths")
+    planes = tuple(_as_f64(a, "zone map") for a in (x_mins, x_maxs, y_mins, y_maxs))
+    chunks = (len(x) + chunk - 1) // chunk
+    if any(len(a) != chunks for a in planes):
+        raise ValueError("canonical drill zone-map lengths do not match columns")
+    limits = np.empty(2, dtype=np.uint64)
+    if _lib.xyg_canonical_drill_limits(int(in_drill), limits.ctypes.data) != 1:
+        raise ValueError("invalid canonical drill state")
+    out = np.empty(int(limits[0]), dtype=np.uint32)
+    stats = np.empty(7, dtype=np.uint64)
+    status = int(
+        _lib.xyg_canonical_drill_query(
+            _ptr_f64(x),
+            _ptr_f64(y),
+            len(x),
+            chunk,
+            *(_ptr_f64(a) for a in planes),
+            chunks,
+            lo_x,
+            hi_x,
+            lo_y,
+            hi_y,
+            int(in_drill),
+            out.ctypes.data,
+            len(out),
+            stats.ctypes.data,
+        )
+    )
+    if status not in (0, 1, 2):
+        raise ValueError("invalid canonical drill query")
+    count = int(stats[0]) if status == 0 else None
+    indices = out[:count].copy() if count is not None else np.empty(0, dtype=np.uint32)
+    return {
+        "status": ("complete", "overflow", "scan-budget")[status],
+        "indices": indices,
+        "count": count,
+        "candidate_rows": int(stats[1]),
+        "candidate_chunks": int(stats[2]),
+        "rows_read": int(stats[3]),
+        "read_bytes": int(stats[4]),
+        "point_cap": int(stats[5]),
+        "scan_row_budget": int(stats[6]),
+    }
+
+
+def tile_paint_control_valid(control: bytes | bytearray | memoryview) -> bool:
+    """Validate XYDC with the shared Rust decoder without store/state access."""
+    if not isinstance(control, (bytes, bytearray, memoryview)):
+        return False
+    size = control.nbytes if isinstance(control, memoryview) else len(control)
+    if size > 3104:
+        return False
+    raw = bytes(control)
+    return _lib.xyg_tile_paint_control_valid(raw, len(raw)) == 1
+
+
 def range_indices(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],

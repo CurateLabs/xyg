@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 395
-#define XYG_ABI_SIGNATURE_SHA256 "0701e862a4f8ea7e1c067c8292b3de63dca87a319d8a963310f191c8f03ea529"
+#define XYG_ABI_VERSION 396
+#define XYG_ABI_SIGNATURE_SHA256 "33408adce57f04332fb09ed02af9f6b7f69b284c24511905cacc66dc10caf9c8"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +35,10 @@ size_t xyg_bin_2d_stratified_sample_range_u8_counted(const double * x, const dou
 size_t xyg_binned_ecdf(const double * values, size_t len, size_t n_bins, double lo, double hi, int32_t use_range, double * out_x, double * out_cumulative, size_t capacity);
 size_t xyg_box_geometry(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, double width, uint32_t orientation, int32_t show_outliers, size_t * out_n_outliers, uint32_t * active_groups, double * group_records, size_t * outlier_offsets, double * outlier_records, size_t group_cap, size_t outlier_cap);
 int32_t xyg_box_stats(const double * data, size_t len, double * out_stats, double * out_outliers, size_t outliers_cap, size_t * out_n_outliers);
+int32_t xyg_canonical_drill_admit(double estimate, int32_t in_drill, int32_t refinement);
+double xyg_canonical_drill_estimate(uint64_t rows, double ex0, double ex1, double ey0, double ey1, double x0, double x1, double y0, double y1);
+int32_t xyg_canonical_drill_limits(int32_t in_drill, uint64_t * out);
+int32_t xyg_canonical_drill_query(const double * x, const double * y, size_t len, size_t chunk_size, const double * x_min, const double * x_max, const double * y_min, const double * y_max, size_t n_chunks, double lo_x, double hi_x, double lo_y, double hi_y, int32_t in_drill, uint32_t * out, size_t out_capacity, uint64_t * stats);
 size_t xyg_categorical_palette(const uint32_t * entry_lens, const uint8_t * entry_texts, size_t entry_texts_len, size_t n_entries, size_t n_categories, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap);
 size_t xyg_categorical_palette_map_resolve(const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, size_t n_categories, const uint32_t * map_key_lens, const uint8_t * map_key_texts, size_t map_key_texts_len, const uint32_t * map_value_lens, const uint8_t * map_value_texts, size_t map_value_texts_len, size_t n_map, const uint32_t * default_lens, const uint8_t * default_texts, size_t default_texts_len, size_t n_default, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap, uint32_t * out_unmapped, uint32_t * out_map_exhausted);
 uint32_t xyg_category_code_width(uint64_t n_categories);
@@ -530,6 +534,7 @@ size_t xyg_tick_window_filter(const double * values, size_t n, double lo, double
 size_t xyg_tight_layout_figure_extra(double canvas_w, double canvas_h, double suptitle_height, double suptitle_y, double xlabel_size, double ylabel_size, double legend_box_w, double * out_extra);
 size_t xyg_tight_layout_solve(double canvas_w, double canvas_h, uint32_t nrows, uint32_t ncols, int32_t compact, const double * in_panels, size_t n_panels, const double * extra, double pad, double w_pad, double h_pad, double point_px, const double * rect, double * out);
 int32_t xyg_tile_budget_set(uint64_t bytes);
+int32_t xyg_tile_paint_control_valid(const uint8_t * control, size_t len);
 int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len);
 int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out);
 /* Buffer contract: out: out_capacity >= checked(w * h) elements and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns -1 before output access; success returns nonnegative_level. */
