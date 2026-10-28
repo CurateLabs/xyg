@@ -215,3 +215,26 @@ environment, source and artifact hashes, raw results and reproduction commands.
 Reuse #876's
 resource-authorized harness and feed the accepted results into #113/#54;
 neither these timings nor integer-only planner cases close that scope.
+
+## Owned-allocation and normal-RAF companion extension
+
+[Schema 2](density-spill-browser-evidence.md) retains all deterministic oracles
+and separately replays the same source/store and 32 windows through normal
+product RAF/clock/adoption. Negative tests cover initial texture/buffer leaks,
+mutable/immutable storage and reallocation, outgoing deletion, stale-reply
+allocation attempts, missing/software/request-mismatched renderer, disabled GPU
+features, normal transition/pixel/adoption corruption, failed Darwin observation
+and missing process-group members, timeout/cancel cleanup, and forged authority.
+The independent event replay enforces the 8-MiB keyed RGBA8 GPU allocation budget
+(including gutters/outgoing/replacement overlap), separately from 16-MiB CPU
+tiles and initial/LUT/pick/chart/oracle resources. Explicit deletion must precede
+context loss; no handles may remain. Readback cadence is not production FPS.
+
+The optional `colored-browser-hardware` experiment uses only the existing manual
+M4 ceiling job, with accelerated preflight and bounded control before a single
+100M worker and both verifiers. Darwin process RSS is bounded sampled `ps` group
+RSS, with accurate sampled high-water labels and fail-closed preallocation
+observation. Linux `/proc` and fixed 12-GiB/4-GiB/3600-s maxima remain. Historical
+schema-1 evidence keeps its original scope. Actual M4 acceleration, new 100M
+normal-RAF proof, comparative scale and the colored exact-drill headline gap
+remain open. No CI fixture allocates 100M or invents a 60-FPS acceptance gate.

@@ -1,0 +1,5 @@
+$ uv run python scripts/verify_density_spill_report.py target/colored-owned-proof/host.json --artifact-root /home/ubuntu/.t3/worktrees/xyg/t3-b21dd7ff
+colored-spill host/kernel slice OK (1000000 rows); browser and whole #11 remain open
+
+$ uv run python scripts/verify_density_spill_browser_report.py target/colored-owned-proof/browser.json --host-report target/colored-owned-proof/host.json --artifact-root /home/ubuntu/.t3/worktrees/xyg/t3-b21dd7ff
+same-source colored-spill browser companion OK; scope is recorded in its schema
