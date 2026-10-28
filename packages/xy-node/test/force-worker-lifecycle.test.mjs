@@ -106,6 +106,7 @@ write("run.mjs", `
     maxWallMs: scenario === 'timeout' ? 250 : 5000,
     onTick(state) {
       trace('callback', {step: state.step});
+      if (scenario === 'mutated-step') state.step -= 1;
       if (scenario === 'callback' || scenario === 'complete-failure') {
         checkpointTurn();
         throw original;
@@ -119,7 +120,7 @@ write("run.mjs", `
   if (scenario === 'no-callback') delete args.onTick;
   try {
     const result = await runForceTicks(args);
-    assert.ok(scenario === 'normal' || scenario === 'no-callback');
+    assert.ok(scenario === 'normal' || scenario === 'no-callback' || scenario === 'mutated-step');
     assert.equal(result.steps, 4);
     trace('settled', {failed: false});
   } catch (error) {
@@ -157,7 +158,7 @@ function cleanedBeforeSettlement(events, terminal) {
   assert.ok(!events.slice(at("settled") + 1).some(event => event.type === "callback"));
 }
 
-for (const scenario of ["callback", "complete-failure", "abort", "timeout", "normal", "no-callback", "native-error"]) {
+for (const scenario of ["callback", "complete-failure", "abort", "timeout", "normal", "no-callback", "mutated-step", "native-error"]) {
   test(`force worker lifecycle: ${scenario} waits for destroy and exit`, () => {
     const events = run(scenario);
     const cancelled = ["callback", "complete-failure", "abort", "timeout"].includes(scenario);
@@ -194,7 +195,7 @@ test("force worker lifecycle: unresponsive worker uses bounded emergency termina
 
 // These still use the real ABI and Koffi inside real isolated Worker processes.
 // The same trace wrapper observes actual destroy return and actual worker exit.
-for (const scenario of ["callback", "complete-failure", "abort", "timeout", "normal", "no-callback"]) {
+for (const scenario of ["callback", "complete-failure", "abort", "timeout", "normal", "no-callback", "mutated-step"]) {
   test(`force worker lifecycle with native ABI: ${scenario}`, () => {
     const events = run(scenario, true);
     const terminal = scenario === "timeout"

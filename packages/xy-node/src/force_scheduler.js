@@ -193,13 +193,14 @@ function runForceTicksInWorker(args) {
         stopListening();
         awaitExit();
       } else if (msg?.type === "tick") {
+        const checkpointStep = msg.state.step;
         try {
           if (typeof args.onTick === "function") args.onTick(msg.state);
         } catch (cause) {
           cancel(cause);
         }
         // The callback can synchronously abort the signal as well as throw.
-        if (!outcome) worker.postMessage({ type: "accept", step: msg.state.step });
+        if (!outcome) worker.postMessage({ type: "accept", step: checkpointStep });
       }
     });
     worker.on("error", (cause) => {

@@ -364,6 +364,8 @@ Rules:
 - Coalesce uploads to animation frames; cancel drops the handle.
 - Node worker checkpoints require parent acceptance **after** the synchronous
   `onTick` callback returns successfully, including the complete checkpoint.
+  Acceptance uses the original step captured before calling user code;
+  changing the callback snapshot's `step` cannot change the protocol checkpoint.
   Until that acceptance, the worker cannot enter another native tick. Callback
   failure or synchronous signal abort sends cancellation instead of acceptance;
   queued checkpoints are ignored once cancellation or a terminal reply wins.
@@ -390,7 +392,7 @@ loop advances native ticks during that callback, whereas the accepted-checkpoint
 loop cannot. Traces assert no next tick, no callbacks after settlement, exact
 exception identity, destroy-before-terminal-reply, and exit-before-settlement.
 The timeout case cancels during a simulated synchronous chunk; normal completion,
-complete-callback failure, native failure, no callback, pre-abort, and an
+complete-callback failure, native failure, no callback, callback-step mutation, pre-abort, and an
 unresponsive checkpoint exercise the remaining lifecycle paths. The same
 callback/abort/timeout/completion cases also wrap the actual ABI/Koffi functions
 and observe real destroy return and worker exit, without a public debug API.
