@@ -89,9 +89,10 @@ ref/SHA identity. It runs a tiny accelerated preflight with a 30-second active
 probe budget and bounded browser cleanup, one 16,384-row 180-second/4-GiB-RSS/1-GiB-disk control and both verifiers, then one supervised
 production-eligibility/base-4096 100M worker capped at **3600 s / 12 GiB RSS /
 4 GiB disk**, with both verifiers and `--require-hardware`. Raw exact-SHA JSON
-files use the existing upload-artifact action. This is an available fail-closed
-execution path, **not a hosted M4 acceleration receipt**. Actual acceleration
-remains unproven until the parent reviews, lands and explicitly runs it.
+files use the existing upload-artifact action. The actual accepted-main run
+40639793475 failed renderer admission before the control or 100M worker;
+the [retained failed preflight receipt](../../benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7/README.md)
+records the outcome below. Actual M4 acceleration remains unproven.
 
 Darwin observation uses a bounded `/bin/ps` snapshot of PID, process group, RSS
 (KiB), state and full process name, excludes zombies, and records sampled group
@@ -102,11 +103,48 @@ keeps its `/proc` group RSS and worker `VmHWM` behavior. Both use the existing
 process-group TERM/KILL, wall/RSS/disk caps, alias/profile/tree cleanup and actual
 browser PID/group observations; an observer failure cannot disable termination.
 
-The current implementation is locally exercised only at <=1M using explicit
-Chrome and `TMPDIR` under `target/`. No local 100M, hosted dispatch or hardware
-success is inferred. The broad colored exact-drill headline still conflicts
-with the detailed keep-colored-pyramid policy; that product gap is preserved,
-not relabeled, relocated or closed by this evidence.
+Local execution remains limited to <=1M using explicit Chrome and `TMPDIR`
+under `target/`. The hosted attempt below supplies failed preallocation
+evidence only. The bounded canonical colored drill baseline is landed, but
+unordered massive localization and its scale/latency/memory proof remain open
+as recorded in [Phase 4 D5](tier3-phase4-roadmap.md#d5-zone-map-pruned-tile-index-companion-not-replacement).
+This receipt does not complete that broader headline, #11 or #108.
+
+### Actual accepted-main hardware attempt (2026-10-28)
+
+[Run 40639793475](https://github.com/CurateLabs/xyg/actions/runs/40639793475),
+attempt 1, ran `colored-browser-hardware` with `hardware_gl=true` from accepted
+main `fe7d2ae71d316fd96b9851f3ce6232f76dd19134`. The single existing
+`blacksmith-12vcpu-macos-15` job completed **failure** at renderer preflight,
+after successful native/package/environment/client/Chromium setup. Chromium
+149.0.7827.55 reported WebGL2, a successful `[64,128,191,255]` readback, no
+context loss and Browser GPU `webgl: enabled` (no separate `webgl2` feature).
+Its actual unmasked renderer was
+`ANGLE (Apple, ANGLE Metal Renderer: Apple Paravirtual device, Unspecified Version)`.
+That does not identify Apple M4 and the unchanged hardware guard refused it.
+This is neither software-fallback evidence nor an accepted M4 acceleration result.
+
+Browser PID 1656 / group 519 was reaped and its profile removed. The
+16,384-row control and production-base-4096 100M worker never started: no
+canonical source rows, host reports, companions, chart windows, resource traces
+or host/browser verifier pairs were produced. Owned allocations, sampled
+process-tree RSS/disk and total driver VRAM were not measured. Configured
+30-second preflight, 180-second/4-GiB/1-GiB control, 3600-second/12-GiB/4-GiB
+worker and 720-minute outer ceilings remain unchanged and are not observed
+usage. No retry or replacement execution accompanies this receipt.
+
+The [receipt](../../benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7/README.md)
+retains the sole exact artifact ZIP, its raw failed report, full logs,
+terminal metadata, environment, source blobs and hashes. The artifact digest is
+`64dbf69c6bd1a9471099c3c19750bf5dd7986fe68479dc1c7b9a929e29f062e9`;
+decoded preflight SHA-256 is
+`a491ac8fe4b925c1e3c1bfdebd70a1e761aa993644a039a5ceb044752bcf6ade`.
+The failure report records no generated native/client/browser executable hashes;
+successful build logs cannot supply those missing identities. The read-only
+inspector reproduces admission refusal over archived observations without
+launching a browser, generating rows or exporting Actions authority. Current
+accelerated owned-allocation/normal-RAF 100M acceptance remains open; historical
+receipts retain their original bytes and scope.
 
 ## Local schema-2 control (2026-10-24)
 

@@ -1,0 +1,43 @@
+Local validation, 2026-10-28 UTC
+Scope: receipt integrity, archived admission refusal and unchanged workflow policy.
+No local browser, native build, source generation, control or authority run.
+No ambient Actions authority/capability exported. No success reports exist.
+
+python3 benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7/inspect_evidence.py
+Receipt verified: run 40639793475 failed renderer preflight; 432 accepted source blobs, both ZIP CRCs/digests and full logs match. Control/100M not started; zero host/browser verifier pairs or chart journeys.
+
+uv run pytest tests/test_density_spill_browser.py -q -k 'renderer_admission_uses_actual_gpu_not_request or positive_hardware_renderer_requires_accelerated_webgl2 or hardware_admits_chromium_single_webgl_feature'
+8 passed, 17 deselected in 0.61s
+
+uv run python scripts/verify_ci_workflow.py
+Workflow verification OK: CI, CodSpeed, density-100m, ceiling-benchmark,
+final-coderabbit, publish and merge-queue ruleset.
+
+Local Markdown link check (five changed files):
+38 relative file targets resolve. URLs and fragment anchors were not fetched.
+
+git diff --check
+PASS
+
+uv run --with pre-commit pre-commit run --all-files
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+
+uv run ruff check .
+All checks passed!
+
+uv run ruff format --check .
+884 files already formatted
+
+All required full-worktree commands exited 0 before the local receipt commit.
+SHA256SUMS, decoded gzip bytes, ZIP CRC/member identities and source snapshots
+are independently checked by inspect_evidence.py after the final seal.
+Historical native/client executable hashes and process-tree resource samples
+are unavailable; this validation neither invents nor substitutes for them.
+Parent independent review/integration remains outstanding; no PR was opened.
+
+Ancestry-only merge b22f5d7eb35ed8a45afbc403ea9adc367edbaaaa:
+Tree 4fd8722a09fc92b3f9a5f0b8167ec1fdb57bc9a7 equals accepted fe7.
+Required full-worktree pre-commit, Ruff check and Ruff format check all passed
+again before that merge commit. The receipt commit follows its own final pass.

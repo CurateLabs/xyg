@@ -300,11 +300,17 @@ inside this frame; changing any of it means editing this section first.
   records SwiftShader and deterministic presentation, with complete cleanup.
 - [ ] Accelerated owned-allocation/normal-cadence 100M evidence: the retained
   schema-1 software receipt excludes pre-hook initial textures. The implemented
-  [schema-2 companion](density-spill-browser-evidence.md) accounts all owned
+  [schema-3 companion](density-spill-browser-evidence.md) accounts all owned
   texture/buffer storage and deletion and adds a separate normal product-RAF
   journey. Its optional existing-M4 manual mode fails closed on software or
-  missing renderer/observer before source allocation; actual accelerated hosted
-  execution remains unproven. Total driver VRAM stays unqueryable. No universal
+  missing renderer/observer before source allocation. Actual accepted-main
+  run 40639793475 on `fe7d2ae7` failed the unchanged Apple-M4 renderer guard:
+  Chromium identified an Apple Paravirtual Metal device. Its
+  [failed preflight receipt](../../benchmarks/results/colored-browser-hardware-2026-10-28/hosted-main-fe7d2ae7/README.md)
+  retains successful WebGL2 readback and browser/profile cleanup, but no control,
+  100M worker, chart resource trace or verifier pair ran. Actual accelerated
+  100M owned-allocation/normal-RAF acceptance remains open. Total driver VRAM
+  stays unqueryable. No universal
   FPS gate or new runner/capacity is introduced; broader headline gaps remain.
 - [ ] Comparable live competitive evidence and explicit scale limitations.
   Actual-main run 40618320164 now passes the structural contract for all
