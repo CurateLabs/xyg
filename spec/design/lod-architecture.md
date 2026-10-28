@@ -879,6 +879,15 @@ contract entry before it lands.
    Colored host pan p95 0.76844255 ms and slowest zoom 11.230729 ms satisfy
    the kernel limits. The 33 framebuffer matches/eight fades are scripted
    SwiftShader observations, not physical-GPU or natural-cadence performance.
+   The [schema-2 companion](density-spill-browser-evidence.md) adds all owned
+   texture/buffer accounting before construction and a separate normal-RAF
+   journey. Its existing manual-M4 workflow mode requires actual accelerated
+   Apple M4 Metal WebGL and a working Darwin RSS observer before canonical
+   allocation. Hosted accelerated/normal-cadence 100M evidence remains open;
+   readback timing introduces no universal FPS gate. T7 includes outgoing tile
+   object references and explicit deletion before context loss. The 8-MiB
+   keyed RGBA8 budget is separate from initial/LUT/pick/other/oracle objects
+   and 16-MiB CPU tiles; total driver VRAM remains unqueryable.
 
 **Phase 4 — Tier-3 residency (disk-resident 256² tiles)**
 
@@ -923,3 +932,8 @@ never blanks, never shimmers, mean-color cells match a NumPy oracle, drill-in
 to exact points under 200k visible, all reductions visible in spec + badge.
 Phase-3 exit is the in-RAM pyramid path (shipped); Phase-4 exit adds
 budgeted disk residency for pyramids that no longer fit.
+
+The colored exact-drill headline above remains an unresolved acceptance gap:
+the detailed Phase-3 colored policy retains the colored pyramid surface. The
+owned-resource/normal-RAF evidence extension changes neither policy nor issue
+status and cannot claim that exact-drill requirement is satisfied.

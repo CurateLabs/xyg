@@ -78,6 +78,11 @@ def guard(
 
 def browser_guard(config: dict) -> None:
     """Optional browser admission, run by both entries before source allocation."""
+    mode = config.get("colored_browser_gl", "software")
+    if mode not in {"software", "hardware"}:
+        raise ValueError("colored browser GL must be software or hardware")
+    if mode == "hardware" and not config.get("colored_browser_report"):
+        raise ValueError("hardware requires the colored browser companion")
     if not config.get("colored_browser_report"):
         return
     if config.get("workload") != WORKLOAD:
@@ -102,6 +107,8 @@ def browser_guard(config: dict) -> None:
         ).strip()
         if commit != os.environ.get("GITHUB_SHA") or dirty:
             raise ValueError("authority browser requires a clean checkout at the actual run SHA")
+    if mode == "hardware":
+        hardware_context_guard(dict(os.environ), authority=bool(config.get("authority")))
     output = Path(config["colored_browser_report"]).resolve()
     if output == Path(config["host_output"]).resolve():
         raise ValueError("browser companion and host outputs must be distinct")
@@ -111,6 +118,31 @@ def browser_guard(config: dict) -> None:
     # Probe actual output access before allocating mappings or native stores.
     with tempfile.TemporaryFile(dir=output.parent):
         pass
+
+
+def hardware_context_guard(
+    environ: dict[str, str],
+    *,
+    authority: bool,
+    system: str | None = None,
+    machine: str | None = None,
+) -> None:
+    import platform
+
+    if (system or platform.system()) != "Darwin" or (machine or platform.machine()) != "arm64":
+        raise ValueError(
+            "colored hardware experiment requires Darwin arm64 on the existing M4 runner"
+        )
+    if authority and (
+        environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch"
+        or environ.get("GITHUB_WORKFLOW_REF")
+        != f"{environ.get('GITHUB_REPOSITORY')}/.github/workflows/ceiling-benchmark.yml@refs/heads/main"
+        or environ.get("GITHUB_WORKFLOW_SHA") != environ.get("GITHUB_SHA")
+        or environ.get("GITHUB_REPOSITORY") != "CurateLabs/xyg"
+    ):
+        raise ValueError(
+            "hardware authority requires the exact manual-main ceiling workflow identity"
+        )
 
 
 def file_hash(path: Path) -> str:
@@ -417,6 +449,18 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
     old_budget = interaction.PYRAMID_RESIDENT_BYTES
     started = time.perf_counter()
     try:
+        supervisor._observer_preflight()
+        preflight = None
+        if config.get("colored_browser_report"):
+            from scripts.density_spill_browser_smoke import renderer_preflight
+
+            preflight = renderer_preflight(
+                config["chrome"],
+                config.get("colored_browser_gl", "software"),
+                Path(config["browser_socket_parent"]),
+                min(config["timeout"], 30),
+            )
+        started = time.perf_counter()  # Preflights are not source-generation timing.
         x, y, color, source = generate(tmp, points, chunk)
         creation_seconds = time.perf_counter() - started
         sources = (x, y, color)
@@ -677,6 +721,8 @@ def run_host(config: dict, tmp: Path, cleanup: dict) -> dict:
                         timeout=config["timeout"],
                         socket_parent=Path(config["browser_socket_parent"]),
                         authority=config["authority"],
+                        gl_mode=config.get("colored_browser_gl", "software"),
+                        preflight=preflight,
                     )
                 except BaseException as exc:
                     # Do not retain the helper traceback's borrowed figure in
@@ -769,6 +815,8 @@ def worker(config: dict) -> int:
             "failure": f"{type(exc).__name__}: {exc}",
             "cleanup": cleanup,
         }
+        if hasattr(exc, "evidence"):
+            report["renderer_preflight"] = exc.evidence
         supervisor._atomic_write_json(result, report)
         raise
     supervisor._atomic_write_json(result, report)

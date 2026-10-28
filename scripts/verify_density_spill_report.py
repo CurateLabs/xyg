@@ -279,6 +279,13 @@ def _validate(
         and integer(tree["observed_process_count"], 1),
         "supervisor must observe worker RSS/processes",
     )
+    if env["platform"]["system"] == "Darwin":
+        require(
+            tree["rss_observer"] == "darwin-ps-sampled-group-rss"
+            and tree["worker_rss_measurement"] == "sampled-high-water"
+            and tree["sample_interval_seconds"] == 0.05,
+            "Darwin requires sampled group RSS observation, not VmHWM",
+        )
     require(
         r["latency_policy"]
         == {
