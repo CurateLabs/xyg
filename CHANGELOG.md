@@ -25,6 +25,11 @@ its acceptance remains gated by #108.
   snapshots without a Python callback or incremental streaming bridge.
 
 ### Fixed
+- Colormapped `contourf` fills honor authored opacity above 0.9, including
+  pyplot's opaque default and masked-corner triangle traces (#1046).
+  Their heatmap and triangle paints no longer apply an extra 0.9 cap. Static
+  export bytes and browser payloads for affected fills change; explicit alpha
+  on the colorbar itself remains a known gap.
 - The release workflow includes the browser package in the seven-package npm
   cohort, checks aligned versions and asset hashes before uploading, and
   requires both registry opt-ins before PyPI publication. GitHub prereleases

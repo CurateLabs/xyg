@@ -4,6 +4,29 @@ This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.
 
+## `contourf` fill opacity — 2026-10-30 (Matplotlib 3.11.0 reference, #1046)
+
+- Colormapped filled contours now forward their authored opacity to both the
+  heatmap and masked-corner triangle traces, removing the 0.9 cap. The pyplot
+  default is opaque, so a default fill and its colorbar band use the same
+  paint. Explicit alpha below 0.9 remains unchanged; alpha above 0.9 is no
+  longer reduced. Rust still owns opacity application and raster compositing.
+- Regression tests read real Matplotlib contour facecolors for omitted alpha,
+  1.0, 0.95 and 0.35; verify compiled heatmap and masked-corner triangle opacity;
+  and compare unmasked PNG fill pixels with the reference paints over white.
+  Masked-corner colormapped static export still fails closed with
+  `XYG_SCENE_UNSUPPORTED_GRADIENT` (#889); its compiled opacity is qualified,
+  not its static pixels.
+- Expected output-byte change: contour fills authored above 0.9 opacity change
+  in static exports and browser payloads. The >15-band SVG regression changes
+  SHA-256 from `a6937fcda700db3170ebc6c7c2503d9b67ddbc0759e880e5fc450c648c08f16c`
+  to `cf1cbb6eec0c5eb488dfa6a7dccda811c80d1e276cf231490d5c9310621fbb7a`;
+  its colorbar remains a continuous ramp. The mark's omitted-opacity default
+  remains 0.9; pyplot already forwards 1.0 explicitly. No wire or ABI changes.
+- This resolves the fill-opacity cap listed below. Colorbar alpha, resampled
+  colormap size, custom normalization, the stop budget and LUT drift remain
+  open; this is partial progress on #1046, not release acceptance.
+
 ## Banded `contourf` colorbars — 2026-10-21 (Matplotlib 3.11.0 reference, #1046)
 
 - A colormapped `contourf` colorbar now carries one band color per level
@@ -25,15 +48,13 @@ which covers user-visible releases across the whole package.
   - `contourf(alpha=...)`: the colorbar bands are drawn opaque; Matplotlib
     applies the mappable's alpha to the colorbar.
   - The contour fill drops a resampled colormap's `N` (`get_cmap(name, n)`):
-    it paints the named map at the continuous band midpoint, and with a fixed
-    0.9 opacity for colormapped fills. The colorbar follows what the fill paints
+    it paints the named map at the continuous band midpoint. The colorbar follows what the fill paints
     (continuous midpoint, no `N` quantization), so both are wrong against
     Matplotlib's resampled LUT in the same way; carrying `N` into the Rust fill
     is the follow-up.
-  - The colorbar stays opaque while colormapped `contourf` fills are capped at
-    0.9 opacity (`_marks_contour.py:195,244`), so the visible fill is up to
-    about 10% lighter than its colorbar band. The fill is what differs from
-    Matplotlib; lifting the cap is a follow-up.
+  - The original 0.9 fill-opacity cap is resolved by the 2026-10-30 correction
+    above. Colorbars still stay opaque when a contour has explicit alpha below
+    1.0; colorbar alpha propagation remains a follow-up.
   - Known pre-existing colormap-table drift: xyg's built-in tables differ from
     Matplotlib 3.11's (viridis by up to 14/255 at LUT indices 139-253, jet 23,
     turbo 15, coolwarm 12, inferno 9), so bands sample the same normalized

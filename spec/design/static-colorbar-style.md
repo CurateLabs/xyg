@@ -118,6 +118,14 @@ ramp has no literal bands to label. A discrete colormap without `BoundaryNorm`
 boundaries (`get_cmap(name, n)`) still renders the continuous ramp, which is the
 pre-existing behavior this change does not widen.
 
+Colormapped contour fills forward the authored opacity without a 0.9 cap to
+their heatmap and clipped corner triangles. With pyplot's default alpha of
+1.0, fills and colorbar bands are both opaque. Explicit contour alpha still
+does not propagate to the colorbar bands or caps, which remain opaque; this
+remaining #1046 gap is separate from the fill correction. Colormap LUT drift,
+resampled colormap size and custom normalization are recorded in the
+[compatibility changelog](../matplotlib/compat-changelog.md).
+
 ## Extensions and labels
 
 Endpoint extension triangles use the first/last stop's literal RGBA paint,
