@@ -192,7 +192,7 @@ def contour(
                         name=name,
                         colormap=colormap,
                         domain=(float(edges[0]), float(edges[-1])),
-                        opacity=min(opacity, 0.9),
+                        opacity=opacity,
                     )
                 else:
                     # Listed contour colors are discrete paint, not a request
@@ -241,7 +241,7 @@ def contour(
                             color=triangle_colors,
                             colormap=colormap,
                             domain=triangle_domain,
-                            opacity=min(opacity, 0.9) if color_table is None else opacity,
+                            opacity=opacity,
                             _joined_fill=True,
                         )
             else:

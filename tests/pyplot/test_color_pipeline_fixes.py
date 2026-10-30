@@ -775,9 +775,10 @@ def test_contourf_colorbar_beyond_the_scene_stop_budget_keeps_the_ramp():
     svg = buffer.getvalue()
     # The ramp is sampled into many thin steps, not 20 level bands.
     assert len(_colorbar_bands(svg.decode())) > 20
-    # Golden SHA-256 of the SVG captured from main b2705b73: output is unchanged.
+    # The fill-opacity correction changes the image bytes, while the colorbar
+    # retains its continuous-ramp fallback beyond the stop budget (#1046).
     assert hashlib.sha256(svg).hexdigest() == (
-        "a6937fcda700db3170ebc6c7c2503d9b67ddbc0759e880e5fc450c648c08f16c"
+        "cf1cbb6eec0c5eb488dfa6a7dccda811c80d1e276cf231490d5c9310621fbb7a"
     )
 
 
@@ -806,7 +807,48 @@ def test_contourf_colorbar_bands_follow_what_the_fill_paints_for_a_resampled_cma
 
     pixels = (mpl_image.imread(io.BytesIO(plain.getvalue()))[..., :3] * 255).round().astype(int)
     painted = np.unique(pixels.reshape(-1, 3), axis=0)
-    # Colormapped contour fills are painted at 0.9 opacity over white.
+    # Default pyplot fills are opaque, like the colorbar bands.
     for band in bands:
-        blended = 0.9 * np.asarray(band) + 0.1 * 255
-        assert np.abs(painted - blended).max(axis=1).min() <= 1.5, (band, blended)
+        assert np.abs(painted - band).max(axis=1).min() <= 1.5, band
+
+
+@pytest.mark.parametrize("alpha", [None, 1.0, 0.95, 0.35])
+@pytest.mark.parametrize("masked_corner", [False, True])
+def test_contourf_fill_opacity_matches_matplotlib(alpha, masked_corner):
+    """Filled bands and clipped corner triangles retain the mappable's alpha."""
+    pytest.importorskip("matplotlib")
+    import matplotlib.image as mpl_image
+    import matplotlib.pyplot as mpl_plt
+
+    grid = np.linspace(0.0, 2.0, 24)
+    values = np.add.outer(grid, grid) / 2
+    if masked_corner:
+        values[0, 0] = np.nan
+    kwargs = {"levels": [0, 1, 2], "cmap": "gray", "corner_mask": True, "alpha": alpha}
+    with mpl_plt.rc_context({"backend": "Agg"}):
+        reference, reference_axes = mpl_plt.subplots()
+        try:
+            contour = reference_axes.contourf(values, **kwargs)
+            reference.canvas.draw()
+            facecolors = contour.get_facecolors().copy()
+        finally:
+            mpl_plt.close(reference)
+
+    _fig, ax = plt.subplots()
+    ax.contourf(values, **kwargs)
+    traces = [trace for trace in _compiled_traces() if trace.kind in {"heatmap", "triangle_mesh"}]
+    assert {trace.kind for trace in traces} == (
+        {"heatmap", "triangle_mesh"} if masked_corner else {"heatmap"}
+    )
+    for trace in traces:
+        assert trace.style["opacity"] == pytest.approx(facecolors[0, 3])
+
+    if masked_corner:
+        # Colormapped joined corner meshes still fail closed on the static
+        # Scene gradient admission (#889); the compiled alpha is testable.
+        return
+    pixels = (mpl_image.imread(io.BytesIO(_png()))[..., :3] * 255).round().astype(int)
+    painted = np.unique(pixels.reshape(-1, 3), axis=0)
+    for rgba in facecolors:
+        expected = 255 * (rgba[:3] * rgba[3] + 1 - rgba[3])
+        assert np.abs(painted - expected).max(axis=1).min() <= 1.5, expected
