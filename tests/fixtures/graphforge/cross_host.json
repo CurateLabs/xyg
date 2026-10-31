@@ -1350,7 +1350,27 @@
         "title": "GraphForge"
       },
       "request_sha256": "f91b424301eb04f0874be193604aa821130fe84d8ce136bf7dec2ed1451260f7",
-      "document_sha256": "9bad058d5178504a6395e5110a589771841472400510e24d78c0a0e26ad48ae5"
+      "document_sha256": "527e90235e056fc933f1fa87f1ef2f07a39b2e9c61f8f6173106cb3aff607a49"
+    },
+    {
+      "name": "property graph",
+      "base": "property",
+      "layers": [],
+      "request_sha256": "1c97749c36db0098c6324602f253f53dddc4dc0b8f10e5bb1f4769f66671f27b",
+      "document_sha256": "423ad7a5b6c356e543965f7e267fe1cdbd31798c250ccf8d8a56ae730546ab39"
+    },
+    {
+      "name": "property graph + render",
+      "base": "property",
+      "layers": [],
+      "render": {
+        "width": 640,
+        "height": 420,
+        "theme": "light",
+        "title": "Property graph"
+      },
+      "request_sha256": "f2e3e5f5788655cab8cc2bc97264abef1c7cc9d01a798128e52919d54dcbae12",
+      "document_sha256": "2d0055ed3d85dddb20498a835f32ace259db47cb810856c3739323b45fa25d96"
     },
     {
       "name": "rows and policies",
