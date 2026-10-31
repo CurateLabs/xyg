@@ -1,0 +1,15 @@
+{
+  "name": "baseline-native-build",
+  "command": [
+    "cargo",
+    "build",
+    "--release",
+    "-p",
+    "xyg-core"
+  ],
+  "exitCode": 0,
+  "seconds": 86.458,
+  "rawSha256": "b09a8bf6376c04df65a7c5d0fd309f690530da8680c407965b269adc2d33eb28",
+  "log": "baseline-native-build.txt.gz",
+  "gzipSha256": "9effa871345d1504e6e6015480db0b3f3a474da1b74becf3ebb18de8da0fa8be"
+}

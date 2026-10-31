@@ -1,0 +1,27 @@
+{
+  "name": "python-focused",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graphforge.py",
+    "tests/test_graphforge_scene.py",
+    "tests/test_graphforge_semantic_evidence.py",
+    "tests/test_graphforge_fixture_generation.py",
+    "tests/test_graphforge_contract_corpus.py",
+    "tests/test_cose_native_parity.py",
+    "tests/test_temporal_columns.py",
+    "tests/test_temporal_graph_native.py",
+    "tests/test_temporal_controller.py",
+    "tests/test_graph_style.py",
+    "tests/test_graph_semantic_mapping.py",
+    "-k",
+    "not browser"
+  ],
+  "exitCode": 0,
+  "seconds": 4.58,
+  "rawSha256": "15c1f61046d11783e53582e38e6421ff488032b1971e26095831c24042f76333",
+  "log": "python-focused.txt.gz",
+  "gzipSha256": "2f8b085038b1535501644954b7d1dc029f9ea336fc67bb57e8eb98369ddf5bb1"
+}

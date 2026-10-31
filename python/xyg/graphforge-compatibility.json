@@ -16,7 +16,7 @@
       "coreVersion": "0.5.2",
       "coreSourceCommit": "c2b782cd833d54aa14bb097b69bd23f3c2a93a9b",
       "contractCorpusSha256": "4886a95ebfd6f2967792fed9a674b59a7f21c4d490a97975cebd328c98363829",
-      "resultManifestSha256": "dd5661f1addd0cb5c796c877e9531fe9bdb2637b22f2a1d3ba8abd01535002fc"
+      "resultManifestSha256": "9f50ce9df24ac263e4de61299f593cec38c3b3f4eb995bc2ec1d058e3af5676b"
     },
     {
       "coreVersion": "0.6.0-rc.5",

@@ -1,0 +1,17 @@
+{
+  "name": "focused-tiny-control",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::pick",
+    "--",
+    "--nocapture"
+  ],
+  "exitCode": 0,
+  "seconds": 8.177,
+  "rawSha256": "e9dd3744ae54ecda13a6d6be1ad47d1c13838a08f5983d0bcd1cd2ee31d59399",
+  "log": "focused-tiny-control.txt.gz",
+  "gzipSha256": "3ca61c710c6b162f6848267da3e42392af8712a466a5c1facc214b6ad3c20945"
+}

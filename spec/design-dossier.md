@@ -1394,6 +1394,20 @@ recomputes on zoom.*
 | **Box / violin / stat traces** | raw column | stats computed in worker from canonical (streaming algorithms; KDE on a bounded grid) — drawn geometry is tiny | stat readout (exact) | recompute stats for visible subset if axis-linked |
 | **Graph (node–link)** | canonical f64 layout positions + u64 source edges (GraphForge UUIDs retained host-side) | Direct (every node/edge) → EdgeSample (deterministic stride over rendered edges, `edge_budget`) → Aggregate (grid centroids, `node_budget`; cross-cluster edges collapse per ordered cluster pair, same-cluster edges drop) — Rust `xyg_graph_build_render` records the tier | edge: the exact source edge (UUID) when its render edge has one member (Direct / EdgeSample), else the Aggregate edge's deterministic ascending source-edge membership (count + up to 256 members, truncation flagged); never an unrelated edge. Node: exact at Direct, cluster via `member_of` above it. Semantic style rows (graph-mark.md §7.1.2) paint under the same exactness and are omitted at Aggregate, recorded in `spec.graph.style_contract`; compound frames are omitted at Aggregate (`compound_frames: "omitted:aggregate"`) and compound disclosure (`collapsed=`) fails closed above Direct (§7.1.5); static SVG/PNG export keeps at most the Scene's 128 labels / 8 KiB of label text, choosing the lowest zoom thresholds (graph-mark.md §8) | full `build_render` re-emission for the new viewport/budget; membership CSR is rebuilt with it (graph-mark.md §6) |
 
+**Graph S3 pick admission clarification.** The 200,000-node publication budget
+may exceed the 131,072-primitive index cap. Retain at most 1,048,576 grid entries
+in a 64×64 grid and 65,536 query candidates; test duplication before allocation.
+Overflow records degraded mode. If nodes cannot all be indexed, exact node
+queries scan that same retained publication under the 4,000,000 deterministic
+work limit, without a second source-sized index. Degraded point edge picks admit
+only canonically single-piece routes in draw order; omitted routed edges/loops
+are unavailable, never chord substitutes. Degraded region edge queries use
+induced published edges. Nodes/polygon edges/grid/dedup/membership/induced work
+is charged before selection or hover commit; refusal never truncates selection.
+Style-only republication refreshes resolved geometry and index at the same
+revision. Exact contracts: graph-interaction.md §2.3, Rust S3 candidate only;
+ABI/browser/host and hardware acceptance remain later slices.
+
 **Static export takes the first-paint tier (#1006).** Native SVG/PNG/PDF/JPEG/
 WebP export makes the same compile-time `payload_tier` decision the browser's
 first paint makes and records it in the spec, never silently: a Cartesian line

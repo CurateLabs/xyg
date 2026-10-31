@@ -9,6 +9,8 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+pub use crate::graph_interaction_state::GraphEntity;
+use crate::graph_interaction_state::{ElementSet, Focus, GraphInteractionState, SelectMode};
 use crate::projection::{GraphProjection, Uuid};
 use crate::temporal::{
     CancelFlag, IntervalEndpoints, IntervalIndex, TemporalColumn, TemporalError,
@@ -24,12 +26,6 @@ pub struct TemporalBindingInput<'a> {
     /// Optional event instants. When present, the event must fall in the
     /// requested frame range in addition to satisfying validity at the cursor.
     pub event_at: Option<&'a TemporalColumn>,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum GraphEntity {
-    Node(Uuid),
-    Edge(Uuid),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -201,11 +197,13 @@ pub struct TemporalGraph {
     edge_dense: HashMap<Uuid, usize>,
     nodes: EntityBinding,
     edges: EntityBinding,
-    selected_nodes: BTreeSet<Uuid>,
-    selected_edges: BTreeSet<Uuid>,
-    focused: Option<GraphEntity>,
-    pinned_nodes: BTreeSet<Uuid>,
+    /// The one selection/focus/pin value; a bound `GraphSession` mutates this
+    /// same instance rather than keeping its own.
+    state: GraphInteractionState,
     applied_revision: u64,
+    /// Source visibility of the last published frame, retained so a bound
+    /// `GraphSession` reads it under the registry lock (F4): `(nodes, edges)`.
+    visibility: Option<(Vec<u8>, Vec<u8>)>,
 }
 
 impl TemporalGraph {
@@ -241,15 +239,73 @@ impl TemporalGraph {
             targets: projection.targets().to_vec(),
             node_ids,
             edge_ids,
-            selected_nodes: BTreeSet::new(),
-            selected_edges: BTreeSet::new(),
-            focused: None,
-            pinned_nodes: BTreeSet::new(),
+            state: GraphInteractionState::default(),
             applied_revision: 0,
+            visibility: None,
         })
     }
 
+    /// Revision of the last published frame (`0` before the first).
+    pub fn applied_revision(&self) -> u64 {
+        self.applied_revision
+    }
+
+    /// Node and edge visibility of the last published frame; `None` before
+    /// the first frame (everything is visible).
+    pub fn applied_visibility(&self) -> Option<(&[u8], &[u8])> {
+        self.visibility
+            .as_ref()
+            .map(|(nodes, edges)| (&nodes[..], &edges[..]))
+    }
+
+    /// Everything a bound `GraphSession` needs from one locked access: the
+    /// shared interaction state (mutable), the last published frame's source
+    /// visibility `(nodes, edges)`, and that frame's revision. One borrow, so
+    /// the revision a session validates is the one whose visibility and state
+    /// it then reads and mutates.
+    pub fn world_parts(
+        &mut self,
+    ) -> (
+        &mut GraphInteractionState,
+        Option<(&[u8], &[u8])>,
+        u64,
+    ) {
+        (
+            &mut self.state,
+            self.visibility
+                .as_ref()
+                .map(|(nodes, edges)| (&nodes[..], &edges[..])),
+            self.applied_revision,
+        )
+    }
+
+    /// Canonical node UUIDs in dense order.
+    pub fn node_ids(&self) -> &[Uuid] {
+        &self.node_ids
+    }
+
+    /// Canonical edge UUIDs in dense order.
+    pub fn edge_ids(&self) -> &[Uuid] {
+        &self.edge_ids
+    }
+
+    /// Persisted endpoint order, used to validate a bound structural replacement.
+    pub fn edge_endpoints(&self) -> impl Iterator<Item = (u64, u64)> + '_ {
+        self.sources.iter().copied().zip(self.targets.iter().copied())
+    }
+
+    pub fn interaction_state(&self) -> &GraphInteractionState {
+        &self.state
+    }
+
+    /// Shared state for a bound `GraphSession`. The session validates every
+    /// identity against the planes it proved equal at bind time.
+    pub fn interaction_state_mut(&mut self) -> &mut GraphInteractionState {
+        &mut self.state
+    }
+
     /// Replace persistent selection atomically after validating every UUID.
+    /// More than `MAX_GRAPH_SELECTION_REFS` identities is `SelectionTooLarge`.
     pub fn set_selection(
         &mut self,
         node_ids: impl IntoIterator<Item = Uuid>,
@@ -262,8 +318,16 @@ impl TemporalGraph {
         {
             return Err(TemporalError::InvalidArgument);
         }
-        self.selected_nodes = nodes;
-        self.selected_edges = edges;
+        self.state
+            .select(
+                SelectMode::Replace,
+                &ElementSet {
+                    nodes,
+                    edges,
+                    ..ElementSet::default()
+                },
+            )
+            .map_err(|_| TemporalError::SelectionTooLarge)?;
         Ok(())
     }
 
@@ -276,7 +340,7 @@ impl TemporalGraph {
         if !valid {
             return Err(TemporalError::InvalidArgument);
         }
-        self.focused = focused;
+        self.state.set_focus(focused.map(Focus::Entity));
         Ok(())
     }
 
@@ -288,7 +352,7 @@ impl TemporalGraph {
         if nodes.iter().any(|id| !self.node_dense.contains_key(id)) {
             return Err(TemporalError::InvalidArgument);
         }
-        self.pinned_nodes = nodes;
+        self.state.set_pinned(nodes);
         Ok(())
     }
 
@@ -357,22 +421,24 @@ impl TemporalGraph {
         let node_state = visible_node_state(
             &self.node_ids,
             &node_visibility,
-            &self.selected_nodes,
-            &self.pinned_nodes,
+            &self.state.selection().nodes,
+            self.state.pinned_nodes(),
             cancel,
         )?;
         let edge_state = visible_edge_state(
             &self.edge_ids,
             &edge_visibility,
-            &self.selected_edges,
+            &self.state.selection().edges,
             cancel,
         )?;
-        let focused_visible = self.focused.filter(|entity| match entity {
+        let focused = self.state.focused_entity();
+        let focused_visible = focused.filter(|entity| match entity {
             GraphEntity::Node(id) => node_visibility[self.node_dense[id]] == 1,
             GraphEntity::Edge(id) => edge_visibility[self.edge_dense[id]] == 1,
         });
         cancel.publish_if_active(|| {
             self.applied_revision = revision;
+            self.visibility = Some((node_visibility.clone(), edge_visibility.clone()));
             TemporalGraphFrame {
                 graph_token: self.graph_token,
                 revision,
@@ -389,7 +455,7 @@ impl TemporalGraph {
                 pinned_visible_node_ids: node_state.pinned_visible,
                 selected_node_ids: node_state.selected,
                 selected_edge_ids: edge_state.selected,
-                focused: self.focused,
+                focused,
                 pinned_node_ids: node_state.pinned,
             }
         })
@@ -784,5 +850,34 @@ mod tests {
             second.freeze(&first_frame).unwrap_err(),
             TemporalError::InvalidArgument
         );
+    }
+
+    #[test]
+    fn selection_over_the_cap_is_rejected_without_changing_the_graph() {
+        use crate::graph_interaction_state::MAX_GRAPH_SELECTION_REFS;
+        let uuid = |i: usize| {
+            let mut out = [0u8; 16];
+            out[..8].copy_from_slice(&(i as u64 + 1).to_le_bytes());
+            out
+        };
+        let nodes: Vec<Uuid> = (0..=MAX_GRAPH_SELECTION_REFS).map(uuid).collect();
+        let graph = GraphProjection::new(&nodes, &[], &[], &[], None, true).unwrap();
+        let mut temporal = TemporalGraph::bind(
+            &graph,
+            TemporalBindingInput::default(),
+            TemporalBindingInput::default(),
+        )
+        .unwrap();
+        temporal
+            .set_selection(nodes[..MAX_GRAPH_SELECTION_REFS].iter().copied(), [])
+            .unwrap();
+        let before = temporal.interaction_state().clone();
+        assert_eq!(
+            temporal
+                .set_selection(nodes.iter().copied(), [])
+                .unwrap_err(),
+            TemporalError::SelectionTooLarge
+        );
+        assert_eq!(temporal.interaction_state(), &before);
     }
 }

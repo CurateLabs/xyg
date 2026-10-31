@@ -16,11 +16,14 @@ use super::recognize::{recognize, Recognized};
 use super::request::{self, ExtraPolicy, LayerRequest, MissingPolicy, Request};
 use super::{GfError, GfResult, Uuid, UuidKey, NIL_UUID};
 use crate::arrow_ipc::{read_table, DataType, Table};
+use crate::graph::COSE_NO_PARENT;
 use crate::graph_style::{semantic_palette, FLAG_DISABLED, FLAG_SELECTED, THEME_DARK, THEME_LIGHT};
 
 /// Version of the composition semantics carried by `XYGF` documents. Bumps
-/// when a plane's meaning changes; added sections do not bump it.
-pub const COMPOSITION_VERSION: u32 = 1;
+/// when a plane's meaning changes; added sections do not bump it, except that
+/// version 2 makes the document the single carrier of the compound hierarchy
+/// (`node.parent`, `node.parent.valid`).
+pub const COMPOSITION_VERSION: u32 = 2;
 /// Absent row / index sentinel in u64 planes.
 pub const NONE_U64: u64 = u64::MAX;
 /// Absent layer sentinel in u32 planes.
@@ -140,6 +143,47 @@ struct Planes<'b> {
     layers: Vec<LayerOut>,
 }
 
+/// Default relationship-type label priority: below every node caption (0.0),
+/// so the interactive mark shows types only once captions fit.
+const DEFAULT_EDGE_LABEL_PRIORITY: f64 = -1.0;
+
+/// Caption of a node with no name-like property: the last eight hex digits of
+/// its UUID (the random tail of a UUIDv7; its leading digits are a timestamp).
+fn short_identity(id: &Uuid) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut text = String::with_capacity(8);
+    for &byte in &id[12..] {
+        text.push(char::from(HEX[usize::from(byte >> 4)]));
+        text.push(char::from(HEX[usize::from(byte & 15)]));
+    }
+    text
+}
+
+/// Group sizes → class codes by rank: the six largest groups get codes 1..=6
+/// and the rest share code 7, unless at most seven groups exist. Equal sizes
+/// rank by `earlier` (ascending key). Returns one code per group and whether
+/// the shared code is in use.
+fn rank_codes(sizes: &[u64], earlier: &dyn Fn(usize, usize) -> bool) -> (Vec<u8>, bool) {
+    let bucket = sizes.len() > GROUP_CODES;
+    let named = if bucket { GROUP_CODES - 1 } else { sizes.len() };
+    let mut codes = vec![GROUP_CODES as u8; sizes.len()];
+    // Code 7 is both the unassigned bucket and the last possible rank, so
+    // previously assigned ranks are distinguishable without a second vector.
+    for rank in 0..named {
+        let mut best = usize::MAX;
+        for group in 0..sizes.len() {
+            let wins = best == usize::MAX
+                || sizes[group] > sizes[best]
+                || (sizes[group] == sizes[best] && earlier(group, best));
+            if codes[group] == GROUP_CODES as u8 && wins {
+                best = group;
+            }
+        }
+        codes[best] = rank as u8 + 1;
+    }
+    (codes, bucket)
+}
+
 pub(super) fn layer_error(code: &'static str, layer: usize, message: String) -> GfError {
     GfError::new(code, message).in_layer(layer)
 }
@@ -206,6 +250,77 @@ impl<'b> Planes<'b> {
 
     fn legend(&mut self, side: u8, field: u8, value: u8, text: String) {
         self.legend.entry((side, field, value)).or_insert(text);
+    }
+
+    /// The property-graph default view of a composition with no result layer
+    /// (spec §4.4a): nodes classed by first label with a label legend,
+    /// captions that fall back to a short identity, arrowheads on directed
+    /// graphs (edge status 1), and relationship types as low-priority edge
+    /// labels (the interactive mark zoom-gates them).
+    fn default_view(&mut self) {
+        let base = self.base;
+        let mut index: HashMap<&str, usize> = HashMap::new();
+        let mut labels: Vec<&str> = Vec::new();
+        let mut counts: Vec<u64> = Vec::new();
+        let mut unlabeled = 0u64;
+        for kind in &base.node_type {
+            match kind.as_deref().filter(|kind| !kind.is_empty()) {
+                Some(kind) => {
+                    let group = *index.entry(kind).or_insert_with(|| {
+                        labels.push(kind);
+                        counts.push(0);
+                        labels.len() - 1
+                    });
+                    counts[group] += 1;
+                }
+                None => unlabeled += 1,
+            }
+        }
+        let labeled = !labels.is_empty();
+        let (codes, bucket) = rank_codes(&counts, &|a, b| labels[a] < labels[b]);
+        let mut others = 0u64;
+        for (&label, &code) in labels.iter().zip(&codes) {
+            if bucket && code == GROUP_CODES as u8 {
+                others += 1;
+            } else {
+                self.legend(LEGEND_NODE, 0, code, label.to_owned());
+            }
+        }
+        if others > 0 {
+            self.legend(
+                LEGEND_NODE,
+                0,
+                GROUP_CODES as u8,
+                format!("other labels ({others})"),
+            );
+        }
+        if labeled && unlabeled > 0 {
+            self.legend(LEGEND_NODE, 0, 0, "no label".into());
+        }
+        self.decide("GF_COMPOSE_GROUPS_BUCKETED", None, others);
+        let mut captioned = 0u64;
+        for (node, kind) in base.node_type.iter().enumerate() {
+            if let Some(&group) = kind.as_deref().and_then(|k| index.get(k)) {
+                self.node_class[node] = codes[group];
+            }
+            if self.node_label[node].is_none() {
+                self.node_label[node] = Some(short_identity(&base.node_uuid[node]));
+                captioned += 1;
+            }
+        }
+        self.decide("GF_COMPOSE_CAPTION_IDENTITY", None, captioned);
+        // Direction rides the edge status plane like every directional overlay
+        // (status 1 resolves to an arrowhead in the graph mark and the Scene).
+        if base.directed && !base.edge_uuid.is_empty() {
+            self.edge_status.fill(1);
+            self.legend(LEGEND_EDGE, 2, 1, "directed relationship".into());
+        }
+        for (edge, kind) in base.edge_type.iter().enumerate() {
+            if kind.is_some() {
+                self.edge_label[edge] = kind.clone();
+                self.edge_label_priority[edge] = DEFAULT_EDGE_LABEL_PRIORITY;
+            }
+        }
     }
 
     // -- joins ---------------------------------------------------------------
@@ -368,28 +483,20 @@ impl<'b> Planes<'b> {
                 None => nulls += 1,
             }
         }
-        let mut ranked: Vec<(i64, u64)> = sizes.into_iter().collect();
-        ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-        let bucket = ranked.len() > GROUP_CODES;
-        let named = if bucket {
-            GROUP_CODES - 1
-        } else {
-            ranked.len()
-        };
-        let mut codes: HashMap<i64, u8> = HashMap::with_capacity(ranked.len());
-        for (rank, &(group, _)) in ranked.iter().enumerate() {
-            let code = if rank < named {
-                rank as u8 + 1
-            } else {
-                GROUP_CODES as u8
-            };
+        let keys: Vec<i64> = sizes.keys().copied().collect();
+        let counts: Vec<u64> = sizes.values().copied().collect();
+        let (ranked, bucket) = rank_codes(&counts, &|a, b| a < b);
+        let mut codes: HashMap<i64, u8> = HashMap::with_capacity(keys.len());
+        let mut others = 0u64;
+        for (&group, &code) in keys.iter().zip(&ranked) {
             codes.insert(group, code);
-            if rank < named {
+            if bucket && code == GROUP_CODES as u8 {
+                others += 1;
+            } else {
                 self.legend(side, 0, code, format!("{noun} {group}"));
             }
         }
         if bucket {
-            let others = (ranked.len() - named) as u64;
             self.legend(
                 side,
                 0,
@@ -1447,12 +1554,51 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
             }
         }
     }
+    if layers.is_empty() {
+        planes.default_view();
+    }
     planes.select(&request.selected);
     let document = encode_graph(&planes, request, &layers);
     match &request.render {
         None => Ok(document),
         Some(render) => with_scene(document, render),
     }
+}
+
+/// Nearest *visible proper* ancestor of every node ([`COSE_NO_PARENT`] when
+/// none), for a parent forest. Memoized along each climbed chain, so a shared
+/// hidden ancestry is walked once: O(n) instead of O(n x depth). Also returns
+/// the number of parent links followed (at most `2n`), the work the memoization
+/// bounds.
+pub(super) fn nearest_visible_ancestors(parent: &[u64], visible: &[bool]) -> (Vec<u64>, u64) {
+    // Both sentinels are outside the dense node index range. Keep unresolved
+    // distinct from a resolved root, which has no visible proper ancestor.
+    const UNRESOLVED: u64 = COSE_NO_PARENT - 1;
+    let mut ancestor = vec![UNRESOLVED; parent.len()];
+    let mut links = 0u64;
+    for start in 0..parent.len() {
+        let mut node = start;
+        // Climb through hidden parents until a node whose answer is known.
+        while ancestor[node] == UNRESOLVED {
+            links += 1;
+            let up = parent[node];
+            if up == COSE_NO_PARENT || visible[up as usize] {
+                ancestor[node] = up;
+                break;
+            }
+            node = up as usize;
+        }
+        let answer = ancestor[node];
+        // Retrace the same chain to memoize its answer. Each unresolved node
+        // is visited at most once in each walk; no chain scratch is needed.
+        node = start;
+        while ancestor[node] == UNRESOLVED {
+            links += 1;
+            ancestor[node] = answer;
+            node = parent[node] as usize;
+        }
+    }
+    (ancestor, links)
 }
 
 /// Append the direct-tier canonical Scene (spec §6.3) to a graph document.
@@ -1574,6 +1720,28 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
         0,
         &pick_f64(&planes.node_priority, &nodes),
     );
+
+    // Compound hierarchy in composed node indices. A child whose parent was
+    // hidden attaches to its nearest visible ancestor (counted, never silent).
+    let mut reparented = 0u64;
+    if !base.node_parent.is_empty() {
+        let visible: Vec<bool> = remap.iter().map(|&dense| dense != NONE_U64).collect();
+        let (ancestor, _) = nearest_visible_ancestors(&base.node_parent, &visible);
+        let mut parent = Vec::with_capacity(nodes.len());
+        let mut valid = Vec::with_capacity(nodes.len());
+        for &node in &nodes {
+            let up = ancestor[node];
+            reparented += u64::from(up != base.node_parent[node]);
+            valid.push(u8::from(up != COSE_NO_PARENT));
+            parent.push(if up == COSE_NO_PARENT {
+                NONE_U32
+            } else {
+                remap[up as usize] as u32
+            });
+        }
+        out.u32s("node.parent", 0, &parent);
+        out.u8s("node.parent.valid", 0, &valid);
+    }
 
     let (mut sources, mut targets) = (
         Vec::with_capacity(edges.len()),
@@ -1771,6 +1939,13 @@ fn encode_graph(planes: &Planes<'_>, request: &Request<'_>, layers: &[Layer<'_>]
             code: "GF_COMPOSE_PATHS_HIDDEN",
             layer: None,
             count: hidden_paths,
+        });
+    }
+    if reparented > 0 {
+        decisions.push(Decision {
+            code: "GF_COMPOSE_PARENT_REPARENTED",
+            layer: None,
+            count: reparented,
         });
     }
     if cascaded > 0 {

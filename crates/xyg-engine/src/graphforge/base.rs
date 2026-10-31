@@ -12,21 +12,35 @@
 //! UUIDs are merged; a relationship seen twice must name the same endpoints.
 //! Merges are counted, never silent. The canonical graph is never mutated by
 //! any composition layer.
+//!
+//! A flat node table may carry an optional `parent_uuid` column (the compound
+//! hierarchy; same name as the Python `GraphData` mapping default). Parents
+//! resolve through the shared [`resolve_parent_uuid`] and must form a forest:
+//! unknown parents, self-parents, and cycles fail the whole build.
 
 use super::columns::{texts, uuids};
 use super::{uuid_map, GfError, GfResult, Uuid, UuidKey, UuidMap, NIL_UUID};
 use crate::arrow_ipc::{Column, DataType, Table};
+use crate::graph::COSE_NO_PARENT;
+use crate::projection::{
+    resolve_parent_uuid, validate_parent_forest, ParentForestError, ProjectionError,
+};
 
 /// Hard bounds on the canonical base graph.
 pub const MAX_BASE_NODES: usize = 20_000_000;
 pub const MAX_BASE_EDGES: usize = 50_000_000;
+/// Name-like node properties, in caption order.
+pub const CAPTION_PROPERTIES: [&str; 3] = ["name", "title", "label"];
 /// Per-label text bound (display labels are truncated far earlier).
 pub const MAX_LABEL_BYTES: usize = 1024;
+/// Optional flat-node-table column naming each node's compound parent.
+pub const PARENT_FIELD: &str = "parent_uuid";
 
 #[derive(Debug, Default)]
 pub struct BaseGraph {
     pub node_uuid: Vec<Uuid>,
-    /// Display name (`name` property / column), bounded.
+    /// Display name: the first non-empty of `name`, `title`, `label`
+    /// ([`CAPTION_PROPERTIES`]), bounded.
     pub node_name: Vec<Option<String>>,
     /// First GraphForge label (`labels[0]`).
     pub node_type: Vec<Option<String>>,
@@ -40,6 +54,9 @@ pub struct BaseGraph {
     pub directed: bool,
     /// Rows that repeated an already-collected entity.
     pub merged_entities: u64,
+    /// Compound parent per node (dense base index, [`COSE_NO_PARENT`] for
+    /// roots). Empty when no node table carried `parent_uuid`.
+    pub node_parent: Vec<u64>,
 }
 
 #[derive(Default)]
@@ -48,6 +65,12 @@ struct Collector {
     /// `(edge uuid, source uuid, target uuid, type)` resolved after all nodes.
     pending_edges: Vec<(Uuid, Uuid, Uuid, Option<String>)>,
     pending_index: UuidMap,
+    /// Declared parent per collected node, parallel to `graph.node_uuid`:
+    /// `None` no `parent_uuid` row seen, `Some(None)` declared root (null),
+    /// `Some(Some(p))` declared under `p`.
+    pending_parents: Vec<Option<Option<Uuid>>>,
+    /// Whether any node table carried a `parent_uuid` column.
+    has_parents: bool,
 }
 
 fn bounded_label(text: Option<&str>) -> Option<String> {
@@ -98,9 +121,27 @@ impl Collector {
                 self.graph.node_uuid.push(id);
                 self.graph.node_name.push(bounded_label(name));
                 self.graph.node_type.push(bounded_label(kind));
+                self.pending_parents.push(None);
             }
         }
         Ok(())
+    }
+
+    /// Record a `parent_uuid` row for the already-collected node `id` (`None`
+    /// is an explicit root). Repeated rows must declare the same thing: a root
+    /// and a parented declaration conflict, in either order.
+    fn parent(&mut self, id: Uuid, parent: Option<Uuid>) -> GfResult<()> {
+        let dense = self.graph.node_index[&UuidKey(id)];
+        match self.pending_parents[dense] {
+            Some(existing) if existing != parent => Err(GfError::new(
+                "GF_BASE_PARENT_CONFLICT",
+                "a node UUID appears with two different parent declarations",
+            )),
+            _ => {
+                self.pending_parents[dense] = Some(parent);
+                Ok(())
+            }
+        }
     }
 
     fn edge(&mut self, id: Uuid, source: Uuid, target: Uuid, kind: Option<&str>) -> GfResult<()> {
@@ -138,6 +179,7 @@ impl Collector {
     }
 
     /// Optional text child: absent or non-text columns yield no labels.
+    #[inline(never)]
     fn optional_text<'a>(column: Option<Column<'_, 'a>>, len: usize) -> Vec<Option<&'a str>> {
         match column {
             Some(column) if matches!(column.field.data_type, DataType::Utf8 { .. }) => {
@@ -145,6 +187,28 @@ impl Collector {
             }
             _ => vec![None; len],
         }
+    }
+
+    /// Per row, the first non-empty text among [`CAPTION_PROPERTIES`]
+    /// (`columns` in that order).
+    fn captions<'a>(
+        columns: [Option<Column<'_, 'a>>; CAPTION_PROPERTIES.len()],
+        len: usize,
+    ) -> Vec<Option<&'a str>> {
+        // Merge one candidate at a time, sharing the text decoder instead of
+        // materializing an array of three vectors (also bounds WASM code size).
+        let mut captions = vec![None; len];
+        for column in columns.into_iter().flatten() {
+            for (caption, text) in captions
+                .iter_mut()
+                .zip(Self::optional_text(Some(column), len))
+            {
+                if caption.is_none() {
+                    *caption = text.filter(|text| !text.is_empty());
+                }
+            }
+        }
+        captions
     }
 
     /// First item of an optional `labels: list<utf8>` child.
@@ -175,7 +239,7 @@ impl Collector {
 
     fn node_struct(&mut self, column: &Column<'_, '_>) -> GfResult<()> {
         let ids = uuids(&column.child("node_uuid").unwrap(), true)?;
-        let names = Self::optional_text(column.child("name"), ids.len());
+        let names = Self::captions(CAPTION_PROPERTIES.map(|name| column.child(name)), ids.len());
         let kinds = Self::first_labels(column.child("labels"), ids.len());
         for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
             self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
@@ -275,13 +339,21 @@ impl Collector {
         if names.contains(&"node_uuid") {
             // Flat node table.
             let ids = uuids(&table.column("node_uuid").unwrap(), true)?;
-            let names = Self::optional_text(
-                table.column("label").or_else(|| table.column("name")),
-                ids.len(),
-            );
+            let names = Self::captions(CAPTION_PROPERTIES.map(|name| table.column(name)), ids.len());
             let kinds = Self::first_labels(table.column("labels"), ids.len());
-            for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
-                self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
+            let parents = match table.column(PARENT_FIELD) {
+                Some(column) => {
+                    self.has_parents = true;
+                    Some(uuids(&column, true)?)
+                }
+                None => None,
+            };
+            for (row, ((id, name), kind)) in ids.into_iter().zip(names).zip(kinds).enumerate() {
+                let id = id.ok_or_else(|| null_identity("node_uuid"))?;
+                self.node(id, name, kind)?;
+                if let Some(parents) = &parents {
+                    self.parent(id, parents[row])?;
+                }
             }
             return Ok(());
         }
@@ -295,6 +367,50 @@ impl Collector {
                 "base table carries no GraphForge node or relationship identity",
             ));
         }
+        Ok(())
+    }
+
+    /// Resolve and validate the compound hierarchy (all-or-nothing).
+    fn resolve_hierarchy(&mut self) -> GfResult<()> {
+        if !self.has_parents {
+            return Ok(());
+        }
+        let mut parents = vec![0; self.pending_parents.len()];
+        let mut validity = vec![0; self.pending_parents.len()];
+        for (i, declaration) in self.pending_parents.iter().enumerate() {
+            if let Some(id) = declaration.flatten() {
+                parents[i] = resolve_parent_uuid(&id, |id| {
+                    self.graph.node_index.get(&UuidKey(*id)).map(|&i| i as u64)
+                })
+                .map_err(|error| match error {
+                    ProjectionError::MissingEndpoint => GfError::new(
+                        "GF_BASE_PARENT_UNKNOWN",
+                        "a node names a parent that is absent from the base nodes",
+                    ),
+                    ProjectionError::MalformedUuid => null_identity(PARENT_FIELD),
+                    _ => GfError::new(
+                        "GF_COMPOSE_REQUEST_INVALID",
+                        "base parent planes are malformed",
+                    ),
+                })?;
+                validity[i] = 1;
+            }
+        }
+        validate_parent_forest(&parents, &validity).map_err(|error| match error {
+            ParentForestError::SelfParent(_) => {
+                GfError::new("GF_BASE_PARENT_SELF", "a node names itself as its parent")
+            }
+            ParentForestError::Cycle(_) => GfError::new(
+                "GF_BASE_PARENT_CYCLE",
+                "the base node parents contain a cycle",
+            ),
+        })?;
+        for (parent, &valid) in parents.iter_mut().zip(&validity) {
+            if valid != 1 {
+                *parent = COSE_NO_PARENT;
+            }
+        }
+        self.graph.node_parent = parents;
         Ok(())
     }
 
@@ -327,6 +443,7 @@ impl Collector {
         if self.graph.node_uuid.is_empty() {
             return Err(GfError::new("GF_BASE_EMPTY", "the base graph has no nodes"));
         }
+        self.resolve_hierarchy()?;
         Ok(self.graph)
     }
 }
@@ -368,6 +485,8 @@ pub fn build(
         },
         pending_edges: Vec::new(),
         pending_index: uuid_map(0),
+        pending_parents: Vec::new(),
+        has_parents: false,
     };
     if let Some(planes) = planes {
         if planes.edge_source.len() != planes.edge_uuid.len()
@@ -475,6 +594,22 @@ mod tests {
     }
 
     #[test]
+    fn flat_node_captions_prefer_name_over_label() {
+        // `captions_nodes.arrow` carries both columns (#934): `name` wins, and
+        // a row without one falls through to `label`.
+        let nodes = std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/captions_nodes.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let graph = build(&[read_table(&nodes).unwrap()], None, true).unwrap();
+        assert_eq!(
+            graph.node_name,
+            [Some("Name A".to_owned()), Some("Label B".to_owned())]
+        );
+    }
+
+    #[test]
     fn conflicting_relationship_endpoints_fail() {
         let a = [1; 16];
         let b = [2; 16];
@@ -489,5 +624,74 @@ mod tests {
             build(&[], Some(planes), true).unwrap_err().code,
             "GF_BASE_EDGE_CONFLICT"
         );
+    }
+
+    fn hierarchy_base(nodes: &str) -> GfResult<BaseGraph> {
+        let nodes = std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/{nodes}.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let edges = load("base-dag-edges");
+        let tables = [read_table(&nodes).unwrap(), read_table(&edges).unwrap()];
+        build(&tables, None, true)
+    }
+
+    #[test]
+    fn parent_uuid_column_resolves_to_a_dense_forest() {
+        let graph = hierarchy_base("hierarchy_dag_nodes").unwrap();
+        assert_eq!(graph.node_parent, [COSE_NO_PARENT, 0, 1, COSE_NO_PARENT]);
+        // Tables without the column carry no hierarchy plane at all.
+        let (nodes, edges) = (load("base-dag-nodes"), load("base-dag-edges"));
+        let tables = [read_table(&nodes).unwrap(), read_table(&edges).unwrap()];
+        let plain = build(&tables, None, true).unwrap();
+        assert!(plain.node_parent.is_empty());
+    }
+
+    #[test]
+    fn invalid_hierarchies_fail_atomically_with_stable_codes() {
+        for (fixture, code) in [
+            (
+                "hierarchy_dag_nodes_unknown_parent",
+                "GF_BASE_PARENT_UNKNOWN",
+            ),
+            ("hierarchy_dag_nodes_self_parent", "GF_BASE_PARENT_SELF"),
+            ("hierarchy_dag_nodes_cycle", "GF_BASE_PARENT_CYCLE"),
+        ] {
+            assert_eq!(hierarchy_base(fixture).unwrap_err().code, code, "{fixture}");
+        }
+    }
+
+    #[test]
+    fn a_root_and_a_parent_declaration_for_one_node_conflict_in_either_order() {
+        let read_fixture = |name: &str| {
+            std::fs::read(format!(
+                "{}/../../tests/fixtures/graphforge/{name}.arrow",
+                env!("CARGO_MANIFEST_DIR")
+            ))
+            .unwrap()
+        };
+        let (roots, forest, edges) = (
+            read_fixture("hierarchy_dag_roots"),
+            read_fixture("hierarchy_dag_nodes"),
+            load("base-dag-edges"),
+        );
+        let build_order = |first: &[u8], second: &[u8]| {
+            let tables = [
+                read_table(first).unwrap(),
+                read_table(second).unwrap(),
+                read_table(&edges).unwrap(),
+            ];
+            build(&tables, None, true)
+        };
+        for (first, second) in [(&roots, &forest), (&forest, &roots)] {
+            assert_eq!(
+                build_order(first, second).unwrap_err().code,
+                "GF_BASE_PARENT_CONFLICT"
+            );
+        }
+        // Agreeing repeats are not a conflict: null twice is the same root.
+        let graph = build_order(&roots, &roots).unwrap();
+        assert_eq!(graph.node_parent, [COSE_NO_PARENT; 4]);
     }
 }

@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const bytes=fs.readFileSync('target/task-tmp/s2-recovery/optimized.wasm');
+const manifest=JSON.parse(fs.readFileSync('spec/wasm/abi.json','utf8'));
+const module=await WebAssembly.compile(bytes);
+assert.deepEqual(WebAssembly.Module.imports(module),[]);
+const exports=new Set(WebAssembly.Module.exports(module).map(x=>x.name));
+for (const item of manifest.exports) assert(exports.has(item.name),item.name);
+assert.equal(WebAssembly.Module.exports(module).filter(x=>x.kind==='function').length, manifest.exports.length);
+const instance=await WebAssembly.instantiate(module,{});
+assert.equal(instance.exports.xyg_wasm_abi_version(),manifest.abi_version);
+assert.equal(instance.exports.xyg_wasm_scene_version(),manifest.scene_version);
+console.log(JSON.stringify({imports:0,exports:exports.size,wasmAbi:manifest.abi_version,scene:manifest.scene_version,manifestExports:manifest.exports.length}));

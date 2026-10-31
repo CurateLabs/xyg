@@ -1,0 +1,17 @@
+{
+  "name": "baseline-wasm-build",
+  "command": [
+    "cargo",
+    "build",
+    "-p",
+    "xyg-wasm",
+    "--release",
+    "--target",
+    "wasm32-unknown-unknown"
+  ],
+  "exitCode": 0,
+  "seconds": 66.141,
+  "rawSha256": "2000e42564d89bb0ad5b2ff3ba50a1a8aa39d1ae6dc26caaabe563baa5e944bb",
+  "log": "baseline-wasm-build.txt.gz",
+  "gzipSha256": "d7c37665552b291cb8a61f90d00f6d8f921f1c42766a40b6226443a4caa22ea7"
+}

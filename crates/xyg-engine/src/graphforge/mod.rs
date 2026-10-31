@@ -15,7 +15,10 @@
 pub mod base;
 pub mod columns;
 pub mod compose;
+pub mod composed;
 pub mod container;
+pub mod identity;
+pub mod interaction;
 pub mod ledger;
 pub mod recognize;
 pub mod request;

@@ -79,7 +79,7 @@ def test_python_reproduces_the_cross_host_bytes_for_every_case() -> None:
         assert hashlib.sha256(document).hexdigest() == case["document_sha256"], case["name"]
 
 
-def test_render_document_refresh_preserves_historical_scene_and_ledger_versions() -> None:
+def test_arrowhead_fix_changes_render_geometry_beyond_scene_and_ledger_versions() -> None:
     gen = _generator()
     case = next(case for case in gen.cases() if case["name"] == "multi-layer + render + select")
     document = bytearray(compose_graphforge_request(gen.build_request(case)))
@@ -91,7 +91,7 @@ def test_render_document_refresh_preserves_historical_scene_and_ledger_versions(
             "<IIIIQQQ", document, 32 + i * 40
         )
         name = document[names + name_offset : names + name_offset + name_length].decode()
-        if name == "ledger.version":
+        if name in {"composition.version", "ledger.version"}:
             assert struct.unpack_from("<I", document, offset)[0] == 2
             struct.pack_into("<I", document, offset, 1)
             changed.add(name)
@@ -104,11 +104,13 @@ def test_render_document_refresh_preserves_historical_scene_and_ledger_versions(
             assert struct.unpack_from("<I", document, offset + 4)[0] == _native.scene_version()
             struct.pack_into("<I", document, offset + 4, 31)
             changed.add(name)
-    assert changed == {"ledger.version", "scene.version", "scene.canonical"}
+    assert changed == {"composition.version", "ledger.version", "scene.version", "scene.canonical"}
     refresh = json.loads((ROOT / "tests/fixtures/graphforge/scene32_refresh.json").read_text())
+    # #934 moves heads to node outlines. Restoring old version words cannot
+    # restore the historical geometry; current bytes are pinned above.
     assert (
         hashlib.sha256(document).hexdigest()
-        == refresh["graphforge_render_previous_document_sha256"]
+        != refresh["graphforge_render_previous_document_sha256"]
     )
 
 
@@ -252,6 +254,40 @@ def test_ledger_and_render_scene() -> None:
     )
     assert c.scene is not None and c.scene["node_stable_id_base"] == 2**32
     assert len(c.scene["x"]) == c.nodes.count
+
+
+def test_zero_layer_request_composes_the_property_graph_defaults() -> None:
+    render = {"width": 480, "height": 320, "theme": "light"}
+    c = xyg.compose_graphforge(base=_base("property"), render=render)
+    assert c.layers == []
+    assert (c.nodes.count, c.edges.count) == (5, 5)
+    # Captions: name, then title, then label, then a short identity.
+    assert list(c.nodes.label) == ["ada", "Prof", "Acme", "00000004", "00000005"]
+    assert list(c.nodes.class_) == [2, 2, 1, 1, 0]
+    assert [row["text"] for row in c.legend["rows"]] == [
+        "no label",
+        "Company",
+        "Person",
+        "directed relationship",
+    ]
+    # Relationship types ride the label plane below every caption.
+    assert list(c.edges.label) == list(c.edges.type)
+    assert c.scene is not None and len(c.scene["x"]) == 5
+    # The same graph and Version compose to the same bytes.
+    request = xyg.encode_graphforge_request(base=_base("property"), render=render)
+    assert compose_graphforge_request(request) == compose_graphforge_request(request)
+
+
+def test_directed_property_graph_keeps_its_arrowheads_in_the_interactive_mark() -> None:
+    def head_bits(directed: bool) -> set[int]:
+        c = xyg.compose_graphforge(base={**_base("property"), "directed": directed})
+        fig = xyg.graphforge_chart(c).figure()
+        edges = fig.traces[fig._graph_meta[0]["edge_trace"]]
+        return {int(flag) & 0x40 for flag in edges.style_channels["edge_ends"].values[:, 6]}
+
+    # Rust's arrow policy (edge status) replaces the directed default.
+    assert head_bits(True) == {0x40}
+    assert head_bits(False) == {0}
 
 
 def test_large_parallel_coordinates_keep_every_segment_identity() -> None:

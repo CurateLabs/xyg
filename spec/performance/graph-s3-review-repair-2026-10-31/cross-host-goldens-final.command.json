@@ -1,0 +1,14 @@
+{
+  "name": "cross-host-goldens-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/gen_graphforge_cross_host.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.246,
+  "rawSha256": "0af9a38471bbdd6191d5f816a90a66603cc8178208e8496734e5b21d37a9d1ae",
+  "log": "cross-host-goldens-final.txt.gz",
+  "gzipSha256": "bcb53cd192f627e9c747532db69527d05786546031ea92778e58af6648e8f06f"
+}

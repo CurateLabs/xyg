@@ -1,0 +1,201 @@
+{
+  "schema": 1,
+  "scope": "S2 minimal explicit functionality budget and real packaging; not milestone or release acceptance",
+  "environment": {
+    "python": "3.12.15",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "node": "v22.23.4",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "browser": "156.0.8078.4",
+    "profile": "Unchanged Rust1.96.0 release O3/fat LTO/codegen1/strip; inline100; Binaryen132 -O3 --all-features"
+  },
+  "artifact": {
+    "node": "v22.23.4",
+    "optimizedBytes": 1547779,
+    "gzip6Bytes": 640527,
+    "optimizedSha256": "27b922cb47294ebf8585a54be4d86d3fece91772a0bc7df432a34385fb26b678",
+    "gzip6Sha256": "c52977d626d8d7d048e964c1cf61d0bf0d0712b8f209f08694613f9a7c0aea96",
+    "previousRawGate": 1547264,
+    "previousGzip6Gate": 640000,
+    "rawGate": 1548288,
+    "gzip6Gate": 641024,
+    "rawHeadroom": 509,
+    "gzip6Headroom": 497
+  },
+  "sourceManifestSha256": "cb321a22bacfd7212aa410352875ed0e6d6fa7490da81b7bb8b6fbafed9836e5",
+  "packagedManifest": {
+    "file": "packages/xy-client/dist/xyg-wasm.manifest.json",
+    "sha256": "433933409df315fb4c3fc2cc624c0badea5fdd342884d6b65daf3fc5fd60e56e",
+    "data": {
+      "schema_version": 1,
+      "artifact": "xyg-wasm.wasm",
+      "sha256": "27b922cb47294ebf8585a54be4d86d3fece91772a0bc7df432a34385fb26b678",
+      "bytes": 1547779,
+      "abi_version": 34,
+      "scene_version": 34,
+      "painter_version": 17
+    }
+  },
+  "commands": [
+    {
+      "name": "wasm-build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "exitCode": 0,
+      "seconds": 0.307,
+      "rawBytes": 3478,
+      "rawSha256": "85a4dff1b32002fd622259fe19899e1b89f8286cd06c1c805d1bae0e93b5bf44",
+      "gzipBytes": 915,
+      "gzipSha256": "1a575eacd404013ae0c0ef02057b0d94b2d9632a153ac7e28fb3c638f5e449bc"
+    },
+    {
+      "name": "client-build",
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 1.135,
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "gzipBytes": 1056,
+      "gzipSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3"
+    },
+    {
+      "name": "package-wasm",
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 39.749,
+      "rawBytes": 493,
+      "rawSha256": "2b15cbf02860b11230ce2f78cb063c26dcdbae028c93f1ef3e6fb3df855857a7",
+      "gzipBytes": 199,
+      "gzipSha256": "3df5a7adfbc8cd25bee932bc9f102819b60d8dbcaafb3f21d68c3b1b1bccf8f6"
+    },
+    {
+      "name": "assets",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.118,
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "gzipBytes": 104,
+      "gzipSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18"
+    },
+    {
+      "name": "node-tests",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=2",
+        "--test-timeout=20000",
+        "packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+        "packages/xy-node/test/cose-wasm-parity.test.mjs",
+        "packages/xy-node/test/graphforge-cross-host.test.mjs",
+        "packages/xy-node/test/force-worker-lifecycle.test.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 5.915,
+      "rawBytes": 10287,
+      "rawSha256": "96789bc5bc78fa3140df8deceefae2f3667ec434646f3b9a69f90c8c5036742a",
+      "gzipBytes": 1672,
+      "gzipSha256": "4aae4c0e58f20123f4a37e522a880f190f3b75fa10774f9280b33548b6a22e9c"
+    },
+    {
+      "name": "browser-foundation",
+      "command": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 13.921,
+      "rawBytes": 663,
+      "rawSha256": "25c2ac5cf7fae9ebd07b201659dab11584d06394f4a222639491271ecc9b89ad",
+      "gzipBytes": 364,
+      "gzipSha256": "17082c99ff282fcfffe8435a3f5a4accf4d9b47b5794b57aa93c50a48dfa2998"
+    },
+    {
+      "name": "cross-host-golden",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_graphforge_cross_host.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "seconds": 0.18,
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzipBytes": 20,
+      "gzipSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+    },
+    {
+      "name": "abi",
+      "command": [
+        "python3",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "seconds": 1.684,
+      "rawBytes": 42,
+      "rawSha256": "039a0153fd2e38e4ecf2ff9508cd5f90c7289c090e8067e5c2ea7175205efd34",
+      "gzipBytes": 62,
+      "gzipSha256": "97f616fa4a428ff787d472e6dca00eda0c129144cfaeaaa9d2133b9c9c0849d4"
+    },
+    {
+      "name": "inventory-write",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "exitCode": 0,
+      "seconds": 3.934,
+      "rawBytes": 89,
+      "rawSha256": "930079e0a5a07ca00d6934b134a1d048f16b064c43e6ed6a41cd5a15dcce78ea",
+      "gzipBytes": 99,
+      "gzipSha256": "fb9674a33af29d70791e579ecd48b87c311ab0ea6415b43d862cfbd8a0018977"
+    },
+    {
+      "name": "inventory-check",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "seconds": 3.76,
+      "rawBytes": 97,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "gzipBytes": 101,
+      "gzipSha256": "d6eb7efac52a320e8f4fe932c324ec419d3b3723ce3099842fa3ddec6f166280"
+    }
+  ],
+  "browserReportSha256": "e6f30ebc2463540a31fd518f8184bb7f51be9902cb99e7344e989387c08f8c2e",
+  "limitations": [
+    "Local source-dist proof, not final release cohort",
+    "No S2 session WASM ABI, controller, accessibility or host acceptance",
+    "CI must confirm tight package headroom",
+    "Historical failed receipts and diagnostic limitations remain unchanged"
+  ],
+  "sourceMetadataNote": "After validation, the graph-interaction status line was corrected to report passing local packaging; all Rust/client/packager/harness inputs and artifacts remain unchanged."
+}

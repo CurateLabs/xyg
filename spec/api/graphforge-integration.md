@@ -15,6 +15,7 @@ Everything is GraphForge Arrow IPC bytes exactly as the engine returned them
 
 | Input | Where it comes from | Notes |
 |---|---|---|
+| `layers` | zero or more result layers | optional: with a base and no layers XYG composes the default property-graph view (no analytical layer) |
 | `layers[i].result` | the engine result (`g.rank(...)`, `g.cluster(...)`, `g.paths(...)`, `g.analyze(...)`, `g.similar(...)`, `g.find(...)`) | recognized from `graphforge.verb` / `graphforge.algorithm` / `graphforge.algorithm_schema_version` (or `graphforge.search_schema_version`) |
 | `layers[i].intent` | the user's choice among the ledger's intents | required; XYG never picks one (see table below) |
 | `layers[i].resultId`, `layers[i].generation` | `ResultProvenance.resultId`, `.generationUuid` | echoed back on every pick for table ↔ chart linking |
@@ -36,11 +37,34 @@ Intent per XYG disposition (the authoritative document is
 | `composition-required` — `embedding` | `parallel-coordinates`, or `embedding-coordinates` with `coordinates` | full-vector view, or the caller's 2D placement |
 | `table-only` scalars | `table` | canonical columns, text cells |
 | `table-only` categories (conductance, triad/dyad census) | `table` or `bar-chart` | bars in result order |
-| `entity-graph` (Cypher) | — | pass as `base.tables` |
+| `entity-graph` (Cypher) | — | pass as `base.tables` with no `layers`: the default view (label colors and legend, captions, arrowheads when directed, relationship types on hover/selection; design §4.4a) |
 
 Several `graph` layers compose together when they write different channels
 (e.g. PageRank size + community class + spanning-tree overlay + a path);
 two layers writing one channel fail with `GF_COMPOSE_CHANNEL_CONFLICT`.
+
+**Retained interaction sessions (#36).** A `GraphSession` is created from the
+composed `XYGF` document plus session-local inputs only; hosts never pass
+hierarchy (it travels in the document as `node.parent` / `node.parent.valid`,
+resolved from the base node table's `parent_uuid`). The Rust-side `SessionLoad`
+(the `load.*` sections the S4 ABI will carry) is: `x`/`y` f64 positions (both
+or neither; absent positions are the seeded CoSE layout, 300 steps over the
+document hierarchy), `collapsed` u8 per node, `pinned` u8 per node (seeds the
+UUID-keyed pin set), `budgets` `[node_budget, edge_budget]` (default 200,000 /
+500,000), and `seed`. Lengths must equal the node count, positions be finite,
+flags be 0/1, budgets non-zero. At the Direct tier the session's render planes
+are byte-equal to what `layout_render` builds from the same inputs; hosts do not
+run `layout_render` beside a session. Typed S3 sessions add screen-point/brush/lasso selection from the same
+publication, linked exact-identity snapshots and atomic document replacement.
+Replacement preserves surviving UUID state and pins, resets omitted load fields
+to create defaults, and drops derived state on generation/result-id changes.
+Omitted x/y does not persist old positions; retained pin tags anchor at the new
+seeded positions. Explicit x/y plus pinned restores persistence. A bound
+replacement must match its temporal owner's UUID order and persisted endpoints;
+validation and reconciliation share one lock. Admission/degraded limits and
+request-level graph snapshot sequencing are defined in graph-interaction.md
+§2.3–2.4/2.10. Sessions are Rust-only until the ABI slice
+(S4); see [graph-interaction.md](../design/graph-interaction.md).
 
 ## 2. Node host (extension host process)
 
@@ -128,16 +152,29 @@ WASM the `xy:graphforge-select` detail), `xyg.select` host→webview (`{uuids}`:
 recompose with `select`, re-render), `xyg.error` (`{code, layer, field,
 message}`). Details: design §6.4.
 
+**Progressive CoSE (#35).** The WASM Worker (`layoutCose`) and the Node
+`worker_threads` scheduler (`runForceTicks`) run the same Rust kernel as the
+native C ABI. Positions are bitwise-identical to native — seeded and authored
+starts, compound and disconnected graphs, exact and grid tiers
+(`packages/xy-node/test/cose-wasm-parity.test.mjs`; policy: `spec/design/graph-mark.md`
+§4 "CoSE cross-host parity").
+Historical checkpoint-delivery latency and cadence at `cb78c1f4` on 1k–1M
+nodes for Python, Node and the browser Worker (not first paint or current-main
+timing evidence; rendered first paint/interactivity, default Node async
+composition and Python widget/notebook integration via #1015 remain open for
+#35):
+`spec/performance/cose-progressive-ladder-2026-10-20/README.md`.
+
 ## 5. Versions
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 395 | `abiVersion()`, `xyg_abi_version` |
+| Native C ABI | 396 | `abiVersion()`, `xyg_abi_version` |
 | WASM ABI | 34 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 34 | `SCENE_VERSION` |
 | Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |
 | Browser painter binary | 17 | `BROWSER_PAINTER_VERSION` (`XYPB`) |
-| `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
+| `XYGF` composition semantics | 2 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 2 | `composition.ledgerVersion` |
 | GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5: 96 algorithms) |
@@ -152,6 +189,7 @@ message}`). Details: design §6.4.
 | Composition | `GF_COMPOSE_REQUEST_INVALID`, `GF_COMPOSE_VERSION`, `GF_COMPOSE_INTENT_REQUIRED`, `GF_COMPOSE_INTENT_INVALID`, `GF_COMPOSE_INTENT_UNSUPPORTED`, `GF_COMPOSE_INTENT_CONFLICT`, `GF_COMPOSE_BASE_REQUIRED`, `GF_COMPOSE_GENERATION_STALE`, `GF_COMPOSE_GENERATION_MISSING`, `GF_COMPOSE_EXTRA_IDS`, `GF_COMPOSE_MISSING_IDS`, `GF_COMPOSE_DUPLICATE_ID`, `GF_COMPOSE_IDENTITY_KIND`, `GF_COMPOSE_EDGE_ENDPOINT_MISMATCH`, `GF_COMPOSE_CHANNEL_CONFLICT`, `GF_COMPOSE_TOO_LARGE`, `GF_COMPOSE_COORDINATES_REQUIRED`, `GF_COMPOSE_COORDINATES_MISSING`, `GF_COMPOSE_COORDINATES_INVALID` |
 | Scene | `GF_COMPOSE_RENDER_UNSUPPORTED`, `GF_COMPOSE_SCENE_TOO_LARGE`, `GF_COMPOSE_SCENE_INVALID`, `GF_COMPOSE_SCENE_EMPTY` (every node hidden: `renderWasmGraphForge` rejects, the document records the decision) |
 | Document decoding | `GF_COMPOSE_DOCUMENT_INVALID` (a supplied document is malformed or its sections disagree on shape) |
+| Interaction session (`InteractionStatus::code`) | `GF_INTERACTION_STALE` (destination stamp, aggregate ref, or walk against a render that is no longer current; nothing changed), `GF_INTERACTION_UNLINKED`, `GF_INTERACTION_INVALID` (malformed document or load, unknown or wrong-kind ref, stale-ordered `op_seq`, non-finite move, unreachable path), `GF_INTERACTION_BUDGET` (query or relayout deterministic work over 4,000,000 units, or pick candidate overflow), `GF_INTERACTION_CAPACITY`, `GF_INTERACTION_SELF_ECHO`, `GF_INTERACTION_STALE_REMOTE`, `GF_INTERACTION_SELECTION_TOO_LARGE` (more than 10,000 refs), `GF_INTERACTION_COMPOUND_TOO_LARGE` (disclosure on a graph over 1,024 nodes), `GF_INTERACTION_UNBOUND` (the bound temporal graph is gone), `GF_INTERACTION_REVISION_EXHAUSTED` (`render_revision` reached `u32::MAX`; the operation changed nothing and the session must be recreated). A failed operation never changes state or consumes its `op_seq`. |
 | Native loading (`LOAD_ERROR_CODES`) | `XYG_NATIVE_UNSUPPORTED_PLATFORM`, `XYG_NATIVE_LIBRARY_MISSING`, `XYG_NATIVE_LIBRARY_PATH_INVALID`, `XYG_NATIVE_LOAD_FAILED`, `XYG_NATIVE_ABI_MISMATCH` (also a library without `xyg_abi_version`), `XYG_NODE_DEPENDENCY_MISSING` (e.g. `koffi` absent), `XYG_NODE_IMPORT_FAILED`; messages never include filesystem paths or loader text |
 | WASM init | `XYG_WASM_ABI_MISMATCH`, `XYG_WASM_SCENE_MISMATCH`, `XYG_WASM_PALETTE_MISMATCH`, `XYG_WASM_EXPORT_MISMATCH`, `XYG_WASM_IMPORTS_REJECTED`, `XYG_WASM_BUDGET_EXCEEDED`, `XYG_WASM_INSTANCE_EXHAUSTED`, `XYG_WASM_INIT_FAILED` (asset loading) |
 
@@ -192,6 +230,18 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
   unchanged.
 
 - WASM Scene: direct tier only (≤ 1,024 elements).
+- Interaction sessions (#36 S2, Rust engine only; no host ABI yet): explicit
+  compound disclosure is bounded at 1,024 source nodes (above it
+  `GF_INTERACTION_COMPOUND_TOO_LARGE`; render-tier aggregates are selectable but
+  take no disclosure action); a selection or highlight plane holds at most
+  10,000 refs, atomically (aggregates and explicit member refs count once);
+  one relayout call requests at most 64 force steps and admits at most
+  4,000,000 `(requested + seed steps) × (visible nodes + visible edges)` units
+  before any force work, including the 300 seed steps when positions are absent;
+  relayout is always
+  CoSE seeded from the current positions (the only engine honoring pins and
+  parents); aggregate refs are valid for exactly one render revision.
+
 - Scene positions come from Rust's seeded force layout with a `libm`-free
   seed, so documents and Scene bytes are bit-identical across hosts and
   platforms.

@@ -1,0 +1,13 @@
+{
+  "name": "setup-npm",
+  "command": [
+    "npm",
+    "ci",
+    "--offline"
+  ],
+  "exitCode": 0,
+  "seconds": 1.767,
+  "rawSha256": "78b33966f49b4a31646f8b7219c31c7f42a1f1e7119362f2ce39d43c26286b71",
+  "log": "setup-npm.txt.gz",
+  "gzipSha256": "b68a4882c25f876b9f8fbc8e2d4d62c87f6b9eca02f8c7d337ccfc2013312058"
+}

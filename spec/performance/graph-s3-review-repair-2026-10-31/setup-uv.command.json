@@ -1,0 +1,17 @@
+{
+  "name": "setup-uv",
+  "command": [
+    "uv",
+    "sync",
+    "--offline",
+    "--python",
+    "3.12",
+    "--group",
+    "dev"
+  ],
+  "exitCode": 0,
+  "seconds": 130.746,
+  "rawSha256": "9577c83189dbdae195743e8517fa1464da5d8c82521f70d3c84054e7c339e905",
+  "log": "setup-uv.txt.gz",
+  "gzipSha256": "46bdcba2a6c1e1227b95ff30d64622790654ea82f225aa12c13d49ecf6bd16b1"
+}

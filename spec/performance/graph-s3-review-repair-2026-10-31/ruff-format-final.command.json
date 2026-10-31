@@ -1,0 +1,16 @@
+{
+  "name": "ruff-format-final",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.03,
+  "rawSha256": "19bdcabf737bf4b3ad3d0662e53bb9ef502fc99f3f12001af07f95ff1ca54c06",
+  "log": "ruff-format-final.txt.gz",
+  "gzipSha256": "cb56f24558fc9dafaaa9cee13e764c9f91642f1a49ef458cdb3f199a14335a5a"
+}

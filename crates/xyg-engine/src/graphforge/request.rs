@@ -310,9 +310,6 @@ pub fn decode(bytes: &[u8]) -> GfResult<Request<'_>> {
                 .map_err(layer_error)?,
         });
     }
-    if layers.is_empty() {
-        return Err(invalid("a composition needs at least one result layer"));
-    }
     let render = decode_render(&container)?;
     if container.indices("select.uuid").iter().any(|&i| i != 0) {
         return Err(invalid("\"select.uuid\" is a single section"));

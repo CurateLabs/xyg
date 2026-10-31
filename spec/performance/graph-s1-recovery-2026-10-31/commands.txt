@@ -1,0 +1,39 @@
+# Run from the recovery worktree; all operations are local.
+export PATH=/home/ubuntu/.cargo/bin:$PATH
+export XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so"
+
+uv run pytest -q tests/test_graphforge.py tests/test_graphforge_scene.py tests/test_graphforge_semantic_evidence.py tests/test_graphforge_fixture_generation.py tests/test_graphforge_contract_corpus.py tests/test_cose_native_parity.py tests/test_graph.py tests/test_graph_compound.py tests/test_graph_edge_identity.py tests/test_graph_edge_routes.py tests/test_graph_edge_ends.py tests/test_graph_style.py tests/test_graph_semantic_mapping.py tests/test_graph_static_export.py tests/test_temporal_columns.py tests/test_temporal_graph_native.py tests/test_temporal_controller.py tests/test_geo*.py
+
+# Diagnostic WASM after the unchanged packager rejects the size; this does not
+# emit a validated package manifest or inline assets.
+node --input-type=module - <<'JS'
+import { readFileSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
+import { optimizeWasm } from './js/optimize-wasm.mjs';
+const source = readFileSync('target/wasm32-unknown-unknown/release/xyg_wasm.wasm');
+const bytes = optimizeWasm(source);
+writeFileSync('target/xyg-s1-diagnostic.wasm', bytes);
+console.log(JSON.stringify({ sourceBytes: source.length,
+  sourceSha256: createHash('sha256').update(source).digest('hex'),
+  optimizedBytes: bytes.length, gzip6Bytes: gzipSync(bytes).length,
+  optimizedSha256: createHash('sha256').update(bytes).digest('hex'),
+  rawGate: 1543168, gzip6Gate: 638976 }, null, 2));
+JS
+cp target/xyg-s1-diagnostic.wasm packages/xy-client/dist/xyg-wasm.wasm
+
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs packages/xy-node/test/graph.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/temporal*.test.mjs packages/xy-node/test/geo*.test.mjs
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs packages/xy-node/test/graph.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/temporal*.test.mjs
+
+# Baseline reproduction uses an already-built validated integration library.
+# Override BASE_NATIVE for another checkout of 465ec0a0.
+BASE_NATIVE=/home/ubuntu/.t3/worktrees/xyg/t3-27f5ddab/target/release/libxyg_core.so
+XYG_NATIVE_LIB="$BASE_NATIVE" node --test --test-concurrency=1 --test-timeout=20000 packages/xy-node/test/geo-live-hierarchy-host.test.mjs packages/xy-node/test/geo-live-host.test.mjs
+XYG_NATIVE_LIB="$BASE_NATIVE" node --test --test-name-pattern='constantMarkColor uses|sceneScatterPaintChannelAdmit matches' packages/xy-node/test/geom.test.mjs
+
+python3 scripts/render_smoke_nonumpy.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+python3 scripts/append_stream_smoke.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+
+# Other producer/check commands are in README.md. Base formatting was checked
+# from a disposable git archive of Cargo.toml, rust-toolchain.toml and crates/ at
+# 465ec0a0, using cargo fmt --manifest-path <archive>/Cargo.toml --all --check.

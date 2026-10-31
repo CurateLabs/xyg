@@ -1,0 +1,109 @@
+# Actual commands; environment/profile in results.json. Logs retain queued labels.
+# artifact-contracts (exit 0)
+uv run python scripts/gen_abi_manifest.py --check
+# baseline-focused (exit 0)
+cargo test -p xyg-engine --lib graphforge::
+# baseline-measure (exit 0)
+node spec/performance/graph-s2-recovery-2026-10-31/measure.mjs target/task-tmp/s2-size-repair/baseline
+# baseline-node (exit 0)
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/graph.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/composition.test.mjs packages/xy-node/test/temporal.test.mjs packages/xy-node/test/temporal-graph.test.mjs packages/xy-node/test/temporal-controller.test.mjs
+# baseline-package-preflight (exit 0)
+node --input-type=module -e 'import fs from "node:fs"; console.log(JSON.parse(fs.readFileSync("node_modules/binaryen/package.json")).version); console.log(JSON.parse(fs.readFileSync("spec/wasm/abi.json")).abi_version)'
+# baseline-package (exit 1)
+node js/package-wasm.mjs
+# baseline-projection (exit 0)
+cargo test -p xyg-engine --lib projection::
+# baseline-python (exit 0)
+uv run pytest -q tests/test_graphforge.py tests/test_graphforge_scene.py tests/test_graphforge_semantic_evidence.py tests/test_graphforge_fixture_generation.py tests/test_graphforge_contract_corpus.py tests/test_cose_native_parity.py tests/test_temporal_columns.py tests/test_temporal_graph_native.py tests/test_temporal_controller.py tests/test_graph_style.py tests/test_graph_semantic_mapping.py -k 'not browser'
+# baseline-style (exit 0)
+cargo test -p xyg-engine --lib graph_style::
+# baseline-wasm-build (exit 0)
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+# candidate1-focused (exit 0)
+cargo test -p xyg-engine --lib graphforge::
+# candidate1-measure (exit 0)
+node spec/performance/graph-s2-recovery-2026-10-31/measure.mjs target/task-tmp/s2-size-repair/candidate1
+# candidate1-projection (exit 0)
+cargo test -p xyg-engine --lib projection::
+# candidate1-proof-before (exit 0)
+cargo test -p xyg-engine --lib projection::
+# candidate1-rustfmt (exit 0)
+rustfmt --edition 2021 --config skip_children=true --check crates/xyg-engine/src/projection.rs
+# candidate1-wasm-build (exit 0)
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+# candidate2-clippy (exit 0)
+cargo clippy --workspace --all-targets -- -D warnings
+# candidate2-focused (exit 0)
+cargo test -p xyg-engine --lib graphforge::
+# candidate2-measure (exit 0)
+node spec/performance/graph-s2-recovery-2026-10-31/measure.mjs target/task-tmp/s2-size-repair/candidate2
+# candidate2-style (exit 0)
+cargo test -p xyg-engine --lib graph_style::
+# candidate2-wasm-build (exit 0)
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+# candidate2-workspace (exit 0)
+cargo test --workspace
+# cross-host-goldens (exit 0)
+uv run python scripts/gen_graphforge_cross_host.py --check
+# diagnostic-module-copy (exit 0)
+cp target/task-tmp/s2-size-repair/final/optimized.wasm packages/xy-client/dist/xyg-wasm.wasm
+# diagnostic-module-remove (exit 0)
+rm packages/xy-client/dist/xyg-wasm.wasm
+# environment (exit 0)
+python3 -c 'import json,os,platform,subprocess; print(json.dumps({"platform":platform.platform(),"machine":platform.machine(),"cwd":os.getcwd(),"tools":{x:subprocess.check_output([x,"--version"],text=True).strip() for x in ["node","npm","rustc","cargo","uv"]}},indent=2))'
+# final-abi-parity (exit 0)
+uv run python scripts/check_abi_parity.py
+# final-abi-smoke (exit 0)
+uv run python scripts/abi_smoke.py
+# final-append-smoke (exit 0)
+uv run python scripts/append_stream_smoke.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+# final-artifact-contract (exit 0)
+node spec/performance/graph-s2-size-repair-2026-10-31/artifact-contract.mjs
+# final-assets (exit 1)
+uv run python scripts/verify_wasm_assets.py
+# final-client-build (exit 0)
+node js/build.mjs
+# final-fixture-and-history-confirmed (exit 0)
+git diff --exit-code HEAD -- tests/fixtures spec/performance/graph-s1-recovery-2026-10-31 spec/performance/graph-s1-size-repair-2026-10-31 spec/performance/graph-s1-package-budget-2026-10-31 spec/performance/graph-s2-recovery-2026-10-31
+# final-fixture-and-history (exit 0)
+git diff --exit-code HEAD -- tests/fixtures spec/performance/graph-s1-recovery-2026-10-31 spec/performance/graph-s1-size-repair-2026-10-31 spec/performance/graph-s1-package-budget-2026-10-31 spec/performance/graph-s2-recovery-2026-10-31
+# final-hooks (exit 0)
+uv run --with pre-commit pre-commit run --all-files
+# final-measure (exit 0)
+node spec/performance/graph-s2-recovery-2026-10-31/measure.mjs target/task-tmp/s2-size-repair/final
+# final-native-backend (exit 0)
+uv run python -c 'import xyg.kernels as k; print(k.BACKEND)'
+# final-native-build (exit 0)
+cargo build --release
+# final-node-wasm-diagnostic (exit 0)
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs
+# final-node (exit 0)
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/graph.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/composition.test.mjs packages/xy-node/test/temporal.test.mjs packages/xy-node/test/temporal-graph.test.mjs packages/xy-node/test/temporal-controller.test.mjs
+# final-package (exit 1)
+node js/package-wasm.mjs
+# final-python-version (exit 0)
+uv run python --version
+# final-python (exit 0)
+uv run pytest -q tests/test_graphforge.py tests/test_graphforge_scene.py tests/test_graphforge_semantic_evidence.py tests/test_graphforge_fixture_generation.py tests/test_graphforge_contract_corpus.py tests/test_cose_native_parity.py tests/test_temporal_columns.py tests/test_temporal_graph_native.py tests/test_temporal_controller.py tests/test_graph_style.py tests/test_graph_semantic_mapping.py -k 'not browser'
+# final-render-smoke (exit 0)
+uv run python scripts/render_smoke_nonumpy.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+# final-ruff-check (exit 0)
+uv run ruff check .
+# final-ruff-format (exit 0)
+uv run ruff format --check .
+# final-rustfmt (exit 0)
+rustfmt --edition 2021 --config skip_children=true --check crates/xyg-engine/src/projection.rs
+# final-semantic-goldens (exit 0)
+uv run python scripts/gen_graphforge_semantic_fixture.py
+# final-source-and-diff (exit 0)
+python3 -c 'import hashlib,pathlib,subprocess; print("projection.rs",hashlib.sha256(pathlib.Path("crates/xyg-engine/src/projection.rs").read_bytes()).hexdigest()); print("engineDiffSha256",hashlib.sha256(subprocess.check_output(["git","diff","HEAD","--","crates/xyg-engine/src/projection.rs"])).hexdigest())'
+# final-ty (exit 0)
+uv run ty check
+# final-wasm-build (exit 0)
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+# final-workspace (exit 0)
+cargo test --workspace
+# node-setup (exit 0)
+npm ci --offline --prefix packages/xy-node
+# ownership (exit 0)
+uv run python scripts/verify_ownership.py

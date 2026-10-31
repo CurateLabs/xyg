@@ -1,0 +1,15 @@
+{
+  "name": "setup-node",
+  "command": [
+    "npm",
+    "ci",
+    "--offline",
+    "--prefix",
+    "packages/xy-node"
+  ],
+  "exitCode": 0,
+  "seconds": 0.731,
+  "rawSha256": "1e41c67e9707524a17cfeb457ddeb0c02ace7d86889f149d54e598c6b02c5920",
+  "log": "setup-node.txt.gz",
+  "gzipSha256": "db4f48893e8e85c828476fe0c0389af5762d5f067424d9f46f43f976a422bc64"
+}

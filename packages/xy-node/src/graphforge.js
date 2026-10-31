@@ -121,7 +121,8 @@ function uuidPlane(values, label) {
  *   bytes: Cypher entity results or flat node/edge tables) and/or packed
  *   planes `nodeUuid`, `edgeUuid`, `edgeSourceUuid`, `edgeTargetUuid`; plus
  *   `generation` (UUID string) and `directed` (default true).
- * @param {Array<object>} input.layers result layers: `result` (Arrow IPC
+ * @param {Array<object>} [input.layers] result layers (none composes the base
+ *   property graph with XYG's default view): `result` (Arrow IPC
  *   bytes), `intent` (required), `resultId`, `generation`, `missing`,
  *   `extra`, `rows`, `coordinates` (Arrow IPC bytes).
  * @param {string[]} [input.select] node/relationship UUIDs painted selected.
@@ -129,9 +130,9 @@ function uuidPlane(values, label) {
  *   graph composition to the direct-tier canonical Scene (`scene.canonical`).
  * @returns {Uint8Array} `XYGQ` request bytes
  */
-export function encodeGraphForgeRequest({ base = {}, layers, select = null, render = null } = {}) {
-  if (!Array.isArray(layers) || layers.length === 0) {
-    throw hostError("GF_COMPOSE_REQUEST_INVALID", "layers must be a non-empty array");
+export function encodeGraphForgeRequest({ base = {}, layers = [], select = null, render = null } = {}) {
+  if (!Array.isArray(layers)) {
+    throw hostError("GF_COMPOSE_REQUEST_INVALID", "layers must be an array");
   }
   const sections = [];
   (base.tables ?? []).forEach((table, index) => {

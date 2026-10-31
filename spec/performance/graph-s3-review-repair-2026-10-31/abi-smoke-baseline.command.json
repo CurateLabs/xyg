@@ -1,0 +1,14 @@
+{
+  "name": "abi-smoke-baseline",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/abi_smoke.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.148,
+  "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+  "log": "abi-smoke-baseline.txt.gz",
+  "gzipSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+}
