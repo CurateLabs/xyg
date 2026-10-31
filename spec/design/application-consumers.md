@@ -38,6 +38,66 @@ lane runs the unconditional real-app consumer gate, which installs the locked
 consumer group into the clean wheel environment and executes every AppTest.
 Missing framework prerequisites fail that gate. Optional test collection must not turn that required consumer proof into a skip.
 
+### Bounded GraphForge consumer (#1016)
+
+The same example adds `graphforge-property` and `graphforge-pagerank` using
+only `compose_graphforge()` and `graphforge_chart()` followed by the existing
+public HTML/static export methods. The former omits analytical layers and
+exercises #934's base-property defaults (label colors/legend, caption fallback,
+directed arrowheads and relationship hover metadata). The latter composes one
+Core-produced PageRank IPC result against its matching base and generation.
+Fixtures are the existing repository `tests/fixtures/graphforge/results/`
+Core 0.5.2 corpus; no analytical engine or fixture generator runs in the app.
+They are repository-only example inputs, not wheel contents. There is no new
+framework adapter or public product policy. The current consumer-group floor
+is `streamlit>=1.56,<2`; the lock pins the version used by the mandatory gate.
+
+The example displays native PNG and SVG previews and offers their original
+bytes as downloads. An independent direct public-Python fixture producer
+(`tests/fixtures/packaged_streamlit_graphforge.py`) builds the same two
+compositions with the installed wheel. The browser helper
+`scripts/streamlit_graphforge_browser.mjs`, invoked by the existing consumer
+runner, requires exact HTML and download SHA-256 equality to that producer,
+graph pixels, painted property captions/legend, decoded static images,
+local brush/zoom, no external requests or CSP violations, and no Python comm bridge.
+Property paint must contain chromatic pixels; PageRank's default score-size
+encoding uses neutral paint and therefore requires nonwhite plot ink instead.
+Rust's collision plan may admit a subset of the property captions at home;
+AppTest checks the complete fallback-caption plane, while the browser checks
+the admitted painted captions rather than assuming DOM text labels.
+AppTest exercises explicit same-input script reruns and switch-away/return
+determinism. Two browser switch cycles per graph require exactly one iframe,
+the same document on return, fresh painted views, and observed CDP destruction
+of each outgoing iframe's default execution context.
+
+This is snapshot-document lifecycle evidence. The app has no handle to call
+`ChartView.destroy()` on the outgoing frame, and the tests do not inject one;
+browser navigation retires that execution context. General live-view GPU,
+Worker, listener and frame cleanup stays under the existing shared/Node gates.
+Local interactions do not imply a tested UUID round-trip to Python. Stock
+Streamlit HTML remains paint-only; no custom component or event adapter is
+added. Cache only immutable IPC or finished exports with complete generation,
+input and presentation keys; mutable charts/selection/live views must not be
+shared through global resource caching. The guide is
+[`docs/integrations/graphforge.md`](../../docs/integrations/graphforge.md#streamlit-test-and-documentation-host).
+
+The existing unconditional consumer job and Release surfaces aggregate cover
+this bounded proof; no additional job, trigger, dependency group or runtime
+extra is needed. `tests/test_dependencies.py` guards package imports and
+dependencies even without Streamlit; `tests/test_streamlit_package_boundary.py`
+also scans the installed wheel for framework imports, extras and adapter paths.
+The optional AppTest module skips only if the framework is absent; a broken
+installed framework import fails. Wheel/sdist metadata guards reject a
+Streamlit runtime requirement, while wheel root guards exclude example and
+adapter namespaces. The runner retains direct inputs/artifact hashes, source
+hashes, downloaded bytes, screenshots and raw AppTest/browser reports with the
+existing consumer artifacts. Local receipts and exact reproduction details
+are recorded in `spec/performance/graphforge-streamlit-1016/README.md`.
+Source-checkout proof, local installed-wheel proof and final release-cohort
+qualification must be named separately. This slice does not close #1016,
+Milestone 4, #36, #934 or #935, update remote #31/#40 host lists, or qualify
+large/massive graph capacity or competitor timing claims.
+
 ## Node / vanilla TypeScript
 
 `examples/vanilla-ts/server.mjs` serves the shared client and Rust-backed Node

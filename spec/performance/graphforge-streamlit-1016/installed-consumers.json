@@ -1,0 +1,1697 @@
+{
+  "schema": 1,
+  "commit": "fab6aa90c94844ed78865721af90a2aebd95dfd0",
+  "browser": "156.0.8078.4",
+  "node": "v24.21.0",
+  "launchArgs": [
+    "--no-sandbox",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--ignore-gpu-blocklist"
+  ],
+  "hosts": {
+    "node": {
+      "kinds": {
+        "scatter": 114,
+        "line": 2436,
+        "bar": 67230,
+        "graph": 433
+      },
+      "update": true,
+      "browserSelection": true,
+      "export": true,
+      "disposeRemount": true,
+      "outgoingViewReleased": true,
+      "workersTerminated": true,
+      "glContextReleased": true,
+      "localWorkerAndWasmRequested": true,
+      "rustTicksAdmitted": true,
+      "errors": [],
+      "missingWasmFailsClosed": true
+    },
+    "streamlit": {
+      "coloredPixels": 114,
+      "rerun": true,
+      "singleIframe": true,
+      "exportControls": true,
+      "downloads": {
+        "svg": {
+          "filename": "chart.svg",
+          "bytes": 5303,
+          "sha256": "de48bd9a12085a5df817bb9df56934d8483801243b9101bdbbd032913461a060"
+        },
+        "png": {
+          "filename": "chart.png",
+          "bytes": 108691,
+          "sha256": "30539d30549f0e390f69989cd956d21734cf3d7ca10b3ae60a25e482a436f35a"
+        }
+      },
+      "pythonSelectionCallbacks": false,
+      "errors": [],
+      "graphforge": {
+        "cases": {
+          "graphforge-property": {
+            "paintPixels": 1441,
+            "pixelOracle": "chromatic (label-color defaults)",
+            "directHtmlSha256": "9d3d32fae6566a5042d0b9e711a7cca923c2114b7d4b7eaf24f9945ac6edf816",
+            "localAssets": true,
+            "nativePreviews": 2,
+            "downloads": {
+              "svg": {
+                "bytes": 4517,
+                "sha256": "c13d815975d0868e0cd52e41535aab949b4fb340763f52b036c449e010ddb91c"
+              },
+              "png": {
+                "bytes": 59377,
+                "sha256": "60a0bb47c63926ce975e94bb76cc8dbe43bfd9075e3dff87c9deadde0c15b0c5"
+              }
+            },
+            "localZoom": true,
+            "lifecycles": [
+              {
+                "outgoingContextRetired": true,
+                "singleIframe": true,
+                "identicalDocument": true,
+                "paintPixels": 1441
+              },
+              {
+                "outgoingContextRetired": true,
+                "singleIframe": true,
+                "identicalDocument": true,
+                "paintPixels": 1441
+              }
+            ],
+            "localBrush": true,
+            "pythonSelectionCallbacks": false,
+            "lifecycle": "browser retires snapshot execution context; no application ChartView.destroy bridge"
+          },
+          "graphforge-pagerank": {
+            "paintPixels": 4894,
+            "pixelOracle": "nonwhite (neutral score-size defaults)",
+            "directHtmlSha256": "1c493935538cfe84bd3a3995a615c4b6e226b1c45d3832adb8f649d6bb14bf5f",
+            "localAssets": true,
+            "nativePreviews": 2,
+            "downloads": {
+              "svg": {
+                "bytes": 2605,
+                "sha256": "a4756d5dce22182010bdfec58385a112d7d14297027674804e6882914324fe20"
+              },
+              "png": {
+                "bytes": 71923,
+                "sha256": "e4c947be84f3136490c69ab6852177b65ac319f529d6a5876a1c9b7e2608ea38"
+              }
+            },
+            "localZoom": true,
+            "lifecycles": [
+              {
+                "outgoingContextRetired": true,
+                "singleIframe": true,
+                "identicalDocument": true,
+                "paintPixels": 4894
+              },
+              {
+                "outgoingContextRetired": true,
+                "singleIframe": true,
+                "identicalDocument": true,
+                "paintPixels": 4894
+              }
+            ],
+            "localBrush": true,
+            "pythonSelectionCallbacks": false,
+            "lifecycle": "browser retires snapshot execution context; no application ChartView.destroy bridge"
+          }
+        },
+        "errors": [],
+        "cspViolations": [],
+        "externalRequests": []
+      }
+    }
+  },
+  "hashes": {
+    "target/release/libxyg_core.so": "95eaa0372637d9e778015810ada138ef39c3a6fd68c69f9696c3f864af5be34a",
+    "packages/xy-client/dist/index.js": "2e3a08a83896290fa246a508f8b4af0f4be9f7e699e6ebcb0e3d394be5e50589",
+    "packages/xy-client/dist/xyg-wasm.wasm": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811"
+  },
+  "packagedQualification": {
+    "cases": [
+      {
+        "name": "python-secondary",
+        "csp": "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'",
+        "ticks": {
+          "diagnostics": {
+            "sequence": 1,
+            "revision": 1,
+            "axisIds": [
+              "x",
+              "y",
+              "y2"
+            ],
+            "cancellations": 0
+          },
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_ready",
+              "diagnostics": {
+                "sequence": 1,
+                "revision": 1,
+                "axisIds": [
+                  "x",
+                  "y",
+                  "y2"
+                ],
+                "cancellations": 0
+              }
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "labels": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "step": 1,
+              "source": "wasm"
+            },
+            "y": {
+              "ticks": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "labels": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "step": 1,
+              "source": "wasm"
+            },
+            "y2": {
+              "ticks": [
+                0,
+                100,
+                200,
+                300,
+                400
+              ],
+              "labels": [
+                0,
+                100,
+                200,
+                300,
+                400
+              ],
+              "step": 100,
+              "source": "wasm"
+            }
+          },
+          "labels": {
+            "x": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "y": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "y2": [
+              "0",
+              "100",
+              "200",
+              "300",
+              "400"
+            ]
+          },
+          "coords": "cartesian",
+          "workers": [
+            {
+              "url": "./wasm-worker.js",
+              "terminated": false
+            }
+          ],
+          "attached": true,
+          "failure": false,
+          "violations": []
+        },
+        "coloredPixels": 616,
+        "screenshot": {
+          "file": "python-secondary.png",
+          "sha256": "29d3cdd539dd50b6f2188243e74807bc8bcd5c0115c4f0a83a4063cf24e0e535"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:37883/secondary.html",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/xyg-wasm.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:37883/xyg-wasm.wasm",
+            "status": 200,
+            "bytes": 1540374,
+            "sha256": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811"
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "python-polar",
+        "csp": "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'",
+        "ticks": {
+          "diagnostics": {
+            "sequence": 1,
+            "revision": 1,
+            "axisIds": [
+              "x",
+              "y"
+            ],
+            "cancellations": 0
+          },
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_ready",
+              "diagnostics": {
+                "sequence": 1,
+                "revision": 1,
+                "axisIds": [
+                  "x",
+                  "y"
+                ],
+                "cancellations": 0
+              }
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "labels": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "step": 90,
+              "source": "wasm"
+            },
+            "y": {
+              "ticks": [
+                0,
+                0.2,
+                0.4,
+                0.6000000000000001,
+                0.8,
+                1
+              ],
+              "labels": [
+                0,
+                0.2,
+                0.4,
+                0.6000000000000001,
+                0.8,
+                1
+              ],
+              "step": 0.2,
+              "source": "wasm"
+            }
+          },
+          "labels": {
+            "x": [
+              "0\u00b0",
+              "90\u00b0",
+              "180\u00b0",
+              "270\u00b0"
+            ],
+            "y": [
+              "0.0",
+              "0.2",
+              "0.4",
+              "0.6",
+              "0.8",
+              "1.0"
+            ]
+          },
+          "coords": "polar",
+          "thetaUnit": "degrees",
+          "workers": [
+            {
+              "url": "./wasm-worker.js",
+              "terminated": false
+            }
+          ],
+          "attached": true,
+          "failure": false,
+          "violations": []
+        },
+        "coloredPixels": 1459,
+        "screenshot": {
+          "file": "python-polar.png",
+          "sha256": "31df5a4179a8a88ebcd5a991b21b6decb4022f7ab9181ca7baabfde29ef7c312"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:37883/polar.html",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/xyg-wasm.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:37883/xyg-wasm.wasm",
+            "status": 200,
+            "bytes": 1540374,
+            "sha256": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811"
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "python-missing",
+        "csp": "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'",
+        "ticks": {
+          "diagnostics": null,
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_error",
+              "code": "XYG_WASM_INIT_FAILED",
+              "message": "WASM URL returned HTTP 404"
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y2": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            }
+          },
+          "labels": {
+            "x": [],
+            "y": [],
+            "y2": []
+          },
+          "coords": "cartesian",
+          "workers": [
+            {
+              "url": "./wasm-worker.js",
+              "terminated": true
+            }
+          ],
+          "attached": false,
+          "failure": true,
+          "violations": []
+        },
+        "coloredPixels": 616,
+        "screenshot": {
+          "file": "python-missing.png",
+          "sha256": "758d9d82b3b8df7b387e844103549d0dbeaed4d7bd06557499e244e871cefda4"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:37883/missing.html",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/missing.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:37883/missing.wasm",
+            "status": 404,
+            "bytes": null,
+            "sha256": null
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "python-corrupt",
+        "csp": "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'",
+        "ticks": {
+          "diagnostics": null,
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_error",
+              "code": "XYG_WASM_INIT_FAILED",
+              "message": "WebAssembly.compile(): expected magic word 00 61 73 6d, found 00 01 02 03 @+0"
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y2": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            }
+          },
+          "labels": {
+            "x": [],
+            "y": [],
+            "y2": []
+          },
+          "coords": "cartesian",
+          "workers": [
+            {
+              "url": "./wasm-worker.js",
+              "terminated": true
+            }
+          ],
+          "attached": false,
+          "failure": true,
+          "violations": []
+        },
+        "coloredPixels": 616,
+        "screenshot": {
+          "file": "python-corrupt.png",
+          "sha256": "758d9d82b3b8df7b387e844103549d0dbeaed4d7bd06557499e244e871cefda4"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:37883/corrupt.html",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:37883/corrupt.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:37883/corrupt.wasm",
+            "status": 200,
+            "bytes": 4,
+            "sha256": "054edec1d0211f624fed0cbca9d4f9400b0e491c43742af2c5b0abebf0c990d8"
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "node-secondary",
+        "csp": "default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'",
+        "ticks": {
+          "diagnostics": {
+            "sequence": 1,
+            "revision": 1,
+            "axisIds": [
+              "x",
+              "y",
+              "y2"
+            ],
+            "cancellations": 0
+          },
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_ready",
+              "diagnostics": {
+                "sequence": 1,
+                "revision": 1,
+                "axisIds": [
+                  "x",
+                  "y",
+                  "y2"
+                ],
+                "cancellations": 0
+              }
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "labels": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "step": 1,
+              "source": "wasm"
+            },
+            "y": {
+              "ticks": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "labels": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              "step": 1,
+              "source": "wasm"
+            },
+            "y2": {
+              "ticks": [
+                0,
+                100,
+                200,
+                300,
+                400
+              ],
+              "labels": [
+                0,
+                100,
+                200,
+                300,
+                400
+              ],
+              "step": 100,
+              "source": "wasm"
+            }
+          },
+          "labels": {
+            "x": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "y": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "y2": [
+              "0",
+              "100",
+              "200",
+              "300",
+              "400"
+            ]
+          },
+          "coords": "cartesian",
+          "workers": [
+            {
+              "url": "/assets/wasm-worker.js",
+              "terminated": false
+            }
+          ],
+          "attached": true,
+          "failure": false,
+          "violations": []
+        },
+        "coloredPixels": 616,
+        "screenshot": {
+          "file": "node-secondary.png",
+          "sha256": "6dc74d5cdf20a0e24fa727eb6611def14b499592de3195ca5f343f69fd07df4f"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:50529/?kind=secondary",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/app.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/client.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/spec?kind=secondary&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/buffers?kind=secondary&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/xyg-wasm.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:50529/assets/xyg-wasm.wasm",
+            "status": 200,
+            "bytes": 1540374,
+            "sha256": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811"
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "node-polar",
+        "csp": "default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'",
+        "ticks": {
+          "diagnostics": {
+            "sequence": 1,
+            "revision": 1,
+            "axisIds": [
+              "x",
+              "y"
+            ],
+            "cancellations": 0
+          },
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_ready",
+              "diagnostics": {
+                "sequence": 1,
+                "revision": 1,
+                "axisIds": [
+                  "x",
+                  "y"
+                ],
+                "cancellations": 0
+              }
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "labels": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "step": 90,
+              "source": "wasm"
+            },
+            "y": {
+              "ticks": [
+                0,
+                0.2,
+                0.4,
+                0.6000000000000001,
+                0.8,
+                1
+              ],
+              "labels": [
+                0,
+                0.2,
+                0.4,
+                0.6000000000000001,
+                0.8,
+                1
+              ],
+              "step": 0.2,
+              "source": "wasm"
+            }
+          },
+          "labels": {
+            "x": [
+              "0\u00b0",
+              "90\u00b0",
+              "180\u00b0",
+              "270\u00b0"
+            ],
+            "y": [
+              "0.0",
+              "0.2",
+              "0.4",
+              "0.6",
+              "0.8",
+              "1.0"
+            ]
+          },
+          "coords": "polar",
+          "thetaUnit": "degrees",
+          "workers": [
+            {
+              "url": "/assets/wasm-worker.js",
+              "terminated": false
+            }
+          ],
+          "attached": true,
+          "failure": false,
+          "violations": []
+        },
+        "coloredPixels": 1459,
+        "screenshot": {
+          "file": "node-polar.png",
+          "sha256": "f277d072fecc2fe1d11b77187863af95623090e71205cd3f987e1372854a3326"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:50529/?kind=polar",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/app.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/client.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/spec?kind=polar&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/buffers?kind=polar&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/xyg-wasm.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:50529/assets/xyg-wasm.wasm",
+            "status": 200,
+            "bytes": 1540374,
+            "sha256": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811"
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "node-missing",
+        "csp": "default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'",
+        "ticks": {
+          "diagnostics": null,
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_error",
+              "code": "XYG_WASM_INIT_FAILED",
+              "message": "WASM URL returned HTTP 404"
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y2": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            }
+          },
+          "labels": {
+            "x": [],
+            "y": [],
+            "y2": []
+          },
+          "coords": "cartesian",
+          "workers": [
+            {
+              "url": "/assets/wasm-worker.js",
+              "terminated": true
+            }
+          ],
+          "attached": false,
+          "failure": true,
+          "violations": []
+        },
+        "coloredPixels": 616,
+        "screenshot": {
+          "file": "node-missing.png",
+          "sha256": "676e73292a266d5dc62016653b9be01ff7eb25cb540998909aa4f359ba5390af"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:50529/?kind=missing",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/app.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/client.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/spec?kind=missing&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/buffers?kind=missing&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/missing.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:50529/assets/missing.wasm",
+            "status": 404,
+            "bytes": null,
+            "sha256": null
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "node-corrupt",
+        "csp": "default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'",
+        "ticks": {
+          "diagnostics": null,
+          "events": [
+            {
+              "phase": "attached"
+            },
+            {
+              "phase": "ticks_error",
+              "code": "XYG_WASM_INIT_FAILED",
+              "message": "WebAssembly.compile(): expected magic word 00 61 73 6d, found 00 01 02 03 @+0"
+            }
+          ],
+          "slots": {
+            "x": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            },
+            "y2": {
+              "ticks": [],
+              "labels": [],
+              "step": 1,
+              "source": "failed-closed"
+            }
+          },
+          "labels": {
+            "x": [],
+            "y": [],
+            "y2": []
+          },
+          "coords": "cartesian",
+          "workers": [
+            {
+              "url": "/assets/wasm-worker.js",
+              "terminated": true
+            }
+          ],
+          "attached": false,
+          "failure": true,
+          "violations": []
+        },
+        "coloredPixels": 616,
+        "screenshot": {
+          "file": "node-corrupt.png",
+          "sha256": "9934d55932be66c8785a56c2a5871702f00adb42acb97dee7800988eb33dadaa"
+        },
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "requests": [
+          {
+            "url": "http://127.0.0.1:50529/?kind=corrupt",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/app.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/client.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/spec?kind=corrupt&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/buffers?kind=corrupt&count=8",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/wasm-worker.js",
+            "method": "GET"
+          },
+          {
+            "url": "http://127.0.0.1:50529/assets/corrupt.wasm",
+            "method": "GET"
+          }
+        ],
+        "assetResponses": [
+          {
+            "url": "http://127.0.0.1:50529/assets/corrupt.wasm",
+            "status": 200,
+            "bytes": 4,
+            "sha256": "054edec1d0211f624fed0cbca9d4f9400b0e491c43742af2c5b0abebf0c990d8"
+          }
+        ],
+        "external": [],
+        "errors": []
+      },
+      {
+        "name": "node-unsupported-density",
+        "unsupported": {
+          "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+          "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+          "trace_ids": [
+            0
+          ]
+        },
+        "events": [
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+            "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "before": {
+          "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "coloredPixels": 2846,
+          "size": [
+            426,
+            318
+          ]
+        },
+        "zoomed": {
+          "sha256": "15efe5280eaf93520931ea449c9d5304f71fab6daa2a0333b5a9611b81bee51e",
+          "ranges": {
+            "x": [
+              0.25,
+              0.75
+            ],
+            "y": [
+              0.25,
+              0.75
+            ]
+          },
+          "coloredPixels": 2843,
+          "size": [
+            426,
+            318
+          ]
+        },
+        "restored": {
+          "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "coloredPixels": 2846,
+          "size": [
+            426,
+            318
+          ]
+        },
+        "zoomDelta": 255,
+        "homeDelta": 0,
+        "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+        "replacementUploads": 0,
+        "workerCount": 1,
+        "densityAttached": false,
+        "violations": [],
+        "csp": "default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'",
+        "lifecycle": {
+          "destroyed": true,
+          "glReleased": true,
+          "contextLost": true,
+          "listeners": 0,
+          "rootConnected": false,
+          "overviewTextureReleased": true,
+          "raf": false,
+          "gpuTraces": 0,
+          "ticksReleased": true,
+          "densityReleased": true,
+          "liveWorkers": 0,
+          "objectUrls": 0,
+          "lateEvents": 0
+        },
+        "screenshot": {
+          "file": "node-unsupported-density.png",
+          "sha256": "72a700ebcb43d687cf671cdeefe36a82fc62e891f93e956f0321ef5e88c10b24"
+        },
+        "requests": [
+          "http://127.0.0.1:50529/?kind=density",
+          "http://127.0.0.1:50529/density.js",
+          "http://127.0.0.1:50529/client.js",
+          "http://127.0.0.1:50529/spec?kind=density",
+          "http://127.0.0.1:50529/buffers?kind=density&index=0",
+          "http://127.0.0.1:50529/buffers?kind=density&index=1",
+          "http://127.0.0.1:50529/buffers?kind=density&index=2",
+          "http://127.0.0.1:50529/assets/wasm-worker.js",
+          "http://127.0.0.1:50529/assets/xyg-wasm.wasm"
+        ],
+        "external": [],
+        "errors": []
+      }
+    ],
+    "limitations": [
+      "One ordinary split-density source; all unsupported source families and final-candidate qualification remain open."
+    ]
+  },
+  "python": "3.12.15",
+  "streamlit": "1.66.1",
+  "app_tests": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "node_runtime_dependencies": {
+    "koffi": "3.1.4"
+  },
+  "npm_fresh_cache": true,
+  "hosted_python_inputs": {
+    "corrupt.html": "ecfd6739672a2f3afca8329dc90cc132ea539a2542a2e3da07b8f77cca91a8da",
+    "corrupt.wasm": "054edec1d0211f624fed0cbca9d4f9400b0e491c43742af2c5b0abebf0c990d8",
+    "missing.html": "e24ea7befb068267c6b6246f012bd3cdaae65cb70cdffcf5a0446538763feaf8",
+    "polar.html": "8abbe7a62883f0e74daab6f03f0651088511b5ad092a00219c0fd96cd01ebd63",
+    "secondary.html": "029da72f4ee263560858d561d9d3ff76842b9fe65dd99b81ef831a986fcc3052",
+    "wasm-worker.js": "b929dc5821ddba2f93d125e2a78358bc5c18e40be4505d611cdf02c32747b6ee",
+    "xyg-wasm.wasm": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811"
+  },
+  "public_html_density_degradation": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "browser": "156.0.8078.4",
+    "launchArgs": [
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--ignore-gpu-blocklist"
+    ],
+    "export": {
+      "file": "density.html",
+      "sha256": "4692e7d50d4eda2d8e9003faeba658a0463dd72113231679bb499fbbfa7b059b"
+    },
+    "faultInjection": "CDP bootstrap setter: missing null; invalid preserves classicWorkerSource and replaces WASM base64 with bytes 00 01 02 03.",
+    "cases": [
+      {
+        "name": "missing-inline-module",
+        "events": [
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "self-contained Rust/WASM density artifact is unavailable",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "before": {
+          "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomed": {
+          "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+          "alphaPixels": 2843,
+          "inkPixels": 2843,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0.25,
+              0.75
+            ],
+            "y": [
+              0.25,
+              0.75
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "restored": {
+          "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomMaxChannelDelta": 255,
+        "restoration": {
+          "maxChannelDelta": 1,
+          "changedChannels": 1
+        },
+        "originalModuleSha256": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811",
+        "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+        "replacementUploads": 0,
+        "workers": [],
+        "objectUrls": 0,
+        "sharedHost": true,
+        "disposal": {
+          "destroyed": true,
+          "glReleased": true,
+          "listeners": 0,
+          "liveWorkers": 0,
+          "objectUrls": 0
+        },
+        "external": [],
+        "errors": [],
+        "screenshot": {
+          "file": "density-export.json.missing-inline-module.png",
+          "sha256": "acb0d3d6d1bc81efe07564a55c60d6d99a3a12d26a50e6447f7b2c5e0533d771"
+        }
+      },
+      {
+        "name": "invalid-inline-module",
+        "events": [
+          {
+            "code": "XYG_WASM_INIT_FAILED",
+            "message": "WebAssembly.compile(): expected magic word 00 61 73 6d, found 00 01 02 03 @+0",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "before": {
+          "sha256": "92e989c39627c5e10cb00e3d72ec96533f20b9019d76d231acbae8c0bcaa28b5",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomed": {
+          "sha256": "fea4d482c71333b741acb0b46a53defd2fb70b2f0eaedc7ec1a37ebc52f5dbcf",
+          "alphaPixels": 2843,
+          "inkPixels": 2843,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0.25,
+              0.75
+            ],
+            "y": [
+              0.25,
+              0.75
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "restored": {
+          "sha256": "469f9a657af4abee668229137f836365e161fa65c7d5292422be7ac045aea12c",
+          "alphaPixels": 2846,
+          "inkPixels": 2846,
+          "attempts": 1,
+          "ranges": {
+            "x": [
+              0,
+              1
+            ],
+            "y": [
+              0,
+              1
+            ]
+          },
+          "width": 426,
+          "height": 318
+        },
+        "zoomMaxChannelDelta": 255,
+        "restoration": {
+          "maxChannelDelta": 1,
+          "changedChannels": 1
+        },
+        "originalModuleSha256": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811",
+        "gridSha256": "1f6fecc36e4705a72d32cc1545c155b95ea86f3a5c928d810ad70740d61da6bb",
+        "replacementUploads": 0,
+        "workers": [
+          {
+            "url": "blob:null/a2da027b-e089-4967-88b3-d7b0ef8d6578",
+            "terminated": true
+          }
+        ],
+        "objectUrls": 0,
+        "sharedHost": true,
+        "disposal": {
+          "destroyed": true,
+          "glReleased": true,
+          "listeners": 0,
+          "liveWorkers": 0,
+          "objectUrls": 0
+        },
+        "external": [],
+        "errors": [],
+        "screenshot": {
+          "file": "density-export.json.invalid-inline-module.png",
+          "sha256": "acb0d3d6d1bc81efe07564a55c60d6d99a3a12d26a50e6447f7b2c5e0533d771"
+        }
+      }
+    ],
+    "limitations": [
+      "Actual installed-wheel to_html output; only two optional inline-module failure cases.",
+      "Unsupported split-source descriptors remain covered by the shared density-source tests; this public packed-HTML proof covers inline-module failures only."
+    ]
+  },
+  "installed_artifacts": {
+    "xyg-0.0.1.dev2915+fab6aa90-py3-none-linux_x86_64.whl": "d92f634f7ddb59d72744fe8591f9aa4bff8ac093719c3639f418434ba55418cc",
+    "curatelabs-xyg-node-linux-x64-0.0.0-test.1063.tgz": "499ef47f6bcdc578ba788b4ee870579749b38cc297a49f76b1a1ba02e3687074",
+    "curatelabs-xyg-node-0.0.0-test.1063.tgz": "5b0e0c7a52342a1874c7e334210f4359602dc439895571e3dcab3bd4e5384cc5",
+    "curatelabs-xyg-0.0.0-test.1063.tgz": "a4e51e65a75f8bd9658f2c89d531d55064edd6e7a3003f718d879bcad9dd61a0"
+  },
+  "host_path_isolation": {
+    "python_without_node": true,
+    "node_without_python": true
+  },
+  "qualification_source_sha256": {
+    "scripts/consumer_apps_smoke.py": "7352405c8e0f73b12bda63562cd3c397966f0061ed60f6905f20242f3436e726",
+    "scripts/consumer_apps_smoke.mjs": "35c0e242b2d15f2f2a2fed955e287e1272572ef0e07b14317d5eb6dc8c9dae24",
+    "scripts/packaged_consumer_browser.mjs": "3470a40e65a23fa79111cc1c3d435ad567410e1f8712b271c76b4cdbc4ac6dfa",
+    "tests/fixtures/packaged_consumer_ticks.py": "5bea079580985e93ef83a8da53a4518dc3d5d54e48399ecb6191a68fd70edc10",
+    "tests/fixtures/packaged_consumer_server.mjs": "86ae8c824944e0d1a04402342fb6c3f74b3a224f7cf198c4dd82403fadda1898",
+    "tests/fixtures/packaged_density_consumer.mjs": "06382ff2ff4f5060b9131e03cceee70a607d821b9327d11e1fc7fabb3de797a5",
+    "tests/fixtures/packaged_streamlit_graphforge.py": "66459ac3bc058e2d38747838aadf938dabe8e5f10880d50fbc35f1c85da0bfc4",
+    "tests/test_streamlit_consumer.py": "90735e4706ea3d7b404191639166854a963f210f430364d3cab41ddc5a66dcae",
+    "tests/test_streamlit_package_boundary.py": "aa4a74d3945ee880876495be6ac827dc930ebbc53da24ca9a29f0c41b9c06c1e",
+    "examples/streamlit/app.py": "81d98ff84dc58c67b019f026b2d5d3aa8405744818a2da63c7a8ee7b023b4839",
+    "scripts/streamlit_graphforge_browser.mjs": "af75c2ede592ce074db301a777293e773611775975381df94e6245154479f75e",
+    "uv.lock": "9c897f644d4b241ab192c38d0afc26f4a49665dbf7734410e893b763ed9a0bef",
+    "pyproject.toml": "07f8799e3d616e73c24bd3ef5a7c679d190855d82f65d853467a7343ee90e825"
+  },
+  "node_qualification_inputs": {
+    "node-corrupt.buffer-0.bin": "2be8b3789fb14ae57d17fb8d9991e5bdfd19f2a39ec644746b2f242ddbf217d9",
+    "node-corrupt.spec.json": "f2efafda5a7ac3012610ca65f651bfa478221c13270c35585a2adb9d9c33c1b3",
+    "node-density.buffer-0.bin": "cb9570b5eff3257941c72734efba53a4b7b226d3dd9d919fa4d8b69b814ef419",
+    "node-density.buffer-1.bin": "5098f55e335ccb1a045c0119ca815509013ba9bae9a004412340c8be53350b3b",
+    "node-density.buffer-2.bin": "5098f55e335ccb1a045c0119ca815509013ba9bae9a004412340c8be53350b3b",
+    "node-density.spec.json": "37c49cddbf1c857ca5fc02d83aa35a69d9690641be1dcfb60155d383ab72a30d",
+    "node-missing.buffer-0.bin": "2be8b3789fb14ae57d17fb8d9991e5bdfd19f2a39ec644746b2f242ddbf217d9",
+    "node-missing.spec.json": "cbda7b973f4292b8767a2a2ef5c24eb48ea7a539041025f5d622a9e83b97efa6",
+    "node-polar.buffer-0.bin": "c588ee295fb4e3f820ef7c9aab116c85cde320401f12a63c62651c89925ff9f5",
+    "node-polar.spec.json": "b4eda4cf6c3490ec202a63f2a693f886405d97b7440079b91320fb899abcb492",
+    "node-secondary.buffer-0.bin": "2be8b3789fb14ae57d17fb8d9991e5bdfd19f2a39ec644746b2f242ddbf217d9",
+    "node-secondary.spec.json": "dd472ea4f9eaad6d68d3e9de9fc6fc429ec7351753088700c74cb42e09944479"
+  }
+}

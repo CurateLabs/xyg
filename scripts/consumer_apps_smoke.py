@@ -141,6 +141,7 @@ def installed_consumers(
             "--junitxml",
             str(result_path),
             str(ROOT / "tests/test_streamlit_consumer.py"),
+            str(ROOT / "tests/test_streamlit_package_boundary.py"),
         ],
         cwd=directory,
         env=clean_env,
@@ -329,6 +330,20 @@ def main() -> None:
             stack.enter_context(tempfile.TemporaryDirectory(prefix=".consumer-smoke-", dir=ROOT))
         )
         python, node_install, hashes, consumer_facts = installed_consumers(directory, args.wheel)
+        subprocess.run(
+            [
+                str(python),
+                str(ROOT / "tests/fixtures/packaged_streamlit_graphforge.py"),
+                str(output),
+            ],
+            cwd=directory,
+            env=env,
+            check=True,
+            timeout=60,
+        )
+        # Keep the exact direct-host documents without committing generated bundles.
+        for path in output.glob("streamlit-graphforge-*.html"):
+            path.with_suffix(".html.gz").write_bytes(gzip.compress(path.read_bytes(), mtime=0))
         hosted_html = directory / "hosted-html"
         subprocess.run(
             [
@@ -460,6 +475,13 @@ def main() -> None:
             "tests/fixtures/packaged_consumer_ticks.py",
             "tests/fixtures/packaged_consumer_server.mjs",
             "tests/fixtures/packaged_density_consumer.mjs",
+            "tests/fixtures/packaged_streamlit_graphforge.py",
+            "tests/test_streamlit_consumer.py",
+            "tests/test_streamlit_package_boundary.py",
+            "examples/streamlit/app.py",
+            "scripts/streamlit_graphforge_browser.mjs",
+            "uv.lock",
+            "pyproject.toml",
         )
     }
     report["node_qualification_inputs"] = {

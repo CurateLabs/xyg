@@ -1,0 +1,10 @@
+uv run --with pre-commit pre-commit run --all-files
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed
+
+uv run ruff check .
+All checks passed!
+
+uv run ruff format --check .
+891 files already formatted
