@@ -1,0 +1,9 @@
+file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/scripts/graphforge_webview_smoke.mjs:179
+const fail = (message) => { throw new Error(`graphforge webview smoke: ${message}`); };
+                                  ^
+
+Error: graphforge webview smoke: webview script failed: XYG_WASM_INIT_FAILED WebAssembly.compile(): BufferSource argument is empty
+    at fail (file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/scripts/graphforge_webview_smoke.mjs:179:35)
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/scripts/graphforge_webview_smoke.mjs:201:16
+
+Node.js v22.23.4

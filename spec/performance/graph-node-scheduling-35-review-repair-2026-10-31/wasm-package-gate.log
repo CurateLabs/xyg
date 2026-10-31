@@ -1,0 +1,11 @@
+file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/js/package-wasm.mjs:138
+if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
+                                              ^
+
+Error: xyg-wasm gzip is 755339 bytes, over the 641024-byte budget
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/js/package-wasm.mjs:138:47
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.23.4

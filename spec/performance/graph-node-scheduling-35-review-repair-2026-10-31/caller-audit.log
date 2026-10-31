@@ -1,0 +1,17 @@
+packages/xy-node/test/graphforge-layout.test.mjs:8:import { GraphForgeLayoutController, graphforgeWebviewPayload, composeGraphForge,
+packages/xy-node/test/graphforge-layout.test.mjs:24:  await assert.rejects(graphforgeWebviewPayload(composeGraphForge(input())), /requires.*owner/);
+packages/xy-node/test/graphforge-layout.test.mjs:28:  const result = await graphforgeWebviewPayload(owner, input(), { iterations: 12, chunkSteps: 2,
+packages/xy-node/src/graphforge.js:18:export { GraphForgeLayoutController, graphforgeWebviewPayload } from "./graphforge_layout.js";
+packages/xy-node/src/graphforge.js:835: * graphforgeWebviewPayload): the chart's
+packages/xy-node/src/graphforge_layout.js:128:export function graphforgeWebviewPayload(owner, input, options = {}) {
+packages/xy-node/src/graphforge_layout.js:130:    return Promise.reject(new TypeError("graphforgeWebviewPayload requires a GraphForgeLayoutController owner"));
+scripts/node_release_smoke.mjs:11:  graphforgeWebviewPayload,
+scripts/node_release_smoke.mjs:79:assert.equal(gf.graphforgeWebviewPayload, graphforgeWebviewPayload, "packaged root exposes the live default");
+scripts/node_release_smoke.mjs:82:  const webview = await graphforgeWebviewPayload(owner, composition, { width: 480, height: 360 });
+packages/xy-node/src/vscode.js:83:export { GraphForgeLayoutController, graphforgeWebviewPayload, graphforgePick,
+packages/xy-node/src/index.js:150:  graphforgeWebviewPayload,
+examples/vanilla-ts/graphforge-live.mjs:7:import { GraphForgeLayoutController, graphforgeWebviewPayload } from '../../packages/xy-node/src/graphforge.js';
+examples/vanilla-ts/graphforge-live.mjs:78:      const run = graphforgeWebviewPayload(owner, input, { width: 720, height: 480, layout: 'cose', iterations: 60, chunkSteps: 1,
+scripts/graphforge_webview_smoke.mjs:33:  graphforgeWebviewPayload,
+scripts/graphforge_webview_smoke.mjs:54:  payload = await graphforgeWebviewPayload(owner, composition, { width: 560, height: 380, title: "Native host" });
+packages/xy-node/test/vscode_contract.test.mjs:29:  assert.equal(typeof api.graphforgeWebviewPayload, "function");

@@ -50,8 +50,12 @@ through the host's nonce- or hash-aware path.
 
 Compose GraphForge results in a native Python or Node host, then serve the
 local XYG painter and typed binary payload. In a Node extension host, use
-`graphforgeWebviewPayload()` and relay picks to `graphforgePick()`; the webview
-owns display rather than graph computation.
+`await graphforgeWebviewPayload(owner, input, options)` with one
+`GraphForgeLayoutController` per view. Relay picks to
+`graphforgePick(payload, composition, hit)` and await `owner.dispose()` during
+teardown. Keep full source positions and pick membership at the Node host;
+only the spec and binary painter buffer go to the webview. The webview owns
+display rather than graph computation.
 
 The direct browser WASM path serves a module Worker and matching WASM asset at
 explicit same-origin URLs. Strict hosting needs `wasm-unsafe-eval` for WASM

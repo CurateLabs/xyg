@@ -258,9 +258,18 @@ and is rejected on raw live requests.
 
 Send only `spec` and binary `buffer` to the local painter. Full source f64
 `positions` and `pickData` stay at the Node host, including at Aggregate LOD.
+Circle, grid and other non-force graph layouts retain the full native source
+layout before preset packing, as force checkpoints do. Complete supplied
+positions keep the static non-force preset-reuse semantics; force requests use
+them as seeds.
 For an existing composition, resolve a relayed `{trace, index}` with
-`graphforgePick(payload, composition, hit)`; Direct node indices also address
-`payload.positions.uuid`. The webview can replace its previous view with
+`graphforgePick(payload, composition, hit)`. Render indices address
+`payload.pickData.nodes`, whose exact UUIDs come from Rust render membership;
+they do not address the full source `payload.positions.uuid` array. Viewport
+culling and collapsed groups can remap rows even below Aggregate. Collapsed
+group picks also report their hidden membership; Aggregate node picks report a
+cluster rather than an exact UUID. Out-of-render indices return `null`. The
+webview can replace its previous view with
 `renderStandalone(el, spec, buffer)` after destroying it, as the
 [local consumer fixture](https://github.com/CurateLabs/xyg/blob/main/examples/vanilla-ts/graphforge-live.mjs)
 does. This replacement resets viewport state; retained graph updates remain

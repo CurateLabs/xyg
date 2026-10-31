@@ -794,39 +794,40 @@ export function graphforgePositions(fig, composition) {
  *   `{ kind: "aggregate", trace, edgeCount, edges }`, or null off-graph.
  */
 export function graphforgePick(fig, composition, { trace, index } = {}) {
-  if (fig?.pickData) {
-    const { nodeTrace, edgeTrace, aggregate, edges } = fig.pickData;
-    if (!Number.isInteger(index) || index < 0) return null;
-    if (trace === nodeTrace) return aggregate ? { kind: "aggregate", trace, nodeCount: null }
-      : index < composition.nodes.count ? composition.identify("node", index) : null;
-    if (trace !== edgeTrace) return null;
-    const pick = edges[index];
-    if (!pick) return null;
-    if (pick.edge_count === 1) return composition.identify("edge", pick.source_edges[0]);
-    return { kind: "aggregate", trace, edgeCount: pick.edge_count,
-      edges: pick.source_edges.map((edge) => composition.identify("edge", edge)), truncated: pick.members_truncated };
-  }
+  if (!Number.isInteger(trace) || !Number.isInteger(index) || index < 0) return null;
+  const live = fig?.pickData;
   const meta = fig?._graphMeta?.[0];
-  if (meta == null || !Number.isInteger(trace) || !Number.isInteger(index) || index < 0) return null;
-  if (trace === meta.node_trace) {
-    if (meta.tier_name === "aggregate" || index >= composition.nodes.count) {
+  if (!live && !meta) return null;
+  const nodeTrace = live ? live.nodeTrace : meta.node_trace;
+  const edgeTrace = live ? live.edgeTrace : meta.edge_trace;
+  if (trace === nodeTrace) {
+    const count = live ? live.nodes.length : meta.n_nodes;
+    if (index >= count) return null;
+    if (live ? live.aggregate : meta.tier_name === "aggregate") {
       return { kind: "aggregate", trace, nodeCount: null };
     }
-    return composition.identify("node", index);
+    // member_of maps Rust's source/subset rows to render rows. It is not an
+    // identity map after viewport culling or compound disclosure.
+    const source = live ? -1 : meta.member_of.indexOf(index);
+    const node = live ? live.nodes[index] : source < 0 ? null
+      : { uuid: meta.ids[source], ...fig.graphNodePick(trace, source) };
+    if (!node) return null;
+    const composed = composition.nodeIndex(node.uuid);
+    if (composed < 0) return null;
+    const { uuid, ...compound } = node;
+    return { ...composition.identify("node", composed), ...compound };
   }
-  if (trace === meta.edge_trace) {
-    const pick = fig.graphEdgePick(trace, index);
-    if (pick == null) return null;
-    if (pick.edge_count === 1) return composition.identify("edge", pick.source_edges[0]);
-    return {
-      kind: "aggregate",
-      trace,
-      edgeCount: pick.edge_count,
-      edges: pick.source_edges.map((edge) => composition.identify("edge", edge)),
-      truncated: pick.members_truncated,
-    };
-  }
-  return null;
+  if (trace !== edgeTrace) return null;
+  const pick = live ? live.edges[index] : fig.graphEdgePick(trace, index);
+  if (!pick) return null;
+  const sourceIds = live ? live.sourceEdgeIds : meta.compound_collapsed ? meta.source_edge_ids : null;
+  // Disclosure membership addresses the visible source subset; join its IDs
+  // back to the composition (including its existing derived-edge IDs).
+  const sourceIndex = sourceIds ? new Map(graphforgeGraphData(composition).edgeIds.map((id, i) => [id, i])) : null;
+  const identify = edge => composition.identify("edge", sourceIndex ? sourceIndex.get(sourceIds[edge]) : edge);
+  if (pick.edge_count === 1) return identify(pick.source_edges[0]);
+  return { kind: "aggregate", trace, edgeCount: pick.edge_count,
+    edges: pick.source_edges.map(identify), truncated: pick.members_truncated };
 }
 
 /**

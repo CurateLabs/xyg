@@ -7,6 +7,8 @@ import path from "node:path";
 
 import {
   PROTOCOL_VERSION,
+  GraphForgeLayoutController,
+  graphforgeWebviewPayload,
   abiVersion,
   nativeLibraryPath,
   scatterChart,
@@ -73,8 +75,18 @@ const composition = gf.composeGraphForge({
 assert.equal(composition.layers[0].counts.matched, composition.nodes.count, "every node joins by UUID");
 assert.ok([...composition.edges.derived].some(Boolean), "derived similarity edges compose");
 assert.ok(composition.scene.bytes.length > 0, "the direct-tier Scene renders");
-const webview = gf.graphforgeWebviewPayload(composition, { width: 480, height: 360 });
-assert.equal(gf.graphforgePick(webview.figure, composition, { trace: webview.nodeTrace, index: 0 }).uuid, composition.nodes.uuid[0]);
+assert.equal(gf.GraphForgeLayoutController, GraphForgeLayoutController, "packaged root and subpath share the owner");
+assert.equal(gf.graphforgeWebviewPayload, graphforgeWebviewPayload, "packaged root exposes the live default");
+const owner = new GraphForgeLayoutController();
+try {
+  const webview = await graphforgeWebviewPayload(owner, composition, { width: 480, height: 360 });
+  assert.equal(webview.phase, "complete");
+  assert.ok(webview.step > 0, "the default live path schedules force");
+  assert.equal(webview.figure, undefined, "live payloads have no caller-thread Figure");
+  assert.equal(gf.graphforgePick(webview, composition, { trace: webview.nodeTrace, index: 0 }).uuid, composition.nodes.uuid[0]);
+} finally {
+  await owner.dispose();
+}
 assert.throws(
   () => gf.composeGraphForge({ layers: [{ result: fixture("pagerank"), intent: "graph" }] }),
   (error) => error.code === "GF_COMPOSE_BASE_REQUIRED",

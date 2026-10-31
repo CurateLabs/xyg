@@ -1,6 +1,6 @@
 /** Marshaling/presentation bridge. Rust and force_scheduler.js remain authorities. */
 import { parentPort, workerData } from "node:worker_threads";
-import { graphIsProgressiveForce } from "./abi.js";
+import { graphIsProgressiveForce, graphLayout } from "./abi.js";
 import { runForceTicks } from "./force_scheduler.js";
 import { composeGraphForge, decodeGraphForgeDocument, graphforgeGraphData,
   graphforgeStaticPayload } from "./graphforge.js";
@@ -19,7 +19,7 @@ function present() {
   const state = pending;
   pending = undefined;
   const started = performance.now();
-  // Every force checkpoint is SOURCE-indexed. Preset packing cannot step force,
+  // Every graph checkpoint is SOURCE-indexed. Preset packing cannot step force,
   // including at Aggregate LOD (never use returned render centroids as seeds).
   const positions = state.x ? { uuid: composition.nodes.uuid, x: state.x, y: state.y } : null;
   const { figure, ...payload } = graphforgeStaticPayload(composition, {
@@ -31,9 +31,20 @@ function present() {
   // joins in the host. Pick data stays in the Node host, outside the paint wire.
   const edgeTrace = payload.edgeTrace;
   const edges = meta ? Array.from({ length: figure.traces[edgeTrace].x0.length }, (_, i) => figure.graphEdgePick(edgeTrace, i)) : [];
+  const nodes = meta ? new Array(meta.n_nodes).fill(null) : [];
+  if (meta && meta.tier_name !== "aggregate") {
+    meta.member_of.forEach((render, source) => {
+      if (render >= 0 && render < nodes.length) nodes[render] = {
+        uuid: meta.ids[source], ...figure.graphNodePick(payload.nodeTrace, source),
+      };
+    });
+  }
   presenting = state;
   const message = { ...payload, positions: sourcePositions, pickData: { nodeTrace: payload.nodeTrace,
-    edgeTrace, aggregate: meta?.tier_name === "aggregate", edges },
+    edgeTrace, aggregate: meta?.tier_name === "aggregate", nodes, edges,
+    // Collapsed edge membership addresses the Rust-visible subset. Keep its
+    // source IDs for the existing composition identity join, outside paint.
+    sourceEdgeIds: meta?.compound_collapsed ? meta.source_edge_ids : null },
     revision, jobId, step: state.step, phase: state.phase, alpha: state.alpha,
     packingMs: performance.now() - started };
   send({ type: "payload", payload: message }, [message.buffer,
@@ -75,7 +86,7 @@ async function main() {
       composition = composeGraphForge(workerData.input);
     }
     const layout = String(opts.layout ?? "force").trim().toLowerCase();
-    if (composition.kind === "graph" && graphIsProgressiveForce(layout)) {
+    if (composition.kind === "graph") {
       const data = graphforgeGraphData(composition);
       let x, y;
       if (opts.positions != null) {
@@ -86,17 +97,27 @@ async function main() {
         x = Float64Array.from(data.ids, id => p.x[at.get(id)]);
         y = Float64Array.from(data.ids, id => p.y[at.get(id)]);
       }
-      let parents;
-      if (layout === "cose" && data.parentIndices != null) {
-        if (data.parentIndices.length !== data.nNodes || data.parentValidity?.length !== data.nNodes) throw new RangeError("compound parent planes must match source nodes");
-        parents = BigUint64Array.from(data.parentIndices, (v, i) => data.parentValidity[i] ? v : 0xffffffffffffffffn);
+      if (!graphIsProgressiveForce(layout)) {
+        const sourceLayout = opts.positions != null ? "preset" : layout;
+        if (sourceLayout === "preset" && x == null) throw new Error("layout='preset' requires x and y");
+        // One native source layout, before render LOD/collapse. Only preset
+        // packing follows; render centroids never replace source coordinates.
+        const laid = graphLayout(sourceLayout, data.nNodes, data.sources, data.targets,
+          { x, y, seed: opts.seed, roots: opts.roots });
+        checkpoint({ ...laid, phase: "complete", step: 0, alpha: null });
+      } else {
+        let parents;
+        if (layout === "cose" && data.parentIndices != null) {
+          if (data.parentIndices.length !== data.nNodes || data.parentValidity?.length !== data.nNodes) throw new RangeError("compound parent planes must match source nodes");
+          parents = BigUint64Array.from(data.parentIndices, (v, i) => data.parentValidity[i] ? v : 0xffffffffffffffffn);
+        }
+        const pinned = typeof opts.pinned === "string" ? data.nodeAttrs[opts.pinned] : opts.pinned;
+        if (typeof opts.pinned === "string" && pinned == null) throw new RangeError("unknown pinned node column");
+        await runForceTicks({ nNodes: data.nNodes, sources: data.sources, targets: data.targets,
+          x, y, pinned, parents, algorithm: layout, cose: opts.cose, seed: opts.seed,
+          totalSteps: opts.iterations ?? 300, chunkSteps: opts.chunkSteps ?? 10,
+          revision, jobId, maxWallMs, signal: abort.signal, onTick: checkpoint });
       }
-      const pinned = typeof opts.pinned === "string" ? data.nodeAttrs[opts.pinned] : opts.pinned;
-      if (typeof opts.pinned === "string" && pinned == null) throw new RangeError("unknown pinned node column");
-      await runForceTicks({ nNodes: data.nNodes, sources: data.sources, targets: data.targets,
-        x, y, pinned, parents, algorithm: layout, cose: opts.cose, seed: opts.seed,
-        totalSteps: opts.iterations ?? 300, chunkSteps: opts.chunkSteps ?? 10,
-        revision, jobId, maxWallMs, signal: abort.signal, onTick: checkpoint });
     } else checkpoint({ phase: "complete", step: 0, alpha: null });
     schedulerDone = true;
     if (abort.signal.aborted) close(); else finish();

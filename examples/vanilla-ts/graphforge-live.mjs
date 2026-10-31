@@ -95,8 +95,10 @@ const server = createServer(async (req, res) => {
     } else if (url.pathname === '/pick' && current && req.method === 'POST') {
       let body = ''; for await (const chunk of req) body += chunk;
       const hit = JSON.parse(body);
-      // Source UUIDs accompany checkpoints, never Aggregate render centroids.
-      const uuid = hit.trace === current.nodeTrace ? current.positions.uuid[hit.index] : null;
+      // Render membership is separate from the full source position snapshot.
+      // Rust can cull/remap rows even below Aggregate; never index sources by hit.
+      const uuid = hit.trace === current.nodeTrace && Number.isInteger(hit.index)
+        && hit.index >= 0 && !current.pickData.aggregate ? current.pickData.nodes[hit.index]?.uuid : null;
       event('pick', { exact: typeof uuid === 'string', step: current.step }); respond(res, { uuid: uuid ?? null });
     } else if (url.pathname === '/evidence') respond(res, { events, maxCallerTickerLagMs: Math.max(0, ...lags), callerTickerSamples: lags.length,
       sourceNodes });

@@ -187,7 +187,7 @@ function measure(n, composeWasm, fixtureDir) {
     const [document, composeMs] = bench(() => composeGraphForgeRequest(request));
     const [composition, decodeMs] = bench(() => decodeGraphForgeDocument(document));
     const [wasmDocument, wasmMs] = bench(() => composeWasm(request));
-    // graphforgeWebviewPayload = graphforgeChart (graph mark: Rust force
+    // graphforgeStaticPayload = graphforgeChart (graph mark: Rust force
     // layout, LOD, routing) + buildPayload (encode); timed apart.
     const [figure, chartMs] = bench(() => graphforgeChart(composition, { width: 960, height: 640 }));
     const [payload, payloadEncodeMs] = bench(() => figure.buildPayload());

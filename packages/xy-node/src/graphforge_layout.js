@@ -37,9 +37,10 @@ export class GraphForgeLayoutController {
     const live = () => !outcome && this.#active === job && !this.#disposed;
     const stop = () => { clearTimeout(timer); signal?.removeEventListener("abort", abort); };
     const cancel = cause => {
-      if (outcome?.failed) return;
-      outcome = { failed: true, value: cause };
-      stop();
+      if (!outcome?.failed) {
+        outcome = { failed: true, value: cause };
+        stop();
+      }
       if (worker) {
         worker.postMessage({ type: "cancel" });
         // Allow the existing force scheduler its own native cleanup/exit grace.
@@ -58,15 +59,23 @@ export class GraphForgeLayoutController {
       else settle.resolve(last);
     };
     if (signal?.aborted) { abort(); finish(); return promise; }
-    signal?.addEventListener("abort", abort, { once: true });
-    timer = setTimeout(() => cancel(error("GF_LAYOUT_TIMEOUT", "GraphForge layout exceeded maxWallMs")), maxWallMs);
     try {
+      signal?.addEventListener("abort", abort, { once: true });
+      // Signal registration and input accessors may synchronously re-enter
+      // cancel/dispose. No worker or timer may escape that failed startup.
+      if (signal?.aborted) abort();
+      if (outcome?.failed) { finish(); return promise; }
+      timer = setTimeout(() => cancel(error("GF_LAYOUT_TIMEOUT", "GraphForge layout exceeded maxWallMs")), maxWallMs);
       // Composition instances contain lazy accessors: send only their canonical
       // document. Raw input is cloned once by Worker; no host-side O(source) pack.
       const request = input?.bytes instanceof Uint8Array ? { documentBytes: input.bytes } : { input };
+      if (outcome?.failed) { finish(); return promise; }
       worker = new Worker(new URL("./graphforge_layout_worker.js", import.meta.url), {
         workerData: { ...request, opts, revision, jobId, maxWallMs },
       });
+      // Structured cloning during construction can also invoke input getters.
+      // Hand an already-recorded cancellation to the newly assigned worker.
+      if (outcome?.failed) cancel(outcome.value);
     } catch (cause) { cancel(cause); finish(); return promise; }
     worker.on("message", msg => {
       if (!live() || msg?.revision !== revision || msg?.jobId !== jobId) return;

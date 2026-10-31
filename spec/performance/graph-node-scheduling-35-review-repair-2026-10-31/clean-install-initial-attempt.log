@@ -1,0 +1,19 @@
+
+added 46 packages in 2s
+node:fs:2801
+      const stats = binding.lstat(base, true, undefined, true /* throwIfNoEntry */);
+                            ^
+
+Error: ENOENT: no such file or directory, lstat '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/repair-release-smoke/node_modules'
+    at Object.realpathSync (node:fs:2801:29)
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/repair-release-smoke/release-smoke.mjs:28:24
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'lstat',
+  path: '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/repair-release-smoke/node_modules'
+}
+
+Node.js v22.23.4
