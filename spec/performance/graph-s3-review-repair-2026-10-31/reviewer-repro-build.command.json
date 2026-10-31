@@ -1,0 +1,20 @@
+{
+  "name": "reviewer-repro-build",
+  "command": [
+    "rustc",
+    "--edition",
+    "2021",
+    "/tmp/xyg-s3-pick-review.rs",
+    "--extern",
+    "xyg_engine=target/debug/libxyg_engine.rlib",
+    "-L",
+    "dependency=target/debug/deps",
+    "-o",
+    "target/task-tmp/reviewer-repro"
+  ],
+  "exitCode": 0,
+  "seconds": 0.932,
+  "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "log": "reviewer-repro-build.txt.gz",
+  "gzipSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+}

@@ -761,3 +761,103 @@ fn nonrepresentable_screen_geometry_cannot_replace_a_valid_publication() {
     assert_eq!(s.render_revision(), rev);
     assert_eq!(s.published(), Some(&old));
 }
+
+#[test]
+fn overflowing_edge_length_preserves_publication_camera_revision_and_pick_identity() {
+    let doc = handmade(&[id(1), id(2)], &[E::Persisted(id(11))], &[]);
+    let mut s = loaded(&doc, &[0., 100.], &[0.; 2]);
+    let camera = Camera {
+        scale_x: 1.,
+        scale_y: 1.,
+        offset_x: 0.,
+        offset_y: 0.,
+        viewport_width: 200.,
+        viewport_height: 100.,
+        dpr: 1.,
+    };
+    let old = s.render(Some(camera)).unwrap().clone();
+    let stamp = header(&s, 1);
+    assert_eq!(old.paint.pieces.len(), 1);
+    // Mapped nodes and membership remain finite; only squared length overflows.
+    assert_eq!(
+        s.render(Some(Camera {
+            scale_x: 1e154,
+            viewport_width: 1e156,
+            ..camera
+        })),
+        Err(InteractionStatus::Invalid)
+    );
+    assert_eq!(s.camera, Some(camera));
+    assert_eq!(s.render_revision(), old.revision);
+    assert_eq!(s.published_revision, old.revision);
+    assert_eq!(s.published(), Some(&old));
+    assert_eq!(s.render(Some(camera)).unwrap(), &old);
+    assert_eq!(
+        s.published().unwrap().pick_at(50., 0.).unwrap(),
+        Some(PickTarget::Edge(0))
+    );
+    s.select_at(stamp, 50., 0., SelectMode::Replace).unwrap();
+    assert_eq!(s.selection().unwrap(), vec![ElementRef::Edge(id(11))]);
+}
+
+#[test]
+fn huge_loaded_edge_geometry_is_invalid_including_pre_route_overflow() {
+    let doc = handmade(&[id(1), id(2)], &[E::Persisted(id(11))], &[]);
+    for x in [[0., 1e155], [-f64::MAX, f64::MAX]] {
+        let mut s = loaded(&doc, &x, &[0.; 2]);
+        assert_eq!(s.render(None), Err(InteractionStatus::Invalid), "{x:?}");
+        assert_eq!(s.render_revision(), 0);
+        assert!(s.published().is_none());
+        assert_eq!(s.camera, None);
+        assert_eq!(s.positions().unwrap().0, &x);
+    }
+}
+
+#[test]
+fn pre_route_delta_overflow_is_invalid_independently_of_screen_length() {
+    let doc = handmade(&[id(1), id(2)], &[E::Persisted(id(11))], &[]);
+    let mut s = loaded(&doc, &[-f64::MAX, f64::MAX], &[0.; 2]);
+    // A tiny camera makes the mapped chord representable, but the routing
+    // kernel's data-space subtraction overflows and otherwise discards it.
+    assert_eq!(
+        s.render(Some(Camera {
+            scale_x: 1e-308,
+            scale_y: 1.,
+            offset_x: 2.,
+            offset_y: 0.,
+            viewport_width: 4.,
+            viewport_height: 100.,
+            dpr: 1.,
+        })),
+        Err(InteractionStatus::Invalid)
+    );
+    assert_eq!(s.render_revision(), 0);
+    assert!(s.published().is_none());
+}
+
+#[test]
+fn valid_zero_length_occluded_and_culled_edges_still_publish_without_pieces() {
+    let doc = handmade(&[id(1), id(2)], &[E::Persisted(id(11))], &[]);
+    for x in [[0., 0.], [0., 1.], [0., 1e-200]] {
+        let mut s = loaded(&doc, &x, &[0.; 2]);
+        let r = s.render(None).unwrap();
+        assert_eq!(r.edge_count(), 1);
+        assert_eq!(r.members_of_edge(0), &[0]);
+        assert!(r.paint.pieces.is_empty(), "{x:?}");
+    }
+    let mut s = loaded(&doc, &[1000., 1100.], &[0.; 2]);
+    let r = s
+        .render(Some(Camera {
+            scale_x: 1.,
+            scale_y: 1.,
+            offset_x: 0.,
+            offset_y: 0.,
+            viewport_width: 100.,
+            viewport_height: 100.,
+            dpr: 1.,
+        }))
+        .unwrap();
+    assert_eq!(r.node_count(), 0);
+    assert_eq!(r.edge_count(), 0);
+    assert!(r.paint.pieces.is_empty());
+}

@@ -1,0 +1,22 @@
+{
+  "name": "node-native-configured",
+  "command": [
+    "node",
+    "--test",
+    "--test-concurrency=2",
+    "--test-timeout=20000",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/graphforge-cross-host.test.mjs",
+    "packages/xy-node/test/graph.test.mjs",
+    "packages/xy-node/test/force-worker-lifecycle.test.mjs",
+    "packages/xy-node/test/composition.test.mjs",
+    "packages/xy-node/test/temporal.test.mjs",
+    "packages/xy-node/test/temporal-graph.test.mjs",
+    "packages/xy-node/test/temporal-controller.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 7.139,
+  "rawSha256": "c84c2accfab4694507c4e3950efb5d0d50edba7abd89a714e434a95bc8c0a2d0",
+  "log": "node-native-configured.txt.gz",
+  "gzipSha256": "dd5f1948ae38da65c9a4b889903b621200a9c51fc153b4ccbc7ff8dcbba13c66"
+}

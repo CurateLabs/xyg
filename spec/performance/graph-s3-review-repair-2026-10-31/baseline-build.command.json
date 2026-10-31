@@ -1,0 +1,14 @@
+{
+  "name": "baseline-build",
+  "command": [
+    "cargo",
+    "build",
+    "-p",
+    "xyg-engine"
+  ],
+  "exitCode": 0,
+  "seconds": 21.813,
+  "rawSha256": "23f055bfa1162e307c6a3faf28c07da687ad5c0d5db4b94674c9de675cb7546c",
+  "log": "baseline-build.txt.gz",
+  "gzipSha256": "cb5b6a8501ab3470e3d6cb53ad8eb8a062829d2812f1fb3397c7fd5a810d803f"
+}

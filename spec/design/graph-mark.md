@@ -1234,4 +1234,7 @@ the composed point painter's outer diameter/inset stroke contract. Region nodes
 use their published centers; exact edges use painted dash/stroke/head geometry.
 Admission overflow is recorded, with bounded same-publication node scans and
 single-piece-only degraded point edges; no omitted loop gets a chord substitute.
-The S4 paint buffer projection and S5 painter/controller remain outstanding.
+Non-finite retained-edge routing or mapped piece arithmetic rejects publication
+before camera/revision replacement; genuine coincident or valid occluded
+pieces may still be absent (graph-interaction.md §2.3). The S4 paint buffer
+projection and S5 painter/controller remain outstanding.

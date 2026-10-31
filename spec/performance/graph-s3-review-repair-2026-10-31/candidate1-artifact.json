@@ -1,0 +1,17 @@
+{
+  "node": "v22.23.4",
+  "source": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+  "output": "target/task-tmp/candidate1-optimized.wasm",
+  "rawBytes": 1548390,
+  "gzip6Bytes": 640709,
+  "sha256": "db698663bb9db02e50001af58e45c538cbdd9644c778d52ae82aebd6a3baa61a",
+  "gzip6Sha256": "2ffb1209c2475fba0d33fb82475b5a0018eafe5d830b46ffb66e61aa252d24ad",
+  "rawGate": 1548288,
+  "gzipGate": 641024,
+  "rawHeadroom": -102,
+  "gzipHeadroom": 315,
+  "imports": 0,
+  "functions": 60,
+  "wasmAbi": 34,
+  "scene": 34
+}

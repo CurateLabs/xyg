@@ -1,0 +1,14 @@
+{
+  "name": "node-wasm-diagnostic-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s3-review-repair-2026-10-31/diagnostic_parity.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.861,
+  "rawSha256": "f8f99d5f9177555659f791eedfd87027438dd57cdf1fb55f40faa30a43d62bee",
+  "log": "node-wasm-diagnostic-final.txt.gz",
+  "gzipSha256": "ce65ec4c4d9e08fc070b05797b1a7c5521556e3c516ce18c271e5e06d35bf04a"
+}

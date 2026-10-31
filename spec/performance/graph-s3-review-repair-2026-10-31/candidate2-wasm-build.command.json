@@ -1,0 +1,17 @@
+{
+  "name": "candidate2-wasm-build",
+  "command": [
+    "cargo",
+    "build",
+    "-p",
+    "xyg-wasm",
+    "--release",
+    "--target",
+    "wasm32-unknown-unknown"
+  ],
+  "exitCode": 0,
+  "seconds": 64.371,
+  "rawSha256": "39cb7a98243aa47147dbab804d9cd517a16ece5eec4b09ef3528f1d75f7cf9df",
+  "log": "candidate2-wasm-build.txt.gz",
+  "gzipSha256": "9ef0dc85deb8787879af0a25b6f9ed897a126ca85528a63d5ca871170d3aa3ac"
+}

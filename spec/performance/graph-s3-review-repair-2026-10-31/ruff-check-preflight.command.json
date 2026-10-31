@@ -1,0 +1,15 @@
+{
+  "name": "ruff-check-preflight",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.259,
+  "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+  "log": "ruff-check-preflight.txt.gz",
+  "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+}

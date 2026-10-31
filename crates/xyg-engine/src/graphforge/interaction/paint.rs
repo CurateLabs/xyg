@@ -225,6 +225,16 @@ pub(super) fn build(
         .map(|n| f64::from(n.style.size) * 0.5)
         .collect();
     let symbols: Vec<_> = paint.nodes.iter().map(|n| n.style.shape).collect();
+    // The shared routing kernel skips non-finite geometry. Validate its chord
+    // arithmetic here so a session cannot publish that omission as valid (§19).
+    for (&s, &t) in output.edge_source.iter().zip(&output.edge_target) {
+        let (s, t) = (s as usize, t as usize);
+        let dx = output.node_x[t] - output.node_x[s];
+        let dy = output.node_y[t] - output.node_y[s];
+        if !dx.is_finite() || !dy.is_finite() || !dx.hypot(dy).is_finite() {
+            return Err(InteractionStatus::Invalid);
+        }
+    }
     let cap = output
         .edge_count()
         .checked_mul(edge_route::edge_route_segments_per_edge(false))
@@ -266,7 +276,10 @@ pub(super) fn build(
         let (a, b) = (map(x0[i], y0[i]), map(x1[i], y1[i]));
         let d = [b[0] - a[0], b[1] - a[1]];
         let length = (d[0] * d[0] + d[1] * d[1]).sqrt();
-        if !length.is_finite() || length <= 0. {
+        if a.iter().chain(&b).chain(&d).any(|v| !v.is_finite()) || !length.is_finite() {
+            return Err(InteractionStatus::Invalid);
+        }
+        if length <= 0. {
             continue;
         }
         let layers = paint.edge_layers[edge];

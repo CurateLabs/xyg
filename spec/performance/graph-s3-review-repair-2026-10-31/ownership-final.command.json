@@ -1,0 +1,14 @@
+{
+  "name": "ownership-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/verify_ownership.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.537,
+  "rawSha256": "958c338d2b0e3efaddf8363303837ad2d36c47d315b1a1f60cedc875d6faf73e",
+  "log": "ownership-final.txt.gz",
+  "gzipSha256": "830e711de2f27ffb9f4d97b920838ba50ea61a9210c8ab61d84daef5f4127a85"
+}

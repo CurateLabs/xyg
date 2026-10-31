@@ -1,0 +1,13 @@
+{
+  "name": "candidate2-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s3-review-repair-2026-10-31/measure-artifact.mjs",
+    "candidate2"
+  ],
+  "exitCode": 0,
+  "seconds": 40.577,
+  "rawSha256": "d1f8ccdf07cc5099b0e821b377c646c4a9908d90c99fb47b7692ff3f75d77818",
+  "log": "candidate2-measure.txt.gz",
+  "gzipSha256": "ffa6302b4b5e5c8f604f1f5d5ff6e473349890eb752a6690146a9dc0d35e987f"
+}

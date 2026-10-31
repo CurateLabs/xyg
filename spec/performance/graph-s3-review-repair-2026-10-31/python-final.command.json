@@ -1,0 +1,27 @@
+{
+  "name": "python-final",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graphforge.py",
+    "tests/test_graphforge_scene.py",
+    "tests/test_graphforge_semantic_evidence.py",
+    "tests/test_graphforge_fixture_generation.py",
+    "tests/test_graphforge_contract_corpus.py",
+    "tests/test_cose_native_parity.py",
+    "tests/test_temporal_columns.py",
+    "tests/test_temporal_graph_native.py",
+    "tests/test_temporal_controller.py",
+    "tests/test_graph_style.py",
+    "tests/test_graph_semantic_mapping.py",
+    "-k",
+    "not browser"
+  ],
+  "exitCode": 0,
+  "seconds": 3.775,
+  "rawSha256": "aac5506b1dd6f3f91a0cce0b95ecab64809739f7e5ee721a0cf8303d1467c795",
+  "log": "python-final.txt.gz",
+  "gzipSha256": "b1108805e9ccb6c0cdf9b98b8774c2d1c4a3282088ec984aff88edd28319c83e"
+}

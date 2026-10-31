@@ -179,6 +179,18 @@ over source rows before membership projection; Aggregate omits source semantics
 and uses the resolver's neutral aggregate style. Geometry and index are rebuilt
 on **every** publication, including style-only republication at the same revision. Work exceeded mid-query → `GF_INTERACTION_BUDGET`, no change. `render_revision` advances on *structural* change only (pin, move, relayout, an effective disclosure, a changed temporal frame, bind/unbind, or a render requested with a different camera than the previous publication); a render with nothing structural changed republishes the same revision with fresh style planes. This supersedes "each render bumps": selection, focus, hover and highlight change style planes only, and aggregate refs must stay valid across them. The revision never wraps: at `u32::MAX` a structural change fails `GF_INTERACTION_REVISION_EXHAUSTED` before any mutation.
 
+**Finite geometry refusal (S3 review repair).** A publication rejects
+`GF_INTERACTION_INVALID` when a retained edge's data-space routing delta or
+length is non-finite, or its mapped piece endpoints, delta, or computed length
+are non-finite. Routing validation precedes the shared kernel, which may omit
+invalid intermediates; checking only its emitted pieces is insufficient.
+Coincident finite endpoints and valid fully occluded pieces may still emit no
+paint; the existing finite zero-length omission remains unchanged, including
+tiny occluded chords whose squared length underflows. Geometry construction
+must succeed before replacing the publication, camera, or render revision,
+so a rejected camera retains the old paint, membership,
+pick identity, and stamp. This adds no coordinate clamp or fallback chord.
+
 ### 2.4 Stamps and coordination
 Destination stamp `(instance_id, render_revision)` on every local event; mismatch → `GF_INTERACTION_STALE`, no change (host repaints, resubmits). Origin stamp on `ApplyRemote`: `GraphCoordinationEvent { group_id, source_instance, revision, generation uuid, refs[0..10_000] sorted unique }`. The gate (`group_id!=0`, wrong group no-op, self → SelfEcho, `revision<=last_seen` → StaleRevision, atomic apply, no local bump, no echo; `temporal_controller.rs:346-389`) is extracted to `coordination.rs::CoordinationGate` and used by both controllers. Outbound: each distinct successful local selection request (including Clear
 and a successful request that leaves membership identical) in a nonzero group
@@ -432,5 +444,9 @@ Final independent review of the complete integrated diff remains required.
 Typed publication picking, shared coordination admission, and atomic replacement
 are implemented locally; validation receipts and remaining package/review gates
 are recorded in [S3 local evidence](../performance/graph-s3-local-2026-10-31/README.md).
+The separate [S3 review repair](../performance/graph-s3-review-repair-2026-10-31/README.md)
+records the finite edge-arithmetic blocker repair and two rejected codegen
+boundary experiments. The raw package gate still fails by 221 bytes; the
+original S3 receipt is unchanged.
 This does not establish S4 wire capacity behavior, browser/host delivery, #36,
 milestone 4, or release completion. No ABI/export/manifest version changes.

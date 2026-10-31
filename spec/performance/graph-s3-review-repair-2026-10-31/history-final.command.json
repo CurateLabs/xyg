@@ -1,0 +1,15 @@
+{
+  "name": "history-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "-c",
+    "import hashlib,json,pathlib; r=pathlib.Path(\"spec/performance/graph-s3-review-repair-2026-10-31\"); h=json.loads((r/\"history-before.json\").read_text()); bad=[p for p,d in h.items() if hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()!=d]; assert not bad,bad; print(f\"{len(h)} historical receipt/fixture/ABI files byte unchanged; original S3 receipt all 57 files unchanged\")"
+  ],
+  "exitCode": 0,
+  "seconds": 0.112,
+  "rawSha256": "0f3cb52aebd629863a86722d5581cb6c838b3e065958a91b335aa0d79d490621",
+  "log": "history-final.txt.gz",
+  "gzipSha256": "f579299d1cc47840eabeb9230f6526ee4cdbf30043253fd54589c5127e416f90"
+}
