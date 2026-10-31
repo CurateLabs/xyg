@@ -22,7 +22,7 @@
     "rawHeadroom": 509,
     "gzip6Headroom": 497
   },
-  "sourceManifestSha256": "bce9c7d92e6306f81a696b093cb8b86c1e076387bb1198427a79fde8a30436c4",
+  "sourceManifestSha256": "cb321a22bacfd7212aa410352875ed0e6d6fa7490da81b7bb8b6fbafed9836e5",
   "packagedManifest": {
     "file": "packages/xy-client/dist/xyg-wasm.manifest.json",
     "sha256": "433933409df315fb4c3fc2cc624c0badea5fdd342884d6b65daf3fc5fd60e56e",
@@ -196,5 +196,6 @@
     "No S2 session WASM ABI, controller, accessibility or host acceptance",
     "CI must confirm tight package headroom",
     "Historical failed receipts and diagnostic limitations remain unchanged"
-  ]
+  ],
+  "sourceMetadataNote": "After validation, the graph-interaction status line was corrected to report passing local packaging; all Rust/client/packager/harness inputs and artifacts remain unchanged."
 }

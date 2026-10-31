@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **design final; S1 and bounded S2 engine implemented; recovered S2 packaging blocked** (see [Implementation status](#implementation-status)).
+Status: **design final; S1 and bounded S2 engine implemented; local S2 packaging validated, independent review and CI pending** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:

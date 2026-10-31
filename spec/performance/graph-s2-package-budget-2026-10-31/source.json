@@ -285,7 +285,7 @@
     "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
     "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
     "spec/design/browser-wasm.md": "8034bb9cee8d8e78c0f5b21dfd9dc3c522ca1ea8301e607514ef7c6b36b96108",
-    "spec/design/graph-interaction.md": "10e8291df073458e000a3acd21dcc350810fb975436fa7274264d535fcb429f1",
+    "spec/design/graph-interaction.md": "e690b603936047d1e3f19e1b376ded7b7035b3ea5c95591838ea18cc8b945f46",
     "spec/releases/0.6.0-api-inventory.json": "72c679c72df3f60a34376ec2de46547f02df2368284f34a323d5082ea9597488",
     "spec/wasm/abi.json": "442524fb009b9b9b7880a5ff829a537fb332686bc5f6e21765d9ceaae1e5ae9b",
     "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24"
