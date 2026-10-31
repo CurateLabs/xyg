@@ -77,6 +77,12 @@ function cases() {
     select: [],
     render: { width: 640, height: 420, theme: "dark", title: "GraphForge" },
   }]);
+  out.push(["property graph", { base: base("property"), layers: [] }]);
+  out.push(["property graph + render", {
+    base: base("property"),
+    layers: [],
+    render: { width: 640, height: 420, theme: "light", title: "Property graph" },
+  }]);
   out.push(["coordinates", {
     layers: [{ result: arrow("node2vec"), intent: "embedding-coordinates", coordinates: fs.readFileSync(path.join(DERIVED, "node2vec-coordinates.arrow")) }],
   }]);

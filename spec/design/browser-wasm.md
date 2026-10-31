@@ -221,6 +221,21 @@ bytes** and **636,944 gzip bytes** (Node `gzipSync`, default level 6), compared 
 the earlier merge-base build's 1,539,454 raw / 635,754 gzip. The gates remain
 1,507 KiB raw / 624 KiB gzip, with 946 / 2,032 bytes of headroom respectively.
 
+The #934 property-graph recovery onto accepted main `ec90340c` keeps those
+same gates and the existing compiler/optimizer profile. Local packaging with
+Rust 1.96.0, Node 24.21.0 and pinned Binaryen 132 (`npm run build:wasm`) measures
+**1,543,118 raw / 638,560 gzip bytes** (Node `gzipSync`, level 6), SHA-256
+`907551f3a16fbe7127ea243d0226c7e3a552595cf663190a0b0ac5482002ad15`.
+Headroom is **50 raw / 416 gzip bytes**. The caption decoder merges candidates
+one at a time, short-UUID captions use the same eight hex digits directly, and
+the shared class-ranking helper reuses its code vector to track assigned ranks.
+These preserve output semantics and fit the existing gates; no runtime speedup
+is claimed. Native ABI 396 and the WASM/Scene/painter versions are unchanged.
+The actual packaged WASM is checked against native for all GraphForge parity
+fixtures. Combined milestone changes must rerun packaging after integration;
+this measurement covers the isolated recovery only.
+
+
 ABI 30 camera transport and closed polygon caches make the default O3 artifact
 1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
 one codegen unit and stripping; ABI30 set LLVM's inline threshold to 150.

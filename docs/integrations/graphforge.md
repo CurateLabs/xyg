@@ -52,6 +52,21 @@ by that result
 schema. XYG checks this choice against its Rust coverage ledger; it does not
 infer analytical meaning from column names or choose an intent for you.
 
+### A plain property graph
+
+A Cypher property-graph result needs no analytical layer. Pass the base
+tables with no `layers` and XYG draws the graph with its defaults: nodes
+colored by label with a legend, captions from `name`, `title`, or `label`
+(then a short identity), arrowheads when the graph is directed, and
+relationship types on hover and selection. The same graph and generation
+always compose to the same bytes.
+
+```python
+composition = xyg.compose_graphforge(
+    base={"tables": [nodes_ipc, edges_ipc], "generation": generation_uuid},
+)
+```
+
 ## Python
 
 Given base-node, base-edge, and PageRank IPC bytes from one GraphForge

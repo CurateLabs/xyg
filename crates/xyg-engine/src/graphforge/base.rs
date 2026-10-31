@@ -20,13 +20,16 @@ use crate::arrow_ipc::{Column, DataType, Table};
 /// Hard bounds on the canonical base graph.
 pub const MAX_BASE_NODES: usize = 20_000_000;
 pub const MAX_BASE_EDGES: usize = 50_000_000;
+/// Name-like node properties, in caption order.
+pub const CAPTION_PROPERTIES: [&str; 3] = ["name", "title", "label"];
 /// Per-label text bound (display labels are truncated far earlier).
 pub const MAX_LABEL_BYTES: usize = 1024;
 
 #[derive(Debug, Default)]
 pub struct BaseGraph {
     pub node_uuid: Vec<Uuid>,
-    /// Display name (`name` property / column), bounded.
+    /// Display name: the first non-empty of `name`, `title`, `label`
+    /// ([`CAPTION_PROPERTIES`]), bounded.
     pub node_name: Vec<Option<String>>,
     /// First GraphForge label (`labels[0]`).
     pub node_type: Vec<Option<String>>,
@@ -138,6 +141,7 @@ impl Collector {
     }
 
     /// Optional text child: absent or non-text columns yield no labels.
+    #[inline(never)]
     fn optional_text<'a>(column: Option<Column<'_, 'a>>, len: usize) -> Vec<Option<&'a str>> {
         match column {
             Some(column) if matches!(column.field.data_type, DataType::Utf8 { .. }) => {
@@ -145,6 +149,28 @@ impl Collector {
             }
             _ => vec![None; len],
         }
+    }
+
+    /// Per row, the first non-empty text among [`CAPTION_PROPERTIES`]
+    /// (`columns` in that order).
+    fn captions<'a>(
+        columns: [Option<Column<'_, 'a>>; CAPTION_PROPERTIES.len()],
+        len: usize,
+    ) -> Vec<Option<&'a str>> {
+        // Merge one candidate at a time, sharing the text decoder instead of
+        // materializing an array of three vectors (also bounds WASM code size).
+        let mut captions = vec![None; len];
+        for column in columns.into_iter().flatten() {
+            for (caption, text) in captions
+                .iter_mut()
+                .zip(Self::optional_text(Some(column), len))
+            {
+                if caption.is_none() {
+                    *caption = text.filter(|text| !text.is_empty());
+                }
+            }
+        }
+        captions
     }
 
     /// First item of an optional `labels: list<utf8>` child.
@@ -175,7 +201,7 @@ impl Collector {
 
     fn node_struct(&mut self, column: &Column<'_, '_>) -> GfResult<()> {
         let ids = uuids(&column.child("node_uuid").unwrap(), true)?;
-        let names = Self::optional_text(column.child("name"), ids.len());
+        let names = Self::captions(CAPTION_PROPERTIES.map(|name| column.child(name)), ids.len());
         let kinds = Self::first_labels(column.child("labels"), ids.len());
         for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
             self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
@@ -275,10 +301,7 @@ impl Collector {
         if names.contains(&"node_uuid") {
             // Flat node table.
             let ids = uuids(&table.column("node_uuid").unwrap(), true)?;
-            let names = Self::optional_text(
-                table.column("label").or_else(|| table.column("name")),
-                ids.len(),
-            );
+            let names = Self::captions(CAPTION_PROPERTIES.map(|name| table.column(name)), ids.len());
             let kinds = Self::first_labels(table.column("labels"), ids.len());
             for ((id, name), kind) in ids.into_iter().zip(names).zip(kinds) {
                 self.node(id.ok_or_else(|| null_identity("node_uuid"))?, name, kind)?;
@@ -471,6 +494,22 @@ mod tests {
         assert_eq!(
             build(&tables, None, true).unwrap_err().code,
             "GF_BASE_ENDPOINT_MISSING"
+        );
+    }
+
+    #[test]
+    fn flat_node_captions_prefer_name_over_label() {
+        // `captions_nodes.arrow` carries both columns (#934): `name` wins, and
+        // a row without one falls through to `label`.
+        let nodes = std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/captions_nodes.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let graph = build(&[read_table(&nodes).unwrap()], None, true).unwrap();
+        assert_eq!(
+            graph.node_name,
+            [Some("Name A".to_owned()), Some("Label B".to_owned())]
         );
     }
 
