@@ -3,7 +3,7 @@
 
 Writes ``tests/fixtures/graphforge/cross_host.json``: one case per GraphForge
 contract fixture (with its ledger intent) plus multi-layer, render, select,
-coordinates, and failure cases, each with the SHA-256 of the ``XYGQ`` request
+coordinates, property-graph (no result layer), and failure cases, each with the SHA-256 of the ``XYGQ`` request
 and the ``XYGF`` document the Python host produces. ``tests/test_graphforge.py``
 and ``packages/xy-node/test/graphforge-cross-host.test.mjs`` build the same
 requests from the case list and must reproduce both digests; Node/WASM
@@ -78,6 +78,16 @@ def cases() -> list[dict[str, Any]]:
             ],
             "select": [],
             "render": {"width": 640, "height": 420, "theme": "dark", "title": "GraphForge"},
+        }
+    )
+    # The property-graph default view (#934): a base graph and no result layer.
+    out.append({"name": "property graph", "base": "property", "layers": []})
+    out.append(
+        {
+            "name": "property graph + render",
+            "base": "property",
+            "layers": [],
+            "render": {"width": 640, "height": 420, "theme": "light", "title": "Property graph"},
         }
     )
     out.append(

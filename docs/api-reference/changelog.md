@@ -12,6 +12,10 @@ contract at 1.0. Before 1.0, a minor release can contain breaking changes.
 
 ## Current Unreleased Migration Notes
 
+- GraphForge node captions now follow `name`, `title`, `label` (first
+  non-empty) for every composition. Flat node tables carrying both `name` and
+  `label` previously showed `label`; they now show `name`. A request with a
+  base graph and no `layers` now composes the default property-graph view.
 - The fluent public `Figure` builder has been removed. Build with declarative
   chart and component factories; use `Chart` for display, export, streaming,
   and readout. `Chart.figure()` remains an advanced internal-engine escape

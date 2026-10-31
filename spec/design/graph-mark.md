@@ -669,6 +669,12 @@ same fixture) and probes Chromium for non-overlapping labels that multiply
 when zoomed; a Rust property test checks collision freedom and monotonicity
 across scales.
 
+The direct semantic Scene's target-end arrow wings meet the resolved node
+outline (marker plus half its stroke width) via the shared `clip_edge_piece`
+geometry, including parallel edges and self-loop return segments (#934).
+Circle, square and diamond target shapes have position regressions so later
+node paint cannot cover heads placed at target centers.
+
 The direct semantic Scene now paints node and edge label text. Rust ranks the
 resolved visual state with stable source identity as its tie-breaker, omits
 aggregate/filtered labels, truncates to a bounded 32-character/plot-width

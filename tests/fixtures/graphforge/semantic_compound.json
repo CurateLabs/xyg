@@ -138,18 +138,18 @@
   },
   "goldens": {
     "light": {
-      "scene_sha256": "af0c8072e02b3ed4a422579ba505a8bf318193db61230293cc765d4ade3cc539",
-      "painter_sha256": "2ebb821c902502fcd25fffaa9398ddc7fe6c8b7921de6ce02cb2ddea0b1ca5ec",
-      "svg_sha256": "fa7d1d03ab5b02cf96992ef1533b512b4d95d2fee9a35b0b51ece844878030c5",
-      "raster_sha256": "76d4b959cdee20707179a42b57d7af507d503678d544fde36f26d9f9ab038bcf",
-      "png_sha256": "b08e35b392c388007f2d4098a0a90aae3f890d4bd6e74808d6307d686d99b5da"
+      "scene_sha256": "20abd78b456038954ea483f7b7a1b47e06bcd9c6df8cd33df279a8b2ab5edb06",
+      "painter_sha256": "90729d9619ad576138edb80e8fd8adaeabbc88763d270fb6b532024c650df954",
+      "svg_sha256": "a3661e2652ccc379ce2054eb26823a96a005d0aff4e905a398c312d0ba6fd54f",
+      "raster_sha256": "e37eb525d90cb21db8670553cd948a886ec0466fe2356cc8d19a9b4b9f7f7339",
+      "png_sha256": "82fc88cea683e3709230a7dffd0a4f38680fc90066eed17cc97f1e8b791a1caf"
     },
     "dark": {
-      "scene_sha256": "64a37a521aaedff465374c1af1af0156b698a699a7826b56e569cb830705fa53",
-      "painter_sha256": "416b6d602e31a9fb51e9f11caa714194f89facb0cb03a00a1bebb5742301a3f0",
-      "svg_sha256": "80759fb51d39e8b63b7d449b0bbe673ad3cd6ce6a980091f69ccd5ce2a4cb676",
-      "raster_sha256": "f9c87b437ebd6169bf5b51be9cc41789ea17ca1903b9e0f705b776698221d4a1",
-      "png_sha256": "31682582e0f42aedc072c9fbc39c0d982cacb6fb49f925e02af95263a01b0d35"
+      "scene_sha256": "e08cacb72d2811e4331a5fa842499ad17c539edc2f90c73219a8cdc840a96131",
+      "painter_sha256": "a7369380e0a153a11580930072645dd95331011bb59806f1983c6d13393520b7",
+      "svg_sha256": "8110569e4ec4e0d5ce2a22f106a53852729c09d5bd394bda602913b664818ed3",
+      "raster_sha256": "429b10608dd0fccc976b6ffd7f33651af55adaae87fc8245f2d72837b1ecbaaf",
+      "png_sha256": "51de72fa5d0cb42cce19fd24affcd8169a9d67f9ddccb8d9d4fd61a925f3cf08"
     }
   }
 }

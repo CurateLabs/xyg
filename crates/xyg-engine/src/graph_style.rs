@@ -1,6 +1,8 @@
 //! Rust-owned graph label acceptance, visual-state precedence, and compound bounds (#34).
 
-use crate::edge_route::{edge_route_segments, STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE};
+use crate::edge_route::{
+    clip_edge_piece, edge_route_segments, NodeShape, STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE,
+};
 use crate::scene::{
     AxisScale, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
     SceneChromeText, SceneError, SceneLabel, SceneLegend, SceneLegendEntry, SceneRecordKind,
@@ -1267,25 +1269,49 @@ fn encode_semantic_graph_scene_internal(
                 cursor = end + pattern.1;
             }
         }
-        if layers.head && !routes[index].is_empty() {
-            let &(ax, ay, bx, by) = routes[index].last().unwrap();
-            let (apx, apy) = to_px(ax, ay);
-            let (bpx, bpy) = to_px(bx, by);
-            let length = ((bpx - apx) * (bpx - apx) + (bpy - apy) * (bpy - apy)).sqrt();
-            if length >= 8.0 {
+        if layers.head {
+            let source = routed_sources[index] as usize;
+            let target = routed_targets[index] as usize;
+            let center = |node: usize| to_px(input.x[node], input.y[node]);
+            // Use the ordinary graph mark's outline clipping in screen space.
+            // Include the marker stroke: nodes paint after edges and must not
+            // cover the head, including a self-loop's terminal return piece.
+            let radius = |node: usize| f64::from(nodes[node].size + nodes[node].width) * 0.5;
+            for &(ax, ay, bx, by) in routes[index].last().into_iter() {
+                let (apx, apy) = to_px(ax, ay);
+                let (bpx, bpy) = to_px(bx, by);
+                let Some((start, _, Some(tip))) = clip_edge_piece(
+                    (apx, apy),
+                    (bpx, bpy),
+                    center(source),
+                    radius(source),
+                    NodeShape::from_symbol_code(nodes[source].shape),
+                    center(target),
+                    radius(target),
+                    NodeShape::from_symbol_code(nodes[target].shape),
+                    true,
+                    true,
+                ) else {
+                    continue;
+                };
+                let length = ((bpx - apx) * (bpx - apx) + (bpy - apy) * (bpy - apy)).sqrt();
+                if length < 8.0 {
+                    continue;
+                }
                 let ux = (bpx - apx) / length;
                 let uy = (bpy - apy) / length;
-                let arrow = (6.0 + f64::from(style.width)).min(length * 0.35);
+                let arrow = (6.0 + f64::from(style.width)).min(length * (tip - start) * 0.35);
+                let tip_px = (apx + (bpx - apx) * tip, apy + (bpy - apy) * tip);
                 for side in [-1.0, 1.0] {
-                    let px = bpx - ux * arrow + (-uy) * side * arrow * 0.55;
-                    let py = bpy - uy * arrow + ux * side * arrow * 0.55;
+                    let px = tip_px.0 - ux * arrow + (-uy) * side * arrow * 0.55;
+                    let py = tip_px.1 - uy * arrow + ux * side * arrow * 0.55;
                     let dx = x_domain.0
                         + (px - layout.left) / (layout.right - layout.left)
                             * (x_domain.1 - x_domain.0);
                     let dy = y_domain.0
                         + (layout.bottom - py) / (layout.bottom - layout.top)
                             * (y_domain.1 - y_domain.0);
-                    push_geometry((bx, by, dx, dy))?;
+                    push_geometry((ax + (bx - ax) * tip, ay + (by - ay) * tip, dx, dy))?;
                 }
             }
         }
@@ -1431,7 +1457,9 @@ fn encode_semantic_graph_scene_internal(
     let colors = palette(input.theme).ok_or(SceneError::Length)?;
     let legend = (!legend_entries.is_empty()).then(|| SceneLegend {
         location: LegendLocation::UpperRight,
-        title: legend_override.map_or(SEMANTIC_LEGEND_TITLE, |l| l.title).to_owned(),
+        title: legend_override
+            .map_or(SEMANTIC_LEGEND_TITLE, |l| l.title)
+            .to_owned(),
         font_size: 11.0,
         title_font_size: 12.0,
         text_rgba: colors[0],
@@ -2477,6 +2505,91 @@ mod tests {
             None
         );
         assert_eq!(out, [sentinel]);
+    }
+
+    #[test]
+    fn semantic_scene_arrow_tips_meet_target_outlines_for_edges_parallels_and_loops() {
+        for class in 0..=2 {
+            let x = [0.0, 10.0, 5.0];
+            let y = [0.0, 0.0, 10.0];
+            let bytes = encode_semantic_graph_scene(SemanticGraphSceneInput {
+                version: SEMANTIC_GRAPH_SCENE_VERSION,
+                width: 800.0,
+                height: 600.0,
+                theme: THEME_LIGHT,
+                title: "",
+                x: &x,
+                y: &y,
+                node_classes: &[class; 3],
+                node_epistemic: &[0; 3],
+                node_statuses: &[0; 3],
+                node_metric: &[0.0, 0.5, 1.0],
+                node_flags: &[0; 3],
+                node_labels: &[""; 3],
+                sources: &[0, 0, 0, 2],
+                targets: &[1, 2, 2, 2],
+                edge_classes: &[0; 4],
+                edge_epistemic: &[0; 4],
+                edge_statuses: &[1; 4],
+                edge_metric: &[f64::NAN; 4],
+                edge_flags: &[0; 4],
+                edge_labels: &[""; 4],
+            })
+            .unwrap();
+            let document = crate::scene::SceneDocument::decode(&bytes).unwrap();
+            let records = document.interaction_records();
+            let px = |point: [f64; 4]| (point[0], point[1]);
+            let mut tips = Vec::new();
+            for (edge, target) in [1, 2, 2, 2].into_iter().enumerate() {
+                let node = records
+                    .iter()
+                    .find(|r| {
+                        r.kind == SceneRecordKind::Scatter && r.stable_id == (1 << 32) + target
+                    })
+                    .unwrap();
+                let center = px(node.coordinates);
+                let (_, _, stroke) = document.interaction_style(node.style_ref).unwrap();
+                let radius = (node.diameter + stroke) * 0.5;
+                let outline = |point: (f64, f64)| {
+                    let dx = (point.0 - center.0).abs();
+                    let dy = (point.1 - center.1).abs();
+                    match class {
+                        1 => dx.max(dy),
+                        2 => (dx + dy) / std::f64::consts::SQRT_2,
+                        _ => (dx * dx + dy * dy).sqrt(),
+                    }
+                };
+                let lines: Vec<_> = records
+                    .iter()
+                    .filter(|r| {
+                        r.kind == SceneRecordKind::Polyline && r.stable_id == edge as u64 + 1
+                    })
+                    .collect();
+                // Each wing is a separate two-point line after the shaft.
+                assert!(
+                    lines.len() >= (if edge == 3 { 10 } else { 6 }),
+                    "edge {edge} must retain its head"
+                );
+                let wings = &lines[lines.len() - 4..];
+                let tip = px(wings[0].coordinates);
+                assert_eq!(tip, px(wings[2].coordinates), "class {class}, edge {edge}");
+                assert!(
+                    (outline(tip) - radius).abs() < 1e-8,
+                    "class {class}, edge {edge}: tip {tip:?} must meet outline {radius}"
+                );
+                for wing in [wings[1], wings[3]] {
+                    assert!(
+                        outline(px(wing.coordinates)) > radius,
+                        "wing must remain outside target"
+                    );
+                }
+                tips.push(tip);
+            }
+            assert_ne!(
+                tips[1], tips[2],
+                "parallel heads keep distinct routed positions"
+            );
+        }
     }
 
     #[test]
