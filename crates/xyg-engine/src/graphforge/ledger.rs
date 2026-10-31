@@ -102,6 +102,9 @@ const fn f(name: &'static str, kind: Kind, role: Role) -> FieldSpec {
 /// (spec §4); `DerivedPairs::directed` decides the derived arrowhead.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Composition {
+    /// The base property graph itself, with no result layer: XYG's default
+    /// view (spec §4.4a). No result schema composes to this.
+    EntityGraph,
     /// Node metric plane (size), keyed by `node_uuid`.
     NodeScore,
     /// Node class plane (fill/shape) from a group id.
@@ -139,6 +142,7 @@ pub enum Composition {
 impl Composition {
     pub fn name(self) -> &'static str {
         match self {
+            Composition::EntityGraph => "entity-graph",
             Composition::NodeScore => "node-score",
             Composition::NodeGroup => "node-group",
             Composition::NodeOrder => "node-order",
@@ -670,6 +674,20 @@ pub const SEARCH_SCHEMA: SchemaEntry = SchemaEntry {
     note: "Search hits keyed by node_uuid.",
 };
 
+/// A Cypher property-graph result (or flat node/edge tables): the graph layer
+/// itself. It has no result fields; a composition with no result layer draws
+/// it with XYG's default view.
+pub const ENTITY_GRAPH_SCHEMA: SchemaEntry = SchemaEntry {
+    id: "entity_graph",
+    version: 1,
+    disposition: Disposition::EntityGraph,
+    composition: Composition::EntityGraph,
+    fields: &[],
+    algorithms: &[],
+    derived_type: None,
+    note: "Base property graph passed as base.tables; composes with no result layer.",
+};
+
 /// Verbs whose results carry `graphforge.algorithm`.
 pub const ALGORITHM_VERBS: &[&str] = &["rank", "cluster", "similar", "paths", "analyze"];
 
@@ -688,7 +706,7 @@ pub fn ledger_tsv() -> String {
         String::from("schema\tversion\tdisposition\tcomposition\tintents\tfields\talgorithms\n");
     for entry in ALGORITHM_SCHEMAS
         .iter()
-        .chain(std::iter::once(&SEARCH_SCHEMA))
+        .chain([&SEARCH_SCHEMA, &ENTITY_GRAPH_SCHEMA])
     {
         let intents: Vec<_> = entry
             .composition
@@ -861,7 +879,7 @@ mod tests {
             .collect();
         let entries: Vec<&SchemaEntry> = ALGORITHM_SCHEMAS
             .iter()
-            .chain(std::iter::once(&SEARCH_SCHEMA))
+            .chain([&SEARCH_SCHEMA, &ENTITY_GRAPH_SCHEMA])
             .collect();
         assert_eq!(rows.len(), entries.len(), "one spec row per schema");
         for (row, entry) in rows.iter().zip(entries) {
@@ -871,7 +889,9 @@ mod tests {
                 .iter()
                 .map(|i| i.name())
                 .collect();
-            let algorithms = if entry.algorithms.is_empty() {
+            let algorithms = if entry.composition == Composition::EntityGraph {
+                "(base graph)".to_owned()
+            } else if entry.algorithms.is_empty() {
                 "(find)".to_owned()
             } else {
                 entry.algorithms.join(", ")
@@ -894,7 +914,9 @@ mod tests {
     #[test]
     fn ledger_tsv_lists_every_schema() {
         let tsv = ledger_tsv();
-        assert_eq!(tsv.lines().count(), 1 + ALGORITHM_SCHEMAS.len() + 1);
+        assert_eq!(tsv.lines().count(), 1 + 1 + ALGORITHM_SCHEMAS.len() + 1);
+        // The property graph itself: no result fields, no algorithms (#934).
+        assert!(tsv.contains("entity_graph\t1\tentity-graph\tentity-graph\tgraph\t\t\n"));
         assert!(tsv.contains("embedding\t1\tcomposition-required\tembedding\tembedding-coordinates,parallel-coordinates"));
     }
 }

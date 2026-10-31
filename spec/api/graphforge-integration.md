@@ -15,6 +15,7 @@ Everything is GraphForge Arrow IPC bytes exactly as the engine returned them
 
 | Input | Where it comes from | Notes |
 |---|---|---|
+| `layers` | zero or more result layers | optional: with a base and no layers XYG composes the default property-graph view (no analytical layer) |
 | `layers[i].result` | the engine result (`g.rank(...)`, `g.cluster(...)`, `g.paths(...)`, `g.analyze(...)`, `g.similar(...)`, `g.find(...)`) | recognized from `graphforge.verb` / `graphforge.algorithm` / `graphforge.algorithm_schema_version` (or `graphforge.search_schema_version`) |
 | `layers[i].intent` | the user's choice among the ledger's intents | required; XYG never picks one (see table below) |
 | `layers[i].resultId`, `layers[i].generation` | `ResultProvenance.resultId`, `.generationUuid` | echoed back on every pick for table ↔ chart linking |
@@ -36,7 +37,7 @@ Intent per XYG disposition (the authoritative document is
 | `composition-required` — `embedding` | `parallel-coordinates`, or `embedding-coordinates` with `coordinates` | full-vector view, or the caller's 2D placement |
 | `table-only` scalars | `table` | canonical columns, text cells |
 | `table-only` categories (conductance, triad/dyad census) | `table` or `bar-chart` | bars in result order |
-| `entity-graph` (Cypher) | — | pass as `base.tables` |
+| `entity-graph` (Cypher) | — | pass as `base.tables` with no `layers`: the default view (label colors and legend, captions, arrowheads when directed, relationship types on hover/selection; design §4.4a) |
 
 Several `graph` layers compose together when they write different channels
 (e.g. PageRank size + community class + spanning-tree overlay + a path);

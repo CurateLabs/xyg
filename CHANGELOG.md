@@ -196,6 +196,16 @@ its acceptance remains gated by #108.
   sidecar length; `xyg_scene_xycf_pack` and `xyg_scene_chrome_pack` gain `y2`
   pointer/length arguments; `xyg_scene_figure_support_materialize` axis rows gain
   the authored `side`.
+- GraphForge compositions accept a base graph with no result layer (#934): XYG
+  draws a Cypher property graph with label-colored nodes and a legend, name /
+  title / label / short-identity captions, arrowheads when directed (edge
+  status 1 with a `directed relationship` legend row), and relationship types
+  on hover/selection and as low-priority `edge.label`. New `entity_graph`
+  ledger row. Canonical Scene arrowheads meet the target marker outline
+  (including its stroke), with geometric regressions for loops, parallels and
+  circle/square/diamond nodes. The fixture producer restores both property
+  Arrow files and their manifest entry after Core regeneration. Spec:
+  `graphforge-compositions.md` §4.4a.
 - ABI 379: GeoColumn closure (#47). Rust now also rejects holes outside their
   exterior ring (`-11`), one-vertex line parts and zero-area rings (`-12`), and
   null features that own vertices or parts (`-14`), checks the byte budget
@@ -254,6 +264,12 @@ its acceptance remains gated by #108.
   attached label. Label-table and paint order change: every text row is now XYAW,
   so offsetless raw text paints after rule, band and marker (XYAL) labels instead
   of before them (`static-annotation-style.md`, `scene-ir.md`).
+- GraphForge base-graph node captions now follow `name`, then `title`, then
+  `label` (first non-empty), for Cypher entity results and flat node tables
+  alike (#934). Flat tables that carry both `name` and `label` used to prefer
+  `label`; they now prefer `name`. The change applies to every GraphForge
+  composition, analytical layers included (`node.name`, and the node caption
+  when no layer overrides it).
 - Repository branding and all owned documentation, support, CI, security, and
   source pointers now target `CurateLabs/xyg`; inherited benchmark records keep
   their original repository field as provenance (#14).

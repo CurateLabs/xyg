@@ -84,7 +84,7 @@ def test_graphforge_semantic_fixture_has_exact_cross_consumer_goldens() -> None:
         assert np.unique(pixels.reshape(-1, 4), axis=0).shape[0] >= 8
 
 
-def test_scene32_refresh_preserves_native_bytes_and_changes_painter_layout() -> None:
+def test_arrowhead_fix_changes_historical_geometry_and_preserves_current_painter_contract() -> None:
     refresh = json.loads(FIXTURE.with_name("scene32_refresh.json").read_text())
     fixture = _fixture()
     for theme in ("light", "dark"):
@@ -92,9 +92,11 @@ def test_scene32_refresh_preserves_native_bytes_and_changes_painter_layout() -> 
         scene = _scene(fixture, theme)
         old_version = bytearray(scene)
         struct.pack_into("<I", old_version, 4, refresh["previous_scene_version"])
-        assert _sha(old_version) == previous["scene_sha256"]
+        # #934 intentionally changes target-end geometry, beyond the old
+        # Scene32 version-word refresh. Exact current bytes are pinned above.
+        assert _sha(old_version) != previous["scene_sha256"]
         for consumer in ("svg_sha256", "raster_sha256", "png_sha256"):
-            assert fixture["goldens"][theme][consumer] == previous[consumer]
+            assert fixture["goldens"][theme][consumer] != previous[consumer]
         painter = _native.scene_browser_painter(scene)
         assert struct.unpack_from("<II", painter, 4) == (17, _native.scene_version())
         header, descriptor, count = struct.unpack_from("<III", painter, 12)
