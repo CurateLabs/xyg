@@ -1314,6 +1314,26 @@ recovered S1 tree. It still exceeds the unchanged limits by **3,540 / 555 bytes*
 the package gate remains **FAIL**. Rejected boundary candidates and their hashes
 are retained separately; the historical failed S1 receipt is unchanged.
 
+**Historical retained session render (#36 S2) size check (old branch).** S2 adds the Rust-only session
+render pipeline and `TemporalGraph::world_parts`; no WASM export changed, so
+the session code is not linked. The packaged artifact measures 1,514,304 raw
+bytes (1,216 under the unchanged 1,515,520-byte gate; +1,686 over S1) and
+622,593 level-6 gzip bytes (4,095 under the 626,688-byte gate; −1,452 against
+S1's 624,045). Neither budget is raised; the raw margin is thin, and the
+session ABI slice owns the next size decision. This old-branch measurement is
+not evidence for the recovered integration tree. The current S1 limits are
+1,511 KiB raw / 625 KiB gzip6, with the unchanged profile; see
+[S2 recovery evidence](../performance/graph-s2-recovery-2026-10-31/README.md)
+for the actual recovered package result. Recovery does not raise either limit.
+The recovered unchanged-profile module measures **1,547,915 raw / 640,615
+gzip6 bytes** on Node 22.23.4, SHA-256
+`544d97c615a96e31cdca66cac0d577b954ee337e50e2e589690dc348d7c852bc`.
+It exceeds the accepted S1 gates by **651 raw / 615 gzip bytes**. The real
+package command rejects the gzip gate before publishing any assets; an
+independent measurement records both exceeded limits. Diagnostic native/WASM
+parity does not waive this package failure. A separate deliberate decision is
+required before packaging can be accepted.
+
 Bounded native/WASM selected snapshot and hierarchy membership checks, exact
 artifact hashes, four fresh-process startup ABBA pairs and reproduction commands
 are recorded in
