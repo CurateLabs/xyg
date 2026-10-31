@@ -1,0 +1,14 @@
+{
+  "name": "capture-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-node-foundation-contract-2026-10-31/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.241,
+  "rawSha256": "055fabfa809f33a5267719b2393ee6e6ff38495c027888fdebd390c0e47881b9",
+  "log": "capture-final.txt.gz",
+  "gzipSha256": "cd9ff73a10ee0f0165b332e3f5ebc3d366fd703b318e3d8256144f9a0eda99f5"
+}

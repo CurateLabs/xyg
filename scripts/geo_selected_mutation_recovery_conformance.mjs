@@ -5,6 +5,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {gzipSync} from 'node:zlib';
 import {encodeGeoScaleRequest as encode,encodeGeoChunkRequest,encodeGeoScaleStyle,decodeGeoScaleReply as decode,driveGeoSession,driveGeoIndexSession,parseGeoSceneData,parseGeoRowsData,nativeGeoScaleBridge} from '../packages/xy-node/src/geoscale.js';
+const expectedWasmAbi=JSON.parse(await readFile(new URL('../spec/wasm/abi.json',import.meta.url),'utf8')).abi_version;
 const MAX=0xffffffffffffffffn,MIN=-0x8000000000000000n;
 const budget={processorBytes:128<<20,maxRowsExamined:1000000n,maxReadBytes:128n<<20n,maxChunks:65536,pageRows:4096};
 const legacyOnly=process.env.XYG_SELECTED_MUTATION_LEGACY_ONLY==='1';
@@ -69,7 +70,7 @@ async function fiveCanonicalViews(bridge){
  for(const f of views){const st=await f.publish();await assert.rejects(bridge.execute(raw(1)));const b=raw(35,f.source,2n,new BigUint64Array([st]),f.query,1n);const rejected=b.slice(0);new DataView(rejected).setBigUint64(32,8192n,true);await assert.rejects(bridge.execute(rejected));await bridge.execute(b);await confirm(bridge,b,f.source);await driveGeoSession(bridge,{handle:f.source,sequence:2n,budget,readChunk:f.readChunk});const out=await bridge.execute(raw(11,f.source,2n,style)),data=fixed(out).handle;assert.equal(new DataView(out).getBigUint64(40,true),f.source);await close(bridge,f.seed);f.seed=data;await bridge.execute(raw(9,f.source,2n));await confirm(bridge,b,f.source,true);await bridge.execute(ack(b,f.source,2));receipts.push({f,b});}
  for(const {f,b} of receipts){await close(bridge,f.source);await bridge.execute(ack(b,f.source,1));await close(bridge,f.seed);await close(bridge,f.scope);}
 }
-const wasmPath=process.env.XYG_SELECTED_MUTATION_WASM??'packages/xy-client/dist/xyg-wasm.wasm',wasmBytes=await readFile(wasmPath),{instance}=await WebAssembly.instantiate(wasmBytes,{}),x=instance.exports,instanceId=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(instanceId);assert.equal(x.xyg_wasm_abi_version(),34);let transportSequence=0;
+const wasmPath=process.env.XYG_SELECTED_MUTATION_WASM??'packages/xy-client/dist/xyg-wasm.wasm',wasmBytes=await readFile(wasmPath),{instance}=await WebAssembly.instantiate(wasmBytes,{}),x=instance.exports,instanceId=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(instanceId);assert.equal(x.xyg_wasm_abi_version(),expectedWasmAbi);let transportSequence=0;
 async function wasmCall(b,read){assert.equal(x.xyg_wasm_arena_resize(instanceId,b.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(instanceId)>>>0,b.byteLength).set(new Uint8Array(b));const status=x[read?'xyg_wasm_geo_scale_read':'xyg_wasm_geo_scale_execute'](instanceId,++transportSequence,0,b.byteLength);if(status)throw new Error(`WASM:${status}`);return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(instanceId)>>>0,x.xyg_wasm_output_len(instanceId)).slice().buffer;}
 try{
  const wasm={execute:b=>wasmCall(b,false),read:b=>wasmCall(b,true)},native=nativeGeoScaleBridge(budget.processorBytes),packets=[],legacy=[];

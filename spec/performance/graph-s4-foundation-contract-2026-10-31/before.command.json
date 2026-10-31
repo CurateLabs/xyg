@@ -1,0 +1,14 @@
+{
+  "name": "before",
+  "command": [
+    "env",
+    "XYG_FRAME_LEASE_WASM=packages/xy-client/dist/xyg-wasm.wasm",
+    "node",
+    "scripts/geo_frame_leases_conformance.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.047,
+  "rawSha256": "976cf161e228c60874c7e843e286db531e1a10e97d8f024c9912689f096068cd",
+  "log": "before.txt.gz",
+  "gzipSha256": "86f26d6066687a0b6e2d05dd66379e14714f95cd048f0937e5c5cc09395c39b8"
+}

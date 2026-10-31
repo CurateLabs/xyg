@@ -1,0 +1,14 @@
+{
+  "name": "capture",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s4-foundation-contract-2026-10-31/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.223,
+  "rawSha256": "988dcc9f78acf08faab10ab2f23d2414f79dd3d38c263e1213352db3ca48decb",
+  "log": "capture.txt.gz",
+  "gzipSha256": "328cfdfa04e2e3b0c0119ea6b72572b290a5243fe1176272eba8c2361d1551d5"
+}
