@@ -1,0 +1,70 @@
+{
+  "date_utc": "2026-10-31T16:59:15Z",
+  "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "machine": "x86_64",
+  "baseline": "1440bec9",
+  "prerequisite": "465ec0a0acc16340947ea599fee7e0486f12b6d0",
+  "merged_baseline": "fab6aa90c94844ed78865721af90a2aebd95dfd0",
+  "note": "Proof ran on merged baseline plus the consumer source changes hashed below; wheel package code is unchanged by this slice. This is local installed-wheel proof, not final release-cohort evidence.",
+  "python": "3.12.15",
+  "node": "v24.21.0",
+  "streamlit_locked": "1.66.1",
+  "streamlit_floor": "1.56.0",
+  "floor_dependency_resolution": "Separate exact-floor install; full versions in floor-packages.txt. Main gate uses uv.lock constraints.",
+  "chromium_executable": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "browser": "156.0.8078.4",
+  "browser_launch_args": [
+    "--no-sandbox",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--ignore-gpu-blocklist"
+  ],
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "uv": "uv 0.12.22 (x86_64-unknown-linux-gnu)",
+  "source_sha256": {
+    "examples/streamlit/app.py": "81d98ff84dc58c67b019f026b2d5d3aa8405744818a2da63c7a8ee7b023b4839",
+    "tests/test_streamlit_consumer.py": "90735e4706ea3d7b404191639166854a963f210f430364d3cab41ddc5a66dcae",
+    "tests/test_streamlit_package_boundary.py": "aa4a74d3945ee880876495be6ac827dc930ebbc53da24ca9a29f0c41b9c06c1e",
+    "tests/fixtures/packaged_streamlit_graphforge.py": "66459ac3bc058e2d38747838aadf938dabe8e5f10880d50fbc35f1c85da0bfc4",
+    "scripts/consumer_apps_smoke.py": "7352405c8e0f73b12bda63562cd3c397966f0061ed60f6905f20242f3436e726",
+    "scripts/consumer_apps_smoke.mjs": "35c0e242b2d15f2f2a2fed955e287e1272572ef0e07b14317d5eb6dc8c9dae24",
+    "scripts/streamlit_graphforge_browser.mjs": "af75c2ede592ce074db301a777293e773611775975381df94e6245154479f75e",
+    "pyproject.toml": "07f8799e3d616e73c24bd3ef5a7c679d190855d82f65d853467a7343ee90e825",
+    "uv.lock": "9c897f644d4b241ab192c38d0afc26f4a49665dbf7734410e893b763ed9a0bef",
+    "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+  },
+  "installed_artifacts": {
+    "xyg-0.0.1.dev2915+fab6aa90-py3-none-linux_x86_64.whl": "d92f634f7ddb59d72744fe8591f9aa4bff8ac093719c3639f418434ba55418cc",
+    "curatelabs-xyg-node-linux-x64-0.0.0-test.1063.tgz": "499ef47f6bcdc578ba788b4ee870579749b38cc297a49f76b1a1ba02e3687074",
+    "curatelabs-xyg-node-0.0.0-test.1063.tgz": "5b0e0c7a52342a1874c7e334210f4359602dc439895571e3dcab3bd4e5384cc5",
+    "curatelabs-xyg-0.0.0-test.1063.tgz": "a4e51e65a75f8bd9658f2c89d531d55064edd6e7a3003f718d879bcad9dd61a0"
+  },
+  "built_artifacts": {
+    "target/release/libxyg_core.so": "95eaa0372637d9e778015810ada138ef39c3a6fd68c69f9696c3f864af5be34a",
+    "packages/xy-client/dist/index.js": "2e3a08a83896290fa246a508f8b4af0f4be9f7e699e6ebcb0e3d394be5e50589",
+    "packages/xy-client/dist/xyg-wasm.wasm": "69f769a109d86ace350d19a7df214c4f0c1f55f733dbc0cfd280e2ba14886811"
+  },
+  "source_tests": {
+    "passed": 137
+  },
+  "installed_tests": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "floor_tests": {
+    "passed": 13,
+    "skipped": 0
+  },
+  "minimal_without_streamlit": {
+    "passed": 2,
+    "skipped": 1
+  },
+  "additional_checks": {
+    "release_gate_and_verify_local_tests": 118,
+    "ty": "passed",
+    "generated_styling_capability_matrix": "current"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "aggregate_omits_source_semantics_even_for_singleton_nodes_and_edges",
+    "--",
+    "--nocapture"
+  ],
+  "exitCode": 101,
+  "productionCommit": "6a42e73be1ae75effb847c875fa3d26ff2d0a4e6",
+  "rawSha256": "3469b731f2ed097bc63e7f9e71dc145da576c8ffbfed7422e6614b1b23f55581",
+  "gzipSha256": "814c0f8ee257b5f33931331e20725483bdb1e998b847a227bd6169fac8d0d081",
+  "log": "regression-before.txt.gz"
+}

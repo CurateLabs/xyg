@@ -103,6 +103,86 @@ intents use `xyg.graphforge_chart(composition)`. `xyg.graphforge_ledger()`
 reports the engine's schema and intent coverage. These byte-based composition
 helpers need no GraphForge import or `pyarrow` dependency in XYG.
 
+## Streamlit (test and documentation host)
+
+The repository example `examples/streamlit/app.py` supports Streamlit
+**1.56 or newer, below 2**, the floor of the `consumers` dependency group.
+Run it from a source checkout after building the native core and client:
+
+```bash
+uv sync --locked --group dev --group consumers
+uv run --group consumers streamlit run examples/streamlit/app.py
+```
+
+Choose `graphforge-property` for the plain property graph with no analytical
+layer. It uses the label colors and legend, caption fallbacks, directed
+arrowheads, and relationship hover metadata from XYG's defaults. Choose
+`graphforge-pagerank` for a graph with one canonical PageRank result layer.
+The example replays the existing repository Core 0.5.2 Arrow fixtures under
+`tests/fixtures/graphforge/results/`; it does not query a database or compute
+PageRank. Keep those repository inputs beside the example. They are not
+installed by the XYG wheel. Replace them with your own same-generation IPC
+bytes and the source generation UUID in an application.
+
+Embedding uses the same public APIs as a direct Python host:
+
+```python
+import streamlit as st
+import streamlit.components.v1 as components
+import xyg
+
+composition = xyg.compose_graphforge(
+    base={"tables": [nodes_ipc, edges_ipc], "generation": generation_uuid},
+)
+chart = xyg.graphforge_chart(composition, width=720, height=360)
+components.html(chart.to_html(), height=400, scrolling=False)
+st.image(chart.to_png(), caption="Native PNG export")
+st.image(chart.to_svg(), caption="Native SVG export")
+```
+
+`to_html()` inlines the local painter and data, with no CDN or runtime Node
+requirement. The static previews and download buttons use native `to_png()`
+and `to_svg()` bytes, identical to direct Python exports for the same inputs,
+dimensions, title, and options. This is a recipe using stock Streamlit HTML
+components; XYG ships no Streamlit imports, dependency extra, or adapter namespace.
+
+The iframe supports local browser pan, zoom, and hover. **Selection stays in
+the browser.** Stock HTML embedding has no Python callback bridge or tested
+UUID selection round-trip. `composition.identify()` remains a direct-host
+identity API; it does not make this iframe bidirectional. There is no
+incremental update, live GraphForge query, or server selection promise here.
+Dynamic ticks are not provisioned by this snapshot recipe; missing optional
+tick assets fail closed rather than guessing URLs.
+
+Streamlit re-executes the script on control changes. The example recomposes
+from immutable inputs and replaces one iframe document; switching away and
+back restores identical HTML and static bytes. Chromium evidence checks
+that outgoing iframe execution contexts are retired. Cleanup is owned by
+browser document navigation, rather than an application callback to
+`ChartView.destroy()`; this does not qualify general live-view disposal.
+
+For expensive inputs, cache immutable Arrow bytes or finished HTML/PNG/SVG
+with `st.cache_data`, keyed by the source generation, all layer bytes and
+intents, dimensions, and styling options. Avoid globally caching a mutable
+Chart, Figure, selection state, or a live browser view with `st.cache_resource`.
+Invalidate cached outputs when the source generation changes. The bounded
+example intentionally needs no cache or persistent view registry.
+
+Reproduce the AppTest and installed-wheel Chromium proof:
+
+```bash
+uv run --group consumers pytest tests/test_streamlit_consumer.py tests/test_dependencies.py -q
+uv run python scripts/consumer_apps_smoke.py --chromium /path/to/chromium
+```
+
+The latter builds and verifies a wheel, installs the locked consumer group in
+a clean environment, and checks actual graph paint, static previews, downloads
+against direct-host hashes, deterministic reruns, local assets, and iframe
+context retirement. It reuses the existing required Release surfaces job.
+See the [consumer specification](https://github.com/CurateLabs/xyg/blob/main/spec/design/application-consumers.md)
+for evidence and boundaries. This bounded #1016 slice does not establish
+full #36/#934/#935 acceptance or a final release cohort.
+
 ## Node and VS Code extension hosts
 
 Node calls the same Rust composition through the native C ABI:

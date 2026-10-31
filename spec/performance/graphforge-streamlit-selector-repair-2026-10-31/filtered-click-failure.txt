@@ -1,0 +1,32 @@
+locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('option', { name: 'line', exact: true })[22m
+[2m    - locator resolved to <div data-rac="" data-key="1" role="option" aria-selected="false" data-selection-mode="single" data-react-aria-pressable="true" id="react-aria9667431499-:r4:-option-1" class="st-emotion-cache-1oefkbl e1oobldh7" data-collection="react-aria9667431499-:r23:">…</div>[22m
+[2m  - attempting click action[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+[2m  - element was detached from the DOM, retrying[22m
+
+    at select (/home/ubuntu/.t3/worktrees/xyg/t3-01e06b71/scripts/streamlit_graphforge_browser.mjs:43:65)
+    at async qualifyStreamlitGraphForge (/home/ubuntu/.t3/worktrees/xyg/t3-01e06b71/scripts/streamlit_graphforge_browser.mjs:141:9)
+    at async file:///home/ubuntu/.t3/worktrees/xyg/t3-01e06b71/scripts/consumer_apps_smoke.mjs:206:39
+Skip to main content
+Deploy
+XYG in Streamlit
+
+Pan, zoom and hover in the chart. Selection stays in the browser.
+
+Chart
+
+graphforge-property
+
+keyboard_arrow_down
+
+Static exports
+
+Native PNG export
+
+Native SVG export
+
+Download SVG
+
+Download PNG

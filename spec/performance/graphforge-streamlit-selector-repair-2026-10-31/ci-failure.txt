@@ -1,0 +1,27 @@
+locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('line · 8 rows', { exact: true }) to be visible
+
+    at qualifyStreamlitGraphForge (/home/runner/_work/xyg/xyg/scripts/streamlit_graphforge_browser.mjs:143:64)
+    at async file:///home/runner/_work/xyg/xyg/scripts/consumer_apps_smoke.mjs:206:39
+Skip to main content
+Deploy
+XYG in Streamlit
+
+Pan, zoom and hover in the chart. Selection stays in the browser.
+
+Chart
+
+graphforge-property
+
+keyboard_arrow_down
+
+Static exports
+
+Native PNG export
+
+Native SVG export
+
+Download SVG
+
+Download PNG

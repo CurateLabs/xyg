@@ -38,6 +38,174 @@ fn extend(doc: &[u8], add: impl FnOnce(&mut Builder)) -> Vec<u8> {
 }
 
 #[test]
+fn aggregate_omits_source_semantics_even_for_singleton_nodes_and_edges() {
+    use crate::graph::LodTier;
+
+    let base = handmade_ends(
+        COMPOSITION_VERSION,
+        &[id(1), id(2), id(3)],
+        &[
+            E::Persisted(id(11)),
+            E::Persisted(id(12)),
+            E::Persisted(id(13)),
+        ],
+        &[],
+        None,
+        Some(&[(0, 2), (1, 2), (2, 0)]),
+    );
+    let base = extend(&base, |b| b.u8s("graph.directed", 0, &[1]));
+    let neutral = extend(&base, |b| b.u8s("edge.status", 0, &[0; 3]));
+    let styled = extend(&base, |b| {
+        b.u8s("node.class", 0, &[1, 2, 3]);
+        b.u8s("node.epistemic", 0, &[1, 2, 3]);
+        b.u8s("node.status", 0, &[1, 2, 3]);
+        b.f64s("node.metric", 0, &[1., 10., 100.]);
+        b.u8s("edge.class", 0, &[1, 2, 3]);
+        b.u8s("edge.epistemic", 0, &[1, 2, 3]);
+        b.u8s("edge.status", 0, &[1; 3]);
+        b.f64s("edge.metric", 0, &[1., 10., 100.]);
+    });
+    for (budgets, tier) in [
+        ((2, 10), LodTier::Aggregate),
+        ((3, 10), LodTier::Direct),
+        ((3, 1), LodTier::EdgeSample),
+    ] {
+        let load = SessionLoad {
+            budgets: Some(budgets),
+            ..at(&[0., 10., 100.], &[0.; 3])
+        };
+        let mut plain = GraphSession::create(&neutral, load.clone(), 7).unwrap();
+        let mut authored = GraphSession::create(&styled, load, 7).unwrap();
+        let expected = plain.render(None).unwrap().clone();
+        let actual = authored.render(None).unwrap().clone();
+        assert_eq!(actual.tier, tier);
+        assert_eq!(actual.member_of, expected.member_of);
+        assert_eq!(actual.edge_members, expected.edge_members);
+        if tier == LodTier::Aggregate {
+            assert!((0..actual.node_count()).any(|r| actual.members_of_node(r).len() == 1));
+            assert!((0..actual.node_count()).any(|r| actual.members_of_node(r).len() == 2));
+            assert!((0..actual.edge_count()).any(|r| actual.members_of_edge(r).len() == 1));
+            assert!((0..actual.edge_count()).any(|r| actual.members_of_edge(r).len() == 2));
+            // Styles, semantic layers, clipping and heads all ignore the source
+            // fields for this tier, independent of membership cardinality.
+            assert_eq!(actual.paint, expected.paint);
+            let mut default_directed = GraphSession::create(
+                &base,
+                SessionLoad {
+                    budgets: Some(budgets),
+                    ..at(&[0., 10., 100.], &[0.; 3])
+                },
+                7,
+            )
+            .unwrap();
+            let fallback = default_directed.render(None).unwrap();
+            assert_eq!(fallback.paint.nodes, expected.paint.nodes);
+            assert_eq!(fallback.paint.edge_styles, expected.paint.edge_styles);
+            assert_eq!(fallback.paint.edge_layers, expected.paint.edge_layers);
+            assert!(fallback
+                .paint
+                .pieces
+                .iter()
+                .any(|piece| piece.head.is_some()));
+            assert!(actual.paint.pieces.iter().all(|piece| piece.head.is_none()));
+            for node in &expected.paint.nodes {
+                for (dx, dy) in [(0., 0.), (5., 5.), (10., 0.)] {
+                    let (x, y) = (node.center[0] + dx, node.center[1] + dy);
+                    assert_eq!(actual.pick_at(x, y), expected.pick_at(x, y));
+                }
+            }
+            for session in [&mut plain, &mut authored] {
+                session
+                    .select_refs(
+                        header(session, 1),
+                        &[ElementRef::Node(id(3))],
+                        SelectMode::Replace,
+                    )
+                    .unwrap();
+                session
+                    .focus_ref(header(session, 2), Some(&ElementRef::Node(id(3))))
+                    .unwrap();
+            }
+            let selected_plain = plain.render(None).unwrap();
+            let selected_authored = authored.render(None).unwrap();
+            assert_eq!(selected_authored.revision, actual.revision);
+            assert_eq!(selected_authored.paint, selected_plain.paint);
+            assert_ne!(selected_authored.paint, actual.paint);
+            assert!(selected_authored.emphasis.iter().any(|&bits| bits != 0));
+        } else {
+            // Exact-node tiers retain authored node and one-member edge styles.
+            assert_ne!(actual.paint.nodes, expected.paint.nodes);
+            assert_ne!(actual.paint.edge_styles, expected.paint.edge_styles);
+            assert_ne!(actual.paint.edge_layers, expected.paint.edge_layers);
+            let mut default_directed = GraphSession::create(
+                &base,
+                SessionLoad {
+                    budgets: Some(budgets),
+                    ..at(&[0., 10., 100.], &[0.; 3])
+                },
+                7,
+            )
+            .unwrap();
+            assert!(default_directed
+                .render(None)
+                .unwrap()
+                .paint
+                .pieces
+                .iter()
+                .any(|piece| piece.head.is_some()));
+        }
+    }
+}
+
+#[test]
+fn direct_collapse_and_authored_aggregate_state_keep_source_semantics() {
+    let base = handmade_with(
+        COMPOSITION_VERSION,
+        &[id(1), id(2)],
+        &[],
+        &[],
+        Some((&[NONE_U32, 0], &[0, 1])),
+    );
+    let doc = extend(&base, |b| b.u8s("node.class", 0, &[1, 2]));
+    let mut s = loaded(&doc, &[0., 100.], &[0.; 2]);
+    let before = s.render(None).unwrap().clone();
+    s.select_refs(
+        header(&s, 1),
+        &[ElementRef::Node(id(2))],
+        SelectMode::Replace,
+    )
+    .unwrap();
+    s.toggle_disclosure(
+        header(&s, 2),
+        &ElementRef::Node(id(1)),
+        DisclosureAction::Collapse,
+    )
+    .unwrap();
+    let collapsed = s.render(None).unwrap();
+    assert_eq!(collapsed.tier, crate::graph::LodTier::Direct);
+    assert_eq!(collapsed.node_count(), 1);
+    assert_eq!(
+        collapsed.paint.nodes[0].style.fill,
+        before.paint.nodes[0].style.fill
+    );
+    assert_eq!(
+        collapsed.paint.nodes[0].style.shape,
+        before.paint.nodes[0].style.shape
+    );
+    assert!(collapsed.paint.nodes[0].style.width > before.paint.nodes[0].style.width);
+
+    let flags = [crate::graph_style::FLAG_AGGREGATE; 2];
+    let authored = extend(&doc, |b| b.u32s("node.flags", 0, &flags));
+    let plain = extend(&base, |b| b.u32s("node.flags", 0, &flags));
+    let mut authored = loaded(&authored, &[0., 100.], &[0.; 2]);
+    let mut plain = loaded(&plain, &[0., 100.], &[0.; 2]);
+    assert_ne!(
+        authored.render(None).unwrap().paint.nodes[0].style.fill,
+        plain.render(None).unwrap().paint.nodes[0].style.fill
+    );
+}
+
+#[test]
 fn pick_uses_shapes_outlines_current_publication_and_style_republish() {
     let doc = handmade(&(1..=6).map(id).collect::<Vec<_>>(), &[], &[]);
     let mut s = loaded(&doc, &[0., 40., 80., 120., 160., 200.], &[0.; 6]);

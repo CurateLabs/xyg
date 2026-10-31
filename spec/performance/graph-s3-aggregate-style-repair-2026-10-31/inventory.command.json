@@ -1,0 +1,14 @@
+{
+  "name": "inventory",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/check_release_inventory.py"
+  ],
+  "exitCode": 0,
+  "seconds": 4.629,
+  "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+  "gzipSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2",
+  "log": "inventory.txt.gz"
+}

@@ -1,0 +1,40 @@
+# Explicit reproduction of the separate installed-wheel floor probe.
+# Run from repository root. Keep server and browser in separate terminals.
+# Build/setup commands for the native/client/WASM inputs are in README.md.
+
+uv build --wheel --out-dir /tmp/graphforge-streamlit-wheel
+uv venv /tmp/graphforge-streamlit-floor
+uv pip install --python /tmp/graphforge-streamlit-floor/bin/python /tmp/graphforge-streamlit-wheel/*.whl 'streamlit==1.56.0' 'pytest==9.1.1'
+uv run python -c 'from pathlib import Path; Path("/tmp/pytest-graphforge.ini").write_text("[pytest]\n")'
+/tmp/graphforge-streamlit-floor/bin/python -m pytest --noconftest -c /tmp/pytest-graphforge.ini tests/test_streamlit_consumer.py tests/test_streamlit_package_boundary.py -q
+
+# Start the server from /tmp with an absolute example path, as in the receipt:
+# /tmp/graphforge-streamlit-floor/bin/python -m streamlit run /ABSOLUTE/CHECKOUT/examples/streamlit/app.py --server.port 18617 --server.address 127.0.0.1 --server.headless true --browser.gatherUsageStats false
+
+# Generate the independent direct-host oracle into a dedicated directory:
+/tmp/graphforge-streamlit-floor/bin/python tests/fixtures/packaged_streamlit_graphforge.py /tmp/graphforge-streamlit-floor-evidence
+
+# The browser is the repository Playwright runner. Reuse its existing paint
+# oracle expression rather than copying pixel-detection policy into this record.
+# This expression extraction is only a local evidence reproduction command;
+# the required installed-consumer gate imports/calls the helper directly.
+node --input-type=module <<'JS'
+import {readFile} from 'node:fs/promises';
+import {chromium} from 'playwright';
+import {qualifyStreamlitGraphForge} from './scripts/streamlit_graphforge_browser.mjs';
+const source=await readFile('./scripts/consumer_apps_smoke.mjs','utf8');
+const paint=eval(source.slice(source.indexOf('const paint =')+14,source.indexOf('\n\ntry {')));
+const browser=await chromium.launch({
+  executablePath:'/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome',
+  args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist'],
+});
+try {
+  console.log(JSON.stringify(await qualifyStreamlitGraphForge(browser,
+    'http://127.0.0.1:18617','/tmp/graphforge-streamlit-floor-evidence',paint),null,2));
+} finally {await browser.close();}
+JS
+
+# For the optional-absence probe, create a new venv with only the same wheel
+# and pytest, then run the same two modules with --noconftest and the empty
+# config. Expected: 2 passed, 1 skipped. Never treat that skip as a substitute
+# for the mandatory installed-framework AppTest/browser proof above.

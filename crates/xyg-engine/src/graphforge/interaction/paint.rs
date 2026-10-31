@@ -236,6 +236,7 @@ pub(super) fn build(
         }
     };
     let mut paint = PaintGeometry::default();
+    let aggregate_tier = output.tier == crate::graph::LodTier::Aggregate;
     // Aggregate paint deliberately omits source semantic summaries (§28), using
     // the same resolver's neutral aggregate row, never an arbitrary member.
     let aggregate = |edge: bool, flags: u32| {
@@ -257,12 +258,12 @@ pub(super) fn build(
     };
     for (r, &flags) in node_flags.iter().enumerate() {
         let source = output.focus_node[r] as usize;
-        let style = if flags & graph_style::FLAG_AGGREGATE != 0 {
+        let style = if aggregate_tier {
             aggregate(false, flags)
         } else {
             source_nodes[source]
         };
-        let (class, epistemic) = if flags & graph_style::FLAG_AGGREGATE != 0 {
+        let (class, epistemic) = if aggregate_tier {
             (0, 0)
         } else {
             (
@@ -278,13 +279,12 @@ pub(super) fn build(
     }
     for (r, &flags) in edge_flags.iter().enumerate() {
         let source = output.members_of_edge(r)[0] as usize;
-        let multiple = output.members_of_edge(r).len() > 1;
-        let style = if multiple {
+        let style = if aggregate_tier {
             aggregate(true, flags)
         } else {
             source_edges[source]
         };
-        let (class, epistemic) = if multiple {
+        let (class, epistemic) = if aggregate_tier {
             (0, 0)
         } else {
             (
