@@ -350,4 +350,9 @@ by `<=2n` parent-link visits.
 
 Source-bound validation and package status are recorded in
 [S2 recovery evidence](../performance/graph-s2-recovery-2026-10-31/README.md).
+The subsequent
+[bounded size repair](../performance/graph-s2-size-repair-2026-10-31/README.md)
+retains scratch-free forest validation with unchanged exact first-error order.
+It saves 136 raw / 88 gzip bytes; packaging still fails the unchanged gates by
+515 raw / 527 gzip bytes. No session behavior or accepted budget changes.
 Final independent review by the parent is still required.

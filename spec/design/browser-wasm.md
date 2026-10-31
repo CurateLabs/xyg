@@ -233,6 +233,16 @@ The earlier failed gates and all four candidate measurements remain in the
 the [packaging decision receipt](../performance/graph-s1-package-budget-2026-10-31/README.md)
 records the subsequent package validation separately.
 
+Recovered #36 S2 measured **1,547,915 raw / 640,615 gzip6 bytes** and failed
+both unchanged S1 gates. A bounded two-candidate follow-up retained only
+scratch-free parent-forest validation, reducing it to **1,547,779 / 640,527**
+(136 / 88 bytes saved). Outlining the shared compound-flags helper saved no
+additional bytes and was reverted. The final module still exceeds the gates
+by **515 / 527 bytes**; this is a failed package result, with no budget or
+profile change. Exact source/artifact hashes, error-order preservation tests,
+and raw measurements are in the
+[S2 size-repair receipt](../performance/graph-s2-size-repair-2026-10-31/README.md).
+
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
 After merging main `4631927`, the local optimized build measures **1,542,222 raw

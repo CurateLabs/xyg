@@ -240,6 +240,17 @@ parent declarations directly, then validates the forest before converting roots
 in place; declaration tri-state and error precedence are unchanged. See the
 [bounded size repair evidence](../performance/graph-s1-size-repair-2026-10-31/README.md).
 
+Forest validation itself also avoids a scratch chain: the original ordered
+walk detects self-parents and cycles, then a second walk retraces its current
+marks to mark the chain acyclic. Each node transitions unvisited -> current ->
+acyclic once, preserving O(n) work and at most 2n parent-link visits without
+changing the first error or reading invalid parent payloads. An independent
+oracle exhausts all 126,126 parent planes through six nodes and checks exact
+first-error kind and cycle entry; deep-chain/shared-ancestor fixtures cover
+100,000 nodes. The
+[S2 size-repair receipt](../performance/graph-s2-size-repair-2026-10-31/README.md)
+records the before/after proof and the remaining package-size failure.
+
 ### 4.2 Generation identity
 
 Callers pass the generation the base graph was read at (`base.generation`)
