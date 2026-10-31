@@ -1,0 +1,14 @@
+{
+  "name": "handoff-release-inventory",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/check_release_inventory.py"
+  ],
+  "exitCode": 0,
+  "seconds": 4.288,
+  "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+  "log": "handoff-release-inventory.txt.gz",
+  "gzipSha256": "d6eb7efac52a320e8f4fe932c324ec419d3b3723ce3099842fa3ddec6f166280"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "handoff-python-native",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py",
+    "tests/test_graphforge.py",
+    "tests/test_graphforge_scene.py",
+    "tests/test_graphforge_semantic_evidence.py",
+    "tests/test_graphforge_fixture_generation.py",
+    "tests/test_graphforge_contract_corpus.py",
+    "tests/test_cose_native_parity.py",
+    "tests/test_temporal_columns.py",
+    "tests/test_temporal_graph_native.py",
+    "tests/test_temporal_controller.py",
+    "tests/test_graph_style.py",
+    "tests/test_graph_semantic_mapping.py",
+    "tests/test_abi_parity.py",
+    "tests/test_gen_wasm_abi.py",
+    "-k",
+    "not browser"
+  ],
+  "exitCode": 0,
+  "seconds": 14.496,
+  "rawSha256": "336ee82a7463bba4486010069945fbf94c9d5503814e2be67b0e27304b4f950a",
+  "log": "handoff-python-native.txt.gz",
+  "gzipSha256": "aec4103dc602f88ab3da0753f8b9fd363dbf2470edd4726a3947a71ad5206255"
+}

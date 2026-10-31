@@ -1,0 +1,15 @@
+{
+  "name": "handoff-session-byte-parity",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-client/dist/xyg-wasm.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.459,
+  "rawSha256": "040112d45282b8d99f45cca7156b9126f8d0d82a3a3f463ca2d4a5b406bb973f",
+  "log": "handoff-session-byte-parity.txt.gz",
+  "gzipSha256": "09fa09e960181813ad98f79c831e2c7a2b42dcd1b9688a1d633b5393e8bfc462"
+}

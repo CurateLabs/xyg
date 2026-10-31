@@ -1,0 +1,16 @@
+{
+  "name": "handoff-production-diff-whitespace",
+  "command": [
+    "git",
+    "diff",
+    "--check",
+    "bd57eb7c692b658d9428109103f4da47dd5eb144",
+    "--",
+    ":!spec/performance"
+  ],
+  "exitCode": 0,
+  "seconds": 0.047,
+  "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "log": "handoff-production-diff-whitespace.txt.gz",
+  "gzipSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "merged-shipping-assets",
+  "command": [
+    "python3",
+    "scripts/verify_wasm_assets.py"
+  ],
+  "exitCode": 1,
+  "seconds": 0.031,
+  "rawSha256": "e08872e227103e96bbcacbbdf8cc599c093d381c41825d8e62fe70287ebb49ee",
+  "log": "merged-shipping-assets.txt.gz",
+  "gzipSha256": "c888a234d655a8cc8f89abc9b0c15a1b543b02c4503a7bb431a16cce48a28cd9"
+}

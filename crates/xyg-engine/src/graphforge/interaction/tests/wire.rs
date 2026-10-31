@@ -335,3 +335,76 @@ fn post_mutation_serialization_refusal_rolls_back_document_state_publication_and
     assert!(s.session().selection().unwrap().is_empty());
     assert_ne!(s.reply(), first);
 }
+
+#[test]
+fn summary_reports_aggregate_membership_from_the_publication() {
+    let opening = request(1, 0, wire::OPEN, |b| {
+        b.bytes("document.bytes", 0, &standard_doc());
+        b.f64s("load.x.f64", 0, &[0., 30., 60.]);
+        b.f64s("load.y.f64", 0, &[0., 0., 0.]);
+        b.u64s("load.budgets.u64", 0, &[1, 500_000]);
+    });
+    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
+    s.execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let rev = s.session().render_revision();
+    let focused = request(3, rev, 6, |b| {
+        b.bytes(
+            "refs.bytes",
+            0,
+            &wire::encode_refs(&[ElementRef::Node(id(1))]).unwrap(),
+        )
+    });
+    let reply = s.execute(&focused, 0, None).unwrap();
+    let c = Container::decode(reply, wire::RESULT_MAGIC).unwrap();
+    let summary = c
+        .get("summary.text.utf8", 0)
+        .unwrap()
+        .as_utf8("summary.text.utf8")
+        .unwrap();
+    assert!(summary.starts_with("Group "), "{summary}");
+    assert!(summary.contains("group of 3"), "{summary}");
+}
+
+#[test]
+fn changed_plane_roundtrips_the_full_20000_symmetric_difference_but_ingress_stays_capped() {
+    let nodes = (1..=20_000).map(id).collect::<Vec<_>>();
+    let document = handmade(&nodes, &[], &[]);
+    let opening = request(1, 0, wire::OPEN, |b| {
+        b.bytes("document.bytes", 0, &document);
+        b.f64s(
+            "load.x.f64",
+            0,
+            &(0..nodes.len()).map(|i| i as f64).collect::<Vec<_>>(),
+        );
+        b.f64s("load.y.f64", 0, &vec![0.; nodes.len()]);
+    });
+    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
+    s.execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let rev = s.session().render_revision();
+    s.execute(
+        &request(3, rev, 10, |b| b.uuids("uuids.uuid", 0, &nodes[..10_000])),
+        0,
+        None,
+    )
+    .unwrap();
+    let reply = s
+        .execute(
+            &request(4, rev, 10, |b| b.uuids("uuids.uuid", 0, &nodes[10_000..])),
+            0,
+            None,
+        )
+        .unwrap();
+    let c = Container::decode(reply, wire::RESULT_MAGIC).unwrap();
+    let changed = wire::decode_refs(c.get("changed.refs.bytes", 0).unwrap().payload).unwrap();
+    assert_eq!(changed.len(), 20_000);
+    assert_eq!(s.session().selection().unwrap().len(), 10_000);
+    let excessive = request(5, rev, 11, |b| {
+        b.bytes("refs.bytes", 0, &wire::encode_refs(&changed).unwrap())
+    });
+    assert!(matches!(
+        Request::decode(&excessive),
+        Err(InteractionStatus::SelectionTooLarge)
+    ));
+}

@@ -1,0 +1,17 @@
+{
+  "name": "handoff-node-native",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graph.test.mjs",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/temporal.test.mjs",
+    "packages/xy-node/test/temporal-controller.test.mjs",
+    "packages/xy-node/test/temporal-graph.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 2.055,
+  "rawSha256": "6ead39b5d6b28e25ea7d6b2fa1685497e1df0856da5b4f1eb2307628a35f496f",
+  "log": "handoff-node-native.txt.gz",
+  "gzipSha256": "e79d1664ab4be915e3c0d7fa0c3c5bba55734df0e666dc20d28a485e4fc17dc0"
+}

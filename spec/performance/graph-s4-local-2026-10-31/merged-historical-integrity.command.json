@@ -1,0 +1,14 @@
+{
+  "name": "merged-historical-integrity",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s4-local-2026-10-31/check_history.py"
+  ],
+  "exitCode": 0,
+  "seconds": 1.69,
+  "rawSha256": "fedf7e3c4900347526593937c5e967cfb3bfa3732cff1dd5efe4ad669e86f15f",
+  "log": "merged-historical-integrity.txt.gz",
+  "gzipSha256": "d1ea3bf551922508be6465af85a25b9c2df73b2d86cad10923cb256c9c7f29c6"
+}

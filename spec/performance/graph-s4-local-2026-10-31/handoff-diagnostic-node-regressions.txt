@@ -1,0 +1,901 @@
+TAP version 13
+# Subtest: the golden covers compound, disconnected, coincident, and both repulsion tiers, seeded and authored
+ok 1 - the golden covers compound, disconnected, coincident, and both repulsion tiers, seeded and authored
+  ---
+  duration_ms: 1.185589
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: path-default
+ok 2 - native Node CoSE matches the golden bitwise: path-default
+  ---
+  duration_ms: 2.124412
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: path-default-seeded
+ok 3 - native Node CoSE matches the golden bitwise: path-default-seeded
+  ---
+  duration_ms: 0.463893
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: compound
+ok 4 - native Node CoSE matches the golden bitwise: compound
+  ---
+  duration_ms: 0.594349
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: compound-seeded
+ok 5 - native Node CoSE matches the golden bitwise: compound-seeded
+  ---
+  duration_ms: 0.433131
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: disconnected
+ok 6 - native Node CoSE matches the golden bitwise: disconnected
+  ---
+  duration_ms: 1.509444
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: disconnected-seeded
+ok 7 - native Node CoSE matches the golden bitwise: disconnected-seeded
+  ---
+  duration_ms: 0.445595
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: pinned-bounds-initial
+ok 8 - native Node CoSE matches the golden bitwise: pinned-bounds-initial
+  ---
+  duration_ms: 0.371769
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: coincident-start
+ok 9 - native Node CoSE matches the golden bitwise: coincident-start
+  ---
+  duration_ms: 0.666479
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-200-exact-tier
+ok 10 - native Node CoSE matches the golden bitwise: random-200-exact-tier
+  ---
+  duration_ms: 11.994425
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-200-exact-tier-seeded
+ok 11 - native Node CoSE matches the golden bitwise: random-200-exact-tier-seeded
+  ---
+  duration_ms: 10.858344
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-700-grid-tier-compound
+ok 12 - native Node CoSE matches the golden bitwise: random-700-grid-tier-compound
+  ---
+  duration_ms: 31.60806
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-700-grid-tier-compound-seeded
+ok 13 - native Node CoSE matches the golden bitwise: random-700-grid-tier-compound-seeded
+  ---
+  duration_ms: 30.385438
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: path-default
+ok 14 - direct-WASM CoSE matches native bitwise: path-default
+  ---
+  duration_ms: 35.240288
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: path-default-seeded
+ok 15 - direct-WASM CoSE matches native bitwise: path-default-seeded
+  ---
+  duration_ms: 6.675638
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: compound
+ok 16 - direct-WASM CoSE matches native bitwise: compound
+  ---
+  duration_ms: 6.630696
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: compound-seeded
+ok 17 - direct-WASM CoSE matches native bitwise: compound-seeded
+  ---
+  duration_ms: 11.225756
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: disconnected
+ok 18 - direct-WASM CoSE matches native bitwise: disconnected
+  ---
+  duration_ms: 6.447944
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: disconnected-seeded
+ok 19 - direct-WASM CoSE matches native bitwise: disconnected-seeded
+  ---
+  duration_ms: 5.874425
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: pinned-bounds-initial
+ok 20 - direct-WASM CoSE matches native bitwise: pinned-bounds-initial
+  ---
+  duration_ms: 6.169507
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: coincident-start
+ok 21 - direct-WASM CoSE matches native bitwise: coincident-start
+  ---
+  duration_ms: 7.125009
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-200-exact-tier
+ok 22 - direct-WASM CoSE matches native bitwise: random-200-exact-tier
+  ---
+  duration_ms: 22.093795
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-200-exact-tier-seeded
+ok 23 - direct-WASM CoSE matches native bitwise: random-200-exact-tier-seeded
+  ---
+  duration_ms: 18.631608
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound
+ok 24 - direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound
+  ---
+  duration_ms: 41.554883
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound-seeded
+ok 25 - direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound-seeded
+  ---
+  duration_ms: 41.336579
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: callback waits for destroy and exit
+not ok 26 - force worker lifecycle: callback waits for destroy and exit
+  ---
+  duration_ms: 239.349204
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+    + actual - expected
+    
+    + [TypeError: Cannot read properties of undefined (reading 'postMessage')]
+    - [Error: consumer failed]
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: [TypeError: Cannot read properties of undefined (reading 'postMessage')],
+      expected: [Error: consumer failed],
+      operator: 'strictEqual',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:163:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: force worker lifecycle: complete-failure waits for destroy and exit
+not ok 27 - force worker lifecycle: complete-failure waits for destroy and exit
+  ---
+  duration_ms: 232.626827
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+    + actual - expected
+    
+    + [TypeError: Cannot read properties of undefined (reading 'postMessage')]
+    - [Error: consumer failed]
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: [TypeError: Cannot read properties of undefined (reading 'postMessage')],
+      expected: [Error: consumer failed],
+      operator: 'strictEqual',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:163:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: force worker lifecycle: abort waits for destroy and exit
+not ok 28 - force worker lifecycle: abort waits for destroy and exit
+  ---
+  duration_ms: 232.826283
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: The input did not match the regular expression /aborted/. Input:
+    
+    "Cannot read properties of undefined (reading 'postMessage')"
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: "Cannot read properties of undefined (reading 'postMessage')",
+      expected: /aborted/,
+      operator: 'match',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:163:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle: timeout waits for destroy and exit
+not ok 29 - force worker lifecycle: timeout waits for destroy and exit
+  ---
+  duration_ms: 267.692924
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: The input did not match the regular expression /exceeded maxWallMs/. Input:
+    
+    'The expression evaluated to a falsy value:\n' +
+      '\n' +
+      "  assert.ok(scenario === 'normal' || scenario === 'no-callback' || scenario === 'mutated-step')\n"
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: 'The expression evaluated to a falsy value:\n' +
+        '\n' +
+        "  assert.ok(scenario === 'normal' || scenario === 'no-callback' || scenario === 'mutated-step')\n",
+      expected: /exceeded maxWallMs/,
+      operator: 'match',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    {"type":"callback","step":2}
+    {"type":"callback","step":3}
+    {"type":"callback","step":4}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:163:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle: normal waits for destroy and exit
+not ok 30 - force worker lifecycle: normal waits for destroy and exit
+  ---
+  duration_ms: 270.246201
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:172:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle: no-callback waits for destroy and exit
+not ok 31 - force worker lifecycle: no-callback waits for destroy and exit
+  ---
+  duration_ms: 266.520204
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:172:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle: mutated-step waits for destroy and exit
+not ok 32 - force worker lifecycle: mutated-step waits for destroy and exit
+  ---
+  duration_ms: 265.630446
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:172:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle: native-error waits for destroy and exit
+not ok 33 - force worker lifecycle: native-error waits for destroy and exit
+  ---
+  duration_ms: 238.204388
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:162:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: The input did not match the regular expression /native tick failed/. Input:
+    
+    'The expression evaluated to a falsy value:\n' +
+      '\n' +
+      "  assert.ok(scenario === 'normal' || scenario === 'no-callback' || scenario === 'mutated-step')\n"
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: 'The expression evaluated to a falsy value:\n' +
+        '\n' +
+        "  assert.ok(scenario === 'normal' || scenario === 'no-callback' || scenario === 'mutated-step')\n",
+      expected: /native tick failed/,
+      operator: 'match',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    {"type":"callback","step":2}
+    {"type":"callback","step":3}
+    {"type":"callback","step":4}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:163:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle: pre-abort never allocates a worker
+ok 34 - force worker lifecycle: pre-abort never allocates a worker
+  ---
+  duration_ms: 243.122375
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: unresponsive worker uses bounded emergency termination and waits for exit
+not ok 35 - force worker lifecycle: unresponsive worker uses bounded emergency termination and waits for exit
+  ---
+  duration_ms: 274.256822
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:186:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: The input did not match the regular expression /exceeded maxWallMs/. Input:
+    
+    'The expression evaluated to a falsy value:\n' +
+      '\n' +
+      "  assert.ok(scenario === 'normal' || scenario === 'no-callback' || scenario === 'mutated-step')\n"
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: 'The expression evaluated to a falsy value:\n' +
+        '\n' +
+        "  assert.ok(scenario === 'normal' || scenario === 'no-callback' || scenario === 'mutated-step')\n",
+      expected: /exceeded maxWallMs/,
+      operator: 'match',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    {"type":"callback","step":2}
+    {"type":"callback","step":3}
+    {"type":"callback","step":4}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:187:18)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle with native ABI: callback
+not ok 36 - force worker lifecycle with native ABI: callback
+  ---
+  duration_ms: 222.735751
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:199:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+    + actual - expected
+    
+    + [TypeError: Cannot read properties of undefined (reading 'postMessage')]
+    - [Error: consumer failed]
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: [TypeError: Cannot read properties of undefined (reading 'postMessage')],
+      expected: [Error: consumer failed],
+      operator: 'strictEqual',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:200:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle with native ABI: complete-failure
+not ok 37 - force worker lifecycle with native ABI: complete-failure
+  ---
+  duration_ms: 245.537052
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:199:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: Expected "actual" to be reference-equal to "expected":
+    + actual - expected
+    
+    + [TypeError: Cannot read properties of undefined (reading 'postMessage')]
+    - [Error: consumer failed]
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: [TypeError: Cannot read properties of undefined (reading 'postMessage')],
+      expected: [Error: consumer failed],
+      operator: 'strictEqual',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:34:76
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:200:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle with native ABI: abort
+not ok 38 - force worker lifecycle with native ABI: abort
+  ---
+  duration_ms: 250.424038
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:199:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: The input did not match the regular expression /aborted/. Input:
+    
+    "Cannot read properties of undefined (reading 'postMessage')"
+    
+        at file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: true,
+      code: 'ERR_ASSERTION',
+      actual: "Cannot read properties of undefined (reading 'postMessage')",
+      expected: /aborted/,
+      operator: 'match',
+      diff: 'simple'
+    }
+    
+    Node.js v22.23.4
+    
+    {"type":"callback","step":1}
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/xyg-force-lifecycle-t9VXyX/run.mjs:35:17
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    run (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:144:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:200:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle with native ABI: timeout
+not ok 39 - force worker lifecycle with native ABI: timeout
+  ---
+  duration_ms: 583.510364
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:199:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    [{"type":"callback","step":1},{"type":"settled","failed":true,"identity":false}]
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    cleanedBeforeSettlement (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:152:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:204:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle with native ABI: normal
+not ok 40 - force worker lifecycle with native ABI: normal
+  ---
+  duration_ms: 298.638749
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:199:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    [{"type":"callback","step":1},{"type":"callback","step":2},{"type":"callback","step":3},{"type":"callback","step":4},{"type":"settled","failed":false}]
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    cleanedBeforeSettlement (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:152:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:204:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle with native ABI: no-callback
+not ok 41 - force worker lifecycle with native ABI: no-callback
+  ---
+  duration_ms: 282.461144
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:199:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    [{"type":"settled","failed":false}]
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    cleanedBeforeSettlement (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:152:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:204:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: force worker lifecycle with native ABI: mutated-step
+not ok 42 - force worker lifecycle with native ABI: mutated-step
+  ---
+  duration_ms: 288.058287
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:199:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    [{"type":"callback","step":1},{"type":"callback","step":2},{"type":"callback","step":3},{"type":"callback","step":4},{"type":"settled","failed":false}]
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    cleanedBeforeSettlement (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:152:10)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs:204:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Node frames and composes the Python-pinned GraphForge bytes for every case
+ok 43 - Node frames and composes the Python-pinned GraphForge bytes for every case
+  ---
+  duration_ms: 27.592788
+  type: 'test'
+  ...
+# Subtest: native and WASM compose byte-identical XYGF documents on every fixture
+ok 44 - native and WASM compose byte-identical XYGF documents on every fixture
+  ---
+  duration_ms: 53.749076
+  type: 'test'
+  ...
+# Subtest: composition v2 hierarchy and root conflicts match native and WASM
+ok 45 - composition v2 hierarchy and root conflicts match native and WASM
+  ---
+  duration_ms: 184.974514
+  type: 'test'
+  ...
+# Subtest: rendered Scenes are identical and carry every composed identity
+ok 46 - rendered Scenes are identical and carry every composed identity
+  ---
+  duration_ms: 7.613218
+  type: 'test'
+  ...
+# Subtest: rendered Scenes stay identical on graphs large enough to exercise layout seeding
+ok 47 - rendered Scenes stay identical on graphs large enough to exercise layout seeding
+  ---
+  duration_ms: 294.332215
+  type: 'test'
+  ...
+# Subtest: a 100-node GraphForge run renders identical Scenes on both hosts
+ok 48 - a 100-node GraphForge run renders identical Scenes on both hosts
+  ---
+  duration_ms: 41.929944
+  type: 'test'
+  ...
+# Subtest: the browser bundle frames the same request bytes and decodes the same identities
+ok 49 - the browser bundle frames the same request bytes and decodes the same identities
+  ---
+  duration_ms: 22.411748
+  type: 'test'
+  ...
+# Subtest: unsupported-schema diagnostics are byte-identical on native and WASM
+ok 50 - unsupported-schema diagnostics are byte-identical on native and WASM
+  ---
+  duration_ms: 4.838618
+  type: 'test'
+  ...
+# Subtest: published Core rc.5 catalog and path-cost schema rejection match actual WASM
+ok 51 - published Core rc.5 catalog and path-cost schema rejection match actual WASM
+  ---
+  duration_ms: 49.545419
+  type: 'test'
+  ...
+1..51
+# tests 51
+# suites 0
+# pass 35
+# fail 16
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4784.73907

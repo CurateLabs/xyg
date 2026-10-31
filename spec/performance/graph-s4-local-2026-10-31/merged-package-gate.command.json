@@ -1,0 +1,13 @@
+{
+  "name": "merged-package-gate",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 233.753,
+  "rawSha256": "564dd898287bdbc467d94d0ff32ee8aaa722dbafa4ab4e927767ad526049cc7a",
+  "log": "merged-package-gate.txt.gz",
+  "gzipSha256": "22d555a68ab47bdc3cfeb5bf193278940e27b2453dc83b2ce5ad9eeaa250c4fe"
+}

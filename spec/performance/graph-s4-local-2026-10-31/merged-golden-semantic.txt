@@ -1,0 +1,2 @@
+usage: gen_graphforge_semantic_fixture.py [-h] [--write]
+gen_graphforge_semantic_fixture.py: error: unrecognized arguments: --check

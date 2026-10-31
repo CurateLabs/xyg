@@ -1,0 +1,15 @@
+{
+  "name": "merged-release-inventory",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/check_release_inventory.py",
+    "--write"
+  ],
+  "exitCode": 0,
+  "seconds": 3.942,
+  "rawSha256": "930079e0a5a07ca00d6934b134a1d048f16b064c43e6ed6a41cd5a15dcce78ea",
+  "log": "merged-release-inventory.txt.gz",
+  "gzipSha256": "fb9674a33af29d70791e579ecd48b87c311ab0ea6415b43d862cfbd8a0018977"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "merged-diagnostic-materialize",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-local-2026-10-31/diagnostic_assets.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 44.419,
+  "rawSha256": "9cefcd9c225bb17d3ec8a2a6d3e09ee8e94734cb8666897df512b6da2a11e378",
+  "log": "merged-diagnostic-materialize.txt.gz",
+  "gzipSha256": "a1a6636b03640414b20c9f269055ba2ea5e599c5f5b85a85c011e240b4038252"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "merged-render-smoke",
+  "command": [
+    "python3",
+    "scripts/render_smoke_nonumpy.py",
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  ],
+  "exitCode": 0,
+  "seconds": 21.452,
+  "rawSha256": "ad5d2219068dfc60b3ab02238ac10d10cfa033b897cb21f321bf5cbd0095d128",
+  "log": "merged-render-smoke.txt.gz",
+  "gzipSha256": "e3c54d1a75b9644b457e1206c4675385fe3362b5fe68a9c87cd84692abbf2a9a"
+}

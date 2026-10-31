@@ -1,0 +1,12 @@
+{
+  "name": "handoff-abi-smoke",
+  "command": [
+    "python3",
+    "scripts/abi_smoke.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.136,
+  "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+  "log": "handoff-abi-smoke.txt.gz",
+  "gzipSha256": "aa3af828689b39e5cb48e96ed8fa99ca3d3a9326510eb29838bb24208e32deba"
+}

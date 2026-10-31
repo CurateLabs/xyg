@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **design final; S1 and bounded S2 engine implemented; typed S3 implemented locally; finite geometry repair and authorized raw-only package decision validated locally; independent final parent review and remote integration pending** (see [Implementation status](#implementation-status)).
+Status: **S1–S3 typed engine approved on the parent base; S4 shared native/WASM session wire implemented locally, merged with the parent-approved S3 aggregate-style repair; S4 package gate fails and final independent parent review remains required** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -575,3 +575,21 @@ the separate document/scalar identity/group arguments must match it exactly.
 The immutable OPEN request/ack is retained until close, independently of the
 last command cache; WASM identical OPEN retries return that original ack even
 after later commands. Close/destroy revoke lifetime and are not retryable.
+
+OPEN acknowledges ingress with status/header only; Poll returns status and an
+optional outbound snapshot only. Successful render/update/bind/interaction and
+companion replies carry the semantic/publication planes described above. A
+failed native request returns its negative export status and zero out_len,
+without replacing the last successful XYGR cache; failed WASM requests likewise
+return the status directly. The last successful cache is never an error reply.
+Aggregate focus summaries derive Group/member counts from that same publication.
+
+S4 final local proof after normal parent merge: full Rust/Clippy, native and real
+WASM byte replay, capacity/disposal/transaction tests, exact-ID string-table
+reordering and the original full strict-CSP diagnostic foundation pass. The
+real shipping producer fails unchanged gates: 1,852,594 raw / 755,339 gzip6
+bytes versus 1,549,312 / 641,024 allowed. No shipping assets are published;
+diagnostic staged assets do not waive that failure. Detailed append-only proof:
+[S4 local receipt](../performance/graph-s4-local-2026-10-31/README.md#final-merged-source-handoff).
+`coordinate_deliver` targets one explicit receiver handle with ApplyRemote (16);
+transport peer enumeration/routing is not public host integration in S4.

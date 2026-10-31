@@ -1,0 +1,15 @@
+{
+  "name": "merged-workspace",
+  "command": [
+    "cargo",
+    "test",
+    "--workspace",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 143.721,
+  "rawSha256": "9955c874f90e2ff2a49efbbc960d57a4ee39f0f31c656fa37b9e0fa473370fac",
+  "log": "merged-workspace.txt.gz",
+  "gzipSha256": "787dd59eb8b58ef63c13185a93f7bcd5960c669f90399acccb7b85ed2556df09"
+}

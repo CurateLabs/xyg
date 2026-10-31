@@ -1,0 +1,316 @@
+TAP version 13
+# Subtest: the golden covers compound, disconnected, coincident, and both repulsion tiers, seeded and authored
+ok 1 - the golden covers compound, disconnected, coincident, and both repulsion tiers, seeded and authored
+  ---
+  duration_ms: 1.162943
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: path-default
+ok 2 - native Node CoSE matches the golden bitwise: path-default
+  ---
+  duration_ms: 2.059371
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: path-default-seeded
+ok 3 - native Node CoSE matches the golden bitwise: path-default-seeded
+  ---
+  duration_ms: 0.4382
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: compound
+ok 4 - native Node CoSE matches the golden bitwise: compound
+  ---
+  duration_ms: 0.596405
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: compound-seeded
+ok 5 - native Node CoSE matches the golden bitwise: compound-seeded
+  ---
+  duration_ms: 1.569594
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: disconnected
+ok 6 - native Node CoSE matches the golden bitwise: disconnected
+  ---
+  duration_ms: 0.362129
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: disconnected-seeded
+ok 7 - native Node CoSE matches the golden bitwise: disconnected-seeded
+  ---
+  duration_ms: 0.435485
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: pinned-bounds-initial
+ok 8 - native Node CoSE matches the golden bitwise: pinned-bounds-initial
+  ---
+  duration_ms: 0.370031
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: coincident-start
+ok 9 - native Node CoSE matches the golden bitwise: coincident-start
+  ---
+  duration_ms: 0.668737
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-200-exact-tier
+ok 10 - native Node CoSE matches the golden bitwise: random-200-exact-tier
+  ---
+  duration_ms: 11.259368
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-200-exact-tier-seeded
+ok 11 - native Node CoSE matches the golden bitwise: random-200-exact-tier-seeded
+  ---
+  duration_ms: 11.19833
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-700-grid-tier-compound
+ok 12 - native Node CoSE matches the golden bitwise: random-700-grid-tier-compound
+  ---
+  duration_ms: 32.610969
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-700-grid-tier-compound-seeded
+ok 13 - native Node CoSE matches the golden bitwise: random-700-grid-tier-compound-seeded
+  ---
+  duration_ms: 31.420925
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: path-default
+ok 14 - direct-WASM CoSE matches native bitwise: path-default
+  ---
+  duration_ms: 34.295633
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: path-default-seeded
+ok 15 - direct-WASM CoSE matches native bitwise: path-default-seeded
+  ---
+  duration_ms: 6.097984
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: compound
+ok 16 - direct-WASM CoSE matches native bitwise: compound
+  ---
+  duration_ms: 5.840222
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: compound-seeded
+ok 17 - direct-WASM CoSE matches native bitwise: compound-seeded
+  ---
+  duration_ms: 8.54104
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: disconnected
+ok 18 - direct-WASM CoSE matches native bitwise: disconnected
+  ---
+  duration_ms: 6.225075
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: disconnected-seeded
+ok 19 - direct-WASM CoSE matches native bitwise: disconnected-seeded
+  ---
+  duration_ms: 5.961795
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: pinned-bounds-initial
+ok 20 - direct-WASM CoSE matches native bitwise: pinned-bounds-initial
+  ---
+  duration_ms: 5.956305
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: coincident-start
+ok 21 - direct-WASM CoSE matches native bitwise: coincident-start
+  ---
+  duration_ms: 7.238903
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-200-exact-tier
+ok 22 - direct-WASM CoSE matches native bitwise: random-200-exact-tier
+  ---
+  duration_ms: 21.800765
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-200-exact-tier-seeded
+ok 23 - direct-WASM CoSE matches native bitwise: random-200-exact-tier-seeded
+  ---
+  duration_ms: 19.256924
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound
+ok 24 - direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound
+  ---
+  duration_ms: 41.778661
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound-seeded
+ok 25 - direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound-seeded
+  ---
+  duration_ms: 41.483612
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: callback waits for destroy and exit
+ok 26 - force worker lifecycle: callback waits for destroy and exit
+  ---
+  duration_ms: 197.908264
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: complete-failure waits for destroy and exit
+ok 27 - force worker lifecycle: complete-failure waits for destroy and exit
+  ---
+  duration_ms: 193.874782
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: abort waits for destroy and exit
+ok 28 - force worker lifecycle: abort waits for destroy and exit
+  ---
+  duration_ms: 193.085889
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: timeout waits for destroy and exit
+ok 29 - force worker lifecycle: timeout waits for destroy and exit
+  ---
+  duration_ms: 588.890894
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: normal waits for destroy and exit
+ok 30 - force worker lifecycle: normal waits for destroy and exit
+  ---
+  duration_ms: 251.231766
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: no-callback waits for destroy and exit
+ok 31 - force worker lifecycle: no-callback waits for destroy and exit
+  ---
+  duration_ms: 261.949221
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: mutated-step waits for destroy and exit
+ok 32 - force worker lifecycle: mutated-step waits for destroy and exit
+  ---
+  duration_ms: 266.069341
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: native-error waits for destroy and exit
+ok 33 - force worker lifecycle: native-error waits for destroy and exit
+  ---
+  duration_ms: 222.450977
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: pre-abort never allocates a worker
+ok 34 - force worker lifecycle: pre-abort never allocates a worker
+  ---
+  duration_ms: 118.750805
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: unresponsive worker uses bounded emergency termination and waits for exit
+ok 35 - force worker lifecycle: unresponsive worker uses bounded emergency termination and waits for exit
+  ---
+  duration_ms: 1381.176351
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: callback
+ok 36 - force worker lifecycle with native ABI: callback
+  ---
+  duration_ms: 286.427133
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: complete-failure
+ok 37 - force worker lifecycle with native ABI: complete-failure
+  ---
+  duration_ms: 261.784581
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: abort
+ok 38 - force worker lifecycle with native ABI: abort
+  ---
+  duration_ms: 258.272672
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: timeout
+ok 39 - force worker lifecycle with native ABI: timeout
+  ---
+  duration_ms: 577.679798
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: normal
+ok 40 - force worker lifecycle with native ABI: normal
+  ---
+  duration_ms: 331.255346
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: no-callback
+ok 41 - force worker lifecycle with native ABI: no-callback
+  ---
+  duration_ms: 267.985651
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: mutated-step
+ok 42 - force worker lifecycle with native ABI: mutated-step
+  ---
+  duration_ms: 269.03645
+  type: 'test'
+  ...
+# Subtest: Node frames and composes the Python-pinned GraphForge bytes for every case
+ok 43 - Node frames and composes the Python-pinned GraphForge bytes for every case
+  ---
+  duration_ms: 26.18127
+  type: 'test'
+  ...
+# Subtest: native and WASM compose byte-identical XYGF documents on every fixture
+ok 44 - native and WASM compose byte-identical XYGF documents on every fixture
+  ---
+  duration_ms: 54.263513
+  type: 'test'
+  ...
+# Subtest: composition v2 hierarchy and root conflicts match native and WASM
+ok 45 - composition v2 hierarchy and root conflicts match native and WASM
+  ---
+  duration_ms: 156.385737
+  type: 'test'
+  ...
+# Subtest: rendered Scenes are identical and carry every composed identity
+ok 46 - rendered Scenes are identical and carry every composed identity
+  ---
+  duration_ms: 6.690636
+  type: 'test'
+  ...
+# Subtest: rendered Scenes stay identical on graphs large enough to exercise layout seeding
+ok 47 - rendered Scenes stay identical on graphs large enough to exercise layout seeding
+  ---
+  duration_ms: 268.674074
+  type: 'test'
+  ...
+# Subtest: a 100-node GraphForge run renders identical Scenes on both hosts
+ok 48 - a 100-node GraphForge run renders identical Scenes on both hosts
+  ---
+  duration_ms: 39.075735
+  type: 'test'
+  ...
+# Subtest: the browser bundle frames the same request bytes and decodes the same identities
+ok 49 - the browser bundle frames the same request bytes and decodes the same identities
+  ---
+  duration_ms: 22.940848
+  type: 'test'
+  ...
+# Subtest: unsupported-schema diagnostics are byte-identical on native and WASM
+ok 50 - unsupported-schema diagnostics are byte-identical on native and WASM
+  ---
+  duration_ms: 5.766358
+  type: 'test'
+  ...
+# Subtest: published Core rc.5 catalog and path-cost schema rejection match actual WASM
+ok 51 - published Core rc.5 catalog and path-cost schema rejection match actual WASM
+  ---
+  duration_ms: 47.915948
+  type: 'test'
+  ...
+1..51
+# tests 51
+# suites 0
+# pass 51
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6005.175287

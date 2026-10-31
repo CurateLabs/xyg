@@ -51,7 +51,7 @@ pub fn decode_refs(bytes: &[u8]) -> Result<Vec<ElementRef>> {
         return bad();
     }
     let n = u32_at(bytes, 0) as usize;
-    if n > MAX_GRAPH_SELECTION_REFS {
+    if n > MAX_GRAPH_SELECTION_REFS * 2 {
         return Err(InteractionStatus::SelectionTooLarge);
     }
     let start = n
@@ -299,7 +299,9 @@ impl<'a> Request<'a> {
         };
         // Validate all optional payloads before any retry or owner lookup.
         if let Some(s) = r.container.get("refs.bytes", 0) {
-            decode_refs(s.payload)?;
+            if decode_refs(s.payload)?.len() > MAX_GRAPH_SELECTION_REFS {
+                return Err(InteractionStatus::SelectionTooLarge);
+            }
         }
         if let Some(s) = r.container.get("remote.bytes", 0) {
             decode_event(s.payload)?;
@@ -1158,7 +1160,7 @@ fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> R
         .identity
         .resolve(f)
         .map_err(|_| InteractionStatus::Invalid)?;
-    let (kind, i, ordinal, selected, relationship) = match index {
+    let (mut kind, i, ordinal, mut selected, mut relationship) = match index {
         ElementIndex::Node(i) => (
             if s.parent.iter().any(|p| *p == i as u64) {
                 "Group"
@@ -1195,6 +1197,22 @@ fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> R
             format!("{} to {}", s.edge_source[i], s.edge_target[i]),
         ),
     };
+    if let (ElementIndex::Node(node), Some(render)) = (index, s.published()) {
+        let group = render.member_of[node];
+        if group != NOT_RENDERED {
+            let members = render.members_of_node(group as usize);
+            if members.len() > 1 {
+                kind = "Group";
+                selected = members.iter().any(|&n| {
+                    state
+                        .selection()
+                        .nodes
+                        .contains(&s.identity.node_uuids()[n as usize])
+                });
+                relationship = format!("group of {}, {relationship}", members.len());
+            }
+        }
+    }
     let mut text = format!(
         "{kind} {}, {relationship}, {}, {ordinal} of {}",
         s.labels.get(i).map(String::as_str).unwrap_or(""),

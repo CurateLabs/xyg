@@ -1,0 +1,12 @@
+{
+  "name": "handoff-diagnostic-materialize",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-local-2026-10-31/diagnostic_assets.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 47.012,
+  "rawSha256": "1665928c453fe41fac7704b22c51e60d48c6f2cd15c7cde51beb76131ad03884",
+  "log": "handoff-diagnostic-materialize.txt.gz",
+  "gzipSha256": "2c4c3ea90d00eff56ab3afe523a4d78b75e1df94834156f4373783b31c78d3b8"
+}

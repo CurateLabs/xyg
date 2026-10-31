@@ -1,0 +1,29 @@
+packaged optimized xyg-wasm artifact at /home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-client/dist/xyg-wasm.wasm
+copied optimized xyg-wasm artifact to /home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/python/xyg/static/xyg-wasm.wasm
+packaged deterministic inline WASM artifact at /home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-client/dist/xyg-wasm-inline.js
+wrote WASM version/hash manifest at /home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-client/dist/xyg-wasm.manifest.json
+{
+  "scope": "diagnostic only, failed shipping gates remain binding",
+  "artifactCommit": null,
+  "stage": "/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets",
+  "assets": {
+    "index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "xyg-wasm.wasm": {
+      "bytes": 1852551,
+      "sha256": "005d629d17e568a1a1c0a7a3321337347bb3584d753ac73a0deb18d09f31cf8e"
+    }
+  }
+}
+DIAGNOSTIC ONLY; SHIPPING GATE FAIL: xyg-wasm gzip is 755325 bytes, over the 641024-byte budget
+DIAGNOSTIC ONLY; SHIPPING GATE FAIL: xyg-wasm is 1852551 bytes, over the 1549312-byte budget (spec/design/browser-wasm.md, "Artifact size")

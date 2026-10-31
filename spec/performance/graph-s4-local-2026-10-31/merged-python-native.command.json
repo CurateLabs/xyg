@@ -1,0 +1,30 @@
+{
+  "name": "merged-python-native",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py",
+    "tests/test_graphforge.py",
+    "tests/test_graphforge_scene.py",
+    "tests/test_graphforge_semantic_evidence.py",
+    "tests/test_graphforge_fixture_generation.py",
+    "tests/test_graphforge_contract_corpus.py",
+    "tests/test_cose_native_parity.py",
+    "tests/test_temporal_columns.py",
+    "tests/test_temporal_graph_native.py",
+    "tests/test_temporal_controller.py",
+    "tests/test_graph_style.py",
+    "tests/test_graph_semantic_mapping.py",
+    "tests/test_abi_parity.py",
+    "tests/test_gen_wasm_abi.py",
+    "-k",
+    "not browser"
+  ],
+  "exitCode": 0,
+  "seconds": 21.005,
+  "rawSha256": "e6f7744c0ca7d04e2b0eca07e6b4b4173206514b06ccaa19a3f2bd06b630a065",
+  "log": "merged-python-native.txt.gz",
+  "gzipSha256": "fc2ae97e4d97bd7d6983d44c2a5930824c40ea25aa36c7dc169cfaa21dd687ef"
+}

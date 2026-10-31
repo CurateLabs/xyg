@@ -1,0 +1,14 @@
+{
+  "name": "merged-semantic-golden-check",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/gen_graphforge_semantic_fixture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.238,
+  "rawSha256": "94a3cddc69bf9d6b7847aa1178d65c38a4053c8bc28775481b73aa108d575748",
+  "log": "merged-semantic-golden-check.txt.gz",
+  "gzipSha256": "5b8f99f3d34a6c404f1e4c7a241a5f1573a525cd31e22e4151273fb2ddcbd801"
+}

@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import * as native from "../src/native.js";
+import { graphProjectionCreate, graphProjectionDestroy, temporalGraphCreate, temporalGraphDestroy, temporalGraphFrame } from "../src/abi.js";
 import { composeGraphForgeRequest, encodeGraphForgeRequest } from "../src/graphforge.js";
 import { DTYPE, decodeContainer, encodeContainer } from "../src/graphforge-container.js";
 
@@ -148,11 +149,11 @@ function wasmCall(x, handle, name, bytes) {
   return { status, output };
 }
 
-function openPair(x, data, instance, group) {
+function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
   const open = request(instance, group, 1, 0, 19, data.load);
   const handle = new BigUint64Array(1);
   assert.equal(native.xyGraphforgeSessionCreate(ptr(data.document), BigInt(data.document.length), ptr(open), BigInt(open.length), instance, group, native.pointer(handle, "uint64_t *")), 0);
-  const wasm = x.xyg_wasm_instance_new(128 * 1024 * 1024);
+  const wasm = x.xyg_wasm_instance_new(budget);
   assert.ok(wasm > 0);
   assert.equal(wasmCall(x, wasm, "xyg_wasm_graphforge_session_open", open).status, 0);
   let sequence = 1;
@@ -164,7 +165,8 @@ function openPair(x, data, instance, group) {
       const fn = operation === 20 ? native.xyGraphforgeSessionUpdate
         : operation === 21 ? native.xyGraphforgeSessionRender
           : operation === 22 ? native.xyGraphforgeSessionPollEvent
-            : operation === 16 ? native.xyGraphforgeCoordinateDeliver : native.xyGraphforgeSessionInteract;
+            : operation === 16 ? native.xyGraphforgeCoordinateDeliver
+              : operation === 18 ? native.xyGraphforgeSessionBindTemporal : native.xyGraphforgeSessionInteract;
       const name = operation === 20 ? "xyg_wasm_graphforge_session_update"
         : operation === 21 ? "xyg_wasm_graphforge_session_render" : "xyg_wasm_graphforge_session_interact";
       const nativeBytes = nativeComplete(fn, handle[0], bytes);
@@ -278,5 +280,86 @@ test("actual native ABI and real WASM replay one GraphSession byte contract", as
   } finally {
     receiver.close();
     sender.close();
+  }
+});
+
+
+test("actual boundaries retain all 20000 changed refs while requests stay capped at 10000", async () => {
+  const {instance} = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const count = 20000, nodes = new Uint8Array(count * 16);
+  const view = new DataView(nodes.buffer);
+  for (let i = 0; i < count; i++) view.setUint32(i * 16, i + 1, true);
+  const document = encodeContainer("XYGF", [
+    field("status", "u32", [0]), field("kind", "utf8", "graph"), field("composition.version", "u32", [2]),
+    field("node.uuid", "uuid", nodes), field("edge.uuid", "uuid", new Uint8Array()),
+    field("edge.derived", "u8", []), field("edge.layer", "u32", []), field("edge.order", "i64", []),
+    field("edge.path", "u64", []), field("edge.source", "u64", []), field("edge.target", "u64", []),
+  ]);
+  const data = {document, load: [field("document.bytes", "bytes", document), field("load.x.f64", "f64", Array.from({length: count}, (_, i) => i)), field("load.y.f64", "f64", Array(count).fill(0))]};
+  const pair = openPair(instance.exports, data, 900003n, 77n, 384 * 1024 * 1024);
+  try {
+    pair.run(21);
+    pair.run(10, [field("uuids.uuid", "uuid", nodes.subarray(0, 10000 * 16))]);
+    const reply = pair.run(10, [field("uuids.uuid", "uuid", nodes.subarray(10000 * 16))]);
+    const changed = value(reply, "changed.refs.bytes");
+    assert.equal(new DataView(changed.buffer, changed.byteOffset).getUint32(0, true), 20000);
+    assert.equal(changed.length, 8 + 20000 * 56);
+    assert.equal(value(reply, "node.flags.u32").filter(v => v & 2).length, 10000);
+    pair.reject(11, [field("refs.bytes", "bytes", changed)], -8);
+  } finally { pair.close(); }
+});
+
+
+test("real native/WASM binding shares temporal frames and revokes replaced owners", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const x = instance.exports;
+  const nodes = new Uint8Array([...Array(16).fill(1), ...Array(16).fill(2)]);
+  const edge = new Uint8Array(16).fill(3);
+  const document = encodeContainer("XYGF", [
+    field("status", "u32", [0]), field("kind", "utf8", "graph"), field("composition.version", "u32", [2]),
+    field("node.uuid", "uuid", nodes), field("edge.uuid", "uuid", edge),
+    field("edge.derived", "u8", [0]), field("edge.layer", "u32", [0xffffffff]), field("edge.order", "i64", [-1n]),
+    field("edge.path", "u64", [0xffffffffffffffffn]), field("edge.source", "u64", [0n]), field("edge.target", "u64", [1n]),
+  ]);
+  const data = { document, load: [field("document.bytes", "bytes", document), field("load.x.f64", "f64", [0, 40]), field("load.y.f64", "f64", [0, 0])] };
+  const projection = graphProjectionCreate({ nodeIds: nodes, edgeIds: edge, sourceIds: nodes.subarray(0, 16), targetIds: nodes.subarray(16) });
+  let owner = temporalGraphCreate({ projectionHandle: projection });
+  // This test process has created no earlier native temporal owners. Native
+  // handle 1 and WASM's instance-local symbolic 1 encode the identical bind.
+  assert.equal(owner, 1n);
+  const pair = openPair(x, data, 900004n, 78n);
+  const other = x.xyg_wasm_instance_new(64 * 1024 * 1024);
+  const create = new Uint8Array(112);
+  create.set(Buffer.from("XYTG"));
+  const cv = new DataView(create.buffer);
+  [1, 32, 1, 0, 2, 1, 0].forEach((v, i) => cv.setUint32(4 + i * 4, v, true));
+  create.set(nodes, 32); create.set(edge, 64); create.set(nodes.subarray(0, 16), 80); create.set(nodes.subarray(16), 96);
+  try {
+    assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", create).status, 0);
+    assert.equal(wasmCall(x, other, "xyg_wasm_graphforge_session_open", pair.open).status, 0);
+    const bind = request(pair.instance, pair.group, 2, 0, 18, [field("temporal.u64", "u64", [1n])]);
+    assert.equal(wasmCall(x, other, "xyg_wasm_graphforge_session_interact", bind).status, -10, "another instance cannot borrow the live owner");
+    const bound = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    pair.run(10, [field("uuids.uuid", "uuid", nodes.subarray(0, 16))]);
+    temporalGraphFrame(owner, { revision: 1n, cursor: 5n, range: [0n, 10n] });
+    const frame = new Uint8Array(56); frame.set(Buffer.from("XYTG"));
+    const fv = new DataView(frame.buffer);
+    [1, 56, 2].forEach((v, i) => fv.setUint32(4 + i * 4, v, true));
+    fv.setBigUint64(16, 1n, true); fv.setBigInt64(24, 5n, true); fv.setBigInt64(40, 10n, true); fv.setBigUint64(48, 1000000n, true);
+    assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", frame).status, 0);
+    pair.reject(4, [], -1);
+    const refreshed = pair.run(21);
+    assert.ok(value(refreshed, "header.u32")[0] > value(bound, "header.u32")[0]);
+    assert.ok(value(refreshed, "node.flags.u32")[0] & 2, "the authoritative temporal world retains selection across frames");
+    temporalGraphDestroy(owner); owner = null;
+    assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", create).status, 0);
+    pair.reject(4, [], -10, {});
+    pair.run(18, [field("temporal.u64", "u64", [0n])]);
+    pair.run(21);
+  } finally {
+    if (owner != null) temporalGraphDestroy(owner);
+    graphProjectionDestroy(projection);
+    x.xyg_wasm_instance_dispose(other);
+    pair.close();
   }
 });

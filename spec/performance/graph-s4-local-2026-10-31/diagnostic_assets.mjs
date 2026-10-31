@@ -40,5 +40,8 @@ fs.copyFileSync(path.join(root,'packages/xy-client/package.json'),path.join(stag
 const nodeHost=path.join(stage,'packages/xy-node');fs.mkdirSync(nodeHost,{recursive:true});
 fs.copyFileSync(path.join(root,'packages/xy-node/package.json'),path.join(nodeHost,'package.json'));
 fs.cpSync(path.join(root,'packages/xy-node/test'),path.join(nodeHost,'test'),{recursive:true});
-for(const name of ['src','node_modules'])if(!fs.existsSync(path.join(nodeHost,name)))fs.symlinkSync(path.join(root,'packages/xy-node',name),path.join(nodeHost,name),'dir');
+const stagedSource=path.join(nodeHost,'src');
+if(fs.existsSync(stagedSource) && fs.lstatSync(stagedSource).isSymbolicLink())fs.unlinkSync(stagedSource);
+fs.cpSync(path.join(root,'packages/xy-node/src'),stagedSource,{recursive:true});
+if(!fs.existsSync(path.join(nodeHost,'node_modules')))fs.symlinkSync(path.join(root,'packages/xy-node/node_modules'),path.join(nodeHost,'node_modules'),'dir');
 fs.mkdirSync(path.join(stage,'tests'),{recursive:true});if(!fs.existsSync(path.join(stage,'tests/fixtures')))fs.symlinkSync(path.join(root,'tests/fixtures'),path.join(stage,'tests/fixtures'),'dir');

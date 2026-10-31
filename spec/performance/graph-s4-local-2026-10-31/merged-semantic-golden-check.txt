@@ -1,0 +1,1 @@
+checked /home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/tests/fixtures/graphforge/semantic_compound.json

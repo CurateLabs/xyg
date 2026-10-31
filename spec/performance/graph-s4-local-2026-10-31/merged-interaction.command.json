@@ -1,0 +1,16 @@
+{
+  "name": "merged-interaction",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 14.51,
+  "rawSha256": "ed92b545f25456799df6d3e3d12c2252d52f44da8632469f6b715c9bb1324ce1",
+  "log": "merged-interaction.txt.gz",
+  "gzipSha256": "10d368dbc037737b9c526970b4bdc7b966a29f8e08b35549e3e9725b3ed12087"
+}
