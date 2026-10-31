@@ -1189,7 +1189,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"ef0870774edacd4fcffceddeb10e9dd469ad0989",
+  "baseCommit":"5debce8055855527f74dd2720c6dd467be3ec22c",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1375,7 +1375,7 @@
   "spec/api/api-examples.md":"f6bc43d28cf9ba88855561ff41bd62eb2f3a823c71ca2c87c5356e1b2a2fa094",
   "spec/api/browser-wasm.md":"28bdabf9bd91dc077c42f4ef053e29ca88ef3737305713b8ecfc6301eaeb3143",
   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
-  "spec/design/browser-wasm.md":"ca6b210e04ac587238e60e11db885f7234cd607690b8ff17fbc52b36f70e8bf9",
+  "spec/design/browser-wasm.md":"336557f15ea13d710c706df50111bd966df89826f5e48b0b7de80c50333db71e",
   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
   "spec/design/host-parity.md":"ac813f7f0d698a6d4c24a8e1a0440894c286074c41fa4954baa3e7141b7d26b6",
   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",
