@@ -391,6 +391,7 @@ const TEMPORAL_MESSAGES = Object.freeze({
   [-13]: "temporal resource is disposed",
   [-14]: "temporal revision is stale",
   [-15]: "temporal coordination rejected a self-echo",
+  [-16]: "graph selection exceeds the 10,000 identity bound",
 });
 
 export class TemporalNativeError extends Error {

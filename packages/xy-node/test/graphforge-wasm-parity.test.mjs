@@ -11,6 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { decodeContainer } from "../src/graphforge-container.js";
 
 import {
   composeGraphForgeRequest,
@@ -105,6 +106,33 @@ test("native and WASM compose byte-identical XYGF documents on every fixture", {
     compared += 1;
   }
   assert.ok(compared >= 100, `compared ${compared} requests`);
+});
+
+test("composition v2 hierarchy and root conflicts match native and WASM", { skip }, async () => {
+  const wasm = await loadWasm();
+  const fixture = (name) => fs.readFileSync(path.join(ROOT, `tests/fixtures/graphforge/${name}.arrow`));
+  const forest = fixture("hierarchy_dag_nodes");
+  const roots = fixture("hierarchy_dag_roots");
+  const check = (tables, code) => {
+    const request = encodeGraphForgeRequest({ base: { tables: [...tables, arrow("base-dag-edges")] }, layers: [] });
+    const native = composeGraphForgeRequest(request);
+    const browser = wasm(request);
+    assert.equal(Buffer.compare(Buffer.from(native), Buffer.from(browser)), 0);
+    if (code) {
+      assert.throws(() => decodeGraphForgeDocument(browser), (error) => error.code === code);
+      return;
+    }
+    const sections = decodeContainer(browser, "XYGF");
+    assert.equal(sections.get("composition.version#0").value[0], 2);
+    assert.deepEqual([...sections.get("node.parent#0").value], [0xffffffff, 0, 1, 0xffffffff]);
+    assert.deepEqual([...sections.get("node.parent.valid#0").value], [0, 1, 1, 0]);
+  };
+  check([forest]);
+  check([forest, roots], "GF_BASE_PARENT_CONFLICT");
+  check([roots, forest], "GF_BASE_PARENT_CONFLICT");
+  for (const [suffix, code] of [["unknown_parent", "UNKNOWN"], ["self_parent", "SELF"], ["cycle", "CYCLE"]]) {
+    check([fixture(`hierarchy_dag_nodes_${suffix}`)], `GF_BASE_PARENT_${code}`);
+  }
 });
 
 test("rendered Scenes are identical and carry every composed identity", { skip }, async () => {

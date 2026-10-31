@@ -1276,6 +1276,18 @@ unchanged. An O3 shrink-level1 experiment produced identical bytes; Oz reduced
 raw size to1,434,576 but increased gzip to598,701, so neither solves the gates.
 No alternate compiler profile is adopted and no runtime speedup is claimed.
 
+**Graph hierarchy composition (#36 S1), recovered on the current integration base.**
+Composition version 2 carries `parent_uuid` resolution, forest validation and
+hidden-parent re-attachment in the shared Rust compose path. The old branch's
+historical 1,480 KiB / 612 KiB allowance is superseded by the current limits
+above: **1,543,168 raw bytes / 638,976 gzip6 bytes**. Recovery does not raise
+these gates or change the pinned Rust/Binaryen profile. The retained interaction
+session is not exported from WASM until S3. The combined optimized build measures
+**1,547,598 raw / 640,237 gzip6 bytes**, exceeding the unchanged gates by
+**4,430 raw / 1,261 gzip bytes**. Packaging fails; diagnostic functional tests do
+not waive that failure. Source/artifact hashes, reproduction commands and narrow
+sharing candidates are in [S1 recovery evidence](../performance/graph-s1-recovery-2026-10-31/README.md).
+
 Bounded native/WASM selected snapshot and hierarchy membership checks, exact
 artifact hashes, four fresh-process startup ABBA pairs and reproduction commands
 are recorded in

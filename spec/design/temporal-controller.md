@@ -201,3 +201,4 @@ never as JSON numbers for temporal samples ([wire-protocol.md](wire-protocol.md)
 | −13 | Disposed |
 | −14 | StaleRevision |
 | −15 | SelfEcho |
+| −16 | SelectionTooLarge (graph selection over 10,000 identities; nothing changed) |

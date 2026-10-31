@@ -37,6 +37,17 @@ its persistent state remains present but it is absent from the frame's
 `selected_visible_*`, `focused_visible`, or `pinned_visible_*` projections. If
 the entity re-enters, the same state becomes visible without remapping.
 
+The selection, focus, and pin state is one `GraphInteractionState`
+(`crates/xyg-engine/src/graph_interaction_state.rs`) owned by the temporal graph
+and shared, not copied, with any interaction session bound to it
+([graph-interaction.md](graph-interaction.md) §1). Selection is bounded at
+10,000 identities (nodes + edges + derived edges, the coordination snapshot
+bound): a `set_selection` whose result would exceed it fails with
+`TemporalError::SelectionTooLarge` (−16) and changes nothing. Previously
+unbounded. A derived-edge selection or focus made through a bound session is
+part of that state but has no temporal counterpart: it is absent from frame
+projections, and a `set_selection` replacement drops it.
+
 This is intentionally distinct from the controller's linked-view `u64`
 selection payload: an integrating host resolves application-stable linked IDs
 to canonical graph UUIDs once, then Rust owns graph membership. Positional row
