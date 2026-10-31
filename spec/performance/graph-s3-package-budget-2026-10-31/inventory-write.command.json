@@ -1,0 +1,15 @@
+{
+  "name": "inventory-write",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/check_release_inventory.py",
+    "--write"
+  ],
+  "exitCode": 0,
+  "seconds": 3.822,
+  "rawSha256": "930079e0a5a07ca00d6934b134a1d048f16b064c43e6ed6a41cd5a15dcce78ea",
+  "log": "inventory-write.txt.gz",
+  "gzipSha256": "95a71fdfdf60913f16a154be28dcae0a40fde51f0aac4f70749370c12005b3b9"
+}

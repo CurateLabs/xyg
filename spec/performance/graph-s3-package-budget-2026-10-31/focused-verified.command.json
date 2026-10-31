@@ -1,0 +1,16 @@
+{
+  "name": "focused-verified",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 7.05,
+  "rawSha256": "895f4d3c864d45b98ab8abc15377e1d7e0f8d392653f118a0c002b8f28547df8",
+  "log": "focused-verified.txt.gz",
+  "gzipSha256": "3ac3df0a203bd401af60e7a58c8dd9342536f38a782cc24d87dd3efde2359032"
+}

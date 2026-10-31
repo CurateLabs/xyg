@@ -1,0 +1,16 @@
+{
+  "name": "temporal-controller",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "temporal_controller",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 0.077,
+  "rawSha256": "df17ea6b8ee6ec164a39e904301b92940f85ebf11ea15aeae12294b519dd2dee",
+  "log": "temporal-controller.txt.gz",
+  "gzipSha256": "341bf314d51ddad2e1d6a0bcc058c4f54a4ee8aba079b3d62dce8625013a2f03"
+}

@@ -15,6 +15,7 @@ pub struct CoordinationGate {
 }
 
 impl CoordinationGate {
+    #[inline]
     pub fn validate(
         &self,
         instance: u64,

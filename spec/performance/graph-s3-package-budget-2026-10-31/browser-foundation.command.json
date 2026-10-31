@@ -1,0 +1,20 @@
+{
+  "name": "browser-foundation",
+  "command": [
+    "env",
+    "-u",
+    "XYG_WASM_FOUNDATION_ONLY",
+    "-u",
+    "XYG_RELEASE_COMMIT",
+    "-u",
+    "XYG_BROWSER_DIST",
+    "XYG_WASM_FOUNDATION_REPORT=spec/performance/graph-s3-package-budget-2026-10-31/browser-foundation.json",
+    "node",
+    "scripts/wasm_foundation_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 12.61,
+  "rawSha256": "08c545c99182cacc2a98bdd530fb25be126c02763cda5c64797e711d732ff7f4",
+  "log": "browser-foundation.txt.gz",
+  "gzipSha256": "0954299233fc4f29c3dd1261cd28d03e42d2d8eca1175f4dc2bf6ced9c7bbc4e"
+}

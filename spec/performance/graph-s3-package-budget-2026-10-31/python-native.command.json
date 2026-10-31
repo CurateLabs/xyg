@@ -1,0 +1,27 @@
+{
+  "name": "python-native",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graphforge.py",
+    "tests/test_graphforge_scene.py",
+    "tests/test_graphforge_semantic_evidence.py",
+    "tests/test_graphforge_fixture_generation.py",
+    "tests/test_graphforge_contract_corpus.py",
+    "tests/test_cose_native_parity.py",
+    "tests/test_temporal_columns.py",
+    "tests/test_temporal_graph_native.py",
+    "tests/test_temporal_controller.py",
+    "tests/test_graph_style.py",
+    "tests/test_graph_semantic_mapping.py",
+    "-k",
+    "not browser"
+  ],
+  "exitCode": 0,
+  "seconds": 8.908,
+  "rawSha256": "2209a5c70737e266fecdfb1e497cc2badfec23d75c48aab528afebc205a29baa",
+  "log": "python-native.txt.gz",
+  "gzipSha256": "bac4c1e247cc42983144645d694613cdb502a7995dd9047d1c9f7c9232de0a67"
+}

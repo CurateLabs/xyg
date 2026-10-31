@@ -1,0 +1,14 @@
+{
+  "name": "environment-ready",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s3-package-budget-2026-10-31/environment.py"
+  ],
+  "exitCode": 0,
+  "seconds": 3.01,
+  "rawSha256": "7d59419fe72160f267098c64fc2fe28fffe14678416cd2926ff157d042efcb21",
+  "log": "environment-ready.txt.gz",
+  "gzipSha256": "ffddc9096f30de197aab2fb7122e22fd5fe7c4657f130f6d4de99c6c93398768"
+}

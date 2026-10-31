@@ -1,0 +1,12 @@
+{
+  "name": "node-provenance",
+  "command": [
+    "node",
+    "spec/performance/graph-s3-package-budget-2026-10-31/node-provenance.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.085,
+  "rawSha256": "b2f02e11c26899c0126d9b9dca5a525bfdabd42cdae2b10f90fc05b118f72a6a",
+  "log": "node-provenance.txt.gz",
+  "gzipSha256": "2166e699be4fd27e7a519993b6ec18153615f0bc841cf63f2fbcee484c872022"
+}

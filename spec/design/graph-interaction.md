@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **design final; S1 and bounded S2 engine implemented; typed S3 implemented locally with a failing unchanged package-size gate; independent final parent review and remote integration pending** (see [Implementation status](#implementation-status)).
+Status: **design final; S1 and bounded S2 engine implemented; typed S3 implemented locally; finite geometry repair and authorized raw-only package decision validated locally; independent final parent review and remote integration pending** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -182,14 +182,23 @@ on **every** publication, including style-only republication at the same revisio
 **Finite geometry refusal (S3 review repair).** A publication rejects
 `GF_INTERACTION_INVALID` when a retained edge's data-space routing delta or
 length is non-finite, or its mapped piece endpoints, delta, or computed length
-are non-finite. Routing validation precedes the shared kernel, which may omit
+are non-finite. Local S3 admission also validates the canonical circle outline
+quadratic (including its discriminant and returned span) and square/diamond
+half-plane arithmetic before `clip_edge_piece` can interpret non-finite
+comparisons as a miss or suppress a required head. A finite canonical `None`
+remains a valid miss; the polygon kernel's unbounded parallel-plane sentinels
+remain valid for tiny occluded chords. This does not replace the canonical
+algorithm or alter legacy shared renderer/ABI behavior.
+Routing validation precedes the shared kernel, which may omit
 invalid intermediates; checking only its emitted pieces is insufficient.
 Coincident finite endpoints and valid fully occluded pieces may still emit no
 paint; the existing finite zero-length omission remains unchanged, including
 tiny occluded chords whose squared length underflows. Geometry construction
 must succeed before replacing the publication, camera, or render revision,
-so a rejected camera retains the old paint, membership,
-pick identity, and stamp. This adds no coordinate clamp or fallback chord.
+so a rejected camera retains the complete old paint/index/membership,
+pick identity, stamp, interaction state, pending outbound snapshot/sequence,
+and operation retry state. This adds no coordinate cutoff, clamp, alternate
+outline algorithm, or fallback chord.
 
 ### 2.4 Stamps and coordination
 Destination stamp `(instance_id, render_revision)` on every local event; mismatch → `GF_INTERACTION_STALE`, no change (host repaints, resubmits). Origin stamp on `ApplyRemote`: `GraphCoordinationEvent { group_id, source_instance, revision, generation uuid, refs[0..10_000] sorted unique }`. The gate (`group_id!=0`, wrong group no-op, self → SelfEcho, `revision<=last_seen` → StaleRevision, atomic apply, no local bump, no echo; `temporal_controller.rs:346-389`) is extracted to `coordination.rs::CoordinationGate` and used by both controllers. Outbound: each distinct successful local selection request (including Clear
@@ -315,7 +324,7 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 |---|---|---|
 | S1 | Hierarchy in composition (`parent_uuid` -> `node.parent`, composition v2); identity (`ElementRef`, exact result-id table); `GraphInteractionState` extraction and 10,000-ref cap; `GraphSession` create / select / clear / focus / bind / unbind with stamps and `op_seq` idempotency | **implemented** |
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
-| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | typed Rust implemented locally; functional proofs pass; package raw gate fails by 221 bytes; final parent review pending |
+| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | typed Rust implemented locally; finite-geometry, real package/assets/parity and full strict-CSP proofs pass under authorized 1,513/626-KiB limits; final independent review and CI pending |
 | S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | planned |
 | S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | planned |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | planned |
@@ -445,8 +454,16 @@ Typed publication picking, shared coordination admission, and atomic replacement
 are implemented locally; validation receipts and remaining package/review gates
 are recorded in [S3 local evidence](../performance/graph-s3-local-2026-10-31/README.md).
 The separate [S3 review repair](../performance/graph-s3-review-repair-2026-10-31/README.md)
-records the finite edge-arithmetic blocker repair and two rejected codegen
-boundary experiments. The raw package gate still fails by 221 bytes; the
-original S3 receipt is unchanged.
+records the first finite edge-arithmetic blocker repair and two historically
+rejected codegen boundary experiments. At that checkpoint the raw package gate
+failed by 221 bytes; the original S3 receipts remain unchanged.
+The separate [S3 package decision receipt](../performance/graph-s3-package-budget-2026-10-31/README.md)
+records the later independent circle-outline clip finding and local finite
+admission repair, the parent's retention of only `#[inline]` on the shared gate,
+and the authorized 1,513-KiB raw limit with gzip unchanged at 626 KiB. Fresh final
+source packages at 1,548,390 raw / 640,709 gzip bytes (922 / 315 bytes headroom).
+Real paired assets, Node native/WASM parity, native temporal seams and the
+original full strict-CSP foundation pass. Final independent review of the whole
+integrated S3 diff and CI remain pending.
 This does not establish S4 wire capacity behavior, browser/host delivery, #36,
 milestone 4, or release completion. No ABI/export/manifest version changes.

@@ -1,0 +1,11 @@
+{
+  "name": "fixed-repro",
+  "command": [
+    "target/task-tmp/clip-repro-after"
+  ],
+  "exitCode": 0,
+  "seconds": 0.004,
+  "rawSha256": "ce01a7a413c6abee6312e7096dddcca424f788b3fc9f7c4c7988ce64192fe87d",
+  "log": "fixed-repro.txt.gz",
+  "gzipSha256": "a5b87fe14133d320b81aa5423b3e2119c46e952c5bd915d522f7e0f54fb4e299"
+}

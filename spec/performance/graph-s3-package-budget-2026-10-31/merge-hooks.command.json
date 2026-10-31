@@ -1,0 +1,17 @@
+{
+  "name": "merge-hooks",
+  "command": [
+    "uv",
+    "run",
+    "--with",
+    "pre-commit",
+    "pre-commit",
+    "run",
+    "--all-files"
+  ],
+  "exitCode": 0,
+  "seconds": 112.018,
+  "rawSha256": "8af9d162fed28ee5ffc99a6c7cb6594f7410f29478d0d6cb4178378b5f3f6d49",
+  "log": "merge-hooks.txt.gz",
+  "gzipSha256": "f5af9fa7c219f28a7cc8add03084563d8a936f0b539798a4f11c6f0dabe6f5d4"
+}

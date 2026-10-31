@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "artifact": "xyg-wasm.wasm",
+  "sha256": "db698663bb9db02e50001af58e45c538cbdd9644c778d52ae82aebd6a3baa61a",
+  "bytes": 1548390,
+  "abi_version": 34,
+  "scene_version": 34,
+  "painter_version": 17
+}

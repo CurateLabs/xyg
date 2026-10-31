@@ -1,0 +1,12 @@
+{
+  "name": "measure-packaged",
+  "command": [
+    "node",
+    "spec/performance/graph-s3-package-budget-2026-10-31/measure-packaged.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.119,
+  "rawSha256": "0e81a095b6f2705e1ed41d0304a4722fbead3e65d2f0ddc0d3b9896e137317ea",
+  "log": "measure-packaged.txt.gz",
+  "gzipSha256": "1acddb24c1196ef455a90682c10b1524ae9a1ae53d0758d00bf7a09c32663d2a"
+}

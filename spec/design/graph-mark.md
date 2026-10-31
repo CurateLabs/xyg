@@ -501,8 +501,10 @@ and accessibility) over composed graphs is specified in
 [graph-interaction.md](graph-interaction.md). Slices S1 (composition hierarchy,
 identity, the shared interaction state, session create/select/focus) and S2
 (the retained `GraphSession` render publication below) are implemented in the
-Rust engine; the typed S3 pick/update/coordination candidate, the native/WASM session ABI (S4), and the
-browser/Python/Node hosts follow per its slice table.
+Rust engine. Typed S3 pick/update/coordination and the finite-geometry repair are
+implemented and validated locally; independent final review and CI are pending.
+The native/WASM session ABI (S4) and browser/Python/Node hosts follow per its
+slice table.
 
 - **Session render publication (#36 S2).** A `GraphSession` publishes one
   `RenderOutput` per revision. Pipeline, in *source* index space until the last
@@ -1234,7 +1236,16 @@ the composed point painter's outer diameter/inset stroke contract. Region nodes
 use their published centers; exact edges use painted dash/stroke/head geometry.
 Admission overflow is recorded, with bounded same-publication node scans and
 single-piece-only degraded point edges; no omitted loop gets a chord substitute.
-Non-finite retained-edge routing or mapped piece arithmetic rejects publication
+Non-finite retained-edge routing, mapped piece, or canonical outline-span
+arithmetic rejects publication
 before camera/revision replacement; genuine coincident or valid occluded
-pieces may still be absent (graph-interaction.md §2.3). The S4 paint buffer
+pieces may still be absent, including tiny polygon spans with unbounded
+parallel-plane sentinels. Local S3 admission checks circle discriminants and
+square/diamond half-plane arithmetic before canonical clipping; shared legacy
+painter semantics and ABIs are unchanged (graph-interaction.md §2.3). The S4 paint buffer
 projection and S5 painter/controller remain outstanding.
+
+The later S3 [clip repair and package decision receipt](../performance/graph-s3-package-budget-2026-10-31/README.md)
+records local validation under the parent's 1,513-KiB raw / unchanged 626-KiB gzip
+limits. This does not add session WASM exports or establish S4/S5 delivery;
+independent final review and CI remain pending.

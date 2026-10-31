@@ -138,6 +138,84 @@ pub struct PaintGeometry {
     pub frames: Vec<FramePaint>,
 }
 
+/// Admit the arithmetic used by the canonical outline kernel before clipping
+/// can mistake a NaN comparison for a miss (§19). This is session admission,
+/// not a replacement span algorithm: legacy painters keep their kernel contract.
+fn admit_outline_span(
+    shape: NodeShape,
+    radius: f64,
+    a: (f64, f64),
+    d: (f64, f64),
+    c: (f64, f64),
+) -> Result<(), InteractionStatus> {
+    if radius <= 0. {
+        return Ok(()); // Canonical no-outline path.
+    }
+    let (px, py) = (a.0 - c.0, a.1 - c.1);
+    if !radius.is_finite() || !px.is_finite() || !py.is_finite() {
+        return invalid();
+    }
+    match shape {
+        NodeShape::Circle => {
+            // Same operation order as edge_route::node_shape_span, including
+            // overflow that could otherwise turn a non-finite discriminant
+            // into None or Some((NaN, NaN)).
+            let qa = d.0 * d.0 + d.1 * d.1;
+            if !qa.is_finite() {
+                return invalid();
+            }
+            if qa <= 0. {
+                return Ok(());
+            }
+            let qb = 2. * (d.0 * px + d.1 * py);
+            let qc = px * px + py * py - radius * radius;
+            let disc = qb * qb - 4. * qa * qc;
+            if [qb, qc, disc, 2. * qa].iter().any(|v| !v.is_finite()) {
+                return invalid();
+            }
+        }
+        NodeShape::Square | NodeShape::Diamond => {
+            let (normals, limit) = if shape == NodeShape::Square {
+                ([(1., 0.), (-1., 0.), (0., 1.), (0., -1.)], radius)
+            } else {
+                (
+                    [(1., 1.), (1., -1.), (-1., 1.), (-1., -1.)],
+                    std::f64::consts::SQRT_2 * radius,
+                )
+            };
+            if !limit.is_finite() {
+                return invalid();
+            }
+            for (nx, ny) in normals {
+                let base = nx * px + ny * py - limit;
+                let slope: f64 = nx * d.0 + ny * d.1;
+                if !base.is_finite() || !slope.is_finite() {
+                    return invalid();
+                }
+                if slope.abs() < 1e-12 {
+                    if base > 0. {
+                        return Ok(()); // Finite canonical early miss.
+                    }
+                } else if !(-base / slope).is_finite() {
+                    return invalid();
+                }
+            }
+        }
+    }
+    if let Some((lo, hi)) = edge_route::node_shape_span(shape, radius, a, d, c) {
+        // Polygon half-plane bounds use ±infinity as unbounded sentinels when
+        // every slope is below the canonical parallel tolerance. Those valid
+        // occluded tiny chords must remain admitted; divisions above are finite.
+        if lo.is_nan()
+            || hi.is_nan()
+            || (shape == NodeShape::Circle && (!lo.is_finite() || !hi.is_finite()))
+        {
+            return invalid();
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn build(
     session: &GraphSession,
     output: &RenderOutput,
@@ -289,6 +367,15 @@ pub(super) fn build(
             session.directed
         };
         let flags = ends[i * edge_route::EDGE_ENDS_STRIDE + 6] as u8;
+        for node in [s, t] {
+            admit_outline_span(
+                NodeShape::from_symbol_code(symbols[node]),
+                radii[node],
+                (a[0], a[1]),
+                (d[0], d[1]),
+                (paint.nodes[node].center[0], paint.nodes[node].center[1]),
+            )?;
+        }
         let Some((lo, hi, tip)) = edge_route::clip_edge_piece(
             (a[0], a[1]),
             (b[0], b[1]),
@@ -418,4 +505,92 @@ pub(super) fn build(
         return Err(InteractionStatus::Invalid);
     }
     Ok(paint)
+}
+
+#[cfg(test)]
+mod outline_admission_tests {
+    use super::*;
+
+    #[test]
+    fn all_canonical_outlines_admit_real_misses_and_tiny_unbounded_occlusion() {
+        for shape in [NodeShape::Circle, NodeShape::Square, NodeShape::Diamond] {
+            for (a, d) in [((0., 20.), (1., 0.)), ((20., 20.), (1e-13, 0.))] {
+                assert_eq!(edge_route::node_shape_span(shape, 8., a, d, (0., 0.)), None);
+                assert_eq!(admit_outline_span(shape, 8., a, d, (0., 0.)), Ok(()));
+            }
+            assert_eq!(
+                admit_outline_span(shape, 0., (0., 0.), (1., 0.), (0., 0.)),
+                Ok(())
+            );
+            let a = (0., 0.);
+            let b = (1e-13, 0.);
+            assert_eq!(admit_outline_span(shape, 8., a, b, a), Ok(()));
+            assert_eq!(admit_outline_span(shape, 8., a, b, b), Ok(()));
+            assert_eq!(
+                edge_route::clip_edge_piece(a, b, a, 8., shape, b, 8., shape, true, true),
+                None
+            );
+            // A finite line missing both outlines keeps the terminal head.
+            assert_eq!(
+                admit_outline_span(shape, 8., (0., 20.), (100., 0.), a),
+                Ok(())
+            );
+            assert_eq!(
+                admit_outline_span(shape, 8., (0., 20.), (100., 0.), (100., 0.)),
+                Ok(())
+            );
+            assert_eq!(
+                edge_route::clip_edge_piece(
+                    (0., 20.),
+                    (100., 20.),
+                    a,
+                    8.,
+                    shape,
+                    (100., 0.),
+                    8.,
+                    shape,
+                    true,
+                    true
+                ),
+                Some((0., 1., Some(1.)))
+            );
+        }
+    }
+
+    #[test]
+    fn nonfinite_circle_discriminants_are_invalid_even_when_the_kernel_returns_none() {
+        let shape = NodeShape::Circle;
+        // +infinity - infinity: a Some((NaN, NaN)) comparison must not hide a head.
+        assert_eq!(
+            admit_outline_span(shape, 8., (0., 0.), (1e80, 0.), (1e80, 0.)),
+            Err(InteractionStatus::Invalid)
+        );
+        // Negative-infinite discriminant otherwise masquerades as a true miss.
+        assert_eq!(
+            edge_route::node_shape_span(shape, 8., (0., 1e80), (1e80, 0.), (0., 0.)),
+            None
+        );
+        assert_eq!(
+            admit_outline_span(shape, 8., (0., 1e80), (1e80, 0.), (0., 0.)),
+            Err(InteractionStatus::Invalid)
+        );
+    }
+
+    #[test]
+    fn polygon_offset_half_plane_and_division_overflow_are_invalid() {
+        for shape in [NodeShape::Square, NodeShape::Diamond] {
+            assert_eq!(
+                admit_outline_span(shape, 8., (-f64::MAX, 0.), (1., 0.), (f64::MAX, 0.)),
+                Err(InteractionStatus::Invalid)
+            );
+            assert_eq!(
+                admit_outline_span(shape, 8., (1e308, 0.), (1e-12, 0.), (0., 0.)),
+                Err(InteractionStatus::Invalid)
+            );
+        }
+        assert_eq!(
+            admit_outline_span(NodeShape::Diamond, 8., (1e308, 1e308), (1., 0.), (0., 0.)),
+            Err(InteractionStatus::Invalid)
+        );
+    }
 }

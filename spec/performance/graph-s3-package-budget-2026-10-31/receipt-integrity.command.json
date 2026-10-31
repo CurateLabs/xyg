@@ -1,0 +1,14 @@
+{
+  "name": "receipt-integrity",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s3-package-budget-2026-10-31/verify-receipt.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.249,
+  "rawSha256": "c3a03a87e8c73512d7fecdd03af078a6e5d72ad22f716971c85e7bdf07c5d36c",
+  "log": "receipt-integrity.txt.gz",
+  "gzipSha256": "f14bd557bbcc5245e3f0e8d42bba5b20a3765368a5b44a84c122ba86f9591980"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "receipt-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s3-package-budget-2026-10-31/verify-receipt.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.25,
+  "rawSha256": "357c978bfc6c381f219d64bbea4d161dc364c18945ae59a290203435092f763e",
+  "log": "receipt-final.txt.gz",
+  "gzipSha256": "eed46e43ad9ecd6e62c830166e6539969d358114b1dca3f64f9ad379b2258a40"
+}

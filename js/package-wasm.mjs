@@ -104,7 +104,7 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1512 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1513 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
@@ -128,6 +128,11 @@ const WASM_SIZE_BUDGET_BYTES = 1512 * 1024;
 // candidates, scratch-free forest validation retains 1,547,779 / 640,527 bytes.
 // The smallest next-KiB functionality budget is 1,512 / 626, leaving 509 / 497
 // bytes. No session WASM exports, profile changes, or validation removals.
+// S3 parent decision (graph-s3-package-budget-2026-10-31): retain the measured
+// #[inline] hint on CoordinationGate::validate (119 raw / 46 gzip bytes saved
+// historically), then admit reachable shared coordination extraction at the
+// smallest next-KiB RAW-only limit, 1,513 KiB. Gzip remains 626 KiB. Fresh final
+// source must pass both gates; no session exports, profile or validation change.
 const WASM_GZIP_BUDGET_BYTES = 626 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);

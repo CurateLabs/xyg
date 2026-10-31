@@ -1,0 +1,16 @@
+{
+  "name": "focused-final",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction",
+    "--lib"
+  ],
+  "exitCode": 101,
+  "seconds": 11.113,
+  "rawSha256": "42c741d98ea2b52c499648095667cdbe6a75a65f73ba4dfe074a4e451dcbd3f4",
+  "log": "focused-final.txt.gz",
+  "gzipSha256": "75435efc8a2d6835ffdd40c15f02930212a3cb36c2487cfed9cc879fb3b28186"
+}

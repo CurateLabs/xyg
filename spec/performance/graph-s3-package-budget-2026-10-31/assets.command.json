@@ -1,0 +1,14 @@
+{
+  "name": "assets",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/verify_wasm_assets.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.081,
+  "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+  "log": "assets.txt.gz",
+  "gzipSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+}

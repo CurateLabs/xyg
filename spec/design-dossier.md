@@ -1150,6 +1150,16 @@ described above.
 - NaN/invalid values **never reach vertex buffers** — an f32 NaN silently kills the
   primitives that share it (GL behavior is undefined-but-usually-invisible geometry,
   and it differs by driver — a determinism hole as well as a correctness one).
+- **Typed graph-session publication also validates canonical outline arithmetic.**
+  Finite endpoints and chord length do not guarantee a finite circle quadratic
+  discriminant or span. Local S3 admission rejects non-finite circle and
+  square/diamond half-plane arithmetic before clipping can silently omit a
+  required head. Finite misses, coincident nodes, tiny occluded chords (including
+  polygon unbounded parallel-plane sentinels), and fully culled graphs remain
+  valid. Rejected camera publication keeps the old complete paint/index,
+  membership, revision, pick identity, interaction state, outbound delivery and
+  operation retry state (graph-interaction.md §2.3). There is no coordinate
+  cutoff, replacement algorithm, fallback chord, or shared renderer/ABI change.
 - Semantics preserved from Plotly: a null inside a line trace = **gap** (line break),
   implemented by splitting the draw into segments at ingest (segment index list, not
   per-frame branching). Aggregations skip nulls and expose `count_valid` vs `count`.
@@ -2768,6 +2778,16 @@ requiring a Rust toolchain — an instant adoption cliff.
   renders wrong. Requests and replies carry no version of their own — the handshake
   happens once, at first paint, before any request is possible
   (`spec/design/wire-protocol.md` §7).
+- **Current WASM packaging limits:** 1,513 KiB raw / 626 KiB gzip6
+  (1,549,312 / 641,024 bytes). The separate S3 parent decision retains only the
+  independently assessed `#[inline]` coordination-gate hint, raises raw by one
+  KiB, and keeps the gzip gate, compiler/profile/optimizer/exports and all
+  validation fixed. Fresh final source packages at 1,548,390 / 640,709 bytes
+  (922 / 315 headroom); growth beyond either limit still fails. See the
+  [S3 clip repair and packaging receipt](performance/graph-s3-package-budget-2026-10-31/README.md)
+  for source/artifact hashes, real paired assets, native/WASM parity and the
+  full strict-CSP foundation. This establishes no speed, hardware, session ABI,
+  release or milestone completion; independent final review and CI remain pending.
 - **Packaged WASM tick assets have one producer and fail early (#1005).** The direct-browser
   module (`xyg-wasm.wasm`), its inline classic-worker copy (`xyg-wasm-inline.js`), and the
   version/hash manifest (`xyg-wasm.manifest.json`: `sha256`, `bytes`, ABI/Scene/painter

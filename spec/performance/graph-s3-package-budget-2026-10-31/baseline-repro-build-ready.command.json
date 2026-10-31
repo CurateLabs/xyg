@@ -1,0 +1,20 @@
+{
+  "name": "baseline-repro-build-ready",
+  "command": [
+    "rustc",
+    "--edition",
+    "2021",
+    "spec/performance/graph-s3-package-budget-2026-10-31/reviewer-repro.rs",
+    "--extern",
+    "xyg_engine=target/debug/libxyg_engine.rlib",
+    "-L",
+    "dependency=target/debug/deps",
+    "-o",
+    "target/task-tmp/clip-repro-before"
+  ],
+  "exitCode": 0,
+  "seconds": 0.253,
+  "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "log": "baseline-repro-build-ready.txt.gz",
+  "gzipSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+}

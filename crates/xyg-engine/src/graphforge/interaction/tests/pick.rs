@@ -861,3 +861,105 @@ fn valid_zero_length_occluded_and_culled_edges_still_publish_without_pieces() {
     assert_eq!(r.edge_count(), 0);
     assert!(r.paint.pieces.is_empty());
 }
+
+#[test]
+fn finite_directed_circle_chord_with_overflowing_outline_must_not_lose_its_head() {
+    let doc = extend(
+        &handmade(&[id(1), id(2)], &[E::Persisted(id(11))], &[]),
+        |b| b.u8s("edge.status", 0, &[1]),
+    );
+    // Squared chord length is finite; the canonical circle discriminant is not.
+    for (x, y) in [([0., 1e80], [0., 0.]), ([0., 0.], [0., 1e80])] {
+        let mut s = loaded(&doc, &x, &y);
+        assert_eq!(s.render(None), Err(InteractionStatus::Invalid));
+        assert!(s.published().is_none());
+        assert_eq!(s.render_revision(), 0);
+        assert_eq!(s.camera, None);
+    }
+    let mut s = loaded(&doc, &[0., 100.], &[0.; 2]);
+    let r = s.render(None).unwrap();
+    assert_eq!(r.edge_count(), 1);
+    assert_eq!(r.paint.pieces.len(), 1);
+    assert!(r.paint.pieces[0].head.is_some());
+}
+
+#[test]
+fn invalid_outline_render_preserves_complete_publication_state_and_delivery() {
+    let doc = extend(
+        &handmade(&[id(1), id(2)], &[E::Persisted(id(11))], &[]),
+        |b| b.u8s("edge.status", 0, &[1]),
+    );
+    let mut s = GraphSession::create_linked(&doc, at(&[0., 100.], &[0.; 2]), 7, 4).unwrap();
+    let camera = Camera {
+        scale_x: 1.,
+        scale_y: 1.,
+        offset_x: 0.,
+        offset_y: 0.,
+        viewport_width: 200.,
+        viewport_height: 100.,
+        dpr: 1.,
+    };
+    s.render(Some(camera)).unwrap();
+    s.select_at(header(&s, 1), 50., 0., SelectMode::Replace)
+        .unwrap();
+    s.focus_ref(header(&s, 2), Some(&ElementRef::Node(id(2))))
+        .unwrap();
+    let old = s.render(Some(camera)).unwrap().clone();
+    assert!(old.paint.pieces[0].head.is_some());
+    let last_op = s.last_op.clone();
+    let state = s.read_state(|state| state.clone()).unwrap();
+    let pending = s.pending_outbound().cloned();
+    let sequence = s.coordination.sequence;
+    let stamp = header(&s, 3);
+    // All mapped endpoints, deltas and computed lengths remain finite.
+    assert_eq!(
+        s.render(Some(Camera {
+            scale_x: 1e78,
+            viewport_width: 1e81,
+            ..camera
+        })),
+        Err(InteractionStatus::Invalid)
+    );
+    assert_eq!(s.camera, Some(camera));
+    assert_eq!(s.render_revision(), old.revision);
+    assert_eq!(s.published_revision, old.revision);
+    assert_eq!(s.published(), Some(&old)); // includes paint, grid, membership
+    assert_eq!(s.read_state(|state| state.clone()).unwrap(), state);
+    assert_eq!(s.last_op, last_op);
+    assert_eq!(s.pending_outbound(), pending.as_ref());
+    assert_eq!(s.coordination.sequence, sequence);
+    assert_eq!(s.render(Some(camera)).unwrap(), &old);
+    assert_eq!(
+        s.published().unwrap().pick_at(50., 0.).unwrap(),
+        Some(PickTarget::Edge(0))
+    );
+    s.select_at(stamp, 50., 0., SelectMode::Replace).unwrap();
+    assert_eq!(s.selection().unwrap(), [ElementRef::Edge(id(11))]);
+    assert_eq!(s.coordination.sequence, sequence + 1);
+}
+
+#[test]
+fn canonical_outline_shapes_keep_finite_occlusion_and_directed_heads_valid() {
+    for class in [0, 1, 2] {
+        // circle, square, diamond
+        let doc = extend(
+            &handmade(&[id(1), id(2)], &[E::Persisted(id(11))], &[]),
+            |b| {
+                b.u8s("edge.status", 0, &[1]);
+                b.u8s("node.class", 0, &[class; 2]);
+            },
+        );
+        for end in [0., 1., 1e-13, 1e-200, 100.] {
+            let mut s = loaded(&doc, &[0., end], &[0.; 2]);
+            let r = s.render(None).unwrap();
+            assert_eq!(r.edge_count(), 1);
+            assert_eq!(r.members_of_edge(0), &[0]);
+            if end == 100. {
+                assert_eq!(r.paint.pieces.len(), 1);
+                assert!(r.paint.pieces[0].head.is_some());
+            } else {
+                assert!(r.paint.pieces.is_empty(), "shape={class} end={end}");
+            }
+        }
+    }
+}

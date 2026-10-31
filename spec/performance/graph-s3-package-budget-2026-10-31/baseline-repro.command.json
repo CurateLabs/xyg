@@ -1,0 +1,11 @@
+{
+  "name": "baseline-repro",
+  "command": [
+    "target/task-tmp/clip-repro-before"
+  ],
+  "exitCode": 0,
+  "seconds": 0.004,
+  "rawSha256": "9ae24b63335f6687f223fddc31568b7fb92708e52982b427345c383883f0e874",
+  "log": "baseline-repro.txt.gz",
+  "gzipSha256": "dfa91e29574f3ff509752be5d3f37bbb13eff5314db3ffde4d078ad4fb763cc0"
+}

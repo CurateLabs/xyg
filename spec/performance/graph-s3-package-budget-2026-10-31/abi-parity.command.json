@@ -1,0 +1,14 @@
+{
+  "name": "abi-parity",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/check_abi_parity.py"
+  ],
+  "exitCode": 0,
+  "seconds": 4.615,
+  "rawSha256": "ad47253496c285094f97147d79a9ee5bca331d6270254859127a93a36f035040",
+  "log": "abi-parity.txt.gz",
+  "gzipSha256": "247f5756fd4498f7a37f3737f48bfe8ff1f68e9266a96ecde3e8ec29c73d2cd0"
+}
