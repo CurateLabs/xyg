@@ -1,0 +1,20 @@
+# wasm-build
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+# client-build
+node js/build.mjs
+# package-wasm
+node js/package-wasm.mjs
+# assets
+uv run python scripts/verify_wasm_assets.py
+# node-tests
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs
+# browser-foundation
+node scripts/wasm_foundation_smoke.mjs
+# cross-host-golden
+uv run python scripts/gen_graphforge_cross_host.py --check
+# abi
+python3 scripts/gen_abi_manifest.py --check
+# inventory-write
+uv run python scripts/check_release_inventory.py --write
+# inventory-check
+uv run python scripts/check_release_inventory.py
