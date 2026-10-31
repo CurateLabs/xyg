@@ -1,0 +1,12 @@
+crates/xyg-engine/src/coordination.rs
+crates/xyg-engine/src/graphforge/interaction.rs
+crates/xyg-engine/src/graphforge/interaction/coordination.rs
+crates/xyg-engine/src/graphforge/interaction/paint.rs
+crates/xyg-engine/src/graphforge/interaction/render.rs
+crates/xyg-engine/src/graphforge/interaction/tests.rs
+crates/xyg-engine/src/graphforge/interaction/update.rs
+spec/design-dossier.md
+spec/design/browser-wasm.md
+spec/design/graph-interaction.md
+spec/design/graph-mark.md
+spec/releases/0.6.0-api-inventory.json

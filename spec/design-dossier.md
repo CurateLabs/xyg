@@ -2779,7 +2779,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   renders wrong. Requests and replies carry no version of their own — the handshake
   happens once, at first paint, before any request is possible
   (`spec/design/wire-protocol.md` §7).
-- **Current WASM packaging limits:** 1,513 KiB raw / 626 KiB gzip6
+- **Historical S3 WASM packaging limits:** 1,513 KiB raw / 626 KiB gzip6
   (1,549,312 / 641,024 bytes). The separate S3 parent decision retains only the
   independently assessed `#[inline]` coordination-gate hint, raises raw by one
   KiB, and keeps the gzip gate, compiler/profile/optimizer/exports and all
@@ -2789,10 +2789,23 @@ requiring a Rust toolchain — an instant adoption cliff.
   for source/artifact hashes, real paired assets, native/WASM parity and the
   full strict-CSP foundation. This establishes no speed, hardware, session ABI,
   release or milestone completion; independent final review and CI remain pending.
-- **S4 session ABI growth has no automatic size allowance.** Native ABI 397 /
+- **Current S4 WASM packaging limits:** 1,817 KiB raw / 742 KiB gzip6
+  (1,860,608 / 759,808 bytes). After independent correctness/evidence review and
+  exactly two measured size candidates, the parent adopts the smallest next-KiB
+  functionality budget for the repaired 1,860,250 / 759,008-byte module. Only the
+  fixed UUID hex writer is retained; headroom is 358 / 800 bytes. The first WASM
+  reachability of complete session render/pick/layout/state, resolved paint,
+  exact identities and atomic admission adds 311,860 / 118,299 bytes over S3.
+  All exports/guards, compiler/profile/toolchain/optimizer/dependencies and
+  16 MiB browser / 384 MiB maximum arenas remain unchanged. Later growth still
+  fails; no automatic allowance. The separate
+  [S4 package decision receipt](performance/graph-s4-package-budget-2026-10-31/README.md)
+  owns real shipping assets and full strict-CSP validation; old failures remain
+  immutable. This establishes no speed, S5–S7, #36, M4 or release acceptance.
+- **S4 session ABI growth originally failed the S3 limits.** Native ABI 397 /
   WASM ABI 35 expose the shared graph-session codec/transaction and disposable
   temporal owners, with admitted speculative work and complete retry replies.
-  Scene/painter formats remain 34/17. The S3 gates above remain binding; see
+  Scene/painter formats remain 34/17. See
   [S4 local evidence](performance/graph-s4-local-2026-10-31/README.md) for fresh
   package failures or passes and distinctly labelled diagnostic execution.
 - **Packaged WASM tick assets have one producer and fail early (#1005).** The direct-browser

@@ -335,8 +335,8 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 |---|---|---|
 | S1 | Hierarchy in composition (`parent_uuid` -> `node.parent`, composition v2); identity (`ElementRef`, exact result-id table); `GraphInteractionState` extraction and 10,000-ref cap; `GraphSession` create / select / clear / focus / bind / unbind with stamps and `op_seq` idempotency | **implemented** |
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
-| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | typed Rust implemented locally; finite-geometry, real package/assets/parity and full strict-CSP proofs pass under authorized 1,513/626-KiB limits; final independent review and CI pending |
-| S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | implemented locally; validation/package status in the S4 receipt; independent parent review pending |
+| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | implemented and merged through #1082; historical real package/assets/parity and full strict-CSP proof under 1,513/626-KiB limits |
+| S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; CI/integration pending |
 | S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | planned |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
@@ -591,7 +591,7 @@ without replacing the last successful XYGR cache; failed WASM requests likewise
 return the status directly. The last successful cache is never an error reply.
 Aggregate focus summaries derive Group/member counts from that same publication.
 
-S4 final local proof after normal parent merge: full Rust/Clippy, native and real
+Historical S4 local proof after normal parent merge: full Rust/Clippy, native and real
 WASM byte replay, capacity/disposal/transaction tests, exact-ID string-table
 reordering and the original full strict-CSP diagnostic foundation pass. The
 real shipping producer fails unchanged gates: 1,852,594 raw / 755,339 gzip6
@@ -714,6 +714,19 @@ the stamp, allowing the same unconsumed operation sequence to recover.
 
 Repair evidence is append-only in
 [the review-repair receipt](../performance/graph-s4-review-repair-2026-10-31/README.md).
+
+After independent correctness and evidence approval, the parent separately
+adopts the smallest next-KiB functionality limits: 1,817 KiB raw / 742 KiB
+gzip6 (1,860,608 / 759,808 bytes). The final module is 1,860,250 / 759,008 bytes,
+leaving 358 / 800 bytes. Exactly two isolated size candidates were measured;
+only the UUID hex writer is retained. Full session/paint/state/transaction
+reachability adds 311,860 raw / 118,299 gzip bytes over accepted S3. Required
+exports and guards, compiler/profile/optimizer/dependencies and runtime arenas
+are unchanged. The separate [package decision receipt](../performance/graph-s4-package-budget-2026-10-31/README.md)
+owns fresh real shipping packaging, paired assets and full strict-CSP proof;
+old FAIL and diagnostic records remain immutable. Final policy-diff review and
+CI are required before integration. S5–S7, #36, M4 and release acceptance remain
+open; no runtime-speed or startup claim follows from the package decision.
 Historical S1–S4 receipts, including failed package/diagnostic proofs, are unchanged.
 
 
