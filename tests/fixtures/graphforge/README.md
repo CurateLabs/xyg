@@ -50,3 +50,21 @@ XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run python scripts/gen
 XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run python scripts/gen_graphforge_semantic_fixture.py --write
 XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run pytest tests/test_graphforge.py tests/test_graphforge_semantic_evidence.py tests/test_m2_wave_b_evidence.py -q
 ```
+
+## Property-graph defaults and arrowhead correction (#934)
+
+The historical Scene32 evidence above remains unchanged. #934 moves canonical
+semantic Scene arrowheads from target centers to the painted marker outlines,
+so current Scene, painter, SVG, raster and PNG hashes intentionally differ from
+those historical values even after restoring old version words. Current exact
+bytes are generated with `gen_graphforge_cross_host.py` and
+`gen_graphforge_semantic_fixture.py --write`; no performance result is changed.
+
+`gen_graphforge_result_fixtures.cjs` clears its results directory. Run
+`uv run python scripts/gen_graphforge_ipc_fixtures.py` after it to restore the
+synthetic `base-property-{nodes,edges}.arrow` fixtures **and** their
+`manifest.bases.property` entry. The Python producer owns both files and index
+entry, preserving Core-owned entries. For disposable regeneration use
+`--results-directory <output-directory>`. Core results/bases have fresh UUIDs
+on each run; regenerate their dependent expectations, derived fixtures and
+cross-host digests together, as described in the composition spec §7.
