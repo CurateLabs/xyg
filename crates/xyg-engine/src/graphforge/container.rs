@@ -255,6 +255,24 @@ impl<'a> Section<'a> {
         Ok(self.payload)
     }
 
+    pub fn as_u32(&self, name: &str) -> GfResult<Vec<u32>> {
+        self.expect(Dtype::U32, name)?;
+        Ok(self
+            .payload
+            .chunks_exact(4)
+            .map(|c| u32::from_le_bytes(c.try_into().unwrap()))
+            .collect())
+    }
+
+    pub fn as_i64(&self, name: &str) -> GfResult<Vec<i64>> {
+        self.expect(Dtype::I64, name)?;
+        Ok(self
+            .payload
+            .chunks_exact(8)
+            .map(|c| i64::from_le_bytes(c.try_into().unwrap()))
+            .collect())
+    }
+
     pub fn as_u64(&self, name: &str) -> GfResult<Vec<u64>> {
         self.expect(Dtype::U64, name)?;
         Ok(self

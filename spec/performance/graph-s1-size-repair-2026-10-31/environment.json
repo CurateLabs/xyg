@@ -1,0 +1,8 @@
+{
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "node": "v24.21.0",
+  "binaryen": "132.0.0",
+  "rust": "1.96.0 (ac68faa20 2026-05-25), LLVM 22.1.2",
+  "profile": "unchanged workspace release O3/fat LTO/codegen-units=1/strip, wasm inline threshold 100; Binaryen -O3 --all-features; Node gzipSync default level 6"
+}

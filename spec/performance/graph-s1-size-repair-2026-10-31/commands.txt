@@ -1,0 +1,40 @@
+# Local commands only. Run from this worktree/repository root.
+export PATH=/home/ubuntu/.cargo/bin:$PATH
+export XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so"
+uv sync --group dev
+npm ci
+npm ci --prefix packages/xy-node
+node js/build.mjs
+cargo build --release
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+node spec/performance/graph-s1-size-repair-2026-10-31/measure.mjs /tmp/xyg-s1-size-reproduction
+node js/package-wasm.mjs  # expected FAIL: 639531 gzip bytes > 638976
+# Diagnostic functional artifact only; packaging emitted no manifest/inline set.
+cp /tmp/xyg-s1-size-reproduction/optimized.wasm packages/xy-client/dist/xyg-wasm.wasm
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+uv run pytest -q tests/test_graphforge.py tests/test_graphforge_scene.py tests/test_graphforge_semantic_evidence.py tests/test_graphforge_fixture_generation.py tests/test_graphforge_contract_corpus.py tests/test_cose_native_parity.py tests/test_temporal_columns.py tests/test_temporal_graph_native.py tests/test_temporal_controller.py
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs packages/xy-node/test/graph.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/temporal*.test.mjs
+uv run python scripts/gen_graphforge_cross_host.py --check
+uv run python scripts/gen_graphforge_semantic_fixture.py
+python3 scripts/gen_abi_manifest.py --check
+python3 scripts/abi_smoke.py
+python3 scripts/render_smoke_nonumpy.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+python3 scripts/append_stream_smoke.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+uv run --with pre-commit pre-commit run --all-files
+uv run ruff check .
+uv run ruff format --check .
+# Baseline: repeat the same commands in an independent checkout of
+# 8878a151767e1f1092fca921117aa7a6d91e5471. Use the measurement script from this
+# directory there (its import/root paths are repository-relative). Expected
+# baseline: 1547598 raw / 640237 gzip6; packaging fails; same functional checks pass.
+# Each candidate-N.patch.gz decodes to a patch relative to 8878a151, not cumulative
+# with another patch. Apply one to that clean baseline, build and measure above:
+# gzip -dc <path-to-receipt>/candidate-N.patch.gz | git apply
+# Retained implementation is candidate-3.patch.gz. Candidate 1 only prevents
+# resolve_hierarchy inlining; candidate 2 folds hierarchy intermediates; candidate
+# 3 adds the sentinel memo; candidate 4 also prevents finish inlining.
+# Optimized wasm32 IR diagnosis (emission only, unchanged profile/settings):
+cargo rustc -p xyg-engine --lib --no-default-features --release --target wasm32-unknown-unknown -- --emit=llvm-ir,link
+# Inspect target/wasm32-unknown-unknown/release/deps/xyg_engine-*.ll.
+# This is pre-final-LTO diagnostic IR, not shipped per-function byte sizes.

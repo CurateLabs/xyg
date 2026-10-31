@@ -1,0 +1,31 @@
+{
+  "artifact": "target/wasm32-unknown-unknown/release/deps/xyg_engine-49bbdc89c3909160.ll",
+  "sha256": "1b17166c32022f928b4aeae5a24f438837626b802c0986dcaed58b5aa6b06ddf",
+  "note": "Optimized wasm32 engine LLVM IR under the unchanged release settings, before final LTO; IR counts are diagnostic, not shipped function byte sizes.",
+  "functions": [
+    {
+      "definition": "define dso_local void @_ZN10xyg_engine10graphforge4base5build17heb466ba8ea0468e8E(ptr dead_on_unwind noalias noundef writable sret([144 x i8]) align 8 captures(none) dereferenceable(144) %_0, ptr noalias noundef nonnull readonly align 4 captures(address) %tables.0, i32 noundef range(i32 0, 53687092) %tables.1, ptr dead_on_return noalias noundef readonly align 4 captures(none) dereferenceable(32) %planes, i1 noundef zeroext %directed) unnamed_addr #4 {",
+      "irLines": 2907,
+      "irBytes": 258892,
+      "allocatorCalls": 32,
+      "inlinedHierarchyMarkers": 15,
+      "inlinedResolverMarkers": 8
+    },
+    {
+      "definition": "define internal fastcc void @_ZN10xyg_engine10graphforge7compose12encode_graph17he1ac5dbd4d6dcc8eE(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 4 captures(none) dereferenceable(12) %_0, ptr noalias noundef nonnull readonly align 8 captures(address, read_provenance) dereferenceable(360) %planes, ptr noalias noundef nonnull readonly align 8 captures(none) dereferenceable(136) %request, ptr noalias noundef nonnull readonly align 4 captures(none) %layers.0, i32 noundef range(i32 0, 25565282) %layers.1) unnamed_addr #4 {",
+      "irLines": 5185,
+      "irBytes": 432632,
+      "allocatorCalls": 102,
+      "inlinedHierarchyMarkers": 0,
+      "inlinedResolverMarkers": 0
+    },
+    {
+      "definition": "define internal fastcc void @_ZN10xyg_engine10projection15resolve_parents17h50e813b63b42a363E(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 4 captures(none) dereferenceable(24) %_0, ptr noalias noundef nonnull readonly captures(none) %ids.0, i32 noundef range(i32 0, 134217728) %ids.1, ptr noalias noundef nonnull readonly captures(none) %validity.0, i32 noundef range(i32 0, -2147483648) %validity.1, i32 noundef range(i32 0, 134217728) %node_count, ptr noalias noundef nonnull readonly align 8 captures(none) dereferenceable(32) %0) unnamed_addr #4 {",
+      "irLines": 221,
+      "irBytes": 12678,
+      "allocatorCalls": 4,
+      "inlinedHierarchyMarkers": 0,
+      "inlinedResolverMarkers": 1
+    }
+  ]
+}

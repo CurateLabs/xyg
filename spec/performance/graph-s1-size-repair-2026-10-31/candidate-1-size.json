@@ -1,0 +1,12 @@
+{
+  "sourceBytes": 1706979,
+  "sourceSha256": "d9d3734072072ffe833cac5a91bb186d7ce004c50cc565d6cc1f4c6f5d277f9a",
+  "optimizedBytes": 1547781,
+  "gzip6Bytes": 640278,
+  "optimizedSha256": "3a5f7dfc9d189aaaac5b2666f191829d53bc4002a7780040f5b2691b1ec68c6d",
+  "gzip6Sha256": "69b96e270126313b5580eadef135cba1767e951c2ec2bb9256f803f76d3ae8ef",
+  "rawGate": 1543168,
+  "gzip6Gate": 638976,
+  "rawHeadroom": -4613,
+  "gzip6Headroom": -1302
+}

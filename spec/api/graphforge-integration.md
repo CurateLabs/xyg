@@ -146,12 +146,12 @@ composition and Python widget/notebook integration via #1015 remain open for
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 395 | `abiVersion()`, `xyg_abi_version` |
+| Native C ABI | 396 | `abiVersion()`, `xyg_abi_version` |
 | WASM ABI | 34 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 34 | `SCENE_VERSION` |
 | Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |
 | Browser painter binary | 17 | `BROWSER_PAINTER_VERSION` (`XYPB`) |
-| `XYGF` composition semantics | 1 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
+| `XYGF` composition semantics | 2 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 2 | `composition.ledgerVersion` |
 | GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5: 96 algorithms) |

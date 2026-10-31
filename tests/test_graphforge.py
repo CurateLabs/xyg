@@ -91,7 +91,7 @@ def test_arrowhead_fix_changes_render_geometry_beyond_scene_and_ledger_versions(
             "<IIIIQQQ", document, 32 + i * 40
         )
         name = document[names + name_offset : names + name_offset + name_length].decode()
-        if name == "ledger.version":
+        if name in {"composition.version", "ledger.version"}:
             assert struct.unpack_from("<I", document, offset)[0] == 2
             struct.pack_into("<I", document, offset, 1)
             changed.add(name)
@@ -104,7 +104,7 @@ def test_arrowhead_fix_changes_render_geometry_beyond_scene_and_ledger_versions(
             assert struct.unpack_from("<I", document, offset + 4)[0] == _native.scene_version()
             struct.pack_into("<I", document, offset + 4, 31)
             changed.add(name)
-    assert changed == {"ledger.version", "scene.version", "scene.canonical"}
+    assert changed == {"composition.version", "ledger.version", "scene.version", "scene.canonical"}
     refresh = json.loads((ROOT / "tests/fixtures/graphforge/scene32_refresh.json").read_text())
     # #934 moves heads to node outlines. Restoring old version words cannot
     # restore the historical geometry; current bytes are pinned above.
