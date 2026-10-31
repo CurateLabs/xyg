@@ -123,9 +123,8 @@ A few limits apply to static output:
   `XYG_STATIC_UNSUPPORTED_LEGEND_FOOTPRINT`; make the chart taller or pass
   `semantic_legend=False`.
 - Labels and legend text use your `--chart-text` color, as in the browser.
-- Annotations (`xyg.text`, rules, arrows) on a graph chart are not exported
-  yet; export fails with `XYG_STATIC_UNSUPPORTED_GRAPH` rather than dropping
-  them. Use the interactive HTML export for annotated graphs.
+- Annotations (`xyg.text`, rules, arrows, callouts) on a graph chart export
+  like on any other chart, drawn above the graph.
 
 Pass chart settings such as `style=` next to a graph child:
 `xyg.graph_chart(xyg.graph(...), style={"background": "#0f172a",

@@ -198,12 +198,15 @@ impl Columns {
 /// ends trimmed at node outlines by the Scene's edge-end pass), filled
 /// arrowheads, and each node's halo then marker. Labels paint where the export's
 /// isotropic scale reaches their Rust threshold and their planned box fits the
-/// plot; the explicit legend replaces the base legend.
+/// plot; the explicit legend replaces the base legend. The base's authored
+/// annotations (already expanded records, styles, and labels) are appended
+/// after the graph, once (#922).
 pub fn rebuild_composed_graph_scene(
     base: &[u8],
     planes: &ComposedGraphPlanes<'_>,
 ) -> Result<Vec<u8>, ComposedSceneError> {
-    let parts = SceneDocument::decode(base)?.into_graph_parts()?;
+    let mut parts = SceneDocument::decode(base)?.into_graph_parts()?;
+    let annotations = std::mem::take(&mut parts.annotations);
     let text_rgba = planes.text_rgba.unwrap_or(parts.chrome.label_rgba);
     let layout = parts.layout;
     let (xs, ys) = (parts.x_scale, parts.y_scale);
@@ -569,15 +572,18 @@ pub fn rebuild_composed_graph_scene(
             LABEL_ID_BASE,
         );
     }
-    // Past the Scene's label caps (count and text bytes): keep the lowest
+    // Authored annotation labels are never dropped: a decoded Scene already
+    // holds them within the label caps, they take their share first, and the
+    // graph's planned labels keep the remainder. Past it, keep the lowest
     // thresholds (the labels that paint earliest when zooming in), in input
     // order.
+    let label_cap = MAX_SCENE_LABELS.saturating_sub(annotations.label_count());
+    let text_cap = MAX_SCENE_LABEL_TEXT_BYTES.saturating_sub(annotations.label_text_bytes());
     labels.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
     let mut text_bytes = 0usize;
     let mut kept = 0usize;
     for entry in &labels {
-        if kept == MAX_SCENE_LABELS || text_bytes + entry.2.text.len() > MAX_SCENE_LABEL_TEXT_BYTES
-        {
+        if kept == label_cap || text_bytes + entry.2.text.len() > text_cap {
             break;
         }
         text_bytes += entry.2.text.len();
@@ -640,7 +646,7 @@ pub fn rebuild_composed_graph_scene(
             return Err(ComposedSceneError::LegendFootprint);
         }
     }
-    SceneBatch::new_with_decorations_and_labels(
+    let graph = SceneBatch::new_with_decorations_and_labels(
         layout,
         1,
         2,
@@ -664,8 +670,13 @@ pub fn rebuild_composed_graph_scene(
         &columns.y1,
     )
     .and_then(|batch| batch.with_dashes(&encode_butt_caps(&columns.butt_styles)?))
-    .map(|batch| batch.encode())
-    .map_err(ComposedSceneError::from)
+    .map(|batch| batch.encode())?;
+    if annotations.is_empty() {
+        return Ok(graph);
+    }
+    // Authored annotations paint above the graph, as the browser overlays
+    // them; they are spliced in already expanded, never re-expanded.
+    Ok(SceneDocument::with_graph_annotations(&graph, annotations)?)
 }
 
 /// Chart facts that fix the graph home view's plot rectangle (#910).
@@ -981,6 +992,10 @@ mod tests {
 
     /// A plain 240x160 base Scene over the unit square (default chrome).
     fn base() -> Vec<u8> {
+        base_batch().encode()
+    }
+
+    fn base_batch() -> SceneBatch<'static> {
         let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
         let xs = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
         let ys = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
@@ -1004,7 +1019,55 @@ mod tests {
             &[0.5],
         )
         .unwrap()
-        .encode()
+    }
+
+    /// The base plus authored text, a straight arrow, and a callout, expanded
+    /// by the same envelope the figure route emits.
+    fn annotated_base() -> Vec<u8> {
+        let mut xyat = b"XYAT".to_vec();
+        xyat.extend_from_slice(&2u32.to_le_bytes());
+        xyat.extend_from_slice(&1u32.to_le_bytes());
+        for value in [0.5f64, 0.9] {
+            xyat.extend_from_slice(&value.to_le_bytes());
+        }
+        xyat.extend_from_slice(&[1, 2, 3, 255, 0, 0, 0, 0]);
+        xyat.extend_from_slice(&4u32.to_le_bytes());
+        xyat.extend_from_slice(b"note");
+        let mut xyar = b"XYAR".to_vec();
+        xyar.extend_from_slice(&1u32.to_le_bytes());
+        xyar.extend_from_slice(&1u32.to_le_bytes());
+        xyar.extend_from_slice(&0x5859_0500_0000_0001u64.to_le_bytes());
+        for value in [0.1f64, 0.1, 0.4, 0.3] {
+            xyar.extend_from_slice(&value.to_le_bytes());
+        }
+        xyar.extend_from_slice(&[200, 100, 50, 255]);
+        xyar.extend_from_slice(&1.0f64.to_le_bytes());
+        xyar.extend_from_slice(&2.0f64.to_le_bytes());
+        let mut xyac = b"XYAC".to_vec();
+        xyac.extend_from_slice(&1u32.to_le_bytes());
+        xyac.extend_from_slice(&1u32.to_le_bytes());
+        for value in [0.7f64, 0.7, 30.0, -20.0] {
+            xyac.extend_from_slice(&value.to_le_bytes());
+        }
+        xyac.extend_from_slice(&[40, 50, 60, 255]);
+        xyac.extend_from_slice(&1.0f64.to_le_bytes());
+        xyac.extend_from_slice(&1.5f64.to_le_bytes());
+        xyac.push(2);
+        xyac.extend_from_slice(&[0; 3]);
+        xyac.extend_from_slice(&3u32.to_le_bytes());
+        xyac.extend_from_slice(b"say");
+        let mut envelope = b"XYAD".to_vec();
+        envelope.extend_from_slice(&2u32.to_le_bytes());
+        for len in [xyat.len(), 0, xyar.len(), xyac.len()] {
+            envelope.extend_from_slice(&(len as u32).to_le_bytes());
+        }
+        envelope.extend_from_slice(&xyat);
+        envelope.extend_from_slice(&xyar);
+        envelope.extend_from_slice(&xyac);
+        base_batch()
+            .with_authored_annotations(&envelope)
+            .unwrap()
+            .encode()
     }
 
     /// `base()` with a log x axis over [1, 100] (an authored axis, #909).
@@ -1203,6 +1266,156 @@ mod tests {
             exported_labels(n, &wide),
             MAX_SCENE_LABEL_TEXT_BYTES / wide.len()
         );
+    }
+
+    /// `(stable_id, kind, tag, geometry)` of every annotation record.
+    fn annotation_records(bytes: &[u8]) -> Vec<(u64, u8, u8, [f64; 4])> {
+        SceneDocument::decode(bytes)
+            .unwrap()
+            .interaction_records()
+            .iter()
+            .filter(|r| r.stable_id >> 48 == 0x5859 || r.annotation_tag != 0)
+            .map(|r| (r.stable_id, r.kind as u8, r.annotation_tag, r.coordinates))
+            .collect()
+    }
+
+    #[test]
+    fn authored_annotations_survive_once_above_the_graph() {
+        let source = annotated_base();
+        let expected = annotation_records(&source);
+        assert!(expected.len() >= 6, "{expected:?}");
+        let out = rebuild_composed_graph_scene(&source, &nodes()).unwrap();
+        // The same records, ids, tags, and CSS geometry: nothing re-expanded.
+        assert_eq!(annotation_records(&out), expected);
+        let svg = SceneDocument::decode(&out).unwrap().to_svg();
+        assert_eq!(svg.matches(">note<").count(), 1, "{svg}");
+        assert_eq!(svg.matches(">say<").count(), 1, "{svg}");
+        assert!(svg.contains("rgb(200,100,50)"), "{svg}");
+        // Annotations paint after the graph nodes.
+        assert!(svg.rfind("<circle").unwrap() < svg.find("rgb(200,100,50)").unwrap());
+        // Without annotations the rebuild output is the plain graph Scene.
+        let plain = rebuild_composed_graph_scene(&base(), &nodes()).unwrap();
+        assert!(annotation_records(&plain).is_empty());
+    }
+
+    #[test]
+    fn literal_tagged_base_records_are_not_annotations() {
+        // Literal-id Scenes tag every record 0x80; that is ordinary geometry
+        // the rebuild replaces, never an annotation it carries over.
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let xs = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let ys = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let literal = |id: u64| {
+            SceneBatch::new_with_chrome_literal_ids(
+                layout,
+                1,
+                2,
+                xs,
+                ys,
+                Default::default(),
+                Default::default(),
+                &[SceneRecordKind::Scatter as u8],
+                &[id],
+                &[0],
+                &[0, 0, 0, 255],
+                &[0, 0, 0, 0],
+                &[0.0],
+                &[8.0],
+                &[0],
+                &[0.5],
+                &[0.5],
+                &[0.5],
+                &[0.5],
+            )
+            .unwrap()
+            .encode()
+        };
+        let circles = |bytes: &[u8]| {
+            let out = rebuild_composed_graph_scene(bytes, &nodes()).unwrap();
+            SceneDocument::decode(&out)
+                .unwrap()
+                .to_svg()
+                .matches("<circle")
+                .count()
+        };
+        // Reserved-prefix ids are legal in literal mode too.
+        for id in [1, 0x5859_0100_0000_0001] {
+            assert_eq!(circles(&literal(id)), circles(&base()), "{id:#x}");
+        }
+    }
+
+    #[test]
+    fn graph_labels_yield_the_label_caps_to_authored_annotations() {
+        let authored = |i: usize| SceneLabel {
+            stable_id: i as u64,
+            x: 30.0,
+            y: 30.0,
+            font_size: 10.0,
+            rgba: [0, 0, 0, 255],
+            anchor: 0,
+            rotation: 0.0,
+            text: "keep".to_owned(),
+            annotation: true,
+        };
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let xs = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let ys = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let source = SceneBatch::new_with_decorations_and_labels(
+            layout,
+            1,
+            2,
+            xs,
+            ys,
+            Default::default(),
+            Default::default(),
+            None,
+            (0..100).map(authored).collect(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap()
+        .encode();
+        let n = 64;
+        let x: Vec<f64> = (0..n).map(|i| (i % 16) as f64 / 16.0).collect();
+        let y: Vec<f64> = (0..n).map(|i| 0.25 + (i / 16) as f64 / 32.0).collect();
+        let fill = vec![0u8; n * 4];
+        let ones = vec![1.0; n];
+        let diameter = vec![4.0; n];
+        let symbol = vec![0u8; n];
+        let labels: Vec<Option<&str>> = (0..n).map(|_| Some("node")).collect();
+        let plan: Vec<f64> = (0..n)
+            .flat_map(|i| [i as f64 * 0.1, 2.0, 2.0, 1.0, 12.0])
+            .collect();
+        let out = rebuild_composed_graph_scene(
+            &source,
+            &ComposedGraphPlanes {
+                x: &x,
+                y: &y,
+                fill: &fill,
+                stroke: &fill,
+                stroke_width: &ones,
+                diameter: &diameter,
+                symbol: &symbol,
+                opacity: &ones,
+                node_label_plan: &plan,
+                node_labels: &labels,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let svg = SceneDocument::decode(&out).unwrap().to_svg();
+        assert_eq!(svg.matches(">keep<").count(), 100);
+        assert_eq!(svg.matches(">node<").count(), MAX_SCENE_LABELS - 100);
     }
 
     /// Edge-ends row for a piece from node 0 to node 1 (#33 layout): source

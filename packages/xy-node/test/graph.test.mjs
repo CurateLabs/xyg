@@ -1066,18 +1066,69 @@ test("graph visual goldens: Node exports the committed PNG bytes (#34)", async (
   }
 });
 
-test("graph annotations fail closed in static export like Python (#34)", () => {
-  for (const annotation of [
-    { kind: "text", x: 0.5, y: 0.5, text: "NOTE" },
-    { kind: "rule", axis: "y", value: 0.25 },
-  ]) {
-    // Authored domains pass the axis admission, so the rebuild itself decides.
-    const fig = graphChart(["a", "b"], [["a", "b"]], {
-      layout: "preset", x: [0, 1], y: [0, 1],
-      xAxis: { domain: [-1, 2], style: { axis_width: 0 } }, yAxis: { domain: [-1, 2], style: { axis_width: 0 } },
-    }).annotate(annotation);
-    assert.throws(() => fig.toSvg(), /XYG_STATIC_UNSUPPORTED_GRAPH/, annotation.kind);
+test("annotated graph static SVG/PNG match the Python cross-host fixture (#922)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { createHash } = await import("node:crypto");
+  const fixture = JSON.parse(
+    readFileSync(new URL("../../../tests/fixtures/graph_static_export_cross_host.json", import.meta.url), "utf8"),
+  );
+  const sha = (bytes) => createHash("sha256").update(typeof bytes === "string" ? bytes : Buffer.from(bytes)).digest("hex");
+  const camel = (key) => key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  const annotation = (spec) => {
+    switch (spec.kind) {
+      case "text": return { kind: "text", x: spec.x, y: spec.y, text: spec.text, dx: 6, dy: -6 };
+      case "hline": return { kind: "rule", axis: "y", value: spec.y, ...(spec.text ? { text: spec.text } : {}) };
+      case "vline": return { kind: "rule", axis: "x", value: spec.x, ...(spec.text ? { text: spec.text } : {}) };
+      case "arrow": return { kind: "arrow", x0: spec.x0, y0: spec.y0, x1: spec.x1, y1: spec.y1 };
+      case "callout": return { kind: "callout", x: spec.x, y: spec.y, text: spec.text };
+      default: throw new Error(spec.kind);
+    }
+  };
+  const polylines = (svg) => svg.split("<polyline").length - 1;
+  for (const [name, expected] of Object.entries(fixture.annotated.cases)) {
+    let fig;
+    if (expected.graph === "composed") {
+      const { composed } = fixture;
+      const options = Object.fromEntries(
+        Object.entries(composed.cases.semantic.options).map(([key, value]) => [camel(key), value]),
+      );
+      fig = graphChart(composed.nodes, composed.edges, {
+        layout: "preset", x: composed.x, y: composed.y, width: 640, height: 480, ...options,
+      });
+    } else {
+      fig = graphChart(fixture.nodes, fixture.edges, {
+        layout: "preset", x: fixture.x, y: fixture.y, color: fixture.color, edgeColor: fixture.edge_color,
+        width: fixture.width, height: fixture.height,
+      });
+    }
+    const plain = new TextDecoder().decode(fig.toSvg());
+    for (const spec of expected.annotations) fig.annotate(annotation(spec));
+    assert.equal(sha(fig.toSvg()), expected.svg_sha256, name);
+    assert.equal(sha(fig.toPng({ scale: 1 })), expected.png_scale1_sha256, `${name} scale=1`);
+    assert.equal(sha(fig.toPng({ scale: 2 })), expected.png_scale2_sha256, `${name} scale=2`);
+    // Drawn, and expanded once: every authored label appears exactly once.
+    const svg = new TextDecoder().decode(fig.toSvg());
+    assert.ok(polylines(svg) >= polylines(plain), name);
+    for (const spec of expected.annotations) {
+      if (spec.text) assert.equal(svg.split(`>${spec.text}<`).length - 1, 1, `${name} ${spec.text}`);
+    }
   }
+});
+
+test("graph annotations draw in static export instead of failing closed (#922)", () => {
+  const chart = () => graphChart(["a", "b"], [["a", "b"]], {
+    layout: "preset", x: [0, 1], y: [0, 1],
+    xAxis: { domain: [-1, 2], style: { axis_width: 0 } }, yAxis: { domain: [-1, 2], style: { axis_width: 0 } },
+  });
+  const svgOf = (fig) => new TextDecoder().decode(fig.toSvg());
+  const count = (svg, needle) => svg.split(needle).length - 1;
+  const plain = svgOf(chart());
+  const text = svgOf(chart().annotate({ kind: "text", x: 0.5, y: 0.5, text: "NOTE" }));
+  assert.equal(count(text, ">NOTE<"), 1);
+  const rule = svgOf(chart().annotate({ kind: "rule", axis: "y", value: 0.25 }));
+  // The rule is exactly one more stroked polyline than the bare graph.
+  assert.equal(count(rule, "<polyline"), count(plain, "<polyline") + 1);
+  assert.ok(chart().annotate({ kind: "rule", axis: "y", value: 0.25 }).toPng({ scale: 1 }).length > 0);
 });
 
 test("graphChart keeps an authored axis like Python graph_chart (#909)", () => {
