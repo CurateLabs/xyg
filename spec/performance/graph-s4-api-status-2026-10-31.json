@@ -1,0 +1,11 @@
+{
+  "scope": "S4 current API version/session status only; no Node live API migration or acceptance claim",
+  "parent": "927de59d11ee3da8d70775dbd36e8e023da5a275",
+  "nativeAbi": 398,
+  "wasmAbi": 35,
+  "scene": 34,
+  "browserPainter": 17,
+  "path": "spec/api/graphforge-integration.md",
+  "sha256": "126303eb3f53e1e6c0db402adc37e3b0e8c9059e2b1fc8cbf5ee05d28409d6e0",
+  "basis": "Official current native/WASM declarations and independently reviewed S4 shipping proof. Retained S5/S6 browser/host work remains pending; older receipts unchanged."
+}
