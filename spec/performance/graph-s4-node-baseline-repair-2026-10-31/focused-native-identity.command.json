@@ -1,0 +1,15 @@
+{
+  "name": "focused-native-identity",
+  "command": [
+    "node",
+    "--test",
+    "--test-concurrency=1",
+    "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+    "packages/xy-node/test/geom.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.871,
+  "rawSha256": "92ec0fff9cbd12a6a22d4a2f68f58d916dda4ba6d8d8f7f5874c1ca7127e5300",
+  "log": "focused-native-identity.txt.gz",
+  "gzipSha256": "03adf911c8f1910ebf0180d1fe862aca8d115c566a87a99f2ddf98bb7d10ffe6"
+}

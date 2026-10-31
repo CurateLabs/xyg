@@ -1,0 +1,14 @@
+{
+  "name": "capture",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-node-stack-final-2026-10-31/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.266,
+  "rawSha256": "955be03df944ecccc7e56b3a54b5213ed03016b084314d4403dd6bd9dc5ecde2",
+  "log": "capture.txt.gz",
+  "gzipSha256": "dc3bb5b2beea012c717984053e46e45c598c4d4d35a003c6823f6614921d3def"
+}
