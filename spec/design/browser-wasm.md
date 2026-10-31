@@ -283,6 +283,22 @@ independent review and CI remain pending; packaging establishes no #36, M4,
 hardware, ABI-slice or release completion. Further growth must still fail these
 limits, without another automatic raise.
 
+**S4 local session boundary.** WASM ABI 35 adds five real session exports
+(open/update/render/interact/close), executing the same Rust XYGI/XYGR codec as
+native ABI 397. Scene 34 and painter 17 are unchanged. One instance retains one
+session; all reply planes and retry bytes count toward its existing arena
+budget, together with temporal ownership, staging and admitted speculative
+work. Temporal replacement/disposal or geographic acquisition revokes the old
+owner; an outstanding Arc cannot keep it usable. Ordinary compile/jobs require
+closing the session; compatible temporal frames and replacements remain
+pre-admitted. Wire status numbers, fixed exact-ID refs, capacity, retries and
+transactional publication are specified in [graph interaction §3](graph-interaction.md#3-abi--wasm).
+The 1,513/626-KiB S3 package gates remain unchanged. Fresh S4 package attempts
+and diagnostic functional proof are recorded separately in
+[S4 local evidence](../performance/graph-s4-local-2026-10-31/README.md); source
+checkout tests do not establish shipping-asset acceptance. Historical S3
+measurements above continue to describe their own source, not this ABI.
+
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
 After merging main `4631927`, the local optimized build measures **1,542,222 raw

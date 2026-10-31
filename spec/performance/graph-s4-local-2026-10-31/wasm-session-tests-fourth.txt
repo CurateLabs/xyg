@@ -1,0 +1,11 @@
+
+running 2 tests
+test graphforge_session::tests::wasm_open_retry_memory_refusal_close_and_transport_conflicts ... ok
+test graphforge_session::tests::wasm_bound_frame_refresh_replacement_disposal_and_instance_isolation ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 70 filtered out; finished in 0.01s
+
+    Blocking waiting for file lock on build directory
+   Compiling xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-wasm)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.88s
+     Running unittests src/lib.rs (target/debug/deps/xyg_wasm-3ddcfe47f3a8bc0f)

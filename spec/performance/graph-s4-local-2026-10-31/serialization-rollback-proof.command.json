@@ -1,0 +1,16 @@
+{
+  "name": "serialization-rollback-proof",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 16.278,
+  "rawSha256": "f2df5341f04999ea45f4c343d3e8d2d97e42f8309c82341791d0be7c46b82e5d",
+  "log": "serialization-rollback-proof.txt.gz",
+  "gzipSha256": "c137ba97be4c6937ce403af691e08d57a41537915f018f38913a442a331338b2"
+}

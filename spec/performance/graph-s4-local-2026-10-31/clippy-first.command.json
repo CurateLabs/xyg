@@ -1,0 +1,17 @@
+{
+  "name": "clippy-first",
+  "command": [
+    "cargo",
+    "clippy",
+    "--workspace",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "exitCode": 0,
+  "seconds": 43.952,
+  "rawSha256": "3ef0af5a3abb081e8a1f5ba5ef985a1bd2a11fe5d24b3f3e3f69f3eae81fbc6a",
+  "log": "clippy-first.txt.gz",
+  "gzipSha256": "8c6d519c664e43cbea661b5963de40661c89cf149445ca81a404f98645bc709f"
+}

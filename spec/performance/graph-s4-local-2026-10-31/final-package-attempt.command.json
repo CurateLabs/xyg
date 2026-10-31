@@ -1,0 +1,13 @@
+{
+  "name": "final-package-attempt",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 244.911,
+  "rawSha256": "f96d487d6b3b4565818d972ba9e11fc34b74e771dc8141823dc5c70c8f7e970f",
+  "log": "final-package-attempt.txt.gz",
+  "gzipSha256": "162e5936440de7e83a189e034ed69743e799b97da9ff18c8e69cf1b2fb34062a"
+}

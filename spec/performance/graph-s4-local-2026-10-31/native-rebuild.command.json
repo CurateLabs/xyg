@@ -1,0 +1,13 @@
+{
+  "name": "native-rebuild",
+  "command": [
+    "cargo",
+    "build",
+    "--release"
+  ],
+  "exitCode": 101,
+  "seconds": 114.643,
+  "rawSha256": "063442ea2220d938d0258717bbf1cb8248d4168279bcebddbf83bb248b2198a1",
+  "log": "native-rebuild.txt.gz",
+  "gzipSha256": "35101e933e0bd715276f1451f38aee2f88834246e00085d5e56d71aee840981d"
+}

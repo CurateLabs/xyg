@@ -95,6 +95,7 @@ impl GraphSession {
         next.render_revision = self.render_revision + 1;
         next.seen_temporal = world.temporal_revision;
         next.work = self.work;
+        next.transaction_world = self.transaction_world.take();
         std::mem::swap(&mut next.slot, &mut self.slot);
         std::mem::swap(&mut next.coordination, &mut self.coordination);
         *self = next;
@@ -104,7 +105,7 @@ impl GraphSession {
         })
     }
 
-    fn matches_temporal(&self, graph: &TemporalGraph) -> bool {
+    pub(super) fn matches_temporal(&self, graph: &TemporalGraph) -> bool {
         self.identity.node_uuids() == graph.node_ids()
             && self
                 .identity

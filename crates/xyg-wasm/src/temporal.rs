@@ -316,6 +316,7 @@ mod tests {
             aggregate_sequence: 0,
             temporal: None,
             temporal_graph: None,
+            graph_session: None,
             graph_job: None,
             compile_job: None,
             geo_transport: None,

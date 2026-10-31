@@ -451,6 +451,7 @@ pub fn layout_hierarchical(
 }
 
 /// Seeded progressive force-layout state (FR / FA2 / spring / KK / …).
+#[derive(Clone)]
 pub struct ForceState {
     pub n: usize,
     pub edges: Vec<(u64, u64)>,

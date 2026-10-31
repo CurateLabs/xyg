@@ -197,10 +197,13 @@ unsafe fn borrowed_byte_spans<'a>(
     Some(spans)
 }
 
+mod graphforge_session_ffi;
+pub use graphforge_session_ffi::*;
+
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 396;
+pub const ABI_VERSION: u32 = 397;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15597,6 +15600,13 @@ pub unsafe extern "C" fn xyg_temporal_graph_set_selection(
         let Some(entry) = temporal_graph_entry(handle) else {
             return temporal::TemporalError::StaleHandle as i32;
         };
+        let _operation = entry
+            .operation
+            .lock()
+            .expect("temporal graph operation poisoned");
+        if entry.disposed.load(std::sync::atomic::Ordering::Acquire) {
+            return temporal::TemporalError::StaleHandle as i32;
+        }
         let mut state = entry.state.lock().expect("temporal graph poisoned");
         state
             .graph
@@ -15631,6 +15641,13 @@ pub unsafe extern "C" fn xyg_temporal_graph_set_focus(
         let Some(entry) = temporal_graph_entry(handle) else {
             return temporal::TemporalError::StaleHandle as i32;
         };
+        let _operation = entry
+            .operation
+            .lock()
+            .expect("temporal graph operation poisoned");
+        if entry.disposed.load(std::sync::atomic::Ordering::Acquire) {
+            return temporal::TemporalError::StaleHandle as i32;
+        }
         let result = entry
             .state
             .lock()
@@ -15659,6 +15676,13 @@ pub unsafe extern "C" fn xyg_temporal_graph_set_pinned(
         let Some(entry) = temporal_graph_entry(handle) else {
             return temporal::TemporalError::StaleHandle as i32;
         };
+        let _operation = entry
+            .operation
+            .lock()
+            .expect("temporal graph operation poisoned");
+        if entry.disposed.load(std::sync::atomic::Ordering::Acquire) {
+            return temporal::TemporalError::StaleHandle as i32;
+        }
         let result = entry
             .state
             .lock()
@@ -15685,6 +15709,13 @@ pub unsafe extern "C" fn xyg_temporal_graph_required_budget(
         let Some(entry) = temporal_graph_entry(handle) else {
             return temporal::TemporalError::StaleHandle as i32;
         };
+        let _operation = entry
+            .operation
+            .lock()
+            .expect("temporal graph operation poisoned");
+        if entry.disposed.load(std::sync::atomic::Ordering::Acquire) {
+            return temporal::TemporalError::StaleHandle as i32;
+        }
         let state = entry.state.lock().expect("temporal graph poisoned");
         match state.graph.required_budget() {
             Ok(value) => {
@@ -15794,6 +15825,13 @@ pub unsafe extern "C" fn xyg_temporal_graph_snapshot_meta(
         let Some(entry) = temporal_graph_entry(handle) else {
             return temporal::TemporalError::StaleHandle as i32;
         };
+        let _operation = entry
+            .operation
+            .lock()
+            .expect("temporal graph operation poisoned");
+        if entry.disposed.load(std::sync::atomic::Ordering::Acquire) {
+            return temporal::TemporalError::StaleHandle as i32;
+        }
         let state = entry.state.lock().expect("temporal graph poisoned");
         let (Some(frame), Some(frozen)) = (&state.frame, &state.frozen) else {
             return temporal::TemporalError::StaleRevision as i32;
@@ -15861,6 +15899,13 @@ pub unsafe extern "C" fn xyg_temporal_graph_snapshot_copy(
         let Some(entry) = temporal_graph_entry(handle) else {
             return temporal::TemporalError::StaleHandle as i32;
         };
+        let _operation = entry
+            .operation
+            .lock()
+            .expect("temporal graph operation poisoned");
+        if entry.disposed.load(std::sync::atomic::Ordering::Acquire) {
+            return temporal::TemporalError::StaleHandle as i32;
+        }
         let state = entry.state.lock().expect("temporal graph poisoned");
         let (Some(frame), Some(frozen)) = (&state.frame, &state.frozen) else {
             return temporal::TemporalError::StaleRevision as i32;

@@ -1,0 +1,13 @@
+{
+  "name": "rust-workspace-first",
+  "command": [
+    "cargo",
+    "test",
+    "--workspace"
+  ],
+  "exitCode": 101,
+  "seconds": 31.577,
+  "rawSha256": "e1d88b239a1249534edbbdac6adc8184ff3a59db6bd17307117ada1815b578a0",
+  "log": "rust-workspace-first.txt.gz",
+  "gzipSha256": "b2f3bd977b7697490af00bd9ba174d9f885119c7313f5ef24a9ace9f19d9707f"
+}

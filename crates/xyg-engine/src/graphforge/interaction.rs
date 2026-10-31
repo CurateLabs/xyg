@@ -19,7 +19,7 @@
 //! ([`render::RenderOutput`], F2 pipeline order, temporal visibility F4),
 //! compound disclosure, pin / move / relayout, and the keyboard walks. The
 //! S3 adds publication geometry/picking, coordination and atomic update.
-//! The C/WASM ABI (S4) is a later slice.
+//! The C/WASM ABI uses the shared `wire` codec and admitted transaction.
 //!
 //! [`TemporalGraph::frame`]: crate::temporal_graph::TemporalGraph::frame
 
@@ -55,6 +55,7 @@ pub use pick::{
     MAX_GRAPH_PICK_PRIMITIVES,
 };
 pub use render::{Camera, RenderOutput, NOT_RENDERED};
+pub mod wire;
 
 /// Default direct-tier budgets (`_graph.py` `layout_render`).
 pub const DEFAULT_NODE_BUDGET: u64 = 200_000;
@@ -137,6 +138,7 @@ pub trait TemporalHost: Send + Sync {
 }
 
 /// Where a session's interaction state lives.
+#[derive(Clone)]
 pub enum StateSlot {
     Owned(Box<GraphInteractionState>),
     /// No state of its own: every access runs on the temporal graph's value.
@@ -188,10 +190,14 @@ struct Hover {
     edges: Vec<usize>,
 }
 
+#[derive(Clone)]
 pub struct GraphSession {
+    // Only set on an admitted wire transaction candidate.
+    transaction_world: Option<(Vec<u8>, Vec<u8>, u64)>,
     instance_id: u64,
     coordination: coordination::Link,
     identity: GraphIdentity,
+    labels: Vec<String>,
     generation: Option<Uuid>,
     /// Compound parent per node (`COSE_NO_PARENT` for roots), from the document.
     parent: Vec<u64>,
@@ -252,6 +258,15 @@ impl GraphSession {
         let identity =
             GraphIdentity::from_document(&doc).map_err(|_| InteractionStatus::Invalid)?;
         let n = identity.node_count();
+        let container = super::container::Container::decode(document, super::container::DOCUMENT_MAGIC).map_err(|_| InteractionStatus::Invalid)?;
+        let mut labels = Vec::new();
+        for (name,count) in [("node.label",n),("edge.label",identity.edge_count())] {
+            if let Some(section) = container.get(name,0) {
+                let text = section.as_texts(name).map_err(|_| InteractionStatus::Invalid)?;
+                if text.len()!=count {return invalid();}
+                labels.extend(text.into_iter().map(str::to_owned));
+            } else { labels.resize(labels.len()+count,String::new()); }
+        }
         let generation = doc.generation().map_err(|_| InteractionStatus::Invalid)?;
         let parent = Self::hierarchy(&doc, n)?;
         let edge_source = doc
@@ -341,9 +356,11 @@ impl GraphSession {
                 .collect::<BTreeSet<_>>(),
         );
         Ok(Self {
+            transaction_world: None,
             instance_id,
             coordination: coordination::Link::default(),
             identity,
+            labels,
             generation,
             parent_valid: parent
                 .iter()
@@ -486,6 +503,16 @@ impl GraphSession {
         &mut self,
         f: impl FnOnce(&mut Self, World<'_>) -> R,
     ) -> Result<R, InteractionStatus> {
+        self.locked_validated(|_,_| Ok(()), f)
+    }
+
+    /// Validate against the canonical owner before splitting its state/world.
+    /// Used by wire updates so endpoint validation and reply share one access.
+    fn locked_validated<R>(
+        &mut self,
+        validate: impl FnOnce(&Self, &TemporalGraph)->Result<(), InteractionStatus>,
+        f: impl FnOnce(&mut Self, World<'_>)->R,
+    )->Result<R, InteractionStatus> {
         let bound = match &self.slot {
             StateSlot::Bound { host, handle } => Some((Arc::clone(host), *handle)),
             StateSlot::Owned(_) => None,
@@ -495,36 +522,41 @@ impl GraphSession {
                 return Err(InteractionStatus::Invalid);
             };
             let mut state = std::mem::take(&mut **slot);
+            let snapshot = self.transaction_world.take();
             let out = f(
                 self,
                 World {
                     state: &mut state,
-                    visibility: None,
-                    temporal_revision: 0,
+                    visibility: snapshot.as_ref().map(|(n, e, _)| (&n[..], &e[..])),
+                    temporal_revision: snapshot.as_ref().map_or(0, |(_, _, r)| *r),
                 },
             );
+            self.transaction_world = snapshot;
             if let StateSlot::Owned(slot) = &mut self.slot {
                 **slot = state;
             }
             return Ok(out);
         };
-        let (mut f, mut out) = (Some(f), None);
+        let (mut f, mut validate, mut out) = (Some(f), Some(validate), None);
         let session = &mut *self;
         let found = host.with_graph(handle, &mut |graph| {
             if let Some(f) = f.take() {
+                if let Err(error)=validate.take().expect("one owner access")(session,graph) {
+                    out=Some(Err(error));return;
+                }
                 let (state, visibility, temporal_revision) = graph.world_parts();
-                out = Some(f(
+                out = Some(Ok(f(
                     session,
                     World {
                         state,
                         visibility,
                         temporal_revision,
                     },
-                ));
+                )));
             }
         });
         match (found, out) {
-            (true, Some(out)) => Ok(out),
+            (true, Some(out)) => out,
             _ => Err(InteractionStatus::Unbound),
         }
     }

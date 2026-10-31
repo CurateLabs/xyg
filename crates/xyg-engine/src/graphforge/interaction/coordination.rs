@@ -14,7 +14,7 @@ pub struct GraphCoordinationEvent {
     pub refs: Vec<ElementRef>,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(super) struct Link {
     pub group: u64,
     pub sequence: u64,
@@ -53,7 +53,7 @@ fn compare(a: &ElementRef, b: &ElementRef) -> Ordering {
 }
 
 impl GraphCoordinationEvent {
-    fn validate(&self) -> Result<(), InteractionStatus> {
+    pub(super) fn validate(&self) -> Result<(), InteractionStatus> {
         if self.refs.len() > MAX_GRAPH_SELECTION_REFS {
             return Err(InteractionStatus::SelectionTooLarge);
         }

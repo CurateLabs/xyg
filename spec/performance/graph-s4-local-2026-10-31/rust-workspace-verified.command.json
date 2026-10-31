@@ -1,0 +1,15 @@
+{
+  "name": "rust-workspace-verified",
+  "command": [
+    "cargo",
+    "test",
+    "--workspace",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 148.153,
+  "rawSha256": "f287a6e65652fe55cc4814d8f0879b1695fc7d1b856ac2590002278e196a40f7",
+  "log": "rust-workspace-verified.txt.gz",
+  "gzipSha256": "051b62bc784d6ff30467bf89489db73d2b387d9aa2fd87cad81a2f2ee68fec97"
+}

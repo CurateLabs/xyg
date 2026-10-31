@@ -1,0 +1,16 @@
+{
+  "name": "bound-one-world",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::wire",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 20.879,
+  "rawSha256": "117c89e5a4d2a4cb2d1e0ecda3f5a3f958e34e311145bcd4b49f857e2c1b581a",
+  "log": "bound-one-world.txt.gz",
+  "gzipSha256": "c8850729e15bf7ec45311559c8cf5dcc4a3a8374f31a12614a0789d5bb214bd8"
+}

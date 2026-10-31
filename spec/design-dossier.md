@@ -1416,7 +1416,8 @@ induced published edges. Nodes/polygon edges/grid/dedup/membership/induced work
 is charged before selection or hover commit; refusal never truncates selection.
 Style-only republication refreshes resolved geometry and index at the same
 revision. Exact contracts: graph-interaction.md §2.3, Rust S3 candidate only;
-ABI/browser/host and hardware acceptance remain later slices.
+S4 exposes the shared transactional native/WASM wire (native ABI 397, WASM 35);
+browser controller/host delivery and hardware acceptance remain later slices.
 
 **Static export takes the first-paint tier (#1006).** Native SVG/PNG/PDF/JPEG/
 WebP export makes the same compile-time `payload_tier` decision the browser's
@@ -2788,6 +2789,12 @@ requiring a Rust toolchain — an instant adoption cliff.
   for source/artifact hashes, real paired assets, native/WASM parity and the
   full strict-CSP foundation. This establishes no speed, hardware, session ABI,
   release or milestone completion; independent final review and CI remain pending.
+- **S4 session ABI growth has no automatic size allowance.** Native ABI 397 /
+  WASM ABI 35 expose the shared graph-session codec/transaction and disposable
+  temporal owners, with admitted speculative work and complete retry replies.
+  Scene/painter formats remain 34/17. The S3 gates above remain binding; see
+  [S4 local evidence](performance/graph-s4-local-2026-10-31/README.md) for fresh
+  package failures or passes and distinctly labelled diagnostic execution.
 - **Packaged WASM tick assets have one producer and fail early (#1005).** The direct-browser
   module (`xyg-wasm.wasm`), its inline classic-worker copy (`xyg-wasm-inline.js`), and the
   version/hash manifest (`xyg-wasm.manifest.json`: `sha256`, `bytes`, ABI/Scene/painter

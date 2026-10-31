@@ -1,0 +1,16 @@
+{
+  "name": "formatting-first",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.309,
+  "rawSha256": "de04e74d0b179993037752080a3c2a701ee59572cc7e489900f5350155acdca8",
+  "log": "formatting-first.txt.gz",
+  "gzipSha256": "f781a540c9068052e7a3a9399544295b7906793838ff88645afdc9a0a9dc8886"
+}

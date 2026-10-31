@@ -1,0 +1,16 @@
+{
+  "name": "geo-transport-regression",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-wasm",
+    "--test",
+    "geo_transport_budget"
+  ],
+  "exitCode": 0,
+  "seconds": 22.497,
+  "rawSha256": "fe71130ed145532be7e626133d74e8cc78e56dd98b78e38193b53bdd5113e50d",
+  "log": "geo-transport-regression.txt.gz",
+  "gzipSha256": "4a9b95ec6336f2f0b61f6e681a16186257edaebeb8a655c7b2957c41386d9935"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "clippy-verified",
+  "command": [
+    "cargo",
+    "clippy",
+    "--workspace",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "exitCode": 0,
+  "seconds": 24.064,
+  "rawSha256": "eac343e6bac34beb4ae5b9d4439764281813b2142d7936c27f0ce845ea86ac6c",
+  "log": "clippy-verified.txt.gz",
+  "gzipSha256": "096dfd8e0d2c3601fd75dbaa88963ed6306468e70e6a879ed9cf16afd3bc80f1"
+}

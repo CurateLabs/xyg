@@ -1,0 +1,38 @@
+    Blocking waiting for file lock on build directory
+    Checking bitflags v2.13.0
+    Checking memchr v2.8.0
+    Checking linux-raw-sys v0.12.1
+    Checking libc v0.2.189
+    Checking num-traits v0.2.19
+    Checking serde_core v1.0.228
+    Checking zmij v1.0.21
+    Checking clap_lex v1.1.0
+    Checking png v0.18.1
+    Checking anstyle v1.0.14
+    Checking itoa v1.0.18
+    Checking anyhow v1.0.104
+    Checking regex-syntax v0.8.10
+    Checking rustix v1.1.4
+    Checking colored v3.1.1
+    Checking aho-corasick v1.1.4
+    Checking glob v0.3.3
+    Checking approx v0.5.1
+    Checking xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-engine)
+    Checking statrs v0.18.0
+    Checking condtype v1.3.0
+    Checking regex-lite v0.1.9
+    Checking terminal_size v0.4.4
+    Checking clap_builder v4.6.6
+    Checking nix v0.31.3
+    Checking getrandom v0.4.2
+    Checking serde v1.0.228
+    Checking serde_json v1.0.151
+    Checking regex-automata v0.4.14
+    Checking clap v4.6.6
+    Checking codspeed v5.0.1
+    Checking codspeed-divan-compat-walltime v5.0.1
+    Checking regex v1.12.3
+    Checking codspeed-divan-compat v5.0.1
+    Checking xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-wasm)
+    Checking xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 43.55s

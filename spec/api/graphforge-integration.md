@@ -47,7 +47,7 @@ two layers writing one channel fail with `GF_COMPOSE_CHANNEL_CONFLICT`.
 composed `XYGF` document plus session-local inputs only; hosts never pass
 hierarchy (it travels in the document as `node.parent` / `node.parent.valid`,
 resolved from the base node table's `parent_uuid`). The Rust-side `SessionLoad`
-(the `load.*` sections the S4 ABI will carry) is: `x`/`y` f64 positions (both
+(the `load.*` sections carried by the S4 XYGI ABI) is: `x`/`y` f64 positions (both
 or neither; absent positions are the seeded CoSE layout, 300 steps over the
 document hierarchy), `collapsed` u8 per node, `pinned` u8 per node (seeds the
 UUID-keyed pin set), `budgets` `[node_budget, edge_budget]` (default 200,000 /

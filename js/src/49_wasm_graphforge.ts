@@ -90,6 +90,7 @@ export function encodeGraphForgeContainer(magic: string, sections: Array<{ name:
     let payload: Uint8Array; let count: number;
     switch (dtype) {
       case DT.u8: payload = Uint8Array.from(values as ArrayLike<number>); count = payload.length; break;
+      case DT.u32: { const a = Uint32Array.from(values as ArrayLike<number>); payload = packLE(4, a.length, (v, at, i) => v.setUint32(at, a[i]!, true)); count = a.length; break; }
       case DT.u64: { const a = BigUint64Array.from(values as ArrayLike<bigint>, (v: any) => BigInt(v)); payload = packLE(8, a.length, (v, at, i) => v.setBigUint64(at, a[i]!, true)); count = a.length; break; }
       case DT.f64: { const a = Float64Array.from(values as ArrayLike<number>); payload = packLE(8, a.length, (v, at, i) => v.setFloat64(at, a[i]!, true)); count = a.length; break; }
       case DT.bytes: payload = values as Uint8Array; count = payload.length; break;

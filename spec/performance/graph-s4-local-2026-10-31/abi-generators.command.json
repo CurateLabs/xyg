@@ -1,0 +1,13 @@
+{
+  "name": "abi-generators",
+  "command": [
+    "python3",
+    "scripts/gen_abi_manifest.py",
+    "--write"
+  ],
+  "exitCode": 0,
+  "seconds": 1.338,
+  "rawSha256": "f6633eeb5323296fa714eb555e0e1b470598a5482194b2be957b996ce8b01f73",
+  "log": "abi-generators.txt.gz",
+  "gzipSha256": "4309c77e4d86b1824b5881e70c319b1ae134e5a571853c8cd62d09bab91dc03e"
+}

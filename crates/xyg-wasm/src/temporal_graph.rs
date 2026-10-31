@@ -1,9 +1,13 @@
 //! Packed direct-browser temporal graph binding and frame transport (#45).
 
 use super::{
-    Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
-    STATUS_STALE_REVISION, fail,
+    fail, Instance, STATUS_CANCELLED, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT,
+    STATUS_STALE_REVISION,
 };
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+use xyg_engine::graph_interaction_state::{ElementSet, Focus, HighlightPlane};
+use xyg_engine::graphforge::interaction::{TemporalHandle, TemporalHost};
 use xyg_engine::projection::{GraphProjection, Uuid};
 use xyg_engine::temporal::{CancelFlag, TemporalColumn, TemporalError, TemporalPrecision};
 use xyg_engine::temporal_graph::{TemporalBindingInput, TemporalGraph};
@@ -20,9 +24,130 @@ const MAX_ENTITIES: usize = 5_000_000;
 
 #[derive(Debug)]
 pub(super) struct WasmTemporalGraph {
-    graph: TemporalGraph,
+    owner: Arc<TemporalOwner>,
     sources: Vec<u64>,
     targets: Vec<u64>,
+}
+
+/// The instance owns this lease; bound sessions only borrow its authority.
+/// Revocation is protected by the same mutex as every access, so an Arc held
+/// by a session never extends the disposed graph's usable lifetime (§1.1).
+/// This adapter must never enter the instance registry: exports already hold
+/// that mutex. Its only lock is the temporal world lock, after the session.
+#[derive(Debug)]
+struct TemporalOwner {
+    generation: u64,
+    graph: Mutex<Option<TemporalGraph>>,
+}
+
+impl TemporalHost for TemporalOwner {
+    fn with_graph(&self, handle: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool {
+        if handle.0 != self.generation {
+            return false;
+        }
+        let mut graph = self.graph.lock().expect("WASM temporal owner poisoned");
+        let Some(graph) = graph.as_mut() else {
+            return false;
+        };
+        f(graph);
+        true
+    }
+}
+
+impl WasmTemporalGraph {
+    fn new(
+        graph: TemporalGraph,
+        sources: Vec<u64>,
+        targets: Vec<u64>,
+    ) -> Result<Self, TemporalError> {
+        static NEXT_GENERATION: AtomicU64 = AtomicU64::new(0);
+        let previous = NEXT_GENERATION
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                value.checked_add(1)
+            })
+            .map_err(|_| TemporalError::CapacityExceeded)?;
+        Ok(Self {
+            owner: Arc::new(TemporalOwner {
+                generation: previous + 1,
+                graph: Mutex::new(Some(graph)),
+            }),
+            sources,
+            targets,
+        })
+    }
+
+    pub(super) fn owner(&self) -> (Arc<dyn TemporalHost>, TemporalHandle) {
+        (self.owner.clone(), TemporalHandle(self.owner.generation))
+    }
+
+    pub(super) fn dispose(&self) {
+        self.owner
+            .graph
+            .lock()
+            .expect("WASM temporal owner poisoned")
+            .take();
+    }
+
+    /// Conservative retained admission charge, not an RSS measurement. 512
+    /// bytes per canonical row covers UUID/dense-map capacity, interval/event
+    /// columns, topology and retained visibility; 256 per tree entry covers
+    /// state nodes and tree slack. Exact derived strings are charged too.
+    /// Staging, frame scratch, publication and serialized replies are separate
+    /// caller charges. Saturation makes arithmetic overflow refuse admission.
+    pub(super) fn retained_bytes(&self) -> usize {
+        let graph = self
+            .owner
+            .graph
+            .lock()
+            .expect("WASM temporal owner poisoned");
+        let topology = self
+            .sources
+            .capacity()
+            .saturating_add(self.targets.capacity())
+            .saturating_mul(std::mem::size_of::<u64>());
+        let Some(graph) = graph.as_ref() else {
+            return 4096usize.saturating_add(topology);
+        };
+        let state = graph.interaction_state();
+        let set_bytes = |set: &ElementSet| {
+            set.derived
+                .iter()
+                .fold(set.len().saturating_mul(256), |bytes, key| {
+                    bytes.saturating_add(key.result_id.as_ref().map_or(0, |id| id.len()))
+                })
+        };
+        let mut bytes = 4096usize
+            .saturating_add(topology)
+            .saturating_add(
+                graph
+                    .node_ids()
+                    .len()
+                    .saturating_add(graph.edge_ids().len())
+                    .saturating_mul(512),
+            )
+            .saturating_add(state.pinned_nodes().len().saturating_mul(256))
+            .saturating_add(set_bytes(state.selection()));
+        for plane in [
+            HighlightPlane::Path,
+            HighlightPlane::Community,
+            HighlightPlane::External,
+        ] {
+            bytes = bytes.saturating_add(set_bytes(state.highlight_set(plane)));
+        }
+        if let Some(focus) = state.focus() {
+            bytes = bytes.saturating_add(256);
+            if let Focus::Derived(key) = focus {
+                bytes = bytes.saturating_add(key.result_id.as_ref().map_or(0, |id| id.len()));
+            }
+        }
+        bytes
+    }
+}
+
+impl Drop for WasmTemporalGraph {
+    fn drop(&mut self) {
+        self.dispose();
+    }
 }
 
 fn u32_at(bytes: &[u8], at: usize) -> Option<u32> {
@@ -166,11 +291,17 @@ fn create(instance: &mut Instance, bytes: &[u8]) -> i32 {
     };
     match TemporalGraph::bind(&projection, nodes, edges) {
         Ok(graph) => {
-            instance.temporal_graph = Some(WasmTemporalGraph {
-                graph,
-                sources,
-                targets,
-            });
+            let owner = match WasmTemporalGraph::new(graph, sources, targets) {
+                Ok(owner) => owner,
+                Err(error) => {
+                    return fail(
+                        instance,
+                        status(error),
+                        "temporal owner generation exhausted",
+                    )
+                }
+            };
+            instance.temporal_graph = Some(owner);
             instance.output.clear();
             instance.last_error.clear();
             STATUS_OK
@@ -210,10 +341,15 @@ fn frame(instance: &mut Instance, bytes: &[u8]) -> i32 {
         );
     };
     let cancel = CancelFlag::new();
-    let frame = match bound
+    let result = bound
+        .owner
         .graph
-        .frame(revision, cursor, start, end, &cancel, budget)
-    {
+        .lock()
+        .expect("WASM temporal owner poisoned")
+        .as_mut()
+        .ok_or(TemporalError::Disposed)
+        .and_then(|graph| graph.frame(revision, cursor, start, end, &cancel, budget));
+    let frame = match result {
         Ok(frame) => frame,
         Err(error) => return fail(instance, status(error), "temporal graph frame failed"),
     };
@@ -283,6 +419,17 @@ fn frame(instance: &mut Instance, bytes: &[u8]) -> i32 {
 }
 
 pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> i32 {
+    // A retained GraphSession shares this owner. Admit replacement/frame work
+    // before touching either owner or output; no second canonical state is kept.
+    if let Some(session)=&instance.graph_session {
+        let old=instance.temporal_graph.as_ref().map_or(0,|g|g.retained_bytes());
+        let staged=instance.arena.get(offset..offset.saturating_add(length));
+        let incoming=staged.filter(|b|b.get(..4)==Some(MAGIC) && u32_at(b,12)==Some(OP_CREATE))
+            .map_or(0,|b| (u32_at(b,20).unwrap_or(u32::MAX) as usize).saturating_add(u32_at(b,24).unwrap_or(u32::MAX) as usize).saturating_mul(2048));
+        let charge=session.retained_budget().saturating_add(old.saturating_mul(3)).saturating_add(incoming)
+            .saturating_add(instance.arena.capacity().saturating_mul(8)).saturating_add(instance.output.capacity());
+        if charge>instance.max_arena_bytes {return fail(instance,STATUS_RESOURCE_LIMIT,"temporal/session world exceeds worker budget");}
+    }
     instance.output.clear();
     let Some(end) = offset.checked_add(length) else {
         return fail(
@@ -314,5 +461,116 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             STATUS_INVALID_ARGUMENT,
             "temporal graph operation is unsupported",
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn graph() -> WasmTemporalGraph {
+        let nodes = [[1; 16], [2; 16]];
+        let edges = [[3; 16]];
+        let projection =
+            GraphProjection::new(&nodes, &edges, &nodes[..1], &nodes[1..], None, true).unwrap();
+        let graph = TemporalGraph::bind(
+            &projection,
+            TemporalBindingInput::default(),
+            TemporalBindingInput::default(),
+        )
+        .unwrap();
+        WasmTemporalGraph::new(graph, vec![0], vec![1]).unwrap()
+    }
+
+    #[test]
+    fn bound_access_and_frames_share_one_canonical_state() {
+        let graph = graph();
+        let (owner, handle) = graph.owner();
+        let before = graph.retained_bytes();
+        assert!(owner.with_graph(handle, &mut |graph| {
+            graph.set_selection([[2; 16]], [[3; 16]]).unwrap();
+            graph.set_pinned_nodes([[2; 16]]).unwrap();
+        }));
+        assert_eq!(graph.retained_bytes(), before + 3 * 256);
+        let mut frame = None;
+        assert!(owner.with_graph(handle, &mut |graph| {
+            frame = Some(
+                graph
+                    .frame(
+                        1,
+                        0,
+                        0,
+                        1,
+                        &CancelFlag::new(),
+                        graph.required_budget().unwrap(),
+                    )
+                    .unwrap(),
+            );
+        }));
+        let frame = frame.unwrap();
+        assert_eq!(frame.selected_visible_node_ids(), &[[2; 16]]);
+        assert_eq!(frame.selected_visible_edge_ids(), &[[3; 16]]);
+        assert_eq!(frame.pinned_visible_node_ids(), &[[2; 16]]);
+    }
+
+    #[test]
+    fn generations_reject_cross_instance_or_replacement_handles() {
+        let first = graph();
+        let second = graph();
+        let (first_owner, first_handle) = first.owner();
+        let (second_owner, second_handle) = second.owner();
+        assert_ne!(first_handle, second_handle);
+        let mut called = false;
+        assert!(!first_owner.with_graph(second_handle, &mut |_| called = true));
+        assert!(!second_owner.with_graph(first_handle, &mut |_| called = true));
+        assert!(!called);
+    }
+
+    #[test]
+    fn replacement_and_instance_drop_revoke_outstanding_arcs() {
+        let mut slot = Some(graph());
+        let (old_owner, old_handle) = slot.as_ref().unwrap().owner();
+        slot = Some(graph());
+        let (new_owner, new_handle) = slot.as_ref().unwrap().owner();
+        assert!(!old_owner.with_graph(old_handle, &mut |_| panic!("disposed owner used")));
+        assert!(new_owner.with_graph(new_handle, &mut |_| {}));
+        drop(slot);
+        assert!(!new_owner.with_graph(new_handle, &mut |_| panic!("dropped instance used")));
+    }
+
+    #[test]
+    fn explicit_disposal_is_idempotent_and_drops_canonical_storage() {
+        let graph = graph();
+        let (owner, handle) = graph.owner();
+        let before = graph.retained_bytes();
+        graph.dispose();
+        graph.dispose();
+        assert!(graph.retained_bytes() < before);
+        assert!(graph.owner.graph.lock().unwrap().is_none());
+        assert!(!owner.with_graph(handle, &mut |_| panic!("disposed graph used")));
+    }
+
+    #[test]
+    fn owner_is_send_sync_and_disposal_serializes_with_active_access() {
+        fn send_sync<T: Send + Sync>() {}
+        send_sync::<TemporalOwner>();
+        let graph = graph();
+        let (owner, handle) = graph.owner();
+        let (entered_tx, entered_rx) = std::sync::mpsc::channel();
+        let (resume_tx, resume_rx) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            assert!(owner.with_graph(handle, &mut |graph| {
+                entered_tx.send(()).unwrap();
+                resume_rx.recv().unwrap();
+                graph.set_selection([[1; 16]], []).unwrap();
+            }));
+        });
+        entered_rx.recv().unwrap();
+        let (owner, handle) = graph.owner();
+        let disposer = std::thread::spawn(move || graph.dispose());
+        resume_tx.send(()).unwrap();
+        worker.join().unwrap();
+        disposer.join().unwrap();
+        assert!(!owner.with_graph(handle, &mut |_| panic!("post-disposal access")));
     }
 }

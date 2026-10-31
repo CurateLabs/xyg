@@ -1,0 +1,22 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-engine)
+warning: unused variable: `state`
+   --> crates/xyg-engine/src/graphforge/interaction/wire.rs:986:9
+    |
+986 |     let state = s.read_state(Clone::clone)?;
+    |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_state`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `xyg-engine` (lib test) generated 1 warning (run `cargo fix --lib -p xyg-engine --tests` to apply 1 suggestion)
+warning: `xyg-engine` (lib) generated 1 warning (1 duplicate)
+   Compiling xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-wasm)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-core)
+error[E0063]: missing field `graph_session` in initializer of `Instance`
+   --> crates/xyg-wasm/src/temporal.rs:301:28
+    |
+301 |         let mut instance = Instance {
+    |                            ^^^^^^^^ missing `graph_session`
+
+For more information about this error, try `rustc --explain E0063`.
+error: could not compile `xyg-wasm` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

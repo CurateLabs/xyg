@@ -44,7 +44,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    fn validate(&self) -> Result<(), InteractionStatus> {
+    pub(super) fn validate(&self) -> Result<(), InteractionStatus> {
         let finite = [
             self.scale_x,
             self.scale_y,
@@ -89,6 +89,9 @@ impl Camera {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RenderOutput {
     pub revision: u32,
+    /// Source-indexed session state, including transient hover.
+    pub source_node_flags: Vec<u32>,
+    pub source_edge_flags: Vec<u32>,
     pub paint: super::PaintGeometry,
     pub pick: super::PickIndex,
     pub tier: LodTier,
@@ -163,9 +166,9 @@ pub(super) struct Hierarchy<'a> {
 }
 
 /// State a render reads, collected under the same lock as its visibility.
-struct Inputs {
-    node_flags: Vec<u32>,
-    edge_flags: Vec<u32>,
+pub(super) struct Inputs {
+    pub node_flags: Vec<u32>,
+    pub edge_flags: Vec<u32>,
 }
 
 /// A reference resolved against the current publication.
@@ -325,7 +328,7 @@ impl GraphSession {
         Ok(())
     }
 
-    fn collect_inputs(&mut self, state: &GraphInteractionState, vis: &Visible) -> Inputs {
+    pub(super) fn collect_inputs(&mut self, state: &GraphInteractionState, vis: &Visible) -> Inputs {
         let mut node_flags = self.node_style.flags.clone();
         let mut edge_flags = self.edge_style.flags.clone();
         let mark = |set: &ElementSet, flag: u32, nodes: &mut [u32], edges: &mut [u32]| {
@@ -417,6 +420,7 @@ impl GraphSession {
                     let representative = collapse.representative[node];
                     hovered[representative] = true;
                     collapse.flags[representative] |= FLAG_HOVERED;
+                    inputs.node_flags[node] |= FLAG_HOVERED;
                 }
             }
             for edge in 0..self.edge_source.len() {
@@ -426,8 +430,10 @@ impl GraphSession {
                 let (s, t) = (collapse.edge_source[edge], collapse.edge_target[edge]);
                 if hovered[s] && !hovered[t] {
                     collapse.flags[t] |= FLAG_NEIGHBOR;
+                    inputs.node_flags[t] |= FLAG_NEIGHBOR;
                 } else if hovered[t] && !hovered[s] {
                     collapse.flags[s] |= FLAG_NEIGHBOR;
+                    inputs.node_flags[s] |= FLAG_NEIGHBOR;
                 }
             }
             self.work += (hovered.len() + self.hover.nodes.len() + self.edge_source.len()) as u64;
@@ -611,6 +617,8 @@ impl GraphSession {
         let (edge_visual_states, edge_emphasis) = states(&edge_flags);
         let mut output = RenderOutput {
             revision,
+            source_node_flags: inputs.node_flags.clone(),
+            source_edge_flags: inputs.edge_flags.clone(),
             paint: super::PaintGeometry::default(),
             pick: super::PickIndex::default(),
             tier: decision.tier,

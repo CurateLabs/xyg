@@ -1,0 +1,4 @@
+wrote spec/abi/xyg-abi.json
+wrote python/xyg/_abi_generated.py
+wrote packages/xy-node/src/_abi_generated.js
+wrote spec/abi/xyg.h
