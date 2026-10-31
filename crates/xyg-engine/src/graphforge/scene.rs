@@ -99,7 +99,15 @@ pub fn render_graph(document: &[u8], render: &Render<'_>) -> GfResult<RenderedSc
     let (node_metric, edge_metric) = (f64s("node.metric")?, f64s("edge.metric")?);
     let (node_flags, edge_flags) = (u32s("node.flags")?, u32s("edge.flags")?);
     let node_labels = texts("node.label")?;
-    let edge_labels = texts("edge.label")?;
+    // No result layer: the property-graph default view (spec §4.4a). A still
+    // picture cannot zoom-gate relationship types, and edge labels would
+    // outrank node captions in the Scene's label planner, so types stay on
+    // hover/selection (`edge.type`) and in `edge.label` for the interactive mark.
+    let edge_labels = if doc.indices("layer.schema").is_empty() {
+        vec![""; e]
+    } else {
+        texts("edge.label")?
+    };
     let legend_text = texts("legend.text")?;
     let legend_shape = u8s("legend.shape")?;
     let palette = u8s(if render.theme == THEME_DARK {

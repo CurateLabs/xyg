@@ -172,7 +172,14 @@ There is no ABI, request, Scene, or composition-wire version change.
 | `dyad-census` | table-only | category | table, bar-chart | dyad_census |
 | `embedding` | composition-required | embedding | embedding-coordinates, parallel-coordinates | node2vec, graphsage, fast_random_projection, hashgnn |
 | `search` | node-layer | node-search | graph | (find) |
+| `entity_graph` | entity-graph | entity-graph | graph | (base graph) |
 <!-- graphforge-ledger:end -->
+
+`entity_graph` is the ledger's row for the base property graph itself (the
+extension's `entity-graph` disposition): it has no result fields and no
+algorithms, and a request that names it (a base and no result layer) composes
+the default view of §4.4a. Adding the row changes no other entry, so
+`LEDGER_VERSION` and every existing document stay byte-identical.
 
 **Delivery status.** Every schema composes: graph intents (node and edge
 layers, derived edges, ordered overlays; §4.4–4.5), tables and bar charts for
@@ -190,7 +197,8 @@ any mix of, in order:
   `edge_uuid` + `src_uuid`/`dst_uuid` (relationships), or `nodes` +
   `relationships` lists (paths), including lists of those structs — e.g.
   `MATCH (n) RETURN n` and `MATCH ()-[r]->() RETURN r`;
-- flat node tables (`node_uuid`) and flat edge tables (`edge_uuid` plus
+- flat node tables (`node_uuid`, optionally `parent_uuid`: the compound
+  hierarchy, see below) and flat edge tables (`edge_uuid` plus
   `src_uuid`/`dst_uuid` or `source_uuid`/`target_uuid`), UUIDs as
   `FixedSizeBinary(16)` or canonical text;
 - raw packed UUID planes (`base.node_uuid`, `base.edge_uuid`,
@@ -200,10 +208,37 @@ The same entity may appear in many rows (`RETURN a, r, b`); identical UUIDs
 merge (counted as `GF_BASE_MERGED_ENTITIES`), and a relationship seen twice
 must name the same endpoints (`GF_BASE_EDGE_CONFLICT`). Relationships whose
 endpoints are not base nodes fail (`GF_BASE_ENDPOINT_MISSING`). Node display
-names come from a `name` property/column (`label` first for flat tables), the
+names come from the first non-empty of the `name`, `title`, and `label`
+properties/columns, in that order (flat tables included), the
 node type from `labels[0]`, and the relationship type from `rel_type`. Bounds:
 20M nodes, 50M relationships (`GF_COMPOSE_TOO_LARGE`). No layer ever mutates
 the base graph: the composed node/edge order is the base order.
+
+**Hierarchy (`parent_uuid`).** A flat node table may carry a nullable
+`parent_uuid` column (same name as the Python `GraphData` mapping default). A
+null parent is a root. Parents resolve to dense base indices through the same
+UUID validation/lookup as `xyg_graph_projection_create`
+(`projection::resolve_parent_uuid`, also used by `resolve_parents`) and
+must form a forest, validated before anything is composed: an unknown parent is
+`GF_BASE_PARENT_UNKNOWN`, a node naming itself `GF_BASE_PARENT_SELF`, a cycle
+`GF_BASE_PARENT_CYCLE`, a nil parent `GF_BASE_NULL_IDENTITY`, and a node seen in
+two rows with different parents `GF_BASE_PARENT_CONFLICT`. An absent column is
+undeclared; a null row explicitly declares a root. Root/parent declarations
+conflict in either order, while agreeing repeats are accepted. Failure is atomic: no
+document is produced. The hierarchy is part of the document (§5.3
+`node.parent`), so native, direct-browser, Python, and Node hosts see one forest
+and no host lowers parents itself. When a layer hides a parent, its children
+attach to the nearest visible ancestor (recorded as
+`GF_COMPOSE_PARENT_REPARENTED`, count of re-attached children). Ancestor resolution
+memoizes each chain in O(n) using one dense sentinel table: unresolved is
+`COSE_NO_PARENT - 1`, distinct from a resolved root (`COSE_NO_PARENT`). One
+walk finds a known answer and a second retraces the unresolved chain to memoize
+it, without a scratch chain or final vector conversion. The deterministic
+regression bound remains at most 2n parent-link visits, including a
+100,000-deep shared hidden chain. The collector resolves its existing optional
+parent declarations directly, then validates the forest before converting roots
+in place; declaration tri-state and error precedence are unchanged. See the
+[bounded size repair evidence](../performance/graph-s1-size-repair-2026-10-31/README.md).
 
 ### 4.2 Generation identity
 
@@ -273,6 +308,65 @@ field and code, text such as `community 3`, `other communities (4)`,
 shape, and the light and dark palette colors. Hosts render them as the
 chart legend (marker swatches, like the semantic legend) instead of the
 generic `Class n` rows.
+
+### 4.4a Property-graph default view (no result layer)
+
+A request with a base graph and **no result layer** composes the base
+property graph with XYG's default view; no analytical layer or configuration
+is needed. The base is the graph layer, whether it arrives as Cypher entity
+results or as flat tables (§4.1), and the ledger row is `entity_graph` (§3).
+Rust alone owns these defaults, so the Python, Node, and direct-browser WASM
+hosts draw the same graph from the same bytes. Layered compositions keep the
+encodings of §4.4 and are unchanged; the defaults below apply only when
+there is no result layer. (Only `layers: []` is new: a request that carries
+no base still fails with `GF_COMPOSE_BASE_REQUIRED`, and layers still check
+`GF_COMPOSE_GENERATION_STALE` against the base generation.)
+
+| Default | Rule |
+|---|---|
+| Node class | `labels[0]` ranked like any group (§4.4 node-group): the six largest labels (ties by ascending label text) get codes 1–6; with more than seven labels the rest share 7 (`GF_COMPOSE_GROUPS_BUCKETED`, no layer). Unlabeled nodes stay class 0. The palette is the shared categorical palette |
+| Legend | one node row per label class present, labeled with the label text, `other labels (n)` for the shared bucket, and `no label` for class 0 when labeled nodes also exist |
+| Node caption | the first non-empty of `name`, `title`, `label` (§4.1), else the last eight hex digits of the node UUID (the random tail of a UUIDv7); nodes that fell back are counted in `GF_COMPOSE_CAPTION_IDENTITY` |
+| Relationship type | `edge.type` carries it for hover and selection; `edge.label` repeats it with `edge.label_priority` −1, below every node caption (0), so the graph mark's zoom-monotone label plan (`graph_label_plan`) ranks types after captions and shows them as zoom frees room |
+| Direction | when `graph.directed` is 1 every base relationship gets edge `status` 1, the directional-overlay signal that `graph_style` resolves to a target-end arrowhead in both the graph mark and the Scene, with a `directed relationship` legend row. Undirected graphs keep status 0 and no arrowheads (layered compositions keep their per-layer status) |
+| Layout | the graph mark's seeded force layout (§6.3: seed 0, 300 ticks over every composed edge) |
+| Identity | every node and relationship keeps its UUID; parallel relationships stay separate edges and self-loops stay one edge with equal endpoints, both painted by the Scene under their own stable IDs |
+
+Composing the same graph and Version twice yields identical bytes, document
+and Scene alike (the layout is seeded and `libm`-free; §6.3). The canonical
+semantic Scene places each head on the target marker's screen-space outline
+(including its stroke) using the ordinary graph mark's `clip_edge_piece`
+geometry. Circle, square and diamond outlines, parallel routes and self-loop
+return segments are covered by geometric position regressions; checking only
+Scene record counts does not prove direction is visible. Shafts retain their
+routing and stable edge identity. This corrects every canonical semantic Scene
+with directed edges, including analytical and compound scenes; the current
+cross-host/semantic goldens change accordingly. Historical Scene32 refresh
+hashes remain untouched and no longer describe a version-only difference from
+the current geometry.
+
+**Level of detail (recorded, never silent).** The direct-tier Scene is bounded
+to 1,024 nodes plus edges (`GF_COMPOSE_SCENE_TOO_LARGE`); larger graphs paint
+through the native graph mark, whose Rust level-of-detail tiers apply
+unchanged and are recorded by that mark (§28): Direct, Edge sample (edges over
+budget), and Cluster/aggregate (nodes over `node_budget`), with caption
+acceptance by label priority (`xyg_graph_label_accept`; graph-mark.md §6, §7.1).
+Inside the direct tier the Scene's label planner is the caption culler: node
+captions are placed in stable-ID order, truncated to the label bound, and
+dropped when they collide or leave the plot; the default view puts no
+relationship-type labels in the static Scene, because a still picture cannot
+zoom-gate them and edge labels would outrank node captions in that order.
+**Known gap:** the direct-browser WASM view paints that fixed-range Scene
+(`renderWasmScene`: `drag_action: "none"`, one fixed view range, labels baked
+into the Scene), so relationship types appear there on selection only (the
+`xy:graphforge-select` detail carries `type`), not at zoom; zoom-gated types are delivered by the native graph mark
+(`edge.label`). Zoom-gating on the WASM path needs the interactive
+render/pick pipeline of #36 and is tracked on #934.
+Static PNG/SVG export of the default view follows the Scene, and its parity
+with the interactive view is tracked by #935. Accessible selection and
+keyboard navigation of the graph are owned by #36, not by this composition. Notebook and Streamlit
+application proof remains tracked by #1015/#1016. #1009 is closed and is no
+longer a hold on this work; these remaining #934 acceptance gaps are open.
 
 ### 4.5 Derived edges
 
@@ -346,7 +440,7 @@ count)` in the document, never a silent change: `GF_COMPOSE_GENERATION_UNVERIFIE
 `GF_COMPOSE_SHARED_MEMBERSHIP`, `GF_COMPOSE_EMPTY_PATHS`,
 `GF_COMPOSE_PATH_LABELS_OMITTED`, `GF_COMPOSE_PATHS_HIDDEN`,
 `GF_COMPOSE_EMBEDDING_2D`, `GF_COMPOSE_SCENE_EMPTY`,
-`GF_BASE_MERGED_ENTITIES`.
+`GF_COMPOSE_PARENT_REPARENTED`, `GF_BASE_MERGED_ENTITIES`.
 
 ## 5. Wire contract
 
@@ -374,8 +468,9 @@ bytes each), 8 UTF-8, 9 text list (`count + 1` u64 offsets, then UTF-8).
 All little-endian. Sections are keyed by `(name, index)`; `index` is the layer
 for `layer.*` sections. Hosts decode sections generically and ignore unknown
 document sections, so sections can be added without a version bump;
-`composition.version` (currently 1) bumps when an existing section's meaning
-changes. Requests are strict: unknown request sections fail.
+`composition.version` (currently 2) bumps when an existing section's meaning
+changes. Version 2 makes the document the single carrier of the compound
+hierarchy (`node.parent`); sessions refuse any other version. Requests are strict: unknown request sections fail.
 
 ### 5.2 Request (`XYGQ`)
 
@@ -408,6 +503,7 @@ optionally `error.field`. A graph composition holds:
 | `graph.directed`, `base.generation`, `base.counts` | base facts |
 | `node.uuid`, `node.base_row`, `node.name`, `node.type` | identity (hidden nodes removed; `base_row` maps back) |
 | `node.class`, `node.epistemic`, `node.status`, `node.metric`, `node.flags`, `node.label`, `node.label_priority` | semantic planes |
+| `node.parent` (u32), `node.parent.valid` (u8) | compound hierarchy in composed node indices (`u32::MAX` / `0` for roots); present only when a base node table carried `parent_uuid` (§4.1); absent means no hierarchy |
 | `edge.uuid`, `edge.base_row`, `edge.source`, `edge.target`, `edge.type`, `edge.derived`, `edge.layer` | identity and dense endpoints (`edge.derived` 1 marks derived edges; persisted edges keep their UUID) |
 | `edge.order` (i64, −1 none), `edge.path` (u64) | step index and overlay index of ordered steps and Euler trail edges |
 | `edge.class`, `edge.epistemic`, `edge.status`, `edge.metric`, `edge.flags`, `edge.label`, `edge.label_priority` | semantic planes and edge labels (Euler step indices) |
@@ -528,7 +624,7 @@ the `graph` mark with the composition's planes and Rust legend; bar charts,
 parallel coordinates, and embedding scatters attach the same UUID hover rows
 as Node. `encode_graphforge_request` and `decode_graphforge_document` expose
 the raw bytes. `tests/fixtures/graphforge/cross_host.json` pins the request and
-document SHA-256 for 99 cases; the Python generator
+document SHA-256 for 101 cases; the Python generator
 (`scripts/gen_graphforge_cross_host.py`) writes it and both
 `tests/test_graphforge.py` and `packages/xy-node/test/graphforge-cross-host.test.mjs`
 reproduce it.
@@ -683,16 +779,48 @@ another result or generation never matches (generation checks, §4.2).
   required/missing/extra coordinate failures. Coordinate and 2D-embedding
   inputs are derived from the real `node2vec` output
   (`scripts/gen_graphforge_derived_fixtures.py --check`).
-- Python/Node: `tests/fixtures/graphforge/cross_host.json` (99 cases: every
-  contract fixture with its intent, multi-layer render/select, rows and
-  policies, coordinates, and failures) pins request and document digests that
+- Rust (property graph, #934): a zero-layer request composes end to end
+  (`tests/fixtures/graphforge/results/base-property-*.arrow`: labels, captions
+  from `name`/`title`/`label`/identity, a parallel pair, a self-loop, an
+  unlabeled node): UUID identity and order, label classes and legend,
+  captions, relationship-type labels below node captions, arrowheads only when
+  directed, label ranking and bucketing, byte-identical recomposition, and the
+  `entity_graph` ledger row.
+  Arrowhead positions are checked against target outlines for ordinary,
+  parallel and loop edges, including circle/square/diamond nodes.
+- Fixture regeneration (#934): the Core producer
+  `node scripts/gen_graphforge_result_fixtures.cjs <core-module> <results-dir>`
+  clears and rebuilds its output. Run
+  `uv run python scripts/gen_graphforge_ipc_fixtures.py --results-directory <results-dir>`
+  afterward. The Python producer owns both deterministic `base-property-*.arrow`
+  files and `manifest.bases.property` (including generation), preserving all
+  Core-owned manifest fields. This synthetic base is not Core-produced evidence.
+  The compatibility declaration's 0.5.2 manifest digest is refreshed because the
+  index includes this added base; Core result/schema bytes and qualified releases
+  remain unchanged.
+  `tests/test_graphforge_fixture_generation.py` proves file/manifest restoration
+  and repeatability with and without an existing Core manifest; full regeneration
+  is checked with actual Core 0.5.2 in a disposable output directory. Regenerating
+  Core identities also requires regenerating dependent expectation/derived/parity
+  fixtures (§6.2a); do not mix Arrow files from different Core runs.
+- Python/Node: `tests/fixtures/graphforge/cross_host.json` (101 cases: every
+  contract fixture with its intent, multi-layer render/select, the property
+  graph with and without render, rows and policies, coordinates, and failures) pins request and document digests that
   both hosts reproduce, so Python, Node, and WASM agree byte for byte.
 - Native/WASM: `packages/xy-node/test/graphforge-wasm-parity.test.mjs` runs
   every GraphForge contract fixture (plus multi-layer render/select,
-  coordinates, and four failure cases) through the native C ABI and the real
+  coordinates, the property graph, and four failure cases) through the native C ABI and the real
   wasm32 artifact and requires byte-identical documents and Scenes; the
   browser bundle's request framing must equal Node's and decode the same
   identities. `cargo test -p xyg-wasm` checks the adapter against the C ABI.
+  Recovery onto ABI 396 preserves the accepted packaging gates of
+  **1,507 KiB raw / 624 KiB gzip** (`npm run build:wasm`); the historical
+  #934 branch's smaller gates are superseded. The isolated artifact is
+  1,543,118 raw / 638,560 gzip bytes (50 / 416 bytes of headroom; environment,
+  hash and reproduction under browser-wasm.md "Artifact size"). Caption
+  candidates merge serially, short identities use direct hex digits, and class
+  ranking remains a sort-free selection using one code vector for assignment
+  tracking. Default encodings and document bytes are preserved.
 - Browser: `scripts/graphforge_wasm_smoke.mjs` serves only the packaged
   Worker/WASM/client and fixtures under a strict CSP (no `blob:`), paints a
   PageRank + similarity composition through WebGL, maps every painted row to

@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "scope": "S1 explicit functionality budget decision and real packaged-asset validation; not milestone or release acceptance",
+  "environment": {
+    "python": "3.12.15",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "node": "v22.23.4",
+    "rust": "1.96.0",
+    "binaryen": "132.0.0",
+    "profile": "Unchanged O3/fat LTO/codegen1/strip; inline100; Binaryen -O3 --all-features"
+  },
+  "artifact": {
+    "node": "v22.23.4",
+    "optimizedBytes": 1546708,
+    "gzip6Bytes": 639531,
+    "optimizedSha256": "2feaf15adfe770d5ae2f879e38b7495ae3490cd73a79ad6dcc334a66ec0a32c7",
+    "gzip6Sha256": "fe660c404e929c28957f2fbf61e2af8d299cebd9af0b6dd72872b91ed92790a2",
+    "previousRawGate": 1543168,
+    "previousGzip6Gate": 638976,
+    "rawGate": 1547264,
+    "gzip6Gate": 640000,
+    "rawHeadroom": 556,
+    "gzip6Headroom": 469
+  },
+  "sourceManifestSha256": "442f6f8f7038fd83ee21896d0c68704ec05f9e5ed7c2e360d1d440e7e0d38beb",
+  "packagedManifest": {
+    "sha256": "4fbf33cd5c745fe6fd1f987bc851284ad85bddb416a38ca5421ee7ed8bf57560",
+    "data": {
+      "schema_version": 1,
+      "artifact": "xyg-wasm.wasm",
+      "sha256": "2feaf15adfe770d5ae2f879e38b7495ae3490cd73a79ad6dcc334a66ec0a32c7",
+      "bytes": 1546708,
+      "abi_version": 34,
+      "scene_version": 34,
+      "painter_version": 17
+    }
+  },
+  "logs": {
+    "assets.txt.gz": {
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "gzipBytes": 104,
+      "gzipSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18",
+      "exitCode": 0
+    },
+    "browser-foundation.txt.gz": {
+      "rawBytes": 503,
+      "rawSha256": "680236881e4e32eddbeaa5046291d58f1c867844c1c942bfce1a0e7643fc558f",
+      "gzipBytes": 256,
+      "gzipSha256": "1d022585e2496bfc0ed8b13037ba7519decf007b269e8c5d2ebe3ea88a5462b1",
+      "exitCode": 0
+    },
+    "client-build.txt.gz": {
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "gzipBytes": 1056,
+      "gzipSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+      "exitCode": 0
+    },
+    "inventory.txt.gz": {
+      "rawBytes": 89,
+      "rawSha256": "930079e0a5a07ca00d6934b134a1d048f16b064c43e6ed6a41cd5a15dcce78ea",
+      "gzipBytes": 99,
+      "gzipSha256": "fb9674a33af29d70791e579ecd48b87c311ab0ea6415b43d862cfbd8a0018977",
+      "exitCode": 0
+    },
+    "node-tests.txt.gz": {
+      "rawBytes": 10294,
+      "rawSha256": "672689cc38dea2eba1dd5fc82ba7c7deb9d567508923d7d52ca574b7475551ce",
+      "gzipBytes": 1676,
+      "gzipSha256": "ef49e12ce9c42052610359f5c4cb07ee8fdc1352bf3584448e042049319ee6b5",
+      "exitCode": 0
+    },
+    "package-wasm.txt.gz": {
+      "rawBytes": 493,
+      "rawSha256": "3f7b692a834db4e2257ee0d6944a642db4c22a18287044fa5e01a11c04bb55db",
+      "gzipBytes": 200,
+      "gzipSha256": "77806b154e928aa5310f92ea123044285686eb5bcc4ee69d571247688a1a0d7b",
+      "exitCode": 0
+    }
+  },
+  "checks": {
+    "packager": "pass",
+    "assets": "pass",
+    "nodeTests": {
+      "pass": 51,
+      "fail": 0,
+      "skip": 0
+    },
+    "strictCspWorkerBrowser": "pass",
+    "crossHostGolden": "pass",
+    "abi": {
+      "symbols": 529,
+      "version": 396,
+      "status": "current"
+    },
+    "inventory": "preparation regenerated; existing classification and acceptance gaps remain"
+  },
+  "limitations": [
+    "Local package proof; CI toolchain equivalence not established",
+    "No interaction latency or full graph accessibility acceptance",
+    "No final release artifact cohort or API freeze",
+    "Historical broader Node baseline failures retained separately"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "node": {
+    "command": "node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs packages/xy-node/test/graph.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/temporal*.test.mjs",
+    "exitCode": 0
+  }
+}

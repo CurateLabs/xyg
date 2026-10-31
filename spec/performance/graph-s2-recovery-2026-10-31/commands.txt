@@ -1,0 +1,83 @@
+# Environment: README. Diagnostic-only artifact must be measured before copying.
+# cp target/task-tmp/s2-recovery/optimized.wasm packages/xy-client/dist/xyg-wasm.wasm
+# cp spec/performance/graph-s2-recovery-2026-10-31/artifact-contract.mjs target/task-tmp/s2-recovery/artifact-contract.mjs
+# abi-generator (exit 0)
+uv run python scripts/gen_abi_manifest.py --check
+# abi-parity (exit 0)
+uv run python scripts/check_abi_parity.py
+# abi-smoke (exit 0)
+uv run python scripts/abi_smoke.py
+# append-smoke (exit 0)
+uv run python scripts/append_stream_smoke.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+# artifact-contract-initial (exit 1)
+node target/task-tmp/s2-recovery/artifact-contract.mjs
+# artifact-contract (exit 0)
+node target/task-tmp/s2-recovery/artifact-contract.mjs
+# artifact-measure (exit 0)
+node spec/performance/graph-s2-recovery-2026-10-31/measure.mjs
+# clippy (exit 0)
+cargo clippy --workspace --all-targets -- -D warnings
+# cross-host-goldens (exit 0)
+uv run python scripts/gen_graphforge_cross_host.py --check
+# focused-session (exit 0)
+cargo test -p xyg-engine --lib graphforge::interaction::
+# hooks (exit 0)
+uv run --with pre-commit pre-commit run --all-files
+# native-backend (exit 0)
+uv run python -c 'import xyg.kernels as k; print(k.BACKEND)'
+# native-build (exit 0)
+cargo build --release
+# node-native (exit 0)
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-cross-host.test.mjs packages/xy-node/test/graph.test.mjs packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/composition.test.mjs packages/xy-node/test/temporal.test.mjs packages/xy-node/test/temporal-graph.test.mjs packages/xy-node/test/temporal-controller.test.mjs
+# node-wasm-diagnostic (exit 0)
+node --test --test-concurrency=2 --test-timeout=20000 packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs
+# ownership-corrected (exit 0)
+uv run python scripts/verify_ownership.py
+# ownership (exit 2)
+uv run python scripts/check_ownership_audit.py
+# package-wasm (exit 1)
+node js/package-wasm.mjs
+# python-tests (exit 0)
+uv run pytest -q tests/test_graphforge.py tests/test_graphforge_scene.py tests/test_graphforge_semantic_evidence.py tests/test_graphforge_fixture_generation.py tests/test_graphforge_contract_corpus.py tests/test_cose_native_parity.py tests/test_temporal_columns.py tests/test_temporal_graph_native.py tests/test_temporal_controller.py tests/test_graph_style.py tests/test_graph_semantic_mapping.py -k 'not browser'
+# render-smoke (exit 0)
+uv run python scripts/render_smoke_nonumpy.py /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome
+# ruff-check (exit 0)
+uv run ruff check .
+# ruff-format-check (exit 0)
+uv run ruff format --check .
+# rustfmt-touched (exit 0)
+rustfmt --edition 2021 --config skip_children=true --check crates/xyg-engine/src/graphforge/interaction.rs crates/xyg-engine/src/graphforge/interaction/layout.rs crates/xyg-engine/src/graphforge/interaction/render.rs crates/xyg-engine/src/graphforge/interaction/tests/session.rs
+# semantic-goldens (exit 0)
+uv run python scripts/gen_graphforge_semantic_fixture.py
+# ty (exit 0)
+uv run ty check
+# wasm-build-final (exit 0)
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+# rust-before (exit 0)
+cargo test --workspace
+# rust-after (exit 0)
+cargo test --workspace
+# session-after (exit 0)
+cargo test -p xyg-engine --lib graphforge::interaction::
+# regressions-before (exit 101)
+cargo test -p xyg-engine --lib recovery_
+# aggregate-before (exit 101)
+cargo test -p xyg-engine --lib graphforge::interaction::tests::session::recovery_aggregate_cap
+# client-build (exit 0)
+node js/build.mjs
+# wasm-build (exit 0)
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+# uv-setup (exit 1)
+uv sync --group dev
+# uv-setup-retry (exit 0)
+uv sync --group dev
+# npm-setup (exit 0)
+npm ci
+# node-setup (exit 0)
+npm ci --prefix packages/xy-node
+# hooks-final (exit 0)
+uv run --with pre-commit pre-commit run --all-files
+# ruff-check-final (exit 0)
+uv run ruff check .
+# ruff-format-check-final (exit 0)
+uv run ruff format --check .

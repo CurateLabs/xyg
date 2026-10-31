@@ -111,7 +111,7 @@ def _ipc(value: Any, label: str) -> bytes:
 
 def encode_graphforge_request(
     *,
-    layers: Sequence[Mapping[str, Any]],
+    layers: Sequence[Mapping[str, Any]] = (),
     base: Mapping[str, Any] | None = None,
     select: Iterable[str] | None = None,
     render: Mapping[str, Any] | None = None,
@@ -122,14 +122,13 @@ def encode_graphforge_request(
     ``base``: ``tables`` (GraphForge Arrow IPC bytes: Cypher entity results or
     flat node/edge tables) and/or packed planes ``node_uuid``, ``edge_uuid``,
     ``edge_source_uuid``, ``edge_target_uuid``; plus ``generation`` (UUID) and
-    ``directed``. ``layers``: ``result`` (Arrow IPC bytes), ``intent``
+    ``directed``. ``layers`` (optional; none composes the base property graph
+    with XYG's default view): ``result`` (Arrow IPC bytes), ``intent``
     (required), ``result_id``, ``generation``, ``missing``, ``extra``,
     ``rows``, ``coordinates``. ``select``: node/relationship UUIDs painted
     selected. ``render``: ``{width, height, theme, title}`` also lowers a graph
     to the direct-tier canonical Scene.
     """
-    if not layers:
-        raise _invalid("layers must be a non-empty sequence")
     base = dict(base or {})
     sections: list[tuple[str, int, int, Any]] = []
     for index, table in enumerate(base.get("tables") or ()):
@@ -207,7 +206,7 @@ def compose_graphforge_request(request: bytes) -> bytes:
 
 def compose_graphforge(
     *,
-    layers: Sequence[Mapping[str, Any]],
+    layers: Sequence[Mapping[str, Any]] = (),
     base: Mapping[str, Any] | None = None,
     select: Iterable[str] | None = None,
     render: Mapping[str, Any] | None = None,

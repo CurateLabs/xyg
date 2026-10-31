@@ -214,12 +214,46 @@ interactive path:
 | `opt-level = "s"` | 877 KB | 311 KB | 21.1 / 203 ms |
 | `opt-level = "z"` | 777 KB | 280 KB | 38.3 / 363 ms |
 
-The raw gate moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
+Current packaging gates are **1,511 KiB raw / 625 KiB gzip6**, a recorded
+composition-v2 hierarchy decision for #36 S1. On the validated combined graph
+base, the module measured 1,540,374 raw / 637,276 gzip bytes. Hierarchy UUID
+resolution, forest validation and hidden-parent reattachment raised this to
+1,547,598 / 640,237. Four measured sharing candidates retained a direct parent
+resolver and compact ancestor memo, recovering 890 raw / 706 gzip bytes without
+changing output bytes, validation, or the deterministic `<=2n` work bound.
+The resulting module is **1,546,708 raw / 639,531 gzip bytes**, a net addition
+of 6,334 / 2,255 bytes over the combined base. The smallest next-KiB limits are
+1,547,264 / 640,000 bytes, leaving **556 / 469 bytes**. These limits admit the
+reachable hierarchy functionality; the native session skeleton is not yet
+WASM-exported. They reserve no capacity for later interaction slices and make
+no runtime-performance claim. Rust 1.96.0, release O3/fat LTO/codegen1/strip,
+inline threshold 100, pinned Binaryen 132 and `-O3 --all-features` remain fixed.
+The earlier failed gates and all four candidate measurements remain in the
+[sharing receipt](../performance/graph-s1-size-repair-2026-10-31/README.md);
+the [packaging decision receipt](../performance/graph-s1-package-budget-2026-10-31/README.md)
+records the subsequent package validation separately.
+
+The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
 After merging main `4631927`, the local optimized build measures **1,542,222 raw
 bytes** and **636,944 gzip bytes** (Node `gzipSync`, default level 6), compared with
 the earlier merge-base build's 1,539,454 raw / 635,754 gzip. The gates remain
 1,507 KiB raw / 624 KiB gzip, with 946 / 2,032 bytes of headroom respectively.
+
+The #934 property-graph recovery onto accepted main `ec90340c` keeps those
+same gates and the existing compiler/optimizer profile. Local packaging with
+Rust 1.96.0, Node 24.21.0 and pinned Binaryen 132 (`npm run build:wasm`) measures
+**1,543,118 raw / 638,560 gzip bytes** (Node `gzipSync`, level 6), SHA-256
+`907551f3a16fbe7127ea243d0226c7e3a552595cf663190a0b0ac5482002ad15`.
+Headroom is **50 raw / 416 gzip bytes**. The caption decoder merges candidates
+one at a time, short-UUID captions use the same eight hex digits directly, and
+the shared class-ranking helper reuses its code vector to track assigned ranks.
+These preserve output semantics and fit the existing gates; no runtime speedup
+is claimed. Native ABI 396 and the WASM/Scene/painter versions are unchanged.
+The actual packaged WASM is checked against native for all GraphForge parity
+fixtures. Combined milestone changes must rerun packaging after integration;
+this measurement covers the isolated recovery only.
+
 
 ABI 30 camera transport and closed polygon caches make the default O3 artifact
 1,060,579 raw bytes. The target-specific `.cargo/config.toml` keeps O3, fat LTO,
@@ -265,7 +299,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging now enforces 1,507 KiB raw / 624 KiB gzip limits (including the XYPB v17 decision above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+packaging now enforces 1,511 KiB raw / 625 KiB gzip limits (including the recorded S1 hierarchy decision above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -1260,6 +1294,45 @@ remain unchanged. Rust release O3/inline100 and pinned Binaryen132 O3 remain
 unchanged. An O3 shrink-level1 experiment produced identical bytes; Oz reduced
 raw size to1,434,576 but increased gzip to598,701, so neither solves the gates.
 No alternate compiler profile is adopted and no runtime speedup is claimed.
+
+**Graph hierarchy composition (#36 S1), recovered on the current integration base.**
+Composition version 2 carries `parent_uuid` resolution, forest validation and
+hidden-parent re-attachment in the shared Rust compose path. The old branch's
+historical 1,480 KiB / 612 KiB allowance is superseded by the current limits
+above: **1,543,168 raw bytes / 638,976 gzip6 bytes**. Recovery does not raise
+these gates or change the pinned Rust/Binaryen profile. The retained interaction
+session is not exported from WASM until S3. The combined optimized build measures
+**1,547,598 raw / 640,237 gzip6 bytes**, exceeding the unchanged gates by
+**4,430 raw / 1,261 gzip bytes**. Packaging fails; diagnostic functional tests do
+not waive that failure. Source/artifact hashes, reproduction commands and narrow
+sharing candidates are in [S1 recovery evidence](../performance/graph-s1-recovery-2026-10-31/README.md). The separate
+[bounded size repair](../performance/graph-s1-size-repair-2026-10-31/README.md)
+retains shared parent-UUID validation, removes hierarchy intermediates and uses
+one sentinel-coded ancestor memo table. Its unchanged-profile build measures
+**1,546,708 raw / 639,531 gzip6 bytes**, saving **890 / 706 bytes** from the
+recovered S1 tree. It still exceeds the unchanged limits by **3,540 / 555 bytes**;
+the package gate remains **FAIL**. Rejected boundary candidates and their hashes
+are retained separately; the historical failed S1 receipt is unchanged.
+
+**Historical retained session render (#36 S2) size check (old branch).** S2 adds the Rust-only session
+render pipeline and `TemporalGraph::world_parts`; no WASM export changed, so
+the session code is not linked. The packaged artifact measures 1,514,304 raw
+bytes (1,216 under the unchanged 1,515,520-byte gate; +1,686 over S1) and
+622,593 level-6 gzip bytes (4,095 under the 626,688-byte gate; −1,452 against
+S1's 624,045). Neither budget is raised; the raw margin is thin, and the
+session ABI slice owns the next size decision. This old-branch measurement is
+not evidence for the recovered integration tree. The current S1 limits are
+1,511 KiB raw / 625 KiB gzip6, with the unchanged profile; see
+[S2 recovery evidence](../performance/graph-s2-recovery-2026-10-31/README.md)
+for the actual recovered package result. Recovery does not raise either limit.
+The recovered unchanged-profile module measures **1,547,915 raw / 640,615
+gzip6 bytes** on Node 22.23.4, SHA-256
+`544d97c615a96e31cdca66cac0d577b954ee337e50e2e589690dc348d7c852bc`.
+It exceeds the accepted S1 gates by **651 raw / 615 gzip bytes**. The real
+package command rejects the gzip gate before publishing any assets; an
+independent measurement records both exceeded limits. Diagnostic native/WASM
+parity does not waive this package failure. A separate deliberate decision is
+required before packaging can be accepted.
 
 Bounded native/WASM selected snapshot and hierarchy membership checks, exact
 artifact hashes, four fresh-process startup ABBA pairs and reproduction commands

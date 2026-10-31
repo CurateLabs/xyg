@@ -715,6 +715,15 @@ Forbidden:
 | `crates/xyg-engine/src/geo_rows_protocol_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_frame_lease_tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-core/src/lib.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
+| `crates/xyg-engine/src/graph_interaction_state.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/composed.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/identity.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/layout.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/render.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/session.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/walk.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-wasm/src/lib.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; WASM ABI 25 exports engine-owned default-palette version/rows/indexed RGBA8 for #868 | #59 |
 | `crates/xyg-wasm/src/compound.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/graphforge.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; WASM ABI 27 GraphForge `XYGQ` → `XYGF` compose | #59 |

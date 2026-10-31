@@ -1,0 +1,134 @@
+{
+  "scope": "Local S1 history-preserving recovery only; package gate FAIL; #36 remains incomplete",
+  "integrationBase": "465ec0a0acc16340947ea599fee7e0486f12b6d0",
+  "integrationTree": "04b437686f5e858bb68fc72379f7ce47064e8ca1",
+  "sourceHead": "95c9f804c2f615038c3669ae78295bab5adb8c4e",
+  "recoveredTreeBeforeEvidence": "39d5d42980289b996224797d26be55361c5832d2",
+  "buildSourceManifestSha256": "e6a15c901d516844b460626932f0cb9999a23d96b437ee008739ff16d4debd2f",
+  "environment": {
+    "rust": "1.96.0 (ac68faa20 2026-05-25)",
+    "binaryen": "132.0.0",
+    "node": "v24.21.0",
+    "python": "3.14.4",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "browser": "Playwright Chromium 1248 chrome-linux64",
+    "wasmProfile": "workspace release O3/fat LTO/codegen-units=1/strip; wasm inline-threshold=100; Binaryen -O3 --all-features; unchanged"
+  },
+  "wasm": {
+    "sourceBytes": 1706762,
+    "sourceSha256": "6ad6e56e235701aebea5aa1e1f446f7efc9dd395e742f283dd20661d0ef738ce",
+    "optimizedBytes": 1547598,
+    "gzip6Bytes": 640237,
+    "optimizedSha256": "a528de02966ec317d33af4c7473d6f3916181664668f755ef1be097ac6eca749",
+    "rawGate": 1543168,
+    "gzip6Gate": 638976,
+    "rawExcessBytes": 4430,
+    "gzip6ExcessBytes": 1261,
+    "packageStatus": "FAIL",
+    "functionalArtifact": "target/xyg-s1-diagnostic.wasm copied to ignored packages/xy-client/dist/xyg-wasm.wasm for functional tests only; no packaged manifest or inline asset set"
+  },
+  "nativeAbi": {
+    "version": 396,
+    "symbols": 529,
+    "signatureChange": false
+  },
+  "validation": {
+    "rustWorkspace": {
+      "passed": 1830,
+      "failed": 0
+    },
+    "pythonFocused": {
+      "passed": 600,
+      "skipped": 11,
+      "failed": 0
+    },
+    "nodeGraphTemporal": {
+      "passed": 156,
+      "failed": 0,
+      "skipped": 0
+    },
+    "nodeBroad": {
+      "tests": 720,
+      "passed": 703,
+      "failed": 15,
+      "cancelled": 1,
+      "skipped": 1
+    },
+    "nodeBaselineLive": {
+      "tests": 27,
+      "passed": 13,
+      "failed": 13,
+      "cancelled": 1
+    },
+    "nodeBaselineGeom": {
+      "tests": 2,
+      "passed": 0,
+      "failed": 2
+    },
+    "rustfmt": {
+      "status": "FAIL",
+      "sameAffectedFilesOnIntegrationBase": 90
+    },
+    "clippy": "PASS --workspace --all-targets -- -D warnings",
+    "abiSmoke": {
+      "passed": 673
+    },
+    "ownership": "PASS 483 production files",
+    "ruff": "PASS check and format --check full worktree",
+    "preCommit": "PASS full worktree",
+    "ty": "PASS",
+    "renderSmoke": "PASS",
+    "appendSmoke": "PASS",
+    "fullPytest": "not run; focused affected suite only"
+  },
+  "compatibilityManifestDigests": {
+    "results": "9f50ce9df24ac263e4de61299f593cec38c3b3f4eb995bc2ec1d058e3af5676b",
+    "results-0.6.0-rc.5": "5cfec9ade2ae502c05b0c041a0b316b1740283dc8ae17bd57de898af978438a0"
+  },
+  "baselineNativeSha256": "95eaa0372637d9e778015810ada138ef39c3a6fd68c69f9696c3f864af5be34a",
+  "logSha256": {
+    "cargo-test.txt.gz": "2cfd2a968634f5e789a304ee1bd3e3d52c3fd27ecaefd3bcc950324fc5a4f432",
+    "native-build.txt.gz": "effcfe6b7f1610aa5b64a298f99ed538b9e1b2b1dcd6737995fd235102c20079",
+    "wasm-build.txt.gz": "301035f0f763e03312c3105faf6c5bc9a144b5ce81a0935d745676bac5227152",
+    "client-build.txt.gz": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+    "python-tests.txt.gz": "5c0fde1134580a8d5534b14cb87e58158cece9426d3521fec1fde93628944743",
+    "node-final.txt.gz": "bc6849ebada9b41313540821e4527cc470da536739800fd65cb402497517667c",
+    "node-graph.txt.gz": "b2280511a54740f354e3e16883eee55d34ec98e20be63f9187e5bbeea50c54f8",
+    "node-baseline-live.txt.gz": "2f6b4ab823f5f35fb9937629add25d46912cf4932deb314ea23d34d412d9e8fa",
+    "node-baseline-geom.txt.gz": "f558b7c9c209429b85233875f444c4f9282eec6d07b893b16eb1c4c2b487333a",
+    "package-wasm.txt.gz": "271c9a28c224bf3e1775ae5bdf9771e298ae4ba15e16d1e1af9096da1405e359",
+    "artifact-measure.txt.gz": "5156c01bbe5e47dff1f017d23970a6363362a9f8472515cd4da901bac2ebf888",
+    "abi-smoke.txt.gz": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+    "render-smoke.txt.gz": "e86d5855e5a476bcce1d748f6a7a764f18a66ba69084968e77a1b7b5026f30b7",
+    "append-smoke.txt.gz": "fd0cd87c74cb396f642d4077bb59a12cc38e9f75b26f24a69a7239440fe07bbe",
+    "clippy.txt.gz": "3ff9d43ab681387b88af098fc169efa003439ed1ff2112ad56649f587a64e73c",
+    "fmt.txt.gz": "e5b4c04c1bbd2b94d050df49351626f0a85b3e45acfbdab43e30e3dc7abf626b",
+    "base-fmt.txt.gz": "f7280af0896cfd9efc2f0d30fff61a3713019997ffea18ef9b0863491b7c9f8f",
+    "ty.txt.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "hooks.txt.gz": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+    "fixture-producer.txt.gz": "91f70093752506849ead14f10a19ff52d871eb16f9443ddf5fb3ad68a68a8815"
+  },
+  "rawLogSha256": {
+    "cargo-test.txt": "cb934cb99d1c69ad09f54fad0c81debb554dc75c756d96862a8c1504c11d86ec",
+    "native-build.txt": "35e6dc7440c6f4edef273912ab30fba2d4758dc67ab3284181c15e564a93e1d3",
+    "wasm-build.txt": "b244ad111c26cb2ceb263e88ae66a98566f87d3ab11239498dc6eb0f56280d57",
+    "client-build.txt": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "python-tests.txt": "726eccc1e1326a7203da8f90af09e6ded5ca0689822332e8f4dfcf380d7a9b41",
+    "node-final.txt": "f92fc9179e17e304c6bc3277d7de90da5e1a5a854e24a30baac8a85b9ae2ace7",
+    "node-graph.txt": "dc19562c2001b53e90337090ce26c83df6c6f4cbc209359156acda3f1ae998ce",
+    "node-baseline-live.txt": "7b1261b05b6c6dce9b01b04bbca709eec08e0923f5ea6cbff1cf90a42dc7ded1",
+    "node-baseline-geom.txt": "603f0a4457934e7ab5f130a78cc0c889e0cc7ef2ed8e62aadc26787825d5591b",
+    "package-wasm.txt": "241537d5b85ade703cc5b44befadeb93521f03db4871616eaaf684e3bf6300dc",
+    "artifact-measure.txt": "d8c6cbecb244042cd365e8c3c6b2d9f0cb9a13620014aa4e905973132b54b2cd",
+    "abi-smoke.txt": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+    "render-smoke.txt": "ad5d2219068dfc60b3ab02238ac10d10cfa033b897cb21f321bf5cbd0095d128",
+    "append-smoke.txt": "548972063af5f6a904d7d159e16782ced0d669677eda6cb6cd184f43c773ad75",
+    "clippy.txt": "cba19276e31c88536a8ad1c1127ddd31dc477a3da5787fbb84848dd8b3994047",
+    "fmt.txt": "f5642ce0df43210bdac28d2395adaad115fe04e5ce92ed54257300ff40746d2f",
+    "base-fmt.txt": "eed9d95ae7d5c609be35bccee90715abf7d4403a8f17383622ce51207dea137e",
+    "ty.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "hooks.txt": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+    "fixture-producer.txt": "42328ffd695f07553dd047a0d5d119d05ed37703904cfdc84029422687e60f96"
+  },
+  "logCaptureNotes": "Raw logs compressed losslessly with gzip mtime=0; node-final includes sparse NUL bytes from restarting a redirected interrupted runner."
+}
