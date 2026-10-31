@@ -38,10 +38,9 @@ export async function qualifyStreamlitGraphForge(browser, url, output, paint) {
     // Expanding previews can scroll the selector offscreen. Scroll before
     // opening its portal: scrolling an open Streamlit menu dismisses it.
     await input.scrollIntoViewIfNeeded();
-    await input.fill(kind);
-    await page.getByRole('option', { name: kind, exact: true }).waitFor();
-    await input.press('ArrowDown');
-    await input.press('Enter');
+    await input.click();
+    // Commit the exact option; input text alone is not app state.
+    await page.getByRole('option', { name: kind, exact: true }).click();
   };
   const current = async kind => {
     const element = page.locator('iframe');

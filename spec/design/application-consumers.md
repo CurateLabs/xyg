@@ -69,6 +69,8 @@ AppTest exercises explicit same-input script reruns and switch-away/return
 determinism. Two browser switch cycles per graph require exactly one iframe,
 the same document on return, fresh painted views, and observed CDP destruction
 of each outgoing iframe's default execution context.
+The browser selects the exact visible Chart option before checking the
+committed caption and settled iframe; typed filter text is not a selection.
 
 This is snapshot-document lifecycle evidence. The app has no handle to call
 `ChartView.destroy()` on the outgoing frame, and the tests do not inject one;
