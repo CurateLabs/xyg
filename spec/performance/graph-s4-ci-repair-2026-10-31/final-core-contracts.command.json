@@ -1,0 +1,13 @@
+{
+  "name": "final-core-contracts",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\ncargo test -p xyg-core --offline\nuv run python scripts/abi_smoke.py\nuv run python scripts/verify_wasm_assets.py\nuv run python scripts/check_release_inventory.py --write\nuv run python scripts/check_release_inventory.py"
+  ],
+  "exitCode": 0,
+  "seconds": 25.598,
+  "rawSha256": "f501bdbf678eddfa67796fcfe60ad931900208837a6a643a93d4773462a84d52",
+  "log": "final-core-contracts.txt.gz",
+  "gzipSha256": "8322315253896d0142b852ed522ed649fe631e0860a07020cbd50654ed0a83d2"
+}

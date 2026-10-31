@@ -1,0 +1,15 @@
+{
+  "name": "temporal-after",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-wasm",
+    "--offline"
+  ],
+  "exitCode": 0,
+  "seconds": 2.634,
+  "rawSha256": "fbea5e2f334af3ea964b17261db8848925279c36e8908a1830363d220803e3de",
+  "log": "temporal-after.txt.gz",
+  "gzipSha256": "b1b392fd9d24d2cb8d19a8e94c2f6a6a8cc7c2401dbd9432e9ded18780a093b8"
+}

@@ -1,0 +1,19 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-engine)
+   Compiling xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-wasm)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-core)
+error[E0308]: mismatched types
+    --> crates/xyg-wasm/src/lib.rs:1887:63
+     |
+1887 |                 std::ptr::copy_nonoverlapping(bytes.as_ptr(), xyg_wasm_arena_ptr(handle), bytes.len());
+     |                 -----------------------------                 ^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `*mut u8`, found `usize`
+     |                 |
+     |                 arguments to this function are incorrect
+     |
+     = note: expected raw pointer `*mut u8`
+                       found type `usize`
+note: function defined here
+    --> /rustc/ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96/library/core/src/ptr/mod.rs:531:20
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `xyg-wasm` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

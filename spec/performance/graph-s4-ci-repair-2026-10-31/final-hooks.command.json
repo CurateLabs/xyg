@@ -1,0 +1,13 @@
+{
+  "name": "final-hooks",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\nuv run --with pre-commit pre-commit run --all-files\nuv run ruff check .\nuv run ruff format --check ."
+  ],
+  "exitCode": 0,
+  "seconds": 0.677,
+  "rawSha256": "397690c4061cce6e50d3ab4c1a853c216fb61c5180e9190529660d31d9be3e4c",
+  "log": "final-hooks.txt.gz",
+  "gzipSha256": "d50ec71ce01be89829f2ed6e74dcc6624a28089f9b1dbf5aa84856c03ed2b141"
+}

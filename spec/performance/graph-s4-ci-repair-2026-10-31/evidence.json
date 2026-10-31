@@ -1,0 +1,1712 @@
+{
+  "scope": "real CI-repaired source shipping assets; native ABI 398; no release acceptance",
+  "artifactCommit": null,
+  "acceptedMain": "be7eb1d012f01c56f4317646eaf32f4164adf7e9",
+  "reviewedParent": "504479e4b59db92cc7d960fa428508c67df9b95f",
+  "historyMerge": "1cd5d42e1677e8ca5c50d92175597140de8ed554",
+  "nonreceiptBinaryFullIndexDiffSha256": "695f80876b3da490f9b4334a76272eb020baa8c29040095b3437e69a6beeb860",
+  "sources": {
+    "crates/xyg-core/src/graphforge_session_ffi.rs": "067e86421a9bea9166fd3799b1c65c7463be0508f68515299f75fea336c3a108",
+    "crates/xyg-core/src/lib.rs": "d2c7d4f45317bffe66902ed5efe6622cd47034ca4c64d2cd02a822063a8265f7",
+    "crates/xyg-engine/src/coordination.rs": "adb6d8fe9f6b509b278a7cddd62acdf57ab909353ed95889a94e3e74b5f832b4",
+    "crates/xyg-engine/src/graph.rs": "646c8afefd36de445647c2f7857fde92a954e85df24b195170662a91fda99b3c",
+    "crates/xyg-engine/src/graphforge/container.rs": "42b5de0711eec6fb4d629dc65a00f6baa911d593ba802200c78ba6dd71b29b40",
+    "crates/xyg-engine/src/graphforge/identity.rs": "83e33ebf27961473a4eaa18879f835ef8691a6057280aa801392288368cef1f0",
+    "crates/xyg-engine/src/graphforge/interaction.rs": "495682687facbea47eac003996e095efc7c5ae1cf83fde7038f25af19edbd1bf",
+    "crates/xyg-engine/src/graphforge/interaction/coordination.rs": "d4bd1ce61fd387edb9682fc64745f1c57f8ea66dfbf46ceb06d17015f8789001",
+    "crates/xyg-engine/src/graphforge/interaction/layout.rs": "8853a6510df464e7468b3f54a92e5386ee166b0f31d96e9e9109b91ad164e0fb",
+    "crates/xyg-engine/src/graphforge/interaction/paint.rs": "02d7cb7c2fb95c6d650ec36bb2c30baaea0f698f0fbb4fb1f257984a50c34821",
+    "crates/xyg-engine/src/graphforge/interaction/render.rs": "7bb693369e54ff23107b98d73dbe22ca4447fa3e9d4bf9e77d90d0577319a36b",
+    "crates/xyg-engine/src/graphforge/interaction/tests.rs": "70dd5a8c6fcd6266828a79cafa58ede02b4293278c65fce2a052a0704f8784d2",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "fd2b97753ff41c4edbbb5a008caca23a51d778f19495efb63cd239f95f00b3fe",
+    "crates/xyg-engine/src/graphforge/interaction/update.rs": "f1ecd90e843c0f273f8013bc7cc2191131b8508e9b6c2faf5d28e354bf6019ca",
+    "crates/xyg-engine/src/graphforge/interaction/walk.rs": "e9604ea515297a69c4373de15c2416e36a3561454dcb9d42ccd36b734df7510b",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "e5f87a0454eb9a79c42fc87783f29d6c6a812cb6d1a22bfecf45465502706c7f",
+    "crates/xyg-engine/src/graphforge/interaction/wire_paint.rs": "d68719f5ca7651ad3556f0fb34eb0978fd0f2c7feec4a9495ca35b408562c7b9",
+    "crates/xyg-wasm/src/graphforge_session.rs": "80629aa8a9b3e45c0284911d3825c31ccf3739b791f35f1e9e2d564ba754147e",
+    "crates/xyg-wasm/src/lib.rs": "577dc34491d705fa67a0ea51827d490821a742bac64cf6a999c1180e2a01dc56",
+    "crates/xyg-wasm/src/temporal.rs": "ea07985cd082b7a7a7c28cb54f60fc8cf08c895335a268bbee4241485ede9472",
+    "crates/xyg-wasm/src/temporal_graph.rs": "c0f3c19a6c34818c116f556bef1d51e295b55d8a2da429979bdedf861d3c111a",
+    "js/package-wasm.mjs": "3da52f2cce716e17bcf7a32ae497194c5bbdfdb0cacfd0c630231b6d5e12b4e0",
+    "js/src/49_wasm_graphforge.ts": "8be17735f6ef5c1783657c49ae59f3cde1421a6298fc31bc9a8487fe0918f0e9",
+    "js/src/wasm_abi_generated.ts": "e6b28e5a0a93b024d8e777f2cce6a011354a97803b1fb2d3905ece11d23c755a",
+    "packages/xy-node/src/_abi_generated.js": "6029bc01cbf421a97415b82c86fec45e710a2184c804c1a0fc4ece73ccac34dd",
+    "packages/xy-node/test/graph-session-wire.test.mjs": "9ccec9d583ea65e153b5a751f379a57dc2d727caa89bde7b6693e7ec5819b6a2",
+    "python/xyg/_abi_generated.py": "2bd6ed6b088bb0af13442021836d1632773cfecc50ac4a900e5639e7d6553062",
+    "scripts/gen_abi_manifest.py": "66e426507717973dfdf463bb586e3082be909e995c54ec8e128a52147ad0ec1c",
+    "spec/abi/xyg-abi.json": "a3a3f37e28339ed99ff9c1e3a6a7365ee90742a6a1836f2586e9ffdde144e0be",
+    "spec/abi/xyg.h": "479ac3299e0a809d93278eedd70b0e646363942b986ec41979da685c4d1fd97f",
+    "spec/api/graphforge-integration.md": "887882e2d751f2e84c8aad6475a1b914395f66e139dbcf375199c0b1e65fa74d",
+    "spec/design-dossier.md": "92854bfbd8f256dd57d79236209a2369a8b3f3c7fb8a548335b4da89cdccf200",
+    "spec/design/browser-wasm.md": "ca6b210e04ac587238e60e11db885f7234cd607690b8ff17fbc52b36f70e8bf9",
+    "spec/design/graph-interaction.md": "70aed60f2ab7c3eb3081d35f59ab04b3fa14b936cf717a78047504fd1b50d7e9",
+    "spec/design/graph-mark.md": "51872982cadaef4426124f7b5cfa26b56612080e522564765fffeacfb1ea1993",
+    "spec/design/graphforge-compositions.md": "8b78b20c3e88e2b245630610527c7b7d435f9d743ff5a2c4775dcaa0d19d8d7f",
+    "spec/design/ownership-audit.json": "c31afb3a954bf477cdcd8c031376047412bbb6e4ca6a0255a27e08042f0d5e11",
+    "spec/design/ownership-audit.md": "1df6524b47ea708a0af55be68a3718468d972fed102d932c5629ac5069478a74",
+    "spec/releases/0.6.0-api-inventory.json": "ce990154a264e452c579a715c24ea3e327c2bc76d590072566779e73d265a8a8",
+    "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77",
+    "tests/browser/graph_session_encoder_test.mjs": "f51fb465225419378e9f1f4759548b93043564fe801acb9b78fc59aa184204e1",
+    "tests/fixtures/animation_emit_cross_host.json": "6622f9d5dbeafc4358d74d0448aaa4786f378062e91b4bb39dc48e6a44a35646",
+    "tests/fixtures/default_styled_emit_cross_host.json": "22518847d00a042bb27f3d1e17421e3090643305d02bf3b545b00c38b1d07753",
+    "tests/fixtures/density_emit_cross_host.json": "09efa3b65013f79d90b7a51f386ceec20f26a93e8c423b4ab5970d909305b1cd",
+    "tests/fixtures/force_emit_cross_host.json": "a30fb8e3351bb9c2c5a8240c4e54c828ddad6bf443fc4a1fa7984cdeab3e24d3",
+    "tests/fixtures/geo_cross_host.json": "e35cb5d978ab5a2d34901a7d590582667789305ed02f8711b0ac8ad048086ca9",
+    "tests/fixtures/payload_attach_cross_host.json": "9c7a02348c2820279071ea15dda11973e45a0dc5b3c7b48e0127367a9335616c",
+    "tests/fixtures/payload_chrome_cross_host.json": "769f5a17f8f27337f287f458a22201cdb0e22ea8bdfa9f44bd88fde84f8a888a",
+    "tests/fixtures/payload_cross_host.json": "a4c0fe52b68c7d0cfed68b3bfc89fc3820669790a34b4d2e82d0995bc961c400",
+    "tests/fixtures/series_palette_cross_host.json": "b1d76a4bde599aeec7ffc497b67958d62880969ddd62a0757ce0ce34b0a4e549",
+    "tests/fixtures/tooltip_len_emit_cross_host.json": "95f1e509f00b2ca466fdc8b191dd0cb2a17d525d9de8c7d90d1af515927c4a77",
+    "tests/test_graph_session_abi.py": "30223edcbce95670ce10a487d2e6d418f6264a16b20764d96240f069688d2173"
+  },
+  "historicalFilesUnchanged": 2493,
+  "historicalGitTreeListingSha256": "1d527d0c58de678b29a9c5fe37809ff00502bddf363771223bd6573e5f1a66db",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6052952,
+      "sha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2051907,
+      "sha256": "111d887c48c6cd0e305891f31c1cfa26ea8bb6bff6818befc313a7b4418dd5c1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    }
+  },
+  "module": {
+    "node": "v22.23.4",
+    "raw": 1860254,
+    "gzip6": 759013,
+    "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099",
+    "gzip6Sha256": "dedd2b64d5a0ccf9b9d4daed181497d28ae09a976b2d47b512a9e18ec2af2ec1",
+    "imports": [],
+    "exports": [
+      {
+        "name": "memory",
+        "kind": "memory"
+      },
+      {
+        "name": "xyg_wasm_abi_version",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_aggregate_bin2d",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_aggregate_step",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_aggregate_stream_begin",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_aggregate_stream_finish",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_aggregate_stream_push",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_arena_high_water",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_arena_len",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_arena_ptr",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_arena_resize",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_cancel",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_compound_transition",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_copy_bytes_hi",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_copy_bytes_lo",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_copy_count",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_dashboard_plan",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_default_palette_rgba8",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_default_palette_rows",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_default_palette_version",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_density_first_paint_plan",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_catalog_compile",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_column_ingest",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_frame_prepare",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_scale_execute",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_scale_read",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_scene_compile",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_snapshot_execute",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_snapshot_read",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_tile_execute",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_tile_frame_prepare",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_tile_read",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_transport_acquire",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_viewport_execute",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graph_begin",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graph_step",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graphforge_compose",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graphforge_composition_version",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graphforge_session_close",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graphforge_session_interact",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graphforge_session_open",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graphforge_session_render",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_graphforge_session_update",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_instance_dispose",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_instance_new",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_last_error_len",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_last_error_ptr",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_last_scene_records",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_last_scene_styles",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_max_arena_bytes",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_output_len",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_output_ptr",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_compile",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_compile_begin",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_compile_phase",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_compile_prepare",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_compile_records_processed",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_compile_step",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_prepare",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_prepare_annotations",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_validate",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_scene_version",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_temporal_execute",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_temporal_graph_execute",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_ticks_resolve",
+        "kind": "function"
+      },
+      {
+        "name": "xyg_wasm_geo_metadata_version",
+        "kind": "function"
+      },
+      {
+        "name": "__data_end",
+        "kind": "global"
+      },
+      {
+        "name": "__heap_base",
+        "kind": "global"
+      }
+    ],
+    "abi": 35,
+    "scene": 34,
+    "painter": 17
+  },
+  "limits": {
+    "raw": 1860608,
+    "gzip6": 759808
+  },
+  "headroom": {
+    "raw": 354,
+    "gzip6": 795
+  },
+  "foundation": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "scope": "full-foundation",
+    "recordedAt": "2026-10-31T21:36:43.738Z",
+    "artifactCommit": null,
+    "harnessCommit": "504479e4b59db92cc7d960fa428508c67df9b95f",
+    "node": "v22.23.4",
+    "browser": "156.0.8078.4",
+    "platform": "linux",
+    "architecture": "x64",
+    "artifactSource": "source-dist",
+    "assets": {
+      "index.js": {
+        "bytes": 757131,
+        "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+      },
+      "standalone.js": {
+        "bytes": 757162,
+        "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+      },
+      "wasm-worker.js": {
+        "bytes": 53710,
+        "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+      },
+      "xyg-wasm.wasm": {
+        "bytes": 1860254,
+        "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+      }
+    },
+    "harness": {
+      "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+      "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24",
+      "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+    },
+    "package": null,
+    "csp": "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+    "externalRequests": [],
+    "densityNoRefinement": [
+      {
+        "name": "missing-inline-artifact",
+        "entry": "esm",
+        "events": [
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "self-contained Rust/WASM density artifact is unavailable",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+        "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+        "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+        "replacements": 0,
+        "allocatedWorkers": 0,
+        "presentations": {
+          "home": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          },
+          "zoom": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 6244
+          },
+          "restored": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          }
+        },
+        "overviewRetained": true,
+        "disposed": true,
+        "screenshot": {
+          "file": "full-foundation.json.esm-missing-inline-artifact.png",
+          "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+        }
+      },
+      {
+        "name": "malformed-inline-artifact",
+        "entry": "esm",
+        "events": [
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "inline worker requires generated base64 bytes and classic worker source",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+        "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+        "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+        "replacements": 0,
+        "allocatedWorkers": 0,
+        "presentations": {
+          "home": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          },
+          "zoom": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 6244
+          },
+          "restored": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          }
+        },
+        "overviewRetained": true,
+        "disposed": true,
+        "screenshot": {
+          "file": "full-foundation.json.esm-malformed-inline-artifact.png",
+          "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+        }
+      },
+      {
+        "name": "missing-retained-source",
+        "entry": "esm",
+        "events": [
+          {
+            "code": "XYG_WASM_SOURCE_UNAVAILABLE",
+            "message": "density refinement requires a retained typed source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+        "framebufferSha256": "41a44c0067b30c3f38c812d81596cb49388f48fca13c483b82235da79e51dd93",
+        "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
+        "replacements": 0,
+        "allocatedWorkers": 0,
+        "presentations": {
+          "home": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          },
+          "zoom": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 6244
+          },
+          "restored": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          }
+        },
+        "overviewRetained": true,
+        "disposed": true,
+        "screenshot": {
+          "file": "full-foundation.json.esm-missing-retained-source.png",
+          "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+        }
+      },
+      {
+        "name": "missing-inline-artifact",
+        "entry": "iife",
+        "events": [
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "self-contained Rust/WASM density artifact is unavailable",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+        "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+        "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+        "replacements": 0,
+        "allocatedWorkers": 0,
+        "presentations": {
+          "home": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          },
+          "zoom": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 6244
+          },
+          "restored": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          }
+        },
+        "overviewRetained": true,
+        "disposed": true,
+        "screenshot": {
+          "file": "full-foundation.json.iife-missing-inline-artifact.png",
+          "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+        }
+      },
+      {
+        "name": "malformed-inline-artifact",
+        "entry": "iife",
+        "events": [
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "inline worker requires generated base64 bytes and classic worker source",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+        "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+        "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+        "replacements": 0,
+        "allocatedWorkers": 0,
+        "presentations": {
+          "home": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          },
+          "zoom": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 6244
+          },
+          "restored": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          }
+        },
+        "overviewRetained": true,
+        "disposed": true,
+        "screenshot": {
+          "file": "full-foundation.json.iife-malformed-inline-artifact.png",
+          "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+        }
+      },
+      {
+        "name": "missing-retained-source",
+        "entry": "iife",
+        "events": [
+          {
+            "code": "XYG_WASM_SOURCE_UNAVAILABLE",
+            "message": "density refinement requires a retained typed source",
+            "traceIds": [
+              0
+            ]
+          },
+          {
+            "code": "XYG_WASM_UNAVAILABLE",
+            "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+            "traceIds": [
+              0
+            ]
+          }
+        ],
+        "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+        "framebufferSha256": "41a44c0067b30c3f38c812d81596cb49388f48fca13c483b82235da79e51dd93",
+        "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
+        "replacements": 0,
+        "allocatedWorkers": 0,
+        "presentations": {
+          "home": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          },
+          "zoom": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0.25,
+                  0.75
+                ],
+                "y": [
+                  0.25,
+                  0.75
+                ]
+              },
+              "x0": 0.25,
+              "x1": 0.75,
+              "y0": 0.25,
+              "y1": 0.75
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 6244
+          },
+          "restored": {
+            "rendered": true,
+            "attempts": 1,
+            "requestedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "presentedView": {
+              "ranges": {
+                "x": [
+                  0,
+                  1
+                ],
+                "y": [
+                  0,
+                  1
+                ]
+              },
+              "x0": 0,
+              "x1": 1,
+              "y0": 0,
+              "y1": 1
+            },
+            "canvas": [
+              266,
+              198
+            ],
+            "glLost": false,
+            "contextLost": false,
+            "sharedHost": true,
+            "alphaPixels": 3120
+          }
+        },
+        "overviewRetained": true,
+        "disposed": true,
+        "screenshot": {
+          "file": "full-foundation.json.iife-missing-retained-source.png",
+          "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+        }
+      }
+    ],
+    "limitations": [
+      "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
+      "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
+      "No actual packaged Reflex XYChart application, full candidate host matrix, large-scale timings, or validly framed corrupt inline WASM claim."
+    ]
+  },
+  "foundationReportSha256": "948636a46009aba2571b680f2f89a74018cf6d3864504306349aabe9b5049712",
+  "foundationHarnessSha256": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+  "screenshots": {
+    "full-foundation.json.esm-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "full-foundation.json.esm-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "full-foundation.json.esm-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "full-foundation.json.iife-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "full-foundation.json.iife-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "full-foundation.json.iife-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  "commands": {
+    "capture.command.json": {
+      "name": "capture",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-s4-ci-repair-2026-10-31/capture.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.562,
+      "rawSha256": "0e20020d8ef26a558c4482499ced6301fb11e2a34bb5714202cd46db5896ea89",
+      "log": "capture.txt.gz",
+      "gzipSha256": "36a02a48a768e38d0586dea529d84da604b5ed62ff1275025472d6ac9e6c5e8c"
+    },
+    "clippy.command.json": {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exitCode": 0,
+      "seconds": 20.098,
+      "rawSha256": "ded77551f9a76bb526d546d682b887fb654ace186246939aa0d7c11bc9a497a1",
+      "log": "clippy.txt.gz",
+      "gzipSha256": "3a6dd25dc6a5f25d4f46aa345db5c53afaff099d189e6b05a9866b4d0eab6c72"
+    },
+    "final-core-contracts.command.json": {
+      "name": "final-core-contracts",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\ncargo test -p xyg-core --offline\nuv run python scripts/abi_smoke.py\nuv run python scripts/verify_wasm_assets.py\nuv run python scripts/check_release_inventory.py --write\nuv run python scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "seconds": 25.598,
+      "rawSha256": "f501bdbf678eddfa67796fcfe60ad931900208837a6a643a93d4773462a84d52",
+      "log": "final-core-contracts.txt.gz",
+      "gzipSha256": "8322315253896d0142b852ed522ed649fe631e0860a07020cbd50654ed0a83d2"
+    },
+    "final-hooks.command.json": {
+      "name": "final-hooks",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run --with pre-commit pre-commit run --all-files\nuv run ruff check .\nuv run ruff format --check ."
+      ],
+      "exitCode": 0,
+      "seconds": 0.677,
+      "rawSha256": "397690c4061cce6e50d3ab4c1a853c216fb61c5180e9190529660d31d9be3e4c",
+      "log": "final-hooks.txt.gz",
+      "gzipSha256": "d50ec71ce01be89829f2ed6e74dcc6624a28089f9b1dbf5aa84856c03ed2b141"
+    },
+    "fixture-refresh.command.json": {
+      "name": "fixture-refresh",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-s4-ci-repair-2026-10-31/refresh_fixtures.py"
+      ],
+      "exitCode": 0,
+      "seconds": 7.114,
+      "rawSha256": "7caedc22b88a55546c90988b906b4298e8efa94c8d50ca3823254909cc6e400d",
+      "log": "fixture-refresh.txt.gz",
+      "gzipSha256": "67324c9190cb3ea9e4ea18969f5a94461e7e3f3ed33a7070c21e0ffab4077489"
+    },
+    "full-foundation.command.json": {
+      "name": "full-foundation",
+      "command": [
+        "env",
+        "-u",
+        "XYG_RELEASE_COMMIT",
+        "-u",
+        "XYG_BROWSER_DIST",
+        "XYG_WASM_FOUNDATION_REPORT=/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/spec/performance/graph-s4-ci-repair-2026-10-31/full-foundation.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 16.773,
+      "rawSha256": "fbb24d200cb759e5e3617bc9b2a6b6fcaa4739466c8d5951c6384c353dfb2096",
+      "log": "full-foundation.txt.gz",
+      "gzipSha256": "cf415ad78c3ff6508636c331319296ed3eb5cb44d18bb03678f94ae958d24495"
+    },
+    "full-node.command.json": {
+      "name": "full-node",
+      "command": [
+        "bash",
+        "-c",
+        "node --test --test-concurrency=4 packages/xy-node/test/*.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 31.7,
+      "rawSha256": "5a4d77f6646ed2ac90021bd62716f6adc3099997d63265a3f95ca94c5dc29022",
+      "log": "full-node.txt.gz",
+      "gzipSha256": "c3aaf0d99d3cd447b797a6399954a7bde85cd8f3511b4b8cd6c8d9d29c94d5eb"
+    },
+    "native-build.command.json": {
+      "name": "native-build",
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "exitCode": 0,
+      "seconds": 134.397,
+      "rawSha256": "4b0a9416c57eb184fa6ba175587434f88f21c0f0bee525d825d23ca752fbdb92",
+      "log": "native-build.txt.gz",
+      "gzipSha256": "9b4de0461641831be435300b0d90767b225429e45b89dbd4fd38bb07a933f795"
+    },
+    "native-seam.command.json": {
+      "name": "native-seam",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graph_session_abi.py"
+      ],
+      "exitCode": 0,
+      "seconds": 1.516,
+      "rawSha256": "57be52af4623aba7a288aead2dd5009536a86c289e7cfad4320fe4586d4c738b",
+      "log": "native-seam.txt.gz",
+      "gzipSha256": "f32dec581b6f8d9524144441e48b46f9fab983034a8cafa19a1424bda6888c96"
+    },
+    "production-node-parity-correct.command.json": {
+      "name": "production-node-parity-correct",
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/no_browser_globals.test.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 0.706,
+      "rawSha256": "cca2dbb86f3d64f664dd355d0edf9917836a537e9da85d9eb985335abe3c4bd7",
+      "log": "production-node-parity-correct.txt.gz",
+      "gzipSha256": "eec6e7c39f9c76e4287ef5713bc26afbb3425fcb11fe923e2009905a200b9bba"
+    },
+    "production-node-parity.command.json": {
+      "name": "production-node-parity",
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/no_browser_globals.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.986,
+      "rawSha256": "9d4908008989eca0bca1ae3fa2fbb28ee89b99a8354b2d2bd7202ce87dcbc48a",
+      "log": "production-node-parity.txt.gz",
+      "gzipSha256": "479541c6de6642aed346db3c5df4cb459499c9c61965aa78046827ce982a4412"
+    },
+    "python-ci-contracts.command.json": {
+      "name": "python-ci-contracts",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_abi_parity.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_animation_emit_cross_host.py",
+        "tests/test_default_styled_emit_cross_host.py",
+        "tests/test_tooltip_len_emit_cross_host.py",
+        "tests/test_density_emit_cross_host.py",
+        "tests/test_force_emit_cross_host.py",
+        "tests/test_payload_attach_cross_host.py",
+        "tests/test_payload_chrome_cross_host.py",
+        "tests/test_payload_cross_host.py",
+        "tests/test_geo_cross_host.py",
+        "tests/test_series_palette_cross_host.py"
+      ],
+      "exitCode": 0,
+      "seconds": 19.208,
+      "rawSha256": "b1b095c495f146ce75961741d19ce703f93533c612559cea5d4884a5b5d5bb63",
+      "log": "python-ci-contracts.txt.gz",
+      "gzipSha256": "c5f4fb5fd1646580128cc71f98f6604e71588803c0c972b08bbdfa145f315c46"
+    },
+    "real-package.command.json": {
+      "name": "real-package",
+      "command": [
+        "npm",
+        "run",
+        "build:wasm"
+      ],
+      "exitCode": 0,
+      "seconds": 76.118,
+      "rawSha256": "4d36ed9fe8fcb9c1f0bd9889db8e6daa062b316bc1817d29c85dd9adedff9b76",
+      "log": "real-package.txt.gz",
+      "gzipSha256": "f502b40dfadbba0f9f6f57d0ce446476d6ae14c43b7d843a2ed4aaaf3c9c9f2b"
+    },
+    "source-contracts-correct.command.json": {
+      "name": "source-contracts-correct",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run python scripts/gen_abi_manifest.py --check\nuv run python scripts/check_abi_parity.py\nuv run python scripts/verify_ownership.py"
+      ],
+      "exitCode": 0,
+      "seconds": 6.869,
+      "rawSha256": "929b9f7122eea609515bdbe48f52b783b3ca477bfd3e49d2cc714311538f9f48",
+      "log": "source-contracts-correct.txt.gz",
+      "gzipSha256": "dd0eec4d08165eb94c0b4d4141bba9b1340ec4aca46312b6807e0b04193ac983"
+    },
+    "source-contracts.command.json": {
+      "name": "source-contracts",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run python scripts/gen_abi_manifest.py --check\nuv run python scripts/check_abi_parity.py\nuv run python scripts/verify_ownership.py"
+      ],
+      "exitCode": 1,
+      "seconds": 8.535,
+      "rawSha256": "0800b18c739f85338070c770f68f6fcbd31b43f3899574c6154d706cfbbcc3da",
+      "log": "source-contracts.txt.gz",
+      "gzipSha256": "f50e324e31834086d615c51f6a32e5cb6c3f8ffb23c03b18d03cebdccc80fb44"
+    },
+    "temporal-after.command.json": {
+      "name": "temporal-after",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-wasm",
+        "--offline"
+      ],
+      "exitCode": 0,
+      "seconds": 2.634,
+      "rawSha256": "fbea5e2f334af3ea964b17261db8848925279c36e8908a1830363d220803e3de",
+      "log": "temporal-after.txt.gz",
+      "gzipSha256": "b1b392fd9d24d2cb8d19a8e94c2f6a6a8cc7c2401dbd9432e9ded18780a093b8"
+    },
+    "temporal-before-correct.command.json": {
+      "name": "temporal-before-correct",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-wasm",
+        "standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget",
+        "--offline"
+      ],
+      "exitCode": 101,
+      "seconds": 8.229,
+      "rawSha256": "9f59176ddbd3fa5645e9f2a657ab537a00c73fd999d3087d5ddcfd35f1d63420",
+      "log": "temporal-before-correct.txt.gz",
+      "gzipSha256": "ae75231958a912e9485e2f8625d7fd85ed03cc04f867f4c7f6c504d988de3e89"
+    },
+    "temporal-before.command.json": {
+      "name": "temporal-before",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-wasm",
+        "standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget",
+        "--offline"
+      ],
+      "exitCode": 101,
+      "seconds": 11.006,
+      "rawSha256": "b20653ac951f0b52f2d6da68f1cb986c7f1bab3a43ca8ff5c6f3f9d7523fcecf",
+      "log": "temporal-before.txt.gz",
+      "gzipSha256": "d8fd5793f2923fec1b9193cf3bca22388dddc3bbc040eb4a15fb865ee94eb2d0"
+    }
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+    "chromium": "Google Chrome for Testing 156.0.8078.4"
+  }
+}

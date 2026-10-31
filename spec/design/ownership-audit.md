@@ -1336,6 +1336,19 @@ production inventory. No new production file requires a JSON inventory row.
 [Bounded evidence](../performance/geo-hierarchy-admission-hosts-2026-10-10/README.md)
 records the remaining44 and lostQuery10 guards.
 
+### GraphSession S4 wire and ABI ownership
+
+These additions use the existing ownership policies without adding a host policy path.
+
+| File | Current owner | Policy | Disposition | Follow-up |
+|---|---|---|---|---|
+| `crates/xyg-core/src/graphforge_session_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/wire.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/wire_paint.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/wire.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-wasm/src/graphforge_session.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

@@ -1,0 +1,13 @@
+{
+  "name": "source-contracts-correct",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\nuv run python scripts/gen_abi_manifest.py --check\nuv run python scripts/check_abi_parity.py\nuv run python scripts/verify_ownership.py"
+  ],
+  "exitCode": 0,
+  "seconds": 6.869,
+  "rawSha256": "929b9f7122eea609515bdbe48f52b783b3ca477bfd3e49d2cc714311538f9f48",
+  "log": "source-contracts-correct.txt.gz",
+  "gzipSha256": "dd0eec4d08165eb94c0b4d4141bba9b1340ec4aca46312b6807e0b04193ac983"
+}

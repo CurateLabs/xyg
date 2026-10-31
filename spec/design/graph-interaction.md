@@ -288,7 +288,7 @@ successful op_seq. The same successful op_seq retry retains its outcome.
 ## 3. ABI / WASM
 Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_graphforge.ts:91-99`; the decoder `:164` and Python `DTYPE.U32` `_graphforge_container.py:49` already have it).
 S4 native surface (`xyg-core`; assign the next ABI version and regenerate
-the manifest when signatures change; native ABI 397 has 537 functions; WASM ABI 35 has 65 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
+the manifest when signatures change; native ABI 398 has 537 functions; WASM ABI 35 has 65 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
 Request `XYGI`: `header.u64`[instance_id, group_id, op_seq]; `header.u32`[render_revision, operation, mode, policy, plane, action, commit, steps, space]; `camera.f64`; `coordinates.f64`; `refs.bytes` (kind-tagged refs; transported derived refs carry the exact result id, §2.1; byte layout fixed with the ABI); `uuids.uuid`; `remote.bytes`; `companion.u32`[page, size≤200]; `load.*` (§1.2).
 Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`; `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`. Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
 Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND, _REVISION_EXHAUSTED`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
@@ -717,7 +717,7 @@ Repair evidence is append-only in
 
 After independent correctness and evidence approval, the parent separately
 adopts the smallest next-KiB functionality limits: 1,817 KiB raw / 742 KiB
-gzip6 (1,860,608 / 759,808 bytes). The final module is 1,860,250 / 759,008 bytes,
+gzip6 (1,860,608 / 759,808 bytes). The budget-decision module was 1,860,250 / 759,008 bytes,
 leaving 358 / 800 bytes. Exactly two isolated size candidates were measured;
 only the UUID hex writer is retained. Full session/paint/state/transaction
 reachability adds 311,860 raw / 118,299 gzip bytes over accepted S3. Required
@@ -733,10 +733,31 @@ Historical S1–S4 receipts, including failed package/diagnostic proofs, are unc
 The native S4 create parameter is named `document_bytes` in generated C/Koffi
 metadata so the existing Node browser-global guard does not confuse its FFI
 signature string with a runtime global. All 537 native binary function types,
-argument order and calling convention remain unchanged (ABI 397); official ABI
-generation updates the named-signature digest. No guard exemption or runtime
-host behavior change is involved. The historical repair exceeded the then-binding
+argument order and calling convention remain unchanged, but the named signature
+changed. Native ABI 398 records that change under the repository rule requiring
+a bump for every signature change; the official generator updates all four
+declarations and the named-signature digest. No checker or guard exemption is
+introduced. The historical repair exceeded the then-binding
 S3 package gates; its diagnostic receipt remains a failed shipping proof.
 The subsequent separate parent package decision above records real shipping
 assets under the reviewed S4 limits. CI/integration and M4/#36 acceptance remain
 pending; diagnostic execution alone establishes none of them.
+
+
+### S4 CI repair: standalone temporal staging compatibility
+
+`arena_resize` charges both session and temporal retention only when a retained
+GraphSession exists, matching the co-owned create/frame admission contract.
+Standalone XYTG retains its prior staging, entity, work and output bounds; this
+slice adds no standalone total-residency guarantee or capacity threshold. A
+40,000-node standalone owner accepted at the default 16 MiB can stage a frame
+and a small replacement. Malformed replacement preserves its previous owner.
+Co-owned sessions retain their conservative retention/peak checks, atomic
+refusal and owner revocation. Native ABI 398, generated declarations, ABI-only
+fixture refreshes and ownership-ledger entries are recorded separately in the
+[CI repair receipt](../performance/graph-s4-ci-repair-2026-10-31/README.md).
+
+The CI-repaired production module is 1,860,254 raw / 759,013 gzip6 bytes, with
+354 / 795 bytes headroom under the unchanged 1,817/742-KiB gates. Native ABI is
+398; WASM/Scene/painter remain 35/34/17. This replaces no historical artifact
+record and claims no runtime speed or standalone residency improvement.

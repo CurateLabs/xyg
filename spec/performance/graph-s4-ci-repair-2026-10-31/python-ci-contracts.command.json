@@ -1,0 +1,26 @@
+{
+  "name": "python-ci-contracts",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_abi_parity.py",
+    "tests/test_verify_ownership.py",
+    "tests/test_animation_emit_cross_host.py",
+    "tests/test_default_styled_emit_cross_host.py",
+    "tests/test_tooltip_len_emit_cross_host.py",
+    "tests/test_density_emit_cross_host.py",
+    "tests/test_force_emit_cross_host.py",
+    "tests/test_payload_attach_cross_host.py",
+    "tests/test_payload_chrome_cross_host.py",
+    "tests/test_payload_cross_host.py",
+    "tests/test_geo_cross_host.py",
+    "tests/test_series_palette_cross_host.py"
+  ],
+  "exitCode": 0,
+  "seconds": 19.208,
+  "rawSha256": "b1b095c495f146ce75961741d19ce703f93533c612559cea5d4884a5b5d5bb63",
+  "log": "python-ci-contracts.txt.gz",
+  "gzipSha256": "c5f4fb5fd1646580128cc71f98f6604e71588803c0c972b08bbdfa145f315c46"
+}

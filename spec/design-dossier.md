@@ -1416,7 +1416,7 @@ induced published edges. Nodes/polygon edges/grid/dedup/membership/induced work
 is charged before selection or hover commit; refusal never truncates selection.
 Style-only republication refreshes resolved geometry and index at the same
 revision. Exact contracts: graph-interaction.md §2.3, Rust S3 candidate only;
-S4 exposes the shared transactional native/WASM wire (native ABI 397, WASM 35);
+S4 exposes the shared transactional native/WASM wire (native ABI 398, WASM 35);
 browser controller/host delivery and hardware acceptance remain later slices.
 
 **Static export takes the first-paint tier (#1006).** Native SVG/PNG/PDF/JPEG/
@@ -2792,7 +2792,7 @@ requiring a Rust toolchain — an instant adoption cliff.
 - **Current S4 WASM packaging limits:** 1,817 KiB raw / 742 KiB gzip6
   (1,860,608 / 759,808 bytes). After independent correctness/evidence review and
   exactly two measured size candidates, the parent adopts the smallest next-KiB
-  functionality budget for the repaired 1,860,250 / 759,008-byte module. Only the
+  functionality budget for the reviewed 1,860,250 / 759,008-byte module. Only the
   fixed UUID hex writer is retained; headroom is 358 / 800 bytes. The first WASM
   reachability of complete session render/pick/layout/state, resolved paint,
   exact identities and atomic admission adds 311,860 / 118,299 bytes over S3.
@@ -2808,6 +2808,16 @@ requiring a Rust toolchain — an instant adoption cliff.
   Scene/painter formats remain 34/17. See
   [S4 local evidence](performance/graph-s4-local-2026-10-31/README.md) for fresh
   package failures or passes and distinctly labelled diagnostic execution.
+- **S4 compatibility and versioning repair.** Standalone XYTG keeps its prior
+  staging/work/output contract; session-plus-temporal retention is charged
+  together only while a GraphSession is retained. An accepted standalone graph
+  can stage its next frame and replacement. Native ABI 398 records the named
+  C-signature change under the existing versioning rule, with official
+  declarations and ABI-only fixtures. Its production module is 1,860,254 raw /
+  759,013 gzip6 bytes (354 / 795 headroom under unchanged gates). See
+  [S4 CI repair evidence](performance/graph-s4-ci-repair-2026-10-31/README.md);
+  this adds no standalone residency, S5, milestone or release acceptance.
+
 - **Packaged WASM tick assets have one producer and fail early (#1005).** The direct-browser
   module (`xyg-wasm.wasm`), its inline classic-worker copy (`xyg-wasm-inline.js`), and the
   version/hash manifest (`xyg-wasm.manifest.json`: `sha256`, `bytes`, ABI/Scene/painter

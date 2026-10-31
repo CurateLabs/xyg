@@ -766,8 +766,14 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
         // request. Drop its allocation before reserving staging so retained
         // capacity cannot stack on top of the next operation's peak budget.
         instance.output = Vec::new();
-        let retained = instance.graph_session.as_ref().map_or(0, |s|s.retained_budget())
-            .saturating_add(instance.temporal_graph.as_ref().map_or(0, |t|t.retained_bytes()));
+        // S4 co-owned sessions account for both retained authorities. Standalone
+        // XYTG keeps its existing staging/work/output contract; charging its
+        // conservative session-only reserve here would strand accepted owners.
+        let retained = instance.graph_session.as_ref().map_or(0, |session| {
+            session.retained_budget().saturating_add(
+                instance.temporal_graph.as_ref().map_or(0, |graph| graph.retained_bytes()),
+            )
+        });
         if length.saturating_add(retained) > instance.max_arena_bytes {
             return fail(
                 instance,
@@ -1858,6 +1864,68 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget() {
+        fn create(nodes: u32) -> Vec<u8> {
+            let mut bytes = b"XYTG".to_vec();
+            for word in [1u32, 32, 1, 0, nodes, 0, 0] {
+                bytes.extend_from_slice(&word.to_le_bytes());
+            }
+            for node in 1..=nodes {
+                bytes.extend_from_slice(&u128::from(node).to_le_bytes());
+            }
+            bytes
+        }
+        fn frame(revision: u64) -> Vec<u8> {
+            let mut bytes = b"XYTG".to_vec();
+            for word in [1u32, 56, 2] {
+                bytes.extend_from_slice(&word.to_le_bytes());
+            }
+            for word in [revision, 0, 0, 1, 16 * 1024 * 1024] {
+                bytes.extend_from_slice(&word.to_le_bytes());
+            }
+            bytes
+        }
+        fn execute(handle: u32, bytes: &[u8]) -> i32 {
+            assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    bytes.as_ptr(),
+                    xyg_wasm_arena_ptr(handle) as *mut u8,
+                    bytes.len(),
+                );
+            }
+            xyg_wasm_temporal_graph_execute(handle, 0, bytes.len())
+        }
+        for count in [32_760, 40_000] {
+            let handle = xyg_wasm_instance_new(16 * 1024 * 1024);
+            assert_ne!(handle, 0);
+            assert_eq!(execute(handle, &create(count)), STATUS_OK);
+            assert_eq!(execute(handle, &frame(1)), STATUS_OK);
+            let mut invalid = create(2);
+            invalid.pop();
+            assert_eq!(execute(handle, &invalid), STATUS_INVALID_ARGUMENT);
+            assert_eq!(execute(handle, &frame(2)), STATUS_OK);
+            with_instance_mut(handle, |instance| {
+                assert_eq!(
+                    u32::from_le_bytes(instance.output[48..52].try_into().unwrap()),
+                    count
+                );
+            })
+            .unwrap();
+            assert_eq!(execute(handle, &create(2)), STATUS_OK);
+            assert_eq!(execute(handle, &frame(3)), STATUS_OK);
+            with_instance_mut(handle, |instance| {
+                assert_eq!(
+                    u32::from_le_bytes(instance.output[48..52].try_into().unwrap()),
+                    2
+                );
+            })
+            .unwrap();
+            assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+        }
+    }
 
     #[test]
     fn default_palette_exports_are_engine_owned_and_fail_closed() {

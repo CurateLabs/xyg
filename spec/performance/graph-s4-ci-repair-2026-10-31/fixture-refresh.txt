@@ -1,0 +1,8 @@
+wrote /home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/tests/fixtures/payload_attach_cross_host.json
+wrote /home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/tests/fixtures/payload_chrome_cross_host.json
+wrote /home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/tests/fixtures/payload_cross_host.json (32 cases)
+wrote tests/fixtures/geo_cross_host.json (28 cases)
+wrote /home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/tests/fixtures/series_palette_cross_host.json
+{"fixtures": 10, "change": "top-level ABI labels only"}
+/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/python/xyg/_payload.py:168: RuntimeWarning: more than 8 series use default colors; the default palette repeats every 8 (series 9 wears series 1's color). Pass explicit color= per series, or group series, to keep identities distinct.
+  return emit_trace_materialized(self, t, pw, xr, yr, px_width)

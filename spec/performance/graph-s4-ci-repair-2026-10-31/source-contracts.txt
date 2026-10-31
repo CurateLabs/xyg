@@ -1,0 +1,13 @@
+ABI artifacts current (537 symbols, v398)
+ABI parity ok (537 symbols, v398; both hosts generated from the typed contract)
+ownership audit failed:
+- invalid classification: crates/xyg-core/src/graphforge_session_ffi.rs rationale must match policy 'rust-c-abi'
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/wire.rs rationale must match policy 'rust-engine'
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/wire_paint.rs rationale must match policy 'rust-engine'
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/tests/wire.rs rationale must match policy 'rust-engine'
+- invalid classification: crates/xyg-wasm/src/graphforge_session.rs rationale must match policy 'rust-wasm-abi'
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-core/src/graphforge_session_ffi.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/tests/wire.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/wire.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/wire_paint.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-wasm/src/graphforge_session.rs

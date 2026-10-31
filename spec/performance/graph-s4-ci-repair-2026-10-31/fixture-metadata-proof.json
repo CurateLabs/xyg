@@ -1,0 +1,133 @@
+[
+  {
+    "path": "tests/fixtures/animation_emit_cross_host.json",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/animation_emit_cross_host.mjs"
+    ],
+    "oldAbi": 396,
+    "newAbi": 398,
+    "beforeSha256": "25f0e9c251aa3d0134606472a1416fc9ee986153ef2128deb8b75b7a422ee703",
+    "afterSha256": "6622f9d5dbeafc4358d74d0448aaa4786f378062e91b4bb39dc48e6a44a35646",
+    "unchangedDataSha256": "4f7716333b378d05b29d3b23bb5b25dd58b8794edd90c613b3062df1eaa0ba1f"
+  },
+  {
+    "path": "tests/fixtures/default_styled_emit_cross_host.json",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/default_styled_emit_cross_host.mjs"
+    ],
+    "oldAbi": 396,
+    "newAbi": 398,
+    "beforeSha256": "715571e0f115acc34a107ec745bf5d82b8f092c849baff63a252efb4c30e4367",
+    "afterSha256": "22518847d00a042bb27f3d1e17421e3090643305d02bf3b545b00c38b1d07753",
+    "unchangedDataSha256": "f3866411dc51d67022ae85b5441316f284c8652f98a78768b5d399c95a32f19e"
+  },
+  {
+    "path": "tests/fixtures/tooltip_len_emit_cross_host.json",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/tooltip_len_emit_cross_host.mjs"
+    ],
+    "oldAbi": 396,
+    "newAbi": 398,
+    "beforeSha256": "9028df663c331acf012a34b16ed028108a0b109eda99bf415b048711eca665ab",
+    "afterSha256": "95f1e509f00b2ca466fdc8b191dd0cb2a17d525d9de8c7d90d1af515927c4a77",
+    "unchangedDataSha256": "e71f3b48bbfe605c41830abbee985923c4f874966493d6f43deb5c1afc4498e4"
+  },
+  {
+    "path": "tests/fixtures/density_emit_cross_host.json",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/density_emit_cross_host.mjs"
+    ],
+    "oldAbi": 397,
+    "newAbi": 398,
+    "beforeSha256": "012a42ea08b061aed82ab75c2027f1cc7d86c089418595c562a0ab683eda1e56",
+    "afterSha256": "09efa3b65013f79d90b7a51f386ceec20f26a93e8c423b4ab5970d909305b1cd",
+    "unchangedDataSha256": "d3a9b20b4b4bae70cf45c6ea61b3758772d8ff3e9c3d940138099035c80c09e4"
+  },
+  {
+    "path": "tests/fixtures/force_emit_cross_host.json",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/force_emit_cross_host.mjs"
+    ],
+    "oldAbi": 397,
+    "newAbi": 398,
+    "beforeSha256": "07cd7461121ca69690d11da3ba4ca3af8856e7e2abccdfc44bcf89e3c5495c59",
+    "afterSha256": "a30fb8e3351bb9c2c5a8240c4e54c828ddad6bf443fc4a1fa7984cdeab3e24d3",
+    "unchangedDataSha256": "a2575552f98f4fdf8630f585dbb2dea2bff6d6ad96d2cf75d89738a79b7decbf"
+  },
+  {
+    "path": "tests/fixtures/payload_attach_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py"
+    ],
+    "oldAbi": 396,
+    "newAbi": 398,
+    "beforeSha256": "e0988253fa4ed78a7926b82b793a1c9ce9b50f38bcce234a61135840f2cbeb74",
+    "afterSha256": "9c7a02348c2820279071ea15dda11973e45a0dc5b3c7b48e0127367a9335616c",
+    "unchangedDataSha256": "d1db09951fa00fcced3afda26adae91ce7cbbb70783c6eb0cb3ad4563163aa3c"
+  },
+  {
+    "path": "tests/fixtures/payload_chrome_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py"
+    ],
+    "oldAbi": 396,
+    "newAbi": 398,
+    "beforeSha256": "3381ce03a4bc01e3d3b62f7c6540bc6f3467c05cc7ca5af2ec8e9e94b4dfc02b",
+    "afterSha256": "769f5a17f8f27337f287f458a22201cdb0e22ea8bdfa9f44bd88fde84f8a888a",
+    "unchangedDataSha256": "78b886b602e8706593e98bd4412e990787699df9b8a3ce71ac22f51f5ce45d28"
+  },
+  {
+    "path": "tests/fixtures/payload_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py"
+    ],
+    "oldAbi": 397,
+    "newAbi": 398,
+    "beforeSha256": "e94bb3d4decf1899099781f6dd2c01d3d054dc85eb32ca9cfb54d16a6df0f6ad",
+    "afterSha256": "a4c0fe52b68c7d0cfed68b3bfc89fc3820669790a34b4d2e82d0995bc961c400",
+    "unchangedDataSha256": "dc8cb26a396486f0e498e7dde0aaae22e9d0064f9baec76fe953710eb33c77ce"
+  },
+  {
+    "path": "tests/fixtures/geo_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py"
+    ],
+    "oldAbi": 397,
+    "newAbi": 398,
+    "beforeSha256": "597838dd7174a62a704abb887944211191e38c9811e5b2cd6bd2826bc14fe88b",
+    "afterSha256": "e35cb5d978ab5a2d34901a7d590582667789305ed02f8711b0ac8ad048086ca9",
+    "unchangedDataSha256": "7b48abcfc3db181e715302c0cf89f0f033a0961fb60e23dba34f145fa98cbf16"
+  },
+  {
+    "path": "tests/fixtures/series_palette_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "tests/test_series_palette_cross_host.py",
+      "--write"
+    ],
+    "oldAbi": 397,
+    "newAbi": 398,
+    "beforeSha256": "cab889bb2539688894c6f88ee6d46870d0c386dbd76558d971111f31705e736b",
+    "afterSha256": "b1d76a4bde599aeec7ffc497b67958d62880969ddd62a0757ce0ce34b0a4e549",
+    "unchangedDataSha256": "aeae732dc988cb24601d4be0e65936913b83a8a1c0586ee7f6ee479696886a6a"
+  }
+]
