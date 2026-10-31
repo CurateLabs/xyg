@@ -104,7 +104,7 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1507 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1511 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
@@ -120,7 +120,11 @@ const WASM_SIZE_BUDGET_BYTES = 1507 * 1024;
 // tick-label strategy layout in the painter writer, including per-side rotations.
 // After merging main 4631927, the local build is 1,542,222 raw / 636,944 gzip
 // (earlier merge-base: 1,539,454 / 635,754); raw headroom is 946 bytes.
-const WASM_GZIP_BUDGET_BYTES = 624 * 1024;
+// Composition v2 hierarchy (#36 S1): after measured sharing savings of
+// 890 raw / 706 gzip bytes, the integrated module is 1,546,708 / 639,531.
+// Record the functionality budget at the smallest next-KiB limits: 1,511 / 625,
+// leaving 556 / 469 bytes. Compiler, optimizer and runtime validation stay fixed.
+const WASM_GZIP_BUDGET_BYTES = 625 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
 if (bytes.length > WASM_SIZE_BUDGET_BYTES) {
