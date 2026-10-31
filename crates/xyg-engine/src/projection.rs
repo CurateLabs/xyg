@@ -195,12 +195,10 @@ pub enum ParentForestError {
 pub fn validate_parent_forest(parents: &[u64], validity: &[u8]) -> Result<(), ParentForestError> {
     // 0 unvisited, 1 on the current chain, 2 proven acyclic.
     let mut state = vec![0u8; parents.len()];
-    let mut chain = Vec::new();
     for start in 0..parents.len() {
         let mut node = start;
         while state[node] == 0 {
             state[node] = 1;
-            chain.push(node);
             if validity[node] != 1 {
                 break;
             }
@@ -213,8 +211,15 @@ pub fn validate_parent_forest(parents: &[u64], validity: &[u8]) -> Result<(), Pa
                 return Err(ParentForestError::Cycle(node));
             }
         }
-        for visited in chain.drain(..) {
-            state[visited] = 2;
+        // Retrace only this chain's marks. Every node changes 0 -> 1 -> 2
+        // once, so the two walks stay linear without a scratch path vector.
+        node = start;
+        while state[node] == 1 {
+            state[node] = 2;
+            if validity[node] != 1 {
+                break;
+            }
+            node = parents[node] as usize;
         }
     }
     Ok(())
@@ -313,5 +318,68 @@ mod tests {
         ));
         // Invalid rows are not read, even when their stored parent is garbage.
         assert_eq!(validate_parent_forest(&[7, 0], &[0, 1]), Ok(()));
+    }
+
+    #[test]
+    fn parent_forest_matches_first_error_for_every_small_parent_plane() {
+        // Independent per-start walks deliberately revisit proven chains. This
+        // pins the exact first error (including the cycle entry), not only
+        // acceptance, across tails, shared ancestors, and competing errors.
+        fn reference(parents: &[u64], validity: &[u8]) -> Result<(), ParentForestError> {
+            for start in 0..parents.len() {
+                let mut seen = vec![false; parents.len()];
+                let mut node = start;
+                while validity[node] == 1 {
+                    let parent = parents[node] as usize;
+                    if parent == node {
+                        return Err(ParentForestError::SelfParent(node));
+                    }
+                    seen[node] = true;
+                    if seen[parent] {
+                        return Err(ParentForestError::Cycle(parent));
+                    }
+                    node = parent;
+                }
+            }
+            Ok(())
+        }
+        for n in 0usize..=6 {
+            for mut encoding in 0..(n + 1).pow(n as u32) {
+                let mut parents = vec![u64::MAX; n];
+                let mut validity = vec![0; n];
+                for i in 0..n {
+                    let parent = encoding % (n + 1);
+                    encoding /= n + 1;
+                    if parent != n {
+                        parents[i] = parent as u64;
+                        validity[i] = 1;
+                    }
+                }
+                assert_eq!(
+                    validate_parent_forest(&parents, &validity),
+                    reference(&parents, &validity),
+                    "parents={parents:?}, validity={validity:?}"
+                );
+            }
+        }
+        // This helper treats only 1 as valid; callers validate plane shape.
+        assert_eq!(validate_parent_forest(&[u64::MAX], &[2]), Ok(()));
+    }
+
+    #[test]
+    fn parent_forest_handles_a_deep_chain_and_shared_ancestors() {
+        let n = 100_000;
+        let mut parents: Vec<u64> = (1..=n as u64).collect();
+        let mut validity = vec![1; n];
+        parents[n - 1] = u64::MAX;
+        validity[n - 1] = 0;
+        assert_eq!(validate_parent_forest(&parents, &validity), Ok(()));
+        parents[0] = 1;
+        for parent in &mut parents[2..n - 1] {
+            *parent = 1;
+        }
+        parents[1] = u64::MAX;
+        validity[1] = 0;
+        assert_eq!(validate_parent_forest(&parents, &validity), Ok(()));
     }
 }

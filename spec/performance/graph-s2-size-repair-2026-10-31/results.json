@@ -1,0 +1,839 @@
+{
+  "scope": "Bounded S2 size repair: package FAIL; two candidates measured, one retained; no budget decision",
+  "baseCommit": "cea8fcf9c8e7daf8f5deabf5aa3c1553f288464e",
+  "recoveredS2": "5c3f51cd2091543bea22a37368466e742d052fdb",
+  "mergeParents": [
+    "1440bec94202129eea25751c3d51ee7cd1620130",
+    "5c3f51cd2091543bea22a37368466e742d052fdb"
+  ],
+  "baselineMatchesRecoveredSource": true,
+  "engineDiffSha256": "49cfaaa2cb0b676c069b675f451296d0db613aa4a39bffef5e614076a3e514ef",
+  "projectionSourceSha256": "9cd0ebf1ce4866036b44005293177d675d28722ac9e13c830d6f1e4a7b5f7cef",
+  "changedProducerFiles": [
+    "crates/xyg-engine/src/projection.rs"
+  ],
+  "unchangedProducerContracts": true,
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-dc173a1a",
+    "tools": {
+      "node": "v22.23.4",
+      "npm": "10.9.9",
+      "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+      "uv": "uv 0.12.22 (x86_64-unknown-linux-gnu)"
+    }
+  },
+  "profile": "unchanged release O3/fat LTO/codegen1/strip, wasm inline threshold 100; pinned Binaryen 132.0.0 -O3 --all-features; Node gzipSync default level 6",
+  "candidates": [
+    {
+      "id": 1,
+      "change": "Retrace forest mark states instead of allocating a scratch chain",
+      "disposition": "retained; saves 136 raw / 88 gzip bytes; both gates still fail",
+      "patchSha256": "49cfaaa2cb0b676c069b675f451296d0db613aa4a39bffef5e614076a3e514ef",
+      "artifact": {
+        "node": "v22.23.4",
+        "sourceBytes": 1706999,
+        "sourceSha256": "cfa904e03bb11869e7a1439b1c603675f1ace9688fd43273b1092bb9a017f0e7",
+        "optimizedBytes": 1547779,
+        "gzip6Bytes": 640527,
+        "optimizedSha256": "27b922cb47294ebf8585a54be4d86d3fece91772a0bc7df432a34385fb26b678",
+        "gzip6Sha256": "c52977d626d8d7d048e964c1cf61d0bf0d0712b8f209f08694613f9a7c0aea96",
+        "rawGate": 1547264,
+        "gzip6Gate": 640000,
+        "rawHeadroom": -515,
+        "gzip6Headroom": -527
+      }
+    },
+    {
+      "id": 2,
+      "change": "Force shared collapsed_node_flags helper out of line atop candidate 1",
+      "disposition": "rejected and reverted; zero additional raw or gzip saving",
+      "cumulativePatchSha256": "e98b0c0cf68f40ac5dc6c2b1125f9f9fe2b0e64a7403f0ab6de81fea5ab1a0d8",
+      "artifact": {
+        "node": "v22.23.4",
+        "sourceBytes": 1706999,
+        "sourceSha256": "62774ea128c8818fedd9677c7cd71b6bec70d04e205450e54d7a5afbf8b46f67",
+        "optimizedBytes": 1547779,
+        "gzip6Bytes": 640527,
+        "optimizedSha256": "bb07927f7472b3182aa7e80a93032ee93bb464ae5a9ec3858e17846d8f5c9e7b",
+        "gzip6Sha256": "ae4d1e0aea4b4d74e2f46d3f8e7a93bfc8594cba1482b23dc9ad645bea2779cf",
+        "rawGate": 1547264,
+        "gzip6Gate": 640000,
+        "rawHeadroom": -515,
+        "gzip6Headroom": -527
+      }
+    }
+  ],
+  "artifacts": {
+    "baseline": {
+      "node": "v22.23.4",
+      "sourceBytes": 1707146,
+      "sourceSha256": "d1586d910837e7efd2094e309162f5a7c80055442a31c09873f1a83d023b42bd",
+      "optimizedBytes": 1547915,
+      "gzip6Bytes": 640615,
+      "optimizedSha256": "544d97c615a96e31cdca66cac0d577b954ee337e50e2e589690dc348d7c852bc",
+      "gzip6Sha256": "e558c95a9a6074631900aa9eab05724fdb0fab078064e00647b7e3425ce91903",
+      "rawGate": 1547264,
+      "gzip6Gate": 640000,
+      "rawHeadroom": -651,
+      "gzip6Headroom": -615
+    },
+    "candidate1": {
+      "node": "v22.23.4",
+      "sourceBytes": 1706999,
+      "sourceSha256": "cfa904e03bb11869e7a1439b1c603675f1ace9688fd43273b1092bb9a017f0e7",
+      "optimizedBytes": 1547779,
+      "gzip6Bytes": 640527,
+      "optimizedSha256": "27b922cb47294ebf8585a54be4d86d3fece91772a0bc7df432a34385fb26b678",
+      "gzip6Sha256": "c52977d626d8d7d048e964c1cf61d0bf0d0712b8f209f08694613f9a7c0aea96",
+      "rawGate": 1547264,
+      "gzip6Gate": 640000,
+      "rawHeadroom": -515,
+      "gzip6Headroom": -527
+    },
+    "candidate2": {
+      "node": "v22.23.4",
+      "sourceBytes": 1706999,
+      "sourceSha256": "62774ea128c8818fedd9677c7cd71b6bec70d04e205450e54d7a5afbf8b46f67",
+      "optimizedBytes": 1547779,
+      "gzip6Bytes": 640527,
+      "optimizedSha256": "bb07927f7472b3182aa7e80a93032ee93bb464ae5a9ec3858e17846d8f5c9e7b",
+      "gzip6Sha256": "ae4d1e0aea4b4d74e2f46d3f8e7a93bfc8594cba1482b23dc9ad645bea2779cf",
+      "rawGate": 1547264,
+      "gzip6Gate": 640000,
+      "rawHeadroom": -515,
+      "gzip6Headroom": -527
+    },
+    "final": {
+      "node": "v22.23.4",
+      "sourceBytes": 1706999,
+      "sourceSha256": "cfa904e03bb11869e7a1439b1c603675f1ace9688fd43273b1092bb9a017f0e7",
+      "optimizedBytes": 1547779,
+      "gzip6Bytes": 640527,
+      "optimizedSha256": "27b922cb47294ebf8585a54be4d86d3fece91772a0bc7df432a34385fb26b678",
+      "gzip6Sha256": "c52977d626d8d7d048e964c1cf61d0bf0d0712b8f209f08694613f9a7c0aea96",
+      "rawGate": 1547264,
+      "gzip6Gate": 640000,
+      "rawHeadroom": -515,
+      "gzip6Headroom": -527
+    }
+  },
+  "proof": {
+    "exhaustiveParentPlanes": 126126,
+    "maxExhaustiveNodes": 6,
+    "largeParentNodes": 100000,
+    "workspacePassed": 1878,
+    "pythonPassed": 134,
+    "pythonDeselected": 4,
+    "nodeNativePassed": 136,
+    "nodeDiagnosticParityPassed": 33,
+    "abiSmokeChecks": 673,
+    "fixtureAndHistoricalEvidenceUnchanged": true
+  },
+  "remainingGates": [
+    "WASM package exceeds raw by 515 bytes and gzip by 527 bytes",
+    "Required independent parent review must include the final validator diff"
+  ],
+  "packagedFoundation": "not run: real package rejected; asset verifier fails for missing paired set",
+  "clippyProvenance": "candidate2-clippy was queued with that label; its actual command started after helper revert and checked final retained source",
+  "commands": [
+    {
+      "name": "artifact-contracts",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 1.838
+    },
+    {
+      "name": "baseline-focused",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "graphforge::"
+      ],
+      "exit": 0,
+      "seconds": 47.512
+    },
+    {
+      "name": "baseline-measure",
+      "command": [
+        "node",
+        "spec/performance/graph-s2-recovery-2026-10-31/measure.mjs",
+        "target/task-tmp/s2-size-repair/baseline"
+      ],
+      "exit": 0,
+      "seconds": 42.729
+    },
+    {
+      "name": "baseline-node",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=2",
+        "--test-timeout=20000",
+        "packages/xy-node/test/graphforge.test.mjs",
+        "packages/xy-node/test/graphforge-cross-host.test.mjs",
+        "packages/xy-node/test/graph.test.mjs",
+        "packages/xy-node/test/force-worker-lifecycle.test.mjs",
+        "packages/xy-node/test/composition.test.mjs",
+        "packages/xy-node/test/temporal.test.mjs",
+        "packages/xy-node/test/temporal-graph.test.mjs",
+        "packages/xy-node/test/temporal-controller.test.mjs"
+      ],
+      "exit": 0,
+      "seconds": 6.097
+    },
+    {
+      "name": "baseline-package-preflight",
+      "command": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import fs from \"node:fs\"; console.log(JSON.parse(fs.readFileSync(\"node_modules/binaryen/package.json\")).version); console.log(JSON.parse(fs.readFileSync(\"spec/wasm/abi.json\")).abi_version)"
+      ],
+      "exit": 0,
+      "seconds": 0.039
+    },
+    {
+      "name": "baseline-package",
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "exit": 1,
+      "seconds": 43.815
+    },
+    {
+      "name": "baseline-projection",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "projection::"
+      ],
+      "exit": 0,
+      "seconds": 0.485
+    },
+    {
+      "name": "baseline-python",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge.py",
+        "tests/test_graphforge_scene.py",
+        "tests/test_graphforge_semantic_evidence.py",
+        "tests/test_graphforge_fixture_generation.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_cose_native_parity.py",
+        "tests/test_temporal_columns.py",
+        "tests/test_temporal_graph_native.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_graph_style.py",
+        "tests/test_graph_semantic_mapping.py",
+        "-k",
+        "not browser"
+      ],
+      "exit": 0,
+      "seconds": 9.737
+    },
+    {
+      "name": "baseline-style",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "graph_style::"
+      ],
+      "exit": 0,
+      "seconds": 0.127
+    },
+    {
+      "name": "baseline-wasm-build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "exit": 0,
+      "seconds": 99.507
+    },
+    {
+      "name": "candidate1-focused",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "graphforge::"
+      ],
+      "exit": 0,
+      "seconds": 13.946
+    },
+    {
+      "name": "candidate1-measure",
+      "command": [
+        "node",
+        "spec/performance/graph-s2-recovery-2026-10-31/measure.mjs",
+        "target/task-tmp/s2-size-repair/candidate1"
+      ],
+      "exit": 0,
+      "seconds": 39.991
+    },
+    {
+      "name": "candidate1-projection",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "projection::"
+      ],
+      "exit": 0,
+      "seconds": 0.567
+    },
+    {
+      "name": "candidate1-proof-before",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "projection::"
+      ],
+      "exit": 0,
+      "seconds": 14.451
+    },
+    {
+      "name": "candidate1-rustfmt",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "crates/xyg-engine/src/projection.rs"
+      ],
+      "exit": 0,
+      "seconds": 0.042
+    },
+    {
+      "name": "candidate1-wasm-build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "exit": 0,
+      "seconds": 63.48
+    },
+    {
+      "name": "candidate2-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 37.559
+    },
+    {
+      "name": "candidate2-focused",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "graphforge::"
+      ],
+      "exit": 0,
+      "seconds": 0.412
+    },
+    {
+      "name": "candidate2-measure",
+      "command": [
+        "node",
+        "spec/performance/graph-s2-recovery-2026-10-31/measure.mjs",
+        "target/task-tmp/s2-size-repair/candidate2"
+      ],
+      "exit": 0,
+      "seconds": 40.998
+    },
+    {
+      "name": "candidate2-style",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--lib",
+        "graph_style::"
+      ],
+      "exit": 0,
+      "seconds": 6.846
+    },
+    {
+      "name": "candidate2-wasm-build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "exit": 0,
+      "seconds": 68.55
+    },
+    {
+      "name": "candidate2-workspace",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace"
+      ],
+      "exit": 0,
+      "seconds": 141.416
+    },
+    {
+      "name": "cross-host-goldens",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_graphforge_cross_host.py",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.188
+    },
+    {
+      "name": "diagnostic-module-copy",
+      "command": [
+        "cp",
+        "target/task-tmp/s2-size-repair/final/optimized.wasm",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "exit": 0,
+      "seconds": 0.009
+    },
+    {
+      "name": "diagnostic-module-remove",
+      "command": [
+        "rm",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "exit": 0,
+      "seconds": 0.001
+    },
+    {
+      "name": "environment",
+      "command": [
+        "python3",
+        "-c",
+        "import json,os,platform,subprocess; print(json.dumps({\"platform\":platform.platform(),\"machine\":platform.machine(),\"cwd\":os.getcwd(),\"tools\":{x:subprocess.check_output([x,\"--version\"],text=True).strip() for x in [\"node\",\"npm\",\"rustc\",\"cargo\",\"uv\"]}},indent=2))"
+      ],
+      "exit": 0,
+      "seconds": 1.194
+    },
+    {
+      "name": "final-abi-parity",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_abi_parity.py"
+      ],
+      "exit": 0,
+      "seconds": 6.077
+    },
+    {
+      "name": "final-abi-smoke",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/abi_smoke.py"
+      ],
+      "exit": 0,
+      "seconds": 0.151
+    },
+    {
+      "name": "final-append-smoke",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/append_stream_smoke.py",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      ],
+      "exit": 0,
+      "seconds": 9.265
+    },
+    {
+      "name": "final-artifact-contract",
+      "command": [
+        "node",
+        "spec/performance/graph-s2-size-repair-2026-10-31/artifact-contract.mjs"
+      ],
+      "exit": 0,
+      "seconds": 0.039
+    },
+    {
+      "name": "final-assets",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "exit": 1,
+      "seconds": 0.047
+    },
+    {
+      "name": "final-client-build",
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "exit": 0,
+      "seconds": 1.994
+    },
+    {
+      "name": "final-fixture-and-history-confirmed",
+      "command": [
+        "git",
+        "diff",
+        "--exit-code",
+        "HEAD",
+        "--",
+        "tests/fixtures",
+        "spec/performance/graph-s1-recovery-2026-10-31",
+        "spec/performance/graph-s1-size-repair-2026-10-31",
+        "spec/performance/graph-s1-package-budget-2026-10-31",
+        "spec/performance/graph-s2-recovery-2026-10-31"
+      ],
+      "exit": 0,
+      "seconds": 0.004
+    },
+    {
+      "name": "final-fixture-and-history",
+      "command": [
+        "git",
+        "diff",
+        "--exit-code",
+        "HEAD",
+        "--",
+        "tests/fixtures",
+        "spec/performance/graph-s1-recovery-2026-10-31",
+        "spec/performance/graph-s1-size-repair-2026-10-31",
+        "spec/performance/graph-s1-package-budget-2026-10-31",
+        "spec/performance/graph-s2-recovery-2026-10-31"
+      ],
+      "exit": 0,
+      "seconds": 0.004
+    },
+    {
+      "name": "final-hooks",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "seconds": 1.104
+    },
+    {
+      "name": "final-measure",
+      "command": [
+        "node",
+        "spec/performance/graph-s2-recovery-2026-10-31/measure.mjs",
+        "target/task-tmp/s2-size-repair/final"
+      ],
+      "exit": 0,
+      "seconds": 40.222
+    },
+    {
+      "name": "final-native-backend",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "-c",
+        "import xyg.kernels as k; print(k.BACKEND)"
+      ],
+      "exit": 0,
+      "seconds": 0.162
+    },
+    {
+      "name": "final-native-build",
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "exit": 0,
+      "seconds": 118.067
+    },
+    {
+      "name": "final-node-wasm-diagnostic",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=2",
+        "--test-timeout=20000",
+        "packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+        "packages/xy-node/test/cose-wasm-parity.test.mjs"
+      ],
+      "exit": 0,
+      "seconds": 0.813
+    },
+    {
+      "name": "final-node",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=2",
+        "--test-timeout=20000",
+        "packages/xy-node/test/graphforge.test.mjs",
+        "packages/xy-node/test/graphforge-cross-host.test.mjs",
+        "packages/xy-node/test/graph.test.mjs",
+        "packages/xy-node/test/force-worker-lifecycle.test.mjs",
+        "packages/xy-node/test/composition.test.mjs",
+        "packages/xy-node/test/temporal.test.mjs",
+        "packages/xy-node/test/temporal-graph.test.mjs",
+        "packages/xy-node/test/temporal-controller.test.mjs"
+      ],
+      "exit": 0,
+      "seconds": 8.318
+    },
+    {
+      "name": "final-package",
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "exit": 1,
+      "seconds": 40.166
+    },
+    {
+      "name": "final-python-version",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "--version"
+      ],
+      "exit": 0,
+      "seconds": 0.018
+    },
+    {
+      "name": "final-python",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge.py",
+        "tests/test_graphforge_scene.py",
+        "tests/test_graphforge_semantic_evidence.py",
+        "tests/test_graphforge_fixture_generation.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_cose_native_parity.py",
+        "tests/test_temporal_columns.py",
+        "tests/test_temporal_graph_native.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_graph_style.py",
+        "tests/test_graph_semantic_mapping.py",
+        "-k",
+        "not browser"
+      ],
+      "exit": 0,
+      "seconds": 7.757
+    },
+    {
+      "name": "final-render-smoke",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/render_smoke_nonumpy.py",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      ],
+      "exit": 0,
+      "seconds": 22.51
+    },
+    {
+      "name": "final-ruff-check",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.07
+    },
+    {
+      "name": "final-ruff-format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.033
+    },
+    {
+      "name": "final-rustfmt",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "crates/xyg-engine/src/projection.rs"
+      ],
+      "exit": 0,
+      "seconds": 0.04
+    },
+    {
+      "name": "final-semantic-goldens",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_graphforge_semantic_fixture.py"
+      ],
+      "exit": 0,
+      "seconds": 0.199
+    },
+    {
+      "name": "final-source-and-diff",
+      "command": [
+        "python3",
+        "-c",
+        "import hashlib,pathlib,subprocess; print(\"projection.rs\",hashlib.sha256(pathlib.Path(\"crates/xyg-engine/src/projection.rs\").read_bytes()).hexdigest()); print(\"engineDiffSha256\",hashlib.sha256(subprocess.check_output([\"git\",\"diff\",\"HEAD\",\"--\",\"crates/xyg-engine/src/projection.rs\"])).hexdigest())"
+      ],
+      "exit": 0,
+      "seconds": 0.067
+    },
+    {
+      "name": "final-ty",
+      "command": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "exit": 0,
+      "seconds": 3.609
+    },
+    {
+      "name": "final-wasm-build",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "exit": 0,
+      "seconds": 70.96
+    },
+    {
+      "name": "final-workspace",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace"
+      ],
+      "exit": 0,
+      "seconds": 139.141
+    },
+    {
+      "name": "node-setup",
+      "command": [
+        "npm",
+        "ci",
+        "--offline",
+        "--prefix",
+        "packages/xy-node"
+      ],
+      "exit": 0,
+      "seconds": 2.623
+    },
+    {
+      "name": "ownership",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exit": 0,
+      "seconds": 0.53
+    }
+  ],
+  "mergeCommitChecks": [
+    {
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "log": "merge-hooks.txt.gz"
+    },
+    {
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "log": "merge-ruff-check.txt.gz"
+    },
+    {
+      "command": "uv run ruff format --check .",
+      "exit": 0,
+      "log": "merge-ruff-format.txt.gz"
+    }
+  ]
+}

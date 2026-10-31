@@ -201,6 +201,9 @@ pub struct TemporalGraph {
     /// same instance rather than keeping its own.
     state: GraphInteractionState,
     applied_revision: u64,
+    /// Source visibility of the last published frame, retained so a bound
+    /// `GraphSession` reads it under the registry lock (F4): `(nodes, edges)`.
+    visibility: Option<(Vec<u8>, Vec<u8>)>,
 }
 
 impl TemporalGraph {
@@ -238,7 +241,42 @@ impl TemporalGraph {
             edge_ids,
             state: GraphInteractionState::default(),
             applied_revision: 0,
+            visibility: None,
         })
+    }
+
+    /// Revision of the last published frame (`0` before the first).
+    pub fn applied_revision(&self) -> u64 {
+        self.applied_revision
+    }
+
+    /// Node and edge visibility of the last published frame; `None` before
+    /// the first frame (everything is visible).
+    pub fn applied_visibility(&self) -> Option<(&[u8], &[u8])> {
+        self.visibility
+            .as_ref()
+            .map(|(nodes, edges)| (&nodes[..], &edges[..]))
+    }
+
+    /// Everything a bound `GraphSession` needs from one locked access: the
+    /// shared interaction state (mutable), the last published frame's source
+    /// visibility `(nodes, edges)`, and that frame's revision. One borrow, so
+    /// the revision a session validates is the one whose visibility and state
+    /// it then reads and mutates.
+    pub fn world_parts(
+        &mut self,
+    ) -> (
+        &mut GraphInteractionState,
+        Option<(&[u8], &[u8])>,
+        u64,
+    ) {
+        (
+            &mut self.state,
+            self.visibility
+                .as_ref()
+                .map(|(nodes, edges)| (&nodes[..], &edges[..])),
+            self.applied_revision,
+        )
     }
 
     /// Canonical node UUIDs in dense order.
@@ -395,6 +433,7 @@ impl TemporalGraph {
         });
         cancel.publish_if_active(|| {
             self.applied_revision = revision;
+            self.visibility = Some((node_visibility.clone(), edge_visibility.clone()));
             TemporalGraphFrame {
                 graph_token: self.graph_token,
                 revision,

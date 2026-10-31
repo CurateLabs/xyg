@@ -1,0 +1,13 @@
+{
+  "node": "v22.23.4",
+  "sourceBytes": 1706999,
+  "sourceSha256": "cfa904e03bb11869e7a1439b1c603675f1ace9688fd43273b1092bb9a017f0e7",
+  "optimizedBytes": 1547779,
+  "gzip6Bytes": 640527,
+  "optimizedSha256": "27b922cb47294ebf8585a54be4d86d3fece91772a0bc7df432a34385fb26b678",
+  "gzip6Sha256": "c52977d626d8d7d048e964c1cf61d0bf0d0712b8f209f08694613f9a7c0aea96",
+  "rawGate": 1547264,
+  "gzip6Gate": 640000,
+  "rawHeadroom": -515,
+  "gzip6Headroom": -527
+}

@@ -498,10 +498,73 @@ is never serialized into `spec.graph` or the paint payload.
 
 Retained interaction (coordinated selection, focus, pin/drag/relayout, picks,
 and accessibility) over composed graphs is specified in
-[graph-interaction.md](graph-interaction.md); slice S1 (composition hierarchy,
-identity, the shared interaction state, session create/select/focus) is
-implemented, the render/pick pipeline and hosts follow per its slice table.
+[graph-interaction.md](graph-interaction.md). Slices S1 (composition hierarchy,
+identity, the shared interaction state, session create/select/focus) and S2
+(the retained `GraphSession` render publication below) are implemented in the
+Rust engine; the pick index (S3), the native/WASM session ABI (S4), and the
+browser/Python/Node hosts follow per its slice table.
 
+- **Session render publication (#36 S2).** A `GraphSession` publishes one
+  `RenderOutput` per revision. Pipeline, in *source* index space until the last
+  step: (1) the bound temporal frame's source visibility masks nodes and edges
+  (an Owned session has none; an edge is also masked when either endpoint is);
+  (2) `compound_collapse` over the document hierarchy and `load.collapsed`
+  (visibility, representatives, rerouted endpoints with edge provenance);
+  (3) `graph::build_render` culls (the camera is the viewport) and applies the
+  §1.4 LOD over the collapsed source graph, hidden nodes entering as
+  non-finite (inactive) positions and dropped edges simply absent; (4)
+  membership composes source node → representative → render node, and render
+  edge → source edges (ascending). At the Direct tier with authored positions
+  the planes are byte-equal to `layout_render` on the same inputs
+  (`graph_build_render_with_membership`); unauthored positions are the seeded
+  CoSE layout (300 steps, document parents) the host path uses. A collapsed
+  group that is culled does not render its on-screen child (collapse runs
+  before culling), and aggregate centroids exclude hidden descendants.
+  Membership is not source visibility: a node hidden by a collapsed group has a
+  render node (its representative's), while a temporally invisible or culled
+  node has none (`NOT_RENDERED`). Style planes: per-render-node and per-render-edge `visual_states`
+  (`resolve_visual_state`, unchanged precedence) and an independent `emphasis`
+  u8 (`(flags >> 7) & 0xF`: FOCUSED, PATH, COMMUNITY, EXTERNAL; they never
+  enter the precedence). Emphasis flags and `SELECTED/HOVERED/NEIGHBOR/PINNED`
+  propagate from hidden members to their representative; across an aggregate
+  the plane is the OR over members. `KNOWN_STATE_FLAGS` (the authored style vocabulary, `state_flag_mask` 127 in every host) stays 7 bits; only `compound_collapse` accepts the session emphasis flags (`KNOWN_SESSION_FLAGS`, `(1 << 11) - 1`).
+  Hover (`HOVERED` on the current representative, `NEIGHBOR` one temporally
+  visible, collapse-rerouted edge away) is transient
+  session state, not part of the shared interaction state.
+- **Revisions and stamps.** `render_revision` advances on every *structural*
+  change — pin, move preview/commit/cancel, relayout step, an effective
+  disclosure, a changed temporal frame (a bound session folds the temporal
+  revision in, so a host holding the old publication is rejected `Stale` and
+  repaints), bind/unbind — and when a render is requested with a different
+  camera than the previous publication. Selection, focus, hover and highlight
+  change style planes only and republish at the same revision, so aggregate
+  refs stay valid across them. An aggregate ref is valid only for the current
+  publication (`Stale` otherwise); selecting one selects its member source
+  nodes (a collapsed group's render node includes its hidden descendants).
+  The revision never wraps: at `u32::MAX` a structural change fails
+  `GF_INTERACTION_REVISION_EXHAUSTED` before any mutation. Under a bound
+  temporal graph the revision check, the mutation, and the render inputs share
+  one registry lock, and the temporal snapshot masks the hierarchy before
+  collapse (an expired collapsed group hides nothing); layout and relayout run
+  on the visible subgraph only.
+- **Positions.** Pin writes the node's current f64 into the UUID-keyed pin set.
+  Move: preview (updates the position, remembers the origin once), commit (applies
+  any last delta, pins, reports the position), cancel (restores the origin bit
+  for bit); screen deltas convert through the last rendered camera; non-finite
+  results are `Invalid` and leave the last valid position. `relayout_step`
+  (≤ 64 requested steps, `(requested + seed steps) × (visible nodes + visible
+  edges) ≤ 4,000,000` else `Budget`, with 300 seed steps when positions are
+  absent, admitted before any force work) always
+  runs CoSE seeded from the current positions with pinned nodes held bit-exact
+  and the document parents, because `ForceState::new_configured` is the one
+  engine honoring pins and parents; any pin/move/commit drops the retained
+  force state.
+- **Keyboard walks.** `FocusStep ±1` walks drawn render nodes (wrapping; an
+  aggregate or collapsed group is one stop focused through its lowest-index
+  visible member). `FocusRing ±1` walks the ring around an anchor node: the
+  node, its out-edges, its in-edges, then its neighbors, each ascending in
+  render index; the anchor persists until focus moves by another operation or
+  the render changes.
 - Pan / zoom / fit (chart view) — zoom drives §1.4 LOD, not client-side
   topology walks.
 - Pick nodes via scatter GPU pick; edges via segment hit or neighbor of picked node.
@@ -941,6 +1004,18 @@ group by recomposing with the next collapse set (`xyg_graph_compound_transition`
 validates it). `tests/test_graph_compound.py` pins the composed result in
 `tests/fixtures/graph_compound_cross_host.json` (Node asserts the same
 fixture) and probes Chromium for padded frames under the data.
+
+**Tier decision: interactive disclosure (#36 S2, §28).** A retained session
+toggles a group (`toggle_disclosure`, Expand / Collapse / Toggle) as an
+explicit *direct-tier* feature bounded at `MAX_COMPOUND_TRANSITION_NODES`
+(1,024) source nodes — the same bound `xyg_graph_compound_transition` enforces.
+Above it the operation fails `GF_INTERACTION_COMPOUND_TOO_LARGE` with no state
+or revision change (the host shows that grouping is camera-driven for that
+graph). Render-tier aggregates (Aggregate / EdgeSample LOD) are selectable
+(their members), focusable, and hoverable, but take no disclosure action
+(`GF_INTERACTION_INVALID`); so do non-compound nodes and edges. Hidden members
+keep their UUID-keyed selection/focus state, which re-surfaces on the
+representative while collapsed and on the members after expansion.
 
 `tests/fixtures/graphforge/semantic_compound.json` is the inspectable final-
 evidence corpus for this contract. It combines all five canonical class,

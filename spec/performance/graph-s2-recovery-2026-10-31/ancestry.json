@@ -1,0 +1,9 @@
+{
+  "start": "1440bec94202129eea25751c3d51ee7cd1620130",
+  "firstParent": "9a52123156ef87ef8ed30a22db3d577be5ae8925",
+  "secondParent": "b72b1af07cf41dfd52509d79f681bc4070f1f1ce",
+  "originalPrBranch": "feat/36-s2-graph-session",
+  "originalPrBase": "feat/36-s1-graph-session",
+  "retainedEngineDiffSha256": "f0bcdc91415f1c091076b00a437254c0fdd8454c29bd7be235578e5fac7700f9",
+  "s1ReviewedDiffVs465Sha256": "4e9fc973721dcad1afa080d517d112f90cdc2bc1f90aae8e4a67ac44f0b14566"
+}
