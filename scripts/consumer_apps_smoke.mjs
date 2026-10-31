@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright';
 import { qualifyPackagedConsumers } from './packaged_consumer_browser.mjs';
+import { qualifyStreamlitGraphForge } from './streamlit_graphforge_browser.mjs';
 const { values } = parseArgs({ options: {
   chromium: { type: 'string' }, 'streamlit-url': { type: 'string' }, 'node-url': { type: 'string' },
   'python-html-url': { type: 'string' }, 'qualification-url': { type: 'string' },
@@ -18,12 +19,12 @@ const report = { schema: 1, commit: execFileSync('git', ['rev-parse', 'HEAD'], {
   browser: browser.version(), node: process.version, launchArgs, hosts: {}, hashes: {} };
 // An incomplete asynchronous journey must never exit successfully without proof.
 process.exitCode = 1;
-const paint = async frame => {
+const paint = async (frame, nonWhite = false) => {
   // Read the actual composited plot: GPU presentation buffers may already be cleared.
   const plot = frame.locator('canvas[style*="touch-action"]').first();
   await plot.waitFor();
   const png = await plot.screenshot();
-  return frame.evaluate(async encoded => {
+  return frame.evaluate(async ({encoded, nonWhite}) => {
     const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
     const image = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
     const canvas = document.createElement('canvas');
@@ -33,9 +34,10 @@ const paint = async frame => {
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
     let colored = 0;
     for (let i = 0; i < pixels.length; i += 4)
-      if (pixels[i + 3] && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) - Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) > 50) colored++;
+      if (pixels[i + 3] && (nonWhite ? Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) < 200
+        : Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) - Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) > 50)) colored++;
     return colored;
-  }, png.toString('base64'));
+  }, { encoded: png.toString('base64'), nonWhite });
 };
 
 try {
@@ -201,6 +203,8 @@ try {
   assert.deepEqual(streamlitErrors, []);
   report.hosts.streamlit = { coloredPixels: before, rerun: true, singleIframe: true,
     exportControls: true, downloads, pythonSelectionCallbacks: false, errors: streamlitErrors };
+  report.hosts.streamlit.graphforge = await qualifyStreamlitGraphForge(browser,
+    values['streamlit-url'], 'consumer-apps-smoke', paint);
   for (const file of ['target/release/libxyg_core.so', 'packages/xy-client/dist/index.js',
     'packages/xy-client/dist/xyg-wasm.wasm'])
     report.hashes[file] = createHash('sha256').update(await readFile(file)).digest('hex');

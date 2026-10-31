@@ -1,0 +1,78 @@
+{
+  "inputs": {
+    "manifest.json": "9f50ce9df24ac263e4de61299f593cec38c3b3f4eb995bc2ec1d058e3af5676b",
+    "base-property-nodes.arrow": "625ad3c2dc13420279300339ed294d7b20b08f379b1ed5c45392168d6e3b01dc",
+    "base-property-edges.arrow": "408a4c1a88ceab3f98af1b8a50fa9c1dd40c8dd9d5db1cf28c0d40b9efbac73f",
+    "base-cyclic-nodes.arrow": "9d3781a5e34781d22278bc3b5db08d17c8fb2a1ef89b807e60928f68fef0bee8",
+    "base-cyclic-edges.arrow": "5e401ad23a7586f9c31e83904fe76215b4c920ab8a8c50dc15172a560623f738",
+    "pagerank.arrow": "af0edce7246fd618701cf2562ed8d5f20abec6796bb4546185a24dda8da10705"
+  },
+  "cases": {
+    "graphforge-property": {
+      "nodes": 5,
+      "edges": 5,
+      "generation": "0190a000-0000-7000-8000-000000000006",
+      "layers": 0,
+      "captions": [
+        "ada",
+        "Prof",
+        "Acme",
+        "00000004",
+        "00000005"
+      ],
+      "legend": [
+        "no label",
+        "Company",
+        "Person",
+        "directed relationship"
+      ],
+      "artifacts": {
+        "html": {
+          "file": "streamlit-graphforge-property.html",
+          "bytes": 766275,
+          "sha256": "9d3d32fae6566a5042d0b9e711a7cca923c2114b7d4b7eaf24f9945ac6edf816"
+        },
+        "svg": {
+          "file": "streamlit-graphforge-property.svg",
+          "bytes": 4517,
+          "sha256": "c13d815975d0868e0cd52e41535aab949b4fb340763f52b036c449e010ddb91c"
+        },
+        "png": {
+          "file": "streamlit-graphforge-property.png",
+          "bytes": 59377,
+          "sha256": "60a0bb47c63926ce975e94bb76cc8dbe43bfd9075e3dff87c9deadde0c15b0c5"
+        }
+      }
+    },
+    "graphforge-pagerank": {
+      "nodes": 4,
+      "edges": 5,
+      "generation": "0190a000-0000-7000-8000-000000000001",
+      "layers": 1,
+      "captions": [
+        "ada",
+        "bo",
+        "cy",
+        "di"
+      ],
+      "legend": [],
+      "artifacts": {
+        "html": {
+          "file": "streamlit-graphforge-pagerank.html",
+          "bytes": 765339,
+          "sha256": "1c493935538cfe84bd3a3995a615c4b6e226b1c45d3832adb8f649d6bb14bf5f"
+        },
+        "svg": {
+          "file": "streamlit-graphforge-pagerank.svg",
+          "bytes": 2605,
+          "sha256": "a4756d5dce22182010bdfec58385a112d7d14297027674804e6882914324fe20"
+        },
+        "png": {
+          "file": "streamlit-graphforge-pagerank.png",
+          "bytes": 71923,
+          "sha256": "e4c947be84f3136490c69ab6852177b65ac319f529d6a5876a1c9b7e2608ea38"
+        }
+      }
+    }
+  }
+}

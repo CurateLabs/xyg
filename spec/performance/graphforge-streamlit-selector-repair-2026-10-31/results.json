@@ -1,0 +1,88 @@
+{
+  "scope": "#1081 selector harness repair; bounded local installed-wheel/browser proof, not milestone or release acceptance",
+  "ci": {
+    "run": 41225069267,
+    "testJob": 124607772828,
+    "releaseAggregateJob": 124610991921,
+    "head": "2fc467a85295e9a09c0105923991535bbe963386",
+    "mergeCommit": "52858b43f9a3e8c49c2412cfaba447c9206f42c7",
+    "artifactId": 13051273287,
+    "artifactZipSha256": "0aa3cd30ee57dcf890abd95a25e3472571c111f05b0176c980129c0668fda416",
+    "failure": "Search text line remained uncommitted; caption and iframe stayed graphforge-property"
+  },
+  "negativeControl": {
+    "candidate": "fill(kind), then exact option click",
+    "lockedFullGateExit": 1,
+    "floorBrowserExit": 0,
+    "observed": "Exact line option detaches and menu closes before commit; do not attribute only to Enter"
+  },
+  "fix": "Open selector with normal click, activate exact visible option with normal click; original assertions/timeouts unchanged",
+  "verification": {
+    "fullInstalledConsumerGateExit": 0,
+    "lockedAppTests": 13,
+    "lockedStreamlit": "1.66.1",
+    "floorAppTests": 13,
+    "floorStreamlit": "1.56.0",
+    "floorBrowserExit": 0,
+    "node": "v22.23.4",
+    "browser": "149.0.7827.55",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+    "launchArgs": [
+      "--no-sandbox",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--ignore-gpu-blocklist"
+    ],
+    "floor": {
+      "python": "/tmp/graphforge-streamlit-floor/bin/python",
+      "package": "/tmp/graphforge-streamlit-floor/lib/python3.12/site-packages/xyg/__init__.py",
+      "version": "0.0.1.dev2915+fab6aa90",
+      "streamlit": "1.56.0"
+    },
+    "wheel": {
+      "name": "xyg-0.0.1.dev2915+fab6aa90-py3-none-linux_x86_64.whl",
+      "sha256": "d92f634f7ddb59d72744fe8591f9aa4bff8ac093719c3639f418434ba55418cc"
+    },
+    "fullCommand": [
+      "uv",
+      "run",
+      "python",
+      "scripts/consumer_apps_smoke.py",
+      "--chromium",
+      "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+      "--wheel",
+      "/tmp/graphforge-streamlit-wheel/xyg-0.0.1.dev2915+fab6aa90-py3-none-linux_x86_64.whl"
+    ],
+    "regression": "For each of two GraphForge fixtures: previews, exact downloads, local brush/zoom, then two line/graph switch cycles with committed caption, settled exact iframe, old context retirement, identical remounted document and paint"
+  },
+  "sourceManifestSha256": "4b54f81ff19481eaa228b38b7afdf224c6e3b7bc8bb58dc68f6f342511b5da63",
+  "logs": {
+    "filtered-click-full-gate.txt.gz": {
+      "rawBytes": 7088,
+      "rawSha256": "7cce669eb132d0370681333c09c7cce9bb4c0122cf3b89411e8a1f9f8954bcf5",
+      "gzipSha256": "a22ea9d9af07e2ec539219724a7a2b57f48ab87630fd50bac0f1bda952f2acfd"
+    },
+    "full-gate.txt.gz": {
+      "rawBytes": 52341,
+      "rawSha256": "896a0a0127c8b3048727489ab65205b76e3554a3acaf8a659d8685e49f7f2916",
+      "gzipSha256": "40e49a25d788933eb3d49e548ca3e64373d35f519c3156d1dfde9b6e08dab431"
+    },
+    "floor-browser.txt.gz": {
+      "rawBytes": 2346,
+      "rawSha256": "8e3135717c92f5ee8027887f08c062fc9c1ee4176e64e276a8993fc9003a102b",
+      "gzipSha256": "99a8d8bc96d57e62fa48d900ad6456cb3cc37c00dd55c83e803e36447ae5a335"
+    },
+    "floor-server.txt.gz": {
+      "rawBytes": 1642,
+      "rawSha256": "dc7eda0a4a55390aa0b26cc15df834ae367ae419b0a1b91759a4835460b9fcb0",
+      "gzipSha256": "1df206146190b32c73d5566e3020723033fc44abf7d81aa89a004bd5510cd2af"
+    }
+  },
+  "limitations": [
+    "Underlying React scheduling not proven from screenshot; failure-to-commit and detached option observed directly",
+    "CI commit fields name baseline; working-tree hashes bind repaired harness",
+    "Exact local wheel reused because only repository harness/spec changed",
+    "No Python callback bridge, live-view destroy proof, graph accessibility or final release-cohort qualification",
+    "Original1016 receipt remains unchanged; CI must confirm repaired head"
+  ]
+}
