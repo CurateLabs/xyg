@@ -32,3 +32,13 @@ package and browser client, installs their archives into a clean directory, and
 runs this server with `XYG_CONSUMER_INSTALL` pointing at that install. The host
 then resolves the installed package exports and assets rather than source paths;
 no development native override is set.
+
+The independent `graphforge-live.mjs` fixture uses one
+`GraphForgeLayoutController` with the asynchronous default live payload API.
+It serves local painter assets and raw binary checkpoints from a four-node
+GraphForge property graph. Its acceptance handshake lets the functional browser
+runner inspect initial/final pixels, GPU picks and pan before acknowledging each
+presentation. Run the reproducible proof from
+`spec/performance/graph-node-scheduling-35-2026-10-31/README.md`; no WASM build is
+needed for this native/painter journey. It replaces the whole view, with the same
+viewport reset limitation as this example; it is not a retained graph controller.

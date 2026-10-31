@@ -15,6 +15,7 @@
 
 import { graphChart } from "./charts.js";
 import { figure } from "./figure.js";
+export { GraphForgeLayoutController, graphforgeWebviewPayload } from "./graphforge_layout.js";
 import {
   DOCUMENT_MAGIC,
   DTYPE,
@@ -297,6 +298,8 @@ export class GraphForgeComposition {
         count: nodeUuid.length / 16,
         uuidBytes: nodeUuid,
         baseRow: get("node.base_row"),
+        parentIndices: get("node.parent") ?? null,
+        parentValidity: get("node.parent.valid") ?? null,
         name: get("node.name"),
         type: get("node.type"),
         class: get("node.class"),
@@ -547,6 +550,8 @@ export function graphforgeGraphData(composition) {
     edgeIds,
     sources: edges.source,
     targets: edges.target,
+    parentIndices: nodes.parentIndices == null ? null : BigUint64Array.from(nodes.parentIndices, BigInt),
+    parentValidity: nodes.parentValidity,
     x: null,
     y: null,
     nodeAttrs,
@@ -779,7 +784,7 @@ export function graphforgePositions(fig, composition) {
 }
 
 /**
- * Map a pick on a `graphforgeChart` figure (a webview's `xy:click` detail
+ * Map a pick on a live payload or `graphforgeChart` figure (a webview's `xy:click` detail
  * `{trace, index}`, relayed to the extension host) to the composed element's
  * GraphForge identity. Node rows are exact below Aggregate LOD; edge segments
  * resolve through Rust's render-edge membership, so an aggregate edge reports
@@ -789,6 +794,18 @@ export function graphforgePositions(fig, composition) {
  *   `{ kind: "aggregate", trace, edgeCount, edges }`, or null off-graph.
  */
 export function graphforgePick(fig, composition, { trace, index } = {}) {
+  if (fig?.pickData) {
+    const { nodeTrace, edgeTrace, aggregate, edges } = fig.pickData;
+    if (!Number.isInteger(index) || index < 0) return null;
+    if (trace === nodeTrace) return aggregate ? { kind: "aggregate", trace, nodeCount: null }
+      : index < composition.nodes.count ? composition.identify("node", index) : null;
+    if (trace !== edgeTrace) return null;
+    const pick = edges[index];
+    if (!pick) return null;
+    if (pick.edge_count === 1) return composition.identify("edge", pick.source_edges[0]);
+    return { kind: "aggregate", trace, edgeCount: pick.edge_count,
+      edges: pick.source_edges.map((edge) => composition.identify("edge", edge)), truncated: pick.members_truncated };
+  }
   const meta = fig?._graphMeta?.[0];
   if (meta == null || !Number.isInteger(trace) || !Number.isInteger(index) || index < 0) return null;
   if (trace === meta.node_trace) {
@@ -813,12 +830,13 @@ export function graphforgePick(fig, composition, { trace, index } = {}) {
 }
 
 /**
- * The paint payload for a VS Code webview (or any browser host): the chart's
+ * Explicit synchronous batch/static payload (live views use an owner via
+ * graphforgeWebviewPayload): the chart's
  * `{spec, buffers}` plus the trace indices a pick relay needs. Post `spec` and
  * the buffer (transferable) to the webview, which calls
  * `xy.renderStandalone(el, spec, buffer)` from the local paint client.
  */
-export function graphforgeWebviewPayload(composition, opts = {}) {
+export function graphforgeStaticPayload(composition, opts = {}) {
   const fig = graphforgeChart(composition, opts);
   // Webviews relay picks, so the chart emits `xy:click` (off by default).
   fig.interaction = { click: true, ...(fig.interaction ?? {}) };

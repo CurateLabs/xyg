@@ -148,6 +148,8 @@ export {
   graphforgePick,
   graphforgePositions,
   graphforgeWebviewPayload,
+  graphforgeStaticPayload,
+  GraphForgeLayoutController,
 } from "./graphforge.js";
 
 export { geoDescriptorFromGeoArrow } from "./geoarrow.js";

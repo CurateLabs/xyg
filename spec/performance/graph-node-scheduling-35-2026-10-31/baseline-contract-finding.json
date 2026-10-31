@@ -1,0 +1,9 @@
+{
+  "scope": "pre-existing no_browser_globals test false positive; not repaired in Node-owned paths",
+  "base": "dee3ea37540a7126c3082ae59624bb02881bb00f",
+  "path": "packages/xy-node/src/_abi_generated.js",
+  "base_sha256": "99e89d6ba93c8debd1df7888b822581ad207011e9aead2c876f81c5b5ead3d0e",
+  "current_sha256": "99e89d6ba93c8debd1df7888b822581ad207011e9aead2c876f81c5b5ead3d0e",
+  "offending_declaration": "xyGraphforgeSessionCreate = lib.func(\"int32_t xyg_graphforge_session_create(const uint8_t * document, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)\");",
+  "finding": "test regex bans the identifier document even inside a generated FFI declaration string; parent/S4 owns generated ABI and boundary-test disposition"
+}

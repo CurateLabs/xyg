@@ -1,0 +1,768 @@
+TAP version 13
+# Subtest: normalize + circle runLayout emits positions and meta
+ok 1 - normalize + circle runLayout emits positions and meta
+  ---
+  duration_ms: 4.765165
+  type: 'test'
+  ...
+# Subtest: configured CoSE rejects non-positive iterations instead of dropping options
+ok 2 - configured CoSE rejects non-positive iterations instead of dropping options
+  ---
+  duration_ms: 0.675722
+  type: 'test'
+  ...
+# Subtest: composeGraph + figure.buildPayload protocol subset
+ok 3 - composeGraph + figure.buildPayload protocol subset
+  ---
+  duration_ms: 66.836773
+  type: 'test'
+  ...
+# Subtest: composeGraph helper returns traces ready for figure
+ok 4 - composeGraph helper returns traces ready for figure
+  ---
+  duration_ms: 1.293548
+  type: 'test'
+  ...
+# Subtest: graph ships tooltip_rows plus continuous size and color channels
+ok 5 - graph ships tooltip_rows plus continuous size and color channels
+  ---
+  duration_ms: 43.451383
+  type: 'test'
+  ...
+# Subtest: graph ships CSS color lists as direct_rgba
+ok 6 - graph ships CSS color lists as direct_rgba
+  ---
+  duration_ms: 29.763463
+  type: 'test'
+  ...
+# Subtest: composeGraph rejects tooltip_rows length mismatch
+ok 7 - composeGraph rejects tooltip_rows length mismatch
+  ---
+  duration_ms: 1.103821
+  type: 'test'
+  ...
+# Subtest: PayloadWriter ships continuous size_ch buffers
+ok 8 - PayloadWriter ships continuous size_ch buffers
+  ---
+  duration_ms: 9.986541
+  type: 'test'
+  ...
+# Subtest: force_scheduler chunked setImmediate completes
+ok 9 - force_scheduler chunked setImmediate completes
+  ---
+  duration_ms: 32.027021
+  type: 'test'
+  ...
+# Subtest: force_scheduler worker transports CoSE options and pins without host math
+ok 10 - force_scheduler worker transports CoSE options and pins without host math
+  ---
+  duration_ms: 139.333642
+  type: 'test'
+  ...
+# Subtest: force_scheduler stops after the first converged completion phase
+ok 11 - force_scheduler stops after the first converged completion phase
+  ---
+  duration_ms: 2.748365
+  type: 'test'
+  ...
+# Subtest: force_scheduler rejects and terminates when a progress callback fails
+ok 12 - force_scheduler rejects and terminates when a progress callback fails
+  ---
+  duration_ms: 138.819411
+  type: 'test'
+  ...
+# Subtest: force_scheduler never turns a misspelled mode into main-thread work
+ok 13 - force_scheduler never turns a misspelled mode into main-thread work
+  ---
+  duration_ms: 0.700213
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: callback waits for destroy and exit
+ok 14 - force worker lifecycle: callback waits for destroy and exit
+  ---
+  duration_ms: 461.861277
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: complete-failure waits for destroy and exit
+ok 15 - force worker lifecycle: complete-failure waits for destroy and exit
+  ---
+  duration_ms: 320.72979
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: abort waits for destroy and exit
+ok 16 - force worker lifecycle: abort waits for destroy and exit
+  ---
+  duration_ms: 359.527523
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: timeout waits for destroy and exit
+ok 17 - force worker lifecycle: timeout waits for destroy and exit
+  ---
+  duration_ms: 712.851927
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: normal waits for destroy and exit
+ok 18 - force worker lifecycle: normal waits for destroy and exit
+  ---
+  duration_ms: 425.122245
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: no-callback waits for destroy and exit
+ok 19 - force worker lifecycle: no-callback waits for destroy and exit
+  ---
+  duration_ms: 417.214381
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: mutated-step waits for destroy and exit
+ok 20 - force worker lifecycle: mutated-step waits for destroy and exit
+  ---
+  duration_ms: 385.455985
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: native-error waits for destroy and exit
+ok 21 - force worker lifecycle: native-error waits for destroy and exit
+  ---
+  duration_ms: 309.175146
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: pre-abort never allocates a worker
+ok 22 - force worker lifecycle: pre-abort never allocates a worker
+  ---
+  duration_ms: 162.968846
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle: unresponsive worker uses bounded emergency termination and waits for exit
+ok 23 - force worker lifecycle: unresponsive worker uses bounded emergency termination and waits for exit
+  ---
+  duration_ms: 1382.91405
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: callback
+ok 24 - force worker lifecycle with native ABI: callback
+  ---
+  duration_ms: 416.482945
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: complete-failure
+ok 25 - force worker lifecycle with native ABI: complete-failure
+  ---
+  duration_ms: 320.689619
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: abort
+ok 26 - force worker lifecycle with native ABI: abort
+  ---
+  duration_ms: 383.270125
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: timeout
+ok 27 - force worker lifecycle with native ABI: timeout
+  ---
+  duration_ms: 664.188332
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: normal
+ok 28 - force worker lifecycle with native ABI: normal
+  ---
+  duration_ms: 291.388703
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: no-callback
+ok 29 - force worker lifecycle with native ABI: no-callback
+  ---
+  duration_ms: 303.716734
+  type: 'test'
+  ...
+# Subtest: force worker lifecycle with native ABI: mutated-step
+ok 30 - force worker lifecycle with native ABI: mutated-step
+  ---
+  duration_ms: 305.967641
+  type: 'test'
+  ...
+# (node:1231377) RuntimeWarning: graph colorScale categorical has 3 categories but the palette has 2 colors; colors repeat every 2 categories (category 3 wears category 1's color). Pass a longer palette.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: abi version matches expected
+ok 31 - abi version matches expected
+  ---
+  duration_ms: 5.119621
+  type: 'test'
+  ...
+# Subtest: compound bounds include transitive descendants without host traversal
+ok 32 - compound bounds include transitive descendants without host traversal
+  ---
+  duration_ms: 1.754716
+  type: 'test'
+  ...
+# Subtest: compound disclosure transition is Rust-owned and refuses aggregate LOD
+ok 33 - compound disclosure transition is Rust-owned and refuses aggregate LOD
+  ---
+  duration_ms: 1.439556
+  type: 'test'
+  ...
+# Subtest: compound collapse compiles through native Rust to canonical Scene
+ok 34 - compound collapse compiles through native Rust to canonical Scene
+  ---
+  duration_ms: 1.741179
+  type: 'test'
+  ...
+# Subtest: GraphForge semantic styles are identical to the native golden
+ok 35 - GraphForge semantic styles are identical to the native golden
+  ---
+  duration_ms: 2.094276
+  type: 'test'
+  ...
+# Subtest: GraphForge tables preserve UUID identity, parents, and provenance through Rust
+ok 36 - GraphForge tables preserve UUID identity, parents, and provenance through Rust
+  ---
+  duration_ms: 2.027534
+  type: 'test'
+  ...
+# Subtest: circle layout length and values
+ok 37 - circle layout length and values
+  ---
+  duration_ms: 0.711408
+  type: 'test'
+  ...
+# Subtest: seeded force is deterministic across two calls
+ok 38 - seeded force is deterministic across two calls
+  ---
+  duration_ms: 1.009357
+  type: 'test'
+  ...
+# Subtest: configurable CoSE pins and bounds stay in the Rust kernel
+ok 39 - configurable CoSE pins and bounds stay in the Rust kernel
+  ---
+  duration_ms: 1.079917
+  type: 'test'
+  ...
+# Subtest: CoSE ergonomic options fail closed instead of falling back
+ok 40 - CoSE ergonomic options fail closed instead of falling back
+  ---
+  duration_ms: 1.049482
+  type: 'test'
+  ...
+# Subtest: force layout catalog names are seeded deterministic
+ok 41 - force layout catalog names are seeded deterministic
+  ---
+  duration_ms: 57.515236
+  type: 'test'
+  ...
+# Subtest: layout name aliases match Python map ids
+ok 42 - layout name aliases match Python map ids
+  ---
+  duration_ms: 0.880258
+  type: 'test'
+  ...
+# Subtest: hierarchical/dagre differ from undirected breadthfirst on a DAG
+ok 43 - hierarchical/dagre differ from undirected breadthfirst on a DAG
+  ---
+  duration_ms: 0.414788
+  type: 'test'
+  ...
+# Subtest: LOD edge sample tier and edge sampling
+ok 44 - LOD edge sample tier and edge sampling
+  ---
+  duration_ms: 0.34608
+  type: 'test'
+  ...
+# Subtest: cluster aggregate records Aggregate tier and centroids
+ok 45 - cluster aggregate records Aggregate tier and centroids
+  ---
+  duration_ms: 0.376815
+  type: 'test'
+  ...
+# Subtest: CSR build returns u64 offsets and neighbors
+ok 46 - CSR build returns u64 offsets and neighbors
+  ---
+  duration_ms: 0.372803
+  type: 'test'
+  ...
+# Subtest: simple two-node sankey layout succeeds in the unit box
+ok 47 - simple two-node sankey layout succeeds in the unit box
+  ---
+  duration_ms: 0.563051
+  type: 'test'
+  ...
+# Subtest: graphBuildRender respects node/edge budgets
+ok 48 - graphBuildRender respects node/edge budgets
+  ---
+  duration_ms: 0.524605
+  type: 'test'
+  ...
+# Subtest: 10M / 100M / 1B-class LOD decisions stay screen-bounded
+ok 49 - 10M / 100M / 1B-class LOD decisions stay screen-bounded
+  ---
+  duration_ms: 0.238925
+  type: 'test'
+  ...
+# Subtest: looksLikeGraphForgeTables detects canonical UUID columns
+ok 50 - looksLikeGraphForgeTables detects canonical UUID columns
+  ---
+  duration_ms: 0.199179
+  type: 'test'
+  ...
+# Subtest: graphEdgeRouteSegments separates parallels and keeps source indices
+ok 51 - graphEdgeRouteSegments separates parallels and keeps source indices
+  ---
+  duration_ms: 0.497646
+  type: 'test'
+  ...
+# Subtest: graphEdgeRouteSegments curved bows off the chord and stays deterministic
+ok 52 - graphEdgeRouteSegments curved bows off the chord and stays deterministic
+  ---
+  duration_ms: 0.369946
+  type: 'test'
+  ...
+# Subtest: composeGraph edge_curve='curve' emits more paint segments than straight
+ok 53 - composeGraph edge_curve='curve' emits more paint segments than straight
+  ---
+  duration_ms: 5.561213
+  type: 'test'
+  ...
+# Subtest: composeGraph expands per-edge colors across curved routed segments
+ok 54 - composeGraph expands per-edge colors across curved routed segments
+  ---
+  duration_ms: 2.654222
+  type: 'test'
+  ...
+# Subtest: composeGraph rejects an unknown edgeCurve value
+ok 55 - composeGraph rejects an unknown edgeCurve value
+  ---
+  duration_ms: 11.27207
+  type: 'test'
+  ...
+# Subtest: graph style policies consume the shared Rust ABI
+ok 56 - graph style policies consume the shared Rust ABI
+  ---
+  duration_ms: 6.387184
+  type: 'test'
+  ...
+# Subtest: composeGraph serializes Rust-owned labels, visual states, and compounds
+ok 57 - composeGraph serializes Rust-owned labels, visual states, and compounds
+  ---
+  duration_ms: 7.867988
+  type: 'test'
+  ...
+# Subtest: composeGraph label text has exact null fallback and rejects scalar coercion
+ok 58 - composeGraph label text has exact null fallback and rejects scalar coercion
+  ---
+  duration_ms: 3.466961
+  type: 'test'
+  ...
+# Subtest: Aggregate graph composition omits source-indexed label and state planes
+ok 59 - Aggregate graph composition omits source-indexed label and state planes
+  ---
+  duration_ms: 1.240998
+  type: 'test'
+  ...
+# Subtest: composeGraph numeric identity fallback is safe and exact
+ok 60 - composeGraph numeric identity fallback is safe and exact
+  ---
+  duration_ms: 11.967294
+  type: 'test'
+  ...
+# Subtest: composeGraph GraphForge tables preserve edge identity and node tooltips
+ok 61 - composeGraph GraphForge tables preserve edge identity and node tooltips
+  ---
+  duration_ms: 5.728604
+  type: 'test'
+  ...
+# Subtest: figure.graph GraphForge tables ship continuous size from column name
+ok 62 - figure.graph GraphForge tables ship continuous size from column name
+  ---
+  duration_ms: 58.119838
+  type: 'test'
+  ...
+# Subtest: fromGraphForgeTables rejects duplicate edge uuid before paint
+ok 63 - fromGraphForgeTables rejects duplicate edge uuid before paint
+  ---
+  duration_ms: 0.470061
+  type: 'test'
+  ...
+# Subtest: fromGraphForgeTables rejects missing endpoint before paint
+ok 64 - fromGraphForgeTables rejects missing endpoint before paint
+  ---
+  duration_ms: 0.294218
+  type: 'test'
+  ...
+# Subtest: resolveGraphData accepts GraphData passthrough
+ok 65 - resolveGraphData accepts GraphData passthrough
+  ---
+  duration_ms: 0.457603
+  type: 'test'
+  ...
+# Subtest: looksLikeGraphForgeTables honors mapping overrides
+ok 66 - looksLikeGraphForgeTables honors mapping overrides
+  ---
+  duration_ms: 0.430669
+  type: 'test'
+  ...
+# Subtest: composeGraph accepts GraphData with size option object
+ok 67 - composeGraph accepts GraphData with size option object
+  ---
+  duration_ms: 1.662608
+  type: 'test'
+  ...
+# Subtest: resolveGraphData rejects mismatched preset y length
+ok 68 - resolveGraphData rejects mismatched preset y length
+  ---
+  duration_ms: 0.449599
+  type: 'test'
+  ...
+# Subtest: projectionTooltipRows preserves bigint attributes as strings
+ok 69 - projectionTooltipRows preserves bigint attributes as strings
+  ---
+  duration_ms: 0.304188
+  type: 'test'
+  ...
+# Subtest: graph edge picks match the Python cross-host identity fixture (\#33)
+ok 70 - graph edge picks match the Python cross-host identity fixture (\#33)
+  ---
+  duration_ms: 5.515931
+  type: 'test'
+  ...
+# Subtest: graph semantic paint matches the Python cross-host fixture (\#34)
+ok 71 - graph semantic paint matches the Python cross-host fixture (\#34)
+  ---
+  duration_ms: 12.167387
+  type: 'test'
+  ...
+# Subtest: graph label plan matches the Python cross-host fixture (\#34)
+ok 72 - graph label plan matches the Python cross-host fixture (\#34)
+  ---
+  duration_ms: 3.708093
+  type: 'test'
+  ...
+# Subtest: graph color scales and semantic legend match the Python cross-host fixture (\#34)
+ok 73 - graph color scales and semantic legend match the Python cross-host fixture (\#34)
+  ---
+  duration_ms: 18.719543
+  type: 'test'
+  ...
+# Subtest: graph compound frames and disclosure match the Python cross-host fixture (\#34)
+ok 74 - graph compound frames and disclosure match the Python cross-host fixture (\#34)
+  ---
+  duration_ms: 17.237543
+  type: 'test'
+  ...
+# Subtest: graph semantic fields fail closed (\#34)
+ok 75 - graph semantic fields fail closed (\#34)
+  ---
+  duration_ms: 4.29164
+  type: 'test'
+  ...
+# Subtest: graph edge picks truncate aggregate membership at the shared cap (\#33)
+ok 76 - graph edge picks truncate aggregate membership at the shared cap (\#33)
+  ---
+  duration_ms: 2.497914
+  type: 'test'
+  ...
+# Subtest: graphChart static SVG/PNG match the Python cross-host export fixture (\#33)
+ok 77 - graphChart static SVG/PNG match the Python cross-host export fixture (\#33)
+  ---
+  duration_ms: 449.307748
+  type: 'test'
+  ...
+# Subtest: figure legend options place the graph semantic legend like Python (\#34)
+ok 78 - figure legend options place the graph semantic legend like Python (\#34)
+  ---
+  duration_ms: 3.163039
+  type: 'test'
+  ...
+# Subtest: semantic legend respects authored options, merges graphs, and scales fail closed like Python (\#34)
+ok 79 - semantic legend respects authored options, merges graphs, and scales fail closed like Python (\#34)
+  ---
+  duration_ms: 65.878603
+  type: 'test'
+  ...
+# Subtest: composed graphChart static SVG/PNG match the Python cross-host fixture (\#34)
+ok 80 - composed graphChart static SVG/PNG match the Python cross-host fixture (\#34)
+  ---
+  duration_ms: 694.3949
+  type: 'test'
+  ...
+# Subtest: edgeless graphs export and unplaceable graph legends fail closed like Python (\#34)
+ok 81 - edgeless graphs export and unplaceable graph legends fail closed like Python (\#34)
+  ---
+  duration_ms: 64.467199
+  type: 'test'
+  ...
+# Subtest: graph visual goldens: Node exports the committed PNG bytes (\#34)
+ok 82 - graph visual goldens: Node exports the committed PNG bytes (\#34)
+  ---
+  duration_ms: 154.094682
+  type: 'test'
+  ...
+# Subtest: annotated graph static SVG/PNG match the Python cross-host fixture (\#922)
+ok 83 - annotated graph static SVG/PNG match the Python cross-host fixture (\#922)
+  ---
+  duration_ms: 1014.545467
+  type: 'test'
+  ...
+# Subtest: graph annotations draw in static export instead of failing closed (\#922)
+ok 84 - graph annotations draw in static export instead of failing closed (\#922)
+  ---
+  duration_ms: 87.226585
+  type: 'test'
+  ...
+# Subtest: graphChart keeps an authored axis like Python graph_chart (\#909)
+ok 85 - graphChart keeps an authored axis like Python graph_chart (\#909)
+  ---
+  duration_ms: 19.865419
+  type: 'test'
+  ...
+# Subtest: graphChart hides axes like Python graph_chart (\#33)
+ok 86 - graphChart hides axes like Python graph_chart (\#33)
+  ---
+  duration_ms: 3.523274
+  type: 'test'
+  ...
+# Subtest: segment and point overflow both report XYG_SCENE_UNSUPPORTED_PUBLIC_LOD (\#899)
+ok 87 - segment and point overflow both report XYG_SCENE_UNSUPPORTED_PUBLIC_LOD (\#899)
+  ---
+  duration_ms: 83.890756
+  type: 'test'
+  ...
+# Subtest: Node frames and composes the Python-pinned GraphForge bytes for every case
+ok 88 - Node frames and composes the Python-pinned GraphForge bytes for every case
+  ---
+  duration_ms: 89.280205
+  type: 'test'
+  ...
+# Subtest: default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+ok 89 - default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+  ---
+  duration_ms: 551.974107
+  type: 'test'
+  ...
+# Subtest: presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+ok 90 - presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+  ---
+  duration_ms: 736.640787
+  type: 'test'
+  ...
+# Subtest: concurrent owners, supersession, late callback and reload remain isolated
+ok 91 - concurrent owners, supersession, late callback and reload remain isolated
+  ---
+  duration_ms: 1510.966507
+  type: 'test'
+  ...
+# Subtest: pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+ok 92 - pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+  ---
+  duration_ms: 1672.771484
+  type: 'test'
+  ...
+# Subtest: compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+ok 93 - compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+  ---
+  duration_ms: 347.929793
+  type: 'test'
+  ...
+# Subtest: real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+ok 94 - real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+  ---
+  duration_ms: 3668.073962
+  type: 'test'
+  ...
+# Subtest: existing CoSE golden/options remain bit-exact in the reused real native worker
+ok 95 - existing CoSE golden/options remain bit-exact in the reused real native worker
+  ---
+  duration_ms: 1023.824058
+  type: 'test'
+  ...
+# Subtest: explicit static layouts and analytical intents still pack off-loop without force
+ok 96 - explicit static layouts and analytical intents still pack off-loop without force
+  ---
+  duration_ms: 506.627363
+  type: 'test'
+  ...
+# Subtest: a request with no result layer composes the property-graph defaults
+ok 97 - a request with no result layer composes the property-graph defaults
+  ---
+  duration_ms: 8.749599
+  type: 'test'
+  ...
+# Subtest: a directed property graph keeps its arrowheads in the interactive graph mark
+ok 98 - a directed property graph keeps its arrowheads in the interactive graph mark
+  ---
+  duration_ms: 19.547006
+  type: 'test'
+  ...
+# Subtest: every node and edge layer joins by UUID, matching an independent decoder
+ok 99 - every node and edge layer joins by UUID, matching an independent decoder
+  ---
+  duration_ms: 37.537917
+  type: 'test'
+  ...
+# Subtest: scores become the node metric plane; communities class codes
+ok 100 - scores become the node metric plane; communities class codes
+  ---
+  duration_ms: 1.159059
+  type: 'test'
+  ...
+# Subtest: edge overlays mark members, dim context, and keep persisted identity
+ok 101 - edge overlays mark members, dim context, and keep persisted identity
+  ---
+  duration_ms: 1.471581
+  type: 'test'
+  ...
+# Subtest: identity round-trips for selection: UUID → index → UUID + result rows
+ok 102 - identity round-trips for selection: UUID → index → UUID + result rows
+  ---
+  duration_ms: 1.538424
+  type: 'test'
+  ...
+# Subtest: failures carry stable codes and no identities or values
+ok 103 - failures carry stable codes and no identities or values
+  ---
+  duration_ms: 3.039506
+  type: 'test'
+  ...
+# Subtest: missing and extra identity policies are explicit and recorded
+ok 104 - missing and extra identity policies are explicit and recorded
+  ---
+  duration_ms: 2.258218
+  type: 'test'
+  ...
+# Subtest: diagnostics are value-free
+ok 105 - diagnostics are value-free
+  ---
+  duration_ms: 1.622073
+  type: 'test'
+  ...
+# Subtest: request framing is host-neutral bytes; the document decodes identically
+ok 106 - request framing is host-neutral bytes; the document decodes identically
+  ---
+  duration_ms: 1.982624
+  type: 'test'
+  ...
+# Subtest: container numbers are little-endian bytes regardless of host order
+ok 107 - container numbers are little-endian bytes regardless of host order
+  ---
+  duration_ms: 0.510246
+  type: 'test'
+  ...
+# Subtest: container codec round-trips and rejects corruption
+ok 108 - container codec round-trips and rejects corruption
+  ---
+  duration_ms: 0.530934
+  type: 'test'
+  ...
+# Subtest: table documents with inconsistent shapes are rejected, not iterated
+ok 109 - table documents with inconsistent shapes are rejected, not iterated
+  ---
+  duration_ms: 0.887024
+  type: 'test'
+  ...
+# Subtest: graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+ok 110 - graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+  ---
+  duration_ms: 196.314378
+  type: 'test'
+  ...
+# Subtest: graph mark accepts edge visual-state flags only with edge semantic fields
+ok 111 - graph mark accepts edge visual-state flags only with edge semantic fields
+  ---
+  duration_ms: 10.652614
+  type: 'test'
+  ...
+# Subtest: the Rust ledger covers every GraphForge 0.5.2 contract
+ok 112 - the Rust ledger covers every GraphForge 0.5.2 contract
+  ---
+  duration_ms: 1.116518
+  type: 'test'
+  ...
+# Subtest: derived pairs are identified by layer and result row, never a persisted UUID
+ok 113 - derived pairs are identified by layer and result row, never a persisted UUID
+  ---
+  duration_ms: 2.228242
+  type: 'test'
+  ...
+# Subtest: ordered overlays expose paths, step order, and position labels
+ok 114 - ordered overlays expose paths, step order, and position labels
+  ---
+  duration_ms: 11.640764
+  type: 'test'
+  ...
+# Subtest: scalar and category results compose as tables and bar charts, never graphs
+ok 115 - scalar and category results compose as tables and bar charts, never graphs
+  ---
+  duration_ms: 128.760782
+  type: 'test'
+  ...
+# Subtest: table cells are escaped text
+ok 116 - table cells are escaped text
+  ---
+  duration_ms: 0.593436
+  type: 'test'
+  ...
+# Subtest: embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+ok 117 - embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+  ---
+  duration_ms: 115.358225
+  type: 'test'
+  ...
+# Subtest: render requests append the canonical Scene and selections paint selected
+ok 118 - render requests append the canonical Scene and selections paint selected
+  ---
+  duration_ms: 1.558993
+  type: 'test'
+  ...
+# Subtest: webview payloads relay picks back to GraphForge identity
+ok 119 - webview payloads relay picks back to GraphForge identity
+  ---
+  duration_ms: 46.977389
+  type: 'test'
+  ...
+# Subtest: recompositions reuse a layout by node UUID instead of laying out again
+ok 120 - recompositions reuse a layout by node UUID instead of laying out again
+  ---
+  duration_ms: 67.748004
+  type: 'test'
+  ...
+# Subtest: composition identities decode lazily and agree with the planes
+ok 121 - composition identities decode lazily and agree with the planes
+  ---
+  duration_ms: 1.008622
+  type: 'test'
+  ...
+# Subtest: derived edges carry no provenance row in hover rows
+ok 122 - derived edges carry no provenance row in hover rows
+  ---
+  duration_ms: 4.695474
+  type: 'test'
+  ...
+# Subtest: unsupported result-schema versions name the schema and next action
+ok 123 - unsupported result-schema versions name the schema and next action
+  ---
+  duration_ms: 1.914609
+  type: 'test'
+  ...
+# Subtest: published Core rc.5 catalog composes, including endpoint-only path costs
+ok 124 - published Core rc.5 catalog composes, including endpoint-only path costs
+  ---
+  duration_ms: 63.98766
+  type: 'test'
+  ...
+# Subtest: vscode.js points webviews at the host-neutral paint client
+ok 125 - vscode.js points webviews at the host-neutral paint client
+  ---
+  duration_ms: 1.348779
+  type: 'test'
+  ...
+# Subtest: vscode.js exposes the background force scheduler
+ok 126 - vscode.js exposes the background force scheduler
+  ---
+  duration_ms: 282.173932
+  type: 'test'
+  ...
+1..126
+# tests 126
+# suites 0
+# pass 126
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10305.7238

@@ -80,3 +80,5 @@ export {
 
 export { GeoChart, geoLayer, geoChart, RetainedGeoSource, GeoTileSession } from "./index.js";
 export { attachGeoWebview } from "./geo-webview.js";
+export { GraphForgeLayoutController, graphforgeWebviewPayload, graphforgePick,
+  graphforgeStaticPayload, composeGraphForge } from "./graphforge.js";
