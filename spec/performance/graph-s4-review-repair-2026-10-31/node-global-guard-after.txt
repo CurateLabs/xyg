@@ -1,0 +1,16 @@
+TAP version 13
+# Subtest: @curatelabs/xyg-node modules do not reference browser globals
+ok 1 - @curatelabs/xyg-node modules do not reference browser globals
+  ---
+  duration_ms: 41.781581
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 102.495861

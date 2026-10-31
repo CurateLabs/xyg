@@ -1,0 +1,17 @@
+{
+  "name": "experiment-a-build",
+  "command": [
+    "cargo",
+    "build",
+    "-p",
+    "xyg-wasm",
+    "--release",
+    "--target",
+    "wasm32-unknown-unknown"
+  ],
+  "exitCode": 0,
+  "seconds": 75.612,
+  "rawSha256": "7fac66c08ba15272ce2f333a1f756762bc078b05f07dfc26b68da1b5112f6408",
+  "log": "experiment-a-build.txt.gz",
+  "gzipSha256": "b2cb73e32f4f5fff3234ef1532742fcd5776cf5d8f97abcf0eca87f3be8f6916"
+}

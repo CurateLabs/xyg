@@ -44,6 +44,7 @@ struct NativeHost {
 }
 
 impl TemporalHost for NativeHost {
+    fn owner_identity(&self) -> usize { Arc::as_ptr(&self.entry) as usize }
     fn with_graph(&self, handle: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool {
         if handle.0 != self.handle || self.entry.disposed.load(Ordering::Acquire) {
             return false;
@@ -116,7 +117,7 @@ fn bind_owner(request: &Request<'_>) -> Result<Option<TemporalBinding>, Interact
 /// active-instance OPEN retries return the same handle even after later calls.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graphforge_session_create(
-    document: *const u8,
+    document_bytes: *const u8,
     document_len: usize,
     load: *const u8,
     load_len: usize,
@@ -130,7 +131,7 @@ pub unsafe extern "C" fn xyg_graphforge_session_create(
         }
         *out_handle = 0;
         let result = (|| {
-            let document = input(document, document_len)?;
+            let document = input(document_bytes, document_len)?;
             let bytes = input(load, load_len)?;
             let request = Request::decode(bytes)?;
             if request.operation != wire::OPEN

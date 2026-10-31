@@ -1,0 +1,310 @@
+{
+  "scope": "combined source-checkout Node/S4 integration; no full release cohort or milestone acceptance",
+  "artifactCommit": null,
+  "reviewedNode": "32f32199d3472278398c2afdda02b7f4c4ca1b9d",
+  "reviewedS4": "ffeb94d1861aec6aa6ddb7b1b505e93c92358ecc",
+  "workingHead": "32f32199d3472278398c2afdda02b7f4c4ca1b9d",
+  "nonreceiptBinaryFullIndexDiffSha256": "422e1038dc62c780e3516bcd942085744a1307c6c0a0c5a84f298ee01b76c063",
+  "sources": {
+    "benchmarks/bench_graphforge_compose.mjs": "96f06c8d7365d65e4d48c027495999c6031d538d9c65c07aed0a0e303d0369ed",
+    "docs/guides/serving-csp-and-offline-use.md": "9d28d4e42976d2108a1fb912f79899fea8c8e47364df0be4c20c30616c121840",
+    "docs/integrations/graphforge.md": "dac640c18d70ea22ddb4028ea3b7a394dfeba119140774d022dcbd4738912d37",
+    "examples/vanilla-ts/README.md": "5a2cd556534a9b21964ea0e3813090cba15ae30b743769f54a0b25690897eceb",
+    "examples/vanilla-ts/graphforge-live.mjs": "0ad000f4d377b2ea02b36128067c25f529557f49c36b390ba7ee15f9d8acda89",
+    "packages/xy-node/package.json": "2b999bed8650878d45b2cadc01ffd8039dc4f2d8544048a0deac0956923f508e",
+    "packages/xy-node/src/graphforge.js": "85ae86977d110d2f8cf8a0552ab1334711ad95cd44b5f7474139b8b6d891afd5",
+    "packages/xy-node/src/graphforge_layout.js": "252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
+    "packages/xy-node/src/graphforge_layout_worker.js": "faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
+    "packages/xy-node/src/index.js": "b14c1b25eaac153da60a85de3c416720fcaa7628c1a86b91c41e98ff2fcf116c",
+    "packages/xy-node/src/vscode.js": "dc3c9c01ac72bb1509f35cc00bee5539b8c4bf5352f661ed270236745c1f0e1f",
+    "packages/xy-node/test/graphforge-layout.test.mjs": "03338160071086e5a3cdb60aaca173ec0b05d0bb602756a7144563b3e8c4c905",
+    "packages/xy-node/test/graphforge.test.mjs": "e02a35a224ccef1a5b592c9af0ae5172f599404cee976a3c110ec619b6a54ee8",
+    "packages/xy-node/test/vscode_contract.test.mjs": "ca11d661e5400d4271b0fa24ee0698204c5858816478e0ca65791e86fec2d7f6",
+    "scripts/graphforge_webview_smoke.mjs": "0e93e46d493ff67bafa73941cacdfaeeef23f6d8ea497b50287d8e3b25a29494",
+    "scripts/node_release_smoke.mjs": "812701159b8d9ff38505596ec8c0be87e4b10dfd1402ea3239a1fc38feb9a8d1",
+    "spec/design/application-consumers.md": "63c7063ad2a79c6e7e21287b199251c1f78b1336712b5ddfe36504f512ea8cf1",
+    "spec/design/graph-mark.md": "543732c9ba829e64a05f2d2ed847e9249eef1d2fc3ec1b0ea00dd6fb997e7cdc",
+    "spec/design/graphforge-compositions.md": "cffb0400e43aaad9f5ec0d09b2992cd33321a0e3caeda08ee193c45912b3881c",
+    "spec/design/graphforge-node-scheduling.md": "237c7836224c2ee7515f5b4607bbabccc560e3356802fd24df99dba8980bf935",
+    "spec/design/host-parity.md": "ac813f7f0d698a6d4c24a8e1a0440894c286074c41fa4954baa3e7141b7d26b6",
+    "spec/releases/0.6.0-api-inventory.json": "ac27b730b0a1496d48b042bf56b9719f513810bcb959d20e903c47027088eff4"
+  },
+  "historicalFilesUnchanged": 2546,
+  "nativeAbi": 397,
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6052952,
+      "sha256": "f31d05896b0ca7072f62d1b013be8d3812f559e1f844852afbe58445e1bf3be9"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1860250,
+      "sha256": "25ee24fdf32ee8355598cff67da44e01556d0bb2914d5cc2d4ab4a3834c1769d"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1860250,
+      "sha256": "25ee24fdf32ee8355598cff67da44e01556d0bb2914d5cc2d4ab4a3834c1769d"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2499525,
+      "sha256": "d75f46134def6e49008a56dc157a9f8cc2bb0c733e414054096e0d0fc02137e3"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2499525,
+      "sha256": "d75f46134def6e49008a56dc157a9f8cc2bb0c733e414054096e0d0fc02137e3"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "fd1bc8da8bd43c01a5e68c3b8c8b003f99e1899a4f15104e499ae9adbc800f0f"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "fd1bc8da8bd43c01a5e68c3b8c8b003f99e1899a4f15104e499ae9adbc800f0f"
+    }
+  },
+  "commands": {
+    "combined-build.command.json": {
+      "name": "combined-build",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\ncargo build --release --offline\nnode js/build.mjs\nnpm run build:wasm"
+      ],
+      "exitCode": 0,
+      "seconds": 227.324,
+      "rawSha256": "417426254921ac5779ed45e459b5164907d68f6a1e5f7d90653876d8a8a0ac87",
+      "log": "combined-build.txt.gz",
+      "gzipSha256": "a7f7b4a36d2badcf7c2ed6cdf20e5bce7c4145f7af02747d3626072567d338ec"
+    },
+    "combined-contracts.command.json": {
+      "name": "combined-contracts",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run python scripts/abi_smoke.py\nuv run python scripts/verify_wasm_assets.py\nuv run python scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "seconds": 10.806,
+      "rawSha256": "4266f9281ff579f967caecf19ad61a347595bd116fd0eea649a5a9a9b0588bc8",
+      "log": "combined-contracts.txt.gz",
+      "gzipSha256": "8226e1b43c62c99817aa5554f1a056652ceed98c311fbb37542cfebdbed3882b"
+    },
+    "combined-installed-smoke.command.json": {
+      "name": "combined-installed-smoke",
+      "command": [
+        "bash",
+        "spec/performance/graph-node-scheduling-35-review-repair-2026-10-31/clean-install.sh"
+      ],
+      "exitCode": 0,
+      "seconds": 6.128,
+      "rawSha256": "805d3a9a792c0ae4a6284c9a30f1bc29f5feb57a6c9732d9203a128d94fb5ed9",
+      "log": "combined-installed-smoke.txt.gz",
+      "gzipSha256": "8e03df3d7731abff5e35c93d8f9bf77da6487b1f38902db6781425d1d498a350"
+    },
+    "combined-node-tests.command.json": {
+      "name": "combined-node-tests",
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graphforge-layout.test.mjs",
+        "packages/xy-node/test/graphforge.test.mjs",
+        "packages/xy-node/test/graphforge-cross-host.test.mjs",
+        "packages/xy-node/test/graph.test.mjs",
+        "packages/xy-node/test/composition.test.mjs",
+        "packages/xy-node/test/force-worker-lifecycle.test.mjs",
+        "packages/xy-node/test/vscode_contract.test.mjs",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/no_browser_globals.test.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 16.875,
+      "rawSha256": "41298789ab24905ed5d1c40bf628e941915c3594e0525e236f8ffc3c72574d13",
+      "log": "combined-node-tests.txt.gz",
+      "gzipSha256": "c8eb0864123763256af5982e4e0568a6f93be6cf8374fd35cbba4eb956a3c27d"
+    },
+    "final-format.command.json": {
+      "name": "final-format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.095,
+      "rawSha256": "7a00df50c94d920aa0c9fd316b7ce2b2a994daf0258d4e03e76cc5cd63259241",
+      "log": "final-format.txt.gz",
+      "gzipSha256": "22909bbdfa7f22bfafbd48fdca4993582f1bb159d6f9b80dac8b36781a9cffb3"
+    },
+    "final-hooks.command.json": {
+      "name": "final-hooks",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 1.959,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "final-hooks.txt.gz",
+      "gzipSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "final-ruff.command.json": {
+      "name": "final-ruff",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.198,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "final-ruff.txt.gz",
+      "gzipSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd"
+    },
+    "functional-paint.command.json": {
+      "name": "functional-paint",
+      "command": [
+        "env",
+        "XYG_GRAPH_NODE_RECEIPT_OUTPUT=spec/performance/graph-node-scheduling-35-integration-2026-10-31/",
+        "node",
+        "spec/performance/graph-node-scheduling-35-review-repair-2026-10-31/run.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 9.268,
+      "rawSha256": "8bdaeda1d0f09b59be9c821b581ec7777997726d36d5aca8fe9718ba2ee65e31",
+      "log": "functional-paint.txt.gz",
+      "gzipSha256": "5c77f721fc3ace8270e6a068ab2c32a73a3c5b223dfb47a6c4338a227a13d87a"
+    },
+    "staged-format.command.json": {
+      "name": "staged-format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.031,
+      "rawSha256": "7a00df50c94d920aa0c9fd316b7ce2b2a994daf0258d4e03e76cc5cd63259241",
+      "log": "staged-format.txt.gz",
+      "gzipSha256": "22909bbdfa7f22bfafbd48fdca4993582f1bb159d6f9b80dac8b36781a9cffb3"
+    },
+    "staged-hooks.command.json": {
+      "name": "staged-hooks",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 0.796,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "staged-hooks.txt.gz",
+      "gzipSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "staged-ruff.command.json": {
+      "name": "staged-ruff",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.032,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "staged-ruff.txt.gz",
+      "gzipSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd"
+    },
+    "two-path-csp.command.json": {
+      "name": "two-path-csp",
+      "command": [
+        "env",
+        "XYG_GRAPHFORGE_SCREENSHOT=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/spec/performance/graph-node-scheduling-35-integration-2026-10-31/webview-csp.png",
+        "node",
+        "scripts/graphforge_webview_smoke.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 10.555,
+      "rawSha256": "fc6f51d6411868105ad3713ef7d19b009281b905fd9dfc5eb245c73d649f51d7",
+      "log": "two-path-csp.txt.gz",
+      "gzipSha256": "fd2e6fc0f5a2d293a4c915a5bb41d4c43cccd37961b75a0e6dcbfcf17dbdf061"
+    }
+  },
+  "installedArtifacts": {
+    "target/task-tmp/node35-clean-install.MSQlPM/wheels/xyg-0.0.1.dev2952+32f32199-py3-none-linux_x86_64.whl": {
+      "bytes": 6052247,
+      "sha256": "64129ca37e47d2182a78a773dc9e9d7042e65d59e3102d811e2646e64a39327a"
+    },
+    "target/task-tmp/node35-clean-install.MSQlPM/packs/koffi-3.1.4.tgz": {
+      "bytes": 322069,
+      "sha256": "a102a4084802f76da7afb20f01c34bad71727bcc283fa143906021cc32b31dea"
+    },
+    "target/task-tmp/node35-clean-install.MSQlPM/packs/curatelabs-xyg-node-linux-x64-0.0.0.tgz": {
+      "bytes": 2813797,
+      "sha256": "4b5d9a78b937264bfe1662811c447a858cadbaac29939900a39d4399e44d25f7"
+    },
+    "target/task-tmp/node35-clean-install.MSQlPM/packs/curatelabs-xyg-node-0.0.0.tgz": {
+      "bytes": 644723,
+      "sha256": "fad672b30455f1980bc7944cc5620c8000e0897c188e32d3c339e92a1a6f1853"
+    },
+    "target/task-tmp/node35-clean-install.MSQlPM/packs/koromix-koffi-linux-x64-3.1.4.tgz": {
+      "bytes": 734953,
+      "sha256": "72d02c99fcd871dfcfe223c23aab655e606ac9c3ff522084270d97499aead3a1"
+    }
+  },
+  "outputs": {
+    "final-buffer.bin": "e335c0436e4d8f48745c095b4c297e23c349ed89e6a506551542f385400e9a5a",
+    "final-spec.json": "e89d69bcf016de1eba7abf848a6b5f2fc5ced7f1142865cfd3bf95fd979fc0ca",
+    "final.png": "ba82ed78b89e059bc94e374e77f0f587b7242634870c5a634758adf3fb9fc9b9",
+    "initial-buffer.bin": "5946b7ca37a75ed1df596821e20910a47c4c2c34dd4bc109e76edc6ea3c38eca",
+    "initial-spec.json": "de86e389593b618a9e5f0a17b0f843816b27f47316cc117ec6dc2b5028a30787",
+    "initial.png": "8d7bdc04149b451666ca6af7d8842a61825a441bad74691842a7bb20cd56bae5",
+    "result.json": "06f0f86b45dee2011aa44f848798d9b93715ef2421a8b30253f0b2ee7f571136",
+    "webview-csp.png": "6c5aa44cee76d159248703527155bbc8c9b5f5f78b8a16bcd25c258c6a5c5a46"
+  },
+  "reusedFullFoundation": {
+    "path": "spec/performance/graph-s4-package-budget-2026-10-31/full-foundation.json",
+    "sha256": "6dda7161f9edf05add769c708a1d347789183c813da53f5b06c3144b2283ff5d",
+    "basis": "Rust and WASM bytes unchanged; fresh GraphForge two-path CSP and functional Node journey also run here"
+  }
+}

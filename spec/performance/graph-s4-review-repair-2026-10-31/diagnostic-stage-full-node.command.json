@@ -1,0 +1,12 @@
+{
+  "name": "diagnostic-stage-full-node",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-review-repair-2026-10-31/stage_full_node.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.056,
+  "rawSha256": "15772118d982df4f0765d224c694680e89f1f72c938e13af758a679fe9eaaf29",
+  "log": "diagnostic-stage-full-node.txt.gz",
+  "gzipSha256": "c34bce0c6fd04947d0fea079cdac04b7c6944c4a0b15beda50e83d7488b8daf0"
+}

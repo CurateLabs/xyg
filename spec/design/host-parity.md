@@ -54,6 +54,18 @@ treat VS Code, notebooks, or Streamlit as separate engine stacks.
 | **2. Node host** | `packages/xy-node` (`@curatelabs/xyg-node`) | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. Never publish `@xy/node`. Native loading uses the exact optional platform package (`@curatelabs/xyg-node-<platform>-<arch>`, #52), with only an explicit absolute-path `XYG_NATIVE_LIB` development override; it never searches a checkout, working directory, system path, or Python. Windows arm64 is an explicit unsupported error. Every loading failure is an `XygNativeError` with a stable `code` (`NATIVE_ERROR_CODES`): `XYG_NATIVE_UNSUPPORTED_PLATFORM` (`platform`, `arch`, `supported`), `XYG_NATIVE_LIBRARY_MISSING` (`packageName`, `searched`), `XYG_NATIVE_LIBRARY_PATH_INVALID` (relative `XYG_NATIVE_LIB`), `XYG_NATIVE_LOAD_FAILED` (the library exists but cannot be loaded), and `XYG_NATIVE_ABI_MISMATCH` (`expected`, `actual`; also a matching version that lacks a declared symbol). `@curatelabs/xyg-node/load` exports `loadXygNode()`, which imports no native code itself and resolves to `{ok: true, xyg}` or `{ok: false, code, message}` instead of throwing, so hosts such as VS Code extensions can degrade with a stable diagnostic; its `LOAD_ERROR_CODES` add `XYG_NODE_DEPENDENCY_MISSING` (a JavaScript dependency such as koffi is absent) and `XYG_NODE_IMPORT_FAILED` (any other import failure) so packaging problems never masquerade as native ones. A loadable library without `xyg_abi_version` is `XYG_NATIVE_ABI_MISMATCH` (`actual: null`). Host-facing loading messages carry no filesystem paths or loader text; `libraryPath`, `searched`, and `cause` stay on the thrown error for local debugging. `toHtml()` inlines the host-neutral standalone client, not the Python tree. Root `npm ci` does **not** install this package; CI Test and Python 3.11 jobs run `npm ci --prefix packages/xy-node` so koffi is present for Node host tests. |
 | **3. Browser surface** | `js/src/*.ts` + Rust/WASM → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 painter and browser lifecycle. It draws §29 buffers uploaded by Python/Node and uses the #59 foundation for direct browser execution by the same Rust engine compiled to WebAssembly in a Worker. TypeScript keeps paint, pick, gestures, accessibility, DOM chrome, transitions, caches, and request scheduling; Rust owns canonical layout/LOD/encode decisions. |
 
+Node/VS Code live GraphForge payloads use a per-view
+`GraphForgeLayoutController`: composition and preset packing run in a bridge
+Worker, while the existing dedicated force Worker owns native ticks and cleanup.
+For non-force layouts, the bridge obtains the complete source layout from the
+existing native authority before preset packing. Full source snapshots and
+Rust-derived render membership have distinct indexing, including Aggregate.
+The [Node scheduling contract](graphforge-node-scheduling.md) defines the async
+API and explicit synchronous export route. This adds no engine runtime or
+host-owned layout, LOD or style policy. Native loading at module import,
+structured cloning and callbacks still cost caller CPU. The local four-node
+paint proof establishes neither zero-copy delivery nor large-scale response.
+
 The #59 foundation adds `crates/xyg-wasm`, a generated raw-export adapter,
 and an explicit static module Worker. It proves bounded JS→WASM staging,
 version/status/lifecycle behavior, exact Scene validation/paint lowering, and

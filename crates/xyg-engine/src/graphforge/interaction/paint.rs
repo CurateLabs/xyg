@@ -1,4 +1,4 @@
-//! Publication geometry, shared by typed picking and the future S4 paint seam.
+//! Publication geometry, shared by typed picking and the S4 resolved CPU publication seam.
 //! No Scene compiler and no second topology/layout/LOD path (§27–29).
 use super::*;
 use crate::edge_route::{self, NodeShape};

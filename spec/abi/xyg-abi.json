@@ -3,7 +3,7 @@
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "68824381caf0f8a96852b75e33764e926af4416a566cebcc1bff1b2a26241a29",
+  "signature_sha256": "11aaa11bd88b7c974284d88fd96295a938f0b17d811ce820132f0b22aeef7ffa",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -22228,7 +22228,7 @@
       "nargs": 7,
       "arguments": [
         {
-          "name": "document",
+          "name": "document_bytes",
           "type": {
             "rust": "*const u8",
             "c": "const uint8_t *",
@@ -22348,7 +22348,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_graphforge_session_create(const uint8_t * document, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)"
+      "c_signature": "int32_t xyg_graphforge_session_create(const uint8_t * document_bytes, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)"
     },
     {
       "name": "xyg_graphforge_session_destroy",

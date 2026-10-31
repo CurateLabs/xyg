@@ -1,0 +1,13 @@
+{
+  "name": "node-global-guard-after",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/no_browser_globals.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.144,
+  "rawSha256": "faba932d4b9dbd896c57790a0b39c2d3e7735b3d5e61eeadb03684a45a383034",
+  "log": "node-global-guard-after.txt.gz",
+  "gzipSha256": "4149c38fa0c1a27a382637640b5068d5274da8c51ebe947668a01523eaf02f1c"
+}

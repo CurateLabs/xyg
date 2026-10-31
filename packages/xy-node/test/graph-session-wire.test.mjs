@@ -110,7 +110,9 @@ function fixture() {
 function withResultIds(data, replacements) {
   const sections = decodeContainer(data.document, "XYGF");
   for (const [layer, id] of Object.entries(replacements)) {
-    sections.get(`layer.result_id#${layer}`).value = id;
+    if(id===null) sections.delete(`layer.result_id#${layer}`);
+    else if(sections.has(`layer.result_id#${layer}`)) sections.get(`layer.result_id#${layer}`).value = id;
+    else sections.set(`layer.result_id#${layer}`,{name:"layer.result_id",index:Number(layer),dtype:DTYPE.utf8,value:id});
   }
   const document = encodeContainer("XYGF", [...sections.values()].map((s) => ({ ...s, values: s.value })));
   return {
@@ -160,7 +162,7 @@ function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
   let revision = 0;
   return {
     handle: handle[0], wasm, instance, group, open,
-    run(operation, sections = [], words = {}) {
+    run(operation, sections = [], words = {}, nativeSections = sections) {
       const bytes = request(instance, group, ++sequence, revision, operation, sections, words);
       const fn = operation === 20 ? native.xyGraphforgeSessionUpdate
         : operation === 21 ? native.xyGraphforgeSessionRender
@@ -169,7 +171,7 @@ function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
               : operation === 18 ? native.xyGraphforgeSessionBindTemporal : native.xyGraphforgeSessionInteract;
       const name = operation === 20 ? "xyg_wasm_graphforge_session_update"
         : operation === 21 ? "xyg_wasm_graphforge_session_render" : "xyg_wasm_graphforge_session_interact";
-      const nativeBytes = nativeComplete(fn, handle[0], bytes);
+      const nativeBytes = nativeComplete(fn, handle[0], nativeSections === sections ? bytes : request(instance, group, sequence, revision, operation, nativeSections, words));
       const wasmResult = wasmCall(x, wasm, name, bytes);
       assert.equal(wasmResult.status, 0, `operation ${operation}`);
       equalBytes(wasmResult.output, nativeBytes, `operation ${operation} native/WASM bytes`);
@@ -182,6 +184,7 @@ function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
       const bytes = request(instance, group, ++sequence, revision, operation, sections, words);
       assert.equal(nativeCall(native.xyGraphforgeSessionInteract, handle[0], bytes, 0).status, expected);
       assert.equal(wasmCall(x, wasm, "xyg_wasm_graphforge_session_interact", bytes).status, expected);
+      sequence--; // rejection must leave this exact sequence available
     },
     close() {
       assert.equal(native.xyGraphforgeSessionDestroy(handle[0]), 0);
@@ -254,6 +257,11 @@ test("actual native ABI and real WASM replay one GraphSession byte contract", as
     const malformed = refs([data.exact]);
     new DataView(malformed.buffer).setUint32(8 + 48, 1, true);
     sender.reject(11, [field("refs.bytes", "bytes", malformed)], -3);
+    const invalidUtf8=refs([data.exact]); invalidUtf8[invalidUtf8.length-1]=0xff;
+    sender.reject(11,[field("refs.bytes","bytes",invalidUtf8)],-3);
+    sender.reject(11,[field("refs.bytes","bytes",refs([data.exact]).subarray(0,-1))],-3);
+    const reserved=refs([data.exact]); reserved[12]=1;
+    sender.reject(11,[field("refs.bytes","bytes",reserved)],-3);
     sender.run(20, data.load);
     sender.run(10, [field("uuids.uuid", "uuid", data.nodes.subarray(0, 16))]);
     const polled = sender.run(22);
@@ -347,19 +355,127 @@ test("real native/WASM binding shares temporal frames and revokes replaced owner
     [1, 56, 2].forEach((v, i) => fv.setUint32(4 + i * 4, v, true));
     fv.setBigUint64(16, 1n, true); fv.setBigInt64(24, 5n, true); fv.setBigInt64(40, 10n, true); fv.setBigUint64(48, 1000000n, true);
     assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", frame).status, 0);
+    pair.reject(18, [field("temporal.u64", "u64", [1n])], -1);
+    pair.reject(18, [field("temporal.u64", "u64", [0n])], -1);
     pair.reject(4, [], -1);
     const refreshed = pair.run(21);
     assert.ok(value(refreshed, "header.u32")[0] > value(bound, "header.u32")[0]);
     assert.ok(value(refreshed, "node.flags.u32")[0] & 2, "the authoritative temporal world retains selection across frames");
+    pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    temporalGraphFrame(owner, { revision: 2n, cursor: 6n, range: [0n, 10n] });
+    fv.setBigUint64(16, 2n, true);fv.setBigInt64(24, 6n, true);
+    assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", frame).status, 0);
+    pair.reject(18, [field("temporal.u64", "u64", [0n])], -1);
+    pair.run(21);
     temporalGraphDestroy(owner); owner = null;
     assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", create).status, 0);
     pair.reject(4, [], -10, {});
     pair.run(18, [field("temporal.u64", "u64", [0n])]);
     pair.run(21);
+    owner=temporalGraphCreate({projectionHandle:projection});
+    pair.run(18, [field("temporal.u64","u64",[1n])], {}, [field("temporal.u64","u64",[owner])]);
+    pair.run(21);
+    pair.run(18, [field("temporal.u64","u64",[0n])]);
   } finally {
     if (owner != null) temporalGraphDestroy(owner);
     graphProjectionDestroy(projection);
     x.xyg_wasm_instance_dispose(other);
     pair.close();
   }
+});
+
+
+test("exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB", async () => {
+  const {instance} = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const x=instance.exports;
+  const source=fixture();
+  let number=901000n;
+  for(const exact of [null,"","résumé with spaces","é".repeat(100)]) {
+    const parts=decodeContainer(source.document,"XYGF");
+    if(exact===null) parts.delete("layer.result_id#2"); else parts.get("layer.result_id#2").value=exact;
+    const document=encodeContainer("XYGF",[...parts.values()].map(s=>({...s,values:s.value})));
+    const data={...source,document,load:source.load.map(s=>s.name==="document.bytes"?{...s,values:document}:s)};
+    const receiverData=withResultIds(data,{1:"rank:exact"});
+    const a=openPair(x,data,++number,99n),b=openPair(x,receiverData,++number,99n);
+    const reference={...source.exact,result:exact};
+    try {
+      const initial=a.run(21);
+      assert.ok(value(initial,"paint.node.style.bytes").length>0);
+      assert.ok(value(initial,"paint.edge.style.bytes").length>0);
+      a.run(11,[field("refs.bytes","bytes",refs([reference]))]);
+      const focused=a.run(6,[field("refs.bytes","bytes",refs([reference]))]);
+      const focus=value(focused,"focus.bytes");
+      const fv=new DataView(focus.buffer,focus.byteOffset,focus.byteLength);
+      assert.equal(fv.getUint32(8+48,true),exact===null?0xffffffff:0);
+      assert.equal(fv.getUint32(8+52,true),exact===null?0:Buffer.byteLength(exact));
+      const event=value(a.run(22),"outbound.bytes");
+      b.run(21);
+      const remote=b.run(16,[field("remote.bytes","bytes",event)]);
+      assert.equal(value(remote,"header.u32")[2],0);
+      assert.ok(value(remote,"edge.flags.u32")[source.exactIndex]&2);
+      const updated=b.run(20,receiverData.load);
+      assert.ok(value(updated,"edge.flags.u32")[source.exactIndex]&2);
+      b.run(11,[field("refs.bytes","bytes",refs([reference]))]);
+      const changed=withResultIds(receiverData,{2:exact===null?"":null});
+      const dropped=b.run(20,changed.load);
+      assert.ok(value(dropped,"header.u32")[3]>0,"None and present-empty update invalidate distinct exact identities");
+      b.reject(11,[field("refs.bytes","bytes",refs([reference]))],-3);
+    } finally {a.close();b.close();}
+  }
+  const nodes=new Uint8Array([...Array(16).fill(1),...Array(16).fill(2)]);
+  const document=encodeContainer("XYGF",[
+    field("status","u32",[0]),field("kind","utf8","graph"),field("composition.version","u32",[2]),
+    field("node.uuid","uuid",nodes),field("node.class","u8",[0,1]),
+    field("edge.uuid","uuid",new Uint8Array(16).fill(3)),field("edge.derived","u8",[0]),
+    field("edge.layer","u32",[0xffffffff]),field("edge.order","i64",[-1n]),field("edge.path","u64",[0xffffffffffffffffn]),
+    field("edge.source","u64",[0n]),field("edge.target","u64",[1n]),field("graph.directed","u8",[1]),
+  ]);
+  const data={document,load:[field("document.bytes","bytes",document),field("load.x.f64","f64",[0,40]),field("load.y.f64","f64",[0,0])]};
+  const small=openPair(x,data,++number,0n,16*1024*1024);
+  try {
+    const before=small.run(21);
+    const selected=small.run(11,[field("refs.bytes","bytes",refs([{kind:0,uuid:nodes.subarray(0,16)}]))]);
+    assert.equal(value(before,"header.u32")[0],value(selected,"header.u32")[0]);
+    assert.notDeepEqual(value(before,"paint.node.style.bytes"),value(selected,"paint.node.style.bytes"));
+    assert.ok(value(before,"paint.piece.geometry.f64").length>0);
+    small.run(6,[field("refs.bytes","bytes",refs([{kind:0,uuid:nodes.subarray(16)}]))]);
+    const hugeLabel="é".repeat(65536);
+    const sections=decodeContainer(document,"XYGF");
+    const expanded=encodeContainer("XYGF",[...sections.values()].map(s=>({...s,values:s.value})).concat([field("node.label","texts",[hugeLabel,hugeLabel])]));
+    const pressure=request(small.instance,small.group,5, value(selected,"header.u32")[0],20,[field("document.bytes","bytes",expanded),field("load.x.f64","f64",[0,40]),field("load.y.f64","f64",[0,0])]);
+    assert.equal(wasmCall(x,small.wasm,"xyg_wasm_graphforge_session_update",pressure).status,-4);
+    small.run(21); // same sequence 5 remains available after atomic refusal
+  } finally {small.close();}
+});
+
+
+test("real native/WASM resolved routes, heads, frames and aggregate singleton sections", async () => {
+  const {instance}=await WebAssembly.instantiate(fs.readFileSync(WASM),{});
+  const nodes=new Uint8Array(48);[1,2,3].forEach((v,i)=>nodes.fill(v,i*16,(i+1)*16));
+  const edges=new Uint8Array(64);[11,12,13,14].forEach((v,i)=>edges.fill(v,i*16,(i+1)*16));
+  const document=encodeContainer("XYGF",[
+    field("status","u32",[0]),field("kind","utf8","graph"),field("composition.version","u32",[2]),
+    field("node.uuid","uuid",nodes),field("node.parent","u32",[0,0,0]),field("node.parent.valid","u8",[0,1,1]),
+    field("node.class","u8",[1,2,3]),field("node.epistemic","u8",[1,2,3]),field("edge.uuid","uuid",edges),
+    field("edge.derived","u8",[0,0,0,0]),field("edge.layer","u32",Array(4).fill(0xffffffff)),
+    field("edge.order","i64",Array(4).fill(-1n)),field("edge.path","u64",Array(4).fill(0xffffffffffffffffn)),
+    field("edge.source","u64",[0n,0n,1n,1n]),field("edge.target","u64",[1n,1n,1n,2n]),field("graph.directed","u8",[1]),
+  ]);
+  const data={document,load:[field("document.bytes","bytes",document),field("load.x.f64","f64",[0,30,60]),field("load.y.f64","f64",[0,0,0])]};
+  const pair=openPair(instance.exports,data,902000n,0n);
+  try {
+    const r=pair.run(21,[field("camera.f64","f64",[1,100,20,100,200,200,2])]);
+    const idx=value(r,"paint.piece.index.u64");
+    assert.ok(idx.some((v,i)=>i%2===1 && (v&2n)!==0n));
+    assert.equal([...idx].filter((v,i)=>i%2===0 && v===2n).length,3);
+    assert.ok(value(r,"paint.frame.node.u64").length>0);
+    const load=data.load.map(s=>s.name==="load.x.f64"?{...s,values:[0,0.1,60]}:s);
+    load.push(field("load.budgets.u64","u64",[2n,100n]));
+    const aggregate=pair.run(20,load);
+    assert.equal(value(aggregate,"render.tier.u32")[0],2);
+    const offsets=value(aggregate,"render.node_member_offsets.u64");
+    assert.ok([...offsets].some((v,i)=>i>0&&v-offsets[i-1]===1n));
+    assert.equal(value(aggregate,"paint.frame.node.u64").length,0);
+    assert.equal(value(aggregate,"paint.node.style.bytes").length,2*60);
+  } finally {pair.close();}
 });

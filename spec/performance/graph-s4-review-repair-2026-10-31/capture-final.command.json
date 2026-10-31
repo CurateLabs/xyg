@@ -1,0 +1,14 @@
+{
+  "name": "capture-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s4-review-repair-2026-10-31/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.263,
+  "rawSha256": "7f573400191c87b2e8e251c25543baef5ab2071eb24ecffb3c04b602699d2736",
+  "log": "capture-final.txt.gz",
+  "gzipSha256": "f3f96c9170b9e3c55362fcacd2ac1ee81b0353030cac6f1e198129cf007d4a0b"
+}

@@ -1,0 +1,1 @@
+graphforge webview smoke: nonce CSP, cross-origin local assets, Blob module Worker; native pick → node, WASM pick → node

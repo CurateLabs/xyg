@@ -5,8 +5,9 @@ This document is normative for the Node live payload API. It supplements
 and dossier §§27–29. It does not qualify browser WASM exports, notebook
 attachment, retained graph interaction/controllers, accessibility, a large-data
 render ladder, or M4 completion. Historical checkpoint receipts are unchanged.
-The parent integration must reconcile older synchronous-live status paragraphs
-and the release API inventory before a PR.
+The shared composition/host contracts and release API inventory record this
+owner-required API. Inventory preparation retains explicit classification and
+acceptance gaps; this slice establishes no release freeze.
 
 ## API migration and ownership
 

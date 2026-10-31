@@ -1,0 +1,184 @@
+{
+  "scope": "raw function body byte attribution (optimizer may inline/fold boundaries)",
+  "file": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+  "nameCount": 0,
+  "codeBytes": 1938179,
+  "top": [
+    {
+      "index": 1257,
+      "bytes": 43115,
+      "name": null
+    },
+    {
+      "index": 304,
+      "bytes": 28938,
+      "name": null
+    },
+    {
+      "index": 266,
+      "bytes": 28168,
+      "name": null
+    },
+    {
+      "index": 738,
+      "bytes": 23407,
+      "name": null
+    },
+    {
+      "index": 696,
+      "bytes": 20585,
+      "name": null
+    },
+    {
+      "index": 625,
+      "bytes": 18870,
+      "name": null
+    },
+    {
+      "index": 732,
+      "bytes": 18812,
+      "name": null
+    },
+    {
+      "index": 275,
+      "bytes": 15725,
+      "name": null
+    },
+    {
+      "index": 686,
+      "bytes": 15565,
+      "name": null
+    },
+    {
+      "index": 1189,
+      "bytes": 13774,
+      "name": null
+    },
+    {
+      "index": 1198,
+      "bytes": 13092,
+      "name": null
+    },
+    {
+      "index": 307,
+      "bytes": 12519,
+      "name": null
+    },
+    {
+      "index": 76,
+      "bytes": 12301,
+      "name": null
+    },
+    {
+      "index": 566,
+      "bytes": 11104,
+      "name": null
+    },
+    {
+      "index": 650,
+      "bytes": 10742,
+      "name": null
+    },
+    {
+      "index": 958,
+      "bytes": 9972,
+      "name": null
+    },
+    {
+      "index": 737,
+      "bytes": 9636,
+      "name": null
+    },
+    {
+      "index": 1960,
+      "bytes": 9542,
+      "name": null
+    },
+    {
+      "index": 429,
+      "bytes": 9499,
+      "name": null
+    },
+    {
+      "index": 588,
+      "bytes": 9463,
+      "name": null
+    },
+    {
+      "index": 1229,
+      "bytes": 9343,
+      "name": null
+    },
+    {
+      "index": 1197,
+      "bytes": 9327,
+      "name": null
+    },
+    {
+      "index": 985,
+      "bytes": 8865,
+      "name": null
+    },
+    {
+      "index": 306,
+      "bytes": 8665,
+      "name": null
+    },
+    {
+      "index": 641,
+      "bytes": 8535,
+      "name": null
+    },
+    {
+      "index": 1084,
+      "bytes": 7659,
+      "name": null
+    },
+    {
+      "index": 1212,
+      "bytes": 7508,
+      "name": null
+    },
+    {
+      "index": 399,
+      "bytes": 7378,
+      "name": null
+    },
+    {
+      "index": 1977,
+      "bytes": 7133,
+      "name": null
+    },
+    {
+      "index": 931,
+      "bytes": 7049,
+      "name": null
+    },
+    {
+      "index": 970,
+      "bytes": 6865,
+      "name": null
+    },
+    {
+      "index": 518,
+      "bytes": 6567,
+      "name": null
+    },
+    {
+      "index": 1824,
+      "bytes": 6326,
+      "name": null
+    },
+    {
+      "index": 1449,
+      "bytes": 6198,
+      "name": null
+    },
+    {
+      "index": 969,
+      "bytes": 6116,
+      "name": null
+    }
+  ],
+  "session": []
+}

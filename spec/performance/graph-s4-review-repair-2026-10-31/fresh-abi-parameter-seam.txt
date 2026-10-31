@@ -1,0 +1,16 @@
+.F.................                                                      [100%]
+=================================== FAILURES ===================================
+_________________ test_host_declarations_match_rust_symbol_set _________________
+
+    def test_host_declarations_match_rust_symbol_set() -> None:
+        errors = check_abi_parity.check_abi_parity()
+>       assert errors == []
+E       AssertionError: assert ['ABI signatu...out_handle)`'] == []
+E         
+E         Left contains one more item: 'ABI signature changed without an ABI_VERSION bump: xyg_graphforge_session_create: `int32_t xyg_graphforge_session_cre... document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)`'
+E         Use -v to get more diff
+
+tests/test_abi_parity.py:37: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_abi_parity.py::test_host_declarations_match_rust_symbol_set
+1 failed, 18 passed in 12.21s

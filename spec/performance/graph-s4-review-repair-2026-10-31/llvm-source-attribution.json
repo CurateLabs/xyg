@@ -1,0 +1,112 @@
+{
+  "scope": "diagnostic LLVM IR emission only; no release profile/optimizer changes",
+  "path": "target/wasm32-unknown-unknown/release/deps/xyg_engine-49bbdc89c3909160.ll",
+  "sha256": "62722d1ebf1135a41c836d8490b9a7342741ab54bed7036bf0aa15ea1ba92de4",
+  "functions": [
+    {
+      "header": "define dso_local noundef range(i8 9, 12) i8 @_ZN10xyg_engine10graphforge11interaction4wire11WireSession10check_live17h3943273484e9f592E(ptr noalias noundef readonly align 8 captures(none) dereferenceable(1584) %self) unnamed_addr #4 {",
+      "lines": 45,
+      "bytesLLVMIR": 2931,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define internal fastcc { i32, i32 } @_ZN10xyg_engine10graphforge11interaction4wire11WireSession12state_charge17h35207df718847acbE(ptr noalias noundef nonnull readonly align 8 captures(address) dereferenceable(200) %state) unnamed_addr #4 {",
+      "lines": 228,
+      "bytesLLVMIR": 13288,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define internal fastcc void @_ZN10xyg_engine10graphforge11interaction4wire11WireSession15document_charge17h87e29de2417edd66E(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 4 captures(none) dereferenceable(8) %_0, ptr noalias noundef nonnull readonly captures(address, read_provenance) %bytes.0, i32 noundef range(i32 0, -2147483648) %bytes.1, i32 noundef %watermarks) unnamed_addr #4 {",
+      "lines": 377,
+      "bytesLLVMIR": 22682,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define dso_local noundef i32 @_ZN10xyg_engine10graphforge11interaction4wire11WireSession15retained_budget17he03a304e518c2755E(ptr noalias noundef readonly align 8 captures(none) dereferenceable(1584) %self) unnamed_addr #4 {",
+      "lines": 164,
+      "bytesLLVMIR": 11013,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define dso_local void @_ZN10xyg_engine10graphforge11interaction4wire11WireSession4open17h0b4f492ba9823c00E(ptr dead_on_unwind noalias noundef writable writeonly sret([1584 x i8]) align 8 captures(none) dereferenceable(1584) %_0, ptr noalias noundef nonnull readonly captures(address, read_provenance) %bytes.0, i32 noundef range(i32 0, -2147483648) %bytes.1, i32 noundef %max_bytes, i32 noundef %0) unnamed_addr #4 {",
+      "lines": 358,
+      "bytesLLVMIR": 22688,
+      "candidateCalls": 0,
+      "cloneCalls": 1
+    },
+    {
+      "header": "define dso_local void @_ZN10xyg_engine10graphforge11interaction4wire11WireSession4poll17h4c8d9888ad154bcaE(ptr dead_on_unwind noalias noundef writable writeonly sret([8 x i8]) align 4 captures(none) dereferenceable(8) %_0, ptr noalias noundef align 8 captures(none) dereferenceable(1584) %self, ptr noalias noundef nonnull readonly captures(address, read_provenance) %bytes.0, i32 noundef range(i32 0, -2147483648) %bytes.1, i32 noundef %capacity, i32 noundef %external) unnamed_addr #4 {",
+      "lines": 335,
+      "bytesLLVMIR": 22044,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define internal fastcc void @_ZN10xyg_engine10graphforge11interaction4wire11WireSession5admit17h42a55b7a6ba4723fE(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 4 captures(none) dereferenceable(8) initializes((0, 1)) %_0, ptr noalias noundef nonnull readonly align 8 captures(none) dereferenceable(1584) %self, ptr noalias noundef nonnull readonly captures(address, read_provenance) %request.0, i32 noundef range(i32 0, -2147483648) %request.1, i32 noundef %external) unnamed_add",
+      "lines": 151,
+      "bytesLLVMIR": 8462,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define internal fastcc { i1, i8 } @_ZN10xyg_engine10graphforge11interaction4wire11WireSession5retry17hed376ab5af983a14E(ptr noalias noundef nonnull readonly align 8 captures(none) dereferenceable(1584) %self, ptr noalias noundef nonnull readonly align 8 captures(none) dereferenceable(104) %r, ptr noalias noundef nonnull readonly captures(none) %bytes.0, i32 noundef range(i32 0, -2147483648) %bytes.1) unnamed_addr #4 {",
+      "lines": 82,
+      "bytesLLVMIR": 4553,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define internal fastcc void @_ZN10xyg_engine10graphforge11interaction4wire11WireSession6finish17h52305b102895f1b7E(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 8 captures(none) dereferenceable(1528) %_0, ptr dead_on_return noalias noundef nonnull align 8 captures(address) dereferenceable(1512) %next, ptr noalias noundef nonnull readonly align 8 captures(none) dereferenceable(104) %r, ptr dead_on_return noalias noundef nonnull readonly align 8 captures(none) dereferenceable",
+      "lines": 2805,
+      "bytesLLVMIR": 235292,
+      "candidateCalls": 0,
+      "cloneCalls": 1
+    },
+    {
+      "header": "define dso_local void @_ZN10xyg_engine10graphforge11interaction4wire11WireSession7execute17h3fda1cd50943b685E(ptr dead_on_unwind noalias noundef writable writeonly sret([8 x i8]) align 4 captures(none) dereferenceable(8) %_0, ptr noalias noundef align 8 dereferenceable(1584) %self, ptr noalias noundef nonnull readonly captures(address, read_provenance) %bytes.0, i32 noundef range(i32 0, -2147483648) %bytes.1, i32 noundef %0, ptr dead_on_return noalias noundef readonly align 8 captures(none) dere",
+      "lines": 1067,
+      "bytesLLVMIR": 71621,
+      "candidateCalls": 0,
+      "cloneCalls": 1
+    },
+    {
+      "header": "define internal fastcc void @\"_ZN10xyg_engine10graphforge11interaction4wire11WireSession7execute28_$u7b$$u7b$closure$u7d$$u7d$17he7a8ed6af270b84cE\"(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 4 captures(none) dereferenceable(12) %_0, ptr dead_on_return noalias noundef nonnull readonly align 4 captures(none) dereferenceable(16) %_1, ptr noalias noundef nonnull align 8 captures(address, read_provenance) dereferenceable(1512) %session, ptr dead_on_return noalias noundef nonn",
+      "lines": 2134,
+      "bytesLLVMIR": 172989,
+      "candidateCalls": 1,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define internal void @\"_ZN10xyg_engine10graphforge11interaction4wire11WireSession7execute28_$u7b$$u7b$closure$u7d$$u7d$17hebf7fe917ca4fcc6E\"(ptr noalias noundef readonly align 4 captures(none) dereferenceable(40) %_1, ptr noalias noundef align 8 dereferenceable(520) %graph) unnamed_addr #0 {",
+      "lines": 345,
+      "bytesLLVMIR": 28929,
+      "candidateCalls": 1,
+      "cloneCalls": 0
+    },
+    {
+      "header": "define internal fastcc void @\"_ZN10xyg_engine10graphforge11interaction4wire67_$LT$impl$u20$xyg_engine..graphforge..interaction..GraphSession$GT$9candidate17he449507bf20c06e1E\"(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 8 captures(none) dereferenceable(1512) %_0, ptr noalias noundef nonnull readonly align 8 captures(address, read_provenance) dereferenceable(1512) %self, ptr noalias noundef nonnull readonly align 8 captures(none) dereferenceable(32) %world) unnamed_addr #4",
+      "lines": 205,
+      "bytesLLVMIR": 16342,
+      "candidateCalls": 1,
+      "cloneCalls": 2
+    },
+    {
+      "header": "define internal fastcc void @\"_ZN88_$LT$xyg_engine..graphforge..interaction..GraphSession$u20$as$u20$core..clone..Clone$GT$5clone17hf341db2cdb9f7818E\"(ptr dead_on_unwind noalias noundef nonnull writable writeonly align 8 captures(none) dereferenceable(1512) %_0, ptr noalias noundef nonnull readonly align 8 captures(address, read_provenance) dereferenceable(1512) %self) unnamed_addr #0 {",
+      "lines": 2680,
+      "bytesLLVMIR": 232761,
+      "candidateCalls": 0,
+      "cloneCalls": 8
+    },
+    {
+      "header": "define dso_local noundef zeroext i1 @\"_ZN91_$LT$xyg_engine..graphforge..interaction..wire..WireSession$u20$as$u20$core..fmt..Debug$GT$3fmt17h82c2dde998a8d4bdE\"(ptr noalias noundef readonly align 8 captures(address, read_provenance) dereferenceable(1584) %self, ptr noalias noundef align 4 dereferenceable(16) %f) unnamed_addr #4 {",
+      "lines": 16,
+      "bytesLLVMIR": 2229,
+      "candidateCalls": 0,
+      "cloneCalls": 0
+    }
+  ]
+}

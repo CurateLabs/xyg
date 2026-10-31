@@ -1,7 +1,8 @@
 //! Shared XYGI/XYGR boundary (§3). Hosts own only lifetime, staging and copies.
+pub use super::wire_paint::decode as decode_paint;
 use super::*;
 use crate::graph_interaction_state::HighlightPlane;
-use crate::graphforge::container::{Builder, Container, Dtype, Section};
+pub(super) use crate::graphforge::container::{Builder, Container, Dtype, Section};
 use crate::graphforge::identity::{AggregateRef, DerivedRef, ResultRef};
 
 pub const REQUEST_MAGIC: &[u8; 4] = b"XYGI";
@@ -13,7 +14,7 @@ pub const RENDER: u32 = 21;
 pub const POLL: u32 = 22;
 const REF_BYTES: usize = 56;
 
-type Result<T> = std::result::Result<T, InteractionStatus>;
+pub(super) type Result<T> = std::result::Result<T, InteractionStatus>;
 
 impl InteractionStatus {
     pub fn number(self) -> i32 {
@@ -32,10 +33,10 @@ impl InteractionStatus {
         }
     }
 }
-fn bad<T>() -> Result<T> {
+pub(super) fn bad<T>() -> Result<T> {
     Err(InteractionStatus::Invalid)
 }
-fn gf<T>(r: crate::graphforge::GfResult<T>) -> Result<T> {
+pub(super) fn gf<T>(r: crate::graphforge::GfResult<T>) -> Result<T> {
     r.map_err(|_| InteractionStatus::Invalid)
 }
 fn u32_at(b: &[u8], at: usize) -> u32 {
@@ -47,6 +48,9 @@ fn u64_at(b: &[u8], at: usize) -> u64 {
 
 /// Fixed records plus a contiguous exact-id pool; no receiver-local identity.
 pub fn decode_refs(bytes: &[u8]) -> Result<Vec<ElementRef>> {
+    refs_impl(bytes, true)
+}
+fn refs_impl(bytes: &[u8], collect: bool) -> Result<Vec<ElementRef>> {
     if bytes.len() < 8 {
         return bad();
     }
@@ -64,7 +68,7 @@ pub fn decode_refs(bytes: &[u8]) -> Result<Vec<ElementRef>> {
     if end != bytes.len() {
         return bad();
     }
-    let mut out = Vec::with_capacity(n);
+    let mut out = Vec::with_capacity(if collect { n } else { 0 });
     let mut cursor = 0;
     for record in bytes[8..start].chunks_exact(REF_BYTES) {
         let kind = u32_at(record, 0);
@@ -80,7 +84,7 @@ pub fn decode_refs(bytes: &[u8]) -> Result<Vec<ElementRef>> {
         if u32_at(record, 4) != 0 {
             return bad();
         }
-        out.push(match kind {
+        let element = match kind {
             0 | 1 => {
                 if id == [0; 16]
                     || layer != 0
@@ -105,7 +109,7 @@ pub fn decode_refs(bytes: &[u8]) -> Result<Vec<ElementRef>> {
                 let exact = if off == u32::MAX && len == 0 {
                     None
                 } else {
-                    if off as usize != cursor || len == 0 || len > 128 {
+                    if off as usize != cursor {
                         return bad();
                     }
                     let end = cursor
@@ -114,18 +118,9 @@ pub fn decode_refs(bytes: &[u8]) -> Result<Vec<ElementRef>> {
                     let text = bytes
                         .get(start + cursor..start + end)
                         .ok_or(InteractionStatus::Invalid)?;
-                    if !text
-                        .iter()
-                        .all(|b| b.is_ascii_alphanumeric() || b"._:-".contains(b))
-                    {
-                        return bad();
-                    }
                     cursor = end;
-                    Some(
-                        std::str::from_utf8(text)
-                            .map_err(|_| InteractionStatus::Invalid)?
-                            .into(),
-                    )
+                    let text = std::str::from_utf8(text).map_err(|_| InteractionStatus::Invalid)?;
+                    collect.then(|| text.into())
                 };
                 ElementRef::Derived(DerivedRef {
                     result: ResultRef::Exact(exact),
@@ -144,7 +139,10 @@ pub fn decode_refs(bytes: &[u8]) -> Result<Vec<ElementRef>> {
                 })
             }
             _ => return bad(),
-        });
+        };
+        if collect {
+            out.push(element);
+        }
     }
     if cursor != bytes.len() - start {
         return bad();
@@ -179,17 +177,15 @@ pub fn encode_refs(refs: &[ElementRef]) -> Result<Vec<u8>> {
                 let (off, len) = match id {
                     None => (u32::MAX, 0),
                     Some(id) => {
-                        if id.is_empty()
-                            || id.len() > 128
-                            || !id
-                                .bytes()
-                                .all(|b| b.is_ascii_alphanumeric() || b"._:-".contains(&b))
-                        {
-                            return bad();
-                        }
-                        let off = pool.len() as u32;
+                        let off =
+                            u32::try_from(pool.len()).map_err(|_| InteractionStatus::Budget)?;
+                        let len = u32::try_from(id.len()).map_err(|_| InteractionStatus::Budget)?;
+                        pool.len()
+                            .checked_add(id.len())
+                            .filter(|n| *n < u32::MAX as usize)
+                            .ok_or(InteractionStatus::Budget)?;
                         pool.extend_from_slice(id.as_bytes());
-                        (off, id.len() as u32)
+                        (off, len)
                     }
                 };
                 r[48..52].copy_from_slice(&off.to_le_bytes());
@@ -220,6 +216,9 @@ impl<'a> Request<'a> {
     pub fn decode(bytes: &'a [u8]) -> Result<Self> {
         let c = gf(Container::decode(bytes, REQUEST_MAGIC))?;
         let get = |name| c.get(name, 0).ok_or(InteractionStatus::Invalid);
+        if get("header.u64")?.count != 3 || get("header.u32")?.count != 9 {
+            return bad();
+        }
         let h = gf(get("header.u64")?.as_u64("header.u64"))?;
         let w = gf(get("header.u32")?.as_u32("header.u32"))?;
         if h.len() != 3 || w.len() != 9 || h[0] == 0 || h[2] == 0 || w[1] > POLL {
@@ -299,16 +298,19 @@ impl<'a> Request<'a> {
         };
         // Validate all optional payloads before any retry or owner lookup.
         if let Some(s) = r.container.get("refs.bytes", 0) {
-            if decode_refs(s.payload)?.len() > MAX_GRAPH_SELECTION_REFS {
+            refs_impl(s.payload, false)?;
+            if u32_at(s.payload, 0) as usize > MAX_GRAPH_SELECTION_REFS {
                 return Err(InteractionStatus::SelectionTooLarge);
             }
         }
         if let Some(s) = r.container.get("remote.bytes", 0) {
-            decode_event(s.payload)?;
+            validate_event(s.payload)?;
         }
         if let Some(s) = r.container.get("coordinates.f64", 0) {
-            let v = gf(s.as_f64("coordinates.f64"))?;
-            if v.iter().any(|v| !v.is_finite()) {
+            if s.payload
+                .chunks_exact(8)
+                .any(|v| !f64::from_le_bytes(v.try_into().unwrap()).is_finite())
+            {
                 return bad();
             }
         }
@@ -374,6 +376,9 @@ impl<'a> Request<'a> {
         let Some(s) = self.container.get("companion.u32", 0) else {
             return Ok((0, 50));
         };
+        if s.count != 2 {
+            return bad();
+        }
         let v = gf(s.as_u32("companion.u32"))?;
         if v.len() != 2 || v[1] == 0 || v[1] > 200 {
             return bad();
@@ -421,7 +426,75 @@ pub fn encode_event(event: &GraphCoordinationEvent) -> Result<Vec<u8>> {
     b.bytes("refs.bytes", 0, &encode_refs(&event.refs)?);
     Ok(b.finish())
 }
+// Validate transport identities and canonical ordering by borrowed UTF-8 slices;
+// no arbitrary string is cloned before resource admission.
+fn validate_event(bytes: &[u8]) -> Result<()> {
+    let c = gf(Container::decode(bytes, REQUEST_MAGIC))?;
+    for (name, index, s) in &c.sections {
+        if *index != 0
+            || !matches!(
+                (*name, s.dtype),
+                ("remote.u64", Dtype::U64)
+                    | ("remote.generation.uuid", Dtype::Uuid)
+                    | ("refs.bytes", Dtype::Bytes)
+            )
+        {
+            return bad();
+        }
+    }
+    let h = c.get("remote.u64", 0).ok_or(InteractionStatus::Invalid)?;
+    if h.count != 3 || u64_at(h.payload, 8) == 0 || u64_at(h.payload, 16) == 0 {
+        return bad();
+    }
+    if c.get("remote.generation.uuid", 0)
+        .is_some_and(|s| s.count != 1)
+    {
+        return bad();
+    }
+    let b = c
+        .get("refs.bytes", 0)
+        .ok_or(InteractionStatus::Invalid)?
+        .payload;
+    refs_impl(b, false)?;
+    let n = u32_at(b, 0) as usize;
+    if n > MAX_GRAPH_SELECTION_REFS {
+        return Err(InteractionStatus::SelectionTooLarge);
+    }
+    let pool = &b[8 + n * REF_BYTES..];
+    let mut previous = None;
+    for r in b[8..8 + n * REF_BYTES].chunks_exact(REF_BYTES) {
+        let kind = u32_at(r, 0);
+        if kind == 3 {
+            return bad();
+        }
+        let id = if kind == 2 {
+            let off = u32_at(r, 48);
+            let len = u32_at(r, 52) as usize;
+            if off == u32::MAX {
+                None
+            } else {
+                Some(&pool[off as usize..off as usize + len])
+            }
+        } else {
+            None
+        };
+        let key = (
+            kind,
+            &r[8..24],
+            id,
+            u32_at(r, 24),
+            u64_at(r, 32),
+            u64_at(r, 40),
+        );
+        if previous.is_some_and(|p| p >= key) {
+            return bad();
+        }
+        previous = Some(key);
+    }
+    Ok(())
+}
 pub fn decode_event(bytes: &[u8]) -> Result<GraphCoordinationEvent> {
+    validate_event(bytes)?;
     let c = gf(Container::decode(bytes, REQUEST_MAGIC))?;
     for (n, i, s) in &c.sections {
         if *i != 0
@@ -491,20 +564,25 @@ impl WireSession {
     pub fn session(&self) -> &GraphSession {
         &self.session
     }
-    /// Charge peak, including candidate, hash/tree overhead, grid duplication,
-    /// multiple codec buffers and temporary render/layout arrays. Checked before
-    /// allocation. Factor 48 covers all decoded style/identity/text copies.
+    // Peak envelope, not an RSS measurement. Row reservation includes old/new
+    // source/publication/route/layout arrays; grid includes compound bands.
     fn charge(
         document: usize,
         n: usize,
         m: usize,
         watermarks: usize,
-        state: usize,
+        text: usize,
     ) -> Option<usize> {
-        let primitives = n.checked_add(m.checked_mul(11)?)?;
+        let rows = n.checked_add(m)?;
+        let state = rows
+            .min(MAX_GRAPH_SELECTION_REFS)
+            .checked_mul(4)?
+            .checked_add(n)?
+            .checked_add(1)?;
+        let primitives = n.checked_mul(2)?.checked_add(m.checked_mul(11)?)?;
         98_304usize
             .checked_add(document.checked_mul(48)?)?
-            .checked_add(n.checked_add(m)?.checked_mul(8192)?)?
+            .checked_add(rows.checked_mul(8192)?)?
             .checked_add(
                 primitives
                     .checked_mul(4096)?
@@ -512,73 +590,14 @@ impl WireSession {
                     .checked_mul(16)?,
             )?
             .checked_add(watermarks.checked_mul(128)?)?
-            .checked_add(state.checked_mul(1024)?)
+            .checked_add(state.checked_mul(1024)?)?
+            .checked_add(text.checked_mul(128)?)
     }
-    pub fn retained_budget(&self) -> usize {
-        Self::charge(
-            self.document.len(),
-            self.session.identity.node_count(),
-            self.session.identity.edge_count(),
-            self.session.coordination.gate.len(),
-            MAX_GRAPH_SELECTION_REFS * 5,
-        )
-        .and_then(|n| n.checked_add(self.last_request.len() * 3))
-        .and_then(|n| n.checked_add(self.opening.len() * 3))
-        .and_then(|n| n.checked_add(self.open_reply.len() * 3))
-        .and_then(|n| n.checked_add(self.last_reply.len() * 3))
-        .unwrap_or(usize::MAX)
-    }
-    fn admit(&self, request: &[u8], external: usize) -> Result<()> {
-        let r = Request::decode(request)?;
-        let doc = r
-            .container
-            .get("document.bytes", 0)
-            .map_or(0, |s| s.payload.len());
-        let replacement = if r.operation == UPDATE {
-            let c = gf(Container::decode(
-                r.document()?,
-                crate::graphforge::container::DOCUMENT_MAGIC,
-            ))?;
-            Self::charge(
-                doc,
-                c.get("node.uuid", 0)
-                    .ok_or(InteractionStatus::Invalid)?
-                    .count,
-                c.get("edge.uuid", 0)
-                    .ok_or(InteractionStatus::Invalid)?
-                    .count,
-                0,
-                MAX_GRAPH_SELECTION_REFS * 5,
-            )
-            .ok_or(InteractionStatus::Budget)?
-        } else {
-            0
-        };
-        let charge = self
-            .retained_budget()
-            .checked_add(
-                request
-                    .len()
-                    .checked_mul(8)
-                    .ok_or(InteractionStatus::Budget)?,
-            )
-            .and_then(|v| v.checked_add(external))
-            .and_then(|v| v.checked_add(replacement))
-            .ok_or(InteractionStatus::Budget)?;
-        if charge > self.max_bytes {
-            return Err(InteractionStatus::Budget);
-        }
-        Ok(())
-    }
-    pub fn open(bytes: &[u8], max_bytes: usize, external: usize) -> Result<Self> {
-        let r = Request::decode(bytes)?;
-        if r.operation != OPEN || r.words[0] != 0 {
-            return bad();
-        }
-        let document = r.document()?;
-        // Count planes without expanding them; document validation follows admission.
+    // Scan borrowed document text BEFORE identity/label expansion. TextList is
+    // already expanded per row, including labels compiled from dictionaries.
+    fn document_charge(bytes: &[u8], watermarks: usize) -> Result<usize> {
         let c = gf(Container::decode(
-            document,
+            bytes,
             crate::graphforge::container::DOCUMENT_MAGIC,
         ))?;
         let n = c
@@ -589,8 +608,125 @@ impl WireSession {
             .get("edge.uuid", 0)
             .ok_or(InteractionStatus::Invalid)?
             .count;
-        let charge = Self::charge(document.len(), n, m, 0, MAX_GRAPH_SELECTION_REFS * 5)
-            .and_then(|v| v.checked_add(bytes.len().checked_mul(8)?))
+        let mut text = 0usize;
+        let mut longest = 0usize;
+        for (name, _, s) in &c.sections {
+            let len = if *name == "layer.result_id" {
+                let len = gf(s.as_utf8(name))?.len();
+                longest = longest.max(len);
+                len
+            } else if matches!(*name, "node.label" | "edge.label") {
+                if s.dtype != Dtype::TextList {
+                    return bad();
+                }
+                // Validated monotonic offsets partition this entire UTF-8 pool.
+                let head = s
+                    .count
+                    .checked_add(1)
+                    .and_then(|v| v.checked_mul(8))
+                    .ok_or(InteractionStatus::Budget)?;
+                let pool = s.payload.get(head..).ok_or(InteractionStatus::Invalid)?;
+                std::str::from_utf8(pool).map_err(|_| InteractionStatus::Invalid)?;
+                pool.len()
+            } else {
+                0
+            };
+            text = text.checked_add(len).ok_or(InteractionStatus::Budget)?;
+        }
+        // Every edge may repeat the longest ID in state/changed/event pools.
+        text = text
+            .checked_add(m.checked_mul(longest).ok_or(InteractionStatus::Budget)?)
+            .ok_or(InteractionStatus::Budget)?;
+        Self::charge(bytes.len(), n, m, watermarks, text).ok_or(InteractionStatus::Budget)
+    }
+    fn state_charge(state: &GraphInteractionState) -> Option<usize> {
+        let mut count = state.pinned_nodes().len().checked_add(1)?;
+        let mut text = 0usize;
+        for set in std::iter::once(state.selection()).chain(
+            [
+                HighlightPlane::Path,
+                HighlightPlane::Community,
+                HighlightPlane::External,
+            ]
+            .iter()
+            .map(|p| state.highlight_set(*p)),
+        ) {
+            count = count.checked_add(set.len())?;
+            for key in &set.derived {
+                text = text.checked_add(key.result_id.as_ref().map_or(0, |s| s.len()))?;
+            }
+        }
+        if let Some(crate::graph_interaction_state::Focus::Derived(key)) = state.focus() {
+            text = text.checked_add(key.result_id.as_ref().map_or(0, |s| s.len()))?;
+        }
+        count.checked_mul(1024)?.checked_add(text.checked_mul(128)?)
+    }
+    pub fn retained_budget(&self) -> usize {
+        Self::document_charge(&self.document, self.session.coordination.gate.len())
+            .ok()
+            .and_then(|n| {
+                n.checked_add(match &self.session.slot {
+                    StateSlot::Owned(state) => Self::state_charge(state)?,
+                    _ => 0,
+                })
+            })
+            .and_then(|n| {
+                let text = self.session.pending_outbound().map_or(Some(0), |e| {
+                    e.refs
+                        .iter()
+                        .map(|r| match r {
+                            ElementRef::Derived(d) => match &d.result {
+                                ResultRef::Exact(Some(s)) => s.len(),
+                                _ => 0,
+                            },
+                            _ => 0,
+                        })
+                        .try_fold(0usize, |sum, len| sum.checked_add(len))
+                })?;
+                n.checked_add(text.checked_mul(128)?)
+            })
+            .and_then(|n| n.checked_add(self.last_request.len().checked_mul(3)?))
+            .and_then(|n| n.checked_add(self.opening.len().checked_mul(3)?))
+            .and_then(|n| n.checked_add(self.open_reply.len().checked_mul(3)?))
+            .and_then(|n| n.checked_add(self.last_reply.len().checked_mul(3)?))
+            .unwrap_or(usize::MAX)
+    }
+    fn admit(&self, request: &[u8], external: usize) -> Result<usize> {
+        let r = Request::decode(request)?;
+        let replacement = if r.operation == UPDATE {
+            Self::document_charge(r.document()?, 0)?
+        } else {
+            0
+        };
+        let charge = self
+            .retained_budget()
+            .checked_add(
+                request
+                    .len()
+                    .checked_mul(128)
+                    .ok_or(InteractionStatus::Budget)?,
+            )
+            .and_then(|v| v.checked_add(external))
+            .and_then(|v| v.checked_add(replacement))
+            .ok_or(InteractionStatus::Budget)?;
+        if charge > self.max_bytes {
+            return Err(InteractionStatus::Budget);
+        }
+        Ok(charge)
+    }
+    pub fn open(bytes: &[u8], max_bytes: usize, external: usize) -> Result<Self> {
+        let r = Request::decode(bytes)?;
+        if r.operation != OPEN || r.words[0] != 0 {
+            return bad();
+        }
+        let document = r.document()?;
+        let charge = Self::document_charge(document, 0)?
+            .checked_add(
+                bytes
+                    .len()
+                    .checked_mul(128)
+                    .ok_or(InteractionStatus::Budget)?,
+            )
             .and_then(|v| v.checked_add(external))
             .ok_or(InteractionStatus::Budget)?;
         if charge > max_bytes {
@@ -661,32 +797,42 @@ impl WireSession {
         if r.operation == OPEN || r.operation == POLL {
             return bad();
         }
-        self.admit(bytes, external)?;
-        if r.operation == 18 && r.temporal()? != 0 {
-            self.check_live()?;
-        }
+        let admitted = self.admit(bytes, external)?;
         // Bind changes owners. Validate candidate against the new owner before
         // installing it; no state mutation occurs in that owner.
         let max_bytes = self.max_bytes;
         let result = if r.operation == 18 {
             let mut next = self.session.clone();
-            if r.header.stamp
-                != (Stamp {
-                    instance_id: next.instance_id,
-                    render_revision: next.render_revision,
-                })
-            {
-                return Err(InteractionStatus::Stale);
-            }
+            let same_owner = r.temporal()? != 0
+                && match (&self.session.slot, &bind) {
+                    (StateSlot::Bound { host, handle }, Some((new_host, new_handle))) => {
+                        host.owner_identity() == new_host.owner_identity() && handle == new_handle
+                    }
+                    _ => false,
+                };
             let (candidate, reply) = if r.temporal()? == 0 {
                 next.unbind()?;
-                Self::finish(next, &r, OpOutcome::default())?
+                let (candidate, reply) = Self::finish(next, &r, OpOutcome::default())?;
+                (Some(candidate), reply)
             } else {
                 let (host, handle) = bind.ok_or(InteractionStatus::Unbound)?;
                 let (mut next, mut output) = (Some(next), None);
                 let found = host.with_graph(handle, &mut |graph| {
                     let mut next = next.take().expect("one owner access");
                     output = Some((|| {
+                        if same_owner {
+                            Self::validate_owner_stamp(
+                                &next,
+                                r.header.stamp,
+                                graph.applied_revision(),
+                            )?;
+                        }
+                        if Self::state_charge(graph.interaction_state())
+                            .and_then(|v| v.checked_add(admitted))
+                            .is_none_or(|v| v > max_bytes)
+                        {
+                            return Err(InteractionStatus::Budget);
+                        }
                         if next.identity.node_uuids() != graph.node_ids()
                             || !next
                                 .identity
@@ -711,7 +857,20 @@ impl WireSession {
                             host: Arc::clone(&host),
                             handle,
                         };
-                        Ok((candidate, reply))
+                        if reply
+                            .len()
+                            .checked_mul(3)
+                            .and_then(|v| v.checked_add(external))
+                            .is_none_or(|v| v > max_bytes)
+                        {
+                            return Err(InteractionStatus::Budget);
+                        }
+                        if same_owner {
+                            self.session = candidate;
+                            Ok((None, reply))
+                        } else {
+                            Ok((Some(candidate), reply))
+                        }
                     })());
                 });
                 if !found {
@@ -727,7 +886,37 @@ impl WireSession {
             {
                 return Err(InteractionStatus::Budget);
             }
-            self.session = candidate;
+            if !same_owner {
+                // Build the destination snapshot first, release its lock, then
+                // validate the current owner and install under that one lock.
+                // Never nest old/new owner locks, including cross-owner binds.
+                let mut candidate = candidate;
+                let was_owned = matches!(self.session.slot, StateSlot::Owned(_));
+                let installed = self.session.locked(|session, world| {
+                    Self::validate_owner_stamp(session, r.header.stamp, world.temporal_revision)?;
+                    if !was_owned {
+                        *session = candidate.take().expect("one commit");
+                    }
+                    Ok::<(), InteractionStatus>(())
+                });
+                match installed {
+                    Ok(result) => {
+                        result?;
+                        if was_owned {
+                            self.session = candidate.take().expect("owned commit");
+                        }
+                    }
+                    Err(InteractionStatus::Unbound) if r.temporal()? == 0 => {
+                        Self::validate_owner_stamp(
+                            &self.session,
+                            r.header.stamp,
+                            self.session.seen_temporal,
+                        )?;
+                        self.session = candidate.take().expect("disposed owner recovery");
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
             reply
         } else {
             self.session.locked_validated(
@@ -741,6 +930,12 @@ impl WireSession {
                     Ok(())
                 },
                 |session, world| {
+                    if Self::state_charge(world.state)
+                        .and_then(|v| v.checked_add(admitted))
+                        .is_none_or(|v| v > max_bytes)
+                    {
+                        return Err(InteractionStatus::Budget);
+                    }
                     let mut next = session.candidate(&world);
                     let outcome = apply(&mut next, &r)?;
                     let (mut next, reply) = Self::finish(next, &r, outcome)?;
@@ -771,6 +966,19 @@ impl WireSession {
         self.last_request = bytes.to_vec();
         self.last_sequence = r.sequence;
         Ok(&self.last_reply)
+    }
+    fn validate_owner_stamp(
+        session: &GraphSession,
+        stamp: Stamp,
+        temporal_revision: u64,
+    ) -> Result<()> {
+        if stamp.instance_id != session.instance_id
+            || stamp.render_revision != session.render_revision
+            || temporal_revision != session.seen_temporal
+        {
+            return Err(InteractionStatus::Stale);
+        }
+        Ok(())
     }
     fn finish(
         mut next: GraphSession,
@@ -965,7 +1173,13 @@ fn escaped(text: &str) -> String {
         .replace('\n', "\\n")
 }
 fn uuid_text(id: &Uuid) -> String {
-    id.iter().map(|v| format!("{v:02x}")).collect()
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut text = String::with_capacity(32);
+    for &byte in id {
+        text.push(char::from(HEX[usize::from(byte >> 4)]));
+        text.push(char::from(HEX[usize::from(byte & 15)]));
+    }
+    text
 }
 fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
     refs.iter()
@@ -1020,6 +1234,7 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome) -> Result<V
     ] {
         b.u8s(name, 0, v);
     }
+    super::wire_paint::encode(&mut b, &render.paint);
     b.u32s("node.flags.u32", 0, &render.source_node_flags);
     b.u32s("edge.flags.u32", 0, &render.source_edge_flags);
     let state = s.read_state(Clone::clone)?;

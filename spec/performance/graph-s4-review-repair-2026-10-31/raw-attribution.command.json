@@ -1,0 +1,13 @@
+{
+  "name": "raw-attribution",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-review-repair-2026-10-31/attribute.mjs",
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+  ],
+  "exitCode": 0,
+  "seconds": 0.095,
+  "rawSha256": "4ac7f0f20570c5bed856e0479b792f0eedcd705c7e258ba9559f01d829de6201",
+  "log": "raw-attribution.txt.gz",
+  "gzipSha256": "20cc070afc0a45a9222cdffed6ad361e8f26eca85aab2942e31b7f31d915cd2d"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "final-all-byte-parity",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/task-tmp/s4-review-repair-diagnostic-assets/packages/xy-client/dist/xyg-wasm.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 1.039,
+  "rawSha256": "d3c1d7afd8c7f0e962121f05e7f80e3e0b2eea1a12f482015677d7d2559e74a2",
+  "log": "final-all-byte-parity.txt.gz",
+  "gzipSha256": "6f701ef0468094de177143d38fae1bf21af00a60fc5b34a34a2d00a505eb0d1a"
+}

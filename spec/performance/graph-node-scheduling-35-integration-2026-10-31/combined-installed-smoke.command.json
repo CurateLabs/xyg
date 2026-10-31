@@ -1,0 +1,12 @@
+{
+  "name": "combined-installed-smoke",
+  "command": [
+    "bash",
+    "spec/performance/graph-node-scheduling-35-review-repair-2026-10-31/clean-install.sh"
+  ],
+  "exitCode": 0,
+  "seconds": 6.128,
+  "rawSha256": "805d3a9a792c0ae4a6284c9a30f1bc29f5feb57a6c9732d9203a128d94fb5ed9",
+  "log": "combined-installed-smoke.txt.gz",
+  "gzipSha256": "8e03df3d7731abff5e35c93d8f9bf77da6487b1f38902db6781425d1d498a350"
+}

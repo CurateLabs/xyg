@@ -374,11 +374,16 @@ p50
 0.8–1.3 s at 1M; cadence p50 per 10-tick checkpoint ≈ 11–13 ms (1k), 32–112 ms
 (10k), 136–315 ms (100k), 1.4 s native / 2.9 s WASM (1M); host-thread ticker
 lag p95 ≤ 3.6 ms with maximum stalls of 40 ms (browser, 10k), 25 ms (Node, 1M)
-and 12 ms (Python, 1M). Not a CI gate. **Remaining for #35:** a render-based
-first-paint/interactivity measurement on the ladder; default Node/VS Code
-`composeGraphForge` / `graphforgeWebviewPayload` still compose synchronously
-and do not use `runForceTicks`; Python widget/notebook progressive delivery
-and rerender/dispose cancellation remain #1015 acceptance work. The historical
+and 12 ms (Python, 1M). Not a CI gate. Node/VS Code live payloads now require a
+per-view `GraphForgeLayoutController`, using the existing native scheduler and
+worker preset packing; see [the Node scheduling contract](graphforge-node-scheduling.md).
+Every live graph layout retains a complete f64 source snapshot, including
+circle/grid at Aggregate; Rust-derived render membership has separate indexing.
+Its bounded four-node native/painter receipt proves initial and changed later
+paint, UUID picks and pan through full view replacement. **Remaining for #35:**
+render-based first-paint/interactivity measurements on the large-data ladder,
+retained S5 updates, and Python widget/notebook progressive delivery plus
+rerender/dispose cancellation (#1015). The historical
 receipt predates #1078's Node checkpoint acceptance and cleanup contract (§5)
 and is not current-main timing evidence.
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid
@@ -1242,10 +1247,17 @@ before camera/revision replacement; genuine coincident or valid occluded
 pieces may still be absent, including tiny polygon spans with unbounded
 parallel-plane sentinels. Local S3 admission checks circle discriminants and
 square/diamond half-plane arithmetic before canonical clipping; shared legacy
-painter semantics and ABIs are unchanged (graph-interaction.md §2.3). The S4 paint buffer
-projection and S5 painter/controller remain outstanding.
+painter semantics and ABIs are unchanged (graph-interaction.md §2.3).
+S4 now projects the retained resolved CPU `RenderOutput.paint` through named
+XYGR sections (graph-interaction.md, S4 review repair), with no host policy or
+GPU f64 upload. S5 generic Rust lowering integration, painter/controller and
+emphasis rendering remain outstanding.
 
 The later S3 [clip repair and package decision receipt](../performance/graph-s3-package-budget-2026-10-31/README.md)
 records local validation under the parent's 1,513-KiB raw / unchanged 626-KiB gzip
-limits. This does not add session WASM exports or establish S4/S5 delivery;
-independent final review and CI remain pending.
+limits. That historical S3 receipt does not add session WASM exports or establish
+S4/S5 delivery; S3 has since merged through #1082. S4's separately reviewed
+session functionality decision uses 1,817-KiB raw / 742-KiB gzip gates and records
+fresh shipping validation in the [S4 package receipt](../performance/graph-s4-package-budget-2026-10-31/README.md).
+It establishes no S5 painter/controller, #36 or milestone acceptance; final
+policy-diff review and CI remain required.

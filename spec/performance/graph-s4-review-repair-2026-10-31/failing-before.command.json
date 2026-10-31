@@ -1,0 +1,17 @@
+{
+  "name": "failing-before",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "review_",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 101,
+  "seconds": 46.078,
+  "rawSha256": "256d23d074e44b802f8ba650177a070d48ecc02ea3eabdfacaef5e69693b889d",
+  "log": "failing-before.txt.gz",
+  "gzipSha256": "88a3cc0ff04852e447500fd23a08e79a902574b6fd6b37029fae11d0e2c3914b"
+}

@@ -104,7 +104,7 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1513 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1817 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
@@ -133,7 +133,15 @@ const WASM_SIZE_BUDGET_BYTES = 1513 * 1024;
 // historically), then admit reachable shared coordination extraction at the
 // smallest next-KiB RAW-only limit, 1,513 KiB. Gzip remains 626 KiB. Fresh final
 // source must pass both gates; no session exports, profile or validation change.
-const WASM_GZIP_BUDGET_BYTES = 626 * 1024;
+// S4 explicit functionality decision (graph-s4-package-budget-2026-10-31): first
+// reachability of shared session/render/pick/state/transaction machinery plus
+// complete resolved paint and exact-ID transport. After correctness review and
+// exactly two isolated size experiments, retain only the UUID hex writer.
+// Final source measures 1,860,250 raw / 759,008 gzip6 (+311,860 / +118,299 over
+// accepted S3). Smallest next-KiB limits: 1,817 / 742, headroom 358 / 800.
+// Compiler/profile/optimizer/dependencies/exports/validation remain unchanged;
+// future growth still fails these gates, without an automatic allowance.
+const WASM_GZIP_BUDGET_BYTES = 742 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
 if (bytes.length > WASM_SIZE_BUDGET_BYTES) {

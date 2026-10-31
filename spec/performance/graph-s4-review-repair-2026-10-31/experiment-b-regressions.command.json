@@ -1,0 +1,18 @@
+{
+  "name": "experiment-b-regressions",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::wire",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "exitCode": 0,
+  "seconds": 12.381,
+  "rawSha256": "4c7c46b0508b9ccb2cf70827d8abb1ef63cfd44b382326f2ed944ce439eedb5b",
+  "log": "experiment-b-regressions.txt.gz",
+  "gzipSha256": "9b92c6df9895338e30e804618fafcfa4e453cb73bc11ea0b9dc48d4b9bf62050"
+}

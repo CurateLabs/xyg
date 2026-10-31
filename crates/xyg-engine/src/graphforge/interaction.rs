@@ -56,6 +56,7 @@ pub use pick::{
 };
 pub use render::{Camera, RenderOutput, NOT_RENDERED};
 pub mod wire;
+mod wire_paint;
 
 /// Default direct-tier budgets (`_graph.py` `layout_render`).
 pub const DEFAULT_NODE_BUDGET: u64 = 200_000;
@@ -134,6 +135,8 @@ pub struct TemporalHandle(pub u64);
 /// Locked access to the temporal graph behind a handle, implemented by the
 /// registry that owns it. `false` means the graph is gone (disposed).
 pub trait TemporalHost: Send + Sync {
+    /// Process-local lock identity; adapters for one owner return the same key.
+    fn owner_identity(&self) -> usize { self as *const Self as *const () as usize }
     fn with_graph(&self, handle: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool;
 }
 

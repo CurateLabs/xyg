@@ -109,6 +109,21 @@ not product policy. Selection/update and disposal checks exercise this boundary;
 large source arrays remain host-side and numerical paint planes remain binary
 under dossier §29. Streamlit HTML embedding does not establish this live path.
 
+`examples/vanilla-ts/graphforge-live.mjs` independently exercises the async Node
+GraphForge scheduling boundary on a four-node fixture. Its
+[local receipt](../performance/graph-node-scheduling-35-2026-10-31/README.md)
+binds native ABI 397 and generated painter assets to initial and changed final
+paint, pointer picks resolving source UUIDs, and pan response on both frames.
+It separates checkpoint arrival from painted frames. Each update replaces the
+whole ChartView and resets the viewport; retained S5 updates remain open.
+The repaired consumer resolves picks through Rust-derived render membership,
+independently of full source-position indexing; its
+[repair receipt](../performance/graph-node-scheduling-35-review-repair-2026-10-31/README.md)
+retains exact GPU-hit/UUID checks and initial/final specs and binary payloads.
+This source-checkout fixture qualifies no shipping WASM artifact, packaged
+consumer, editor adapter, large-data ladder or release cohort. Existing installed
+consumer receipts remain independent evidence.
+
 ## Coverage disposition
 
 Framework-only behavior is retired: Reflex computed vars, registry tokens,

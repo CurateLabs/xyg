@@ -1,0 +1,13 @@
+{
+  "name": "baseline-real-package-gate",
+  "command": [
+    "node",
+    "js/package-wasm.mjs",
+    "target/task-tmp/repair-baseline/raw.wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 49.946,
+  "rawSha256": "d0a7cc00563841d89110d54e36eae5eb07abba2fb72ae612b3286740f8e04414",
+  "log": "baseline-real-package-gate.txt.gz",
+  "gzipSha256": "35697229e5329fa9d2de1cf60173d9c72287985a3bfd1a4df5116ae3ab4dff2f"
+}

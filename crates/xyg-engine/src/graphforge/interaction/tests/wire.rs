@@ -63,13 +63,6 @@ fn exact_refs_roundtrip_and_malformed_pools_reserved_kinds() {
     let mut tail = bytes.clone();
     tail.push(0);
     assert_eq!(wire::decode_refs(&tail), Err(InteractionStatus::Invalid));
-    assert!(wire::encode_refs(&[ElementRef::Derived(DerivedRef {
-        result: ResultRef::Exact(Some("".into())),
-        layer: 0,
-        path: 0,
-        order: 0
-    })])
-    .is_err());
 }
 #[test]
 fn strict_operation_schema_rejects_extra_fields_lengths_types() {
@@ -280,9 +273,8 @@ fn bound_commands_validate_mutate_publish_and_serialize_in_one_owner_access() {
 }
 
 #[test]
-fn post_mutation_serialization_refusal_rolls_back_document_state_publication_and_delivery() {
-    // Typed identity deliberately distinguishes Some("") from None (S1–S3).
-    // Empty exact IDs cannot cross the wire's composition identifier grammar.
+fn present_empty_update_preserves_identity_and_malformed_update_rolls_back() {
+    // Reader and transport preserve present-empty independently of absence.
     let document = handmade(
         &[id(1), id(2), id(3)],
         &[
@@ -323,7 +315,12 @@ fn post_mutation_serialization_refusal_rolls_back_document_state_publication_and
         b.f64s("load.x.f64", 0, &[0., 30., 60.]);
         b.f64s("load.y.f64", 0, &[0., 0., 0.]);
     });
-    assert_eq!(s.execute(&update, 0, None), Err(InteractionStatus::Invalid));
+    let mut malformed = update.clone();
+    malformed[24] = 1; // container reserved field, truly malformed
+    assert_eq!(
+        s.execute(&malformed, 0, None),
+        Err(InteractionStatus::Invalid)
+    );
     assert_eq!(s.reply(), cache);
     assert_eq!(s.session().published(), Some(&published));
     assert_eq!(s.session().pending_outbound(), pending.as_ref());
@@ -331,7 +328,10 @@ fn post_mutation_serialization_refusal_rolls_back_document_state_publication_and
         s.session().selection().unwrap(),
         vec![ElementRef::Node(id(1))]
     );
-    s.execute(&request(4, rev, 4, |_| {}), 0, None).unwrap();
+    s.execute(&update, 0, None).unwrap();
+    let updated = s.session().render_revision();
+    assert!(wire::decode_refs(Container::decode(s.reply(),wire::RESULT_MAGIC).unwrap().get("candidates.bytes",0).unwrap().payload).unwrap().iter().any(|r|matches!(r,ElementRef::Derived(DerivedRef{result:ResultRef::Exact(Some(id)),..}) if id.is_empty())));
+    s.execute(&request(5, updated, 4, |_| {}), 0, None).unwrap();
     assert!(s.session().selection().unwrap().is_empty());
     assert_ne!(s.reply(), first);
 }
@@ -407,4 +407,378 @@ fn changed_plane_roundtrips_the_full_20000_symmetric_difference_but_ingress_stay
         Request::decode(&excessive),
         Err(InteractionStatus::SelectionTooLarge)
     ));
+}
+
+#[test]
+fn review_paint_reply_and_default_arena() {
+    let mut s = WireSession::open(&open_doc(&standard_doc()), 16 * 1024 * 1024, 0).unwrap();
+    let reply = s
+        .execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let c = Container::decode(reply, wire::RESULT_MAGIC).unwrap();
+    assert!(c.get("paint.node.center.f64", 0).is_some());
+    assert_eq!(
+        wire::decode_paint(reply).unwrap(),
+        s.session().published().unwrap().paint
+    );
+    let rev = s.session().render_revision();
+    s.execute(&request(3, rev, 4, |_| {}), 0, None).unwrap();
+}
+
+#[test]
+fn review_exact_utf8_ids_survive_publication() {
+    for result in [
+        None,
+        Some(""),
+        Some("résumé with spaces"),
+        Some("x".repeat(129).as_str()),
+    ] {
+        let doc = handmade(
+            &[id(1), id(2), id(3)],
+            &[E::Overlay {
+                layer: 0,
+                path: 0,
+                order: 0,
+            }],
+            &[result],
+        );
+        let mut s = WireSession::open(&open_doc(&doc), wire::DEFAULT_MAX_BYTES, 0).unwrap();
+        s.execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+            .unwrap();
+    }
+}
+
+#[test]
+fn review_resolved_paint_roundtrip_routes_frames_aggregate_and_style_refresh() {
+    let base = handmade_ends(
+        COMPOSITION_VERSION,
+        &[id(1), id(2), id(3)],
+        &[
+            E::Persisted(id(11)),
+            E::Persisted(id(12)),
+            E::Persisted(id(13)),
+            E::Persisted(id(14)),
+        ],
+        &[],
+        Some((&[0, 0, 0], &[0, 1, 1])),
+        Some(&[(0, 1), (0, 1), (1, 1), (1, 2)]),
+    );
+    let mut b = Builder::new(DOCUMENT_MAGIC);
+    b.extend_from(&Container::decode(&base, DOCUMENT_MAGIC).unwrap());
+    b.u8s("node.class", 0, &[1, 2, 3]);
+    b.u8s("node.epistemic", 0, &[1, 2, 3]);
+    b.u8s("graph.directed", 0, &[1]);
+    let doc = b.finish();
+    let mut s = WireSession::open(&open_doc(&doc), wire::DEFAULT_MAX_BYTES, 0).unwrap();
+    let bytes = s
+        .execute(
+            &request(2, 0, wire::RENDER, |b| {
+                b.f64s("camera.f64", 0, &[1., 100., 20., 100., 200., 200., 2.])
+            }),
+            0,
+            None,
+        )
+        .unwrap()
+        .to_vec();
+    let paint = wire::decode_paint(&bytes).unwrap();
+    assert_eq!(paint, s.session().published().unwrap().paint);
+    assert!(paint.pieces.iter().any(|p| p.head.is_some()));
+    assert!(paint.pieces.iter().filter(|p| p.edge == 2).count() > 1);
+    assert!(!paint.frames.is_empty());
+    assert_ne!(paint.pieces[0].start, paint.pieces[1].start);
+    let rev = s.session().render_revision();
+    let selected = s
+        .execute(
+            &request(3, rev, 11, |b| {
+                b.bytes(
+                    "refs.bytes",
+                    0,
+                    &wire::encode_refs(&[ElementRef::Node(id(2))]).unwrap(),
+                )
+            }),
+            0,
+            None,
+        )
+        .unwrap()
+        .to_vec();
+    assert_eq!(header_of(&selected)[0], rev);
+    assert_eq!(
+        wire::decode_paint(&selected).unwrap(),
+        s.session().published().unwrap().paint
+    );
+    assert_ne!(wire::decode_paint(&selected).unwrap(), paint);
+    let mut malformed = bytes.clone();
+    let c = Container::decode(&bytes, wire::RESULT_MAGIC).unwrap();
+    let section = c.get("paint.node.style.bytes", 0).unwrap();
+    let off = section.payload.as_ptr() as usize - bytes.as_ptr() as usize;
+    malformed[off + 57] = 1;
+    assert_eq!(
+        wire::decode_paint(&malformed),
+        Err(InteractionStatus::Invalid)
+    );
+    let opening = request(1, 0, wire::OPEN, |b| {
+        b.bytes("document.bytes", 0, &doc);
+        b.f64s("load.x.f64", 0, &[0., 0.1, 60.]);
+        b.f64s("load.y.f64", 0, &[0.; 3]);
+        b.u64s("load.budgets.u64", 0, &[2, 100]);
+    });
+    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
+    let reply = s
+        .execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+        .unwrap()
+        .to_vec();
+    let render = s.session().published().unwrap();
+    assert_eq!(render.tier, crate::graph::LodTier::Aggregate);
+    assert!(render
+        .node_member_offsets
+        .windows(2)
+        .any(|w| w[1] - w[0] == 1));
+    assert_eq!(wire::decode_paint(&reply).unwrap(), render.paint);
+    assert!(render.paint.frames.is_empty());
+}
+
+#[test]
+fn review_live_owner_stamp_rebind_unbind_and_cross_owner_interleaving() {
+    let host = temporal(&[id(1), id(2), id(3)]);
+    let mut s = opened();
+    s.execute(
+        &request(2, 0, 18, |b| b.u64s("temporal.u64", 0, &[1])),
+        0,
+        Some((host.clone(), HANDLE)),
+    )
+    .unwrap();
+    let old = s.reply().to_vec();
+    let rev = s.session().render_revision();
+    frame(&host, 1);
+    for handle in [1, 0] {
+        let command = request(3, rev, 18, |b| b.u64s("temporal.u64", 0, &[handle]));
+        assert_eq!(
+            s.execute(&command, 0, Some((host.clone(), HANDLE))),
+            Err(InteractionStatus::Stale)
+        );
+        assert_eq!(s.reply(), old);
+        assert_eq!(s.session().render_revision(), rev);
+        assert!(s.session().is_bound());
+    }
+    s.execute(&request(3, rev, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let rev = s.session().render_revision();
+    s.execute(
+        &request(4, rev, 18, |b| b.u64s("temporal.u64", 0, &[1])),
+        0,
+        Some((host.clone(), HANDLE)),
+    )
+    .unwrap();
+    let rev = s.session().render_revision();
+    struct Interleaved {
+        target: Arc<Registry>,
+        old: Arc<Registry>,
+    }
+    impl TemporalHost for Interleaved {
+        fn with_graph(&self, h: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool {
+            frame(&self.old, 2);
+            self.target.with_graph(h, f)
+        }
+    }
+    let target = temporal(&[id(1), id(2), id(3)]);
+    let next = Arc::new(Interleaved {
+        target: target.clone(),
+        old: host.clone(),
+    });
+    let prior = s.reply().to_vec();
+    let change = request(5, rev, 18, |b| b.u64s("temporal.u64", 0, &[1]));
+    assert_eq!(
+        s.execute(&change, 0, Some((next, HANDLE))),
+        Err(InteractionStatus::Stale)
+    );
+    assert_eq!(s.reply(), prior);
+    assert!(s.session().is_bound());
+    s.execute(&request(5, rev, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let rev = s.session().render_revision();
+    s.execute(
+        &request(6, rev, 18, |b| b.u64s("temporal.u64", 0, &[1])),
+        0,
+        Some((target.clone(), HANDLE)),
+    )
+    .unwrap();
+    frame(&target, 3);
+    let rev = s.session().render_revision();
+    assert_eq!(
+        s.execute(
+            &request(7, rev, 18, |b| b.u64s("temporal.u64", 0, &[0])),
+            0,
+            None
+        ),
+        Err(InteractionStatus::Stale)
+    );
+    s.execute(&request(7, rev, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let rev = s.session().render_revision();
+    s.execute(
+        &request(8, rev, 18, |b| b.u64s("temporal.u64", 0, &[0])),
+        0,
+        None,
+    )
+    .unwrap();
+    assert!(!s.session().is_bound());
+}
+
+#[test]
+fn review_long_text_pressure_is_atomic_and_counts_repeated_ids() {
+    let text = "é".repeat(32_768);
+    let doc = handmade(
+        &[id(1), id(2), id(3)],
+        &[E::Overlay {
+            layer: 0,
+            path: 0,
+            order: 0,
+        }],
+        &[Some(&text)],
+    );
+    let bytes = open_doc(&doc);
+    assert!(matches!(
+        WireSession::open(&bytes, 16 * 1024 * 1024, 0),
+        Err(InteractionStatus::Budget)
+    ));
+    let mut s = opened();
+    s.execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let old = s.reply().to_vec();
+    let rev = s.session().render_revision();
+    s.max_bytes = 16 * 1024 * 1024;
+    let update = request(3, rev, wire::UPDATE, |b| {
+        b.bytes("document.bytes", 0, &doc);
+        b.f64s("load.x.f64", 0, &[0., 30., 60.]);
+        b.f64s("load.y.f64", 0, &[0.; 3]);
+    });
+    assert_eq!(s.execute(&update, 0, None), Err(InteractionStatus::Budget));
+    assert_eq!(s.reply(), old);
+    s.execute(&request(3, rev, 4, |_| {}), 0, None).unwrap();
+    let mut b = Builder::new(DOCUMENT_MAGIC);
+    b.extend_from(&Container::decode(&standard_doc(), DOCUMENT_MAGIC).unwrap());
+    // Per-row expanded dictionary labels, charged at all three occurrences.
+    b.texts("node.label", 0, &[text.as_str(); 3]);
+    assert!(matches!(
+        WireSession::open(&open_doc(&b.finish()), 16 * 1024 * 1024, 0),
+        Err(InteractionStatus::Budget)
+    ));
+}
+#[test]
+fn review_style_publication_distinguishes_classes() {
+    let mut replies = Vec::new();
+    for class in [0, 1] {
+        let doc = handmade(&[id(1), id(2), id(3)], &[], &[]);
+        let mut b = Builder::new(DOCUMENT_MAGIC);
+        b.extend_from(&Container::decode(&doc, DOCUMENT_MAGIC).unwrap());
+        b.u8s("node.class", 0, &[class; 3]);
+        let mut s = WireSession::open(&open_doc(&b.finish()), wire::DEFAULT_MAX_BYTES, 0).unwrap();
+        replies.push(
+            s.execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+                .unwrap()
+                .to_vec(),
+        );
+    }
+    assert_ne!(replies[0], replies[1]);
+}
+
+#[test]
+fn review_open_charge_has_a_tight_atomic_boundary() {
+    let bytes = open_doc(&standard_doc());
+    let (mut low, mut high) = (0, 16 * 1024 * 1024);
+    while high - low > 1 {
+        let mid = (high + low) / 2;
+        match WireSession::open(&bytes, mid, 0) {
+            Ok(_) => high = mid,
+            Err(InteractionStatus::Budget) => low = mid,
+            Err(error) => panic!("unexpected {error:?}"),
+        }
+    }
+    assert!(matches!(
+        WireSession::open(&bytes, high - 1, 0),
+        Err(InteractionStatus::Budget)
+    ));
+    assert!(WireSession::open(&bytes, high, 0).is_ok());
+    println!(
+        "three-node/three-edge open minimum admitted bytes={high}; browser default={}",
+        16 * 1024 * 1024
+    );
+}
+
+#[test]
+fn review_uuid_text_preserves_all_32_lowercase_hex_bytes_including_zeros() {
+    // This pins the byte contract before either authorized size experiment.
+    let node = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 255];
+    let doc = handmade(&[node], &[], &[]);
+    let opening = request(1, 0, wire::OPEN, |b| {
+        b.bytes("document.bytes", 0, &doc);
+        b.f64s("load.x.f64", 0, &[0.]);
+        b.f64s("load.y.f64", 0, &[0.]);
+    });
+    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
+    let reply = s
+        .execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+        .unwrap();
+    let c = Container::decode(reply, wire::RESULT_MAGIC).unwrap();
+    let text = c
+        .get("companion.text.utf8", 0)
+        .unwrap()
+        .as_utf8("companion.text.utf8")
+        .unwrap();
+    assert_eq!(
+        text,
+        "Node\t000102030405060708090a0b0c0d0eff\t\t0 relationships\tnot selected"
+    );
+}
+
+#[test]
+fn review_bound_state_text_absent_from_document_is_admitted_under_owner_lock() {
+    let host = temporal(&[id(1), id(2), id(3)]);
+    let mut s = opened();
+    s.execute(
+        &request(2, 0, 18, |b| b.u64s("temporal.u64", 0, &[1])),
+        0,
+        Some((host.clone(), HANDLE)),
+    )
+    .unwrap();
+    let mut foreign = ElementSet::default();
+    foreign.derived.insert(DerivedKey {
+        result_id: Some("λ".repeat(100_000).into_boxed_str()),
+        layer: 900,
+        path: 0,
+        order: 0,
+    });
+    host.graph
+        .lock()
+        .unwrap()
+        .as_mut()
+        .unwrap()
+        .interaction_state_mut()
+        .select(SelectMode::Replace, &foreign)
+        .unwrap();
+    let rev = s.session().render_revision();
+    let old = s.reply().to_vec();
+    s.max_bytes = 16 * 1024 * 1024;
+    let clear = request(3, rev, 4, |_| {});
+    assert_eq!(s.execute(&clear, 0, None), Err(InteractionStatus::Budget));
+    assert_eq!(s.reply(), old);
+    assert_eq!(
+        host.graph
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .interaction_state()
+            .selection(),
+        &foreign
+    );
+    host.graph
+        .lock()
+        .unwrap()
+        .as_mut()
+        .unwrap()
+        .interaction_state_mut()
+        .clear();
+    s.execute(&clear, 0, None).unwrap(); // no premature sequence or delivery
+    assert_eq!(s.session().pending_outbound().unwrap().revision, 1);
 }

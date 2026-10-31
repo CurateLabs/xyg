@@ -1,0 +1,16 @@
+{
+  "name": "fresh-abi-parameter-seam",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_abi_parity.py",
+    "tests/test_graph_session_abi.py"
+  ],
+  "exitCode": 1,
+  "seconds": 12.656,
+  "rawSha256": "9150d755892c462137b325fe0004e2fc44e002b458dfe839c81a86cc0396af74",
+  "log": "fresh-abi-parameter-seam.txt.gz",
+  "gzipSha256": "01078b826262551938775ad89c4878fa3e5f2d7b469da50aab3dd27767e216a0"
+}

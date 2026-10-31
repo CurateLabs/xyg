@@ -1,0 +1,15 @@
+{
+  "name": "abi-parameter-regenerate",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/gen_abi_manifest.py",
+    "--write"
+  ],
+  "exitCode": 0,
+  "seconds": 1.27,
+  "rawSha256": "f6633eeb5323296fa714eb555e0e1b470598a5482194b2be957b996ce8b01f73",
+  "log": "abi-parameter-regenerate.txt.gz",
+  "gzipSha256": "5d12f6a563f9bc41b09e171ee7f14badec1dfdd269e9d1523d83b2ffb41a0302"
+}

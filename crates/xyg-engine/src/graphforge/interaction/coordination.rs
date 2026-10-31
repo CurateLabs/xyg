@@ -63,14 +63,7 @@ impl GraphCoordinationEvent {
                 ElementRef::Node(id) | ElementRef::Edge(id) => *id == super::super::NIL_UUID,
                 ElementRef::Derived(d) => match &d.result {
                     ResultRef::Local(_) => true,
-                    ResultRef::Exact(None) => false,
-                    ResultRef::Exact(Some(id)) => {
-                        id.is_empty()
-                            || id.len() > super::super::request::MAX_RESULT_ID_BYTES
-                            || !id
-                                .bytes()
-                                .all(|b| b.is_ascii_alphanumeric() || b"._:-".contains(&b))
-                    }
+                    ResultRef::Exact(_) => false,
                 },
                 ElementRef::Aggregate(_) => true,
             })

@@ -1,0 +1,2 @@
+    Checking xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-engine)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.59s

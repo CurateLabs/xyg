@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #define XYG_ABI_VERSION 397
-#define XYG_ABI_SIGNATURE_SHA256 "68824381caf0f8a96852b75e33764e926af4416a566cebcc1bff1b2a26241a29"
+#define XYG_ABI_SIGNATURE_SHA256 "11aaa11bd88b7c974284d88fd96295a938f0b17d811ce820132f0b22aeef7ffa"
 
 #ifdef __cplusplus
 extern "C" {
@@ -201,7 +201,7 @@ int32_t xyg_graphforge_document_destroy(uint64_t handle);
 int32_t xyg_graphforge_document_len(uint64_t handle, uint64_t * out_len);
 size_t xyg_graphforge_ledger_tsv(uint8_t * out, size_t out_cap);
 int32_t xyg_graphforge_session_bind_temporal(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
-int32_t xyg_graphforge_session_create(const uint8_t * document, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle);
+int32_t xyg_graphforge_session_create(const uint8_t * document_bytes, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle);
 int32_t xyg_graphforge_session_destroy(uint64_t handle);
 int32_t xyg_graphforge_session_interact(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
 int32_t xyg_graphforge_session_poll_event(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);

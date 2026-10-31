@@ -1,0 +1,13 @@
+{
+  "name": "experiment-b-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-review-repair-2026-10-31/measure.mjs",
+    "experiment-b"
+  ],
+  "exitCode": 0,
+  "seconds": 48.324,
+  "rawSha256": "274b3bae8d4e4825f0aa929f259544b73b31e8d05e90d73914aee3febcd173b6",
+  "log": "experiment-b-measure.txt.gz",
+  "gzipSha256": "3c3837ce3eccefee3a2aac3c8e0ec89e1aa4e72b97f0f21c56f24bbaf749172a"
+}

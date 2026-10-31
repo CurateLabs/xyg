@@ -1,0 +1,38 @@
+
+running 17 tests
+test graphforge::interaction::tests::wire::bound_commands_validate_mutate_publish_and_serialize_in_one_owner_access ... ok
+test graphforge::interaction::tests::wire::bound_wire_captures_one_world_and_disposal_revokes_retries_unbind_recovers ... ok
+test graphforge::interaction::tests::wire::changed_plane_roundtrips_the_full_20000_symmetric_difference_but_ingress_stays_capped ... ok
+test graphforge::interaction::tests::wire::exact_refs_roundtrip_and_malformed_pools_reserved_kinds ... ok
+test graphforge::interaction::tests::wire::present_empty_update_preserves_identity_and_malformed_update_rolls_back ... ok
+test graphforge::interaction::tests::wire::review_exact_utf8_ids_survive_publication ... ok
+test graphforge::interaction::tests::wire::review_live_owner_stamp_rebind_unbind_and_cross_owner_interleaving ... ok
+test graphforge::interaction::tests::wire::review_long_text_pressure_is_atomic_and_counts_repeated_ids ... ok
+test graphforge::interaction::tests::wire::review_open_charge_has_a_tight_atomic_boundary ... three-node/three-edge open minimum admitted bytes=2966016; browser default=16777216
+ok
+test graphforge::interaction::tests::wire::review_paint_reply_and_default_arena ... ok
+test graphforge::interaction::tests::wire::review_resolved_paint_roundtrip_routes_frames_aggregate_and_style_refresh ... ok
+test graphforge::interaction::tests::wire::review_style_publication_distinguishes_classes ... ok
+test graphforge::interaction::tests::wire::review_uuid_text_preserves_all_32_lowercase_hex_bytes_including_zeros ... ok
+test graphforge::interaction::tests::wire::serialized_retry_is_identical_style_refresh_and_poll_peek ... ok
+test graphforge::interaction::tests::wire::strict_operation_schema_rejects_extra_fields_lengths_types ... ok
+test graphforge::interaction::tests::wire::summary_reports_aggregate_membership_from_the_publication ... ok
+test graphforge::interaction::tests::wire::update_failed_geometry_and_resource_refusals_keep_all_live_state_and_sequence ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 1784 filtered out; finished in 1.04s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.35s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-65077abe13f18b2c)
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-3248208b6d85f135)

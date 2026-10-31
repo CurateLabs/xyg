@@ -1,0 +1,99 @@
+    Blocking waiting for file lock on build directory
+warning: struct `StaticLabelStyle` is never constructed
+   --> crates/xyg-engine/src/scene.rs:215:19
+    |
+215 | pub(crate) struct StaticLabelStyle {
+    |                   ^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `encode_base64` is never used
+     --> crates/xyg-engine/src/scene.rs:11480:15
+      |
+11480 | pub(crate) fn encode_base64(bytes: &[u8]) -> String {
+      |               ^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+     --> crates/xyg-engine/src/scene.rs:12503:19
+      |
+11880 | impl SceneDocument {
+      | ------------------ methods in this implementation
+...
+12503 |     pub(crate) fn plot_bounds(&self) -> (f64, f64, f64, f64) {
+      |                   ^^^^^^^^^^^
+...
+12519 |     pub(crate) fn clear_backgrounds(&mut self) {
+      |                   ^^^^^^^^^^^^^^^^^
+...
+12622 |     pub(crate) fn apply_static_chrome_metrics(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+12652 |     pub(crate) fn apply_static_chrome_text(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+12688 |     pub(crate) fn apply_static_axis_sides(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^
+...
+12712 |     pub(crate) fn apply_static_grid_dash(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^
+...
+12742 |     pub(crate) fn apply_static_colorbar_layout(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+12769 |     pub(crate) fn apply_static_colorbar_style(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+12801 |     pub(crate) fn apply_static_colorbar_discrete(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+12852 |     pub(crate) fn apply_static_annotation_labels(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+12955 |     pub(crate) fn apply_static_title_style(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+12976 |     pub(crate) fn apply_static_arrow_metrics(
+      |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `legend_marker_geometry` is never used
+     --> crates/xyg-engine/src/scene.rs:17697:15
+      |
+17697 | pub(crate) fn legend_marker_geometry(symbol: u8, diameter: f64, stroke_width: f64) -> (f64, f64) {
+      |               ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `push_legend_marker_svg` is never used
+     --> crates/xyg-engine/src/scene.rs:17704:15
+      |
+17704 | pub(crate) fn push_legend_marker_svg(
+      |               ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `level_counts`, `level_color`, `level_dims`, and `domain` are never used
+  --> crates/xyg-engine/src/tiles.rs:84:19
+   |
+57 | impl Pyramid {
+   | ------------ methods in this implementation
+...
+84 |     pub(crate) fn level_counts(&self, level: usize) -> &[u32] {
+   |                   ^^^^^^^^^^^^
+...
+87 |     pub(crate) fn level_color(&self, level: usize) -> Option<&[[u16; 4]]> {
+   |                   ^^^^^^^^^^^
+...
+90 |     pub(crate) fn level_dims(&self) -> &[usize] {
+   |                   ^^^^^^^^^^
+...
+93 |     pub(crate) fn domain(&self) -> (f64, f64, f64, f64) {
+   |                   ^^^^^^
+
+warning: associated function `window` is never used
+   --> crates/xyg-engine/src/tiles.rs:128:19
+    |
+116 | impl<'a> LevelView<'a> {
+    | ---------------------- associated function in this implementation
+...
+128 |     pub(crate) fn window(
+    |                   ^^^^^^
+
+warning: `xyg-engine` (lib) generated 7 warnings
+   Compiling xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-wasm)
+    Finished `release` profile [optimized] target(s) in 24.06s
