@@ -48,6 +48,9 @@ It is separate from the full source-indexed `positions` snapshot. A viewport
 can map source node 3 to render row 0 even at EdgeSample; render indices must
 never index `positions.uuid`. Collapsed visible-subset identities join back to
 the composition by UUID, preserving hidden group membership and edge provenance.
+Edge identity lookup is cached once per immutable composition from persisted and
+existing derived IDs. Picks never rebuild GraphData or copy unrelated node
+attributes/result columns; the cache retains one source-edge-size lookup.
 Aggregate node hits return a cluster summary, never a source UUID; an index
 outside the actual rendered node/segment count returns null at every tier.
 A raw-input consumer can resolve exact hits with `pickData.nodes[hit.index]`

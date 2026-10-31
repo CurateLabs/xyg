@@ -1,0 +1,12 @@
+{
+  "name": "installed",
+  "command": [
+    "bash",
+    "spec/performance/graph-node-review-followup-2026-10-31/clean-install.sh"
+  ],
+  "exitCode": 0,
+  "seconds": 6.913,
+  "rawSha256": "d9eeef697192a9408c7bdd748c715ae4de55e1e3e4a91cfd1f348b93aea513bd",
+  "log": "installed.txt.gz",
+  "gzipSha256": "025a5c8a4958d0b333e3f708efdba17c528c698c1b32f3dd3e7a68f1cef09696"
+}

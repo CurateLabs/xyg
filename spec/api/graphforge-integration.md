@@ -63,14 +63,14 @@ seeded positions. Explicit x/y plus pinned restores persistence. A bound
 replacement must match its temporal owner's UUID order and persisted endpoints;
 validation and reconciliation share one lock. Admission/degraded limits and
 request-level graph snapshot sequencing are defined in graph-interaction.md
-§2.3–2.4/2.10. Sessions are Rust-only until the ABI slice
-(S4); see [graph-interaction.md](../design/graph-interaction.md).
+§2.3–2.4/2.10. Native and WASM session exports are implemented by S4; retained browser
+attachment and host integration remain S5/S6. See [graph-interaction.md](../design/graph-interaction.md).
 
 ## 2. Node host (extension host process)
 
 ```js
 import {
-  composeGraphForge, graphforgeWebviewPayload, graphforgePick,
+  composeGraphForge, GraphForgeLayoutController, graphforgeWebviewPayload, graphforgePick,
   graphforgeTableHtml, graphforgeLedger, GraphForgeCompositionError,
 } from "@curatelabs/xyg-node/graphforge";
 import { loadXygNode, LOAD_ERROR_CODES } from "@curatelabs/xyg-node/load";
@@ -87,14 +87,27 @@ composition.kind;              // "graph" | "table" | "bar-chart" | "parallel-co
 composition.identify("node", i);   // { uuid, layers: [{ layer, resultId, row }] }
 composition.select(uuids);         // { nodes: [i], edges: [j] }
 composition.diagnostics();         // value-free: schema ids, counts, decision codes
-const { spec, buffer, figure, positions } = graphforgeWebviewPayload(composition, { width, height, theme });
-graphforgePick(figure, composition, { trace, index });     // relayed webview click → identity
-// Recomposing the same base (new layers, selection, theme): reuse the layout.
-graphforgeWebviewPayload(next, { width, height, theme, positions });
+// Allocate once per mounted view; dispose when that view closes.
+const owner = new GraphForgeLayoutController();
+try {
+  const payload = await graphforgeWebviewPayload(owner, composition, { width, height, theme });
+  const { spec, buffer, positions } = payload; // send only spec + buffer to the painter
+  graphforgePick(payload, composition, { trace, index }); // relayed webview click → identity
+  // Recomposing the same base: explicitly reuse source positions without force.
+  await graphforgeWebviewPayload(owner, next, { width, height, theme, positions, layout: "preset" });
+} finally {
+  await owner.dispose(); // cancellation settles after worker teardown
+}
 graphforgeTableHtml(tableComposition);                     // escaped <table> for table intents
 ```
 
-Failures throw `GraphForgeCompositionError` (`code`, `layer`, `field`,
+Live rendering is asynchronous and returns no `Figure`; `graphforgePick` accepts
+the live payload. Explicit synchronous batch/export callers use
+`graphforgeStaticPayload(composition, options)`, which includes its ready
+`figure`. The [Node scheduling contract](../design/graphforge-node-scheduling.md)
+defines checkpoints, cancellation and owner lifecycle.
+
+Composition failures throw `GraphForgeCompositionError` (`code`, `layer`, `field`,
 value-free `message`). `encodeGraphForgeRequest(input)` /
 `composeGraphForgeRequest(bytes)` / `decodeGraphForgeDocument(bytes)` expose
 the raw `XYGQ`/`XYGF` bytes (e.g. to compose in the webview instead).
@@ -160,17 +173,19 @@ starts, compound and disconnected graphs, exact and grid tiers
 §4 "CoSE cross-host parity").
 Historical checkpoint-delivery latency and cadence at `cb78c1f4` on 1k–1M
 nodes for Python, Node and the browser Worker (not first paint or current-main
-timing evidence; rendered first paint/interactivity, default Node async
-composition and Python widget/notebook integration via #1015 remain open for
-#35):
+timing evidence). The default Node live API now composes/packs in a dedicated
+Worker and schedules force checkpoints; its bounded four-node paint/pick/pan
+proof is recorded in the [Node scheduling contract](../design/graphforge-node-scheduling.md).
+Rendered scale first paint/interactivity and Python widget/notebook integration
+via #1015 remain open for #35:
 `spec/performance/cose-progressive-ladder-2026-10-20/README.md`.
 
 ## 5. Versions
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 396 | `abiVersion()`, `xyg_abi_version` |
-| WASM ABI | 34 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
+| Native C ABI | 398 | `abiVersion()`, `xyg_abi_version` |
+| WASM ABI | 35 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 34 | `SCENE_VERSION` |
 | Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |
 | Browser painter binary | 17 | `BROWSER_PAINTER_VERSION` (`XYPB`) |
@@ -230,7 +245,8 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
   unchanged.
 
 - WASM Scene: direct tier only (≤ 1,024 elements).
-- Interaction sessions (#36 S2, Rust engine only; no host ABI yet): explicit
+- Interaction sessions (#36 S4 native/WASM ABI; retained browser controller
+  and remaining host integration pending): explicit
   compound disclosure is bounded at 1,024 source nodes (above it
   `GF_INTERACTION_COMPOUND_TOO_LARGE`; render-tier aggregates are selectable but
   take no disclosure action); a selection or highlight plane holds at most

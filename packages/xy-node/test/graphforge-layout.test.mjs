@@ -200,6 +200,16 @@ test("collapsed groups and hidden source rows retain UUID, group membership and 
     assert.ok(live.pickData.edges.length > 0, "disclosure must exercise retained edge provenance");
     assert.deepEqual(live.pickData.nodes.map(n => n.uuid), [c.nodes.uuid[0], c.nodes.uuid[2], c.nodes.uuid[3]]);
     const edgeIds = graphforgeGraphData(c).edgeIds;
+    // A pick needs identities/provenance, never materialized result attributes.
+    for (const key of ["name", "type"]) Object.defineProperty(c.nodes, key, {
+      get() { throw new Error(`pick copied node ${key}`); },
+    });
+    for (const layer of c.layers) for (const key of ["nodeValues", "edgeValues", "nodeTexts"]) {
+      Object.defineProperty(layer, key, { get() { throw new Error(`pick copied ${key}`); } });
+    }
+    const ids = c.edges.uuid;
+    let indexBuilds = 0;
+    ids.map = function (...args) { indexBuilds++; return Array.prototype.map.apply(this, args); };
     for (const target of [live, batch.figure]) {
       assert.deepEqual(graphforgePick(target, c, { trace: live.nodeTrace, index: 1 }), c.identify("node", 2));
       const group = graphforgePick(target, c, { trace: live.nodeTrace, index: 0 });
@@ -213,6 +223,7 @@ test("collapsed groups and hidden source rows retain UUID, group membership and 
         assert.deepEqual(graphforgePick(target, c, { trace: live.edgeTrace, index: i }), c.identify("edge", edgeIds.indexOf(pick.edge_ids[0])));
       }
     }
+    assert.equal(indexBuilds, 1, "live and static picks share one edge-identity index per composition");
   } finally { await owner.dispose(); }
 });
 

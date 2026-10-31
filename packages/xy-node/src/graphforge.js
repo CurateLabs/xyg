@@ -356,6 +356,9 @@ export class GraphForgeComposition {
         this.edges.uuid.forEach((id, i) => { if (id != null) index.set(id, i); });
         return index;
       });
+      // Compositions are immutable snapshots, like the persisted UUID indexes.
+      // Disclosure picks need derived IDs too, without materializing attributes.
+      lazy(this, "_renderEdgeIndex", () => new Map(renderEdgeIds(this).map((id, i) => [id, i])));
     }
     if (this.kind === "table") {
       const columns = get("table.columns");
@@ -511,6 +514,19 @@ export class GraphForgeComposition {
   }
 }
 
+function renderEdgeIds(composition) {
+  const { edges } = composition;
+  // Derived edges have no persisted UUID: identify them by layer and result row.
+  return edges.uuid.map((id, i) => {
+    if (id != null) return id;
+    // One result row may yield several steps (paths, walks, cycles): the
+    // step index keeps each derived edge's id unique.
+    const layer = composition.layers[edges.layer[i]];
+    const step = edges.order != null && edges.order[i] >= 0n ? `:${edges.order[i]}` : "";
+    return `derived:${edges.layer[i]}:${Number(layer.edgeRows[i])}${step}`;
+  });
+}
+
 /** GraphData (graph.js) for a graph composition; identity is UUID text. */
 export function graphforgeGraphData(composition) {
   if (composition?.kind !== "graph") throw new TypeError("graphforgeGraphData needs a graph composition");
@@ -533,15 +549,7 @@ export function graphforgeGraphData(composition) {
       });
     }
   }
-  // Derived edges have no persisted UUID: identify them by layer and result row.
-  const edgeIds = edges.uuid.map((id, i) => {
-    if (id != null) return id;
-    // One result row may yield several steps (paths, walks, cycles): the
-    // step index keeps each derived edge's id unique.
-    const layer = composition.layers[edges.layer[i]];
-    const step = edges.order != null && edges.order[i] >= 0n ? `:${edges.order[i]}` : "";
-    return `derived:${edges.layer[i]}:${Number(layer.edgeRows[i])}${step}`;
-  });
+  const edgeIds = renderEdgeIds(composition);
   if (edges.order != null) {
     edgeAttrs.step = Float64Array.from(edges.order, (v) => (v < 0n ? Number.NaN : Number(v)));
   }
@@ -823,7 +831,7 @@ export function graphforgePick(fig, composition, { trace, index } = {}) {
   const sourceIds = live ? live.sourceEdgeIds : meta.compound_collapsed ? meta.source_edge_ids : null;
   // Disclosure membership addresses the visible source subset; join its IDs
   // back to the composition (including its existing derived-edge IDs).
-  const sourceIndex = sourceIds ? new Map(graphforgeGraphData(composition).edgeIds.map((id, i) => [id, i])) : null;
+  const sourceIndex = sourceIds ? composition._renderEdgeIndex : null;
   const identify = edge => composition.identify("edge", sourceIndex ? sourceIndex.get(sourceIds[edge]) : edge);
   if (pick.edge_count === 1) return identify(pick.source_edges[0]);
   return { kind: "aggregate", trace, edgeCount: pick.edge_count,

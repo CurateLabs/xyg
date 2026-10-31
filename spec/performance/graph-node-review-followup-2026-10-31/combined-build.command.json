@@ -1,0 +1,13 @@
+{
+  "name": "combined-build",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\ncargo build --release --offline\nnode js/build.mjs\nnpm run build:wasm"
+  ],
+  "exitCode": 0,
+  "seconds": 93.986,
+  "rawSha256": "5aade5f21d4f4735c02d9f12f103e3d60ebf551a960a9406613088328ddd17a6",
+  "log": "combined-build.txt.gz",
+  "gzipSha256": "ceb1f511a45b8badc53fbe44bb245bb92ad7a4dcdf50bbb39962dcb30ec49b43"
+}

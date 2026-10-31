@@ -1189,7 +1189,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"1044cdf2175d57dbed2c5088f747f812a982dc08",
+  "baseCommit":"ef0870774edacd4fcffceddeb10e9dd469ad0989",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1298,7 +1298,7 @@
   "packages/xy-node/src/geoviewport.js":"0275dff5da2d68c720a0301c50b32e3a38abd08a9d6a7a9bb41db3984127e958",
   "packages/xy-node/src/graph.js":"35ef2297291395d26f8ecb1505baf750f2fcafb2897e0251e4bd15bda2eeb4b1",
   "packages/xy-node/src/graphforge-container.js":"57e2250967df1322e0a5d449774a073f4687e01d45ef563e17b736d42e998a6a",
-  "packages/xy-node/src/graphforge.js":"85ae86977d110d2f8cf8a0552ab1334711ad95cd44b5f7474139b8b6d891afd5",
+  "packages/xy-node/src/graphforge.js":"3cab9c13499fdadc893ddb086fa6f6a7a8a5f0768e2faf19ac63b74e52018875",
   "packages/xy-node/src/graphforge_layout.js":"252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
   "packages/xy-node/src/graphforge_layout_worker.js":"faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
   "packages/xy-node/src/html.js":"19798bb407af09aa75f3f42a5ebd9e19aa7d3e34fb880a300588466dfa89a24f",

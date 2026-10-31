@@ -1,0 +1,305 @@
+TAP version 13
+# Subtest: standalone temporal owners keep frame and replacement staging at the default arena
+ok 1 - standalone temporal owners keep frame and replacement staging at the default arena
+  ---
+  duration_ms: 62.940558
+  type: 'test'
+  ...
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 2 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 124.380946
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm","bytes":1860254,"sha256":"27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so","nativeSha256":"dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a","diagnosticModule":false}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 3 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 369.487468
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 4 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 19.738613
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 5 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 59.763547
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 6 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 17.640569
+  type: 'test'
+  ...
+# Subtest: Node frames and composes the Python-pinned GraphForge bytes for every case
+ok 7 - Node frames and composes the Python-pinned GraphForge bytes for every case
+  ---
+  duration_ms: 39.953555
+  type: 'test'
+  ...
+# Subtest: default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+ok 8 - default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+  ---
+  duration_ms: 370.928549
+  type: 'test'
+  ...
+# Subtest: presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+ok 9 - presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+  ---
+  duration_ms: 598.621859
+  type: 'test'
+  ...
+# Subtest: concurrent owners, supersession, late callback and reload remain isolated
+ok 10 - concurrent owners, supersession, late callback and reload remain isolated
+  ---
+  duration_ms: 778.983881
+  type: 'test'
+  ...
+# Subtest: pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+ok 11 - pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+  ---
+  duration_ms: 1334.141952
+  type: 'test'
+  ...
+# Subtest: compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+ok 12 - compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+  ---
+  duration_ms: 312.060694
+  type: 'test'
+  ...
+# Subtest: render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+ok 13 - render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+  ---
+  duration_ms: 164.798257
+  type: 'test'
+  ...
+# Subtest: Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+ok 14 - Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+  ---
+  duration_ms: 494.286463
+  type: 'test'
+  ...
+# Subtest: collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+ok 15 - collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+  ---
+  duration_ms: 168.944623
+  type: 'test'
+  ...
+# Subtest: circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+ok 16 - circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+  ---
+  duration_ms: 1915.86341
+  type: 'test'
+  ...
+# Subtest: real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+ok 17 - real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+  ---
+  duration_ms: 3249.772597
+  type: 'test'
+  ...
+# Subtest: existing CoSE golden/options remain bit-exact in the reused real native worker
+ok 18 - existing CoSE golden/options remain bit-exact in the reused real native worker
+  ---
+  duration_ms: 948.581999
+  type: 'test'
+  ...
+# Subtest: explicit static layouts and analytical intents still pack off-loop without force
+ok 19 - explicit static layouts and analytical intents still pack off-loop without force
+  ---
+  duration_ms: 469.250558
+  type: 'test'
+  ...
+# Subtest: reentrant startup cancellation cannot strand a bridge or escape disposal
+ok 20 - reentrant startup cancellation cannot strand a bridge or escape disposal
+  ---
+  duration_ms: 1367.155213
+  type: 'test'
+  ...
+# Subtest: non-force Aggregate source layout runs once in the bridge before preset-only packing
+ok 21 - non-force Aggregate source layout runs once in the bridge before preset-only packing
+  ---
+  duration_ms: 1650.686042
+  type: 'test'
+  ...
+# Subtest: a request with no result layer composes the property-graph defaults
+ok 22 - a request with no result layer composes the property-graph defaults
+  ---
+  duration_ms: 8.378254
+  type: 'test'
+  ...
+# Subtest: a directed property graph keeps its arrowheads in the interactive graph mark
+ok 23 - a directed property graph keeps its arrowheads in the interactive graph mark
+  ---
+  duration_ms: 19.586528
+  type: 'test'
+  ...
+# Subtest: every node and edge layer joins by UUID, matching an independent decoder
+ok 24 - every node and edge layer joins by UUID, matching an independent decoder
+  ---
+  duration_ms: 21.459272
+  type: 'test'
+  ...
+# Subtest: scores become the node metric plane; communities class codes
+ok 25 - scores become the node metric plane; communities class codes
+  ---
+  duration_ms: 0.811887
+  type: 'test'
+  ...
+# Subtest: edge overlays mark members, dim context, and keep persisted identity
+ok 26 - edge overlays mark members, dim context, and keep persisted identity
+  ---
+  duration_ms: 0.971177
+  type: 'test'
+  ...
+# Subtest: identity round-trips for selection: UUID → index → UUID + result rows
+ok 27 - identity round-trips for selection: UUID → index → UUID + result rows
+  ---
+  duration_ms: 1.026846
+  type: 'test'
+  ...
+# Subtest: failures carry stable codes and no identities or values
+ok 28 - failures carry stable codes and no identities or values
+  ---
+  duration_ms: 2.692986
+  type: 'test'
+  ...
+# Subtest: missing and extra identity policies are explicit and recorded
+ok 29 - missing and extra identity policies are explicit and recorded
+  ---
+  duration_ms: 2.507036
+  type: 'test'
+  ...
+# Subtest: diagnostics are value-free
+ok 30 - diagnostics are value-free
+  ---
+  duration_ms: 1.629973
+  type: 'test'
+  ...
+# Subtest: request framing is host-neutral bytes; the document decodes identically
+ok 31 - request framing is host-neutral bytes; the document decodes identically
+  ---
+  duration_ms: 1.526469
+  type: 'test'
+  ...
+# Subtest: container numbers are little-endian bytes regardless of host order
+ok 32 - container numbers are little-endian bytes regardless of host order
+  ---
+  duration_ms: 0.644556
+  type: 'test'
+  ...
+# Subtest: container codec round-trips and rejects corruption
+ok 33 - container codec round-trips and rejects corruption
+  ---
+  duration_ms: 0.441838
+  type: 'test'
+  ...
+# Subtest: table documents with inconsistent shapes are rejected, not iterated
+ok 34 - table documents with inconsistent shapes are rejected, not iterated
+  ---
+  duration_ms: 0.613978
+  type: 'test'
+  ...
+# Subtest: graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+ok 35 - graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+  ---
+  duration_ms: 126.887271
+  type: 'test'
+  ...
+# Subtest: graph mark accepts edge visual-state flags only with edge semantic fields
+ok 36 - graph mark accepts edge visual-state flags only with edge semantic fields
+  ---
+  duration_ms: 6.27636
+  type: 'test'
+  ...
+# Subtest: the Rust ledger covers every GraphForge 0.5.2 contract
+ok 37 - the Rust ledger covers every GraphForge 0.5.2 contract
+  ---
+  duration_ms: 0.577059
+  type: 'test'
+  ...
+# Subtest: derived pairs are identified by layer and result row, never a persisted UUID
+ok 38 - derived pairs are identified by layer and result row, never a persisted UUID
+  ---
+  duration_ms: 0.774246
+  type: 'test'
+  ...
+# Subtest: ordered overlays expose paths, step order, and position labels
+ok 39 - ordered overlays expose paths, step order, and position labels
+  ---
+  duration_ms: 8.394273
+  type: 'test'
+  ...
+# Subtest: scalar and category results compose as tables and bar charts, never graphs
+ok 40 - scalar and category results compose as tables and bar charts, never graphs
+  ---
+  duration_ms: 64.944457
+  type: 'test'
+  ...
+# Subtest: table cells are escaped text
+ok 41 - table cells are escaped text
+  ---
+  duration_ms: 2.783998
+  type: 'test'
+  ...
+# Subtest: embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+ok 42 - embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+  ---
+  duration_ms: 86.345867
+  type: 'test'
+  ...
+# Subtest: render requests append the canonical Scene and selections paint selected
+ok 43 - render requests append the canonical Scene and selections paint selected
+  ---
+  duration_ms: 1.335432
+  type: 'test'
+  ...
+# Subtest: webview payloads relay picks back to GraphForge identity
+ok 44 - webview payloads relay picks back to GraphForge identity
+  ---
+  duration_ms: 23.755093
+  type: 'test'
+  ...
+# Subtest: recompositions reuse a layout by node UUID instead of laying out again
+ok 45 - recompositions reuse a layout by node UUID instead of laying out again
+  ---
+  duration_ms: 32.616947
+  type: 'test'
+  ...
+# Subtest: composition identities decode lazily and agree with the planes
+ok 46 - composition identities decode lazily and agree with the planes
+  ---
+  duration_ms: 0.849313
+  type: 'test'
+  ...
+# Subtest: derived edges carry no provenance row in hover rows
+ok 47 - derived edges carry no provenance row in hover rows
+  ---
+  duration_ms: 2.02118
+  type: 'test'
+  ...
+# Subtest: unsupported result-schema versions name the schema and next action
+ok 48 - unsupported result-schema versions name the schema and next action
+  ---
+  duration_ms: 1.020895
+  type: 'test'
+  ...
+# Subtest: published Core rc.5 catalog composes, including endpoint-only path costs
+ok 49 - published Core rc.5 catalog composes, including endpoint-only path costs
+  ---
+  duration_ms: 35.209127
+  type: 'test'
+  ...
+1..49
+# tests 49
+# suites 0
+# pass 49
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14061.632345

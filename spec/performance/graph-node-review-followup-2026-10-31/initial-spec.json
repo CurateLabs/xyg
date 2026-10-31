@@ -1,0 +1,552 @@
+{
+  "protocol": 14,
+  "width": 720,
+  "height": 480,
+  "title": null,
+  "x_axis": {
+    "id": "x",
+    "label": null,
+    "range": [
+      -2.1205942113844842,
+      2.223751979951607
+    ],
+    "side": "bottom",
+    "kind": "linear",
+    "domain": [
+      -2.1205942113844842,
+      2.223751979951607
+    ],
+    "style": {
+      "axis_width": 0,
+      "axis_color": "#00000000",
+      "tick_length": 0,
+      "tick_width": 0,
+      "grid_opacity": 0,
+      "tick_label_color": "#00000000",
+      "label_color": "#00000000"
+    }
+  },
+  "y_axis": {
+    "id": "y",
+    "label": null,
+    "range": [
+      -2.1197470777089884,
+      2.1194220195812554
+    ],
+    "side": "left",
+    "kind": "linear",
+    "domain": [
+      -2.1197470777089884,
+      2.1194220195812554
+    ],
+    "style": {
+      "axis_width": 0,
+      "axis_color": "#00000000",
+      "tick_length": 0,
+      "tick_width": 0,
+      "grid_opacity": 0,
+      "tick_label_color": "#00000000",
+      "label_color": "#00000000"
+    }
+  },
+  "axes": {
+    "x": {
+      "id": "x",
+      "label": null,
+      "range": [
+        -2.1205942113844842,
+        2.223751979951607
+      ],
+      "side": "bottom",
+      "kind": "linear",
+      "domain": [
+        -2.1205942113844842,
+        2.223751979951607
+      ],
+      "style": {
+        "axis_width": 0,
+        "axis_color": "#00000000",
+        "tick_length": 0,
+        "tick_width": 0,
+        "grid_opacity": 0,
+        "tick_label_color": "#00000000",
+        "label_color": "#00000000"
+      }
+    },
+    "y": {
+      "id": "y",
+      "label": null,
+      "range": [
+        -2.1197470777089884,
+        2.1194220195812554
+      ],
+      "side": "left",
+      "kind": "linear",
+      "domain": [
+        -2.1197470777089884,
+        2.1194220195812554
+      ],
+      "style": {
+        "axis_width": 0,
+        "axis_color": "#00000000",
+        "tick_length": 0,
+        "tick_width": 0,
+        "grid_opacity": 0,
+        "tick_label_color": "#00000000",
+        "label_color": "#00000000"
+      }
+    }
+  },
+  "traces": [
+    {
+      "id": 0,
+      "kind": "segments",
+      "name": null,
+      "style": {
+        "color": "#888888",
+        "width": 1.2,
+        "opacity": 1,
+        "role": "segments"
+      },
+      "tier": "direct",
+      "n_points": 5,
+      "n_marks": 5,
+      "x_axis": "x",
+      "y_axis": "y",
+      "x0": 0,
+      "x1": 1,
+      "y0": 2,
+      "y1": 3,
+      "color": {
+        "mode": "direct_rgba",
+        "components": 4,
+        "dtype": "u8",
+        "buf": 4,
+        "n": 20
+      },
+      "size": {
+        "mode": "constant"
+      },
+      "tooltip_columns": {
+        "n": 5,
+        "keys": [
+          "source",
+          "target",
+          "edge_id",
+          "provenance_row",
+          "type",
+          "step"
+        ],
+        "kinds": [
+          "uuid",
+          "uuid",
+          "uuid",
+          "f64",
+          "text",
+          "f64"
+        ],
+        "data": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          11
+        ],
+        "present": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          10
+        ],
+        "dict": [
+          "KNOWS"
+        ]
+      },
+      "channels": {
+        "edge_ends": {
+          "mode": "direct",
+          "components": 7,
+          "dtype": "f32",
+          "buf": 12,
+          "n": 35
+        },
+        "width": {
+          "mode": "direct",
+          "components": 1,
+          "dtype": "f32",
+          "buf": 13,
+          "n": 5
+        },
+        "opacity": {
+          "mode": "direct",
+          "components": 1,
+          "dtype": "f32",
+          "buf": 14,
+          "n": 5
+        },
+        "label_plan": {
+          "mode": "direct",
+          "components": 5,
+          "dtype": "f32",
+          "buf": 15,
+          "n": 25
+        }
+      }
+    },
+    {
+      "id": 1,
+      "kind": "scatter",
+      "name": null,
+      "style": {
+        "color": null,
+        "symbol": "circle",
+        "opacity": 1
+      },
+      "tier": "direct",
+      "n_points": 4,
+      "n_marks": 4,
+      "x_axis": "x",
+      "y_axis": "y",
+      "x": 16,
+      "y": 17,
+      "color": {
+        "mode": "direct_rgba",
+        "components": 4,
+        "dtype": "u8",
+        "buf": 18,
+        "n": 16
+      },
+      "size": {
+        "mode": "constant",
+        "size": 13.5
+      },
+      "stroke": {
+        "mode": "direct_rgba",
+        "components": 4,
+        "dtype": "u8",
+        "buf": 19,
+        "n": 16
+      },
+      "tooltip_columns": {
+        "n": 4,
+        "keys": [
+          "id",
+          "provenance_row",
+          "name",
+          "type"
+        ],
+        "kinds": [
+          "uuid",
+          "f64",
+          "text",
+          "text"
+        ],
+        "data": [
+          20,
+          21,
+          22,
+          23
+        ],
+        "present": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dict": [
+          "ada",
+          "bo",
+          "cy",
+          "di",
+          "Person"
+        ]
+      },
+      "channels": {
+        "opacity": {
+          "mode": "direct",
+          "components": 1,
+          "dtype": "f32",
+          "buf": 24,
+          "n": 4
+        },
+        "symbol": {
+          "mode": "direct",
+          "components": 1,
+          "dtype": "u8",
+          "buf": 25,
+          "n": 4
+        },
+        "stroke_width": {
+          "mode": "direct",
+          "components": 1,
+          "dtype": "f32",
+          "buf": 26,
+          "n": 4
+        },
+        "label_plan": {
+          "mode": "direct",
+          "components": 5,
+          "dtype": "f32",
+          "buf": 27,
+          "n": 20
+        }
+      }
+    }
+  ],
+  "columns": [
+    {
+      "byte_offset": 0,
+      "len": 5,
+      "offset": 0.00005412108953706252,
+      "scale": 1,
+      "kind": "float"
+    },
+    {
+      "byte_offset": 20,
+      "len": 5,
+      "offset": 0.00005412108953706252,
+      "scale": 1,
+      "kind": "float"
+    },
+    {
+      "byte_offset": 40,
+      "len": 5,
+      "offset": 1.000577848782124,
+      "scale": 1,
+      "kind": "float"
+    },
+    {
+      "byte_offset": 60,
+      "len": 5,
+      "offset": -0.00016252906386649002,
+      "scale": 1,
+      "kind": "float"
+    },
+    {
+      "byte_offset": 80,
+      "len": 20,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 100,
+      "len": 80,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 180,
+      "len": 80,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 260,
+      "len": 80,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 340,
+      "len": 40,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 380,
+      "len": 5,
+      "dtype": "u32"
+    },
+    {
+      "byte_offset": 400,
+      "len": 5,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 408,
+      "len": 40,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 448,
+      "len": 35
+    },
+    {
+      "byte_offset": 588,
+      "len": 5
+    },
+    {
+      "byte_offset": 608,
+      "len": 5
+    },
+    {
+      "byte_offset": 628,
+      "len": 25
+    },
+    {
+      "byte_offset": 728,
+      "len": 4,
+      "offset": 0.00005412108953706252,
+      "scale": 1,
+      "kind": "float"
+    },
+    {
+      "byte_offset": 744,
+      "len": 4,
+      "offset": -0.00016252906386649002,
+      "scale": 1,
+      "kind": "float"
+    },
+    {
+      "byte_offset": 760,
+      "len": 16,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 776,
+      "len": 16,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 792,
+      "len": 64,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 856,
+      "len": 32,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 888,
+      "len": 4,
+      "dtype": "u32"
+    },
+    {
+      "byte_offset": 904,
+      "len": 4,
+      "dtype": "u32"
+    },
+    {
+      "byte_offset": 920,
+      "len": 4
+    },
+    {
+      "byte_offset": 936,
+      "len": 4,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 940,
+      "len": 4
+    },
+    {
+      "byte_offset": 956,
+      "len": 20
+    },
+    {
+      "byte_offset": 1036,
+      "len": 5,
+      "dtype": "u32"
+    },
+    {
+      "byte_offset": 1056,
+      "len": 5,
+      "dtype": "u32"
+    },
+    {
+      "byte_offset": 1076,
+      "len": 4,
+      "dtype": "u8"
+    },
+    {
+      "byte_offset": 1080,
+      "len": 4,
+      "dtype": "u8"
+    }
+  ],
+  "backend": "native",
+  "show_legend": true,
+  "view": {
+    "ranges": {
+      "x": [
+        -2.1205942113844842,
+        2.223751979951607
+      ],
+      "y": [
+        -2.1197470777089884,
+        2.1194220195812554
+      ]
+    }
+  },
+  "interaction": {
+    "click": true
+  },
+  "graph": [
+    {
+      "layout": "preset",
+      "seed": 0,
+      "lod_tier": 0,
+      "edges_kept": 5,
+      "nodes_kept": 4,
+      "n_nodes": 4,
+      "n_edges": 5,
+      "source_n_nodes": 4,
+      "source_n_edges": 5,
+      "node_budget": 200000,
+      "edge_budget": 500000,
+      "directed": true,
+      "csr_offsets": {
+        "column": 28
+      },
+      "csr_neighbors": {
+        "column": 29
+      },
+      "node_symbol": "circle",
+      "edge_curve": "straight",
+      "style_contract": {
+        "version": 1,
+        "theme": "light",
+        "nodes": "resolved",
+        "edges": "resolved",
+        "pending_layers": [],
+        "node_metric_domain": [
+          0,
+          0
+        ],
+        "edge_metric_domain": [
+          0,
+          0
+        ]
+      },
+      "tier_name": "direct",
+      "node_trace": 1,
+      "edge_trace": 0,
+      "edge_label_segments": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "edge_label_text": [
+        "KNOWS",
+        "KNOWS",
+        "KNOWS",
+        "KNOWS",
+        "KNOWS"
+      ],
+      "node_labels": [
+        "ada",
+        "bo",
+        "cy",
+        "di"
+      ],
+      "label_accepted": {
+        "column": 30
+      },
+      "label_budget": 64,
+      "visual_states": {
+        "column": 31
+      }
+    }
+  ]
+}
