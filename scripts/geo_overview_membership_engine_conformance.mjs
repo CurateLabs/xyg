@@ -8,13 +8,14 @@ import {gzipSync} from 'node:zlib';
 import {encodeGeoScaleRequest as encode,decodeGeoScaleReply as decode,encodeGeoChunkRequest,
  encodeGeoScaleStyle,driveGeoSession,prepareGeoSceneData,nativeGeoScaleBridge,parseGeoMembershipData}
  from '../packages/xy-node/src/geoscale.js';
+const expectedWasmAbi=JSON.parse(await readFile(new URL('../spec/wasm/abi.json',import.meta.url),'utf8')).abi_version;
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const wasmPath=process.env.XYG_MEMBERSHIP_WASM??new URL('../packages/xy-client/dist/xyg-wasm.wasm',import.meta.url);
 const wasmBytes=await readFile(wasmPath),nativePath=process.env.XYG_NATIVE_LIB;
 assert.ok(nativePath,'XYG_NATIVE_LIB must pin the actual native artifact');
 const nativeBytes=await readFile(nativePath);
 const {instance}=await WebAssembly.instantiate(wasmBytes,{}),x=instance.exports;
-assert.equal(x.xyg_wasm_abi_version(),34);
+assert.equal(x.xyg_wasm_abi_version(),expectedWasmAbi);
 const budget={processorBytes:128<<20,maxRowsExamined:1000000n,maxReadBytes:128n<<20n,maxChunks:65536,pageRows:4};
 const h=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(h);let transport=0;
 const wasm={async execute(request){return call(request,false);},async read(request){return call(request,true);}};

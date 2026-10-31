@@ -1,0 +1,1 @@
+ABI parity ok (537 symbols, v397; both hosts generated from the typed contract)

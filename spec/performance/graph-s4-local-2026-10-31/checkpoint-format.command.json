@@ -1,0 +1,16 @@
+{
+  "name": "checkpoint-format",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.03,
+  "rawSha256": "a84ae22f7811801fac92ab2db406cb0016f9a994cdeb829f5bce5bf79941fa4d",
+  "log": "checkpoint-format.txt.gz",
+  "gzipSha256": "9234f08dc4b0205f391463202e5f96e0eb89dcc4f53ca0b3efd9e29670e7434e"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "diagnostic-assets-verify",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/verify_wasm_assets.py",
+    "--root",
+    "target/task-tmp/s4-review-repair-diagnostic-assets"
+  ],
+  "exitCode": 0,
+  "seconds": 0.087,
+  "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+  "log": "diagnostic-assets-verify.txt.gz",
+  "gzipSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+}

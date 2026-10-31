@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/scripts/render_smoke_nonumpy.py", line 1679, in <module>
+    main()
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/scripts/render_smoke_nonumpy.py", line 1387, in main
+    title = run_probe(page)
+            ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/scripts/render_smoke_nonumpy.py", line 68, in run_probe
+    with ChromiumSession(
+         ^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/python/xyg/_chromium.py", line 200, in __init__
+    self._proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=self._stderr_file)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/home/ubuntu/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '--chromium'

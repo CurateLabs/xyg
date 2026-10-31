@@ -1,0 +1,16 @@
+{
+  "name": "commit-format",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 1.125,
+  "rawSha256": "3c3ff7cf2ec5b366afc56b8a5d1b6202903b71e00d19cdd6fb7ffadef4e0b257",
+  "log": "commit-format.txt.gz",
+  "gzipSha256": "b3c7af1f3a1bf6eb6096f1029d5b2fce1b49a96ef36e00bab02879f58f57d719"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "merged-node-native",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graph.test.mjs",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/temporal.test.mjs",
+    "packages/xy-node/test/temporal-controller.test.mjs",
+    "packages/xy-node/test/temporal-graph.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 2.681,
+  "rawSha256": "c6b717bbf4d9cd74e73e018ac033b5f34b067238c244dc94dffef44734005b51",
+  "log": "merged-node-native.txt.gz",
+  "gzipSha256": "1b2b41fcf1b83ce268ef1b606384400fa75edd95c64e5c9de2d5608278db0c1b"
+}

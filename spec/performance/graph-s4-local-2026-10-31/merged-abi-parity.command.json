@@ -1,0 +1,12 @@
+{
+  "name": "merged-abi-parity",
+  "command": [
+    "python3",
+    "scripts/check_abi_parity.py"
+  ],
+  "exitCode": 0,
+  "seconds": 3.696,
+  "rawSha256": "fc811feb089b1b2d644eb627ddf3b3f44a96153fe62254c3167fca3aa105c010",
+  "log": "merged-abi-parity.txt.gz",
+  "gzipSha256": "272764609638fe279559e390ed557241b86abdf4bb32565612ad585ff6d2ead6"
+}

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 396
-#define XYG_ABI_SIGNATURE_SHA256 "33408adce57f04332fb09ed02af9f6b7f69b284c24511905cacc66dc10caf9c8"
+#define XYG_ABI_VERSION 398
+#define XYG_ABI_SIGNATURE_SHA256 "11aaa11bd88b7c974284d88fd96295a938f0b17d811ce820132f0b22aeef7ffa"
 
 #ifdef __cplusplus
 extern "C" {
@@ -195,10 +195,18 @@ int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint32_t theme, uint6
 int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out);
 int32_t xyg_graphforge_compose(const uint8_t * request, size_t request_len, uint64_t * out_handle);
 uint32_t xyg_graphforge_composition_version();
+int32_t xyg_graphforge_coordinate_deliver(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
 int32_t xyg_graphforge_document_copy(uint64_t handle, uint8_t * out, size_t out_cap);
 int32_t xyg_graphforge_document_destroy(uint64_t handle);
 int32_t xyg_graphforge_document_len(uint64_t handle, uint64_t * out_len);
 size_t xyg_graphforge_ledger_tsv(uint8_t * out, size_t out_cap);
+int32_t xyg_graphforge_session_bind_temporal(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
+int32_t xyg_graphforge_session_create(const uint8_t * document_bytes, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle);
+int32_t xyg_graphforge_session_destroy(uint64_t handle);
+int32_t xyg_graphforge_session_interact(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
+int32_t xyg_graphforge_session_poll_event(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
+int32_t xyg_graphforge_session_render(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
+int32_t xyg_graphforge_session_update(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t out_cap, size_t * out_len);
 int32_t xyg_hash_row_ids(const uint64_t * ids, size_t len, uint64_t seed, uint64_t * out);
 /* Buffer contract: out: out_capacity >= checked(w * h * 4) bytes and total bytes <= isize::MAX; null output, zero dimensions, arithmetic overflow, impossible slice size, or short capacity returns 0 before output access; success returns 1. */
 int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out, size_t out_capacity);

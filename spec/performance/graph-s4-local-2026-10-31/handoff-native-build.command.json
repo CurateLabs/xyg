@@ -1,0 +1,13 @@
+{
+  "name": "handoff-native-build",
+  "command": [
+    "cargo",
+    "build",
+    "--release"
+  ],
+  "exitCode": 0,
+  "seconds": 114.642,
+  "rawSha256": "10453b2f4703f66fa6f6b91a4642bc040aba4774b2a41d894a7d995bdc6aab58",
+  "log": "handoff-native-build.txt.gz",
+  "gzipSha256": "af2f6bb30b35cedad53ff3227ea4573984d8c23290ed1bab707c9d11082f4eff"
+}

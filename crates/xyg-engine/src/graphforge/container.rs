@@ -367,11 +367,12 @@ impl<'a> Container<'a> {
             return Err(invalid("header is inconsistent"));
         }
         let names_start = HEADER_BYTES + count * ENTRY_BYTES;
-        let payload_start = align8(names_start + names_len);
+        let names_end = names_start.checked_add(names_len).ok_or_else(|| invalid("names overflow"))?;
+        let payload_start = names_end.checked_add(7).map(|v|v & !7).ok_or_else(|| invalid("names alignment overflow"))?;
         if payload_start > bytes.len() {
             return Err(invalid("names lie outside the buffer"));
         }
-        let names = &bytes[names_start..names_start + names_len];
+        let names = &bytes[names_start..names_end];
         let mut sections = Vec::with_capacity(count);
         let mut spans = Vec::with_capacity(count);
         for i in 0..count {

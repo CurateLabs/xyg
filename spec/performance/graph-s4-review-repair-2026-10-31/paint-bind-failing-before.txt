@@ -1,0 +1,75 @@
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.45
+   Compiling bitflags v2.13.0
+   Compiling unicode-ident v1.0.24
+   Compiling cfg-if v1.0.4
+   Compiling autocfg v1.5.1
+   Compiling libc v0.2.189
+   Compiling memchr v2.8.0
+   Compiling rustix v1.1.4
+   Compiling serde_core v1.0.228
+   Compiling linux-raw-sys v0.12.1
+   Compiling cfg_aliases v0.2.2
+   Compiling zmij v1.0.21
+   Compiling find-msvc-tools v0.1.9
+   Compiling shlex v2.0.1
+   Compiling num-traits v0.2.19
+   Compiling cc v1.2.63
+   Compiling nix v0.31.3
+   Compiling simd-adler32 v0.3.9
+   Compiling serde_json v1.0.151
+   Compiling syn v2.0.117
+   Compiling crc32fast v1.5.0
+   Compiling getrandom v0.4.2
+   Compiling anyhow v1.0.104
+   Compiling equivalent v1.0.2
+   Compiling serde v1.0.228
+   Compiling hashbrown v0.17.1
+   Compiling winnow v1.0.4
+   Compiling terminal_size v0.4.4
+   Compiling approx v0.5.1
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling anstyle v1.0.14
+   Compiling indexmap v2.14.0
+   Compiling itoa v1.0.18
+   Compiling clap_lex v1.1.0
+   Compiling codspeed v5.0.1
+   Compiling adler2 v2.0.1
+   Compiling clap_builder v4.6.6
+   Compiling miniz_oxide v0.8.9
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling statrs v0.18.0
+   Compiling aho-corasick v1.1.4
+   Compiling colored v3.1.1
+   Compiling toml_edit v0.25.13+spec-1.1.0
+   Compiling glob v0.3.3
+   Compiling regex-syntax v0.8.10
+   Compiling either v1.16.0
+   Compiling itertools v0.14.0
+   Compiling proc-macro-crate v3.5.0
+   Compiling clap v4.6.6
+   Compiling flate2 v1.1.9
+   Compiling fdeflate v0.3.7
+   Compiling codspeed-divan-compat v5.0.1
+   Compiling regex-lite v0.1.9
+   Compiling regex-automata v0.4.14
+   Compiling serde_derive v1.0.228
+   Compiling divan-macros v0.1.17
+   Compiling condtype v1.3.0
+   Compiling png v0.18.1
+   Compiling codspeed-divan-compat-macros v5.0.1
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/task-tmp/before/crates/xyg-engine)
+   Compiling regex v1.12.3
+   Compiling codspeed-divan-compat-walltime v5.0.1
+error: couldn't read `crates/xyg-engine/src/../../../spec/wasm/abi.json`: No such file or directory (os error 2)
+    --> crates/xyg-engine/src/graph_style.rs:2352:19
+     |
+2352 |         let abi = include_str!("../../../spec/wasm/abi.json");
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a file with the same name in a different directory
+     |
+2352 |         let abi = include_str!("../../../../../../spec/wasm/abi.json");
+     |                                          +++++++++
+
+error: could not compile `xyg-engine` (lib test) due to 1 previous error

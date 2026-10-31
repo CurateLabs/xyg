@@ -47,7 +47,7 @@ two layers writing one channel fail with `GF_COMPOSE_CHANNEL_CONFLICT`.
 composed `XYGF` document plus session-local inputs only; hosts never pass
 hierarchy (it travels in the document as `node.parent` / `node.parent.valid`,
 resolved from the base node table's `parent_uuid`). The Rust-side `SessionLoad`
-(the `load.*` sections the S4 ABI will carry) is: `x`/`y` f64 positions (both
+(the `load.*` sections carried by the S4 XYGI ABI) is: `x`/`y` f64 positions (both
 or neither; absent positions are the seeded CoSE layout, 300 steps over the
 document hierarchy), `collapsed` u8 per node, `pinned` u8 per node (seeds the
 UUID-keyed pin set), `budgets` `[node_budget, edge_budget]` (default 200,000 /
@@ -63,8 +63,8 @@ seeded positions. Explicit x/y plus pinned restores persistence. A bound
 replacement must match its temporal owner's UUID order and persisted endpoints;
 validation and reconciliation share one lock. Admission/degraded limits and
 request-level graph snapshot sequencing are defined in graph-interaction.md
-§2.3–2.4/2.10. Sessions are Rust-only until the ABI slice
-(S4); see [graph-interaction.md](../design/graph-interaction.md).
+§2.3–2.4/2.10. Native and WASM session exports are implemented by S4; retained browser
+attachment and host integration remain S5/S6. See [graph-interaction.md](../design/graph-interaction.md).
 
 ## 2. Node host (extension host process)
 
@@ -169,8 +169,8 @@ composition and Python widget/notebook integration via #1015 remain open for
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 396 | `abiVersion()`, `xyg_abi_version` |
-| WASM ABI | 34 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
+| Native C ABI | 398 | `abiVersion()`, `xyg_abi_version` |
+| WASM ABI | 35 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 34 | `SCENE_VERSION` |
 | Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |
 | Browser painter binary | 17 | `BROWSER_PAINTER_VERSION` (`XYPB`) |
@@ -230,7 +230,8 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
   unchanged.
 
 - WASM Scene: direct tier only (≤ 1,024 elements).
-- Interaction sessions (#36 S2, Rust engine only; no host ABI yet): explicit
+- Interaction sessions (#36 S4 native/WASM ABI; retained browser controller
+  and remaining host integration pending): explicit
   compound disclosure is bounded at 1,024 source nodes (above it
   `GF_INTERACTION_COMPOUND_TOO_LARGE`; render-tier aggregates are selectable but
   take no disclosure action); a selection or highlight plane holds at most

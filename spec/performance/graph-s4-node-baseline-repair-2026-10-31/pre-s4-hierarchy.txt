@@ -1,0 +1,231 @@
+TAP version 13
+# Subtest: actual selected hierarchy live43/44 survives original source disposal
+not ok 1 - actual selected hierarchy live43/44 survives original source disposal
+  ---
+  duration_ms: 29.498901
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:4:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:11:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: exclusive lane and closed lane fail before losing accepted paint
+ok 2 - exclusive lane and closed lane fail before losing accepted paint
+  ---
+  duration_ms: 5.76194
+  type: 'test'
+  ...
+# Subtest: five independent hierarchy lanes keep15→16 replacement within fixed caps
+ok 3 - five independent hierarchy lanes keep15→16 replacement within fixed caps
+  ---
+  duration_ms: 20.160571
+  type: 'test'
+  ...
+# Subtest: lost actual33 preserves paint and settles typed replacement before retry
+ok 4 - lost actual33 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 6.174422
+  type: 'test'
+  ...
+# Subtest: lost actual43 preserves paint and settles typed replacement before retry
+not ok 5 - lost actual43 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 4.257834
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:41:34'
+  failureType: 'testCodeFailure'
+  error: 'The "string" argument must be of type string. Received type undefined (undefined)'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:44:89)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lost actual44 preserves paint and settles typed replacement before retry
+not ok 6 - lost actual44 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 7.893651
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:41:34'
+  failureType: 'testCodeFailure'
+  error: 'The "string" argument must be of type string. Received type undefined (undefined)'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:44:89)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: uncertain33 cleanup failure holds global slot until exact retry confirmation
+ok 7 - uncertain33 cleanup failure holds global slot until exact retry confirmation
+  ---
+  duration_ms: 4.287184
+  type: 'test'
+  ...
+# Subtest: uncertain43 cleanup failure holds global slot until exact retry confirmation
+not ok 8 - uncertain43 cleanup failure holds global slot until exact retry confirmation
+  ---
+  duration_ms: 7.706183
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:48:30'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(a.liveCandidate.cleanupOperation||a.liveCandidate.cleanupAllocation)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:51:133)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: cancel after real44 publication cleans candidate before accepted paint changes
+not ok 9 - cancel after real44 publication cleans candidate before accepted paint changes
+  ---
+  duration_ms: 22.455426
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:55:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: close during actual26 retains failed disposal owner and retries before releasing lane
+not ok 10 - close during actual26 retains failed disposal owner and retries before releasing lane
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:64:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: canonical lost33 reply resolves one allocation and keeps accepted paint
+not ok 11 - canonical lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: canonical corrupt33 reply resolves one allocation and keeps accepted paint
+not ok 12 - canonical corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: indexed lost33 reply resolves one allocation and keeps accepted paint
+not ok 13 - indexed lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: indexed corrupt33 reply resolves one allocation and keeps accepted paint
+not ok 14 - indexed corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: hierarchy lost33 reply resolves one allocation and keeps accepted paint
+not ok 15 - hierarchy lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: hierarchy corrupt33 reply resolves one allocation and keeps accepted paint
+not ok 16 - hierarchy corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: canonical uncertain33 cleanup keeps owner and slot until exact retry
+not ok 17 - canonical uncertain33 cleanup keeps owner and slot until exact retry
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:88:43'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: indexed uncertain33 cleanup keeps owner and slot until exact retry
+not ok 18 - indexed uncertain33 cleanup keeps owner and slot until exact retry
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:88:43'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 4
+# fail 4
+# cancelled 10
+# skipped 0
+# todo 0
+# duration_ms 242.16252

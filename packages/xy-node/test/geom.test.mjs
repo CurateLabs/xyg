@@ -874,7 +874,9 @@ test("constantMarkColor uses color_ch.constant only like Python", () => {
     constantMarkColor({ color_ch: { mode: "constant", constant: "red" } }),
     "red",
   );
-  assert.equal(constantMarkColor({ color_ch: "red" }), null);
+  // String channels are ignored; the Rust/Python contract takes style fallback.
+  assert.equal(constantMarkColor({ color_ch: "red" }), "#3987e5");
+  assert.equal(constantMarkColor({ color_ch: "red", style: { color: "green" } }), "green");
   assert.equal(
     constantMarkColor({ color_ch: { mode: "constant", color: "red" } }),
     null,
@@ -2152,13 +2154,14 @@ test("sceneHeatmapColormapAdmit matches host table", () => {
 });
 
 test("sceneScatterPaintChannelAdmit matches host table", () => {
-  for (const name of ["color", "stroke", "stroke_width", "opacity", "artist_alpha"]) {
+  for (const name of ["color", "stroke", "stroke_width", "size", "opacity", "artist_alpha"]) {
     assert.equal(sceneScatterPaintChannelAdmit(name), true, name);
   }
   assert.equal(sceneScatterPaintChannelAdmit(""), false);
   assert.equal(sceneScatterPaintChannelAdmit("STROKE"), false);
   assert.equal(sceneScatterPaintChannelAdmit(" color"), false);
-  assert.equal(sceneScatterPaintChannelAdmit("size"), false);
+  assert.equal(sceneScatterPaintChannelAdmit("SIZE"), false);
+  assert.equal(sceneScatterPaintChannelAdmit(" size"), false);
   assert.equal(sceneScatterPaintChannelAdmit("symbol"), false);
 });
 

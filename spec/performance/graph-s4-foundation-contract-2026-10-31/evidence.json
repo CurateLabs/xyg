@@ -1,0 +1,170 @@
+{
+  "scope": "harness-only foundation contract repair; no runtime or acceptance change",
+  "parent": "93cb8570e72d9d21cb48def6679728b10396e3cc",
+  "sources": {
+    "scripts/geo_frame_leases_conformance.mjs": "2e90e6eaea3d9f2bf8367027d16d5374e5104a65e872ed7387c961a5b7b1c092",
+    "scripts/geo_overview_conformance.mjs": "48df14badcef8daccc0124d1092f22b6ae9968f0c60d9d5a1b9548b0b963218a",
+    "scripts/geo_overview_membership_engine_conformance.mjs": "3c198758b9ce52c3ad810b7487316e91c579b747d3bccba26add8f4f80bf0e60",
+    "scripts/geo_selected_conformance.mjs": "51c3d49809cc53b9df7ef0a630ba0992cfb85419235be3e81d6ac390c451e980",
+    "scripts/geo_selected_mutation_recovery_conformance.mjs": "6cd6aa5d338f6e2f78ee37ce08c09c58a9dd403af43571f70f94d7444fa1fbba",
+    "scripts/geo_selected_publication_recovery_conformance.mjs": "f00f644fc8cfdd33468f85627a3540f1acaf97023fbb2448fbdfb9a50647dd11",
+    "spec/design/browser-wasm.md": "336557f15ea13d710c706df50111bd966df89826f5e48b0b7de80c50333db71e"
+  },
+  "nonreceiptDiffSha256": "e9d4459301e7c611f735588df16a4442d60442510e48c4dd9f9b29e76f720772",
+  "shippingArtifactsUnchanged": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6052952,
+      "sha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2051907,
+      "sha256": "111d887c48c6cd0e305891f31c1cfa26ea8bb6bff6818befc313a7b4418dd5c1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    }
+  },
+  "historicalFilesUnchanged": 2609,
+  "commands": {
+    "before.command.json": {
+      "name": "before",
+      "command": [
+        "env",
+        "XYG_FRAME_LEASE_WASM=packages/xy-client/dist/xyg-wasm.wasm",
+        "node",
+        "scripts/geo_frame_leases_conformance.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.047,
+      "rawSha256": "976cf161e228c60874c7e843e286db531e1a10e97d8f024c9912689f096068cd",
+      "log": "before.txt.gz",
+      "gzipSha256": "86f26d6066687a0b6e2d05dd66379e14714f95cd048f0937e5c5cc09395c39b8"
+    },
+    "capture.command.json": {
+      "name": "capture",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-s4-foundation-contract-2026-10-31/capture.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.223,
+      "rawSha256": "988dcc9f78acf08faab10ab2f23d2414f79dd3d38c263e1213352db3ca48decb",
+      "log": "capture.txt.gz",
+      "gzipSha256": "328cfdfa04e2e3b0c0119ea6b72572b290a5243fe1176272eba8c2361d1551d5"
+    },
+    "ci-step.command.json": {
+      "name": "ci-step",
+      "command": [
+        "bash",
+        "spec/performance/graph-s4-foundation-contract-2026-10-31/ci-step.sh"
+      ],
+      "exitCode": 0,
+      "seconds": 15.447,
+      "rawSha256": "0fadbf6b6a08915801b6bebba9b916679191bad5e1c02cc0445a705540e828f3",
+      "log": "ci-step.txt.gz",
+      "gzipSha256": "c4d2708ed93979e6be4acd4207083a3cef6d329643c522f23f5d1e976dd693ee"
+    },
+    "final-hooks.command.json": {
+      "name": "final-hooks",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run --with pre-commit pre-commit run --all-files\nuv run ruff check .\nuv run ruff format --check ."
+      ],
+      "exitCode": 0,
+      "seconds": 0.633,
+      "rawSha256": "d2f7fe99382a8e7c209c89a409249ac7bb203b4786be1375f61fa63f5689fb92",
+      "log": "final-hooks.txt.gz",
+      "gzipSha256": "df80c914f2b33ed39fef4877220f7fe00336cdad0f035b9a62ccc87a60994015"
+    },
+    "overview-report.command.json": {
+      "name": "overview-report",
+      "command": [
+        "env",
+        "XYG_GEO_OVERVIEW_REPORT=spec/performance/graph-s4-foundation-contract-2026-10-31/overview-report.json",
+        "node",
+        "scripts/geo_overview_conformance.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 0.308,
+      "rawSha256": "93f7b1c04083e111f6c700fc140025c216879b53deb3fbd6b9ca6dfc05f10c2c",
+      "log": "overview-report.txt.gz",
+      "gzipSha256": "ac887f01d9c162692e1a4edc447ce822fa3a6585d5f8aed3e13fb35cdb40c5c8"
+    },
+    "selected-report.command.json": {
+      "name": "selected-report",
+      "command": [
+        "env",
+        "XYG_SELECTED_REPORT=spec/performance/graph-s4-foundation-contract-2026-10-31/selected-report.json",
+        "node",
+        "scripts/geo_selected_conformance.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 0.76,
+      "rawSha256": "53dcd81f613433b0979ac370b8fd5a57e7529c3326f89160599acea9c1238c8f",
+      "log": "selected-report.txt.gz",
+      "gzipSha256": "919537087607e8e59ba4b26189bd82cc1a1da9dfcf30cb35c90c0d99db7d2c5f"
+    }
+  },
+  "reports": {
+    "geo-allocation-recovery-ci.json": "d7c07e81bfcd6b72834916b75efdb0ad5f953f2f93d23c2da24ef34eadb33777",
+    "geo-hierarchy-recovery-ci.json": "6109bc4ecf48ab2cc9a5c1c53a30f4ce5ef09453112e95b59db6d89340fe15e4",
+    "geo-overview-domain-members-ci.json": "e8d60cc88e1476d5d8778d56db6c5621741932e83e8568394cdd0915ffd72625",
+    "geo-overview-members-hosts-ci.json": "b71ba767eb2d0cc1aa4428e25ce4c80b4258147cb4aa6f37681cb79f6cc2afd1",
+    "geo-selected-mutation-recovery-ci.json": "64d0b20a657cad9f3c83d37b59ab23a70035e442f1c0644d1f6d1395e66b6505",
+    "geo-selected-publication-recovery-ci.json": "cfa0c412031bea965beeae5821abdd9c2af1d492be67ae31ec74dcc61c8af9a9",
+    "geo-snapshot-recovery-ci.json": "ee99373043cecab8d73c8315024c9a83e4c05fdd9de7f973c0e1b5c3399066c8",
+    "overview-report.json": "f7f1d188e7ed5ba3eb629e0da34ecd6b0af3cfff4c04f4cbd4d1519e7c998496",
+    "selected-report.json": "75eda16d6fa1bcd962660bde5c3011a2c99956a94e35eae71bf48d90b957d9f1"
+  },
+  "ciJobLogGzipSha256": "dec960073ed3f3efb957d9a630d58465cfdc249c2dc59e72bff4c99f638db09d",
+  "workflowSha256": "1df6b1a362c3c93a1daf98f08483fd458035ac5a71fb9a6ced101ebf34051f78",
+  "copiedStepSha256": "4fda9bc8f04116e267ed74d48e1b49b4e94806194e33671a884b4f39a4e126ce"
+}

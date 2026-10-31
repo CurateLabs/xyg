@@ -1,0 +1,13 @@
+{
+  "name": "real-package",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 0,
+  "seconds": 112.61,
+  "rawSha256": "d9385514597695add0dbf36b699bce348a6ea07967cbef34b8019fba10303ca3",
+  "log": "real-package.txt.gz",
+  "gzipSha256": "49e57ce18753918ebd2ffc7449967fae9f7ccce320663983f65e145a0a3d94bb"
+}

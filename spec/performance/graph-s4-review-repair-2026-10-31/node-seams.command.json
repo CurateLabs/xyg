@@ -1,0 +1,17 @@
+{
+  "name": "node-seams",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graph.test.mjs",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/temporal.test.mjs",
+    "packages/xy-node/test/temporal-controller.test.mjs",
+    "packages/xy-node/test/temporal-graph.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 3.07,
+  "rawSha256": "6bf00692b865087d2fb4a6271cabbdde4916108160610c15b39c7f957a034f99",
+  "log": "node-seams.txt.gz",
+  "gzipSha256": "e53098d992687cabda7c9e665a88ce5f02bbc335cd34b37be95790cde31b321e"
+}

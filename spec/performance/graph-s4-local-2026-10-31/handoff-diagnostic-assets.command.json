@@ -1,0 +1,14 @@
+{
+  "name": "handoff-diagnostic-assets",
+  "command": [
+    "python3",
+    "scripts/verify_wasm_assets.py",
+    "--root",
+    "target/task-tmp/s4-diagnostic-assets"
+  ],
+  "exitCode": 0,
+  "seconds": 0.07,
+  "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+  "log": "handoff-diagnostic-assets.txt.gz",
+  "gzipSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18"
+}

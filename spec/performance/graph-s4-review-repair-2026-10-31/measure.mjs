@@ -1,0 +1,21 @@
+// Actual Node22 and unchanged producer optimizer; diagnostic bytes only.
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {createHash} from 'node:crypto';
+import {gzipSync} from 'node:zlib';
+import {optimizeWasm} from '../../../js/optimize-wasm.mjs';
+const receipt=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(receipt,'../../..');
+const label=process.argv[2];
+if(!/^(baseline|experiment-a|experiment-b|final)$/.test(label))throw new Error('explicit label required');
+const recordFile=path.join(receipt,`${label}.artifact.json`);
+if(fs.existsSync(recordFile))throw new Error('append-only receipt');
+const source=path.join(root,'target/wasm32-unknown-unknown/release/xyg_wasm.wasm');
+const raw=fs.readFileSync(source),optimized=optimizeWasm(raw),gzip=gzipSync(optimized);
+const stage=path.join(root,'target/task-tmp',`repair-${label}`);fs.mkdirSync(stage,{recursive:true});
+fs.writeFileSync(path.join(stage,'raw.wasm'),raw);fs.writeFileSync(path.join(stage,'optimized.wasm'),optimized);
+const sha=b=>createHash('sha256').update(b).digest('hex');
+const sources={};
+for(const name of ['crates/xyg-engine/src/graphforge/interaction.rs','crates/xyg-engine/src/graphforge/interaction/wire.rs','crates/xyg-engine/src/graphforge/interaction/wire_paint.rs','crates/xyg-engine/src/graphforge/interaction/coordination.rs','crates/xyg-core/src/graphforge_session_ffi.rs'])sources[name]=sha(fs.readFileSync(path.join(root,name)));
+const record={label,scope:'real optimized producer bytes; diagnostic nonshipping artifact',artifactCommit:null,node:process.version,source,sources,rawCompiler:{bytes:raw.length,sha256:sha(raw)},optimized:{path:path.join(stage,'optimized.wasm'),bytes:optimized.length,gzip6Bytes:gzip.length,sha256:sha(optimized),gzip6Sha256:sha(gzip)},gates:{raw:1513*1024,gzip6:626*1024},excess:{raw:optimized.length-1513*1024,gzip6:gzip.length-626*1024},imports:WebAssembly.Module.imports(new WebAssembly.Module(optimized)),functionExports:WebAssembly.Module.exports(new WebAssembly.Module(optimized)).filter(e=>e.kind==='function').length};
+fs.writeFileSync(recordFile,JSON.stringify(record,null,2)+'\n');console.log(JSON.stringify(record,null,2));

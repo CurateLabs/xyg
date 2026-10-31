@@ -1,0 +1,366 @@
+{
+  "base": "7c02d3df0e769e945ae171f90906f9b17acfc65f",
+  "artifactCommit": null,
+  "scope": "Three test-only files; no production changes or new builds",
+  "testBinaryFullIndexDiffSha256": "9e8fde6c297fbaf44d10c6658fc9f0951adffefd2be517f83258a47126238d14",
+  "sourceHashes": {
+    "packages/xy-node/test/geo-live-hierarchy-fixture.mjs": "0a5ae8299bcd64eaa5c79a0a060cdd6408c6bff8d9f7bceb13045482092b7c73",
+    "packages/xy-node/test/geo-live-hierarchy-host.test.mjs": "4ffe410fa19aefbd02b5a05d6e75aee3f8d6e90f4991137fcd96ed475700e254",
+    "packages/xy-node/test/geom.test.mjs": "97aaf8cc2084e0d14c296ab1406315e6da1d279c656deaa422fe7007f8d5cb6f"
+  },
+  "before": {
+    "commit": "80af7df777562605b7ce0bea240c3538a7ebfca7",
+    "nativeAbi": 396,
+    "native": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/target/release/libxyg_core.so",
+      "bytes": 5667736,
+      "sha256": "cef2c70e0d1e0e2f5d26ab8e7e0b5b3a519abe324d549bd56c5a39eafa3fa0ea"
+    },
+    "originalReceipt": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/spec/performance/graph-s3-review-repair-2026-10-31/results.json",
+      "bytes": 35527,
+      "sha256": "54f34c4dec0953c46e1110818a7420a358c1748709bf0f3b4e109c9249f2aafc"
+    },
+    "twelveFilesByteIdenticalToRepairBase": {
+      "packages/xy-node/test/geo-live-hierarchy-fixture.mjs": "d0bba6513a69f1750cdbc7c8d31c3b022b65fbaaeac17e700cffbeb533c5b718",
+      "packages/xy-node/test/geo-live-hierarchy-host.test.mjs": "334fc6eea71116be1a0c0777fce6a757af7a4a9f18afd77bdd7112eda8decbb7",
+      "packages/xy-node/test/geom.test.mjs": "2c7015d73022a004f255ddc162dccbddf34d2e80576b2b4413816025b0fc4966",
+      "packages/xy-node/test/geo-live-host-fixture.mjs": "1b006c0a1af206bd2ad1d908146c505317282f30a1fb27cf0e78e2b453ecd213",
+      "packages/xy-node/test/geoscale-fixture.mjs": "39b9a83e925d8f044f73c1d415e200717d67a08674bbff1c62f2cc5a9d2c6c8d",
+      "packages/xy-node/src/scene.js": "17e3284f92489788f256be00be3135b6014289bf93decb849b5f380c8a66801f",
+      "packages/xy-node/src/encode.js": "f20519f1a21d26b969ab514ee90c4d6e857358fac8fc86d2ad05892a98428a6c",
+      "packages/xy-node/src/geo-hierarchy.js": "0c28c07bf1105147fd0eb82edd2b579d219ebffd44ddf318a54762d3e905927d",
+      "packages/xy-node/src/geo-hierarchy-wire.js": "59790b2236a200166a62177411df49ffb1c47edddea0f620f78893bb29124b96",
+      "packages/xy-node/src/geo-selected.js": "faacabe853ac8daafd7ce25814e298dc9be148abec75e0a8358d3438589f8d96",
+      "python/xyg/_scene_observations.py": "5718deb9bf3d7d4dc09a2aad063ca32cee00fb588e27dce1f0a36bda66ecb2f3",
+      "crates/xyg-engine/src/kernels.rs": "28962b95406758190af7d141ab1d4ea15f34b9675449e004ea92dc7d3de62929"
+    },
+    "oldBroadFailureLog": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/spec/performance/graph-s4-ci-repair-2026-10-31/full-node.txt.gz",
+      "bytes": 49077,
+      "sha256": "c3aaf0d99d3cd447b797a6399954a7bde85cd8f3511b4b8cd6c8d9d29c94d5eb"
+    }
+  },
+  "current": {
+    "nativeAbi": 398,
+    "native": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/release/libxyg_core.so",
+      "bytes": 6052952,
+      "sha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a"
+    },
+    "node": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+      "bytes": 124902584,
+      "sha256": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90"
+    },
+    "nodeVersion": "v22.23.4",
+    "unchangedProductHashes": {
+      "packages/xy-node/test/geo-live-host-fixture.mjs": "1b006c0a1af206bd2ad1d908146c505317282f30a1fb27cf0e78e2b453ecd213",
+      "packages/xy-node/test/geoscale-fixture.mjs": "39b9a83e925d8f044f73c1d415e200717d67a08674bbff1c62f2cc5a9d2c6c8d",
+      "packages/xy-node/src/scene.js": "17e3284f92489788f256be00be3135b6014289bf93decb849b5f380c8a66801f",
+      "packages/xy-node/src/encode.js": "f20519f1a21d26b969ab514ee90c4d6e857358fac8fc86d2ad05892a98428a6c",
+      "packages/xy-node/src/geo-hierarchy.js": "0c28c07bf1105147fd0eb82edd2b579d219ebffd44ddf318a54762d3e905927d",
+      "packages/xy-node/src/geo-hierarchy-wire.js": "59790b2236a200166a62177411df49ffb1c47edddea0f620f78893bb29124b96",
+      "packages/xy-node/src/geo-selected.js": "faacabe853ac8daafd7ce25814e298dc9be148abec75e0a8358d3438589f8d96",
+      "python/xyg/_scene_observations.py": "5718deb9bf3d7d4dc09a2aad063ca32cee00fb588e27dce1f0a36bda66ecb2f3",
+      "crates/xyg-engine/src/kernels.rs": "28962b95406758190af7d141ab1d4ea15f34b9675449e004ea92dc7d3de62929"
+    }
+  },
+  "results": {
+    "focusedPass": 212,
+    "fullPass": 1493,
+    "fullFail": 0,
+    "fullCancelled": 0
+  },
+  "existingSkips": [
+    "ok 906 - parsed identity failure drops packet storage before Data disposal # SKIP",
+    "ok 1364 - Node Scene compiles heatmap fill_opacity # SKIP heatmap fill_opacity is not yet admitted by the shared Scene route; tracked in CurateLabs/xyg\\#889"
+  ],
+  "commands": {
+    "final-pre-commit.command.json": {
+      "name": "final-pre-commit",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 0.536,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "final-pre-commit.txt.gz",
+      "gzipSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "final-ruff-check.command.json": {
+      "name": "final-ruff-check",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.033,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "final-ruff-check.txt.gz",
+      "gzipSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd"
+    },
+    "final-ruff-format.command.json": {
+      "name": "final-ruff-format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.032,
+      "rawSha256": "71f9dd99d06bc66b74bcd0855116e36004fab49fed132e374355e9a1f5f8e592",
+      "log": "final-ruff-format.txt.gz",
+      "gzipSha256": "76990447ae5e57014d156d71bd5d18e0bee8d28065cb0fd3b080e23c4a2cb568"
+    },
+    "focused-after.command.json": {
+      "name": "focused-after",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=1",
+        "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "packages/xy-node/test/geom.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.453,
+      "rawSha256": "110cdd201315c17d94a0b188ecfb6ea437f5b0d0f6ada776a611e77fe2486205",
+      "log": "focused-after.txt.gz",
+      "gzipSha256": "976de0d244c6f8a4e488455e641f5bf578a92ea8c034d3d9fbeffa4acba28bf9"
+    },
+    "focused-final.command.json": {
+      "name": "focused-final",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=1",
+        "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "packages/xy-node/test/geom.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.602,
+      "rawSha256": "1a48de8072ab7a40913c403994047d8ee195557dfea23b1092b2fcfe616667ed",
+      "log": "focused-final.txt.gz",
+      "gzipSha256": "5dd004e19d39125eda9f47ad9a3be972ed2460cf6142d6feff783ef0dcf7c48d"
+    },
+    "focused-native-identity.command.json": {
+      "name": "focused-native-identity",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=1",
+        "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "packages/xy-node/test/geom.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.871,
+      "rawSha256": "92ec0fff9cbd12a6a22d4a2f68f58d916dda4ba6d8d8f7f5874c1ca7127e5300",
+      "log": "focused-native-identity.txt.gz",
+      "gzipSha256": "03adf911c8f1910ebf0180d1fe862aca8d115c566a87a99f2ddf98bb7d10ffe6"
+    },
+    "focused-pass.command.json": {
+      "name": "focused-pass",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=1",
+        "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "packages/xy-node/test/geom.test.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 0.655,
+      "rawSha256": "97ae85aa114f240729dc61cc118ddbd65a4368d5d811831adbf02ae9156697ff",
+      "log": "focused-pass.txt.gz",
+      "gzipSha256": "fbdfdaaeec222e955ae24c6eab3e78164e23475df3f2e0191aba301ad143ac4f"
+    },
+    "full-node.command.json": {
+      "name": "full-node",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=4",
+        "packages/xy-node/test/animation-emit-cross-host.test.mjs",
+        "packages/xy-node/test/arrow-painter-hydration.test.mjs",
+        "packages/xy-node/test/autorange.test.mjs",
+        "packages/xy-node/test/canonical-drill.test.mjs",
+        "packages/xy-node/test/chunked-columns.test.mjs",
+        "packages/xy-node/test/color.test.mjs",
+        "packages/xy-node/test/composition.test.mjs",
+        "packages/xy-node/test/contour-colormap.test.mjs",
+        "packages/xy-node/test/cose-wasm-parity.test.mjs",
+        "packages/xy-node/test/coverage.test.mjs",
+        "packages/xy-node/test/default-palette-contract.test.mjs",
+        "packages/xy-node/test/default-styled-emit-cross-host.test.mjs",
+        "packages/xy-node/test/density-emit-cross-host.test.mjs",
+        "packages/xy-node/test/force-emit-cross-host.test.mjs",
+        "packages/xy-node/test/force-worker-lifecycle.test.mjs",
+        "packages/xy-node/test/geo-catalog-wasm-parity.test.mjs",
+        "packages/xy-node/test/geo-cross-host.test.mjs",
+        "packages/xy-node/test/geo-frame-leases.test.mjs",
+        "packages/xy-node/test/geo-hierarchy.test.mjs",
+        "packages/xy-node/test/geo-host.test.mjs",
+        "packages/xy-node/test/geo-indexed-host.test.mjs",
+        "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "packages/xy-node/test/geo-live-host.test.mjs",
+        "packages/xy-node/test/geo-native-overview-host.test.mjs",
+        "packages/xy-node/test/geo-overview-member-retirement.test.mjs",
+        "packages/xy-node/test/geo-overview-members-recovery.test.mjs",
+        "packages/xy-node/test/geo-overview-members.test.mjs",
+        "packages/xy-node/test/geo-overview-recovery.test.mjs",
+        "packages/xy-node/test/geo-overview-selected.test.mjs",
+        "packages/xy-node/test/geo-overview-source.test.mjs",
+        "packages/xy-node/test/geo-rows.test.mjs",
+        "packages/xy-node/test/geo-scale-wasm-parity.test.mjs",
+        "packages/xy-node/test/geo-scene-wasm-parity.test.mjs",
+        "packages/xy-node/test/geo-selected-hierarchy.test.mjs",
+        "packages/xy-node/test/geo-selected-mutation-hosts.test.mjs",
+        "packages/xy-node/test/geo-selected-publication-hosts.test.mjs",
+        "packages/xy-node/test/geo-selected-state-nonce.test.mjs",
+        "packages/xy-node/test/geo-selected.test.mjs",
+        "packages/xy-node/test/geo-spatial.test.mjs",
+        "packages/xy-node/test/geo-viewport-wasm-parity.test.mjs",
+        "packages/xy-node/test/geo-wasm-parity.test.mjs",
+        "packages/xy-node/test/geo.test.mjs",
+        "packages/xy-node/test/geom.test.mjs",
+        "packages/xy-node/test/geoscale.test.mjs",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/graph.test.mjs",
+        "packages/xy-node/test/graphforge-cross-host.test.mjs",
+        "packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+        "packages/xy-node/test/graphforge.test.mjs",
+        "packages/xy-node/test/html.test.mjs",
+        "packages/xy-node/test/live-dual-axis.test.mjs",
+        "packages/xy-node/test/marks.test.mjs",
+        "packages/xy-node/test/native-path.test.mjs",
+        "packages/xy-node/test/no_browser_globals.test.mjs",
+        "packages/xy-node/test/packaged-consumer-browser.test.mjs",
+        "packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
+        "packages/xy-node/test/painter-rotated-label.test.mjs",
+        "packages/xy-node/test/painter-tick-strategy.test.mjs",
+        "packages/xy-node/test/payload-axis-spec.test.mjs",
+        "packages/xy-node/test/payload-channel-wire.test.mjs",
+        "packages/xy-node/test/payload-column-ship.test.mjs",
+        "packages/xy-node/test/payload-cross-host.test.mjs",
+        "packages/xy-node/test/payload-density-grid-ship.test.mjs",
+        "packages/xy-node/test/polar-legend-support.test.mjs",
+        "packages/xy-node/test/pyramid.test.mjs",
+        "packages/xy-node/test/raster-capacity.test.mjs",
+        "packages/xy-node/test/scene-blob-alignment.test.mjs",
+        "packages/xy-node/test/scene-style.test.mjs",
+        "packages/xy-node/test/scene.test.mjs",
+        "packages/xy-node/test/series-palette-cross-host.test.mjs",
+        "packages/xy-node/test/static-chrome-style.test.mjs",
+        "packages/xy-node/test/static-document-figure.test.mjs",
+        "packages/xy-node/test/static-dual-axis.test.mjs",
+        "packages/xy-node/test/static-lod-polar.test.mjs",
+        "packages/xy-node/test/static-mesh-format.test.mjs",
+        "packages/xy-node/test/stream.test.mjs",
+        "packages/xy-node/test/temporal-controller.test.mjs",
+        "packages/xy-node/test/temporal-graph.test.mjs",
+        "packages/xy-node/test/temporal.test.mjs",
+        "packages/xy-node/test/tooltip-columns-cross-host.test.mjs",
+        "packages/xy-node/test/tooltip-len-emit-cross-host.test.mjs",
+        "packages/xy-node/test/vscode_contract.test.mjs",
+        "packages/xy-node/test/xyts-conformance.test.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 28.226,
+      "rawSha256": "d4d95748e956583cde7161aceb2a1089c0ef92ab0ea992052b4757785b655e23",
+      "log": "full-node.txt.gz",
+      "gzipSha256": "93f5c7844f889189e570db861519e0299d2c6c611da0cf296b93f4068553d141"
+    },
+    "pre-commit.command.json": {
+      "name": "pre-commit",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 0.56,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "pre-commit.txt.gz",
+      "gzipSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "pre-s4-before.command.json": {
+      "name": "pre-s4-before",
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/target/release/libxyg_core.so",
+        "node",
+        "--test",
+        "--test-concurrency=1",
+        "--test-name-pattern=actual.selected.hierarchy|lost.actual43|lost.actual44|uncertain43|constantMarkColor|sceneScatterPaintChannelAdmit",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geom.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.373,
+      "rawSha256": "76b2e3ad63dda59db8388aee1d74c4120911a5d2d65057fd8525b95590706dc1",
+      "log": "pre-s4-before.txt.gz",
+      "gzipSha256": "e76ca53b80f5093de7846e7aefea3cc3536461d20dc7429fa8d286b16898718c"
+    },
+    "pre-s4-hierarchy.command.json": {
+      "name": "pre-s4-hierarchy",
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/target/release/libxyg_core.so",
+        "node",
+        "--test",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.283,
+      "rawSha256": "bd75f5367f3902a6d13759682bfff7cffb2ca5103108cf8594fe607699ce73bc",
+      "log": "pre-s4-hierarchy.txt.gz",
+      "gzipSha256": "9caf602b569544be893e0b6966a3a504057367791a51bd0f516b6860bcf0bc55"
+    },
+    "ruff-check.command.json": {
+      "name": "ruff-check",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.264,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "ruff-check.txt.gz",
+      "gzipSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd"
+    },
+    "ruff-format.command.json": {
+      "name": "ruff-format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.034,
+      "rawSha256": "71f9dd99d06bc66b74bcd0855116e36004fab49fed132e374355e9a1f5f8e592",
+      "log": "ruff-format.txt.gz",
+      "gzipSha256": "76990447ae5e57014d156d71bd5d18e0bee8d28065cb0fd3b080e23c4a2cb568"
+    }
+  }
+}

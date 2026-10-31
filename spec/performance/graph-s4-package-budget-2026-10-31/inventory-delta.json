@@ -1,0 +1,47 @@
+[
+  {
+    "path": "/contractSha256",
+    "before": "434c6179b0644d5073d0760e3e9d949e1c4dc9ed9bc0daf88de74f70a0601fad",
+    "after": "08d3521e4c90e002620d9d8c80ed7ca0222202f869b81605a172289606a5c6f3"
+  },
+  {
+    "path": "/contracts/cAbi/manifestContractSha256",
+    "before": "dde15dffb42e9e68425abb87ae59a1829351b592244f0482c62a2ece1943a664",
+    "after": "c38a5093f23152b44624a8f31f8020cb518b74fb74ab3db6af6a49acf9ceb7ec"
+  },
+  {
+    "path": "/contracts/cAbi/signatureSha256",
+    "before": "68824381caf0f8a96852b75e33764e926af4416a566cebcc1bff1b2a26241a29",
+    "after": "11aaa11bd88b7c974284d88fd96295a938f0b17d811ce820132f0b22aeef7ffa"
+  },
+  {
+    "path": "/sourceProvenance/baseCommit",
+    "before": "dfd1cac8cd1c39cb7010245b43b869db9f76605d",
+    "after": "1cd5d42e1677e8ca5c50d92175597140de8ed554"
+  },
+  {
+    "path": "/sourceSha256/packages/xy-node/src/_abi_generated.js",
+    "before": "99e89d6ba93c8debd1df7888b822581ad207011e9aead2c876f81c5b5ead3d0e",
+    "after": "214e76d5e8dec3beea63848bb5bf42e77b837294394bdac0e324332140f02769"
+  },
+  {
+    "path": "/sourceSha256/python/xyg/_abi_generated.py",
+    "before": "d520629f385feba9e3e4e96811b67e0bc6261a7f197eda4b2931ce59c0c85869",
+    "after": "b9793e4243154d14cf7028c7feaec1adce1f95ed26452471c5c01d3dbc24c08d"
+  },
+  {
+    "path": "/sourceSha256/spec/abi/xyg-abi.json",
+    "before": "e941f55c05e90c5e36a8e816c67918820a28136aaab140e967b89a34ec9a4458",
+    "after": "baf196faf361dce4dd10b2ffc3bd9a00ba5f820e066c70dae1a3bc417fdb8798"
+  },
+  {
+    "path": "/sourceSha256/spec/abi/xyg.h",
+    "before": "e8dfa8e487be654a99b70f5430ba48c2a450dc831cea35b4e3f139752ae4ec7b",
+    "after": "742156f6f3e7a4d6f3d9474289dce2b6d44d455fcac5465e8505aea309dad092"
+  },
+  {
+    "path": "/sourceSha256/spec/design/browser-wasm.md",
+    "before": "41c96cedc8464d4900c6bbf8de9923d38fbbf02b42bbe1cf87ebac4ea7df12f2",
+    "after": "11fea1b0df2251facac0bbe3b0ad6dacfc9352178766bfb30e40ab21b65fc4c6"
+  }
+]

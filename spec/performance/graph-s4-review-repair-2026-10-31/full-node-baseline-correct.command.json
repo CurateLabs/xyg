@@ -1,0 +1,12 @@
+{
+  "name": "full-node-baseline-correct",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-review-repair-2026-10-31/full_node.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 33.832,
+  "rawSha256": "8d1ac6225a13ba5defe65196c81be98d653e585bb671321c32bbe04548576943",
+  "log": "full-node-baseline-correct.txt.gz",
+  "gzipSha256": "ae2790a1694b05b5d7a7070fc79be25774b87fdb6ba592faf6bd6331e6e0ca0c"
+}

@@ -142,7 +142,7 @@ impl GraphSession {
 
     /// The ring around `anchor`: the node, its out-edges, its in-edges, then
     /// its neighbors, each group ascending in render index.
-    fn ring(render: &RenderOutput, anchor: u64) -> Vec<Stop> {
+    pub(super) fn ring(render: &RenderOutput, anchor: u64) -> Vec<Stop> {
         let mut out = Vec::new();
         let mut incoming = Vec::new();
         let mut neighbors = BTreeSet::new();

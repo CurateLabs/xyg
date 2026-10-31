@@ -1,0 +1,14 @@
+{
+  "name": "diagnostic-node-realpath-repair",
+  "command": [
+    "node",
+    "--input-type=module",
+    "-e",
+    "import fs from \"node:fs\"; const target=\"target/task-tmp/s4-diagnostic-assets/packages/xy-node/src\"; if(fs.lstatSync(target).isSymbolicLink())fs.unlinkSync(target); fs.cpSync(\"packages/xy-node/src\",target,{recursive:true}); console.log(\"Copied byte-identical source files: lifecycle loader parent URLs now match their staged source URLs.\");"
+  ],
+  "exitCode": 0,
+  "seconds": 0.041,
+  "rawSha256": "da4b47202d775dca02717a9c182e11d59576c808f43736ae2b735b8d848ad8b0",
+  "log": "diagnostic-node-realpath-repair.txt.gz",
+  "gzipSha256": "d56ae6bc1c9020ef4e3bce62406bebda4d97c96d76bf9c4ef145a5c3dae097d1"
+}

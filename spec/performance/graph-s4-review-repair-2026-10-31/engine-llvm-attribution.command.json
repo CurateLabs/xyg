@@ -1,0 +1,21 @@
+{
+  "name": "engine-llvm-attribution",
+  "command": [
+    "cargo",
+    "rustc",
+    "-p",
+    "xyg-engine",
+    "--no-default-features",
+    "--lib",
+    "--release",
+    "--target",
+    "wasm32-unknown-unknown",
+    "--",
+    "--emit=llvm-ir,link"
+  ],
+  "exitCode": 0,
+  "seconds": 42.25,
+  "rawSha256": "e80630b126d6fb3849efc424ed1cf5e429caa3695e50f1b2f5cb7feab478d2b8",
+  "log": "engine-llvm-attribution.txt.gz",
+  "gzipSha256": "55859ab59aa734a2fbe0fac6bcaa049dc30dd1222cc0b39f90e6b09a85646543"
+}

@@ -1,0 +1,9 @@
+
+running 1 test
+test graphforge::interaction::tests::wire::changed_plane_roundtrips_the_full_20000_symmetric_difference_but_ingress_stays_capped ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1792 filtered out; finished in 0.41s
+
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.71s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)

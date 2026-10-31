@@ -86,6 +86,7 @@ pub(super) struct MoveOrigin {
 /// The retained force layout and the world it was built from. It is valid
 /// only while both still hold: the same visible nodes (a frame change) and the
 /// same pin set (which the shared state can change from outside the session).
+#[derive(Clone)]
 pub(super) struct Relayout {
     force: ForceState,
     active: Vec<usize>,

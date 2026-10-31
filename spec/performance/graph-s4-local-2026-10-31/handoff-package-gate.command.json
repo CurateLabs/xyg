@@ -1,0 +1,13 @@
+{
+  "name": "handoff-package-gate",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 225.706,
+  "rawSha256": "26828967b3e4209b45ba84b3bf0e2a504671eadfb9ae8451d75566c9711cde82",
+  "log": "handoff-package-gate.txt.gz",
+  "gzipSha256": "f7d9e014ea85e84210ef9ffdbf311005bab2f2012ea5e6de4f0c7612896255e1"
+}

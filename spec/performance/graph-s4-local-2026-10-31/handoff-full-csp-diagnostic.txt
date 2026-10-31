@@ -1,0 +1,3 @@
+direct-browser density policy [{"point_count":1000000,"tier":"density","n_marks":196608,"pyramid_eligible":false,"wasm_eligible":true,"attach_sample":true,"ship_wasm_source":false,"canonical_f64_bytes":0,"total_bytes_max":266240},{"point_count":100000000,"tier":"density","n_marks":196608,"pyramid_eligible":true,"wasm_eligible":false,"attach_sample":true,"ship_wasm_source":false,"canonical_f64_bytes":0,"total_bytes_max":266240}]
+density no-refinement evidence retained: /home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/spec/performance/graph-s4-local-2026-10-31/full-csp-diagnostic.json
+strict-CSP local-only WASM worker lifecycle smoke passed (staged package)

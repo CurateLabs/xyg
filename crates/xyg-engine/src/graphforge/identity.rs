@@ -34,6 +34,7 @@ pub trait ResultHash {
 }
 
 /// FNV-1a, 64-bit.
+#[derive(Clone)]
 pub struct Fnv1a;
 
 impl ResultHash for Fnv1a {
@@ -49,6 +50,7 @@ impl ResultHash for Fnv1a {
 pub const NO_RESULT: u32 = 0;
 
 /// Session string table of exact result ids.
+#[derive(Clone)]
 pub struct ResultTable<H: ResultHash = Fnv1a> {
     strings: Vec<Option<Box<str>>>,
     buckets: HashMap<u64, Vec<u32>>,
@@ -146,6 +148,7 @@ pub enum ResolveError {
 }
 
 /// Identity planes of one composed document.
+#[derive(Clone)]
 pub struct GraphIdentity<H: ResultHash = Fnv1a> {
     node_uuid: Vec<Uuid>,
     node_index: UuidMap,

@@ -1,0 +1,12 @@
+{
+  "name": "handoff-artifact-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-local-2026-10-31/measure_artifact.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.098,
+  "rawSha256": "68919b0a184a05962308a4f6a65de5ae1728dcdceef804d62725a5c047538a41",
+  "log": "handoff-artifact-measure.txt.gz",
+  "gzipSha256": "f3ee42458bcbb2a3d2605d3d44556c202383bec6e7fe56a38c9ce847030ac03a"
+}

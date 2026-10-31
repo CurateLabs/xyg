@@ -1,0 +1,13 @@
+{
+  "name": "package-gate-verified",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 227.395,
+  "rawSha256": "b27f550527d78a820e5def954361e92679c7ebf1a0d926c24df96ef8e94cff04",
+  "log": "package-gate-verified.txt.gz",
+  "gzipSha256": "9c0b53f40ebf08238fc3af704763824a2131a68492d8eb6ef2f7120850e93f5b"
+}

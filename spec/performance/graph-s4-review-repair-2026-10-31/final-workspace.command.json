@@ -1,0 +1,15 @@
+{
+  "name": "final-workspace",
+  "command": [
+    "cargo",
+    "test",
+    "--workspace",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 143.177,
+  "rawSha256": "267590d667569be28e431cdf4da263beab658e09ade04c9a68e337e0385533bc",
+  "log": "final-workspace.txt.gz",
+  "gzipSha256": "0e7561f6216d768a4549d133a85a7698cbf697bf595a4049532f54e8aafb3934"
+}

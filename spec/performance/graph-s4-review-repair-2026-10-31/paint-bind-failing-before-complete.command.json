@@ -1,0 +1,19 @@
+{
+  "name": "paint-bind-failing-before-complete",
+  "command": [
+    "cargo",
+    "test",
+    "--manifest-path",
+    "target/task-tmp/before/Cargo.toml",
+    "-p",
+    "xyg-engine",
+    "review_",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 101,
+  "seconds": 41.474,
+  "rawSha256": "bf44da74277d5834368824a7b0b7eede46a9fdd4b7ccc0848529104274598419",
+  "log": "paint-bind-failing-before-complete.txt.gz",
+  "gzipSha256": "715954da1e5029382a5476b947c0af6a6a7823cbbb63eb24395cb1ccee8f8d10"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "handoff-full-csp-diagnostic",
+  "command": [
+    "env",
+    "-u",
+    "XYG_RELEASE_COMMIT",
+    "XYG_BROWSER_DIST=/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-client",
+    "XYG_WASM_FOUNDATION_REPORT=/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/spec/performance/graph-s4-local-2026-10-31/full-csp-diagnostic.json",
+    "node",
+    "scripts/wasm_foundation_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 12.925,
+  "rawSha256": "365f8cd0e5c2484b3411ce3d544d05e4c38dcabbaf1a4fb28741b4c999f76a5d",
+  "log": "handoff-full-csp-diagnostic.txt.gz",
+  "gzipSha256": "3cf7e58f8648a3468ad2b1c50aa9686f6f1081c79fc46bf6166e338101ecee18"
+}

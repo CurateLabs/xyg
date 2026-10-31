@@ -14,6 +14,7 @@ mod dashboard;
 mod geo;
 mod graph;
 mod graphforge;
+mod graphforge_session;
 mod temporal;
 mod temporal_graph;
 pub mod ticks;
@@ -22,7 +23,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, PainterRejection, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 34;
+pub const WASM_ABI_VERSION: u32 = 35;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -305,6 +306,7 @@ struct Instance {
     aggregate_sequence: u32,
     temporal: Option<xyg_engine::temporal_controller::TemporalController>,
     temporal_graph: Option<temporal_graph::WasmTemporalGraph>,
+    graph_session: Option<xyg_engine::graphforge::interaction::wire::WireSession>,
     graph_job: Option<graph::GraphJob>,
     compile_job: Option<CompileJob>,
     geo_transport: Option<xyg_engine::geo_transport::GeoTransportLease>,
@@ -363,6 +365,7 @@ fn acquire_geo_transport(instance: &mut Instance, preserve_staging: bool) -> i32
     instance.compile_job = None;
     instance.temporal = None;
     instance.temporal_graph = None;
+    instance.graph_session = None;
     let phase = instance
         .max_arena_bytes
         .min(xyg_engine::geo_transport::PHASE_BYTES);
@@ -479,6 +482,7 @@ impl Registry {
                 aggregate_sequence: 0,
                 temporal: None,
                 temporal_graph: None,
+                graph_session: None,
                 graph_job: None,
                 compile_job: None,
                 geo_transport: None,
@@ -511,7 +515,7 @@ fn with_ordinary_instance_mut(
     operation: impl FnOnce(&mut Instance) -> i32,
 ) -> Result<i32, i32> {
     with_instance_mut(handle, |instance| {
-        if instance.geo_transport.is_some() {
+        if instance.geo_transport.is_some() || instance.graph_session.is_some() {
             instance.arena = Vec::new();
             return fail(
                 instance,
@@ -639,6 +643,68 @@ pub extern "C" fn xyg_wasm_instance_dispose(handle: u32) -> i32 {
     STATUS_OK
 }
 
+/// Open one XYGI GraphSession in this instance. Output is the shared XYGR ack.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graphforge_session_open(
+    handle: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |i| {
+        graphforge_session::execute(i, offset, length, 19)
+    })
+    .unwrap_or(-10)
+}
+/// Atomically replace a session document using XYGI operation 20.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graphforge_session_update(
+    handle: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |i| {
+        graphforge_session::execute(i, offset, length, 20)
+    })
+    .unwrap_or(-10)
+}
+/// Publish XYGR geometry and style, including same-revision emphasis updates.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graphforge_session_render(
+    handle: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |i| {
+        graphforge_session::execute(i, offset, length, 21)
+    })
+    .unwrap_or(-10)
+}
+/// Execute typed interaction 0–18, including bind to this instance's owner.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graphforge_session_interact(
+    handle: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |i| {
+        graphforge_session::execute(i, offset, length, u32::MAX)
+    })
+    .unwrap_or(-10)
+}
+/// Drop the session; bound temporal interaction state remains with its owner.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graphforge_session_close(handle: u32) -> i32 {
+    with_instance_mut(handle, |i| {
+        if i.graph_session.take().is_some() {
+            i.output = Vec::new();
+            0
+        } else {
+            -10
+        }
+    })
+    .unwrap_or(-10)
+}
+
 /// Execute one packed `XYTC` temporal-controller command and place its packed
 /// `XYTR` snapshot in the ordinary output buffer. Temporal values remain raw
 /// i64/u64 bytes across the browser boundary; TypeScript never owns policy.
@@ -657,7 +723,11 @@ pub extern "C" fn xyg_wasm_temporal_graph_execute(
     offset: usize,
     length: usize,
 ) -> i32 {
-    with_ordinary_instance_mut(handle, |instance| {
+    with_instance_mut(handle, |instance| {
+        if instance.geo_transport.is_some() {
+            instance.arena = Vec::new();
+            return fail(instance, STATUS_INVALID_ARGUMENT, "retained transport rejects temporal operations");
+        }
         temporal_graph::execute(instance, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
@@ -696,7 +766,15 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
         // request. Drop its allocation before reserving staging so retained
         // capacity cannot stack on top of the next operation's peak budget.
         instance.output = Vec::new();
-        if length > instance.max_arena_bytes {
+        // S4 co-owned sessions account for both retained authorities. Standalone
+        // XYTG keeps its existing staging/work/output contract; charging its
+        // conservative session-only reserve here would strand accepted owners.
+        let retained = instance.graph_session.as_ref().map_or(0, |session| {
+            session.retained_budget().saturating_add(
+                instance.temporal_graph.as_ref().map_or(0, |graph| graph.retained_bytes()),
+            )
+        });
+        if length.saturating_add(retained) > instance.max_arena_bytes {
             return fail(
                 instance,
                 STATUS_RESOURCE_LIMIT,
@@ -1786,6 +1864,68 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget() {
+        fn create(nodes: u32) -> Vec<u8> {
+            let mut bytes = b"XYTG".to_vec();
+            for word in [1u32, 32, 1, 0, nodes, 0, 0] {
+                bytes.extend_from_slice(&word.to_le_bytes());
+            }
+            for node in 1..=nodes {
+                bytes.extend_from_slice(&u128::from(node).to_le_bytes());
+            }
+            bytes
+        }
+        fn frame(revision: u64) -> Vec<u8> {
+            let mut bytes = b"XYTG".to_vec();
+            for word in [1u32, 56, 2] {
+                bytes.extend_from_slice(&word.to_le_bytes());
+            }
+            for word in [revision, 0, 0, 1, 16 * 1024 * 1024] {
+                bytes.extend_from_slice(&word.to_le_bytes());
+            }
+            bytes
+        }
+        fn execute(handle: u32, bytes: &[u8]) -> i32 {
+            assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    bytes.as_ptr(),
+                    xyg_wasm_arena_ptr(handle) as *mut u8,
+                    bytes.len(),
+                );
+            }
+            xyg_wasm_temporal_graph_execute(handle, 0, bytes.len())
+        }
+        for count in [32_760, 40_000] {
+            let handle = xyg_wasm_instance_new(16 * 1024 * 1024);
+            assert_ne!(handle, 0);
+            assert_eq!(execute(handle, &create(count)), STATUS_OK);
+            assert_eq!(execute(handle, &frame(1)), STATUS_OK);
+            let mut invalid = create(2);
+            invalid.pop();
+            assert_eq!(execute(handle, &invalid), STATUS_INVALID_ARGUMENT);
+            assert_eq!(execute(handle, &frame(2)), STATUS_OK);
+            with_instance_mut(handle, |instance| {
+                assert_eq!(
+                    u32::from_le_bytes(instance.output[48..52].try_into().unwrap()),
+                    count
+                );
+            })
+            .unwrap();
+            assert_eq!(execute(handle, &create(2)), STATUS_OK);
+            assert_eq!(execute(handle, &frame(3)), STATUS_OK);
+            with_instance_mut(handle, |instance| {
+                assert_eq!(
+                    u32::from_le_bytes(instance.output[48..52].try_into().unwrap()),
+                    2
+                );
+            })
+            .unwrap();
+            assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+        }
+    }
 
     #[test]
     fn default_palette_exports_are_engine_owned_and_fail_closed() {

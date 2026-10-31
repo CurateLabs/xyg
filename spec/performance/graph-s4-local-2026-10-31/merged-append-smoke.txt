@@ -1,0 +1,3 @@
+probe: XY_OK {"warmData":6,"warmBytes":969600,"steadyData":0,"steadySubBytes":4800,"inPlace":1,"lit":40497,"mismatch":0,"viewSendsHome":0,"viewSendsZoomed":2,"hasStyleBuf":1,"dprSameKeeps":1,"dprMoved":1,"dprChangeRebuilds":1}
+per-tick GPU upload: steady 4800 B via bufferSubData (full rebuild would re-upload 504000 B: 105x more); view round-trips: home=0/5 ticks, zoomed=2/6 ticks
+append stream smoke OK: tail-only uploads + pixel-identical + coalesced refines

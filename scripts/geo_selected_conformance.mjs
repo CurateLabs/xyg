@@ -1,21 +1,23 @@
 #!/usr/bin/env node
-// Actual native383 / packaged WASM33 selected-state ownership and exact wire proof.
+// Actual native / packaged WASM selected-state ownership and exact wire proof.
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {abiVersion} from '../packages/xy-node/src/abi.js';
 import {execFileSync} from 'node:child_process';
 import {dirname} from 'node:path';
 import {gzipSync} from 'node:zlib';
 import {encodeGeoScaleRequest as encode,decodeGeoScaleReply as decode,encodeGeoChunkRequest,encodeGeoScaleStyle,driveGeoSession,driveGeoIndexSession,prepareGeoSceneData,prepareGeoAuxData,parseGeoRowsData,parseGeoHitData,nativeGeoScaleBridge} from '../packages/xy-node/src/geoscale.js';
 import {createGeoSelectedScope} from '../packages/xy-node/src/geo-selected.js';
 
+const wasmContract=JSON.parse(await readFile(new URL('../spec/wasm/abi.json',import.meta.url),'utf8'));
 const budget={processorBytes:128<<20,maxRowsExamined:1000000n,maxReadBytes:128n<<20n,maxChunks:65536,pageRows:1};
 const MAX=0xffffffffffffffffn,MIN=-0x8000000000000000n;
 const style=encodeGeoScaleStyle({fill:new Uint8Array([255,0,0,255]),stroke:new Uint8Array(4),strokeWidth:0,diameter:6,opacity:1,symbol:0});
 const path=process.env.XYG_SELECTED_WASM??'packages/xy-client/dist/xyg-wasm.wasm';
 const {instance}=await WebAssembly.instantiate(await readFile(path),{}),x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);
-assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),34);let sequence=0;
+assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),wasmContract.abi_version);let sequence=0;
 async function call(request,read){assert.equal(x.xyg_wasm_arena_resize(h,request.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h)>>>0,request.byteLength).set(new Uint8Array(request));const status=x[`xyg_wasm_geo_scale_${read?'read':'execute'}`](h,++sequence,0,request.byteLength);if(status){const error=new Error(new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h)>>>0,x.xyg_wasm_last_error_len(h))));error.nativeCode=status;throw error;}return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h)).slice().buffer;}
 const wasm={execute:r=>call(r,false),read:r=>call(r,true)};
 // These test-only bridges call raw exports; they have no genuine Worker/native
@@ -137,9 +139,9 @@ try{
  if(process.env.XYG_SELECTED_REPORT){
   const sourceFiles=['crates/xyg-engine/src/geo_linked_state.rs','crates/xyg-engine/src/geo_linked_state_protocol.rs','crates/xyg-engine/src/geo_source_session.rs','crates/xyg-engine/src/geo_rows_session.rs','crates/xyg-engine/src/geo_scale_protocol.rs','crates/xyg-engine/src/geo_lod.rs','crates/xyg-engine/src/geo_lod_scene.rs','crates/xyg-engine/src/geo_lod_hit.rs','crates/xyg-engine/src/geo_snapshot.rs','js/src/63_geo_source.ts','js/src/68_geo_selected.ts','scripts/geo_selected_conformance.mjs'],sources={};
   for(const file of sourceFiles)sources[file]=hash(await readFile(file));const wasm=await readFile(path),native=await readFile(process.env.XYG_NATIVE_LIB);
-  const report={sourceHead:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),environment:{node:process.version,platform:process.platform,arch:process.arch},native:{abi:383,sha256:hash(native)},wasm:{abi:33,scene:32,painter:15,sha256:hash(wasm),rawBytes:wasm.length,gzipBytes:gzipSync(wasm).length},sources,cases,gates:{fiveViewsWithinExisting16Handles8Data:true,parkTwoEnginesForPageOverlap:true,failedPagePreservesOldPage:true,outstandingReadSettledBeforeAck:true,crossInstanceActualHandleCollisionRejected:true,effectiveSelectedAlphaDirectAndClusterDensity:true},limitations:['typed internal foundation; no public selected interaction controller','no selected frozen export or selected host journey claim','no massive timing or memory performance claim']};
+  const report={sourceHead:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),environment:{node:process.version,platform:process.platform,arch:process.arch},native:{abi:abiVersion(),sha256:hash(native)},wasm:{abi:x.xyg_wasm_abi_version(),scene:x.xyg_wasm_scene_version(),painter:wasmContract.painter_version,sha256:hash(wasm),rawBytes:wasm.length,gzipBytes:gzipSync(wasm).length},sources,cases,gates:{fiveViewsWithinExisting16Handles8Data:true,parkTwoEnginesForPageOverlap:true,failedPagePreservesOldPage:true,outstandingReadSettledBeforeAck:true,crossInstanceActualHandleCollisionRejected:true,effectiveSelectedAlphaDirectAndClusterDensity:true},limitations:['typed internal foundation; no public selected interaction controller','no selected frozen export or selected host journey claim','no massive timing or memory performance claim']};
   await mkdir(dirname(process.env.XYG_SELECTED_REPORT),{recursive:true});await writeFile(process.env.XYG_SELECTED_REPORT,JSON.stringify(report,null,2)+'\n');
  }
- console.log('selected native383/packagedWASM33 direct+reduced/indexed fullXYSE/Rows intent, i64MIN/u64MAX, consumption/failure, private continuation, exact packet parity, fiveview16handle/8Data pressure+explicitpark+failedpage recovery, outstanding-read cancellation/ACK/recovery and actualtwoWASMregistry handlecollision rejection PASS');
+ console.log('selected native/packagedWASM direct+reduced/indexed fullXYSE/Rows intent, i64MIN/u64MAX, consumption/failure, private continuation, exact packet parity, fiveview16handle/8Data pressure+explicitpark+failedpage recovery, outstanding-read cancellation/ACK/recovery and actualtwoWASMregistry handlecollision rejection PASS');
 }
 finally{assert.equal(x.xyg_wasm_instance_dispose(h),0);}

@@ -258,7 +258,7 @@ historical failed receipts remain unchanged; real packaging, paired assets
 and strict-CSP browser validation are recorded separately in the
 [S2 packaging decision receipt](../performance/graph-s2-package-budget-2026-10-31/README.md).
 
-**Current packaging gates are 1,513 KiB raw / 626 KiB gzip6**
+**Historical S3 packaging gates were 1,513 KiB raw / 626 KiB gzip6**
 (**1,549,312 / 641,024 bytes**), the parent's separate S3 raw-only functionality
 decision. The prior S3 child rejected both measured codegen hints because neither
 met the then-unchanged raw gate; that historical failure remains intact in the
@@ -282,6 +282,54 @@ foundation. Earlier S1/S2/S3 receipts and fixtures remain byte-unchanged. Final
 independent review and CI remain pending; packaging establishes no #36, M4,
 hardware, ABI-slice or release completion. Further growth must still fail these
 limits, without another automatic raise.
+
+**S4 local session boundary.** WASM ABI 35 adds five real session exports
+(open/update/render/interact/close), executing the same Rust XYGI/XYGR codec as
+native ABI 398 (the named-signature CI repair). Scene 34 and painter 17 are unchanged. One instance retains one
+session; all reply planes and retry bytes count toward its existing arena
+budget, together with temporal ownership, staging and admitted speculative
+work. Temporal replacement/disposal or geographic acquisition revokes the old
+owner; an outstanding Arc cannot keep it usable. Ordinary compile/jobs require
+closing the session; compatible temporal frames and replacements remain
+pre-admitted. Wire status numbers, fixed exact-ID refs, capacity, retries and
+transactional publication are specified in [graph interaction §3](graph-interaction.md#3-abi--wasm).
+The original 1,513/626-KiB S3 gates rejected S4. Those package attempts
+and diagnostic functional proofs are recorded separately in
+[S4 local evidence](../performance/graph-s4-local-2026-10-31/README.md); source
+checkout tests do not establish shipping-asset acceptance. Historical S3
+measurements above continue to describe their own source, not this ABI.
+
+**Current S4 packaging gates are 1,817 KiB raw / 742 KiB gzip6**
+(1,860,608 / 759,808 bytes). After complete-paint, exact-identity, live-owner
+stamp and default-arena admission repairs, independent correctness and policy
+review approved the source and a separately recorded functionality decision.
+Exactly two size candidates were measured; only the fixed UUID hex writer is
+retained (73 raw / 37 gzip bytes saved). The reviewed budget-decision module measured
+1,860,250 raw / 759,008 gzip6, leaving 358 / 800 bytes. This is 311,860 raw /
+118,299 gzip bytes above accepted S3 because the complete session machinery is
+first reachable through WASM, including resolved CPU paint and atomic state.
+There is no compiler/profile/toolchain/dependency/optimizer/export or validation
+change. Both gates remain hard limits with no automatic allowance for later
+growth. The [S4 package decision receipt](../performance/graph-s4-package-budget-2026-10-31/README.md)
+records the separate real shipping build, paired-asset verification and full
+strict-CSP foundation. Historical FAIL/diagnostic records remain unchanged.
+The 16 MiB browser default and 384 MiB maximum are unchanged. This package
+decision establishes no runtime speed, S5–S7, #36, M4 or release acceptance.
+
+The S4 CI repair preserves standalone XYTG staging behavior: temporal retention
+is added to `arena_resize` only alongside a retained GraphSession, matching
+co-owned temporal/session pre-admission. Standalone entity/work/output bounds
+remain unchanged; no new standalone total-residency guarantee is claimed. The
+40,000-node default-arena frame/replacement regression and native ABI 398 policy
+repair, with its fresh 1,860,254 raw / 759,013 gzip6-byte module (354 / 795 bytes
+headroom under the unchanged gates), are recorded in the [CI repair receipt](../performance/graph-s4-ci-repair-2026-10-31/README.md).
+
+Current native/WASM conformance harnesses compare the module ABI against the
+committed generated `spec/wasm/abi.json`, preserving strict equality instead of
+pinning the previous ABI literal. Overview reports record the loaded native and
+WASM versions. The [foundation contract repair](../performance/graph-s4-foundation-contract-2026-10-31/README.md)
+records the ABI-34 assertion failure and the actual geographic conformance rerun
+on ABI 398/35; runtime, payload, resource and package contracts are unchanged.
 
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
@@ -349,7 +397,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging now enforces 1,513 KiB raw / 626 KiB gzip limits (including the recorded S1 hierarchy, S2 shared-functionality and S3 raw-only decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+packaging now enforces 1,817 KiB raw / 742 KiB gzip limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only and S4 session-functionality decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 

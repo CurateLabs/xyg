@@ -1,0 +1,13 @@
+{
+  "name": "source-contracts",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\nuv run python scripts/gen_abi_manifest.py --check\nuv run python scripts/check_abi_parity.py\nuv run python scripts/verify_ownership.py"
+  ],
+  "exitCode": 1,
+  "seconds": 8.535,
+  "rawSha256": "0800b18c739f85338070c770f68f6fcbd31b43f3899574c6154d706cfbbcc3da",
+  "log": "source-contracts.txt.gz",
+  "gzipSha256": "f50e324e31834086d615c51f6a32e5cb6c3f8ffb23c03b18d03cebdccc80fb44"
+}

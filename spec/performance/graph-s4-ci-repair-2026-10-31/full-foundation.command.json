@@ -1,0 +1,18 @@
+{
+  "name": "full-foundation",
+  "command": [
+    "env",
+    "-u",
+    "XYG_RELEASE_COMMIT",
+    "-u",
+    "XYG_BROWSER_DIST",
+    "XYG_WASM_FOUNDATION_REPORT=/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/spec/performance/graph-s4-ci-repair-2026-10-31/full-foundation.json",
+    "node",
+    "scripts/wasm_foundation_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 16.773,
+  "rawSha256": "fbb24d200cb759e5e3617bc9b2a6b6fcaa4739466c8d5951c6384c353dfb2096",
+  "log": "full-foundation.txt.gz",
+  "gzipSha256": "cf415ad78c3ff6508636c331319296ed3eb5cb44d18bb03678f94ae958d24495"
+}

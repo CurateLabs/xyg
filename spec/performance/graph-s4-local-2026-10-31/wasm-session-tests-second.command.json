@@ -1,0 +1,16 @@
+{
+  "name": "wasm-session-tests-second",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-wasm",
+    "graphforge_session::tests",
+    "--lib"
+  ],
+  "exitCode": 101,
+  "seconds": 8.009,
+  "rawSha256": "306693db3c6f13e56993e2eb0f89eed83091c5ffa4acbd06d3a1619b88bdc3c1",
+  "log": "wasm-session-tests-second.txt.gz",
+  "gzipSha256": "35986731c50c03c3aaeb02afff69fb56f51b2104997ae46d50dcb3175b6a1f9f"
+}

@@ -1,0 +1,1516 @@
+TAP version 13
+# Subtest: actual selected hierarchy live43/44 survives original source disposal
+not ok 1 - actual selected hierarchy live43/44 survives original source disposal
+  ---
+  duration_ms: 18.079722
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:4:1'
+  failureType: 'testCodeFailure'
+  error: 'native geographic host requires the native source bridge'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    new GeoHostAdapter (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-webview.js:24:58)
+    GeoChart.host (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/charts.js:379:26)
+    hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:31:22)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:5:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: exclusive lane and closed lane fail before losing accepted paint
+not ok 2 - exclusive lane and closed lane fail before losing accepted paint
+  ---
+  duration_ms: 0.948592
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:14:1'
+  failureType: 'testCodeFailure'
+  error: 'geographic column handle is stale or freed'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async execute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:13:97)
+    async createGeoSelectedScope (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:20:15)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:19:14)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:15:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: five independent hierarchy lanes keep15→16 replacement within fixed caps
+not ok 3 - five independent hierarchy lanes keep15→16 replacement within fixed caps
+  ---
+  duration_ms: 2.704839
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:19:1'
+  failureType: 'testCodeFailure'
+  error: 'geographic column handle is stale or freed'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async execute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:13:97)
+    async createGeoSelectedScope (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:20:15)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:19:14)
+    async hierarchyFiveFixtures (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:39:13)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:22:11)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lost actual33 preserves paint and settles typed replacement before retry
+not ok 4 - lost actual33 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 1.02538
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:41:34'
+  failureType: 'testCodeFailure'
+  error: 'geographic column handle is stale or freed'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async execute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:13:97)
+    async createGeoSelectedScope (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:20:15)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:19:14)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:42:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lost actual43 preserves paint and settles typed replacement before retry
+not ok 5 - lost actual43 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 0.736669
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:41:34'
+  failureType: 'testCodeFailure'
+  error: 'geographic column handle is stale or freed'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async execute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:13:97)
+    async createGeoSelectedScope (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:20:15)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:19:14)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:42:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lost actual44 preserves paint and settles typed replacement before retry
+not ok 6 - lost actual44 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 0.653136
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:41:34'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async execute (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:13:97)
+    async createGeoSelectedScope (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-selected.js:20:15)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:19:14)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:42:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: uncertain33 cleanup failure holds global slot until exact retry confirmation
+not ok 7 - uncertain33 cleanup failure holds global slot until exact retry confirmation
+  ---
+  duration_ms: 0.290965
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:48:30'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:15:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:49:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: uncertain43 cleanup failure holds global slot until exact retry confirmation
+not ok 8 - uncertain43 cleanup failure holds global slot until exact retry confirmation
+  ---
+  duration_ms: 0.129762
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:48:30'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:15:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:49:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: cancel after real44 publication cleans candidate before accepted paint changes
+not ok 9 - cancel after real44 publication cleans candidate before accepted paint changes
+  ---
+  duration_ms: 0.485065
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:55:1'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:15:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:56:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: close during actual26 retains failed disposal owner and retries before releasing lane
+not ok 10 - close during actual26 retains failed disposal owner and retries before releasing lane
+  ---
+  duration_ms: 0.474345
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:64:1'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:15:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:65:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: canonical lost33 reply resolves one allocation and keeps accepted paint
+not ok 11 - canonical lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0.44804
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async selectedLiveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:57:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:80:55)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: canonical corrupt33 reply resolves one allocation and keeps accepted paint
+not ok 12 - canonical corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0.185521
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async selectedLiveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:57:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:80:55)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: indexed lost33 reply resolves one allocation and keeps accepted paint
+not ok 13 - indexed lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0.234228
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async selectedLiveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:57:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:80:55)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: indexed corrupt33 reply resolves one allocation and keeps accepted paint
+not ok 14 - indexed corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0.177169
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async selectedLiveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:57:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:80:55)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: hierarchy lost33 reply resolves one allocation and keeps accepted paint
+not ok 15 - hierarchy lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0.179246
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:15:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:80:30)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: hierarchy corrupt33 reply resolves one allocation and keeps accepted paint
+not ok 16 - hierarchy corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 0.160157
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:78:91'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async hierarchyFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:15:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:80:30)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: canonical uncertain33 cleanup keeps owner and slot until exact retry
+not ok 17 - canonical uncertain33 cleanup keeps owner and slot until exact retry
+  ---
+  duration_ms: 0.27525
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:88:43'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async selectedLiveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:57:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:90:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: indexed uncertain33 cleanup keeps owner and slot until exact retry
+not ok 18 - indexed uncertain33 cleanup keeps owner and slot until exact retry
+  ---
+  duration_ms: 0.166071
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:88:43'
+  failureType: 'testCodeFailure'
+  error: 'geometry exceeds feature, vertex, or byte limits'
+  code: 'ERR_TEST_FAILURE'
+  name: 'GeoNativeError'
+  stack: |-
+    Object.geoScaleExecute [as execute] (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geoscale.js:295:29)
+    async RetainedGeoSource.create (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/src/geo-retained.js:158:7)
+    async liveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-host-fixture.mjs:8:106)
+    async selectedLiveFixture (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-fixture.mjs:57:17)
+    async TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-node/test/geo-live-hierarchy-host.test.mjs:90:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: geometryOffset pins log family and nonfinite to zero
+ok 19 - geometryOffset pins log family and nonfinite to zero
+  ---
+  duration_ms: 2.717724
+  type: 'test'
+  ...
+# Subtest: encodeF32Values packs EncodedColumn meta from the kernel
+ok 20 - encodeF32Values packs EncodedColumn meta from the kernel
+  ---
+  duration_ms: 1.318125
+  type: 'test'
+  ...
+# Subtest: arrowGeometry trims label_clear and samples shafts
+ok 21 - arrowGeometry trims label_clear and samples shafts
+  ---
+  duration_ms: 0.665682
+  type: 'test'
+  ...
+# Subtest: packArrowStyle ignores malformed start_offset CSV
+ok 22 - packArrowStyle ignores malformed start_offset CSV
+  ---
+  duration_ms: 0.461908
+  type: 'test'
+  ...
+# Subtest: packArrowStyle ignores malformed label_clear CSV
+ok 23 - packArrowStyle ignores malformed label_clear CSV
+  ---
+  duration_ms: 0.314759
+  type: 'test'
+  ...
+# Subtest: hexbinRing scales the canonical pointy-top fractions
+ok 24 - hexbinRing scales the canonical pointy-top fractions
+  ---
+  duration_ms: 0.42755
+  type: 'test'
+  ...
+# Subtest: ribbonEdge midpoint matches Python golden
+ok 25 - ribbonEdge midpoint matches Python golden
+  ---
+  duration_ms: 0.213212
+  type: 'test'
+  ...
+# Subtest: ribbonPolygon is upper then reversed lower
+ok 26 - ribbonPolygon is upper then reversed lower
+  ---
+  duration_ms: 0.183376
+  type: 'test'
+  ...
+# Subtest: monotoneTangents zero interiors on sign change
+ok 27 - monotoneTangents zero interiors on sign change
+  ---
+  duration_ms: 0.463491
+  type: 'test'
+  ...
+# Subtest: curveFlatten keeps knots and 15 interiors per span
+ok 28 - curveFlatten keeps knots and 15 interiors per span
+  ---
+  duration_ms: 0.433745
+  type: 'test'
+  ...
+# Subtest: stepArrays expands pre mid and post vertices
+ok 29 - stepArrays expands pre mid and post vertices
+  ---
+  duration_ms: 0.400929
+  type: 'test'
+  ...
+# Subtest: markerPathScale flips y and matches host vertices
+ok 30 - markerPathScale flips y and matches host vertices
+  ---
+  duration_ms: 0.361155
+  type: 'test'
+  ...
+# Subtest: sceneDashAdmit presets reject bad tokens and empty lists
+ok 31 - sceneDashAdmit presets reject bad tokens and empty lists
+  ---
+  duration_ms: 0.26444
+  type: 'test'
+  ...
+# Subtest: sceneLinecapAdmit names reject unknown and whitespace
+ok 32 - sceneLinecapAdmit names reject unknown and whitespace
+  ---
+  duration_ms: 0.15066
+  type: 'test'
+  ...
+# Subtest: densityOverlayOpacity caps finite and maps non-finite to 0.55
+ok 33 - densityOverlayOpacity caps finite and maps non-finite to 0.55
+  ---
+  duration_ms: 0.118751
+  type: 'test'
+  ...
+# Subtest: sceneMarkerPathAdmit bounds and host coercion
+ok 34 - sceneMarkerPathAdmit bounds and host coercion
+  ---
+  duration_ms: 0.243274
+  type: 'test'
+  ...
+# Subtest: sceneAnnotationStyleAdmit matches host allowlist table
+ok 35 - sceneAnnotationStyleAdmit matches host allowlist table
+  ---
+  duration_ms: 0.276118
+  type: 'test'
+  ...
+# Subtest: sceneTickLabelStrategy matches host table
+ok 36 - sceneTickLabelStrategy matches host table
+  ---
+  duration_ms: 0.165307
+  type: 'test'
+  ...
+# Subtest: sceneTickAnchor matches host table
+ok 37 - sceneTickAnchor matches host table
+  ---
+  duration_ms: 0.145966
+  type: 'test'
+  ...
+# Subtest: sceneFillGradientAdmit matches host table
+ok 38 - sceneFillGradientAdmit matches host table
+  ---
+  duration_ms: 0.394967
+  type: 'test'
+  ...
+# Subtest: sceneParseLinearGradient matches host table
+ok 39 - sceneParseLinearGradient matches host table
+  ---
+  duration_ms: 0.501501
+  type: 'test'
+  ...
+# Subtest: sceneRectExtraFlags matches host table
+ok 40 - sceneRectExtraFlags matches host table
+  ---
+  duration_ms: 0.228163
+  type: 'test'
+  ...
+# Subtest: rectExtraFlags array fill matches Python dict-only
+ok 41 - rectExtraFlags array fill matches Python dict-only
+  ---
+  duration_ms: 0.9007
+  type: 'test'
+  ...
+# Subtest: sceneGradientDir matches host table
+ok 42 - sceneGradientDir matches host table
+  ---
+  duration_ms: 0.152054
+  type: 'test'
+  ...
+# Subtest: sceneLinearGradientPrefix matches host table
+ok 43 - sceneLinearGradientPrefix matches host table
+  ---
+  duration_ms: 1.811732
+  type: 'test'
+  ...
+# Subtest: fillIsGradientAuthoring host coercion matches Python dict-only
+ok 44 - fillIsGradientAuthoring host coercion matches Python dict-only
+  ---
+  duration_ms: 0.138697
+  type: 'test'
+  ...
+# Subtest: packXyTaColormap uses style.colormap only like Python
+ok 45 - packXyTaColormap uses style.colormap only like Python
+  ---
+  duration_ms: 0.34567
+  type: 'test'
+  ...
+# Subtest: packXyTaColormap stop bytes require RGB rows like Python
+ok 46 - packXyTaColormap stop bytes require RGB rows like Python
+  ---
+  duration_ms: 0.214492
+  type: 'test'
+  ...
+# Subtest: packXyTaDensityColorCh uses color_ch only like Python
+ok 47 - packXyTaDensityColorCh uses color_ch only like Python
+  ---
+  duration_ms: 0.147484
+  type: 'test'
+  ...
+# Subtest: packXyTaFillOpacity uses fill_opacity only like Python
+ok 48 - packXyTaFillOpacity uses fill_opacity only like Python
+  ---
+  duration_ms: 0.122214
+  type: 'test'
+  ...
+# Subtest: packXyTcStrokeWidth uses stroke_width only like Python
+ok 49 - packXyTcStrokeWidth uses stroke_width only like Python
+  ---
+  duration_ms: 0.238197
+  type: 'test'
+  ...
+# Subtest: packXyTcLineWidth uses line_width only like Python
+ok 50 - packXyTcLineWidth uses line_width only like Python
+  ---
+  duration_ms: 0.141972
+  type: 'test'
+  ...
+# Subtest: packXyTcSize uses size only like Python
+ok 51 - packXyTcSize uses size only like Python
+  ---
+  duration_ms: 0.196362
+  type: 'test'
+  ...
+# Subtest: packXyTaGrid flattens plane.values like Python
+ok 52 - packXyTaGrid flattens plane.values like Python
+  ---
+  duration_ms: 0.261434
+  type: 'test'
+  ...
+# Subtest: packXyTaRgba ignores nested .rgba like Python
+ok 53 - packXyTaRgba ignores nested .rgba like Python
+  ---
+  duration_ms: 0.110381
+  type: 'test'
+  ...
+# Subtest: packXyTaRgbaGrid stacks flattened planes like Python
+ok 54 - packXyTaRgbaGrid stacks flattened planes like Python
+  ---
+  duration_ms: 0.369831
+  type: 'test'
+  ...
+# Subtest: packXyTcFillOpacity uses fill_opacity only like Python
+ok 55 - packXyTcFillOpacity uses fill_opacity only like Python
+  ---
+  duration_ms: 0.209688
+  type: 'test'
+  ...
+# Subtest: packXyTcJoinedFill uses joined_fill only like Python
+ok 56 - packXyTcJoinedFill uses joined_fill only like Python
+  ---
+  duration_ms: 0.19362
+  type: 'test'
+  ...
+# Subtest: packXyTcLineColor uses line_color only like Python
+ok 57 - packXyTcLineColor uses line_color only like Python
+  ---
+  duration_ms: 0.203592
+  type: 'test'
+  ...
+# Subtest: packXyTcLinecap uses linecap only like Python
+ok 58 - packXyTcLinecap uses linecap only like Python
+  ---
+  duration_ms: 0.109291
+  type: 'test'
+  ...
+# Subtest: packXyAfLinecap uses linecap only like Python
+ok 59 - packXyAfLinecap uses linecap only like Python
+  ---
+  duration_ms: 0.1045
+  type: 'test'
+  ...
+# Subtest: packXyTcLineOpacity uses line_opacity only like Python
+ok 60 - packXyTcLineOpacity uses line_opacity only like Python
+  ---
+  duration_ms: 0.207659
+  type: 'test'
+  ...
+# Subtest: packXyTcSizeChannel uses size_ch only like Python
+ok 61 - packXyTcSizeChannel uses size_ch only like Python
+  ---
+  duration_ms: 0.169216
+  type: 'test'
+  ...
+# Subtest: packXyTcStrokeOpacity uses stroke_opacity only like Python
+ok 62 - packXyTcStrokeOpacity uses stroke_opacity only like Python
+  ---
+  duration_ms: 0.154809
+  type: 'test'
+  ...
+# Subtest: packXyTcColorChannel uses color_ch only like Python
+ok 63 - packXyTcColorChannel uses color_ch only like Python
+  ---
+  duration_ms: 0.201505
+  type: 'test'
+  ...
+# Subtest: packXyTcStrokePerimeter uses stroke_perimeter only like Python
+ok 64 - packXyTcStrokePerimeter uses stroke_perimeter only like Python
+  ---
+  duration_ms: 0.235482
+  type: 'test'
+  ...
+# Subtest: sceneXytcFigurePlan passes showLegend like Python
+ok 65 - sceneXytcFigurePlan passes showLegend like Python
+  ---
+  duration_ms: 0.145232
+  type: 'test'
+  ...
+# Subtest: sceneXytcTraceDispatchPlan scatter density and glyph routing
+ok 66 - sceneXytcTraceDispatchPlan scatter density and glyph routing
+  ---
+  duration_ms: 0.223416
+  type: 'test'
+  ...
+# Subtest: sceneXytcTraceDispatchPlan ribbon color2 and area perimeter
+ok 67 - sceneXytcTraceDispatchPlan ribbon color2 and area perimeter
+  ---
+  duration_ms: 0.104824
+  type: 'test'
+  ...
+# Subtest: sceneXytaFigurePlan passes polar like Python
+ok 68 - sceneXytaFigurePlan passes polar like Python
+  ---
+  duration_ms: 0.140741
+  type: 'test'
+  ...
+# Subtest: sceneXytaTraceDispatchPlan heatmap hexbin ribbon and density routing
+ok 69 - sceneXytaTraceDispatchPlan heatmap hexbin ribbon and density routing
+  ---
+  duration_ms: 0.273606
+  type: 'test'
+  ...
+# Subtest: sceneFigureSupportTraceDispatchPlan bar and scatter routing
+ok 70 - sceneFigureSupportTraceDispatchPlan bar and scatter routing
+  ---
+  duration_ms: 0.386641
+  type: 'test'
+  ...
+# Subtest: scene chrome export orchestration routes legend density and wrapped XYAF
+ok 71 - scene chrome export orchestration routes legend density and wrapped XYAF
+  ---
+  duration_ms: 0.461051
+  type: 'test'
+  ...
+# Subtest: hexbinXyTaColormap uses channel.colormap only like Python
+ok 72 - hexbinXyTaColormap uses channel.colormap only like Python
+  ---
+  duration_ms: 0.225512
+  type: 'test'
+  ...
+# Subtest: xyHfColormap uses style.colormap only like Python
+ok 73 - xyHfColormap uses style.colormap only like Python
+  ---
+  duration_ms: 0.172015
+  type: 'test'
+  ...
+# Subtest: xyHfColormap stop bytes require RGB rows like Python
+ok 74 - xyHfColormap stop bytes require RGB rows like Python
+  ---
+  duration_ms: 0.19166
+  type: 'test'
+  ...
+# Subtest: constantMarkColor uses color_ch.constant only like Python
+ok 75 - constantMarkColor uses color_ch.constant only like Python
+  ---
+  duration_ms: 0.319067
+  type: 'test'
+  ...
+# Subtest: channelConstantCss uses channel.constant only like Python
+ok 76 - channelConstantCss uses channel.constant only like Python
+  ---
+  duration_ms: 0.154938
+  type: 'test'
+  ...
+# Subtest: channelEndRgba8 constant uses .constant only like Python
+ok 77 - channelEndRgba8 constant uses .constant only like Python
+  ---
+  duration_ms: 0.26381
+  type: 'test'
+  ...
+# Subtest: channelEndRgba8 ignores array channels like Python
+ok 78 - channelEndRgba8 ignores array channels like Python
+  ---
+  duration_ms: 0.069973
+  type: 'test'
+  ...
+# Subtest: channelEndRgba8 categorical uses DEFAULT_PALETTE like Python
+ok 79 - channelEndRgba8 categorical uses DEFAULT_PALETTE like Python
+  ---
+  duration_ms: 0.282597
+  type: 'test'
+  ...
+# Subtest: sourceColorCss uses color_ch only like Python
+ok 80 - sourceColorCss uses color_ch only like Python
+  ---
+  duration_ms: 0.111162
+  type: 'test'
+  ...
+# Subtest: sourceColorCss empty style.color falls through like Python or-default
+ok 81 - sourceColorCss empty style.color falls through like Python or-default
+  ---
+  duration_ms: 0.065656
+  type: 'test'
+  ...
+# Subtest: color2Channel uses color2_ch only like Python
+ok 82 - color2Channel uses color2_ch only like Python
+  ---
+  duration_ms: 0.07507
+  type: 'test'
+  ...
+# Subtest: itemFillRgba8 null style.color uses style.get default like Python
+ok 83 - itemFillRgba8 null style.color uses style.get default like Python
+  ---
+  duration_ms: 0.19974
+  type: 'test'
+  ...
+# Subtest: itemFillRgba8 uses color_ch only like Python
+ok 84 - itemFillRgba8 uses color_ch only like Python
+  ---
+  duration_ms: 0.172748
+  type: 'test'
+  ...
+# Subtest: itemStrokeRgba8 empty style.stroke falls through like Python or-default
+ok 85 - itemStrokeRgba8 empty style.stroke falls through like Python or-default
+  ---
+  duration_ms: 0.129556
+  type: 'test'
+  ...
+# Subtest: itemStrokeRgba8 uses stroke_ch only like Python
+ok 86 - itemStrokeRgba8 uses stroke_ch only like Python
+  ---
+  duration_ms: 0.185206
+  type: 'test'
+  ...
+# Subtest: scatterPaintChannelNames uses color_ch only like Python
+ok 87 - scatterPaintChannelNames uses color_ch only like Python
+  ---
+  duration_ms: 0.16647
+  type: 'test'
+  ...
+# Subtest: scatterPointStrokeRgba8 uses stroke_ch only like Python
+ok 88 - scatterPointStrokeRgba8 uses stroke_ch only like Python
+  ---
+  duration_ms: 0.26028
+  type: 'test'
+  ...
+# Subtest: scatterHasNonConstantColor uses color_ch only like Python
+ok 89 - scatterHasNonConstantColor uses color_ch only like Python
+  ---
+  duration_ms: 0.100487
+  type: 'test'
+  ...
+# Subtest: scatterPerItemChannels ignores style.color_channel like Python
+ok 90 - scatterPerItemChannels ignores style.color_channel like Python
+  ---
+  duration_ms: 0.115397
+  type: 'test'
+  ...
+# Subtest: resolveDensityBinColors uses color_ch only like Python
+ok 91 - resolveDensityBinColors uses color_ch only like Python
+  ---
+  duration_ms: 0.217059
+  type: 'test'
+  ...
+# Subtest: sceneGradientSpace matches host table
+ok 92 - sceneGradientSpace matches host table
+  ---
+  duration_ms: 0.130962
+  type: 'test'
+  ...
+# Subtest: sceneHexbinReduceAdmit matches host table
+ok 93 - sceneHexbinReduceAdmit matches host table
+  ---
+  duration_ms: 0.124562
+  type: 'test'
+  ...
+# Subtest: sceneCurveClassify matches host table
+ok 94 - sceneCurveClassify matches host table
+  ---
+  duration_ms: 0.135318
+  type: 'test'
+  ...
+# Subtest: sceneMarkerGlyphAdmit matches host table
+ok 95 - sceneMarkerGlyphAdmit matches host table
+  ---
+  duration_ms: 0.133091
+  type: 'test'
+  ...
+# Subtest: admittedMarkerGlyph host coercion matches Python str-only
+ok 96 - admittedMarkerGlyph host coercion matches Python str-only
+  ---
+  duration_ms: 0.143441
+  type: 'test'
+  ...
+# Subtest: sceneKindAdmit matches host table
+ok 97 - sceneKindAdmit matches host table
+  ---
+  duration_ms: 0.222916
+  type: 'test'
+  ...
+# Subtest: figureTraceSupport empty kind matches Python or mark
+ok 98 - figureTraceSupport empty kind matches Python or mark
+  ---
+  duration_ms: 0.445746
+  type: 'test'
+  ...
+# Subtest: figureTraceSupport ignores style.smooth like Python
+ok 99 - figureTraceSupport ignores style.smooth like Python
+  ---
+  duration_ms: 0.222608
+  type: 'test'
+  ...
+# Subtest: xyEfJoinedFill uses joined_fill only like Python
+ok 100 - xyEfJoinedFill uses joined_fill only like Python
+  ---
+  duration_ms: 0.084524
+  type: 'test'
+  ...
+# Subtest: xyEfStrokeWidthOnly uses stroke_width only like Python
+ok 101 - xyEfStrokeWidthOnly uses stroke_width only like Python
+  ---
+  duration_ms: 0.086955
+  type: 'test'
+  ...
+# Subtest: sceneKindClass matches host table
+ok 102 - sceneKindClass matches host table
+  ---
+  duration_ms: 0.098522
+  type: 'test'
+  ...
+# Subtest: sceneHexbinColormapPlaneAdmit matches host table
+ok 103 - sceneHexbinColormapPlaneAdmit matches host table
+  ---
+  duration_ms: 0.157671
+  type: 'test'
+  ...
+# Subtest: hexbinCellRgba8 null style.color uses style.get default like Python
+ok 104 - hexbinCellRgba8 null style.color uses style.get default like Python
+  ---
+  duration_ms: 0.119486
+  type: 'test'
+  ...
+# Subtest: hexbinCellRgba8 uses color_ch only like Python
+ok 105 - hexbinCellRgba8 uses color_ch only like Python
+  ---
+  duration_ms: 0.112146
+  type: 'test'
+  ...
+# Subtest: hexbinPacksColormapPlane matches Python channel.values only
+ok 106 - hexbinPacksColormapPlane matches Python channel.values only
+  ---
+  duration_ms: 0.116065
+  type: 'test'
+  ...
+# Subtest: legendStyleFontSizes uses font_size only like Python
+ok 107 - legendStyleFontSizes uses font_size only like Python
+  ---
+  duration_ms: 0.104176
+  type: 'test'
+  ...
+# Subtest: heatmapGridShape uses grid_shape only like Python
+ok 108 - heatmapGridShape uses grid_shape only like Python
+  ---
+  duration_ms: 0.074716
+  type: 'test'
+  ...
+# Subtest: hexbinStylePitch uses hex_dx then dx like Python
+ok 109 - hexbinStylePitch uses hex_dx then dx like Python
+  ---
+  duration_ms: 0.102
+  type: 'test'
+  ...
+# Subtest: polarGridShape uses grid_shape only like Python
+ok 110 - polarGridShape uses grid_shape only like Python
+  ---
+  duration_ms: 0.066798
+  type: 'test'
+  ...
+# Subtest: polarAxisThetaUnit uses theta_unit only like Python
+ok 111 - polarAxisThetaUnit uses theta_unit only like Python
+  ---
+  duration_ms: 0.086132
+  type: 'test'
+  ...
+# Subtest: polarAxisThetaZero uses theta_zero only like Python
+ok 112 - polarAxisThetaZero uses theta_zero only like Python
+  ---
+  duration_ms: 0.08206
+  type: 'test'
+  ...
+# Subtest: polarAxisThetaDirection uses theta_direction only like Python
+ok 113 - polarAxisThetaDirection uses theta_direction only like Python
+  ---
+  duration_ms: 0.066422
+  type: 'test'
+  ...
+# Subtest: polarAxisROrigin uses r_origin only like Python
+ok 114 - polarAxisROrigin uses r_origin only like Python
+  ---
+  duration_ms: 0.064257
+  type: 'test'
+  ...
+# Subtest: polarAxisHole uses hole only like Python
+ok 115 - polarAxisHole uses hole only like Python
+  ---
+  duration_ms: 0.105346
+  type: 'test'
+  ...
+# Subtest: polarAxisSector uses sector only like Python
+ok 116 - polarAxisSector uses sector only like Python
+  ---
+  duration_ms: 0.083788
+  type: 'test'
+  ...
+# Subtest: axisTickValues uses tick_values only like Python
+ok 117 - axisTickValues uses tick_values only like Python
+  ---
+  duration_ms: 0.06975
+  type: 'test'
+  ...
+# Subtest: axisScaleName uses type only like Python
+ok 118 - axisScaleName uses type only like Python
+  ---
+  duration_ms: 0.078368
+  type: 'test'
+  ...
+# Subtest: legendAxisScale uses type only like Python _axis_scale
+ok 119 - legendAxisScale uses type only like Python _axis_scale
+  ---
+  duration_ms: 0.081056
+  type: 'test'
+  ...
+# Subtest: axisMinorTickValues uses minor_tick_values only like Python
+ok 120 - axisMinorTickValues uses minor_tick_values only like Python
+  ---
+  duration_ms: 0.082522
+  type: 'test'
+  ...
+# Subtest: axisTickLabels uses tick_labels only like Python
+ok 121 - axisTickLabels uses tick_labels only like Python
+  ---
+  duration_ms: 0.074622
+  type: 'test'
+  ...
+# Subtest: axisTickLabelAnchor uses tick_label_anchor only like Python
+ok 122 - axisTickLabelAnchor uses tick_label_anchor only like Python
+  ---
+  duration_ms: 0.08144
+  type: 'test'
+  ...
+# Subtest: axisTickLabelAngle uses tick_label_angle only like Python
+ok 123 - axisTickLabelAngle uses tick_label_angle only like Python
+  ---
+  duration_ms: 0.066772
+  type: 'test'
+  ...
+# Subtest: axisTickLabelMinGap uses tick_label_min_gap only like Python
+ok 124 - axisTickLabelMinGap uses tick_label_min_gap only like Python
+  ---
+  duration_ms: 0.064993
+  type: 'test'
+  ...
+# Subtest: axisTickLabelStrategy uses tick_label_strategy then collision like Python
+ok 125 - axisTickLabelStrategy uses tick_label_strategy then collision like Python
+  ---
+  duration_ms: 0.081423
+  type: 'test'
+  ...
+# Subtest: polarCollisionKeys uses snake-case keys only like Python
+ok 126 - polarCollisionKeys uses snake-case keys only like Python
+  ---
+  duration_ms: 0.087783
+  type: 'test'
+  ...
+# Subtest: figureChromeStyles uses chrome_styles only like Python
+ok 127 - figureChromeStyles uses chrome_styles only like Python
+  ---
+  duration_ms: 0.10145
+  type: 'test'
+  ...
+# Subtest: chromeAxisMinorStyle uses minor_style only like Python
+ok 128 - chromeAxisMinorStyle uses minor_style only like Python
+  ---
+  duration_ms: 0.151893
+  type: 'test'
+  ...
+# Subtest: chromeAxisTickSides uses tick_sides only like Python
+ok 129 - chromeAxisTickSides uses tick_sides only like Python
+  ---
+  duration_ms: 0.079372
+  type: 'test'
+  ...
+# Subtest: chromeAxisTickLabelSides uses tick_label_sides only like Python
+ok 130 - chromeAxisTickLabelSides uses tick_label_sides only like Python
+  ---
+  duration_ms: 0.077466
+  type: 'test'
+  ...
+# Subtest: chromeAxisStyleKeys admits snake-case keys only like Python
+ok 131 - chromeAxisStyleKeys admits snake-case keys only like Python
+  ---
+  duration_ms: 0.107582
+  type: 'test'
+  ...
+# Subtest: chromeAxisStyleHas and chromeAxisStyleValue read snake-case keys only like Python
+ok 132 - chromeAxisStyleHas and chromeAxisStyleValue read snake-case keys only like Python
+  ---
+  duration_ms: 0.111359
+  type: 'test'
+  ...
+# Subtest: chromeStyleHasFontFamily uses font-family key only like Python
+ok 133 - chromeStyleHasFontFamily uses font-family key only like Python
+  ---
+  duration_ms: 0.077623
+  type: 'test'
+  ...
+# Subtest: figureClassName uses class_name only like Python
+ok 134 - figureClassName uses class_name only like Python
+  ---
+  duration_ms: 0.113531
+  type: 'test'
+  ...
+# Subtest: figureClassNames uses class_names only like Python
+ok 135 - figureClassNames uses class_names only like Python
+  ---
+  duration_ms: 0.077124
+  type: 'test'
+  ...
+# Subtest: annotationClassName uses class_name only like Python
+ok 136 - annotationClassName uses class_name only like Python
+  ---
+  duration_ms: 0.065616
+  type: 'test'
+  ...
+# Subtest: figureExtraLegends uses extra_legends only like Python
+ok 137 - figureExtraLegends uses extra_legends only like Python
+  ---
+  duration_ms: 0.074125
+  type: 'test'
+  ...
+# Subtest: figureTitleOptions uses title_options only like Python
+ok 138 - figureTitleOptions uses title_options only like Python
+  ---
+  duration_ms: 0.074296
+  type: 'test'
+  ...
+# Subtest: figureLegendOptions uses legend_options only like Python
+ok 139 - figureLegendOptions uses legend_options only like Python
+  ---
+  duration_ms: 0.073358
+  type: 'test'
+  ...
+# Subtest: figureColorbarOptions uses colorbar_options only like Python
+ok 140 - figureColorbarOptions uses colorbar_options only like Python
+  ---
+  duration_ms: 0.085769
+  type: 'test'
+  ...
+# Subtest: figureShowLegend uses show_legend only like Python
+ok 141 - figureShowLegend uses show_legend only like Python
+  ---
+  duration_ms: 0.080395
+  type: 'test'
+  ...
+# Subtest: figureAxisOptions uses axis_options only like Python
+ok 142 - figureAxisOptions uses axis_options only like Python
+  ---
+  duration_ms: 0.083023
+  type: 'test'
+  ...
+# Subtest: figureAutorangeAxisOptions uses axis_options only like Python
+ok 143 - figureAutorangeAxisOptions uses axis_options only like Python
+  ---
+  duration_ms: 0.077547
+  type: 'test'
+  ...
+# Subtest: figureAutorangeAxisScale uses type only like Python _axis_scale
+ok 144 - figureAutorangeAxisScale uses type only like Python _axis_scale
+  ---
+  duration_ms: 0.078386
+  type: 'test'
+  ...
+# Subtest: figureAxisKind scatter Column.kind time_ms matches Python
+ok 145 - figureAxisKind scatter Column.kind time_ms matches Python
+  ---
+  duration_ms: 1.154203
+  type: 'test'
+  ...
+# Subtest: figureAxisKind matches Python _axis_kind
+ok 146 - figureAxisKind matches Python _axis_kind
+  ---
+  duration_ms: 0.1056
+  type: 'test'
+  ...
+# Subtest: chromeAxisTickKind uses Figure._axisKind like Python
+ok 147 - chromeAxisTickKind uses Figure._axisKind like Python
+  ---
+  duration_ms: 0.32005
+  type: 'test'
+  ...
+# Subtest: xyEfResolvedKind uses Figure._axisKind like Python
+ok 148 - xyEfResolvedKind uses Figure._axisKind like Python
+  ---
+  duration_ms: 0.210477
+  type: 'test'
+  ...
+# Subtest: figureAutorangeThetaUnit uses theta_unit only like Python
+ok 149 - figureAutorangeThetaUnit uses theta_unit only like Python
+  ---
+  duration_ms: 0.076883
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis theta_unit like Python set_axis
+ok 150 - setPolarMeta writes axis theta_unit like Python set_axis
+  ---
+  duration_ms: 0.186849
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis theta_zero like Python set_axis
+ok 151 - setPolarMeta writes axis theta_zero like Python set_axis
+  ---
+  duration_ms: 0.20471
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis theta_direction like Python set_axis
+ok 152 - setPolarMeta writes axis theta_direction like Python set_axis
+  ---
+  duration_ms: 0.091348
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis grid_shape like Python set_axis
+ok 153 - setPolarMeta writes axis grid_shape like Python set_axis
+  ---
+  duration_ms: 0.077992
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis hole like Python set_axis
+ok 154 - setPolarMeta writes axis hole like Python set_axis
+  ---
+  duration_ms: 0.094687
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis sector like Python set_axis
+ok 155 - setPolarMeta writes axis sector like Python set_axis
+  ---
+  duration_ms: 0.096941
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty theta_unit uses Python or-default
+ok 156 - _polarAxisSpecs empty theta_unit uses Python or-default
+  ---
+  duration_ms: 0.556967
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis theta_unit like Python _axis_spec
+ok 157 - _polarAxisSpecs uses axis theta_unit like Python _axis_spec
+  ---
+  duration_ms: 0.201507
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis theta_zero like Python _axis_spec
+ok 158 - _polarAxisSpecs uses axis theta_zero like Python _axis_spec
+  ---
+  duration_ms: 0.334332
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty theta_direction uses Python or-default
+ok 159 - _polarAxisSpecs empty theta_direction uses Python or-default
+  ---
+  duration_ms: 0.161417
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis theta_direction like Python _axis_spec
+ok 160 - _polarAxisSpecs uses axis theta_direction like Python _axis_spec
+  ---
+  duration_ms: 0.133097
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty grid_shape uses Python or-default
+ok 161 - _polarAxisSpecs empty grid_shape uses Python or-default
+  ---
+  duration_ms: 0.098373
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis grid_shape like Python _axis_spec
+ok 162 - _polarAxisSpecs uses axis grid_shape like Python _axis_spec
+  ---
+  duration_ms: 0.11722
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty sector uses Python or-default
+ok 163 - _polarAxisSpecs empty sector uses Python or-default
+  ---
+  duration_ms: 0.109668
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis sector like Python _axis_spec
+ok 164 - _polarAxisSpecs uses axis sector like Python _axis_spec
+  ---
+  duration_ms: 0.130544
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty hole uses Python or-default
+ok 165 - _polarAxisSpecs empty hole uses Python or-default
+  ---
+  duration_ms: 0.096103
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis hole like Python _axis_spec
+ok 166 - _polarAxisSpecs uses axis hole like Python _axis_spec
+  ---
+  duration_ms: 0.118641
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis r_origin like Python _axis_spec
+ok 167 - _polarAxisSpecs uses axis r_origin like Python _axis_spec
+  ---
+  duration_ms: 0.162157
+  type: 'test'
+  ...
+# Subtest: packPolarSceneInput uses figure _range like Python _pack_polar_scene_input
+ok 168 - packPolarSceneInput uses figure _range like Python _pack_polar_scene_input
+  ---
+  duration_ms: 1.458813
+  type: 'test'
+  ...
+# Subtest: figureAxisIsLog uses axis type only like Python _axis_scale log
+ok 169 - figureAxisIsLog uses axis type only like Python _axis_scale log
+  ---
+  duration_ms: 0.094775
+  type: 'test'
+  ...
+# Subtest: figureAutorangeCategories uses _axis_categories only like Python
+ok 170 - figureAutorangeCategories uses _axis_categories only like Python
+  ---
+  duration_ms: 0.077605
+  type: 'test'
+  ...
+# Subtest: figureAutorangeDomain uses axis domain only like Python
+ok 171 - figureAutorangeDomain uses axis domain only like Python
+  ---
+  duration_ms: 0.136135
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForceBin2d uses force_bin2d only like Python
+ok 172 - scatterPayloadForceBin2d uses force_bin2d only like Python
+  ---
+  duration_ms: 0.070333
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForceDensity uses force_density tri-state like Python
+ok 173 - scatterPayloadForceDensity uses force_density tri-state like Python
+  ---
+  duration_ms: 0.072787
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForceDirect uses force_direct only like Python
+ok 174 - scatterPayloadForceDirect uses force_direct only like Python
+  ---
+  duration_ms: 0.068372
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForcePyramid uses force_pyramid only like Python
+ok 175 - scatterPayloadForcePyramid uses force_pyramid only like Python
+  ---
+  duration_ms: 0.065131
+  type: 'test'
+  ...
+# Subtest: scatterPayloadNoRescan uses no_rescan only like Python
+ok 176 - scatterPayloadNoRescan uses no_rescan only like Python
+  ---
+  duration_ms: 0.067535
+  type: 'test'
+  ...
+# Subtest: figureXLabel uses x_label then axis label like Python
+ok 177 - figureXLabel uses x_label then axis label like Python
+  ---
+  duration_ms: 0.069147
+  type: 'test'
+  ...
+# Subtest: figureXLabel empty x_label falls through like Python or-fallthrough
+ok 178 - figureXLabel empty x_label falls through like Python or-fallthrough
+  ---
+  duration_ms: 0.059048
+  type: 'test'
+  ...
+# Subtest: figureYLabel uses y_label then axis label like Python
+ok 179 - figureYLabel uses y_label then axis label like Python
+  ---
+  duration_ms: 0.066997
+  type: 'test'
+  ...
+# Subtest: figureYLabel empty y_label falls through like Python or-fallthrough
+ok 180 - figureYLabel empty y_label falls through like Python or-fallthrough
+  ---
+  duration_ms: 0.049739
+  type: 'test'
+  ...
+# Subtest: plotTopAxisRoom uses top_axis_room only like Python
+ok 181 - plotTopAxisRoom uses top_axis_room only like Python
+  ---
+  duration_ms: 0.063126
+  type: 'test'
+  ...
+# Subtest: hexbinPacksRgbaPlane uses color_ch only like Python
+ok 182 - hexbinPacksRgbaPlane uses color_ch only like Python
+  ---
+  duration_ms: 0.18667
+  type: 'test'
+  ...
+# Subtest: sceneHexbinRgbaPlaneAdmit matches host table
+ok 183 - sceneHexbinRgbaPlaneAdmit matches host table
+  ---
+  duration_ms: 0.126989
+  type: 'test'
+  ...
+# Subtest: sceneMeshPaintPlaneAdmit matches host table
+ok 184 - sceneMeshPaintPlaneAdmit matches host table
+  ---
+  duration_ms: 0.099691
+  type: 'test'
+  ...
+# Subtest: meshHasPerItem matches Python has_per_item_channels
+ok 185 - meshHasPerItem matches Python has_per_item_channels
+  ---
+  duration_ms: 0.092867
+  type: 'test'
+  ...
+# Subtest: meshJoinedFill uses joined_fill only like Python
+ok 186 - meshJoinedFill uses joined_fill only like Python
+  ---
+  duration_ms: 0.065032
+  type: 'test'
+  ...
+# Subtest: sceneItemApplyOpacity matches host table
+ok 187 - sceneItemApplyOpacity matches host table
+  ---
+  duration_ms: 0.176898
+  type: 'test'
+  ...
+# Subtest: sceneItemWidthsAdmit matches host table
+ok 188 - sceneItemWidthsAdmit matches host table
+  ---
+  duration_ms: 0.15623
+  type: 'test'
+  ...
+# Subtest: itemWidths missing values fail-closes like Python
+ok 189 - itemWidths missing values fail-closes like Python
+  ---
+  duration_ms: 0.190824
+  type: 'test'
+  ...
+# Subtest: itemApplyOpacity missing values fail-closes like Python
+ok 190 - itemApplyOpacity missing values fail-closes like Python
+  ---
+  duration_ms: 0.137394
+  type: 'test'
+  ...
+# Subtest: sceneItemFillT matches host table
+ok 191 - sceneItemFillT matches host table
+  ---
+  duration_ms: 0.174147
+  type: 'test'
+  ...
+# Subtest: sceneFiniteAll matches host table
+ok 192 - sceneFiniteAll matches host table
+  ---
+  duration_ms: 0.123035
+  type: 'test'
+  ...
+# Subtest: sceneGradientSolidCss matches host table
+ok 193 - sceneGradientSolidCss matches host table
+  ---
+  duration_ms: 0.188616
+  type: 'test'
+  ...
+# Subtest: sceneArraysEqual matches host table
+ok 194 - sceneArraysEqual matches host table
+  ---
+  duration_ms: 0.142981
+  type: 'test'
+  ...
+# Subtest: clipQuantizeU8 matches host table
+ok 195 - clipQuantizeU8 matches host table
+  ---
+  duration_ms: 0.131016
+  type: 'test'
+  ...
+# Subtest: sceneConstantColorAdmit matches host table
+ok 196 - sceneConstantColorAdmit matches host table
+  ---
+  duration_ms: 0.117676
+  type: 'test'
+  ...
+# Subtest: sceneHiddenOrPerItemAdmit matches host table
+ok 197 - sceneHiddenOrPerItemAdmit matches host table
+  ---
+  duration_ms: 0.067382
+  type: 'test'
+  ...
+# Subtest: quantizeUnitU8 matches normalize then clip-quantize
+ok 198 - quantizeUnitU8 matches normalize then clip-quantize
+  ---
+  duration_ms: 0.128013
+  type: 'test'
+  ...
+# Subtest: colormapLutRgba8 matches ABI 206 RGB plus opaque alpha
+ok 199 - colormapLutRgba8 matches ABI 206 RGB plus opaque alpha
+  ---
+  duration_ms: 0.441943
+  type: 'test'
+  ...
+# Subtest: sceneHexbinPitchAdmit matches host table
+ok 200 - sceneHexbinPitchAdmit matches host table
+  ---
+  duration_ms: 0.092602
+  type: 'test'
+  ...
+# Subtest: sceneHeatmapExtentAdmit matches host table
+ok 201 - sceneHeatmapExtentAdmit matches host table
+  ---
+  duration_ms: 0.093737
+  type: 'test'
+  ...
+# Subtest: sceneHeatmapColormapAdmit matches host table
+ok 202 - sceneHeatmapColormapAdmit matches host table
+  ---
+  duration_ms: 0.085588
+  type: 'test'
+  ...
+# Subtest: sceneScatterPaintChannelAdmit matches host table
+ok 203 - sceneScatterPaintChannelAdmit matches host table
+  ---
+  duration_ms: 0.154682
+  type: 'test'
+  ...
+# Subtest: scatterPaintChannelNames matches Python per_item_channel_names
+ok 204 - scatterPaintChannelNames matches Python per_item_channel_names
+  ---
+  duration_ms: 0.091497
+  type: 'test'
+  ...
+# Subtest: scatterPacksPaintPlane missing kind matches Python empty not scatter
+ok 205 - scatterPacksPaintPlane missing kind matches Python empty not scatter
+  ---
+  duration_ms: 0.162384
+  type: 'test'
+  ...
+# Subtest: sceneHeatmapShapeAdmit matches host table
+ok 206 - sceneHeatmapShapeAdmit matches host table
+  ---
+  duration_ms: 0.089291
+  type: 'test'
+  ...
+# Subtest: ribbonEndRgbaPair uses color_ch only like Python
+ok 207 - ribbonEndRgbaPair uses color_ch only like Python
+  ---
+  duration_ms: 0.161497
+  type: 'test'
+  ...
+# Subtest: sceneRibbonColor2Classify matches host table
+ok 208 - sceneRibbonColor2Classify matches host table
+  ---
+  duration_ms: 0.176054
+  type: 'test'
+  ...
+# Subtest: classifyRibbonColor2 uses color_ch only like Python
+ok 209 - classifyRibbonColor2 uses color_ch only like Python
+  ---
+  duration_ms: 0.104261
+  type: 'test'
+  ...
+# Subtest: roundedRectPoly zero radii is four corners
+ok 210 - roundedRectPoly zero radii is four corners
+  ---
+  duration_ms: 0.121036
+  type: 'test'
+  ...
+# Subtest: sceneArtistAlphaCss is the Rust-owned keyword and paint rule
+ok 211 - sceneArtistAlphaCss is the Rust-owned keyword and paint rule
+  ---
+  duration_ms: 0.134718
+  type: 'test'
+  ...
+# Subtest: sceneArtistAlphaCss bounds its input at the Scene text limit
+ok 212 - sceneArtistAlphaCss bounds its input at the Scene text limit
+  ---
+  duration_ms: 0.141393
+  type: 'test'
+  ...
+1..212
+# tests 212
+# suites 0
+# pass 194
+# fail 18
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 417.807938

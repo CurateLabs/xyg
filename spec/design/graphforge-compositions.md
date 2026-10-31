@@ -640,7 +640,7 @@ document SHA-256 for 101 cases; the Python generator
 `tests/test_graphforge.py` and `packages/xy-node/test/graphforge-cross-host.test.mjs`
 reproduce it.
 
-### 6.3 Direct-browser WASM (`@curatelabs/xyg`, current WASM ABI 34)
+### 6.3 Direct-browser WASM (`@curatelabs/xyg`, current WASM ABI 35)
 
 `xyg_wasm_graphforge_compose(handle, offset, length)` composes one staged
 `XYGQ` request with the same engine call as the native host and returns its

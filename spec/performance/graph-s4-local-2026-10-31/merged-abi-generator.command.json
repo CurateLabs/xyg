@@ -1,0 +1,13 @@
+{
+  "name": "merged-abi-generator",
+  "command": [
+    "python3",
+    "scripts/gen_abi_manifest.py",
+    "--check"
+  ],
+  "exitCode": 0,
+  "seconds": 3.553,
+  "rawSha256": "509f3a71691bfa786677e0c2252c619bc5a39b79e6c8399f8469f07e8dae5468",
+  "log": "merged-abi-generator.txt.gz",
+  "gzipSha256": "be49936e36c43f30aff6d264cbf495b69b3fa35c93bcf2002d9bc98d5fba9855"
+}

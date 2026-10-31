@@ -1,0 +1,15 @@
+{
+  "name": "focused-pass",
+  "command": [
+    "node",
+    "--test",
+    "--test-concurrency=1",
+    "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+    "packages/xy-node/test/geom.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.655,
+  "rawSha256": "97ae85aa114f240729dc61cc118ddbd65a4368d5d811831adbf02ae9156697ff",
+  "log": "focused-pass.txt.gz",
+  "gzipSha256": "fbdfdaaeec222e955ae24c6eab3e78164e23475df3f2e0191aba301ad143ac4f"
+}

@@ -1,0 +1,1008 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "full-foundation",
+  "recordedAt": "2026-10-31T20:09:14.595Z",
+  "artifactCommit": null,
+  "harnessCommit": "dfd1cac8cd1c39cb7010245b43b869db9f76605d",
+  "node": "v22.23.4",
+  "browser": "156.0.8078.4",
+  "platform": "linux",
+  "architecture": "x64",
+  "artifactSource": "staged-package",
+  "assets": {
+    "index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "xyg-wasm.wasm": {
+      "bytes": 1852594,
+      "sha256": "ed4b5c9a0da268c0da1519d2f4bc0a4d8fae5b87351672d477662bb0884c598f"
+    }
+  },
+  "harness": {
+    "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+    "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24",
+    "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+  },
+  "package": "0.0.0",
+  "csp": "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+  "externalRequests": [],
+  "densityNoRefinement": [
+    {
+      "name": "missing-inline-artifact",
+      "entry": "esm",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "self-contained Rust/WASM density artifact is unavailable",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "full-csp-diagnostic.json.esm-missing-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "malformed-inline-artifact",
+      "entry": "esm",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "inline worker requires generated base64 bytes and classic worker source",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "full-csp-diagnostic.json.esm-malformed-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "missing-retained-source",
+      "entry": "esm",
+      "events": [
+        {
+          "code": "XYG_WASM_SOURCE_UNAVAILABLE",
+          "message": "density refinement requires a retained typed source",
+          "traceIds": [
+            0
+          ]
+        },
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "41a44c0067b30c3f38c812d81596cb49388f48fca13c483b82235da79e51dd93",
+      "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "full-csp-diagnostic.json.esm-missing-retained-source.png",
+        "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+      }
+    },
+    {
+      "name": "missing-inline-artifact",
+      "entry": "iife",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "self-contained Rust/WASM density artifact is unavailable",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "full-csp-diagnostic.json.iife-missing-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "malformed-inline-artifact",
+      "entry": "iife",
+      "events": [
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "inline worker requires generated base64 bytes and classic worker source",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "0afab4292bf95b51631c61eb682fb31c4a1e6b40fd7e5a7fff10c6376e676e5a",
+      "zoomFramebufferSha256": "99f1a66906a36385327eabf4e0acf0e9cb9b34656ec4dd1f0fbf377a2288032e",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "full-csp-diagnostic.json.iife-malformed-inline-artifact.png",
+        "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+      }
+    },
+    {
+      "name": "missing-retained-source",
+      "entry": "iife",
+      "events": [
+        {
+          "code": "XYG_WASM_SOURCE_UNAVAILABLE",
+          "message": "density refinement requires a retained typed source",
+          "traceIds": [
+            0
+          ]
+        },
+        {
+          "code": "XYG_WASM_UNAVAILABLE",
+          "message": "Rust/WASM density refinement is unavailable; retaining the overview",
+          "traceIds": [
+            0
+          ]
+        }
+      ],
+      "overviewSha256": "db9b8f13689c3f16964e6fc2f87f120dc0c4ca63c9bad554c06f343159ce0650",
+      "framebufferSha256": "41a44c0067b30c3f38c812d81596cb49388f48fca13c483b82235da79e51dd93",
+      "zoomFramebufferSha256": "61af02219eada8e0edabeb7008ca3fa01ab27ad671cfecfddbb2ffafb72b02c6",
+      "replacements": 0,
+      "allocatedWorkers": 0,
+      "presentations": {
+        "home": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        },
+        "zoom": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0.25,
+                0.75
+              ],
+              "y": [
+                0.25,
+                0.75
+              ]
+            },
+            "x0": 0.25,
+            "x1": 0.75,
+            "y0": 0.25,
+            "y1": 0.75
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 6244
+        },
+        "restored": {
+          "rendered": true,
+          "attempts": 1,
+          "requestedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "presentedView": {
+            "ranges": {
+              "x": [
+                0,
+                1
+              ],
+              "y": [
+                0,
+                1
+              ]
+            },
+            "x0": 0,
+            "x1": 1,
+            "y0": 0,
+            "y1": 1
+          },
+          "canvas": [
+            266,
+            198
+          ],
+          "glLost": false,
+          "contextLost": false,
+          "sharedHost": true,
+          "alphaPixels": 3120
+        }
+      },
+      "overviewRetained": true,
+      "disposed": true,
+      "screenshot": {
+        "file": "full-csp-diagnostic.json.iife-missing-retained-source.png",
+        "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+      }
+    }
+  ],
+  "limitations": [
+    "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
+    "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
+    "No actual packaged Reflex XYChart application, full candidate host matrix, large-scale timings, or validly framed corrupt inline WASM claim."
+  ]
+}

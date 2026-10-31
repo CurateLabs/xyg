@@ -1,0 +1,14 @@
+{
+  "name": "final-abi-parity-after-parameter",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/check_abi_parity.py"
+  ],
+  "exitCode": 1,
+  "seconds": 3.265,
+  "rawSha256": "dda7876bd4ae667da3d97d6157251534e9404439bb0475233138dc272ff68b22",
+  "log": "final-abi-parity-after-parameter.txt.gz",
+  "gzipSha256": "9f6973cf2f61463405382bf470221c20090e923823b62d1c7a2dae0f312e8338"
+}

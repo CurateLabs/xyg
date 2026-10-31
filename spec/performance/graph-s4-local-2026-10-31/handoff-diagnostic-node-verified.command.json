@@ -1,0 +1,18 @@
+{
+  "name": "handoff-diagnostic-node-verified",
+  "command": [
+    "node",
+    "--test",
+    "--test-concurrency=2",
+    "--test-timeout=20000",
+    "target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+    "target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/cose-wasm-parity.test.mjs",
+    "target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/graphforge-cross-host.test.mjs",
+    "target/task-tmp/s4-diagnostic-assets/packages/xy-node/test/force-worker-lifecycle.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 6.043,
+  "rawSha256": "0fdd3ce7ac81781a6f1eb958673d6f595b48ac3c84abd0e15a55ff2f2df09d7a",
+  "log": "handoff-diagnostic-node-verified.txt.gz",
+  "gzipSha256": "6693534b27c25e6015d89d932f6c72aacbba13661aa6829294119c0650cbbcb7"
+}

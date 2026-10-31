@@ -1,0 +1,13 @@
+{
+  "name": "node-wire-diagnostic-1",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.963,
+  "rawSha256": "72210d45852d406852ebfe83cf51eaf8fbf476e05cceb727e8f8892922ed31d6",
+  "log": "node-wire-diagnostic-1.txt.gz",
+  "gzipSha256": "c22f1e208dd58ae2a90ac069ca2c97389070c7fea9458be14f0bc067662ba03a"
+}

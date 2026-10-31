@@ -1,0 +1,12 @@
+{
+  "name": "browser-u32-encoder",
+  "command": [
+    "node",
+    "tests/browser/graph_session_encoder_test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 2.89,
+  "rawSha256": "5790acafef023d7d670ff94ee783086075e61474ccdbc74c3736dd54fa5a2aef",
+  "log": "browser-u32-encoder.txt.gz",
+  "gzipSha256": "c5d7b40cd53f46aef63d423c24a9195b5eb35c1c95f9bea74b525f79baab0a9d"
+}

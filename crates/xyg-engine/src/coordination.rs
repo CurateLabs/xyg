@@ -9,7 +9,7 @@ pub enum GateError {
     Stale,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct CoordinationGate {
     last: HashMap<u64, u64>,
 }
@@ -42,6 +42,10 @@ impl CoordinationGate {
     pub fn commit(&mut self, source: u64, sequence: u64) {
         self.last.insert(source, sequence);
     }
+
+    pub fn len(&self) -> usize { self.last.len() }
+
+    pub fn is_empty(&self) -> bool { self.last.is_empty() }
 
     pub fn clear(&mut self) {
         self.last.clear();

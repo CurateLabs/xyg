@@ -1,0 +1,17 @@
+{
+  "name": "clippy-final",
+  "command": [
+    "cargo",
+    "clippy",
+    "--workspace",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "exitCode": 0,
+  "seconds": 38.795,
+  "rawSha256": "35e31280d613987d5e2f1b57c88d55b577733093b760d3b809c7470a653b057f",
+  "log": "clippy-final.txt.gz",
+  "gzipSha256": "bc952ff18cc6a9e11d0b7c57a551d1e4f736f4c4df523b83236495e6c742118f"
+}

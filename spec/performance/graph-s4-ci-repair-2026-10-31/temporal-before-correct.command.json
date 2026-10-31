@@ -1,0 +1,16 @@
+{
+  "name": "temporal-before-correct",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-wasm",
+    "standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget",
+    "--offline"
+  ],
+  "exitCode": 101,
+  "seconds": 8.229,
+  "rawSha256": "9f59176ddbd3fa5645e9f2a657ab537a00c73fd999d3087d5ddcfd35f1d63420",
+  "log": "temporal-before-correct.txt.gz",
+  "gzipSha256": "ae75231958a912e9485e2f8625d7fd85ed03cc04f867f4c7f6c504d988de3e89"
+}

@@ -1,0 +1,35 @@
+{
+  "label": "experiment-b",
+  "scope": "real optimized producer bytes; diagnostic nonshipping artifact",
+  "artifactCommit": null,
+  "node": "v22.23.4",
+  "source": "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+  "sources": {
+    "crates/xyg-engine/src/graphforge/interaction.rs": "495682687facbea47eac003996e095efc7c5ae1cf83fde7038f25af19edbd1bf",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "e5f87a0454eb9a79c42fc87783f29d6c6a812cb6d1a22bfecf45465502706c7f",
+    "crates/xyg-engine/src/graphforge/interaction/wire_paint.rs": "d68719f5ca7651ad3556f0fb34eb0978fd0f2c7feec4a9495ca35b408562c7b9",
+    "crates/xyg-engine/src/graphforge/interaction/coordination.rs": "d4bd1ce61fd387edb9682fc64745f1c57f8ea66dfbf46ceb06d17015f8789001",
+    "crates/xyg-core/src/graphforge_session_ffi.rs": "9b42eb390624469421ecdaf80515fd718ac1224f839710a781a42a59e716a738"
+  },
+  "rawCompiler": {
+    "bytes": 2051907,
+    "sha256": "c92331ab934390e8a67a539c9553339b6bcb3de8bd0fd647d2a10cc94ac6e401"
+  },
+  "optimized": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/task-tmp/repair-experiment-b/optimized.wasm",
+    "bytes": 1860250,
+    "gzip6Bytes": 759008,
+    "sha256": "25ee24fdf32ee8355598cff67da44e01556d0bb2914d5cc2d4ab4a3834c1769d",
+    "gzip6Sha256": "5357262c8b2999858ffbf9953a7acd6cebc97d49440abbce1781ea860a1352f9"
+  },
+  "gates": {
+    "raw": 1549312,
+    "gzip6": 641024
+  },
+  "excess": {
+    "raw": 310938,
+    "gzip6": 117984
+  },
+  "imports": [],
+  "functionExports": 65
+}

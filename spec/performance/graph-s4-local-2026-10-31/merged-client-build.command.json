@@ -1,0 +1,12 @@
+{
+  "name": "merged-client-build",
+  "command": [
+    "node",
+    "js/build.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 1.174,
+  "rawSha256": "c44a5ab4d97d51bb02c92ed3a5cf9aa369b9ee8de47375b3356e0626c7496afb",
+  "log": "merged-client-build.txt.gz",
+  "gzipSha256": "1cce749e21c17aeec6e128fd3480e7b8c1ad0d32e1ff344d83f266a4687afda0"
+}

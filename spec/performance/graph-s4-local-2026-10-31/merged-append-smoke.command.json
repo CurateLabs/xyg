@@ -1,0 +1,13 @@
+{
+  "name": "merged-append-smoke",
+  "command": [
+    "python3",
+    "scripts/append_stream_smoke.py",
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  ],
+  "exitCode": 0,
+  "seconds": 7.925,
+  "rawSha256": "548972063af5f6a904d7d159e16782ced0d669677eda6cb6cd184f43c773ad75",
+  "log": "merged-append-smoke.txt.gz",
+  "gzipSha256": "858694caa37f4b50a12dd448dbd803e495505637b5e086c8441021242867ac38"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "node-deps",
+  "command": [
+    "npm",
+    "ci",
+    "--prefix",
+    "packages/xy-node"
+  ],
+  "exitCode": 0,
+  "seconds": 1.018,
+  "rawSha256": "26a9f26390480194ca8e1cd995ed30cb638fed5703e01329c815b509e6eaa5f3",
+  "log": "node-deps.txt.gz",
+  "gzipSha256": "e1c700b66e7f551090a4cf21c8f06a1b65a30c827c0d8d609811ea6d75f86b5e"
+}

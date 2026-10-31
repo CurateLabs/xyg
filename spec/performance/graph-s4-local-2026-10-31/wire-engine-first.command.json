@@ -1,0 +1,16 @@
+{
+  "name": "wire-engine-first",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::wire",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 36.522,
+  "rawSha256": "68644cf4df4f2934b410d1c42366ac9a150f757beaa6afdffed26f5792f85546",
+  "log": "wire-engine-first.txt.gz",
+  "gzipSha256": "c93cdeee94919302327390d99a6a477fb9efc9628b3046b4c6955a20e9f8d0ae"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "handoff-workspace",
+  "command": [
+    "cargo",
+    "test",
+    "--workspace",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 141.086,
+  "rawSha256": "9a4fe33e8cb7d37447a1d97a2e97903f1dae0a1c6d44c1f69353fc0de62f4f4f",
+  "log": "handoff-workspace.txt.gz",
+  "gzipSha256": "eb3cfc71b2a4477d2726564269aacdfc7bee4932c95078eb3ac1617bbef5c180"
+}

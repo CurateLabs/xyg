@@ -1,0 +1,17 @@
+{
+  "name": "handoff-clippy",
+  "command": [
+    "cargo",
+    "clippy",
+    "--workspace",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "exitCode": 0,
+  "seconds": 18.269,
+  "rawSha256": "07d42df3d4aee0b29bee09254086763696d5cd85e83ab016faf0a51aaef09c42",
+  "log": "handoff-clippy.txt.gz",
+  "gzipSha256": "63d6c2f9142d3d46965bcb4b86a94c0ba6d2d022506ff3fb3599cde3211d5322"
+}

@@ -1,0 +1,36 @@
+{
+  "candidateCount": 2,
+  "selected": "experiment-b",
+  "reason": "B improves both raw and gzip relative to baseline and A; A removed; candidates never combined",
+  "rows": [
+    {
+      "label": "baseline",
+      "raw": 1860323,
+      "gzip6": 759045,
+      "rawDelta": 0,
+      "gzip6Delta": 0,
+      "paretoAgainstBaseline": false,
+      "patchSha256": null
+    },
+    {
+      "label": "experiment-a",
+      "raw": 1860323,
+      "gzip6": 759044,
+      "rawDelta": 0,
+      "gzip6Delta": -1,
+      "paretoAgainstBaseline": true,
+      "patchSha256": "f2cfe94d04fa5978ebeefe133d13490b07c82eb189ad476db0496b655c21c0f1"
+    },
+    {
+      "label": "experiment-b",
+      "raw": 1860250,
+      "gzip6": 759008,
+      "rawDelta": -73,
+      "gzip6Delta": -37,
+      "paretoAgainstBaseline": true,
+      "patchSha256": "7b4ef2af1ceae3a077ae6ea930c297c86455d9bb1710d46e786292f1b7a3b084"
+    }
+  ],
+  "runtimeSpeedClaim": false,
+  "policyLimitsChanged": false
+}

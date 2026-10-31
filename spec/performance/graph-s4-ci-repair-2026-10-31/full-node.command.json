@@ -1,0 +1,13 @@
+{
+  "name": "full-node",
+  "command": [
+    "bash",
+    "-c",
+    "node --test --test-concurrency=4 packages/xy-node/test/*.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 31.7,
+  "rawSha256": "5a4d77f6646ed2ac90021bd62716f6adc3099997d63265a3f95ca94c5dc29022",
+  "log": "full-node.txt.gz",
+  "gzipSha256": "c3aaf0d99d3cd447b797a6399954a7bde85cd8f3511b4b8cd6c8d9d29c94d5eb"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "merged-clippy",
+  "command": [
+    "cargo",
+    "clippy",
+    "--workspace",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "exitCode": 0,
+  "seconds": 19.726,
+  "rawSha256": "4ccafa355913b33a1cdcfa03425ca0b1fda28c2ce6a7f0711103b405c68c1679",
+  "log": "merged-clippy.txt.gz",
+  "gzipSha256": "6fb6243f6999d4066dc4586494d2e4737cee38989cd55e88194886b7e6527d73"
+}

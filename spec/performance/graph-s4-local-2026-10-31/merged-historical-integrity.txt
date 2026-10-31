@@ -1,0 +1,14 @@
+{
+  "status": "pass",
+  "historicalReceiptFiles": 623,
+  "historicalInventorySha256": "94be1efe9d32553bd0dd1104a2b6fa7893ba850f31096b4a62957dde93b9016f",
+  "protectedBuildInputs": {
+    "Cargo.toml": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    ".cargo/config.toml": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92",
+    "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "js/package-wasm.mjs": "01d1ed7d3e9b9d038099d1124116bda578b62e142d4efd216cc12d6ea493caf3",
+    "js/optimize-wasm.mjs": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658"
+  }
+}

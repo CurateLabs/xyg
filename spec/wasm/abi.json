@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 34,
+  "abi_version": 35,
   "scene_version": 34,
   "painter_version": 17,
   "painter_header_bytes": 420,
@@ -227,6 +227,49 @@
       "name": "xyg_wasm_geo_metadata_version",
       "params": [],
       "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_open",
+      "params": [
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_update",
+      "params": [
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_render",
+      "params": [
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_interact",
+      "params": [
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_close",
+      "params": [
+        "u32"
+      ],
+      "result": "i32"
     },
     {
       "name": "xyg_wasm_graphforge_compose",

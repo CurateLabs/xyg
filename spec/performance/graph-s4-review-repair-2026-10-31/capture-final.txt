@@ -1,0 +1,29 @@
+{
+  "sourceCount": 19,
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6052952,
+      "sha256": "f31d05896b0ca7072f62d1b013be8d3812f559e1f844852afbe58445e1bf3be9"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2051907,
+      "sha256": "c92331ab934390e8a67a539c9553339b6bcb3de8bd0fd647d2a10cc94ac6e401"
+    },
+    "target/task-tmp/s4-review-repair-diagnostic-assets/packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1860250,
+      "sha256": "25ee24fdf32ee8355598cff67da44e01556d0bb2914d5cc2d4ab4a3834c1769d"
+    },
+    "target/task-tmp/s4-review-repair-diagnostic-assets/packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2499525,
+      "sha256": "d75f46134def6e49008a56dc157a9f8cc2bb0c733e414054096e0d0fc02137e3"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    }
+  }
+}

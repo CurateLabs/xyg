@@ -1,0 +1,84 @@
+
+running 67 tests
+test geo_scale_abi_tests::output_admission_precedes_registry_mutation ... ok
+test graphforge_ffi_tests::compose_round_trips_documents_and_errors ... ok
+test graphforge_ffi_tests::ledger_and_version_are_exposed ... ok
+test graphforge_session_ffi::tests::bound_native_owner_is_authoritative_and_disposal_blocks_cached_replies_until_unbind ... ok
+test graphforge_session_ffi::tests::coordinate_delivery_uses_shared_event_codec_and_never_rebroadcasts ... ok
+test graphforge_session_ffi::tests::destroyed_handles_and_raced_entry_clones_stay_unbound ... ok
+test graphforge_session_ffi::tests::native_temporal_adapter_rechecks_disposal_after_waiting_for_operation_lock ... ok
+test graphforge_session_ffi::tests::pointer_validation_precedes_execution_and_endpoint_types_are_strict ... ok
+test graphforge_session_ffi::tests::poll_short_does_not_consume_or_duplicate_event_and_style_refreshes_same_revision ... ok
+test graphforge_session_ffi::tests::registry_enforces_256_live_sessions_and_recovers_capacity_without_reuse ... ok
+test graphforge_session_ffi::tests::resource_and_update_refusals_do_not_consume_sequence_or_replace_document ... ok
+test graphforge_session_ffi::tests::zero_short_exact_retry_is_atomic_and_create_retry_survives_commands ... ok
+test tests::argsort_histogram_contour_and_hex_groups_ffi ... ok
+test tests::artist_alpha_css_abi_bounds_its_input ... ok
+test tests::binned_ecdf_ffi_is_compact_bounded_and_atomic ... ok
+test tests::box_geometry_query_short_copy_and_empty_outlier_plane_are_safe ... ok
+test tests::colormap_lut_and_density_linear_ffi ... ok
+test tests::colormap_stops_resolves_names_and_reversal ... ok
+test tests::combine_plot_default_padding_matches_engine ... ok
+test tests::configured_cose_abi_preserves_pins_and_rejects_compound_cycles ... ok
+test tests::default_palette_abi_is_versioned_bounded_and_atomic ... ok
+test tests::ffi_guard_maps_panic_to_sentinel ... ok
+test tests::geo_column_abi_reads_back_planes_metadata_and_fails_closed ... ok
+test tests::geo_column_abi_rejects_new_validation_codes ... ok
+test tests::geo_column_abi_rejects_over_budget_lengths_before_reading ... ok
+test tests::geo_column_abi_round_trips_point ... ok
+test tests::geom_helpers_ffi ... ok
+test tests::graph_force_abi_never_exposes_overflowed_positions ... ok
+test tests::graph_force_abi_rejects_nonfinite_initial_positions ... ok
+test tests::graph_projection_abi_rejects_missing_endpoint ... ok
+test tests::graph_projection_abi_roundtrip_and_stable_errors ... ok
+test tests::grid_size_products_that_overflow_are_rejected ... ok
+test tests::hexbin_ffi_auto_policy_and_explicit_range ... ok
+test tests::histogram_bins_ffi_is_bounded_and_atomic ... ok
+test tests::histogram_edges_write_capacity_and_resource_contract ... ok
+test tests::index_emitting_entry_points_reject_u32_overflowing_len ... ok
+test tests::legend_box_layout_keeps_classes_title_prefix ... ok
+test tests::legend_normalize_and_best_loc_ffi ... ok
+test tests::payload_density_grid_materialize_identity_ffi ... ok
+test tests::payload_tier_and_visible_mask_ffi ... ok
+test tests::polar_abi_bytes_reads_packed_view_or_empty ... ok
+test tests::product_output_fit_decides_without_allocating_the_output ... ok
+test tests::product_support_diagnostic_reports_exact_required_buffer_size ... ok
+test tests::raster_framebuffer_abis_validate_capacity_before_writing ... ok
+test tests::recut_polar_plot_insets_authored_padding ... ok
+test tests::required_grid_len_enforces_all_slice_bounds ... ok
+test tests::rgba_grid_abis_reject_short_capacity_without_writing ... ok
+test tests::scene_authoring_envelope_is_exact_bounded_and_legacy_compatible ... ok
+test tests::scene_batch_abi_is_bounded_and_rejects_malformed_records ... ok
+test tests::scene_layout_axis_format_abi_is_bounded_utf8_without_nul ... ok
+test tests::scene_pack_product_resolves_kind_and_heatmap_envelope ... ok
+test tests::scene_scale_abi_rejects_malformed_boundaries ... ok
+test tests::scene_support_abi_queries_copies_and_rejects_unknown_bits ... ok
+test tests::semantic_legend_query_and_short_copy_are_capacity_safe ... ok
+test tests::static_document_failures_without_a_diagnostic_leave_out_untouched ... ok
+test tests::static_document_rejection_diagnostic_buffer_contract ... ok
+test tests::temporal_poll_initializes_all_outputs_on_failure ... ok
+test tests::temporal_selection_abi_is_exact_and_poll_capacity_is_atomic ... ok
+test tests::text_block_measure_normalizes_crlf ... ok
+test tests::tick_format_matches_engine_cartesian_labels ... ok
+test tests::tick_label_layout_end_anchor_rotate_keeps_all ... ok
+test tests::tick_window_filter_keeps_seam_crossing_degree_ticks ... ok
+test tests::tight_layout_solve_matches_empty_wide_defaults ... ok
+test tests::transition_key_ffi_accepts_empty_null_spans_and_rejects_bad_pointers ... ok
+test tests::transition_key_ffi_reports_duplicate_rows_and_invalid_data ... ok
+test tests::violin_rects_query_and_short_copy_are_capacity_safe ... ok
+test tests::y_axis_left_room_titled_matches_engine ... ok
+
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling bitflags v2.13.0
+   Compiling png v0.18.1
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-engine)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 24.85s
+     Running unittests src/lib.rs (target/debug/deps/xyg_core-840e708af8c37a74)
+   Doc-tests xyg_core

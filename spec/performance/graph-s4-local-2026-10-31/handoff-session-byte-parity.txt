@@ -1,0 +1,23 @@
+TAP version 13
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 1 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 70.555916
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/task-tmp/s4-diagnostic-assets/packages/xy-client/dist/xyg-wasm.wasm","bytes":1852594,"sha256":"ed4b5c9a0da268c0da1519d2f4bc0a4d8fae5b87351672d477662bb0884c598f","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/target/release/libxyg_core.so","nativeSha256":"c4e5cb10351366e5037e1db934464d03ab1a5302e3bc33e5791dd7b64e662841","diagnosticModule":true}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 2 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 207.573097
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 421.301761

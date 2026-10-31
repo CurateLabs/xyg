@@ -1,0 +1,453 @@
+Python 3.11 floor	Python 3.11 tests (native core)	﻿2026-10-31T21:16:07.6974119Z ##[group]Run .venv/bin/python -m pytest -q
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6974308Z [36;1m.venv/bin/python -m pytest -q[0m
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6991931Z shell: /usr/bin/bash -e {0}
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6992072Z env:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6992190Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 630
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6992438Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 856
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6992585Z   GITHUB_REPO_NAME: CurateLabs/xyg
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6992723Z   CARGO_HOME: /home/runner/.cargo
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6992857Z   CARGO_INCREMENTAL: 0
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6992985Z   CARGO_TERM_COLOR: always
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6993141Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.16/x64
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6993463Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib/pkgconfig
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6993670Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6993876Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6994101Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6994428Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6994682Z   UV_PYTHON_INSTALL_DIR: /home/runner/.local/share/uv/python
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:07.6994845Z ##[endgroup]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:15.5258777Z ........................................................................ [  0%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:15.6230602Z ........................................................................ [  1%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:15.7480065Z ...............................................x..XX.................... [  2%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:16.0181242Z .............................................xx......................... [  3%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:18.6187659Z ............................x..xx............X..X...ssssssssssssssssssss [  4%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:19.2392247Z sssssssssssssssss.s.............sssssss..sssssssssss.....x.........xxx.. [  5%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:20.8956682Z .xxx.................................................................... [  6%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:21.4725481Z ..........................xx......s..................................... [  7%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:22.3587307Z ....x..........x......s..........xx...xx................................ [  7%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:23.2676370Z .........x....................................................x......... [  8%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:23.6874701Z ....................sssssssssssssssssssss.sssssssssssssss.sss...sss....x [  9%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:24.5004833Z x.........................................................ssssss........ [ 10%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:24.7091464Z ...x.................................................................... [ 11%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:25.4807846Z ..............................................x...................x..... [ 12%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:26.2749919Z .....................................................ss...xs...xx......x [ 13%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:28.7651331Z .................x..................................................x.x. [ 14%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:29.4807405Z ........sssssssssssssssssssssssssssssssssssssssssssssssssssssss......x.. [ 15%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:29.8023590Z ..............x......................................................... [ 15%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:33.2340787Z ........................x.xx....x........F.............................. [ 16%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:33.2617135Z ....................................................sssss............... [ 17%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:33.4382461Z ......................................................F................. [ 18%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:33.5986080Z ........................................................................ [ 19%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:33.8242151Z ........................................................................ [ 20%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:37.2391949Z ........................................................................ [ 21%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:41.1186483Z ..............................................x......................... [ 22%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:41.2600770Z ........................................................................ [ 23%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:41.2996044Z .ssssss................................................................. [ 23%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:41.4625686Z ........x...x........................................................... [ 24%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:42.2197956Z ......................................................................sx [ 25%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:42.4230542Z .x...x.......xs...........................................x.x........... [ 26%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:43.5691585Z ...............................s.............................x....F..... [ 27%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:44.7268093Z .......................sss....sssssssssssssss.ssssssssss................ [ 28%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:48.5653134Z ......sss............................................................... [ 29%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:50.0386301Z ........................................................................ [ 30%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:50.5195494Z ........................................................................ [ 31%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:55.7993138Z ........x.............................................sss.sssss.......s. [ 31%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:56.0366736Z sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss....sss.s [ 32%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:57.4183656Z sssssssssssssssssssss................................................... [ 33%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:16:58.4349273Z ........................................................................ [ 34%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:05.1827964Z ............................s.....................xxxs.................. [ 35%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:05.2555656Z ........................................................................ [ 36%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:05.9486879Z ........................................................................ [ 37%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:06.7464898Z ........................................................................ [ 38%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:07.2134792Z ............................................................x........... [ 39%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:07.6298084Z ........................................................................ [ 39%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:08.1772940Z ........................................................................ [ 40%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:08.4091022Z ......s.........................ssssssssssssssssssssssssss.............. [ 41%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:08.7689287Z ........................................................................ [ 42%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:11.7577645Z ........................................................................ [ 43%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:13.0399266Z ........................................................................ [ 44%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:18.3563044Z ........................................................................ [ 45%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:29.5444976Z ........................................................................ [ 46%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:36.6464334Z ........................................................................ [ 46%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:49.2920120Z ................................x....................................... [ 47%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:51.7813681Z ........................................................................ [ 48%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:17:51.8643039Z ........................................................................ [ 49%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:08.9041052Z .........................................x.............................. [ 50%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:12.5186061Z ........................................................................ [ 51%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:14.7072673Z ........................x............................................... [ 52%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:15.4598185Z ........................................................................ [ 53%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:15.6666374Z ................F....................................................... [ 54%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:15.8725083Z ..........................F............................................. [ 54%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:16.7780189Z .......................................................................x [ 55%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:17.4543646Z x.x...x.x............................................................... [ 56%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:17.5112957Z ......................................................................x. [ 57%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:19.4967842Z ..xx................xxxxxxx.xx....x............xxxx.x...xx...xx.xx...x.. [ 58%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:28.3015553Z .....................xx.x........xxx.................................... [ 59%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:34.7577125Z ........................................................................ [ 60%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:34.8907311Z ........................................................................ [ 61%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:40.4801473Z ........................................................................ [ 62%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:43.5357381Z ........................................................................ [ 62%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:43.5608095Z ........................................................................ [ 63%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:44.2487666Z xxxx....xxxxx........................................................... [ 64%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:44.3845916Z ........................................................................ [ 65%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:44.7002710Z ........................................................................ [ 66%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:45.0101812Z ........................................................................ [ 67%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:45.2543754Z ........................................................................ [ 68%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:45.8128134Z ........................................................................ [ 69%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:48.9261525Z ........................................................................ [ 70%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:48.9875040Z ...........x............................................................ [ 70%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:49.2831204Z ........................................................................ [ 71%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:18:49.3295707Z ........................................................................ [ 72%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:01.4074816Z ........................................................................ [ 73%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:16.6016193Z ........................................................................ [ 74%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:16.8775438Z ........................................................................ [ 75%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:17.1464975Z ........................................................................ [ 76%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:20.7978626Z ........................................................................ [ 77%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:21.0419907Z ........................................................................ [ 78%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:21.3502933Z ........................................................................ [ 78%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:22.0020923Z ........................................................................ [ 79%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:40.4208915Z ........................................................................ [ 80%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:46.0794315Z ........................................................................ [ 81%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:54.0044283Z ............................................xx.x........................ [ 82%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:54.1769430Z ........................................................................ [ 83%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:54.5367507Z .................................xxx.................................... [ 84%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:19:54.7196012Z .....................................F.................................. [ 85%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:20:12.4080760Z .......x...........x.......sss.......................................... [ 86%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:20:16.3986120Z ........................................................................ [ 86%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:21:01.5587733Z ........................................................................ [ 87%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:21:17.8301762Z ........................................................................ [ 88%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:21:38.6982968Z ........................................................................ [ 89%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:21:53.5999297Z ........................................................................ [ 90%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:12.6519206Z ........................................................................ [ 91%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:29.9809449Z ........................................................................ [ 92%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:39.3616161Z ........................................................................ [ 93%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:40.3674357Z ........................................................................ [ 93%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:45.4203990Z ........................................................................ [ 94%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:45.9130278Z .............................................................F.......... [ 95%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:46.0742414Z ........................................................................ [ 96%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:46.7988511Z ........................................................................ [ 97%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:22:47.7492536Z ........................................................................ [ 98%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:02.6912889Z ........................................................................ [ 99%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2519619Z ........................................................                 [100%]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2519979Z =================================== FAILURES ===================================
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2520375Z _________________ test_host_declarations_match_rust_symbol_set _________________
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2520905Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2521346Z     def test_host_declarations_match_rust_symbol_set() -> None:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2521658Z         errors = check_abi_parity.check_abi_parity()
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2521841Z >       assert errors == []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2522064Z E       AssertionError: assert ['ABI signatu...out_handle)`'] == []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2522247Z E         
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2522834Z E         Left contains one more item: 'ABI signature changed without an ABI_VERSION bump: xyg_graphforge_session_create: `int32_t xyg_graphforge_session_cre... document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)`'
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2523413Z E         
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2523528Z E         Full diff:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2523643Z E         - []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2523752Z E         + [
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2523926Z E         +     'ABI signature changed without an ABI_VERSION bump: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2524148Z E         +     'xyg_graphforge_session_create: `int32_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2524396Z E         +     'xyg_graphforge_session_create(const uint8_t * document, size_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2524665Z E         +     'document_len, const uint8_t * load, size_t load_len, uint64_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2524944Z E         +     'instance_id, uint64_t group_id, uint64_t * out_handle)` -> `int32_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2525229Z E         +     'xyg_graphforge_session_create(const uint8_t * document_bytes, size_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2525506Z E         +     'document_len, const uint8_t * load, size_t load_len, uint64_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2525753Z E         +     'instance_id, uint64_t group_id, uint64_t * out_handle)`',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2525931Z E         + ]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2525997Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2526090Z tests/test_abi_parity.py:37: AssertionError
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2526316Z ____________________________ test_fixture_contract _____________________________
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2526449Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2526901Z fixture = {'abi_version': 396, 'authority': 'packages/xy-node/src/figure.js payloadBaseEntryPlan and attachTransitionEntry attac...ng': 'linear'}, 'kind': 'line', 'n_points': 10001, 'name': 'line_decimated_animation', ...}, ...], 'protocol': 14, ...}
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2527279Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2527369Z     def test_fixture_contract(fixture: dict) -> None:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2527598Z         assert fixture["schema"] == "xyg.animation-emit-cross-host/v1"
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2527815Z         assert fixture["protocol"] == PROTOCOL_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2528046Z >       assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2528230Z E       assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2528380Z E        +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2528558Z E        +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2528718Z E        +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2528820Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2528936Z tests/test_animation_emit_cross_host.py:268: AssertionError
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2529181Z ____________________________ test_fixture_contract _____________________________
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2529311Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2529738Z fixture = {'abi_version': 396, 'authority': 'packages/xy-node/src/figure.js _defaultStyled emit paths', 'cases': [{'kind': 'line...lt_styled', 'palette_color': '#d95926', 'style': {'color': '#d95926', 'opacity': 0.9}, ...}, ...], 'protocol': 14, ...}
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2530091Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2530179Z     def test_fixture_contract(fixture: dict) -> None:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2530407Z         assert fixture["schema"] == "xyg.default-styled-emit-cross-host/v1"
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2530628Z         assert fixture["protocol"] == PROTOCOL_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2530857Z >       assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2531037Z E       assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2531175Z E        +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2531323Z E        +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2531506Z E        +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2531609Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2531730Z tests/test_default_styled_emit_cross_host.py:152: AssertionError
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2531982Z ____________________________ test_fixture_contract _____________________________
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2532112Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2532549Z fixture = {'abi_version': 396, 'authority': 'python/xyg/_payload.py build_payload ABI 303 attach flags (wasm_density, frame_side... ...}, {'animation': None, 'buffer_layout': None, 'export': None, 'frame_sides': None, ...}, ...], 'protocol': 14, ...}
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2532918Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2533004Z     def test_fixture_contract(fixture: dict) -> None:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2533748Z         assert fixture["schema"] == "xyg.payload-attach-cross-host/v1"
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2533962Z         assert fixture["protocol"] == PROTOCOL_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2534183Z >       assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2534359Z E       assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2534501Z E        +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2534649Z E        +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2534806Z E        +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2534906Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2535018Z tests/test_payload_attach_cross_host.py:213: AssertionError
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2535266Z ____________________________ test_fixture_contract _____________________________
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2535392Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2535824Z fixture = {'abi_version': 396, 'authority': 'python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, ...one, ...}, {'annotations': None, 'colorbar': None, 'dom': None, 'extra_legends': None, ...}, ...], 'protocol': 14, ...}
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2536195Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2536280Z     def test_fixture_contract(fixture: dict) -> None:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2536497Z         assert fixture["schema"] == "xyg.payload-chrome-cross-host/v1"
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2536709Z         assert fixture["protocol"] == PROTOCOL_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2536925Z >       assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2537105Z E       assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2537244Z E        +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2537386Z E        +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2537545Z E        +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2537643Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2537755Z tests/test_payload_chrome_cross_host.py:186: AssertionError
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2537997Z ____________________________ test_fixture_contract _____________________________
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2538128Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2538572Z fixture = {'abi_version': 396, 'authority': 'packages/xy-node/src/figure.js attachTooltipRows', 'cases': [{'expect_error': False...tooltip rows must match geometry', 'expect_error': True, 'name': 'ribbon_tooltip_mismatch', ...}], 'protocol': 14, ...}
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2538952Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2539037Z     def test_fixture_contract(fixture: dict) -> None:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2539255Z         assert fixture["schema"] == "xyg.tooltip-len-emit-cross-host/v1"
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2539476Z         assert fixture["protocol"] == PROTOCOL_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2539697Z >       assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2539876Z E       assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2540013Z E        +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2540158Z E        +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2540314Z E        +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2540412Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2540532Z tests/test_tooltip_len_emit_cross_host.py:146: AssertionError
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2540795Z _______________ test_real_repository_ownership_audit_is_complete _______________
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2540943Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2541051Z     def test_real_repository_ownership_audit_is_complete() -> None:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2541258Z         root = Path(__file__).resolve().parents[1]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2541549Z >       assert VERIFY.validate(root, root / "spec/design/ownership-audit.json") == []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2541827Z E       AssertionError: assert ['unclassifie...n ledger row'] == []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2542000Z E         
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2542519Z E         Left contains 5 more items, first extra item: 'unclassified production source: crates/xyg-core/src/graphforge_session_ffi.rs; add one ownership-audit.json entry and the human ledger row'
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2542879Z E         
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2542984Z E         Full diff:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2543102Z E         - []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2543211Z E         + [
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2543355Z E         +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2543769Z E         +     'crates/xyg-core/src/graphforge_session_ffi.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2544014Z E         +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2544220Z E         +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2544466Z E         +     'crates/xyg-engine/src/graphforge/interaction/tests/wire.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2544728Z E         +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2544938Z E         +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2545171Z E         +     'crates/xyg-engine/src/graphforge/interaction/wire.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2545422Z E         +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2545627Z E         +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2545867Z E         +     'crates/xyg-engine/src/graphforge/interaction/wire_paint.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2546127Z E         +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2546340Z E         +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2546595Z E         +     'crates/xyg-wasm/src/graphforge_session.rs; add one ownership-audit.json '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2546833Z E         +     'entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2546977Z E         + ]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2547041Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2547134Z tests/test_verify_ownership.py:77: AssertionError
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2547353Z =============================== warnings summary ===============================
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2547547Z tests/pyplot/test_corpus.py: 1 warning
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2547739Z tests/test_animation_emit_cross_host.py: 12 warnings
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2547933Z tests/test_payload_cross_host.py: 14 warnings
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2548128Z tests/test_tooltip_len_emit_cross_host.py: 4 warnings
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2548662Z   /home/runner/_work/xyg/xyg/python/xyg/_payload.py:168: RuntimeWarning: more than 8 series use default colors; the default palette repeats every 8 (series 9 wears series 1's color). Pass explicit color= per series, or group series, to keep identities distinct.
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2549175Z     return emit_trace_materialized(self, t, pw, xr, yr, px_width)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2549304Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2549491Z tests/test_density_mean_color.py::test_density_view_pyramid_path_ships_mean_colors
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2550119Z   /home/runner/_work/xyg/xyg/tests/test_density_mean_color.py:194: RuntimeWarning: scatter has 2,050,000 points above the soft ceiling (2,000,000); using a density surface for the initial render. The color channel is kept as the surface's per-cell mean point color (composited at the points' own alpha).
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2550647Z     fig = Figure().scatter(x, y, color=cats)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2550748Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2550914Z tests/test_density_mean_color.py::test_colored_pyramid_append_invalidates_for_lazy_rebuild
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.2551596Z   /home/runner/_work/xyg/xyg/tests/test_density_mean_color.py:224: RuntimeWarning: scatter has 2,010,000 points above the soft ceiling (2,000,000); using a density surface for the initial render. The color channel is kept as the surface's per-cell mean point color (composited at the points' own alpha).
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9258912Z     fig = Figure().scatter(x, y, color=x.copy())
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9259223Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9259545Z tests/test_density_mean_color.py::test_pyramid_band_reuses_build_time_resolution
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9260580Z   /home/runner/_work/xyg/xyg/tests/test_density_mean_color.py:418: RuntimeWarning: scatter has 2,050,000 points above the soft ceiling (2,000,000); using a density surface for the initial render. The color channel is kept as the surface's per-cell mean point color (composited at the points' own alpha).
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9261568Z     fig = Figure().scatter(x, y, color=x.copy())
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9261738Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9262082Z tests/test_factorize_cross_host.py::test_palette_rows_rgba8_cross_host[palette_rows_rgba8_browser_only]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9264066Z   /home/runner/_work/xyg/xyg/tests/test_factorize_cross_host.py:409: RuntimeWarning: palette entries ['var(--x)'] resolve only in a browser, so the aggregated density surface and static exports cannot paint them; those categories fall back to the built-in palette there. Pass literal colors (hex/rgb()/hsl()/named) for identical color across renderers.
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9265118Z     rows = _python_palette_rows_case(spec)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9265296Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9265650Z tests/test_figure_scene_v3.py::test_public_router_preflights_legacy_export_contracts[<lambda>-PUBLIC_LOD]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9266626Z   /home/runner/_work/xyg/xyg/tests/test_figure_scene_v3.py:731: RuntimeWarning: density=False with 2,000,001 points forces direct draw above the ceiling (2,000,000); expect fill-rate-bound frames and possible buffer-allocation failure.
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9267500Z     lambda figure: figure.scatter(np.zeros(2_000_001), np.zeros(2_000_001), density=False),
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9267799Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9268091Z tests/test_polar_audit_fixes.py::test_time_radius_autoranges_from_the_data_not_epoch_zero
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9268647Z tests/test_polar_charts.py::test_polar_refuses_a_time_angular_axis_by_resolved_kind
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9269188Z tests/test_polar_charts.py::test_time_radius_is_exempt_from_the_centre_origin_default
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9269861Z   /home/runner/_work/xyg/xyg/python/xyg/columns.py:662: UserWarning: no explicit representation of timezones available for np.datetime64
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9270371Z     out = arr.astype(dtype, copy=False)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9270537Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9270852Z tests/test_scatter.py::test_categorical_code_width_changes_without_wrapping_at_palette_boundary
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9272124Z   /home/runner/_work/xyg/xyg/.venv/lib/python3.11/site-packages/_pytest/python.py:157: RuntimeWarning: categorical color has 256 categories but the palette has 8 colors; colors repeat every 8 categories (category 9 wears category 1's color). Pass a longer palette, group rare categories, or use a continuous encoding.
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9273080Z     fail(msg, pytrace=False)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9273223Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9273551Z tests/test_scatter.py::test_implicit_categorical_density_payload_is_byte_identical_to_general_path
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9274708Z   /home/runner/_work/xyg/xyg/tests/test_scatter.py:636: RuntimeWarning: categorical color has 24 categories but the palette has 8 colors; colors repeat every 8 categories (category 9 wears category 1's color). Pass a longer palette, group rare categories, or use a continuous encoding.
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9275640Z     fig = Figure().scatter(x, y, color=color, density=True)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9275840Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9276209Z tests/test_scene_export_support.py::test_builtin_symbol_cutover_keeps_nonliteral_scatter_fail_closed[<lambda>3]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9277242Z   /home/runner/_work/xyg/xyg/tests/test_scene_export_support.py:2089: RuntimeWarning: density=False with 2,000,001 points forces direct draw above the ceiling (2,000,000); expect fill-rate-bound frames and possible buffer-allocation failure.
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9278141Z     lambda figure: figure.scatter(np.zeros(2_000_001), np.zeros(2_000_001), density=False),
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9278420Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9278817Z tests/test_scene_export_support.py::test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior[<lambda>]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9279864Z   /home/runner/_work/xyg/xyg/tests/test_scene_export_support.py:2415: RuntimeWarning: density=False with 2,000,001 points forces direct draw above the ceiling (2,000,000); expect fill-rate-bound frames and possible buffer-allocation failure.
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9280758Z     lambda: _supported().scatter(np.zeros(2_000_001), np.zeros(2_000_001), density=False),
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9281037Z 
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9281289Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9281796Z =========================== short test summary info ============================
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9282832Z FAILED tests/test_abi_parity.py::test_host_declarations_match_rust_symbol_set - AssertionError: assert ['ABI signatu...out_handle)`'] == []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9283326Z   
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9284203Z   Left contains one more item: 'ABI signature changed without an ABI_VERSION bump: xyg_graphforge_session_create: `int32_t xyg_graphforge_session_cre... document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)`'
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9285008Z   
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9285177Z   Full diff:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9285358Z   - []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9285528Z   + [
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9285788Z   +     'ABI signature changed without an ABI_VERSION bump: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9286124Z   +     'xyg_graphforge_session_create: `int32_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9286492Z   +     'xyg_graphforge_session_create(const uint8_t * document, size_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9286910Z   +     'document_len, const uint8_t * load, size_t load_len, uint64_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9287342Z   +     'instance_id, uint64_t group_id, uint64_t * out_handle)` -> `int32_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9287792Z   +     'xyg_graphforge_session_create(const uint8_t * document_bytes, size_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9288208Z   +     'document_len, const uint8_t * load, size_t load_len, uint64_t '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9288595Z   +     'instance_id, uint64_t group_id, uint64_t * out_handle)`',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9288876Z   + ]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9289256Z FAILED tests/test_animation_emit_cross_host.py::test_fixture_contract - assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9289625Z  +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9289828Z  +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9290057Z  +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9290518Z FAILED tests/test_default_styled_emit_cross_host.py::test_fixture_contract - assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9290900Z  +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9291101Z  +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9291331Z  +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9291806Z FAILED tests/test_payload_attach_cross_host.py::test_fixture_contract - assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9292169Z  +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9292368Z  +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9292591Z  +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9293027Z FAILED tests/test_payload_chrome_cross_host.py::test_fixture_contract - assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9293394Z  +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9293597Z  +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9293819Z  +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9294263Z FAILED tests/test_tooltip_len_emit_cross_host.py::test_fixture_contract - assert 396 == 397
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9294643Z  +  where 396 = int(396)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9294842Z  +  and   397 = int(397)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9295070Z  +    where 397 = _native.ABI_VERSION
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9295727Z FAILED tests/test_verify_ownership.py::test_real_repository_ownership_audit_is_complete - AssertionError: assert ['unclassifie...n ledger row'] == []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9296255Z   
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9296898Z   Left contains 5 more items, first extra item: 'unclassified production source: crates/xyg-core/src/graphforge_session_ffi.rs; add one ownership-audit.json entry and the human ledger row'
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9297508Z   
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9297672Z   Full diff:
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9297849Z   - []
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9298014Z   + [
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9298225Z   +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9298570Z   +     'crates/xyg-core/src/graphforge_session_ffi.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9298955Z   +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9299275Z   +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9299655Z   +     'crates/xyg-engine/src/graphforge/interaction/tests/wire.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9300048Z   +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9300590Z   +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9300940Z   +     'crates/xyg-engine/src/graphforge/interaction/wire.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9301322Z   +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9301687Z   +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9302059Z   +     'crates/xyg-engine/src/graphforge/interaction/wire_paint.rs; add one '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9302554Z   +     'ownership-audit.json entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9302869Z   +     'unclassified production source: '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9303254Z   +     'crates/xyg-wasm/src/graphforge_session.rs; add one ownership-audit.json '
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9303637Z   +     'entry and the human ledger row',
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9303875Z   + ]
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:04.9304283Z 7 failed, 7658 passed, 354 skipped, 113 xfailed, 4 xpassed, 43 warnings in 416.28s (0:06:56)
+Python 3.11 floor	Python 3.11 tests (native core)	2026-10-31T21:23:05.6544948Z ##[error]Process completed with exit code 1.
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	﻿2026-10-31T21:19:02.2592159Z ##[group]Run python3 scripts/check_abi_parity.py
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2592460Z [36;1mpython3 scripts/check_abi_parity.py[0m
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2608428Z shell: /usr/bin/bash -e {0}
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2608595Z env:
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2608721Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 600
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2608887Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 989
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2609040Z   GITHUB_REPO_NAME: CurateLabs/xyg
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2609183Z   CARGO_HOME: /home/runner/.cargo
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2609322Z   CARGO_INCREMENTAL: 0
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2609446Z   CARGO_TERM_COLOR: always
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2609607Z   UV_PYTHON_INSTALL_DIR: /home/runner/.local/share/uv/python
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:02.2609784Z ##[endgroup]
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:03.0855154Z ABI signature changed without an ABI_VERSION bump: xyg_graphforge_session_create: `int32_t xyg_graphforge_session_create(const uint8_t * document, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)` -> `int32_t xyg_graphforge_session_create(const uint8_t * document_bytes, size_t document_len, const uint8_t * load, size_t load_len, uint64_t instance_id, uint64_t group_id, uint64_t * out_handle)`
+Test (Rust + Python + JS)	ABI parity gate (stdlib only)	2026-10-31T21:19:03.0933402Z ##[error]Process completed with exit code 1.
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	﻿2026-10-31T21:19:03.1023839Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1024068Z with:
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1024342Z   name: host-delegation-fcd610a0ee5c05bd07e97f41212f1ada50413c55
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1024647Z   if-no-files-found: error
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1024874Z   path: target/host-delegation-report.json
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1025107Z   compression-level: 6
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1025245Z   overwrite: false
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1025370Z   include-hidden-files: false
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1025505Z   archive: true
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1025624Z env:
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1025745Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 600
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1025905Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 989
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1026107Z   GITHUB_REPO_NAME: CurateLabs/xyg
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1026266Z   CARGO_HOME: /home/runner/.cargo
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1026414Z   CARGO_INCREMENTAL: 0
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1026536Z   CARGO_TERM_COLOR: always
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1026717Z   UV_PYTHON_INSTALL_DIR: /home/runner/.local/share/uv/python
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1026928Z ##[endgroup]
+Test (Rust + Python + JS)	Upload executable host-delegation evidence	2026-10-31T21:19:03.1966338Z ##[error]No files were found with the provided path: target/host-delegation-report.json. No artifacts will be uploaded.
+Test (Rust + Python + JS)	Retain consumer application browser evidence	﻿2026-10-31T21:19:04.4516755Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4516990Z with:
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4517113Z   name: consumer-apps-smoke
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4517297Z   path: consumer-apps-smoke.json
+Test (Rust + Python + JS)	Retain consumer application browser evidence	consumer-apps-smoke/
+Test (Rust + Python + JS)	Retain consumer application browser evidence	
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4517514Z   if-no-files-found: error
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4517658Z   compression-level: 6
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4517838Z   overwrite: false
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4517971Z   include-hidden-files: false
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4518112Z   archive: true
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4518226Z env:
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4518349Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 600
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4518514Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 989
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4518679Z   GITHUB_REPO_NAME: CurateLabs/xyg
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4518831Z   CARGO_HOME: /home/runner/.cargo
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4518981Z   CARGO_INCREMENTAL: 0
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4519109Z   CARGO_TERM_COLOR: always
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4519283Z   UV_PYTHON_INSTALL_DIR: /home/runner/.local/share/uv/python
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.4519491Z ##[endgroup]
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.5428264Z Multiple search paths detected. Calculating the least common ancestor of all paths
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.5428985Z The least common ancestor is /home/runner/_work/xyg/xyg. This will be the root directory of the artifact
+Test (Rust + Python + JS)	Retain consumer application browser evidence	2026-10-31T21:19:04.5430194Z ##[error]No files were found with the provided path: consumer-apps-smoke.json
+Test (Rust + Python + JS)	Retain consumer application browser evidence	consumer-apps-smoke/. No artifacts will be uploaded.
+Release surfaces	Require every applicable release surface	﻿2026-10-31T21:23:20.8747946Z ##[group]Run python3 scripts/verify_release_surface_results.py \
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8748287Z [36;1mpython3 scripts/verify_release_surface_results.py \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8748489Z [36;1m  --required "true" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8748650Z [36;1m  --event "pull_request" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8748811Z [36;1m  --job "test=failure" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8748978Z [36;1m  --job "wasm_assets=success" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8749157Z [36;1m  --job "wasm_foundation=failure" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8749332Z [36;1m  --job "python_floor=failure" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8749530Z [36;1m  --job "browser_conformance=success" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8749714Z [36;1m  --job "authored_scene=success" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8749908Z [36;1m  --job "matplotlib_reference=success" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8750245Z [36;1m  --job "sdist=success" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8750415Z [36;1m  --job "wheels=skipped" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8750586Z [36;1m  --job "install_without_rust=success" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8750790Z [36;1m  --job "benchmark_vs=skipped" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8750976Z [36;1m  --job "benchmark_methodology=skipped" \[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8751173Z [36;1m  --job "benchmark=skipped"[0m
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8762219Z shell: /usr/bin/bash -e {0}
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8762372Z env:
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8762509Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 566
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8762680Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 913
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8762843Z   GITHUB_REPO_NAME: CurateLabs/xyg
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8763037Z ##[endgroup]
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8896943Z ERROR: test must succeed, got 'failure'
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8897173Z ERROR: wasm_foundation must succeed, got 'failure'
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8897377Z ERROR: python_floor must succeed, got 'failure'
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8897596Z ERROR: release-surface job wheels must succeed, got 'skipped'
+Release surfaces	Require every applicable release surface	2026-10-31T21:23:20.8920915Z ##[error]Process completed with exit code 1.

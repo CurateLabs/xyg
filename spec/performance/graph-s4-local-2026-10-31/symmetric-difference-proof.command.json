@@ -1,0 +1,16 @@
+{
+  "name": "symmetric-difference-proof",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "changed_plane_roundtrips",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 12.169,
+  "rawSha256": "997856514759a6dcd86c83b895fb107280bf7fae54646a3a05e0d0b4142b8759",
+  "log": "symmetric-difference-proof.txt.gz",
+  "gzipSha256": "ab2f410bdeb154d0159c081e0d9c66080bd0cdb2190e12bc450a2a688680377c"
+}

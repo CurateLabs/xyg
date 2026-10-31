@@ -1,0 +1,12 @@
+{
+  "name": "client",
+  "command": [
+    "node",
+    "js/build.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 2.299,
+  "rawSha256": "c44a5ab4d97d51bb02c92ed3a5cf9aa369b9ee8de47375b3356e0626c7496afb",
+  "log": "client.txt.gz",
+  "gzipSha256": "848770ed716c7f03e8f3b5ecc0dd1fbf006ee2a6ff7bf31411de821a1d737fcb"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "focused-after",
+  "command": [
+    "node",
+    "--test",
+    "--test-concurrency=1",
+    "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+    "packages/xy-node/test/geom.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.453,
+  "rawSha256": "110cdd201315c17d94a0b188ecfb6ea437f5b0d0f6ada776a611e77fe2486205",
+  "log": "focused-after.txt.gz",
+  "gzipSha256": "976de0d244c6f8a4e488455e641f5bf578a92ea8c034d3d9fbeffa4acba28bf9"
+}

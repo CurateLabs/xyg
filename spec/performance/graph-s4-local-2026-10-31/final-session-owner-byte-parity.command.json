@@ -1,0 +1,15 @@
+{
+  "name": "final-session-owner-byte-parity",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=target/task-tmp/s4-diagnostic-assets/packages/xy-client/dist/xyg-wasm.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.476,
+  "rawSha256": "78c420b7ae3d19c699b77159502c573e6a04e79ab3c09b044238431009c6082f",
+  "log": "final-session-owner-byte-parity.txt.gz",
+  "gzipSha256": "09ef14ba355b6b1d18a9113f9b870b80a8cd14510d687ed872463bcef907a177"
+}

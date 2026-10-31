@@ -1,0 +1,14 @@
+
+running 6 tests
+test graphforge::interaction::tests::wire::exact_refs_roundtrip_and_malformed_pools_reserved_kinds ... ok
+test graphforge::interaction::tests::wire::strict_operation_schema_rejects_extra_fields_lengths_types ... ok
+test graphforge::interaction::tests::wire::bound_commands_validate_mutate_publish_and_serialize_in_one_owner_access ... ok
+test graphforge::interaction::tests::wire::update_failed_geometry_and_resource_refusals_keep_all_live_state_and_sequence ... ok
+test graphforge::interaction::tests::wire::bound_wire_captures_one_world_and_disposal_revokes_retries_unbind_recovers ... ok
+test graphforge::interaction::tests::wire::serialized_retry_is_identical_style_refresh_and_poll_peek ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 1782 filtered out; finished in 0.01s
+
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-2aee6f0d/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.83s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)

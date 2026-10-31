@@ -1,0 +1,13 @@
+{
+  "name": "browser-encoder",
+  "command": [
+    "node",
+    "--test",
+    "tests/browser/graph_session_encoder_test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.71,
+  "rawSha256": "c36bf010df0bf1f636f15acf9200706c7fdf92e03f386d28ccb61a05ba57f169",
+  "log": "browser-encoder.txt.gz",
+  "gzipSha256": "a20b96c771e091c602bf57a249844527830889963219e9b3610a43c6589ed19d"
+}

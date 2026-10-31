@@ -1,0 +1,13 @@
+{
+  "name": "final-package-after-parameter",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 54.112,
+  "rawSha256": "3635ec17b35bfcbb6ba170c972f8f88f77f7c49c1d4de6c06b80d9f9ed37b803",
+  "log": "final-package-after-parameter.txt.gz",
+  "gzipSha256": "d3a6eb6df9913d750f978cc987a03fb51720be918f86938b1dc4daf52b1915c9"
+}

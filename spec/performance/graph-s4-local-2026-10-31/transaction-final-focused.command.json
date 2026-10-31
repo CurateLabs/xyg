@@ -1,0 +1,16 @@
+{
+  "name": "transaction-final-focused",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 16.164,
+  "rawSha256": "8e22a20366ec9ad813049ec309a903923d9e727a18da45aac2354dca9f9a19ea",
+  "log": "transaction-final-focused.txt.gz",
+  "gzipSha256": "40e48370ebc0dd0283cd2e36227cf48f47954a470212fc2fb7d16bfda8956a85"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "native-release-final",
+  "command": [
+    "cargo",
+    "build",
+    "--release"
+  ],
+  "exitCode": 0,
+  "seconds": 126.947,
+  "rawSha256": "c475df7e4a977bbe63bf9c984151f6f1a9d0aa895ad952e4134c288d59ea9ab5",
+  "log": "native-release-final.txt.gz",
+  "gzipSha256": "3ee8ba321fe7313cfe2042a3ce11e32f4b76591099829596b4f315e79b97e62d"
+}

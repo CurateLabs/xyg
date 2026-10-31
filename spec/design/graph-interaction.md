@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **design final; S1 and bounded S2 engine implemented; typed S3 implemented locally; finite geometry repair and authorized raw-only package decision validated locally; independent final parent review and remote integration pending** (see [Implementation status](#implementation-status)).
+Status: **S1–S3 typed engine approved on the parent base; S4 shared native/WASM session wire implemented locally, merged with the parent-approved S3 aggregate-style repair; S4 package gate fails and final independent parent review remains required** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -37,7 +37,7 @@ selection bound (§2.2).
 `GraphSession.state: StateSlot` where `enum StateSlot { Owned(GraphInteractionState),
 Bound { host, handle } }`. **Bound sessions own no state**: every read and
 mutation runs on the temporal graph's own value through `TemporalHost::with_graph`
-(the registry that owns the graph implements it; `xyg-core` integration is planned in S4), under
+(the registry that owns the graph implements it; `xyg-core` and `xyg-wasm` adapters execute the shared S4 wire transaction), under
 that registry's lock. Divergence is impossible by construction: there is one
 `GraphInteractionState` value, reachable from either owner. Binding
 (`GraphSession::bind_temporal`) validates that the session's node UUID plane and
@@ -216,8 +216,13 @@ snapshot. This graph request-level delivery contract intentionally differs from
 temporal's normalized no-op suppression, which remains unchanged. Transport refs
 are strictly ordered by kind (Node, Edge, Derived), UUID bytes within persisted
 kinds, and `(exact result id: None before Some, layer, path, order)` for Derived;
-aggregates and local result-table indices are rejected. Exact result-id strings
-obey the composition's 1–128-byte identifier grammar. Validate the whole event
+aggregates and local result-table indices are rejected. Exact result-id strings preserve the successful XYGF reader contract: arbitrary
+valid UTF-8, including present-empty, spaces, Unicode and more than 128 bytes.
+This is distinct from XYGQ authoring, whose 1–128-byte identifier grammar in
+`request.rs` is unchanged. Reader success never implied that XYGQ accepted
+empty authoring IDs. Transport length is bounded by checked u32 pool offsets,
+request/selection caps and charged session resources; a valid long ID can
+return Budget, never Invalid merely for the authoring grammar. Validate the whole event
 before zero/wrong group, self or stale filtering. Unknown refs and derived refs
 from another generation are unmatched; UUID refs still resolve. Resolve all refs
 before selection replacement, then commit the source watermark only on success.
@@ -282,8 +287,8 @@ successful op_seq. The same successful op_seq retry retains its outcome.
 
 ## 3. ABI / WASM
 Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_graphforge.ts:91-99`; the decoder `:164` and Python `DTYPE.U32` `_graphforge_container.py:49` already have it).
-Planned S4 native surface (`xyg-core`; assign the next ABI version and regenerate
-the manifest when signatures change; S1 retains ABI 396 and 529 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
+S4 native surface (`xyg-core`; assign the next ABI version and regenerate
+the manifest when signatures change; native ABI 398 has 537 functions; WASM ABI 35 has 65 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
 Request `XYGI`: `header.u64`[instance_id, group_id, op_seq]; `header.u32`[render_revision, operation, mode, policy, plane, action, commit, steps, space]; `camera.f64`; `coordinates.f64`; `refs.bytes` (kind-tagged refs; transported derived refs carry the exact result id, §2.1; byte layout fixed with the ABI); `uuids.uuid`; `remote.bytes`; `companion.u32`[page, size≤200]; `load.*` (§1.2).
 Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`; `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`. Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
 Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND, _REVISION_EXHAUSTED`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
@@ -330,8 +335,8 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 |---|---|---|
 | S1 | Hierarchy in composition (`parent_uuid` -> `node.parent`, composition v2); identity (`ElementRef`, exact result-id table); `GraphInteractionState` extraction and 10,000-ref cap; `GraphSession` create / select / clear / focus / bind / unbind with stamps and `op_seq` idempotency | **implemented** |
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
-| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | typed Rust implemented locally; finite-geometry, real package/assets/parity and full strict-CSP proofs pass under authorized 1,513/626-KiB limits; final independent review and CI pending |
-| S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | planned |
+| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | implemented and merged through #1082; historical real package/assets/parity and full strict-CSP proof under 1,513/626-KiB limits |
+| S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; CI/integration pending |
 | S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | planned |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
@@ -473,3 +478,286 @@ original full strict-CSP foundation pass. Final independent review of the whole
 integrated S3 diff and CI remain pending.
 This does not establish S4 wire capacity behavior, browser/host delivery, #36,
 milestone 4, or release completion. No ABI/export/manifest version changes.
+
+### S4 wire decisions (implementation contract)
+
+`XYGI` and `XYGR` use the existing version-1 named-section container, little
+endian and 8-byte aligned. All request sections have index zero; unknown or
+operation-inapplicable sections, wrong types/counts, nonzero unused header
+fields, invalid enums and overflow are Invalid. `header.u64` is exactly
+`[instance, group, op_seq]`; `header.u32` is exactly the nine fields above.
+Operations 0–18 retain §2.2 numbering; 19 Open, 20 Update, 21 Render and 22 Poll
+complete the transport vocabulary. Open/Update carry `document.bytes` (XYGF).
+Open/Render/Bind also require a nonzero sequence; all successful commands share
+one last-sequence cache of complete serialized bytes. An equal sequence with
+different request bytes is Invalid; a byte-identical retry returns that exact
+reply, including across a temporal frame change (a disposed binding still
+returns Unbound). Native create additionally retries identical open bytes by
+instance id until destroy; a conflicting open for that id is Invalid.
+
+Status values are 0 success, and -1 Stale, -2 Unlinked, -3 Invalid, -4 Budget,
+-5 Capacity, -6 SelfEcho, -7 StaleRemote, -8 SelectionTooLarge,
+-9 CompoundTooLarge, -10 Unbound, -11 RevisionExhausted. `status.u32` contains
+the two's-complement value. Export return codes use this same vocabulary;
+instance/staging errors on the new WASM exports also use it. Existing exports
+retain their own vocabulary. Failed commands leave the last success cache and
+all state unchanged. Capacity is a native copy refusal after successful
+execution: required length is written, no bytes are copied, and the reply is
+retained. Poll is the exception: it serializes and tests capacity before taking
+the pending event; short polls never consume. Poll retries use their sequence
+and return the same bytes without consuming a newer event.
+
+Each refs byte plane starts with `[count:u32, string_bytes:u32]`, followed by
+`count * 56` fixed records and one UTF-8 string pool. Record offsets are:
+`kind:u32@0` (0 node, 1 edge, 2 derived, 3 aggregate), `reserved:u32@4=0`,
+`uuid[16]@8`, `layer:u32@24`, `render_revision:u32@28`, `path:u64@32`,
+`order:u64@40`, `string_offset:u32@48`, `string_length:u32@52`.
+Unused fields are zero. Derived refs have NIL UUID and zero render revision;
+`string_offset=0xffffffff,length=0` means absent id. Present ids contain exact UTF-8 bytes of any length admitted by the request
+and resource caps. A present-empty id has the actual current pool cursor and
+length zero; it never uses the absence sentinel. Aggregate index is in `layer`; other identity fields are zero.
+Pools must be contiguous in record order with no unused bytes. All outgoing
+derived refs use exact strings, never local table slots or hashes.
+`remote.bytes` is itself an XYGI container with `remote.u64` = group, source,
+sequence, optional one `remote.generation.uuid`, and `refs.bytes`.
+`temporal.u64[handle]` is present only on Bind (zero unbinds); WASM accepts 1
+for its own current owner and 0 to unbind, never another instance handle.
+
+`companion.u32[page,size]` defaults to [0,50], size is 1–200; this also pages
+`candidates.bytes` in canonical source node then edge order, with
+`candidates.total.u32`. Rows contain kind, identity, label, relationship and
+selected state, escaped as §3. Focus ring is `[kind,index]` pairs (node=0,
+edge=1) in the existing ring order, paged by the same bounds. Results always
+include current render geometry/style/emphasis, source flags, focus, summary
+and the bounded companion/candidates page; style changes are delivered even
+at the same render revision. Position records are 80 bytes: one fixed 56-byte
+node ref, x/y f64, pinned u32 and zero reserved u32. The resolved CPU paint snapshot below uses the existing container and
+`RenderOutput.paint`; there is no second host style/layout/router or Scene path.
+No S5 painter/controller change.
+
+Commands execute on an admitted speculative session and interaction state
+under one authoritative temporal world lock. Typed mutation, render, semantic
+reply construction and serialization all succeed before installing either
+session or owner state; a failure discards the candidate and consumes no
+sequence, watermark, publication or delivery. This is a bounded transaction,
+not a second canonical graph: only the interaction state is speculative; the
+owner's graph/visibility is borrowed from that single locked world. The
+candidate's visibility snapshot is temporary and discarded at commit.
+Admission conservatively reserves retained session/document/publication/index,
+old/new reply, input/staging, speculative copies, and render/layout/codec work
+BEFORE candidate allocation. Checked arithmetic overflow refuses Budget.
+The accounting constants and source-size formula live beside the executor;
+they intentionally refuse some graphs whose actual allocation could fit.
+Native sessions default to the existing 384-MiB WASM arena ceiling. WASM
+includes other retained instance work in this admission. No budget change is
+implied by exposing the session exports.
+
+Native handles are monotonic, never reused; at most 256 entries. The registry
+is held only to clone/remove an entry. Lock order is session -> temporal
+operation -> temporal state; disposal invalidates an owner even if an Arc
+survives. WASM keeps one session per instance and a directly locked temporal
+owner, never a host adapter that re-enters the instance registry. Replacing or
+dropping the temporal binding, destroying the instance, or acquiring geographic
+transport disposes the old owner. A new owner cannot revive an old binding.
+
+A WASM instance with a live session rejects unrelated ordinary compiler/job
+operations; close it first. Temporal-graph commands remain compatible and are
+pre-admitted with the retained session. Geographic transport acquisition drops
+the session and disposes its temporal owner. WASM `interact` also accepts Poll
+operation 22; the instance output is the complete retained reply. Render is a
+repaint request: its revision is advisory, allowing recovery after a temporal
+frame advance; every interaction still requires the exact current stamp.
+Disclosure action values are 0 Toggle, 1 Collapse, 2 Expand; step/ring direction
+is action 1 or 0xffffffff. Mode is 0 Replace, 1 Add, 2 Toggle; policy is
+0 Nodes, 1 Edges, 2 NodesAndInducedEdges; plane is 0 Path, 1 Community, 2 External.
+`changed.refs.bytes` can contain up to 20,000 refs (the symmetric difference
+of two admitted selections); request ref lists remain capped at 10,000.
+
+Native create returns Capacity with a zero handle when the 256-entry table or
+monotonic handle range is exhausted; this allocation refusal applies no state.
+The applied-output meaning of Capacity applies to command replies, not create.
+Native `out_len` is a `size_t*`; all request and output lengths are `size_t`.
+Native create's `load` argument is the full OPEN request, including its document;
+the separate document/scalar identity/group arguments must match it exactly.
+The immutable OPEN request/ack is retained until close, independently of the
+last command cache; WASM identical OPEN retries return that original ack even
+after later commands. Close/destroy revoke lifetime and are not retryable.
+
+OPEN acknowledges ingress with status/header only; Poll returns status and an
+optional outbound snapshot only. Successful render/update/bind/interaction and
+companion replies carry the semantic/publication planes described above. A
+failed native request returns its negative export status and zero out_len,
+without replacing the last successful XYGR cache; failed WASM requests likewise
+return the status directly. The last successful cache is never an error reply.
+Aggregate focus summaries derive Group/member counts from that same publication.
+
+Historical S4 local proof after normal parent merge: full Rust/Clippy, native and real
+WASM byte replay, capacity/disposal/transaction tests, exact-ID string-table
+reordering and the original full strict-CSP diagnostic foundation pass. The
+real shipping producer fails unchanged gates: 1,852,594 raw / 755,339 gzip6
+bytes versus 1,549,312 / 641,024 allowed. No shipping assets are published;
+diagnostic staged assets do not waive that failure. Detailed append-only proof:
+[S4 local receipt](../performance/graph-s4-local-2026-10-31/README.md#final-merged-source-handoff).
+`coordinate_deliver` targets one explicit receiver handle with ApplyRemote (16);
+transport peer enumeration/routing is not public host integration in S4.
+
+
+### S4 review repair: resolved CPU publication sections
+
+Every successful post-Open command (including style-only operations at the same
+revision) carries all sections below, index zero, including zero-length sections.
+Open remains an ingress acknowledgment; Poll carries only its event/status.
+Let N/M/P/F denote published nodes/edges/clipped pieces/frame bands. Container
+scalar counts equal the counts below. Little-endian fields are packed explicitly,
+without Rust struct padding; reserved bytes must be zero.
+
+| Section | Container dtype / scalar count | Fixed record, in field order |
+|---|---|---|
+| `paint.node.center.f64` | F64 / 2N | mapped screen center x,y |
+| `paint.node.style.bytes` | Bytes / 60N | style + semantic layers below |
+| `paint.edge.style.bytes` | Bytes / 60M | style + semantic layers below |
+| `paint.piece.index.u64` | U64 / 2P | published edge index; flags bit0 single_piece, bit1 head present, all others zero |
+| `paint.piece.geometry.f64` | F64 / 14P | start x,y; end x,y; half_width; dash on,off; dash_offset; head triangle x,y ×3 (six zeros when absent) |
+| `paint.frame.node.u64` | U64 / F | published node index |
+| `paint.frame.geometry.f64` | F64 / 5F | xmin,ymin,xmax,ymax,half_width |
+
+A 60-byte style/layers record is: fill RGBA u8@0, stroke RGBA@4,
+halo RGBA@8; size/width/opacity f32@12/16/20; shape/dash/arrow/state
+u8@24/25/26/27; semantic halo/body/stroke RGBA@28/32/36;
+halo_extent/body_width/dash_on/dash_off f32@40/44/48/52; head u8@56
+(0/1); reserved u8@57..59=0. These are the resolver's exact values;
+style size is the outer node diameter. All geometry and style floats are finite.
+The Rust `wire::decode_paint` validator reconstructs `PaintGeometry` with no
+semantic, route or layout evaluation, checking types, strides, cross-plane
+counts, indices, flags, absent-head zeros and reserved bytes. Scalar type/count
+mismatches and malformed pools remain Invalid. Node and edge flags remain the
+source-indexed `node.flags.u32` / `edge.flags.u32`; visual/emphasis planes and
+membership CSR retain their existing publication indexing.
+
+Vector order is canonical draw order within each pass: frame bands, shafts,
+heads, nodes (later vector index wins within a pass). Pick precedence is nodes,
+heads, shafts, frame bands. The piece record refers to its edge style/layers;
+frames refer to their node style. Routed clipped endpoints, dash origins and
+head vertices are already resolved by Rust. Aggregate snapshots include neutral
+aggregate styles even for singleton memberships and omit compound frames.
+
+These f64 geometry sections are a **resolved CPU publication snapshot**, not
+vertex buffers or a new GPU wire. They allow host-independent inspection and
+replay of the same geometry used by the pick index. Subsequent generic GPU
+encoding remains Rust-owned and must use the existing §29 offset-f32/u8
+lowering. Hosts must not upload these f64 arrays directly, narrow them in
+TypeScript, or recompute semantic/router policy. S5 controller/shader/DOM/ARIA
+and emphasis rendering remain outstanding.
+
+### S4 review repair: admission and owner transitions
+
+The unchanged browser default is 16 MiB, native default / arena maximum 384 MiB.
+A real two-node/one-edge XYGF open/render/select/focus is admitted at 16 MiB.
+This is a bounded tiny-session proof, not arbitrary-cardinality admission or
+S7 scale/responsiveness acceptance. Every command still speculatively clones,
+renders and serializes: O(source + publication) work per command. No interaction
+latency improvement is claimed.
+
+Before candidate allocation, checked admission reserves the following peak
+envelope. With D encoded document bytes, n/m source counts, R=n+m,
+S=min(R,10,000), Q=min((2n+11m)*4096,1,048,576), W coordination watermarks:
+
+| Component | Reserved bytes | Scope |
+|---|---:|---|
+| bounded tables/codec metadata | 98,304 | fixed baseline overhead; bounded section metadata is covered by document/request factors |
+| document/decoded copies | 48D | retained document, identity/style tables, old/new decoding and codec temporary copies |
+| source/publication/layout/route work | 8,192R | old/new publication/index primitives, membership, route scratch (up to 11 pieces/edge), layout and query arrays |
+| grid duplication | 16Q | old/new bounded grid entries; includes up to n compound bands as well as n nodes |
+| possible local state | 1,024(4S+n+1) | four capped identity planes, all possible node pins, focus; tree overhead and bounded delta/outcome/candidate copies |
+| watermarks | 128W | retained/cloned coordination gate |
+| expanded document text | 128T | T = per-row label bytes + layer ID bytes + m × longest layer ID byte length |
+| retained request/reply caches | 3 × each actual byte length | opening, Open reply, last request and last reply |
+| next request/staging | 128 × actual request bytes + external | decoded request identity copies, codec work; WASM arena/output/other owner retention is external |
+| replacement | full new document envelope | Update retains old while admitting new |
+
+Current Owned state is charged additionally. Inside the authoritative owner
+lock, before cloning bound state, actual state items and exact UTF-8 bytes are
+also charged at 1,024/item and 128/text byte. This includes all four planes,
+pins and focus, even identities retained by another session but absent from
+this document. Pending outbound exact-ID bytes are separately charged at 128×.
+All products/sums are checked; overflow or exceeding the arena returns Budget
+before candidate/state/sequence/cache mutation. Borrowed request/event/ref
+validation checks UTF-8, offsets, sentinel, reserved fields, ordering and count
+caps without cloning result-ID text before admission.
+
+T counts dictionary-expanded labels at every row occurrence: XYGF uses a
+monotonic-offset TextList, not Arrow dictionary indices, so its entire per-row
+UTF-8 pool is charged before allocating Strings. The m×longest-ID bound covers
+repeated derived identities, even when a short document stores one layer ID.
+The 128× text allowance covers retained/speculative/state/delta/outcome copies,
+20,000 changed refs, 10,000 pending refs, 200 candidates and focus, old/new
+reference pools/builders/final replies, and companion formatting. Arbitrary UTF-8
+Debug escaping can expand a byte up to tenfold; subsequent cell escaping up to
+twice that, with rows, joined rows and builder/final buffers overlapping. The
+128× envelope includes these expansions and intermediate copies. Fixed item
+reserves account for string headers separately. This intentionally refuses
+some inputs that would fit actual allocation; it is not an RSS report.
+
+Bind/Unbind validate the old LIVE owner's frame revision and destination stamp
+in the same authoritative snapshot immediately before installation. Same-owner
+rebind validates, constructs and installs under that owner's one lock; native
+adapters identify the underlying owner, not their temporary wrapper allocation.
+Cross-owner bind constructs the destination snapshot first and releases its
+lock, then validates the old owner and installs under the old owner's lock.
+No owner locks are nested. A destination frame advancing after its snapshot is
+handled by the usual next-operation stale check / Render recovery. A change to
+the old frame during construction refuses Stale without installation. Unbind
+validates a live old owner under its lock; a disposed owner explicitly permits
+Unbound-to-unbind recovery with the last session stamp. Failure preserves owner,
+session, publication, retry cache, sequence and outbound event. Render refreshes
+the stamp, allowing the same unconsumed operation sequence to recover.
+
+Repair evidence is append-only in
+[the review-repair receipt](../performance/graph-s4-review-repair-2026-10-31/README.md).
+
+After independent correctness and evidence approval, the parent separately
+adopts the smallest next-KiB functionality limits: 1,817 KiB raw / 742 KiB
+gzip6 (1,860,608 / 759,808 bytes). The budget-decision module was 1,860,250 / 759,008 bytes,
+leaving 358 / 800 bytes. Exactly two isolated size candidates were measured;
+only the UUID hex writer is retained. Full session/paint/state/transaction
+reachability adds 311,860 raw / 118,299 gzip bytes over accepted S3. Required
+exports and guards, compiler/profile/optimizer/dependencies and runtime arenas
+are unchanged. The separate [package decision receipt](../performance/graph-s4-package-budget-2026-10-31/README.md)
+owns fresh real shipping packaging, paired assets and full strict-CSP proof;
+old FAIL and diagnostic records remain immutable. Final policy-diff review and
+CI are required before integration. S5–S7, #36, M4 and release acceptance remain
+open; no runtime-speed or startup claim follows from the package decision.
+Historical S1–S4 receipts, including failed package/diagnostic proofs, are unchanged.
+
+
+The native S4 create parameter is named `document_bytes` in generated C/Koffi
+metadata so the existing Node browser-global guard does not confuse its FFI
+signature string with a runtime global. All 537 native binary function types,
+argument order and calling convention remain unchanged, but the named signature
+changed. Native ABI 398 records that change under the repository rule requiring
+a bump for every signature change; the official generator updates all four
+declarations and the named-signature digest. No checker or guard exemption is
+introduced. The historical repair exceeded the then-binding
+S3 package gates; its diagnostic receipt remains a failed shipping proof.
+The subsequent separate parent package decision above records real shipping
+assets under the reviewed S4 limits. CI/integration and M4/#36 acceptance remain
+pending; diagnostic execution alone establishes none of them.
+
+
+### S4 CI repair: standalone temporal staging compatibility
+
+`arena_resize` charges both session and temporal retention only when a retained
+GraphSession exists, matching the co-owned create/frame admission contract.
+Standalone XYTG retains its prior staging, entity, work and output bounds; this
+slice adds no standalone total-residency guarantee or capacity threshold. A
+40,000-node standalone owner accepted at the default 16 MiB can stage a frame
+and a small replacement. Malformed replacement preserves its previous owner.
+Co-owned sessions retain their conservative retention/peak checks, atomic
+refusal and owner revocation. Native ABI 398, generated declarations, ABI-only
+fixture refreshes and ownership-ledger entries are recorded separately in the
+[CI repair receipt](../performance/graph-s4-ci-repair-2026-10-31/README.md).
+
+The CI-repaired production module is 1,860,254 raw / 759,013 gzip6 bytes, with
+354 / 795 bytes headroom under the unchanged 1,817/742-KiB gates. Native ABI is
+398; WASM/Scene/painter remain 35/34/17. This replaces no historical artifact
+record and claims no runtime speed or standalone residency improvement.
