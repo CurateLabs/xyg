@@ -176,7 +176,13 @@ Clear can remove them; bound sessions use the temporal owner selection. Node
 `size` is the outer marker diameter with inset stroke, and edge clipping uses
 its half diameter, matching the composed point painter. Metric domains resolve
 over source rows before membership projection; Aggregate omits source semantics
-and uses the resolver's neutral aggregate style. Geometry and index are rebuilt
+and uses the resolver's neutral aggregate style for every render node and edge,
+including singleton memberships. The tier controls style and semantic-layer
+omission, not membership counts or the aggregate state flag. Projected state and
+emphasis still apply. The global directed-graph fallback remains unchanged when
+semantic edge status is absent. Direct and EdgeSample
+retain source semantics, including collapsed representatives and authored state
+flags. Geometry and index are rebuilt
 on **every** publication, including style-only republication at the same revision. Work exceeded mid-query → `GF_INTERACTION_BUDGET`, no change. `render_revision` advances on *structural* change only (pin, move, relayout, an effective disclosure, a changed temporal frame, bind/unbind, or a render requested with a different camera than the previous publication); a render with nothing structural changed republishes the same revision with fresh style planes. This supersedes "each render bumps": selection, focus, hover and highlight change style planes only, and aggregate refs must stay valid across them. The revision never wraps: at `u32::MAX` a structural change fails `GF_INTERACTION_REVISION_EXHAUSTED` before any mutation.
 
 **Finite geometry refusal (S3 review repair).** A publication rejects
