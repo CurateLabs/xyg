@@ -1,15 +1,16 @@
 #!/usr/bin/env node
-// Actual native383 / real wasm32 immutable-frame duplicate conformance.
+// Actual native / real wasm32 immutable-frame duplicate conformance.
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {encodeGeoScaleRequest as encode,decodeGeoScaleReply as decode,encodeGeoChunkRequest,encodeGeoScaleStyle,driveGeoSession,prepareGeoSceneData,nativeGeoScaleBridge,parseGeoHitData,parseGeoMembershipData,parseGeoRowsData} from '../packages/xy-node/src/geoscale.js';
 import {encodeGeoSnapshotRequest as rawSnapshotRequest,decodeGeoSnapshotReply as snapshotReply,nativeGeoSnapshotBridge} from '../packages/xy-node/src/geo-snapshot.js';
+const expectedWasmAbi=JSON.parse(await readFile(new URL('../spec/wasm/abi.json',import.meta.url),'utf8')).abi_version;
 const snapshotRequest=({command,handle,...options})=>rawSnapshotRequest(command,handle,options);
 const budget={processorBytes:128<<20,maxRowsExamined:1000000n,maxReadBytes:128n<<20n,maxChunks:65536,pageRows:4096};
 const style=encodeGeoScaleStyle({fill:Uint8Array.of(255,0,0,255),stroke:new Uint8Array(4),strokeWidth:0,diameter:6,opacity:1,symbol:0});
 const MAX=0xffffffffffffffffn;
 const {instance}=await WebAssembly.instantiate(await readFile(process.env.XYG_FRAME_LEASE_WASM??'target/wasm32-unknown-unknown/release/xyg_wasm.wasm'),{});
-const x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),34);
+const x=instance.exports,h=x.xyg_wasm_instance_new(budget.processorBytes);assert.ok(h);assert.equal(x.xyg_wasm_abi_version(),expectedWasmAbi);
 let sequence=0;
 async function call(request,read,family='scale'){
  assert.equal(x.xyg_wasm_arena_resize(h,request.byteLength),0);
@@ -70,5 +71,5 @@ async function run(bridge,snapshots,vertices,isWasm){
  if(retained)await retained.dispose();if(original)await original.dispose();if(source!==undefined)await bridge.execute(encode({command:10,handle:source}));await bridge.execute(encode({command:10,handle:builder}));
  }
 }
-try{for(const vertices of [2,40000])assert.deepEqual(await run(nativeGeoScaleBridge(budget.processorBytes),nativeGeoSnapshotBridge(384<<20),vertices,false),await run(wasm,wasmSnapshot,vertices,true));console.log('frame leases: native383/WASM33 direct+reduced exact bytes, full-u64, source/original disposal, picking, exact membership, full-source rows independent copy quotas, exact frozen snapshots, native six-format exports/WASM unsupported export PASS');}
+try{for(const vertices of [2,40000])assert.deepEqual(await run(nativeGeoScaleBridge(budget.processorBytes),nativeGeoSnapshotBridge(384<<20),vertices,false),await run(wasm,wasmSnapshot,vertices,true));console.log('frame leases: native/WASM direct+reduced exact bytes, full-u64, source/original disposal, picking, exact membership, full-source rows independent copy quotas, exact frozen snapshots, native six-format exports/WASM unsupported export PASS');}
 finally{assert.equal(x.xyg_wasm_instance_dispose(h),0);}

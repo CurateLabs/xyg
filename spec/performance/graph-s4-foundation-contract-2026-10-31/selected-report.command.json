@@ -1,0 +1,14 @@
+{
+  "name": "selected-report",
+  "command": [
+    "env",
+    "XYG_SELECTED_REPORT=spec/performance/graph-s4-foundation-contract-2026-10-31/selected-report.json",
+    "node",
+    "scripts/geo_selected_conformance.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.76,
+  "rawSha256": "53dcd81f613433b0979ac370b8fd5a57e7529c3326f89160599acea9c1238c8f",
+  "log": "selected-report.txt.gz",
+  "gzipSha256": "919537087607e8e59ba4b26189bd82cc1a1da9dfcf30cb35c90c0d99db7d2c5f"
+}

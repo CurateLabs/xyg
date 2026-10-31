@@ -324,6 +324,13 @@ remain unchanged; no new standalone total-residency guarantee is claimed. The
 repair, with its fresh 1,860,254 raw / 759,013 gzip6-byte module (354 / 795 bytes
 headroom under the unchanged gates), are recorded in the [CI repair receipt](../performance/graph-s4-ci-repair-2026-10-31/README.md).
 
+Current native/WASM conformance harnesses compare the module ABI against the
+committed generated `spec/wasm/abi.json`, preserving strict equality instead of
+pinning the previous ABI literal. Overview reports record the loaded native and
+WASM versions. The [foundation contract repair](../performance/graph-s4-foundation-contract-2026-10-31/README.md)
+records the ABI-34 assertion failure and the actual geographic conformance rerun
+on ABI 398/35; runtime, payload, resource and package contracts are unchanged.
+
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
 After merging main `4631927`, the local optimized build measures **1,542,222 raw

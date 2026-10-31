@@ -1,0 +1,14 @@
+{
+  "name": "overview-report",
+  "command": [
+    "env",
+    "XYG_GEO_OVERVIEW_REPORT=spec/performance/graph-s4-foundation-contract-2026-10-31/overview-report.json",
+    "node",
+    "scripts/geo_overview_conformance.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.308,
+  "rawSha256": "93f7b1c04083e111f6c700fc140025c216879b53deb3fbd6b9ca6dfc05f10c2c",
+  "log": "overview-report.txt.gz",
+  "gzipSha256": "ac887f01d9c162692e1a4edc447ce822fa3a6585d5f8aed3e13fb35cdb40c5c8"
+}
