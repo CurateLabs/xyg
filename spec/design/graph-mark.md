@@ -328,9 +328,59 @@ exchange revisions or positions. `reheat` restarts Rust CoSE from the current
 drag coordinates and pin mask; Python transports those buffers but performs no
 force or position math.
 
-The full browser/native deterministic tolerance plus first-paint/cadence
-size-ladder evidence remains an explicit #35 closure gate. Hosts must not
-emulate the shipped CoSE policy.
+Hosts must not emulate the shipped CoSE policy.
+
+**CoSE cross-host parity (#35, criterion 6).** Python native, Node native (both
+the same `libxyg_core` C ABI) and the wasm32 kernel (`xyg_wasm_graph_begin` /
+`_step`, exactly as the Worker drives it) are compared on one committed golden,
+`tests/fixtures/graphforge/cose-parity/golden.json` (regenerate with
+`scripts/gen_cose_parity_golden.py --write`). It holds 12 fixtures — default and
+custom options, compound parents, disconnected components plus isolated nodes,
+pins with bounds, coincident authored positions, a 200-node exact-repulsion
+graph and a 700-node uniform-grid-tier graph with compounds. Five graphs (path,
+compound, disconnected, 200-node, 700-node) appear twice — authored and
+Rust-seeded start positions — and `pinned-bounds-initial` and `coincident-start`
+are authored-only. Tick chunks `1,9,20,30` produce cumulative checkpoints
+`1,10,30,60`; each case records the sha256 of the f64 `x‖y‖alpha` bytes at
+those checkpoints plus the final positions.
+
+**Tolerance policy: bitwise, no ε.** Every f64 position and `alpha` at every
+checkpoint must be `==` across Python native, Node native and WASM
+(`tests/test_cose_native_parity.py`,
+`packages/xy-node/test/cose-wasm-parity.test.mjs`). This holds because the CoSE
+path consults the platform `libm` nowhere: it uses only `+ − × ÷ √` (IEEE
+correctly rounded) and `portable_sin_cos` for the seeded circle
+(`layout_circle`), the coincident-overlap seeding, the coincident-pair
+direction, and the per-component gravity anchors. Any new transcendental on the
+CoSE path must use a portable implementation and extend the golden; the
+force-iteration is chaotic, so a one-ulp platform difference grows to O(1) drift
+within tens of ticks (observed up to 6.5 units on the 200-node graph with
+platform `sin`/`cos`), which is why no tolerance is offered instead.
+`layout_circle` seeds every `ForceState` family started without authored
+positions, so the other force algorithms' seeded outputs also changed with this
+switch — by ulps at seeding and by more than ulps after iteration.
+
+**Checkpoint-delivery latency and cadence evidence (#35, criterion 4 — gate
+stays open).** `scripts/bench_cose_progressive.py` drives the shipped schedulers
+(`GraphLayoutController`, `force_scheduler.js` `runForceTicks`, and
+`layoutWasmCose` in a headless-Chromium Worker) on 1k/10k/100k/1M nodes, 2
+edges/node (1M = the admission ceiling, `MAX_NODES`). It measures when
+checkpoints reach the host thread, not first paint: the browser rung renders
+nothing and excludes browser start-up. The historical run at `cb78c1f4` on a
+loaded shared host (raw rows in
+`spec/performance/cose-progressive-ladder-2026-10-20/`) recorded first-checkpoint
+p50
+≤ 0.15 s through 100k (Node's ~0.12–0.14 s is Worker spawn + library load) and
+0.8–1.3 s at 1M; cadence p50 per 10-tick checkpoint ≈ 11–13 ms (1k), 32–112 ms
+(10k), 136–315 ms (100k), 1.4 s native / 2.9 s WASM (1M); host-thread ticker
+lag p95 ≤ 3.6 ms with maximum stalls of 40 ms (browser, 10k), 25 ms (Node, 1M)
+and 12 ms (Python, 1M). Not a CI gate. **Remaining for #35:** a render-based
+first-paint/interactivity measurement on the ladder; default Node/VS Code
+`composeGraphForge` / `graphforgeWebviewPayload` still compose synchronously
+and do not use `runForceTicks`; Python widget/notebook progressive delivery
+and rerender/dispose cancellation remain #1015 acceptance work. The historical
+receipt predates #1078's Node checkpoint acceptance and cleanup contract (§5)
+and is not current-main timing evidence.
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid
 approximation: at most 32 members per neighboring cell are evaluated exactly;
 denser neighboring cells and the complete far field are represented by mass
