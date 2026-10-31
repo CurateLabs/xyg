@@ -1,0 +1,15 @@
+{
+  "name": "focused-final",
+  "command": [
+    "node",
+    "--test",
+    "--test-concurrency=1",
+    "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+    "packages/xy-node/test/geom.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.602,
+  "rawSha256": "1a48de8072ab7a40913c403994047d8ee195557dfea23b1092b2fcfe616667ed",
+  "log": "focused-final.txt.gz",
+  "gzipSha256": "5dd004e19d39125eda9f47ad9a3be972ed2460cf6142d6feff783ef0dcf7c48d"
+}

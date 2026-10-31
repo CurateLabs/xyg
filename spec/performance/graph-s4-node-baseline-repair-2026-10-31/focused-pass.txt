@@ -1,0 +1,1282 @@
+TAP version 13
+# Subtest: actual selected hierarchy live43/44 survives original source disposal
+ok 1 - actual selected hierarchy live43/44 survives original source disposal
+  ---
+  duration_ms: 32.150247
+  type: 'test'
+  ...
+# Subtest: exclusive lane and closed lane fail before losing accepted paint
+ok 2 - exclusive lane and closed lane fail before losing accepted paint
+  ---
+  duration_ms: 5.964768
+  type: 'test'
+  ...
+# Subtest: five independent hierarchy lanes keep15→16 replacement within fixed caps
+ok 3 - five independent hierarchy lanes keep15→16 replacement within fixed caps
+  ---
+  duration_ms: 21.954434
+  type: 'test'
+  ...
+# Subtest: lost actual33 preserves paint and settles typed replacement before retry
+ok 4 - lost actual33 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 6.263853
+  type: 'test'
+  ...
+# Subtest: lost actual43 preserves paint and settles typed replacement before retry
+ok 5 - lost actual43 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 5.247071
+  type: 'test'
+  ...
+# Subtest: lost actual44 preserves paint and settles typed replacement before retry
+ok 6 - lost actual44 preserves paint and settles typed replacement before retry
+  ---
+  duration_ms: 8.612451
+  type: 'test'
+  ...
+# Subtest: uncertain33 cleanup failure holds global slot until exact retry confirmation
+ok 7 - uncertain33 cleanup failure holds global slot until exact retry confirmation
+  ---
+  duration_ms: 4.518036
+  type: 'test'
+  ...
+# Subtest: uncertain43 cleanup failure holds global slot until exact retry confirmation
+ok 8 - uncertain43 cleanup failure holds global slot until exact retry confirmation
+  ---
+  duration_ms: 5.000765
+  type: 'test'
+  ...
+# Subtest: cancel after real44 publication cleans candidate before accepted paint changes
+ok 9 - cancel after real44 publication cleans candidate before accepted paint changes
+  ---
+  duration_ms: 5.384002
+  type: 'test'
+  ...
+# Subtest: close during actual26 retains failed disposal owner and retries before releasing lane
+ok 10 - close during actual26 retains failed disposal owner and retries before releasing lane
+  ---
+  duration_ms: 5.537718
+  type: 'test'
+  ...
+# Subtest: canonical lost33 reply resolves one allocation and keeps accepted paint
+ok 11 - canonical lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 3.83456
+  type: 'test'
+  ...
+# Subtest: canonical corrupt33 reply resolves one allocation and keeps accepted paint
+ok 12 - canonical corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 2.392741
+  type: 'test'
+  ...
+# Subtest: indexed lost33 reply resolves one allocation and keeps accepted paint
+ok 13 - indexed lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 4.811051
+  type: 'test'
+  ...
+# Subtest: indexed corrupt33 reply resolves one allocation and keeps accepted paint
+ok 14 - indexed corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 3.394193
+  type: 'test'
+  ...
+# Subtest: hierarchy lost33 reply resolves one allocation and keeps accepted paint
+ok 15 - hierarchy lost33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 4.602297
+  type: 'test'
+  ...
+# Subtest: hierarchy corrupt33 reply resolves one allocation and keeps accepted paint
+ok 16 - hierarchy corrupt33 reply resolves one allocation and keeps accepted paint
+  ---
+  duration_ms: 12.089662
+  type: 'test'
+  ...
+# Subtest: canonical uncertain33 cleanup keeps owner and slot until exact retry
+ok 17 - canonical uncertain33 cleanup keeps owner and slot until exact retry
+  ---
+  duration_ms: 2.475821
+  type: 'test'
+  ...
+# Subtest: indexed uncertain33 cleanup keeps owner and slot until exact retry
+ok 18 - indexed uncertain33 cleanup keeps owner and slot until exact retry
+  ---
+  duration_ms: 3.913267
+  type: 'test'
+  ...
+# Subtest: geometryOffset pins log family and nonfinite to zero
+ok 19 - geometryOffset pins log family and nonfinite to zero
+  ---
+  duration_ms: 4.535883
+  type: 'test'
+  ...
+# Subtest: encodeF32Values packs EncodedColumn meta from the kernel
+ok 20 - encodeF32Values packs EncodedColumn meta from the kernel
+  ---
+  duration_ms: 2.185304
+  type: 'test'
+  ...
+# Subtest: arrowGeometry trims label_clear and samples shafts
+ok 21 - arrowGeometry trims label_clear and samples shafts
+  ---
+  duration_ms: 1.06695
+  type: 'test'
+  ...
+# Subtest: packArrowStyle ignores malformed start_offset CSV
+ok 22 - packArrowStyle ignores malformed start_offset CSV
+  ---
+  duration_ms: 0.906725
+  type: 'test'
+  ...
+# Subtest: packArrowStyle ignores malformed label_clear CSV
+ok 23 - packArrowStyle ignores malformed label_clear CSV
+  ---
+  duration_ms: 0.44692
+  type: 'test'
+  ...
+# Subtest: hexbinRing scales the canonical pointy-top fractions
+ok 24 - hexbinRing scales the canonical pointy-top fractions
+  ---
+  duration_ms: 0.718485
+  type: 'test'
+  ...
+# Subtest: ribbonEdge midpoint matches Python golden
+ok 25 - ribbonEdge midpoint matches Python golden
+  ---
+  duration_ms: 0.360799
+  type: 'test'
+  ...
+# Subtest: ribbonPolygon is upper then reversed lower
+ok 26 - ribbonPolygon is upper then reversed lower
+  ---
+  duration_ms: 0.304534
+  type: 'test'
+  ...
+# Subtest: monotoneTangents zero interiors on sign change
+ok 27 - monotoneTangents zero interiors on sign change
+  ---
+  duration_ms: 0.612935
+  type: 'test'
+  ...
+# Subtest: curveFlatten keeps knots and 15 interiors per span
+ok 28 - curveFlatten keeps knots and 15 interiors per span
+  ---
+  duration_ms: 0.691957
+  type: 'test'
+  ...
+# Subtest: stepArrays expands pre mid and post vertices
+ok 29 - stepArrays expands pre mid and post vertices
+  ---
+  duration_ms: 0.65223
+  type: 'test'
+  ...
+# Subtest: markerPathScale flips y and matches host vertices
+ok 30 - markerPathScale flips y and matches host vertices
+  ---
+  duration_ms: 0.381146
+  type: 'test'
+  ...
+# Subtest: sceneDashAdmit presets reject bad tokens and empty lists
+ok 31 - sceneDashAdmit presets reject bad tokens and empty lists
+  ---
+  duration_ms: 0.492302
+  type: 'test'
+  ...
+# Subtest: sceneLinecapAdmit names reject unknown and whitespace
+ok 32 - sceneLinecapAdmit names reject unknown and whitespace
+  ---
+  duration_ms: 0.25409
+  type: 'test'
+  ...
+# Subtest: densityOverlayOpacity caps finite and maps non-finite to 0.55
+ok 33 - densityOverlayOpacity caps finite and maps non-finite to 0.55
+  ---
+  duration_ms: 0.198184
+  type: 'test'
+  ...
+# Subtest: sceneMarkerPathAdmit bounds and host coercion
+ok 34 - sceneMarkerPathAdmit bounds and host coercion
+  ---
+  duration_ms: 0.395529
+  type: 'test'
+  ...
+# Subtest: sceneAnnotationStyleAdmit matches host allowlist table
+ok 35 - sceneAnnotationStyleAdmit matches host allowlist table
+  ---
+  duration_ms: 0.399319
+  type: 'test'
+  ...
+# Subtest: sceneTickLabelStrategy matches host table
+ok 36 - sceneTickLabelStrategy matches host table
+  ---
+  duration_ms: 0.284515
+  type: 'test'
+  ...
+# Subtest: sceneTickAnchor matches host table
+ok 37 - sceneTickAnchor matches host table
+  ---
+  duration_ms: 0.243795
+  type: 'test'
+  ...
+# Subtest: sceneFillGradientAdmit matches host table
+ok 38 - sceneFillGradientAdmit matches host table
+  ---
+  duration_ms: 0.597121
+  type: 'test'
+  ...
+# Subtest: sceneParseLinearGradient matches host table
+ok 39 - sceneParseLinearGradient matches host table
+  ---
+  duration_ms: 0.81384
+  type: 'test'
+  ...
+# Subtest: sceneRectExtraFlags matches host table
+ok 40 - sceneRectExtraFlags matches host table
+  ---
+  duration_ms: 0.386779
+  type: 'test'
+  ...
+# Subtest: rectExtraFlags array fill matches Python dict-only
+ok 41 - rectExtraFlags array fill matches Python dict-only
+  ---
+  duration_ms: 1.48111
+  type: 'test'
+  ...
+# Subtest: sceneGradientDir matches host table
+ok 42 - sceneGradientDir matches host table
+  ---
+  duration_ms: 0.359421
+  type: 'test'
+  ...
+# Subtest: sceneLinearGradientPrefix matches host table
+ok 43 - sceneLinearGradientPrefix matches host table
+  ---
+  duration_ms: 0.225551
+  type: 'test'
+  ...
+# Subtest: fillIsGradientAuthoring host coercion matches Python dict-only
+ok 44 - fillIsGradientAuthoring host coercion matches Python dict-only
+  ---
+  duration_ms: 0.184545
+  type: 'test'
+  ...
+# Subtest: packXyTaColormap uses style.colormap only like Python
+ok 45 - packXyTaColormap uses style.colormap only like Python
+  ---
+  duration_ms: 0.506299
+  type: 'test'
+  ...
+# Subtest: packXyTaColormap stop bytes require RGB rows like Python
+ok 46 - packXyTaColormap stop bytes require RGB rows like Python
+  ---
+  duration_ms: 0.333316
+  type: 'test'
+  ...
+# Subtest: packXyTaDensityColorCh uses color_ch only like Python
+ok 47 - packXyTaDensityColorCh uses color_ch only like Python
+  ---
+  duration_ms: 0.239995
+  type: 'test'
+  ...
+# Subtest: packXyTaFillOpacity uses fill_opacity only like Python
+ok 48 - packXyTaFillOpacity uses fill_opacity only like Python
+  ---
+  duration_ms: 0.232751
+  type: 'test'
+  ...
+# Subtest: packXyTcStrokeWidth uses stroke_width only like Python
+ok 49 - packXyTcStrokeWidth uses stroke_width only like Python
+  ---
+  duration_ms: 0.390252
+  type: 'test'
+  ...
+# Subtest: packXyTcLineWidth uses line_width only like Python
+ok 50 - packXyTcLineWidth uses line_width only like Python
+  ---
+  duration_ms: 0.253321
+  type: 'test'
+  ...
+# Subtest: packXyTcSize uses size only like Python
+ok 51 - packXyTcSize uses size only like Python
+  ---
+  duration_ms: 0.409185
+  type: 'test'
+  ...
+# Subtest: packXyTaGrid flattens plane.values like Python
+ok 52 - packXyTaGrid flattens plane.values like Python
+  ---
+  duration_ms: 0.282024
+  type: 'test'
+  ...
+# Subtest: packXyTaRgba ignores nested .rgba like Python
+ok 53 - packXyTaRgba ignores nested .rgba like Python
+  ---
+  duration_ms: 0.122822
+  type: 'test'
+  ...
+# Subtest: packXyTaRgbaGrid stacks flattened planes like Python
+ok 54 - packXyTaRgbaGrid stacks flattened planes like Python
+  ---
+  duration_ms: 0.401791
+  type: 'test'
+  ...
+# Subtest: packXyTcFillOpacity uses fill_opacity only like Python
+ok 55 - packXyTcFillOpacity uses fill_opacity only like Python
+  ---
+  duration_ms: 0.227242
+  type: 'test'
+  ...
+# Subtest: packXyTcJoinedFill uses joined_fill only like Python
+ok 56 - packXyTcJoinedFill uses joined_fill only like Python
+  ---
+  duration_ms: 0.197641
+  type: 'test'
+  ...
+# Subtest: packXyTcLineColor uses line_color only like Python
+ok 57 - packXyTcLineColor uses line_color only like Python
+  ---
+  duration_ms: 0.217172
+  type: 'test'
+  ...
+# Subtest: packXyTcLinecap uses linecap only like Python
+ok 58 - packXyTcLinecap uses linecap only like Python
+  ---
+  duration_ms: 0.108479
+  type: 'test'
+  ...
+# Subtest: packXyAfLinecap uses linecap only like Python
+ok 59 - packXyAfLinecap uses linecap only like Python
+  ---
+  duration_ms: 0.154706
+  type: 'test'
+  ...
+# Subtest: packXyTcLineOpacity uses line_opacity only like Python
+ok 60 - packXyTcLineOpacity uses line_opacity only like Python
+  ---
+  duration_ms: 0.220382
+  type: 'test'
+  ...
+# Subtest: packXyTcSizeChannel uses size_ch only like Python
+ok 61 - packXyTcSizeChannel uses size_ch only like Python
+  ---
+  duration_ms: 0.178158
+  type: 'test'
+  ...
+# Subtest: packXyTcStrokeOpacity uses stroke_opacity only like Python
+ok 62 - packXyTcStrokeOpacity uses stroke_opacity only like Python
+  ---
+  duration_ms: 0.159398
+  type: 'test'
+  ...
+# Subtest: packXyTcColorChannel uses color_ch only like Python
+ok 63 - packXyTcColorChannel uses color_ch only like Python
+  ---
+  duration_ms: 0.212559
+  type: 'test'
+  ...
+# Subtest: packXyTcStrokePerimeter uses stroke_perimeter only like Python
+ok 64 - packXyTcStrokePerimeter uses stroke_perimeter only like Python
+  ---
+  duration_ms: 0.320586
+  type: 'test'
+  ...
+# Subtest: sceneXytcFigurePlan passes showLegend like Python
+ok 65 - sceneXytcFigurePlan passes showLegend like Python
+  ---
+  duration_ms: 0.233558
+  type: 'test'
+  ...
+# Subtest: sceneXytcTraceDispatchPlan scatter density and glyph routing
+ok 66 - sceneXytcTraceDispatchPlan scatter density and glyph routing
+  ---
+  duration_ms: 0.363874
+  type: 'test'
+  ...
+# Subtest: sceneXytcTraceDispatchPlan ribbon color2 and area perimeter
+ok 67 - sceneXytcTraceDispatchPlan ribbon color2 and area perimeter
+  ---
+  duration_ms: 0.177913
+  type: 'test'
+  ...
+# Subtest: sceneXytaFigurePlan passes polar like Python
+ok 68 - sceneXytaFigurePlan passes polar like Python
+  ---
+  duration_ms: 0.222869
+  type: 'test'
+  ...
+# Subtest: sceneXytaTraceDispatchPlan heatmap hexbin ribbon and density routing
+ok 69 - sceneXytaTraceDispatchPlan heatmap hexbin ribbon and density routing
+  ---
+  duration_ms: 0.424223
+  type: 'test'
+  ...
+# Subtest: sceneFigureSupportTraceDispatchPlan bar and scatter routing
+ok 70 - sceneFigureSupportTraceDispatchPlan bar and scatter routing
+  ---
+  duration_ms: 0.621453
+  type: 'test'
+  ...
+# Subtest: scene chrome export orchestration routes legend density and wrapped XYAF
+ok 71 - scene chrome export orchestration routes legend density and wrapped XYAF
+  ---
+  duration_ms: 0.666533
+  type: 'test'
+  ...
+# Subtest: hexbinXyTaColormap uses channel.colormap only like Python
+ok 72 - hexbinXyTaColormap uses channel.colormap only like Python
+  ---
+  duration_ms: 0.248015
+  type: 'test'
+  ...
+# Subtest: xyHfColormap uses style.colormap only like Python
+ok 73 - xyHfColormap uses style.colormap only like Python
+  ---
+  duration_ms: 0.179217
+  type: 'test'
+  ...
+# Subtest: xyHfColormap stop bytes require RGB rows like Python
+ok 74 - xyHfColormap stop bytes require RGB rows like Python
+  ---
+  duration_ms: 0.209769
+  type: 'test'
+  ...
+# Subtest: constantMarkColor uses color_ch.constant only like Python
+ok 75 - constantMarkColor uses color_ch.constant only like Python
+  ---
+  duration_ms: 0.304525
+  type: 'test'
+  ...
+# Subtest: channelConstantCss uses channel.constant only like Python
+ok 76 - channelConstantCss uses channel.constant only like Python
+  ---
+  duration_ms: 0.161746
+  type: 'test'
+  ...
+# Subtest: channelEndRgba8 constant uses .constant only like Python
+ok 77 - channelEndRgba8 constant uses .constant only like Python
+  ---
+  duration_ms: 0.272176
+  type: 'test'
+  ...
+# Subtest: channelEndRgba8 ignores array channels like Python
+ok 78 - channelEndRgba8 ignores array channels like Python
+  ---
+  duration_ms: 0.074525
+  type: 'test'
+  ...
+# Subtest: channelEndRgba8 categorical uses DEFAULT_PALETTE like Python
+ok 79 - channelEndRgba8 categorical uses DEFAULT_PALETTE like Python
+  ---
+  duration_ms: 0.342633
+  type: 'test'
+  ...
+# Subtest: sourceColorCss uses color_ch only like Python
+ok 80 - sourceColorCss uses color_ch only like Python
+  ---
+  duration_ms: 0.110323
+  type: 'test'
+  ...
+# Subtest: sourceColorCss empty style.color falls through like Python or-default
+ok 81 - sourceColorCss empty style.color falls through like Python or-default
+  ---
+  duration_ms: 0.066343
+  type: 'test'
+  ...
+# Subtest: color2Channel uses color2_ch only like Python
+ok 82 - color2Channel uses color2_ch only like Python
+  ---
+  duration_ms: 0.075927
+  type: 'test'
+  ...
+# Subtest: itemFillRgba8 null style.color uses style.get default like Python
+ok 83 - itemFillRgba8 null style.color uses style.get default like Python
+  ---
+  duration_ms: 0.228251
+  type: 'test'
+  ...
+# Subtest: itemFillRgba8 uses color_ch only like Python
+ok 84 - itemFillRgba8 uses color_ch only like Python
+  ---
+  duration_ms: 0.168247
+  type: 'test'
+  ...
+# Subtest: itemStrokeRgba8 empty style.stroke falls through like Python or-default
+ok 85 - itemStrokeRgba8 empty style.stroke falls through like Python or-default
+  ---
+  duration_ms: 0.152472
+  type: 'test'
+  ...
+# Subtest: itemStrokeRgba8 uses stroke_ch only like Python
+ok 86 - itemStrokeRgba8 uses stroke_ch only like Python
+  ---
+  duration_ms: 0.184161
+  type: 'test'
+  ...
+# Subtest: scatterPaintChannelNames uses color_ch only like Python
+ok 87 - scatterPaintChannelNames uses color_ch only like Python
+  ---
+  duration_ms: 0.164268
+  type: 'test'
+  ...
+# Subtest: scatterPointStrokeRgba8 uses stroke_ch only like Python
+ok 88 - scatterPointStrokeRgba8 uses stroke_ch only like Python
+  ---
+  duration_ms: 0.26399
+  type: 'test'
+  ...
+# Subtest: scatterHasNonConstantColor uses color_ch only like Python
+ok 89 - scatterHasNonConstantColor uses color_ch only like Python
+  ---
+  duration_ms: 0.105383
+  type: 'test'
+  ...
+# Subtest: scatterPerItemChannels ignores style.color_channel like Python
+ok 90 - scatterPerItemChannels ignores style.color_channel like Python
+  ---
+  duration_ms: 0.150396
+  type: 'test'
+  ...
+# Subtest: resolveDensityBinColors uses color_ch only like Python
+ok 91 - resolveDensityBinColors uses color_ch only like Python
+  ---
+  duration_ms: 0.22162
+  type: 'test'
+  ...
+# Subtest: sceneGradientSpace matches host table
+ok 92 - sceneGradientSpace matches host table
+  ---
+  duration_ms: 0.128663
+  type: 'test'
+  ...
+# Subtest: sceneHexbinReduceAdmit matches host table
+ok 93 - sceneHexbinReduceAdmit matches host table
+  ---
+  duration_ms: 0.126928
+  type: 'test'
+  ...
+# Subtest: sceneCurveClassify matches host table
+ok 94 - sceneCurveClassify matches host table
+  ---
+  duration_ms: 0.134493
+  type: 'test'
+  ...
+# Subtest: sceneMarkerGlyphAdmit matches host table
+ok 95 - sceneMarkerGlyphAdmit matches host table
+  ---
+  duration_ms: 0.187146
+  type: 'test'
+  ...
+# Subtest: admittedMarkerGlyph host coercion matches Python str-only
+ok 96 - admittedMarkerGlyph host coercion matches Python str-only
+  ---
+  duration_ms: 0.154497
+  type: 'test'
+  ...
+# Subtest: sceneKindAdmit matches host table
+ok 97 - sceneKindAdmit matches host table
+  ---
+  duration_ms: 0.199543
+  type: 'test'
+  ...
+# Subtest: figureTraceSupport empty kind matches Python or mark
+ok 98 - figureTraceSupport empty kind matches Python or mark
+  ---
+  duration_ms: 0.430706
+  type: 'test'
+  ...
+# Subtest: figureTraceSupport ignores style.smooth like Python
+ok 99 - figureTraceSupport ignores style.smooth like Python
+  ---
+  duration_ms: 0.28256
+  type: 'test'
+  ...
+# Subtest: xyEfJoinedFill uses joined_fill only like Python
+ok 100 - xyEfJoinedFill uses joined_fill only like Python
+  ---
+  duration_ms: 0.09073
+  type: 'test'
+  ...
+# Subtest: xyEfStrokeWidthOnly uses stroke_width only like Python
+ok 101 - xyEfStrokeWidthOnly uses stroke_width only like Python
+  ---
+  duration_ms: 0.084366
+  type: 'test'
+  ...
+# Subtest: sceneKindClass matches host table
+ok 102 - sceneKindClass matches host table
+  ---
+  duration_ms: 0.102452
+  type: 'test'
+  ...
+# Subtest: sceneHexbinColormapPlaneAdmit matches host table
+ok 103 - sceneHexbinColormapPlaneAdmit matches host table
+  ---
+  duration_ms: 0.124787
+  type: 'test'
+  ...
+# Subtest: hexbinCellRgba8 null style.color uses style.get default like Python
+ok 104 - hexbinCellRgba8 null style.color uses style.get default like Python
+  ---
+  duration_ms: 0.132905
+  type: 'test'
+  ...
+# Subtest: hexbinCellRgba8 uses color_ch only like Python
+ok 105 - hexbinCellRgba8 uses color_ch only like Python
+  ---
+  duration_ms: 0.11704
+  type: 'test'
+  ...
+# Subtest: hexbinPacksColormapPlane matches Python channel.values only
+ok 106 - hexbinPacksColormapPlane matches Python channel.values only
+  ---
+  duration_ms: 0.160399
+  type: 'test'
+  ...
+# Subtest: legendStyleFontSizes uses font_size only like Python
+ok 107 - legendStyleFontSizes uses font_size only like Python
+  ---
+  duration_ms: 0.112776
+  type: 'test'
+  ...
+# Subtest: heatmapGridShape uses grid_shape only like Python
+ok 108 - heatmapGridShape uses grid_shape only like Python
+  ---
+  duration_ms: 0.078956
+  type: 'test'
+  ...
+# Subtest: hexbinStylePitch uses hex_dx then dx like Python
+ok 109 - hexbinStylePitch uses hex_dx then dx like Python
+  ---
+  duration_ms: 0.102899
+  type: 'test'
+  ...
+# Subtest: polarGridShape uses grid_shape only like Python
+ok 110 - polarGridShape uses grid_shape only like Python
+  ---
+  duration_ms: 0.07108
+  type: 'test'
+  ...
+# Subtest: polarAxisThetaUnit uses theta_unit only like Python
+ok 111 - polarAxisThetaUnit uses theta_unit only like Python
+  ---
+  duration_ms: 0.069507
+  type: 'test'
+  ...
+# Subtest: polarAxisThetaZero uses theta_zero only like Python
+ok 112 - polarAxisThetaZero uses theta_zero only like Python
+  ---
+  duration_ms: 0.07369
+  type: 'test'
+  ...
+# Subtest: polarAxisThetaDirection uses theta_direction only like Python
+ok 113 - polarAxisThetaDirection uses theta_direction only like Python
+  ---
+  duration_ms: 0.068004
+  type: 'test'
+  ...
+# Subtest: polarAxisROrigin uses r_origin only like Python
+ok 114 - polarAxisROrigin uses r_origin only like Python
+  ---
+  duration_ms: 0.066744
+  type: 'test'
+  ...
+# Subtest: polarAxisHole uses hole only like Python
+ok 115 - polarAxisHole uses hole only like Python
+  ---
+  duration_ms: 0.184556
+  type: 'test'
+  ...
+# Subtest: polarAxisSector uses sector only like Python
+ok 116 - polarAxisSector uses sector only like Python
+  ---
+  duration_ms: 0.141694
+  type: 'test'
+  ...
+# Subtest: axisTickValues uses tick_values only like Python
+ok 117 - axisTickValues uses tick_values only like Python
+  ---
+  duration_ms: 0.101585
+  type: 'test'
+  ...
+# Subtest: axisScaleName uses type only like Python
+ok 118 - axisScaleName uses type only like Python
+  ---
+  duration_ms: 0.090897
+  type: 'test'
+  ...
+# Subtest: legendAxisScale uses type only like Python _axis_scale
+ok 119 - legendAxisScale uses type only like Python _axis_scale
+  ---
+  duration_ms: 0.08451
+  type: 'test'
+  ...
+# Subtest: axisMinorTickValues uses minor_tick_values only like Python
+ok 120 - axisMinorTickValues uses minor_tick_values only like Python
+  ---
+  duration_ms: 0.089101
+  type: 'test'
+  ...
+# Subtest: axisTickLabels uses tick_labels only like Python
+ok 121 - axisTickLabels uses tick_labels only like Python
+  ---
+  duration_ms: 0.079096
+  type: 'test'
+  ...
+# Subtest: axisTickLabelAnchor uses tick_label_anchor only like Python
+ok 122 - axisTickLabelAnchor uses tick_label_anchor only like Python
+  ---
+  duration_ms: 0.071387
+  type: 'test'
+  ...
+# Subtest: axisTickLabelAngle uses tick_label_angle only like Python
+ok 123 - axisTickLabelAngle uses tick_label_angle only like Python
+  ---
+  duration_ms: 0.073279
+  type: 'test'
+  ...
+# Subtest: axisTickLabelMinGap uses tick_label_min_gap only like Python
+ok 124 - axisTickLabelMinGap uses tick_label_min_gap only like Python
+  ---
+  duration_ms: 0.090995
+  type: 'test'
+  ...
+# Subtest: axisTickLabelStrategy uses tick_label_strategy then collision like Python
+ok 125 - axisTickLabelStrategy uses tick_label_strategy then collision like Python
+  ---
+  duration_ms: 0.092631
+  type: 'test'
+  ...
+# Subtest: polarCollisionKeys uses snake-case keys only like Python
+ok 126 - polarCollisionKeys uses snake-case keys only like Python
+  ---
+  duration_ms: 0.144895
+  type: 'test'
+  ...
+# Subtest: figureChromeStyles uses chrome_styles only like Python
+ok 127 - figureChromeStyles uses chrome_styles only like Python
+  ---
+  duration_ms: 0.266817
+  type: 'test'
+  ...
+# Subtest: chromeAxisMinorStyle uses minor_style only like Python
+ok 128 - chromeAxisMinorStyle uses minor_style only like Python
+  ---
+  duration_ms: 0.141051
+  type: 'test'
+  ...
+# Subtest: chromeAxisTickSides uses tick_sides only like Python
+ok 129 - chromeAxisTickSides uses tick_sides only like Python
+  ---
+  duration_ms: 0.15753
+  type: 'test'
+  ...
+# Subtest: chromeAxisTickLabelSides uses tick_label_sides only like Python
+ok 130 - chromeAxisTickLabelSides uses tick_label_sides only like Python
+  ---
+  duration_ms: 0.138179
+  type: 'test'
+  ...
+# Subtest: chromeAxisStyleKeys admits snake-case keys only like Python
+ok 131 - chromeAxisStyleKeys admits snake-case keys only like Python
+  ---
+  duration_ms: 0.21101
+  type: 'test'
+  ...
+# Subtest: chromeAxisStyleHas and chromeAxisStyleValue read snake-case keys only like Python
+ok 132 - chromeAxisStyleHas and chromeAxisStyleValue read snake-case keys only like Python
+  ---
+  duration_ms: 0.168827
+  type: 'test'
+  ...
+# Subtest: chromeStyleHasFontFamily uses font-family key only like Python
+ok 133 - chromeStyleHasFontFamily uses font-family key only like Python
+  ---
+  duration_ms: 0.125996
+  type: 'test'
+  ...
+# Subtest: figureClassName uses class_name only like Python
+ok 134 - figureClassName uses class_name only like Python
+  ---
+  duration_ms: 0.125514
+  type: 'test'
+  ...
+# Subtest: figureClassNames uses class_names only like Python
+ok 135 - figureClassNames uses class_names only like Python
+  ---
+  duration_ms: 0.148943
+  type: 'test'
+  ...
+# Subtest: annotationClassName uses class_name only like Python
+ok 136 - annotationClassName uses class_name only like Python
+  ---
+  duration_ms: 0.11236
+  type: 'test'
+  ...
+# Subtest: figureExtraLegends uses extra_legends only like Python
+ok 137 - figureExtraLegends uses extra_legends only like Python
+  ---
+  duration_ms: 0.127926
+  type: 'test'
+  ...
+# Subtest: figureTitleOptions uses title_options only like Python
+ok 138 - figureTitleOptions uses title_options only like Python
+  ---
+  duration_ms: 0.152142
+  type: 'test'
+  ...
+# Subtest: figureLegendOptions uses legend_options only like Python
+ok 139 - figureLegendOptions uses legend_options only like Python
+  ---
+  duration_ms: 0.118443
+  type: 'test'
+  ...
+# Subtest: figureColorbarOptions uses colorbar_options only like Python
+ok 140 - figureColorbarOptions uses colorbar_options only like Python
+  ---
+  duration_ms: 0.14173
+  type: 'test'
+  ...
+# Subtest: figureShowLegend uses show_legend only like Python
+ok 141 - figureShowLegend uses show_legend only like Python
+  ---
+  duration_ms: 0.149838
+  type: 'test'
+  ...
+# Subtest: figureAxisOptions uses axis_options only like Python
+ok 142 - figureAxisOptions uses axis_options only like Python
+  ---
+  duration_ms: 0.139328
+  type: 'test'
+  ...
+# Subtest: figureAutorangeAxisOptions uses axis_options only like Python
+ok 143 - figureAutorangeAxisOptions uses axis_options only like Python
+  ---
+  duration_ms: 0.128661
+  type: 'test'
+  ...
+# Subtest: figureAutorangeAxisScale uses type only like Python _axis_scale
+ok 144 - figureAutorangeAxisScale uses type only like Python _axis_scale
+  ---
+  duration_ms: 0.172068
+  type: 'test'
+  ...
+# Subtest: figureAxisKind scatter Column.kind time_ms matches Python
+ok 145 - figureAxisKind scatter Column.kind time_ms matches Python
+  ---
+  duration_ms: 1.869715
+  type: 'test'
+  ...
+# Subtest: figureAxisKind matches Python _axis_kind
+ok 146 - figureAxisKind matches Python _axis_kind
+  ---
+  duration_ms: 0.169782
+  type: 'test'
+  ...
+# Subtest: chromeAxisTickKind uses Figure._axisKind like Python
+ok 147 - chromeAxisTickKind uses Figure._axisKind like Python
+  ---
+  duration_ms: 0.426722
+  type: 'test'
+  ...
+# Subtest: xyEfResolvedKind uses Figure._axisKind like Python
+ok 148 - xyEfResolvedKind uses Figure._axisKind like Python
+  ---
+  duration_ms: 0.290823
+  type: 'test'
+  ...
+# Subtest: figureAutorangeThetaUnit uses theta_unit only like Python
+ok 149 - figureAutorangeThetaUnit uses theta_unit only like Python
+  ---
+  duration_ms: 0.125859
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis theta_unit like Python set_axis
+ok 150 - setPolarMeta writes axis theta_unit like Python set_axis
+  ---
+  duration_ms: 0.252538
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis theta_zero like Python set_axis
+ok 151 - setPolarMeta writes axis theta_zero like Python set_axis
+  ---
+  duration_ms: 0.162049
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis theta_direction like Python set_axis
+ok 152 - setPolarMeta writes axis theta_direction like Python set_axis
+  ---
+  duration_ms: 0.087155
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis grid_shape like Python set_axis
+ok 153 - setPolarMeta writes axis grid_shape like Python set_axis
+  ---
+  duration_ms: 0.079283
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis hole like Python set_axis
+ok 154 - setPolarMeta writes axis hole like Python set_axis
+  ---
+  duration_ms: 0.087448
+  type: 'test'
+  ...
+# Subtest: setPolarMeta writes axis sector like Python set_axis
+ok 155 - setPolarMeta writes axis sector like Python set_axis
+  ---
+  duration_ms: 0.099445
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty theta_unit uses Python or-default
+ok 156 - _polarAxisSpecs empty theta_unit uses Python or-default
+  ---
+  duration_ms: 0.682102
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis theta_unit like Python _axis_spec
+ok 157 - _polarAxisSpecs uses axis theta_unit like Python _axis_spec
+  ---
+  duration_ms: 0.20547
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis theta_zero like Python _axis_spec
+ok 158 - _polarAxisSpecs uses axis theta_zero like Python _axis_spec
+  ---
+  duration_ms: 0.33577
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty theta_direction uses Python or-default
+ok 159 - _polarAxisSpecs empty theta_direction uses Python or-default
+  ---
+  duration_ms: 0.170311
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis theta_direction like Python _axis_spec
+ok 160 - _polarAxisSpecs uses axis theta_direction like Python _axis_spec
+  ---
+  duration_ms: 0.129931
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty grid_shape uses Python or-default
+ok 161 - _polarAxisSpecs empty grid_shape uses Python or-default
+  ---
+  duration_ms: 0.095579
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis grid_shape like Python _axis_spec
+ok 162 - _polarAxisSpecs uses axis grid_shape like Python _axis_spec
+  ---
+  duration_ms: 0.122956
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty sector uses Python or-default
+ok 163 - _polarAxisSpecs empty sector uses Python or-default
+  ---
+  duration_ms: 0.101344
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis sector like Python _axis_spec
+ok 164 - _polarAxisSpecs uses axis sector like Python _axis_spec
+  ---
+  duration_ms: 0.128604
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs empty hole uses Python or-default
+ok 165 - _polarAxisSpecs empty hole uses Python or-default
+  ---
+  duration_ms: 0.100714
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis hole like Python _axis_spec
+ok 166 - _polarAxisSpecs uses axis hole like Python _axis_spec
+  ---
+  duration_ms: 0.119927
+  type: 'test'
+  ...
+# Subtest: _polarAxisSpecs uses axis r_origin like Python _axis_spec
+ok 167 - _polarAxisSpecs uses axis r_origin like Python _axis_spec
+  ---
+  duration_ms: 0.172073
+  type: 'test'
+  ...
+# Subtest: packPolarSceneInput uses figure _range like Python _pack_polar_scene_input
+ok 168 - packPolarSceneInput uses figure _range like Python _pack_polar_scene_input
+  ---
+  duration_ms: 1.477594
+  type: 'test'
+  ...
+# Subtest: figureAxisIsLog uses axis type only like Python _axis_scale log
+ok 169 - figureAxisIsLog uses axis type only like Python _axis_scale log
+  ---
+  duration_ms: 0.102683
+  type: 'test'
+  ...
+# Subtest: figureAutorangeCategories uses _axis_categories only like Python
+ok 170 - figureAutorangeCategories uses _axis_categories only like Python
+  ---
+  duration_ms: 0.082085
+  type: 'test'
+  ...
+# Subtest: figureAutorangeDomain uses axis domain only like Python
+ok 171 - figureAutorangeDomain uses axis domain only like Python
+  ---
+  duration_ms: 0.150606
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForceBin2d uses force_bin2d only like Python
+ok 172 - scatterPayloadForceBin2d uses force_bin2d only like Python
+  ---
+  duration_ms: 0.077344
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForceDensity uses force_density tri-state like Python
+ok 173 - scatterPayloadForceDensity uses force_density tri-state like Python
+  ---
+  duration_ms: 0.079663
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForceDirect uses force_direct only like Python
+ok 174 - scatterPayloadForceDirect uses force_direct only like Python
+  ---
+  duration_ms: 0.070764
+  type: 'test'
+  ...
+# Subtest: scatterPayloadForcePyramid uses force_pyramid only like Python
+ok 175 - scatterPayloadForcePyramid uses force_pyramid only like Python
+  ---
+  duration_ms: 0.066436
+  type: 'test'
+  ...
+# Subtest: scatterPayloadNoRescan uses no_rescan only like Python
+ok 176 - scatterPayloadNoRescan uses no_rescan only like Python
+  ---
+  duration_ms: 0.070213
+  type: 'test'
+  ...
+# Subtest: figureXLabel uses x_label then axis label like Python
+ok 177 - figureXLabel uses x_label then axis label like Python
+  ---
+  duration_ms: 0.071307
+  type: 'test'
+  ...
+# Subtest: figureXLabel empty x_label falls through like Python or-fallthrough
+ok 178 - figureXLabel empty x_label falls through like Python or-fallthrough
+  ---
+  duration_ms: 0.056108
+  type: 'test'
+  ...
+# Subtest: figureYLabel uses y_label then axis label like Python
+ok 179 - figureYLabel uses y_label then axis label like Python
+  ---
+  duration_ms: 0.069974
+  type: 'test'
+  ...
+# Subtest: figureYLabel empty y_label falls through like Python or-fallthrough
+ok 180 - figureYLabel empty y_label falls through like Python or-fallthrough
+  ---
+  duration_ms: 0.053522
+  type: 'test'
+  ...
+# Subtest: plotTopAxisRoom uses top_axis_room only like Python
+ok 181 - plotTopAxisRoom uses top_axis_room only like Python
+  ---
+  duration_ms: 0.095382
+  type: 'test'
+  ...
+# Subtest: hexbinPacksRgbaPlane uses color_ch only like Python
+ok 182 - hexbinPacksRgbaPlane uses color_ch only like Python
+  ---
+  duration_ms: 0.237529
+  type: 'test'
+  ...
+# Subtest: sceneHexbinRgbaPlaneAdmit matches host table
+ok 183 - sceneHexbinRgbaPlaneAdmit matches host table
+  ---
+  duration_ms: 0.09175
+  type: 'test'
+  ...
+# Subtest: sceneMeshPaintPlaneAdmit matches host table
+ok 184 - sceneMeshPaintPlaneAdmit matches host table
+  ---
+  duration_ms: 2.174517
+  type: 'test'
+  ...
+# Subtest: meshHasPerItem matches Python has_per_item_channels
+ok 185 - meshHasPerItem matches Python has_per_item_channels
+  ---
+  duration_ms: 0.113551
+  type: 'test'
+  ...
+# Subtest: meshJoinedFill uses joined_fill only like Python
+ok 186 - meshJoinedFill uses joined_fill only like Python
+  ---
+  duration_ms: 0.07153
+  type: 'test'
+  ...
+# Subtest: sceneItemApplyOpacity matches host table
+ok 187 - sceneItemApplyOpacity matches host table
+  ---
+  duration_ms: 0.158562
+  type: 'test'
+  ...
+# Subtest: sceneItemWidthsAdmit matches host table
+ok 188 - sceneItemWidthsAdmit matches host table
+  ---
+  duration_ms: 0.163538
+  type: 'test'
+  ...
+# Subtest: itemWidths missing values fail-closes like Python
+ok 189 - itemWidths missing values fail-closes like Python
+  ---
+  duration_ms: 0.201594
+  type: 'test'
+  ...
+# Subtest: itemApplyOpacity missing values fail-closes like Python
+ok 190 - itemApplyOpacity missing values fail-closes like Python
+  ---
+  duration_ms: 0.142904
+  type: 'test'
+  ...
+# Subtest: sceneItemFillT matches host table
+ok 191 - sceneItemFillT matches host table
+  ---
+  duration_ms: 0.188919
+  type: 'test'
+  ...
+# Subtest: sceneFiniteAll matches host table
+ok 192 - sceneFiniteAll matches host table
+  ---
+  duration_ms: 0.130545
+  type: 'test'
+  ...
+# Subtest: sceneGradientSolidCss matches host table
+ok 193 - sceneGradientSolidCss matches host table
+  ---
+  duration_ms: 0.18458
+  type: 'test'
+  ...
+# Subtest: sceneArraysEqual matches host table
+ok 194 - sceneArraysEqual matches host table
+  ---
+  duration_ms: 0.161707
+  type: 'test'
+  ...
+# Subtest: clipQuantizeU8 matches host table
+ok 195 - clipQuantizeU8 matches host table
+  ---
+  duration_ms: 0.138555
+  type: 'test'
+  ...
+# Subtest: sceneConstantColorAdmit matches host table
+ok 196 - sceneConstantColorAdmit matches host table
+  ---
+  duration_ms: 0.118799
+  type: 'test'
+  ...
+# Subtest: sceneHiddenOrPerItemAdmit matches host table
+ok 197 - sceneHiddenOrPerItemAdmit matches host table
+  ---
+  duration_ms: 0.068149
+  type: 'test'
+  ...
+# Subtest: quantizeUnitU8 matches normalize then clip-quantize
+ok 198 - quantizeUnitU8 matches normalize then clip-quantize
+  ---
+  duration_ms: 0.13659
+  type: 'test'
+  ...
+# Subtest: colormapLutRgba8 matches ABI 206 RGB plus opaque alpha
+ok 199 - colormapLutRgba8 matches ABI 206 RGB plus opaque alpha
+  ---
+  duration_ms: 0.489324
+  type: 'test'
+  ...
+# Subtest: sceneHexbinPitchAdmit matches host table
+ok 200 - sceneHexbinPitchAdmit matches host table
+  ---
+  duration_ms: 0.098402
+  type: 'test'
+  ...
+# Subtest: sceneHeatmapExtentAdmit matches host table
+ok 201 - sceneHeatmapExtentAdmit matches host table
+  ---
+  duration_ms: 0.094447
+  type: 'test'
+  ...
+# Subtest: sceneHeatmapColormapAdmit matches host table
+ok 202 - sceneHeatmapColormapAdmit matches host table
+  ---
+  duration_ms: 0.091664
+  type: 'test'
+  ...
+# Subtest: sceneScatterPaintChannelAdmit matches host table
+ok 203 - sceneScatterPaintChannelAdmit matches host table
+  ---
+  duration_ms: 0.162024
+  type: 'test'
+  ...
+# Subtest: scatterPaintChannelNames matches Python per_item_channel_names
+ok 204 - scatterPaintChannelNames matches Python per_item_channel_names
+  ---
+  duration_ms: 0.113558
+  type: 'test'
+  ...
+# Subtest: scatterPacksPaintPlane missing kind matches Python empty not scatter
+ok 205 - scatterPacksPaintPlane missing kind matches Python empty not scatter
+  ---
+  duration_ms: 0.154871
+  type: 'test'
+  ...
+# Subtest: sceneHeatmapShapeAdmit matches host table
+ok 206 - sceneHeatmapShapeAdmit matches host table
+  ---
+  duration_ms: 0.13456
+  type: 'test'
+  ...
+# Subtest: ribbonEndRgbaPair uses color_ch only like Python
+ok 207 - ribbonEndRgbaPair uses color_ch only like Python
+  ---
+  duration_ms: 0.174623
+  type: 'test'
+  ...
+# Subtest: sceneRibbonColor2Classify matches host table
+ok 208 - sceneRibbonColor2Classify matches host table
+  ---
+  duration_ms: 0.183221
+  type: 'test'
+  ...
+# Subtest: classifyRibbonColor2 uses color_ch only like Python
+ok 209 - classifyRibbonColor2 uses color_ch only like Python
+  ---
+  duration_ms: 0.109176
+  type: 'test'
+  ...
+# Subtest: roundedRectPoly zero radii is four corners
+ok 210 - roundedRectPoly zero radii is four corners
+  ---
+  duration_ms: 0.131462
+  type: 'test'
+  ...
+# Subtest: sceneArtistAlphaCss is the Rust-owned keyword and paint rule
+ok 211 - sceneArtistAlphaCss is the Rust-owned keyword and paint rule
+  ---
+  duration_ms: 0.151956
+  type: 'test'
+  ...
+# Subtest: sceneArtistAlphaCss bounds its input at the Scene text limit
+ok 212 - sceneArtistAlphaCss bounds its input at the Scene text limit
+  ---
+  duration_ms: 0.182024
+  type: 'test'
+  ...
+1..212
+# tests 212
+# suites 0
+# pass 212
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 618.939395

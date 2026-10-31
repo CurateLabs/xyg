@@ -1,0 +1,18 @@
+{
+  "name": "pre-s4-before",
+  "command": [
+    "env",
+    "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/target/release/libxyg_core.so",
+    "node",
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern=actual.selected.hierarchy|lost.actual43|lost.actual44|uncertain43|constantMarkColor|sceneScatterPaintChannelAdmit",
+    "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+    "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geom.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.373,
+  "rawSha256": "76b2e3ad63dda59db8388aee1d74c4120911a5d2d65057fd8525b95590706dc1",
+  "log": "pre-s4-before.txt.gz",
+  "gzipSha256": "e76ca53b80f5093de7846e7aefea3cc3536461d20dc7429fa8d286b16898718c"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "pre-s4-hierarchy",
+  "command": [
+    "env",
+    "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/target/release/libxyg_core.so",
+    "node",
+    "--test",
+    "/home/ubuntu/.t3/worktrees/xyg/t3-880cb106/packages/xy-node/test/geo-live-hierarchy-host.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.283,
+  "rawSha256": "bd75f5367f3902a6d13759682bfff7cffb2ca5103108cf8594fe607699ce73bc",
+  "log": "pre-s4-hierarchy.txt.gz",
+  "gzipSha256": "9caf602b569544be893e0b6966a3a504057367791a51bd0f516b6860bcf0bc55"
+}
