@@ -1,0 +1,4 @@
+ERROR: packaged WASM assets are missing or stale:
+  - packages/xy-client/dist: missing xyg-wasm.wasm, xyg-wasm-inline.js, xyg-wasm.manifest.json
+  - python/xyg/static: missing xyg-wasm.wasm, xyg-wasm-inline.js, xyg-wasm.manifest.json
+Produce them with: node js/build.mjs && npm run build:wasm   (needs `rustup target add wasm32-unknown-unknown`; in CI this is the `wasm_assets` job, downloaded as the `wasm-assets` artifact)

@@ -1,0 +1,41 @@
+TAP version 13
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 1 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 77.267397
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/task-tmp/repair-baseline/optimized.wasm","bytes":1860323,"sha256":"b6b3a6f1228e9cd1dd612b585be72e0709474a1be92783f4470bd3304bb21bd8","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/release/libxyg_core.so","nativeSha256":"56ec4b1a47f555210459c4bbe6c628525c39ee549d352fc2652e497308e9a39c","diagnosticModule":true}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 2 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 289.167491
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 3 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 20.525242
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 4 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 52.930479
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 5 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 12.228441
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 599.859647

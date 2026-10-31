@@ -1,0 +1,74 @@
+[
+  {
+    "fixture": "tests/fixtures/density_emit_cross_host.json",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/density_emit_cross_host.mjs"
+    ],
+    "beforeAbi": 396,
+    "afterAbi": 397,
+    "allOtherDataEqual": true,
+    "beforeSha256": "260f00446c0fdd2a66462720333adb6b564a9054eb2e0d31f63e4e03009204b7",
+    "afterSha256": "012a42ea08b061aed82ab75c2027f1cc7d86c089418595c562a0ab683eda1e56",
+    "unchangedDataSha256": "6364308639422aa94a8d7609f6b9e5c793abd99ea0591389eadd6a61773f57a9"
+  },
+  {
+    "fixture": "tests/fixtures/force_emit_cross_host.json",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/force_emit_cross_host.mjs"
+    ],
+    "beforeAbi": 396,
+    "afterAbi": 397,
+    "allOtherDataEqual": true,
+    "beforeSha256": "0da14320fed347cd867d7de132553b7f392837075367e4aca732b209a446ceae",
+    "afterSha256": "07cd7461121ca69690d11da3ba4ca3af8856e7e2abccdfc44bcf89e3c5495c59",
+    "unchangedDataSha256": "e7fd8643e8ac7f30f3ce30a107a6dd66d8d2638d92fbdaf177d8ed0fda920a8c"
+  },
+  {
+    "fixture": "tests/fixtures/geo_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py"
+    ],
+    "beforeAbi": 396,
+    "afterAbi": 397,
+    "allOtherDataEqual": true,
+    "beforeSha256": "bf938f4a46717998c263a822cba46663aa64319d163a2ff4395126cc9ee65590",
+    "afterSha256": "597838dd7174a62a704abb887944211191e38c9811e5b2cd6bd2826bc14fe88b",
+    "unchangedDataSha256": "54dbcc7afd955c6cbf1c95ed9e3f7d686e1232d0a6e2bb2e05c15ace9495fa21"
+  },
+  {
+    "fixture": "tests/fixtures/payload_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py"
+    ],
+    "beforeAbi": 396,
+    "afterAbi": 397,
+    "allOtherDataEqual": true,
+    "beforeSha256": "6da13b5ff95ce93e7a615709649279ddc3677363f05aa61ca46d7e5ca69f21ed",
+    "afterSha256": "e94bb3d4decf1899099781f6dd2c01d3d054dc85eb32ca9cfb54d16a6df0f6ad",
+    "unchangedDataSha256": "590c4fd07306cbb44e765099c95c168a222e4fbf82618b08f41dc4367b5168bb"
+  },
+  {
+    "fixture": "tests/fixtures/series_palette_cross_host.json",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "tests/test_series_palette_cross_host.py",
+      "--write"
+    ],
+    "beforeAbi": 396,
+    "afterAbi": 397,
+    "allOtherDataEqual": true,
+    "beforeSha256": "71995524451d299b296ab1b18933b401cecdc522baf2cacf4b4c7e462b2b65bb",
+    "afterSha256": "cab889bb2539688894c6f88ee6d46870d0c386dbd76558d971111f31705e736b",
+    "unchangedDataSha256": "cc92722de0c4fbb776ff66f801fc310d678571f4f6dc87d0a5226cbcb42f79c0"
+  }
+]

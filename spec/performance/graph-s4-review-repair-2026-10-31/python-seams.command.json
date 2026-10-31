@@ -1,0 +1,30 @@
+{
+  "name": "python-seams",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py",
+    "tests/test_graphforge.py",
+    "tests/test_graphforge_scene.py",
+    "tests/test_graphforge_semantic_evidence.py",
+    "tests/test_graphforge_fixture_generation.py",
+    "tests/test_graphforge_contract_corpus.py",
+    "tests/test_cose_native_parity.py",
+    "tests/test_temporal_columns.py",
+    "tests/test_temporal_graph_native.py",
+    "tests/test_temporal_controller.py",
+    "tests/test_graph_style.py",
+    "tests/test_graph_semantic_mapping.py",
+    "tests/test_abi_parity.py",
+    "tests/test_gen_wasm_abi.py",
+    "-k",
+    "not browser"
+  ],
+  "exitCode": 0,
+  "seconds": 22.089,
+  "rawSha256": "955ab699478defb0d3ee05bb80ce600ed7f5b7b773c9321bb7ccc7669285d524",
+  "log": "python-seams.txt.gz",
+  "gzipSha256": "61474e26c7bdbf7218adeef6c4750c8f3e9be7784313c8230b4074a6635616da"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "final-staged-u32",
+  "command": [
+    "node",
+    "--test",
+    "tests/browser/graph_session_encoder_test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.365,
+  "rawSha256": "de84e8223108c74c70798d0b5f501e7189fb6da9e4f8a0b973ddaf3eb0c9e460",
+  "log": "final-staged-u32.txt.gz",
+  "gzipSha256": "ee4c2e8477ed93c3eea8f102a230346f4208aa2e1651a2db6662cc6815eda662"
+}

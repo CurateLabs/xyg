@@ -1,0 +1,16 @@
+{
+  "name": "render-smoke",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/render_smoke_nonumpy.py",
+    "--chromium",
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  ],
+  "exitCode": 1,
+  "seconds": 0.133,
+  "rawSha256": "10600bd82eef86d55075dbdefd6244aae913f505fd0db1183952cc868e68cb1a",
+  "log": "render-smoke.txt.gz",
+  "gzipSha256": "8be62e1157d77257786dc87b090a88cecb992a3cb580ebc80033bb2a508965b8"
+}

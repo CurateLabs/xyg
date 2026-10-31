@@ -1,0 +1,16 @@
+{
+  "name": "append-smoke",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/append_stream_smoke.py",
+    "--chromium",
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  ],
+  "exitCode": 1,
+  "seconds": 0.308,
+  "rawSha256": "f8561d03a7b739089af1ea2cb092e313b098c67e8c0cbc9d5731ea43af288722",
+  "log": "append-smoke.txt.gz",
+  "gzipSha256": "42657f363c1ab68562c6affae92041c7bb41320149323e63c4e380584a89d488"
+}

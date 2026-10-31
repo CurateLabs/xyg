@@ -1,0 +1,19 @@
+{
+  "name": "python-refreshed-fixtures",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_density_emit_cross_host.py",
+    "tests/test_force_emit_cross_host.py",
+    "tests/test_geo_cross_host.py",
+    "tests/test_payload_cross_host.py",
+    "tests/test_series_palette_cross_host.py"
+  ],
+  "exitCode": 0,
+  "seconds": 3.494,
+  "rawSha256": "58d157be35645fb8138387f0474e7592531a08c79acd76670aa4a7f43acdc33b",
+  "log": "python-refreshed-fixtures.txt.gz",
+  "gzipSha256": "1f69ab60251cd0905875e7f6340e80e198d159a94c0f74abf6361617133e228a"
+}

@@ -1,0 +1,17 @@
+{
+  "parent": "dee3ea37540a7126c3082ae59624bb02881bb00f",
+  "inheritedDiffAgainstBd57": "8b7b36df21bcaefb9d3f37eb4f77a4b68c6470fdfba7d3d796ccd5efc07e7480",
+  "historicalFiles": 2179,
+  "historicalChanged": [],
+  "protected": {
+    "Cargo.toml": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    ".cargo/config.toml": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92",
+    "package.json": "7069837445cf48dd6ec668baa9cb41916cfddd48d2a917ef564b4db1b3f3b870",
+    "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "js/package-wasm.mjs": "01d1ed7d3e9b9d038099d1124116bda578b62e142d4efd216cc12d6ea493caf3",
+    "js/optimize-wasm.mjs": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658",
+    "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+  }
+}

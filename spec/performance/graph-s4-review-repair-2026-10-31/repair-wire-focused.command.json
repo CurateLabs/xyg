@@ -1,0 +1,17 @@
+{
+  "name": "repair-wire-focused",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::wire",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 8.74,
+  "rawSha256": "0e6ec3d6bf144768aefa6ebc741e9704f846d3e428a2c61c7e4df0c67d88ea74",
+  "log": "repair-wire-focused.txt.gz",
+  "gzipSha256": "34b96e1a1f8dde68d9e9620dd189795b519a0f224edcf556db71375cfd0299f0"
+}

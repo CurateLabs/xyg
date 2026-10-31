@@ -1,0 +1,16 @@
+{
+  "name": "native-tests-after-abi-parameter",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-core",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 25.176,
+  "rawSha256": "02e431e7abbd0cf0d5c4f78d3b7db7392a612cd09461ebc7598b60db4e8360c2",
+  "log": "native-tests-after-abi-parameter.txt.gz",
+  "gzipSha256": "85f319b67daf610d6b4fe5aac56f3a21e5e200b01dade10e439c5da403857d54"
+}

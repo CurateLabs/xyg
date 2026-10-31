@@ -1,0 +1,18 @@
+{
+  "name": "rust-final-focused",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::wire",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "exitCode": 0,
+  "seconds": 14.512,
+  "rawSha256": "8e569d9a09b6e56d6c6cad1fce42f988019425e1db4e943afd9eed6915f42ea3",
+  "log": "rust-final-focused.txt.gz",
+  "gzipSha256": "4b2e4ab4b663c41d7fcf461cb2ce84856db2dc68099430371df054a96355011a"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "baseline-byte-parity-correct",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/task-tmp/repair-baseline/optimized.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.637,
+  "rawSha256": "727c188621800c835b38a8c39e2f2d00d932dead78877c87153aa0e45f3deb3b",
+  "log": "baseline-byte-parity-correct.txt.gz",
+  "gzipSha256": "d7c1b3a466a45c34cc870761352b1b4b3f181668564a2dc5d6a78c5c018f64dd"
+}

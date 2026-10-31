@@ -1,0 +1,13 @@
+{
+  "name": "native-baseline",
+  "command": [
+    "cargo",
+    "build",
+    "--release"
+  ],
+  "exitCode": 0,
+  "seconds": 122.827,
+  "rawSha256": "03b144d8a1a7bcaf739ae16f3e1ec2f94f5cdabda5acf24fa76532ff02ba8942",
+  "log": "native-baseline.txt.gz",
+  "gzipSha256": "5df78d9f56993661e548a77b945d92c6427d9f390aa3f361cca799ca1a173dbc"
+}

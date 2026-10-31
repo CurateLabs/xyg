@@ -1,0 +1,14 @@
+{
+  "name": "shipping-assets-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/verify_wasm_assets.py"
+  ],
+  "exitCode": 1,
+  "seconds": 0.066,
+  "rawSha256": "e08872e227103e96bbcacbbdf8cc599c093d381c41825d8e62fe70287ebb49ee",
+  "log": "shipping-assets-final.txt.gz",
+  "gzipSha256": "7d7cb221eafd0c57b02d2ee5ad34addce9bab199859dadbe4f4e7f9359f2dcbd"
+}

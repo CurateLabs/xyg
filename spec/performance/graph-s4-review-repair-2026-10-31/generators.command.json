@@ -1,0 +1,15 @@
+{
+  "name": "generators",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/gen_abi_manifest.py",
+    "--check"
+  ],
+  "exitCode": 0,
+  "seconds": 3.084,
+  "rawSha256": "509f3a71691bfa786677e0c2252c619bc5a39b79e6c8399f8469f07e8dae5468",
+  "log": "generators.txt.gz",
+  "gzipSha256": "12b4a99cdadf2537066bcf2a9e13b31cde048e63dfc1c1b6ff76bf218721ffc6"
+}

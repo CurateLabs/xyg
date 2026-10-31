@@ -1242,8 +1242,11 @@ before camera/revision replacement; genuine coincident or valid occluded
 pieces may still be absent, including tiny polygon spans with unbounded
 parallel-plane sentinels. Local S3 admission checks circle discriminants and
 square/diamond half-plane arithmetic before canonical clipping; shared legacy
-painter semantics and ABIs are unchanged (graph-interaction.md §2.3). The S4 paint buffer
-projection and S5 painter/controller remain outstanding.
+painter semantics and ABIs are unchanged (graph-interaction.md §2.3).
+S4 now projects the retained resolved CPU `RenderOutput.paint` through named
+XYGR sections (graph-interaction.md, S4 review repair), with no host policy or
+GPU f64 upload. S5 generic Rust lowering integration, painter/controller and
+emphasis rendering remain outstanding.
 
 The later S3 [clip repair and package decision receipt](../performance/graph-s3-package-budget-2026-10-31/README.md)
 records local validation under the parent's 1,513-KiB raw / unchanged 626-KiB gzip

@@ -216,8 +216,13 @@ snapshot. This graph request-level delivery contract intentionally differs from
 temporal's normalized no-op suppression, which remains unchanged. Transport refs
 are strictly ordered by kind (Node, Edge, Derived), UUID bytes within persisted
 kinds, and `(exact result id: None before Some, layer, path, order)` for Derived;
-aggregates and local result-table indices are rejected. Exact result-id strings
-obey the composition's 1–128-byte identifier grammar. Validate the whole event
+aggregates and local result-table indices are rejected. Exact result-id strings preserve the successful XYGF reader contract: arbitrary
+valid UTF-8, including present-empty, spaces, Unicode and more than 128 bytes.
+This is distinct from XYGQ authoring, whose 1–128-byte identifier grammar in
+`request.rs` is unchanged. Reader success never implied that XYGQ accepted
+empty authoring IDs. Transport length is bounded by checked u32 pool offsets,
+request/selection caps and charged session resources; a valid long ID can
+return Budget, never Invalid merely for the authoring grammar. Validate the whole event
 before zero/wrong group, self or stale filtering. Unknown refs and derived refs
 from another generation are unmatched; UUID refs still resolve. Resolve all refs
 before selection replacement, then commit the source watermark only on success.
@@ -508,9 +513,9 @@ Each refs byte plane starts with `[count:u32, string_bytes:u32]`, followed by
 `uuid[16]@8`, `layer:u32@24`, `render_revision:u32@28`, `path:u64@32`,
 `order:u64@40`, `string_offset:u32@48`, `string_length:u32@52`.
 Unused fields are zero. Derived refs have NIL UUID and zero render revision;
-`string_offset=0xffffffff,length=0` means absent id. Some ids have length 1–128
-and the composition identifier grammar; an empty Some id is invalid and never
-aliases absence. Aggregate index is in `layer`; other identity fields are zero.
+`string_offset=0xffffffff,length=0` means absent id. Present ids contain exact UTF-8 bytes of any length admitted by the request
+and resource caps. A present-empty id has the actual current pool cursor and
+length zero; it never uses the absence sentinel. Aggregate index is in `layer`; other identity fields are zero.
 Pools must be contiguous in record order with no unused bytes. All outgoing
 derived refs use exact strings, never local table slots or hashes.
 `remote.bytes` is itself an XYGI container with `remote.u64` = group, source,
@@ -526,7 +531,9 @@ edge=1) in the existing ring order, paged by the same bounds. Results always
 include current render geometry/style/emphasis, source flags, focus, summary
 and the bounded companion/candidates page; style changes are delivered even
 at the same render revision. Position records are 80 bytes: one fixed 56-byte
-node ref, x/y f64, pinned u32 and zero reserved u32. No Scene/painter change.
+node ref, x/y f64, pinned u32 and zero reserved u32. The resolved CPU paint snapshot below uses the existing container and
+`RenderOutput.paint`; there is no second host style/layout/router or Scene path.
+No S5 painter/controller change.
 
 Commands execute on an admitted speculative session and interaction state
 under one authoritative temporal world lock. Typed mutation, render, semantic
@@ -593,3 +600,128 @@ diagnostic staged assets do not waive that failure. Detailed append-only proof:
 [S4 local receipt](../performance/graph-s4-local-2026-10-31/README.md#final-merged-source-handoff).
 `coordinate_deliver` targets one explicit receiver handle with ApplyRemote (16);
 transport peer enumeration/routing is not public host integration in S4.
+
+
+### S4 review repair: resolved CPU publication sections
+
+Every successful post-Open command (including style-only operations at the same
+revision) carries all sections below, index zero, including zero-length sections.
+Open remains an ingress acknowledgment; Poll carries only its event/status.
+Let N/M/P/F denote published nodes/edges/clipped pieces/frame bands. Container
+scalar counts equal the counts below. Little-endian fields are packed explicitly,
+without Rust struct padding; reserved bytes must be zero.
+
+| Section | Container dtype / scalar count | Fixed record, in field order |
+|---|---|---|
+| `paint.node.center.f64` | F64 / 2N | mapped screen center x,y |
+| `paint.node.style.bytes` | Bytes / 60N | style + semantic layers below |
+| `paint.edge.style.bytes` | Bytes / 60M | style + semantic layers below |
+| `paint.piece.index.u64` | U64 / 2P | published edge index; flags bit0 single_piece, bit1 head present, all others zero |
+| `paint.piece.geometry.f64` | F64 / 14P | start x,y; end x,y; half_width; dash on,off; dash_offset; head triangle x,y ×3 (six zeros when absent) |
+| `paint.frame.node.u64` | U64 / F | published node index |
+| `paint.frame.geometry.f64` | F64 / 5F | xmin,ymin,xmax,ymax,half_width |
+
+A 60-byte style/layers record is: fill RGBA u8@0, stroke RGBA@4,
+halo RGBA@8; size/width/opacity f32@12/16/20; shape/dash/arrow/state
+u8@24/25/26/27; semantic halo/body/stroke RGBA@28/32/36;
+halo_extent/body_width/dash_on/dash_off f32@40/44/48/52; head u8@56
+(0/1); reserved u8@57..59=0. These are the resolver's exact values;
+style size is the outer node diameter. All geometry and style floats are finite.
+The Rust `wire::decode_paint` validator reconstructs `PaintGeometry` with no
+semantic, route or layout evaluation, checking types, strides, cross-plane
+counts, indices, flags, absent-head zeros and reserved bytes. Scalar type/count
+mismatches and malformed pools remain Invalid. Node and edge flags remain the
+source-indexed `node.flags.u32` / `edge.flags.u32`; visual/emphasis planes and
+membership CSR retain their existing publication indexing.
+
+Vector order is canonical draw order within each pass: frame bands, shafts,
+heads, nodes (later vector index wins within a pass). Pick precedence is nodes,
+heads, shafts, frame bands. The piece record refers to its edge style/layers;
+frames refer to their node style. Routed clipped endpoints, dash origins and
+head vertices are already resolved by Rust. Aggregate snapshots include neutral
+aggregate styles even for singleton memberships and omit compound frames.
+
+These f64 geometry sections are a **resolved CPU publication snapshot**, not
+vertex buffers or a new GPU wire. They allow host-independent inspection and
+replay of the same geometry used by the pick index. Subsequent generic GPU
+encoding remains Rust-owned and must use the existing §29 offset-f32/u8
+lowering. Hosts must not upload these f64 arrays directly, narrow them in
+TypeScript, or recompute semantic/router policy. S5 controller/shader/DOM/ARIA
+and emphasis rendering remain outstanding.
+
+### S4 review repair: admission and owner transitions
+
+The unchanged browser default is 16 MiB, native default / arena maximum 384 MiB.
+A real two-node/one-edge XYGF open/render/select/focus is admitted at 16 MiB.
+This is a bounded tiny-session proof, not arbitrary-cardinality admission or
+S7 scale/responsiveness acceptance. Every command still speculatively clones,
+renders and serializes: O(source + publication) work per command. No interaction
+latency improvement is claimed.
+
+Before candidate allocation, checked admission reserves the following peak
+envelope. With D encoded document bytes, n/m source counts, R=n+m,
+S=min(R,10,000), Q=min((2n+11m)*4096,1,048,576), W coordination watermarks:
+
+| Component | Reserved bytes | Scope |
+|---|---:|---|
+| bounded tables/codec metadata | 98,304 | fixed baseline overhead; bounded section metadata is covered by document/request factors |
+| document/decoded copies | 48D | retained document, identity/style tables, old/new decoding and codec temporary copies |
+| source/publication/layout/route work | 8,192R | old/new publication/index primitives, membership, route scratch (up to 11 pieces/edge), layout and query arrays |
+| grid duplication | 16Q | old/new bounded grid entries; includes up to n compound bands as well as n nodes |
+| possible local state | 1,024(4S+n+1) | four capped identity planes, all possible node pins, focus; tree overhead and bounded delta/outcome/candidate copies |
+| watermarks | 128W | retained/cloned coordination gate |
+| expanded document text | 128T | T = per-row label bytes + layer ID bytes + m × longest layer ID byte length |
+| retained request/reply caches | 3 × each actual byte length | opening, Open reply, last request and last reply |
+| next request/staging | 128 × actual request bytes + external | decoded request identity copies, codec work; WASM arena/output/other owner retention is external |
+| replacement | full new document envelope | Update retains old while admitting new |
+
+Current Owned state is charged additionally. Inside the authoritative owner
+lock, before cloning bound state, actual state items and exact UTF-8 bytes are
+also charged at 1,024/item and 128/text byte. This includes all four planes,
+pins and focus, even identities retained by another session but absent from
+this document. Pending outbound exact-ID bytes are separately charged at 128×.
+All products/sums are checked; overflow or exceeding the arena returns Budget
+before candidate/state/sequence/cache mutation. Borrowed request/event/ref
+validation checks UTF-8, offsets, sentinel, reserved fields, ordering and count
+caps without cloning result-ID text before admission.
+
+T counts dictionary-expanded labels at every row occurrence: XYGF uses a
+monotonic-offset TextList, not Arrow dictionary indices, so its entire per-row
+UTF-8 pool is charged before allocating Strings. The m×longest-ID bound covers
+repeated derived identities, even when a short document stores one layer ID.
+The 128× text allowance covers retained/speculative/state/delta/outcome copies,
+20,000 changed refs, 10,000 pending refs, 200 candidates and focus, old/new
+reference pools/builders/final replies, and companion formatting. Arbitrary UTF-8
+Debug escaping can expand a byte up to tenfold; subsequent cell escaping up to
+twice that, with rows, joined rows and builder/final buffers overlapping. The
+128× envelope includes these expansions and intermediate copies. Fixed item
+reserves account for string headers separately. This intentionally refuses
+some inputs that would fit actual allocation; it is not an RSS report.
+
+Bind/Unbind validate the old LIVE owner's frame revision and destination stamp
+in the same authoritative snapshot immediately before installation. Same-owner
+rebind validates, constructs and installs under that owner's one lock; native
+adapters identify the underlying owner, not their temporary wrapper allocation.
+Cross-owner bind constructs the destination snapshot first and releases its
+lock, then validates the old owner and installs under the old owner's lock.
+No owner locks are nested. A destination frame advancing after its snapshot is
+handled by the usual next-operation stale check / Render recovery. A change to
+the old frame during construction refuses Stale without installation. Unbind
+validates a live old owner under its lock; a disposed owner explicitly permits
+Unbound-to-unbind recovery with the last session stamp. Failure preserves owner,
+session, publication, retry cache, sequence and outbound event. Render refreshes
+the stamp, allowing the same unconsumed operation sequence to recover.
+
+Repair evidence is append-only in
+[the review-repair receipt](../performance/graph-s4-review-repair-2026-10-31/README.md).
+Historical S1–S4 receipts, including failed package/diagnostic proofs, are unchanged.
+
+
+The native S4 create parameter is named `document_bytes` in generated C/Koffi
+metadata so the existing Node browser-global guard does not confuse its FFI
+signature string with a runtime global. All 537 native binary function types,
+argument order and calling convention remain unchanged (ABI 397); official ABI
+generation updates the named-signature digest. No guard exemption or runtime
+host behavior change is involved. The final repaired module remains over the
+unchanged package gates; diagnostics and final independent review do not imply
+shipping or M4/#36 acceptance.

@@ -1,0 +1,12 @@
+{
+  "name": "diagnostic-materialize",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-review-repair-2026-10-31/diagnostic_assets.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 48.938,
+  "rawSha256": "3d15c4291acd8edf4db6dcd3c02cb7c1503a64cec4a1420ce077238d80f934ac",
+  "log": "diagnostic-materialize.txt.gz",
+  "gzipSha256": "0ddb6da0648f88554997ea51428fe5eefcf58fb0a55542590006bff85d04c9f9"
+}

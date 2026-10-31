@@ -1,0 +1,10 @@
+--- a/crates/xyg-engine/src/graphforge/interaction/wire.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/wire.rs
+@@ -1025,6 +1025,7 @@
+     }
+ }
+ impl GraphSession {
++    #[inline(never)]
+     fn candidate(&self, world: &World<'_>) -> Self {
+         let mut next = self.clone();
+         next.slot = StateSlot::Owned(Box::new(world.state.clone()));

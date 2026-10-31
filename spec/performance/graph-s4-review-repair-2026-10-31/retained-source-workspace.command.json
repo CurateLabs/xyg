@@ -1,0 +1,15 @@
+{
+  "name": "retained-source-workspace",
+  "command": [
+    "cargo",
+    "test",
+    "--workspace",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 139.479,
+  "rawSha256": "5793006e82aea24964a2382968fadfaf9d0291e50cc3c4ea0b1274f3309bce60",
+  "log": "retained-source-workspace.txt.gz",
+  "gzipSha256": "004e26d108490a4f13fb3e3c98835025c1c7f4d11a0efc68f0dc56276419b36d"
+}

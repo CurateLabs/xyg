@@ -1,0 +1,18 @@
+{
+  "name": "python-final-seams",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py",
+    "tests/test_temporal_graph_native.py",
+    "tests/test_temporal_controller.py",
+    "tests/test_abi_parity.py"
+  ],
+  "exitCode": 0,
+  "seconds": 12.911,
+  "rawSha256": "50f8de570e480360ca8f53fd6487f0bec94c7df74b64d049d09fa2c861c79d37",
+  "log": "python-final-seams.txt.gz",
+  "gzipSha256": "8417291f08c1704dc0c138d9f2e418512273ddb8cfd6b8940b35e8961b0fe7e3"
+}

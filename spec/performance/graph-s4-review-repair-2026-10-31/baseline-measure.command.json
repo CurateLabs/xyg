@@ -1,0 +1,13 @@
+{
+  "name": "baseline-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s4-review-repair-2026-10-31/measure.mjs",
+    "baseline"
+  ],
+  "exitCode": 0,
+  "seconds": 46.743,
+  "rawSha256": "7990b5e2fae091433b47bef63ad3a72186d709f68f100243ebb26c9d12a8e07d",
+  "log": "baseline-measure.txt.gz",
+  "gzipSha256": "c4335456dcb69f19714b380f9101a7537d947aeee401403e8d057a777fd61da5"
+}

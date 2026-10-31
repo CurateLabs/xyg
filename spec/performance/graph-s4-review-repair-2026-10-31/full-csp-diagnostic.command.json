@@ -1,0 +1,17 @@
+{
+  "name": "full-csp-diagnostic",
+  "command": [
+    "env",
+    "-u",
+    "XYG_RELEASE_COMMIT",
+    "XYG_BROWSER_DIST=/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/task-tmp/s4-review-repair-diagnostic-assets/packages/xy-client",
+    "XYG_WASM_FOUNDATION_REPORT=/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/spec/performance/graph-s4-review-repair-2026-10-31/full-csp-diagnostic.json",
+    "node",
+    "scripts/wasm_foundation_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 14.079,
+  "rawSha256": "5cd50bf1d8b45ce475e72ca0bf44888775f90506d2b4e10c9f72549d879d0eca",
+  "log": "full-csp-diagnostic.txt.gz",
+  "gzipSha256": "0a743ab46009c8d64a27222d3f54a7b72c673821cd8d6e9cfbedac8c602d7614"
+}

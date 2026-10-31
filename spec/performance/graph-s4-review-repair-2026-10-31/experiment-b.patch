@@ -1,0 +1,17 @@
+--- a/crates/xyg-engine/src/graphforge/interaction/wire.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/wire.rs
+@@ -1173,7 +1173,13 @@
+         .replace('\n', "\\n")
+ }
+ fn uuid_text(id: &Uuid) -> String {
+-    id.iter().map(|v| format!("{v:02x}")).collect()
++    const HEX: &[u8; 16] = b"0123456789abcdef";
++    let mut text = String::with_capacity(32);
++    for &byte in id {
++        text.push(char::from(HEX[usize::from(byte >> 4)]));
++        text.push(char::from(HEX[usize::from(byte & 15)]));
++    }
++    text
+ }
+ fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
+     refs.iter()

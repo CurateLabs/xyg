@@ -1,0 +1,13 @@
+{
+  "name": "experiment-b-native",
+  "command": [
+    "cargo",
+    "build",
+    "--release"
+  ],
+  "exitCode": 0,
+  "seconds": 164.305,
+  "rawSha256": "f44862fc1bf545287e0a52c0e775e3fdd60a5a793b77b679e0776c521cb97bdb",
+  "log": "experiment-b-native.txt.gz",
+  "gzipSha256": "29300de35acb6b4b6aee80bfd6f79f4a7de988c428b9c6bfbe9dc1b80589814f"
+}

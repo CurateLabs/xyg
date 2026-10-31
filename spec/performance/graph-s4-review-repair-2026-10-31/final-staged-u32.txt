@@ -1,0 +1,17 @@
+TAP version 13
+# browser DT.u32 encoder: real TypeScript module bytes equal Node codec, including u32::MAX
+# Subtest: tests/browser/graph_session_encoder_test.mjs
+ok 1 - tests/browser/graph_session_encoder_test.mjs
+  ---
+  duration_ms: 320.680791
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 327.734846

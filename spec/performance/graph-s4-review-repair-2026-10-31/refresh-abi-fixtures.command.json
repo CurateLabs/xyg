@@ -1,0 +1,14 @@
+{
+  "name": "refresh-abi-fixtures",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s4-review-repair-2026-10-31/refresh_abi_fixtures.py"
+  ],
+  "exitCode": 0,
+  "seconds": 2.041,
+  "rawSha256": "8c72887ddae5700f0e598f829166d6b9d584b168a9f13e4afee4b8044e3dde52",
+  "log": "refresh-abi-fixtures.txt.gz",
+  "gzipSha256": "8cf9c10d2a2835c0e3952305d3e29184418e324387b7c0f50226096f88738cb6"
+}

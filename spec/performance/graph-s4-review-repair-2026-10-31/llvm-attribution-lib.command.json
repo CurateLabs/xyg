@@ -1,0 +1,20 @@
+{
+  "name": "llvm-attribution-lib",
+  "command": [
+    "cargo",
+    "rustc",
+    "-p",
+    "xyg-wasm",
+    "--lib",
+    "--release",
+    "--target",
+    "wasm32-unknown-unknown",
+    "--",
+    "--emit=llvm-ir,link"
+  ],
+  "exitCode": 0,
+  "seconds": 24.096,
+  "rawSha256": "30cca8f93908c30ff66967ea46f69aca00f347390614a8d5e9e0e9bdbb0d5666",
+  "log": "llvm-attribution-lib.txt.gz",
+  "gzipSha256": "44cc94822ad829626f9ad48982b8f7635cdec495e03ca6aae64f322a5199b641"
+}

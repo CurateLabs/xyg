@@ -1,0 +1,13 @@
+{
+  "name": "native-after-abi-parameter",
+  "command": [
+    "cargo",
+    "build",
+    "--release"
+  ],
+  "exitCode": 0,
+  "seconds": 10.156,
+  "rawSha256": "4232bf246d1c93a62964f0f92664fcbc1e446a35912cfeef26b6696bf06872c4",
+  "log": "native-after-abi-parameter.txt.gz",
+  "gzipSha256": "b281deddea7127f469df8a1a03d48dcc79ed98acf6fbd3ea7b5919ae6ce6c0f6"
+}

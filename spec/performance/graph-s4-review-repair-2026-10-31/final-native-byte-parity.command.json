@@ -1,0 +1,15 @@
+{
+  "name": "final-native-byte-parity",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/task-tmp/repair-experiment-b/optimized.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.662,
+  "rawSha256": "d96772fa3a6c2d8f38c57930b70c9ac024193b9e77c00a1178d8127a8c3b2499",
+  "log": "final-native-byte-parity.txt.gz",
+  "gzipSha256": "d135782da47836df2c6524ce1870a4db400010ce7e8df998d0033f34334cef09"
+}

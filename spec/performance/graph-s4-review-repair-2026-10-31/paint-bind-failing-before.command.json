@@ -1,0 +1,19 @@
+{
+  "name": "paint-bind-failing-before",
+  "command": [
+    "cargo",
+    "test",
+    "--manifest-path",
+    "target/task-tmp/before/Cargo.toml",
+    "-p",
+    "xyg-engine",
+    "review_",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 101,
+  "seconds": 43.96,
+  "rawSha256": "1fed38067b9d744df7d7a7d77113a85141970b579080ef853e0c74bb51c19004",
+  "log": "paint-bind-failing-before.txt.gz",
+  "gzipSha256": "297590f9caab7c9cc0ef2e70e90ac260f0eaf2ec301427335be730189d7c2542"
+}
