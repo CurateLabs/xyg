@@ -162,14 +162,23 @@ pub fn resolve_parents(
             return Err(ProjectionError::InvalidArgument);
         }
         if valid == 1 {
-            if id == [0; 16] {
-                return Err(ProjectionError::MalformedUuid);
-            }
-            parents[i] = dense(&id).ok_or(ProjectionError::MissingEndpoint)?;
+            parents[i] = resolve_parent_uuid(&id, &dense)?;
             parent_validity[i] = 1;
         }
     }
     Ok((parents, parent_validity))
+}
+
+/// Shared UUID validation and lookup for one declared parent. Collectors that
+/// already hold optional declarations need no intermediate UUID/validity planes.
+pub(crate) fn resolve_parent_uuid(
+    id: &Uuid,
+    dense: impl FnOnce(&Uuid) -> Option<u64>,
+) -> Result<u64, ProjectionError> {
+    if *id == [0; 16] {
+        return Err(ProjectionError::MalformedUuid);
+    }
+    dense(id).ok_or(ProjectionError::MissingEndpoint)
 }
 
 /// A resolved parent plane that is not a forest.

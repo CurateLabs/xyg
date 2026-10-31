@@ -1286,7 +1286,14 @@ session is not exported from WASM until S3. The combined optimized build measure
 **1,547,598 raw / 640,237 gzip6 bytes**, exceeding the unchanged gates by
 **4,430 raw / 1,261 gzip bytes**. Packaging fails; diagnostic functional tests do
 not waive that failure. Source/artifact hashes, reproduction commands and narrow
-sharing candidates are in [S1 recovery evidence](../performance/graph-s1-recovery-2026-10-31/README.md).
+sharing candidates are in [S1 recovery evidence](../performance/graph-s1-recovery-2026-10-31/README.md). The separate
+[bounded size repair](../performance/graph-s1-size-repair-2026-10-31/README.md)
+retains shared parent-UUID validation, removes hierarchy intermediates and uses
+one sentinel-coded ancestor memo table. Its unchanged-profile build measures
+**1,546,708 raw / 639,531 gzip6 bytes**, saving **890 / 706 bytes** from the
+recovered S1 tree. It still exceeds the unchanged limits by **3,540 / 555 bytes**;
+the package gate remains **FAIL**. Rejected boundary candidates and their hashes
+are retained separately; the historical failed S1 receipt is unchanged.
 
 Bounded native/WASM selected snapshot and hierarchy membership checks, exact
 artifact hashes, four fresh-process startup ABBA pairs and reproduction commands

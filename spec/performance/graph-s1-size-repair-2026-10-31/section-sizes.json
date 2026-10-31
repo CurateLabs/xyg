@@ -1,0 +1,482 @@
+{
+  "after.compiler": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1747
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1952
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1782
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1605433
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 94587
+    }
+  ],
+  "after": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1154
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1187
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1754
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 12,
+      "payloadBytes": 1
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1448454
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 93897
+    }
+  ],
+  "candidate-4.compiler": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1747
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1953
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1782
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1605416
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 94587
+    }
+  ],
+  "candidate-4": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1154
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1187
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1754
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 12,
+      "payloadBytes": 1
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1448399
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 93897
+    }
+  ],
+  "candidate-3.compiler": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1747
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1952
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1782
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1605433
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 94587
+    }
+  ],
+  "candidate-3": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1154
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1187
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1754
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 12,
+      "payloadBytes": 1
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1448454
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 93897
+    }
+  ],
+  "candidate-2.compiler": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1747
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1952
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1782
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1605577
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 94643
+    }
+  ],
+  "candidate-2": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1154
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1187
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1754
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 12,
+      "payloadBytes": 1
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1448613
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 93953
+    }
+  ],
+  "candidate-1.compiler": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1747
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1953
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1782
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1606563
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 94675
+    }
+  ],
+  "candidate-1": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1154
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1187
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1754
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 12,
+      "payloadBytes": 1
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1449439
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 93985
+    }
+  ],
+  "before.compiler": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1747
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1952
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1782
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1606347
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 94675
+    }
+  ],
+  "before": [
+    {
+      "sectionId": 1,
+      "payloadBytes": 1154
+    },
+    {
+      "sectionId": 3,
+      "payloadBytes": 1187
+    },
+    {
+      "sectionId": 4,
+      "payloadBytes": 5
+    },
+    {
+      "sectionId": 5,
+      "payloadBytes": 3
+    },
+    {
+      "sectionId": 6,
+      "payloadBytes": 25
+    },
+    {
+      "sectionId": 7,
+      "payloadBytes": 1754
+    },
+    {
+      "sectionId": 9,
+      "payloadBytes": 192
+    },
+    {
+      "sectionId": 12,
+      "payloadBytes": 1
+    },
+    {
+      "sectionId": 10,
+      "payloadBytes": 1449256
+    },
+    {
+      "sectionId": 11,
+      "payloadBytes": 93985
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "python": {
+    "command": "uv run pytest -q tests/test_graphforge.py tests/test_graphforge_scene.py tests/test_graphforge_semantic_evidence.py tests/test_graphforge_fixture_generation.py tests/test_graphforge_contract_corpus.py tests/test_cose_native_parity.py tests/test_temporal_columns.py tests/test_temporal_graph_native.py tests/test_temporal_controller.py",
+    "exitCode": 0
+  },
+  "cross-host-goldens": {
+    "command": "uv run python scripts/gen_graphforge_cross_host.py --check",
+    "exitCode": 0
+  },
+  "semantic-goldens": {
+    "command": "uv run python scripts/gen_graphforge_semantic_fixture.py",
+    "exitCode": 0
+  },
+  "abi-generator": {
+    "command": "python3 scripts/gen_abi_manifest.py --check",
+    "exitCode": 0
+  },
+  "abi-smoke": {
+    "command": "python3 scripts/abi_smoke.py",
+    "exitCode": 0
+  }
+}

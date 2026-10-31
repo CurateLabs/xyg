@@ -217,7 +217,8 @@ the base graph: the composed node/edge order is the base order.
 **Hierarchy (`parent_uuid`).** A flat node table may carry a nullable
 `parent_uuid` column (same name as the Python `GraphData` mapping default). A
 null parent is a root. Parents resolve to dense base indices through the same
-resolver as `xyg_graph_projection_create` (`projection::resolve_parents`) and
+UUID validation/lookup as `xyg_graph_projection_create`
+(`projection::resolve_parent_uuid`, also used by `resolve_parents`) and
 must form a forest, validated before anything is composed: an unknown parent is
 `GF_BASE_PARENT_UNKNOWN`, a node naming itself `GF_BASE_PARENT_SELF`, a cycle
 `GF_BASE_PARENT_CYCLE`, a nil parent `GF_BASE_NULL_IDENTITY`, and a node seen in
@@ -229,8 +230,15 @@ document is produced. The hierarchy is part of the document (§5.3
 and no host lowers parents itself. When a layer hides a parent, its children
 attach to the nearest visible ancestor (recorded as
 `GF_COMPOSE_PARENT_REPARENTED`, count of re-attached children). Ancestor resolution
-memoizes each chain in O(n); the deterministic regression bound is at most 2n
-parent-link visits, including a 100,000-deep shared hidden chain.
+memoizes each chain in O(n) using one dense sentinel table: unresolved is
+`COSE_NO_PARENT - 1`, distinct from a resolved root (`COSE_NO_PARENT`). One
+walk finds a known answer and a second retraces the unresolved chain to memoize
+it, without a scratch chain or final vector conversion. The deterministic
+regression bound remains at most 2n parent-link visits, including a
+100,000-deep shared hidden chain. The collector resolves its existing optional
+parent declarations directly, then validates the forest before converting roots
+in place; declaration tri-state and error precedence are unchanged. See the
+[bounded size repair evidence](../performance/graph-s1-size-repair-2026-10-31/README.md).
 
 ### 4.2 Generation identity
 

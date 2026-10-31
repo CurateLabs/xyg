@@ -1571,31 +1571,33 @@ fn graph_document(request: &Request<'_>) -> GfResult<Vec<u8>> {
 /// the number of parent links followed (at most `2n`), the work the memoization
 /// bounds.
 pub(super) fn nearest_visible_ancestors(parent: &[u64], visible: &[bool]) -> (Vec<u64>, u64) {
-    let mut ancestor: Vec<Option<u64>> = vec![None; parent.len()];
-    let mut chain = Vec::new();
+    // Both sentinels are outside the dense node index range. Keep unresolved
+    // distinct from a resolved root, which has no visible proper ancestor.
+    const UNRESOLVED: u64 = COSE_NO_PARENT - 1;
+    let mut ancestor = vec![UNRESOLVED; parent.len()];
     let mut links = 0u64;
     for start in 0..parent.len() {
         let mut node = start;
         // Climb through hidden parents until a node whose answer is known.
-        while ancestor[node].is_none() {
+        while ancestor[node] == UNRESOLVED {
             links += 1;
             let up = parent[node];
             if up == COSE_NO_PARENT || visible[up as usize] {
-                ancestor[node] = Some(up);
-            } else {
-                chain.push(node);
-                node = up as usize;
+                ancestor[node] = up;
+                break;
             }
+            node = up as usize;
         }
-        while let Some(below) = chain.pop() {
+        let answer = ancestor[node];
+        // Retrace the same chain to memoize its answer. Each unresolved node
+        // is visited at most once in each walk; no chain scratch is needed.
+        node = start;
+        while ancestor[node] == UNRESOLVED {
             links += 1;
-            ancestor[below] = ancestor[parent[below] as usize];
+            ancestor[node] = answer;
+            node = parent[node] as usize;
         }
     }
-    let ancestor = ancestor
-        .into_iter()
-        .map(|a| a.expect("every node was resolved"))
-        .collect();
     (ancestor, links)
 }
 

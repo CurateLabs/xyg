@@ -15,7 +15,7 @@
 //!
 //! A flat node table may carry an optional `parent_uuid` column (the compound
 //! hierarchy; same name as the Python `GraphData` mapping default). Parents
-//! resolve through the shared [`resolve_parents`] and must form a forest:
+//! resolve through the shared [`resolve_parent_uuid`] and must form a forest:
 //! unknown parents, self-parents, and cycles fail the whole build.
 
 use super::columns::{texts, uuids};
@@ -23,7 +23,7 @@ use super::{uuid_map, GfError, GfResult, Uuid, UuidKey, UuidMap, NIL_UUID};
 use crate::arrow_ipc::{Column, DataType, Table};
 use crate::graph::COSE_NO_PARENT;
 use crate::projection::{
-    resolve_parents, validate_parent_forest, ParentForestError, ProjectionError,
+    resolve_parent_uuid, validate_parent_forest, ParentForestError, ProjectionError,
 };
 
 /// Hard bounds on the canonical base graph.
@@ -375,30 +375,27 @@ impl Collector {
         if !self.has_parents {
             return Ok(());
         }
-        let ids: Vec<Uuid> = self
-            .pending_parents
-            .iter()
-            .map(|parent| parent.flatten().unwrap_or(NIL_UUID))
-            .collect();
-        let validity: Vec<u8> = self
-            .pending_parents
-            .iter()
-            .map(|parent| u8::from(parent.flatten().is_some()))
-            .collect();
-        let (parents, validity) = resolve_parents(&ids, &validity, ids.len(), |id| {
-            self.graph.node_index.get(&UuidKey(*id)).map(|&i| i as u64)
-        })
-        .map_err(|error| match error {
-            ProjectionError::MissingEndpoint => GfError::new(
-                "GF_BASE_PARENT_UNKNOWN",
-                "a node names a parent that is absent from the base nodes",
-            ),
-            ProjectionError::MalformedUuid => null_identity(PARENT_FIELD),
-            _ => GfError::new(
-                "GF_COMPOSE_REQUEST_INVALID",
-                "base parent planes are malformed",
-            ),
-        })?;
+        let mut parents = vec![0; self.pending_parents.len()];
+        let mut validity = vec![0; self.pending_parents.len()];
+        for (i, declaration) in self.pending_parents.iter().enumerate() {
+            if let Some(id) = declaration.flatten() {
+                parents[i] = resolve_parent_uuid(&id, |id| {
+                    self.graph.node_index.get(&UuidKey(*id)).map(|&i| i as u64)
+                })
+                .map_err(|error| match error {
+                    ProjectionError::MissingEndpoint => GfError::new(
+                        "GF_BASE_PARENT_UNKNOWN",
+                        "a node names a parent that is absent from the base nodes",
+                    ),
+                    ProjectionError::MalformedUuid => null_identity(PARENT_FIELD),
+                    _ => GfError::new(
+                        "GF_COMPOSE_REQUEST_INVALID",
+                        "base parent planes are malformed",
+                    ),
+                })?;
+                validity[i] = 1;
+            }
+        }
         validate_parent_forest(&parents, &validity).map_err(|error| match error {
             ParentForestError::SelfParent(_) => {
                 GfError::new("GF_BASE_PARENT_SELF", "a node names itself as its parent")
@@ -408,11 +405,12 @@ impl Collector {
                 "the base node parents contain a cycle",
             ),
         })?;
-        self.graph.node_parent = parents
-            .iter()
-            .zip(&validity)
-            .map(|(&parent, &valid)| if valid == 1 { parent } else { COSE_NO_PARENT })
-            .collect();
+        for (parent, &valid) in parents.iter_mut().zip(&validity) {
+            if valid != 1 {
+                *parent = COSE_NO_PARENT;
+            }
+        }
+        self.graph.node_parent = parents;
         Ok(())
     }
 
