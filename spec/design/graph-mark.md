@@ -501,7 +501,7 @@ and accessibility) over composed graphs is specified in
 [graph-interaction.md](graph-interaction.md). Slices S1 (composition hierarchy,
 identity, the shared interaction state, session create/select/focus) and S2
 (the retained `GraphSession` render publication below) are implemented in the
-Rust engine; the pick index (S3), the native/WASM session ABI (S4), and the
+Rust engine; the typed S3 pick/update/coordination candidate, the native/WASM session ABI (S4), and the
 browser/Python/Node hosts follow per its slice table.
 
 - **Session render publication (#36 S2).** A `GraphSession` publishes one
@@ -1222,3 +1222,16 @@ Sankey and any other host-only layouts promote into Rust under the same
 “Rust owns decisions” rule for dual-host MVP ([host-parity.md](host-parity.md)).
 Placement of graph LOD / render-graph ownership is also recorded in
 [rust-engine.md](rust-engine.md) §1.
+
+
+S3 retained publication geometry (Rust only) is specified in
+[graph-interaction.md §2.3](graph-interaction.md#23-one-renderpublication-path).
+It resolves source semantic styles and layers through `graph_style`, routes
+through `edge_route_segments_with_ends`, clips every piece against node outlines,
+and retains filled heads and compound bands alongside membership. The pick
+index reads this value only and refreshes on style-only republication. It uses
+the composed point painter's outer diameter/inset stroke contract. Region nodes
+use their published centers; exact edges use painted dash/stroke/head geometry.
+Admission overflow is recorded, with bounded same-publication node scans and
+single-piece-only degraded point edges; no omitted loop gets a chord substitute.
+The S4 paint buffer projection and S5 painter/controller remain outstanding.

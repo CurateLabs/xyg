@@ -89,6 +89,8 @@ impl Camera {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RenderOutput {
     pub revision: u32,
+    pub paint: super::PaintGeometry,
+    pub pick: super::PickIndex,
     pub tier: LodTier,
     pub edges_kept: u64,
     pub node_x: Vec<f64>,
@@ -324,9 +326,8 @@ impl GraphSession {
     }
 
     fn collect_inputs(&mut self, state: &GraphInteractionState, vis: &Visible) -> Inputs {
-        let (n, e) = (self.identity.node_count(), self.identity.edge_count());
-        let mut node_flags = vec![0u32; n];
-        let mut edge_flags = vec![0u32; e];
+        let mut node_flags = self.node_style.flags.clone();
+        let mut edge_flags = self.edge_style.flags.clone();
         let mark = |set: &ElementSet, flag: u32, nodes: &mut [u32], edges: &mut [u32]| {
             for id in &set.nodes {
                 if let Some(i) = self.identity.node_index(id) {
@@ -431,7 +432,7 @@ impl GraphSession {
             }
             self.work += (hovered.len() + self.hover.nodes.len() + self.edge_source.len()) as u64;
         }
-        if let Some(edge) = self.hover.edge {
+        for &edge in &self.hover.edges {
             if vis.edge[edge] == 1 && collapse.edge_keep[edge] {
                 inputs.edge_flags[edge] |= FLAG_HOVERED;
             }
@@ -608,8 +609,10 @@ impl GraphSession {
         };
         let (visual_states, emphasis) = states(&node_flags);
         let (edge_visual_states, edge_emphasis) = states(&edge_flags);
-        Ok(RenderOutput {
+        let mut output = RenderOutput {
             revision,
+            paint: super::PaintGeometry::default(),
+            pick: super::PickIndex::default(),
             tier: decision.tier,
             edges_kept: decision.edges_kept,
             node_x: out_x,
@@ -627,7 +630,19 @@ impl GraphSession {
             node_members,
             focus_node,
             edge_render,
-        })
+        };
+        output.paint = super::paint::build(
+            self,
+            &output,
+            camera,
+            &node_flags,
+            &edge_flags,
+            &collapse.flags,
+            &inputs.edge_flags,
+            vis,
+        )?;
+        output.pick = super::PickIndex::build(&output.paint);
+        Ok(output)
     }
 
     /// Hover emphasis: HOVERED on the target (every member of an aggregate),
@@ -644,7 +659,7 @@ impl GraphSession {
                 None => {}
                 Some(element) => match session.resolve(element)? {
                     Resolved::Element(ElementIndex::Node(node)) => next.nodes.push(node),
-                    Resolved::Element(ElementIndex::Edge(edge)) => next.edge = Some(edge),
+                    Resolved::Element(ElementIndex::Edge(edge)) => next.edges.push(edge),
                     Resolved::Group { render } => {
                         let published = session.published().ok_or(InteractionStatus::Stale)?;
                         next.nodes = published

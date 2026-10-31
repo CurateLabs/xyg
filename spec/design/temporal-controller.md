@@ -75,6 +75,13 @@ row-number conversion by a host.
 - **Dispose:** clears playing and selection and drops outbound/pending remote state; further
   commands return `Disposed` (−13). `destroy` removes the handle.
 
+The shared `coordination::CoordinationGate` now owns source/self/stale/group
+admission and watermark commit for this controller and typed graph sessions.
+Temporal range/window/selection validation stays here and runs before the gate;
+commit follows successful apply. Temporal normalized no-op setters still emit
+nothing. Graph sessions independently sequence each successful selection request,
+including identical membership requests; they do not change temporal behavior.
+
 ## Coordination protocol
 
 Opt-in only (`group_id != 0`). After a local mutation that changes range/cursor/selection,

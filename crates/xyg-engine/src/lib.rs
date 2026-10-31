@@ -292,3 +292,5 @@ pub mod tile_paint_control;
 pub mod tile_store;
 pub mod tiles;
 pub mod transition;
+
+pub mod coordination;

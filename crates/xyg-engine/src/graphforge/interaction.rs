@@ -18,7 +18,8 @@
 //! highlight), identity, binding, the render publication
 //! ([`render::RenderOutput`], F2 pipeline order, temporal visibility F4),
 //! compound disclosure, pin / move / relayout, and the keyboard walks. The
-//! pick index and admission (S3) and the C/WASM ABI (S4) are not here.
+//! S3 adds publication geometry/picking, coordination and atomic update.
+//! The C/WASM ABI (S4) is a later slice.
 //!
 //! [`TemporalGraph::frame`]: crate::temporal_graph::TemporalGraph::frame
 
@@ -35,13 +36,23 @@ use crate::graph_interaction_state::{
 use crate::projection::validate_parent_forest;
 use crate::temporal_graph::TemporalGraph;
 
+mod coordination;
 mod layout;
+mod paint;
+mod pick;
 mod render;
+mod update;
 mod walk;
 
+pub use coordination::GraphCoordinationEvent;
 pub use layout::{
     DisclosureAction, DisclosureReport, MoveCommit, MoveSpace, NodePosition, RelayoutReport,
     INITIAL_LAYOUT_STEPS, MAX_GRAPH_INTERACTION_WORK, MAX_RELAYOUT_STEPS, RELAYOUT_SETTLED_ALPHA,
+};
+pub use paint::{EdgePiece, FramePaint, NodePaint, PaintGeometry};
+pub use pick::{
+    PickIndex, PickTarget, SelectionPolicy, MAX_GRAPH_PICK_CANDIDATES, MAX_GRAPH_PICK_GRID_ENTRIES,
+    MAX_GRAPH_PICK_PRIMITIVES,
 };
 pub use render::{Camera, RenderOutput, NOT_RENDERED};
 
@@ -160,6 +171,8 @@ pub struct OpOutcome {
     pub state_changed: bool,
     /// `SelectUuids` entries naming no element of this document.
     pub unmatched: u32,
+    /// State identities removed by structural replacement (per plane).
+    pub dropped: u32,
     /// Selection size after the operation.
     pub selected: usize,
     /// Node positions to persist (`graph.positions`): pin and move commit.
@@ -172,15 +185,19 @@ pub struct OpOutcome {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct Hover {
     nodes: Vec<usize>,
-    edge: Option<usize>,
+    edges: Vec<usize>,
 }
 
 pub struct GraphSession {
     instance_id: u64,
+    coordination: coordination::Link,
     identity: GraphIdentity,
     generation: Option<Uuid>,
     /// Compound parent per node (`COSE_NO_PARENT` for roots), from the document.
     parent: Vec<u64>,
+    directed: bool,
+    node_style: paint::SourceStyle,
+    edge_style: paint::SourceStyle,
     /// `1` where `parent` is a real parent.
     parent_valid: Vec<u8>,
     /// Composed edge endpoints (dense node indices).
@@ -244,6 +261,16 @@ impl GraphSession {
             .u64s("edge.target")
             .map_err(|_| InteractionStatus::Invalid)?;
         let edges = identity.edge_count();
+        let mut node_style = paint::SourceStyle::read(&doc, "node", n)?;
+        let mut edge_style = paint::SourceStyle::read(&doc, "edge", edges)?;
+        let directed = match doc
+            .optional_u8s("graph.directed")
+            .map_err(|_| InteractionStatus::Invalid)?
+        {
+            None => false,
+            Some([v]) if *v <= 1 => *v == 1,
+            _ => return invalid(),
+        };
         if edge_source.len() != edges
             || edge_target.len() != edges
             || edge_source
@@ -284,6 +311,26 @@ impl GraphSession {
         }
 
         let mut state = GraphInteractionState::default();
+        let mut selected = ElementSet::default();
+        for (node, flag) in node_style.flags.iter_mut().enumerate() {
+            if *flag & crate::graph_style::FLAG_SELECTED != 0 {
+                identity.insert_into(&mut selected, ElementIndex::Node(node));
+                if selected.len() > MAX_GRAPH_SELECTION_REFS {
+                    return Err(InteractionStatus::SelectionTooLarge);
+                }
+            }
+            *flag &= !crate::graph_style::FLAG_SELECTED;
+        }
+        for (edge, flag) in edge_style.flags.iter_mut().enumerate() {
+            if *flag & crate::graph_style::FLAG_SELECTED != 0 {
+                identity.insert_into(&mut selected, ElementIndex::Edge(edge));
+                if selected.len() > MAX_GRAPH_SELECTION_REFS {
+                    return Err(InteractionStatus::SelectionTooLarge);
+                }
+            }
+            *flag &= !crate::graph_style::FLAG_SELECTED;
+        }
+        state.select(SelectMode::Replace, &selected)?;
         state.set_pinned(
             identity
                 .node_uuids()
@@ -295,6 +342,7 @@ impl GraphSession {
         );
         Ok(Self {
             instance_id,
+            coordination: coordination::Link::default(),
             identity,
             generation,
             parent_valid: parent
@@ -302,6 +350,9 @@ impl GraphSession {
                 .map(|&p| u8::from(p != COSE_NO_PARENT))
                 .collect(),
             parent,
+            directed,
+            node_style,
+            edge_style,
             edge_source,
             edge_target,
             edge_ordinal,
@@ -657,7 +708,9 @@ impl GraphSession {
         delta: ElementSet,
         unmatched: u32,
     ) -> Result<OpOutcome, InteractionStatus> {
+        self.admit_outbound()?;
         let changed = world.state.select(mode, &delta)?;
+        self.queue_selection(world.state);
         Ok(OpOutcome {
             render_revision: self.render_revision,
             state_changed: !changed.is_empty(),
@@ -712,8 +765,10 @@ impl GraphSession {
     /// Empty the selection and highlight planes; focus stays.
     pub fn clear(&mut self, header: OpHeader) -> Result<OpOutcome, InteractionStatus> {
         self.operate(header, |session, world| {
+            session.admit_outbound()?;
             let before = world.state.selection().clone();
             let cleared = world.state.clear();
+            session.queue_selection(world.state);
             Ok(OpOutcome {
                 render_revision: session.render_revision,
                 changed: session.identity.refs_of(&before),

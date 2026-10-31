@@ -1157,3 +1157,5 @@ fn destroying_a_bound_session_leaves_the_temporal_state_untouched() {
 }
 
 mod session;
+
+mod pick;
