@@ -1,0 +1,15 @@
+{
+  "name": "fixed-engine",
+  "command": [
+    "cargo",
+    "build",
+    "-p",
+    "xyg-engine",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 6.217,
+  "rawSha256": "1bb34c92783d9cb8b52a7e090895208312478f158f5f20304114ce9fb3a35b41",
+  "log": "fixed-engine.txt.gz",
+  "gzipSha256": "48e4e1660bc8cc1519e5a01542ad829895740d0d1de15fae94add7a14c07ae83"
+}

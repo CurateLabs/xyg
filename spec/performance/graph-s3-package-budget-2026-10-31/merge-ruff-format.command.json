@@ -1,0 +1,16 @@
+{
+  "name": "merge-ruff-format",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.239,
+  "rawSha256": "bc620c93e5c84c1b02bbab5903154038bfbe9bd23ecf71ac061bcb95a03ae493",
+  "log": "merge-ruff-format.txt.gz",
+  "gzipSha256": "f41c3eea388cc9fbd0a1f157e8e50866b1cf273c8c5f7a8bd93492e38e4a1650"
+}

@@ -289,6 +289,11 @@ impl TemporalGraph {
         &self.edge_ids
     }
 
+    /// Persisted endpoint order, used to validate a bound structural replacement.
+    pub fn edge_endpoints(&self) -> impl Iterator<Item = (u64, u64)> + '_ {
+        self.sources.iter().copied().zip(self.targets.iter().copied())
+    }
+
     pub fn interaction_state(&self) -> &GraphInteractionState {
         &self.state
     }

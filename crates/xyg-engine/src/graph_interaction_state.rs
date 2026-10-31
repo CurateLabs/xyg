@@ -132,6 +132,37 @@ pub struct GraphInteractionState {
 }
 
 impl GraphInteractionState {
+    /// Reconcile each identity-bearing plane in place under its owner's lock.
+    /// Counts removed entries per plane (including focus and pins).
+    pub(crate) fn retain_identities(
+        &mut self,
+        node: impl Fn(&Uuid) -> bool,
+        edge: impl Fn(&Uuid) -> bool,
+        derived: impl Fn(&DerivedKey) -> bool,
+    ) -> usize {
+        let mut dropped = 0;
+        for set in std::iter::once(&mut self.selection).chain(self.highlights.iter_mut()) {
+            let before = set.len();
+            set.nodes.retain(&node);
+            set.edges.retain(&edge);
+            set.derived.retain(&derived);
+            dropped += before - set.len();
+        }
+        let keep_focus = match &self.focus {
+            Some(Focus::Entity(GraphEntity::Node(id))) => node(id),
+            Some(Focus::Entity(GraphEntity::Edge(id))) => edge(id),
+            Some(Focus::Derived(key)) => derived(key),
+            None => true,
+        };
+        if !keep_focus {
+            self.focus = None;
+            dropped += 1;
+        }
+        let before = self.pinned.len();
+        self.pinned.retain(node);
+        dropped + before - self.pinned.len()
+    }
+
     pub fn selection(&self) -> &ElementSet {
         &self.selection
     }

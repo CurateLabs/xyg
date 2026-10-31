@@ -1,0 +1,13 @@
+{
+  "name": "final-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s3-review-repair-2026-10-31/measure-artifact.mjs",
+    "final"
+  ],
+  "exitCode": 0,
+  "seconds": 41.565,
+  "rawSha256": "687a54cb446259c6fd6cdbe9f29f56fc83e2a3cbf04837bc7b791b8ba247ad26",
+  "log": "final-measure.txt.gz",
+  "gzipSha256": "465eb7d2335d275779538e931d48601581275a2323ddb1dce7a5cc556bd2f13e"
+}

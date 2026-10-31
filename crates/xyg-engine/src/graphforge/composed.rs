@@ -98,6 +98,12 @@ impl<'a> ComposedDocument<'a> {
             .transpose()
     }
 
+    pub fn optional_f64s(&self, name: &str) -> GfResult<Option<Vec<f64>>> {
+        self.optional(name)
+            .map(|s| s.as_f64(name).map_err(retype))
+            .transpose()
+    }
+
     pub fn generation(&self) -> GfResult<Option<Uuid>> {
         match self.optional("base.generation") {
             None => Ok(None),

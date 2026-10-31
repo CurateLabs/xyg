@@ -1,0 +1,13 @@
+{
+  "name": "baseline-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s3-review-repair-2026-10-31/measure-artifact.mjs",
+    "baseline"
+  ],
+  "exitCode": 0,
+  "seconds": 41.752,
+  "rawSha256": "daa244b96fced52cc53f5794453bb0a9b01dff18e9bb3b882cbdc2893fe39417",
+  "log": "baseline-measure.txt.gz",
+  "gzipSha256": "72ebbf9a5f1c9f3651b2784813e4cef97447acd5b25bad23dc3478379c366f6a"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "environment",
+  "command": [
+    "bash",
+    "-c",
+    "node --version && cargo --version && rustc --version && uv run python --version && git rev-parse HEAD && git diff --binary --full-index d47968e1eb66f269ffe7c610fb282ac5da371c7b HEAD | sha256sum"
+  ],
+  "exitCode": 0,
+  "seconds": 0.174,
+  "rawSha256": "81d9edd5b3f9f9714bcace1bdce0fa25718c87ae2db018b0187d250f7766cd17",
+  "log": "environment.txt.gz",
+  "gzipSha256": "28e93c3d6889fb56e9e5dd0bfa067659f2d624c75c9dc6f97e5f138c0d9690ce"
+}

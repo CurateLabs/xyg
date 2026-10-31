@@ -1,0 +1,12 @@
+{
+  "name": "package-wasm",
+  "command": [
+    "node",
+    "js/package-wasm.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 41.878,
+  "rawSha256": "2e5b8c267a4d4d5bc531dc91c5cd041271e280995c040dddb2e8b4dc4dfd6e40",
+  "log": "package-wasm.txt.gz",
+  "gzipSha256": "b2b39fdc5d94d1ad4c8562fe2a661dc44073195f4dd637e4044499afb7a7e566"
+}

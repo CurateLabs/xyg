@@ -1,0 +1,17 @@
+{
+  "name": "hooks-final",
+  "command": [
+    "uv",
+    "run",
+    "--with",
+    "pre-commit",
+    "pre-commit",
+    "run",
+    "--all-files"
+  ],
+  "exitCode": 0,
+  "seconds": 0.518,
+  "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+  "log": "hooks-final.txt.gz",
+  "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+}

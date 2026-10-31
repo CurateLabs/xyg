@@ -1150,6 +1150,16 @@ described above.
 - NaN/invalid values **never reach vertex buffers** — an f32 NaN silently kills the
   primitives that share it (GL behavior is undefined-but-usually-invisible geometry,
   and it differs by driver — a determinism hole as well as a correctness one).
+- **Typed graph-session publication also validates canonical outline arithmetic.**
+  Finite endpoints and chord length do not guarantee a finite circle quadratic
+  discriminant or span. Local S3 admission rejects non-finite circle and
+  square/diamond half-plane arithmetic before clipping can silently omit a
+  required head. Finite misses, coincident nodes, tiny occluded chords (including
+  polygon unbounded parallel-plane sentinels), and fully culled graphs remain
+  valid. Rejected camera publication keeps the old complete paint/index,
+  membership, revision, pick identity, interaction state, outbound delivery and
+  operation retry state (graph-interaction.md §2.3). There is no coordinate
+  cutoff, replacement algorithm, fallback chord, or shared renderer/ABI change.
 - Semantics preserved from Plotly: a null inside a line trace = **gap** (line break),
   implemented by splitting the draw into segments at ingest (segment index list, not
   per-frame branching). Aggregations skip nulls and expose `count_valid` vs `count`.
@@ -1393,6 +1403,20 @@ recomputes on zoom.*
 | **Streaming (any kind)** | ring capacity declared up front | ring buffer + incremental decimation (Tier-1 buckets updated, not rebuilt); pyramid tiles updated incrementally for touched cells | same as base kind, within retained window | append is O(appended); eviction from ring updates affected buckets only |
 | **Box / violin / stat traces** | raw column | stats computed in worker from canonical (streaming algorithms; KDE on a bounded grid) — drawn geometry is tiny | stat readout (exact) | recompute stats for visible subset if axis-linked |
 | **Graph (node–link)** | canonical f64 layout positions + u64 source edges (GraphForge UUIDs retained host-side) | Direct (every node/edge) → EdgeSample (deterministic stride over rendered edges, `edge_budget`) → Aggregate (grid centroids, `node_budget`; cross-cluster edges collapse per ordered cluster pair, same-cluster edges drop) — Rust `xyg_graph_build_render` records the tier | edge: the exact source edge (UUID) when its render edge has one member (Direct / EdgeSample), else the Aggregate edge's deterministic ascending source-edge membership (count + up to 256 members, truncation flagged); never an unrelated edge. Node: exact at Direct, cluster via `member_of` above it. Semantic style rows (graph-mark.md §7.1.2) paint under the same exactness and are omitted at Aggregate, recorded in `spec.graph.style_contract`; compound frames are omitted at Aggregate (`compound_frames: "omitted:aggregate"`) and compound disclosure (`collapsed=`) fails closed above Direct (§7.1.5); static SVG/PNG export keeps at most the Scene's 128 labels / 8 KiB of label text, choosing the lowest zoom thresholds (graph-mark.md §8) | full `build_render` re-emission for the new viewport/budget; membership CSR is rebuilt with it (graph-mark.md §6) |
+
+**Graph S3 pick admission clarification.** The 200,000-node publication budget
+may exceed the 131,072-primitive index cap. Retain at most 1,048,576 grid entries
+in a 64×64 grid and 65,536 query candidates; test duplication before allocation.
+Overflow records degraded mode. If nodes cannot all be indexed, exact node
+queries scan that same retained publication under the 4,000,000 deterministic
+work limit, without a second source-sized index. Degraded point edge picks admit
+only canonically single-piece routes in draw order; omitted routed edges/loops
+are unavailable, never chord substitutes. Degraded region edge queries use
+induced published edges. Nodes/polygon edges/grid/dedup/membership/induced work
+is charged before selection or hover commit; refusal never truncates selection.
+Style-only republication refreshes resolved geometry and index at the same
+revision. Exact contracts: graph-interaction.md §2.3, Rust S3 candidate only;
+ABI/browser/host and hardware acceptance remain later slices.
 
 **Static export takes the first-paint tier (#1006).** Native SVG/PNG/PDF/JPEG/
 WebP export makes the same compile-time `payload_tier` decision the browser's
@@ -2754,6 +2778,16 @@ requiring a Rust toolchain — an instant adoption cliff.
   renders wrong. Requests and replies carry no version of their own — the handshake
   happens once, at first paint, before any request is possible
   (`spec/design/wire-protocol.md` §7).
+- **Current WASM packaging limits:** 1,513 KiB raw / 626 KiB gzip6
+  (1,549,312 / 641,024 bytes). The separate S3 parent decision retains only the
+  independently assessed `#[inline]` coordination-gate hint, raises raw by one
+  KiB, and keeps the gzip gate, compiler/profile/optimizer/exports and all
+  validation fixed. Fresh final source packages at 1,548,390 / 640,709 bytes
+  (922 / 315 headroom); growth beyond either limit still fails. See the
+  [S3 clip repair and packaging receipt](performance/graph-s3-package-budget-2026-10-31/README.md)
+  for source/artifact hashes, real paired assets, native/WASM parity and the
+  full strict-CSP foundation. This establishes no speed, hardware, session ABI,
+  release or milestone completion; independent final review and CI remain pending.
 - **Packaged WASM tick assets have one producer and fail early (#1005).** The direct-browser
   module (`xyg-wasm.wasm`), its inline classic-worker copy (`xyg-wasm-inline.js`), and the
   version/hash manifest (`xyg-wasm.manifest.json`: `sha256`, `bytes`, ABI/Scene/painter

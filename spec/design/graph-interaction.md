@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **design final; S1 and bounded S2 engine implemented; local S2 packaging validated, independent review and CI pending** (see [Implementation status](#implementation-status)).
+Status: **design final; S1 and bounded S2 engine implemented; typed S3 implemented locally; finite geometry repair and authorized raw-only package decision validated locally; independent final parent review and remote integration pending** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -151,10 +151,81 @@ visual_states u8, emphasis u8 (nodes), edge_visual_states u8, edge_emphasis u8 (
 invisible; a node hidden by a collapsed group rides its representative's render node)
 ```
 Pipeline order (source index space until the last step): (1) the bound temporal frame's source visibility (nodes and edges) masks the source graph *and its hierarchy* (§2.9: an invisible node leaves the forest, its children re-attach to the nearest surviving ancestor, its collapsed flag is dropped); (2) `compound_collapse` (`graph_style.rs`) over that surviving hierarchy, `load.collapsed`, and the propagated state flags yields visibility, `representative[]`, and rerouted endpoints with edge provenance; (3) `graph::build_render` (budgets, viewport culling, LOD) runs over the collapsed source graph; (4) membership composes source -> representative -> render node and source edge -> render edge CSR; then `resolve_visual_state` per render element. A collapsed group whose representative is outside the viewport is culled with its hidden descendants; an on-viewport hidden child does not cause either element to render. Aggregate centroids exclude hidden descendants. **The same `RenderOutput` value is (a) copied into the `render.*` result sections the host packs into its existing §29 paint payload (`_graph_wire.py` keys `visual_states` etc. unchanged, plus `emphasis`) and (b) the only input to the pick index.** Hosts never run `layout_render` beside a session. Proof: pick index node count equals `render.n_nodes`, every hit index `< n_nodes`; the Python wire payload built from result bytes is byte-equal to `_graph.layout_render` on the same inputs at direct tier.
-Pick index: render nodes, and render-edge pieces from `edge_route_segments_with_ends` trimmed by `node_border_distance` and extended by `GRAPH_EDGE_HEAD_LENGTH_PX` (as painters do, `edge_route.rs:481-494`); self-loop = 3 pieces; parallel lanes separate (ties: draw order, then `order`); compound frame band hits the compound, interior passes through; collapsed representative selects members. Admission (`interaction.rs`, geo's shape `geo_interaction.rs:8-14`): `MAX_GRAPH_PICK_PRIMITIVES=131_072`, `_GRID_ENTRIES=1_048_576`, `_CANDIDATES=65_536`, `MAX_GRAPH_INTERACTION_WORK=4_000_000`, 64×64 grid. Over the primitive budget the index keeps nodes and single-piece edges, `pick.degraded=1` (recorded, §28); brush/lasso stay exact for nodes, edges fall back to induced. Work exceeded mid-query → `GF_INTERACTION_BUDGET`, no change. `render_revision` advances on *structural* change only (pin, move, relayout, an effective disclosure, a changed temporal frame, bind/unbind, or a render requested with a different camera than the previous publication); a render with nothing structural changed republishes the same revision with fresh style planes. This supersedes "each render bumps": selection, focus, hover and highlight change style planes only, and aggregate refs must stay valid across them. The revision never wraps: at `u32::MAX` a structural change fails `GF_INTERACTION_REVISION_EXHAUSTED` before any mutation.
+Pick index: render nodes, and render-edge pieces from `edge_route_segments_with_ends` clipped by `clip_edge_piece` / `node_shape_span`, with filled heads from `GRAPH_EDGE_HEAD_LENGTH_PX` (as painters do, `edge_route.rs:481-494`); self-loop = 3 pieces; parallel lanes separate (ties: draw order, then `order`); compound frame band hits the compound, interior passes through; collapsed representative selects members. Admission (`interaction.rs`, geo's shape `geo_interaction.rs:8-14`): `MAX_GRAPH_PICK_PRIMITIVES=131_072`, `_GRID_ENTRIES=1_048_576`, `_CANDIDATES=65_536`, `MAX_GRAPH_INTERACTION_WORK=4_000_000`, 64×64 grid. Admission clarification (S3): the default 200,000-node publication can exceed
+131,072 index primitives. Primitive and grid duplication limits are checked
+before appending or allocating cell entries. Overflow records
+`RenderOutput.pick.degraded`; the index remains bounded. When nodes (or compound
+bands) cannot all fit, `node_scan` scans the **same publication** exactly under
+the work limit, with no second source-sized index. Degraded point edge picks
+include only admitted, canonically single-piece routes, in deterministic draw
+order; omitted loops/routed edges are unavailable, never replaced by chords.
+Degraded Brush/Lasso edge policy uses induced published edges. Query candidate
+storage is capped at 65,536; grid visits/dedup, nodes, polygon edges, membership
+expansion, dash spans and induced-edge scans consume the 4,000,000-unit work
+limit. A limit failure precedes selection/hover writes and never returns a
+truncated selection. Region node inclusion uses published centers (boundary
+inclusive), with an even-odd test for concave lassos; exact edge policy intersects
+clipped, butt-ended, dash-aware painted stroke bands and filled heads.
+Point overlap order is nodes, then the head pass, then shafts, then compound
+bands; within each pass the later canonical draw index wins. A compound's
+unpadded interior passes through. The publication carries the resolved node and
+edge styles/layers, screen geometry, heads and frame bands used by the index;
+source semantic planes and directedness are retained at create/update. Authored
+selected flags seed the initial Owned selection and are then state-owned, so
+Clear can remove them; bound sessions use the temporal owner selection. Node
+`size` is the outer marker diameter with inset stroke, and edge clipping uses
+its half diameter, matching the composed point painter. Metric domains resolve
+over source rows before membership projection; Aggregate omits source semantics
+and uses the resolver's neutral aggregate style for every render node and edge,
+including singleton memberships. The tier controls style and semantic-layer
+omission, not membership counts or the aggregate state flag. Projected state and
+emphasis still apply. The global directed-graph fallback remains unchanged when
+semantic edge status is absent. Direct and EdgeSample
+retain source semantics, including collapsed representatives and authored state
+flags. Geometry and index are rebuilt
+on **every** publication, including style-only republication at the same revision. Work exceeded mid-query → `GF_INTERACTION_BUDGET`, no change. `render_revision` advances on *structural* change only (pin, move, relayout, an effective disclosure, a changed temporal frame, bind/unbind, or a render requested with a different camera than the previous publication); a render with nothing structural changed republishes the same revision with fresh style planes. This supersedes "each render bumps": selection, focus, hover and highlight change style planes only, and aggregate refs must stay valid across them. The revision never wraps: at `u32::MAX` a structural change fails `GF_INTERACTION_REVISION_EXHAUSTED` before any mutation.
+
+**Finite geometry refusal (S3 review repair).** A publication rejects
+`GF_INTERACTION_INVALID` when a retained edge's data-space routing delta or
+length is non-finite, or its mapped piece endpoints, delta, or computed length
+are non-finite. Local S3 admission also validates the canonical circle outline
+quadratic (including its discriminant and returned span) and square/diamond
+half-plane arithmetic before `clip_edge_piece` can interpret non-finite
+comparisons as a miss or suppress a required head. A finite canonical `None`
+remains a valid miss; the polygon kernel's unbounded parallel-plane sentinels
+remain valid for tiny occluded chords. This does not replace the canonical
+algorithm or alter legacy shared renderer/ABI behavior.
+Routing validation precedes the shared kernel, which may omit
+invalid intermediates; checking only its emitted pieces is insufficient.
+Coincident finite endpoints and valid fully occluded pieces may still emit no
+paint; the existing finite zero-length omission remains unchanged, including
+tiny occluded chords whose squared length underflows. Geometry construction
+must succeed before replacing the publication, camera, or render revision,
+so a rejected camera retains the complete old paint/index/membership,
+pick identity, stamp, interaction state, pending outbound snapshot/sequence,
+and operation retry state. This adds no coordinate cutoff, clamp, alternate
+outline algorithm, or fallback chord.
 
 ### 2.4 Stamps and coordination
-Destination stamp `(instance_id, render_revision)` on every local event; mismatch → `GF_INTERACTION_STALE`, no change (host repaints, resubmits). Origin stamp on `ApplyRemote`: `GraphCoordinationEvent { group_id, source_instance, revision, generation uuid, refs[0..10_000] sorted unique }`. The gate (`group_id!=0`, wrong group no-op, self → SelfEcho, `revision<=last_seen` → StaleRevision, atomic apply, no local bump, no echo; `temporal_controller.rs:346-389`) is extracted to `coordination.rs::CoordinationGate` and used by both controllers. Outbound: after a local selection change in a nonzero group Rust queues one snapshot; `poll_event` → host link channel kind `graph_select` (`interaction.md:294-297`) or same-process `coordinate_deliver`. Receiver fires `graph.select` with `source:"linked"`, never rebroadcast.
+Destination stamp `(instance_id, render_revision)` on every local event; mismatch → `GF_INTERACTION_STALE`, no change (host repaints, resubmits). Origin stamp on `ApplyRemote`: `GraphCoordinationEvent { group_id, source_instance, revision, generation uuid, refs[0..10_000] sorted unique }`. The gate (`group_id!=0`, wrong group no-op, self → SelfEcho, `revision<=last_seen` → StaleRevision, atomic apply, no local bump, no echo; `temporal_controller.rs:346-389`) is extracted to `coordination.rs::CoordinationGate` and used by both controllers. Outbound: each distinct successful local selection request (including Clear
+and a successful request that leaves membership identical) in a nonzero group
+queues a complete identity snapshot; its sequence is independent of render
+revision and op_seq. Retrying the same successful op_seq returns its retained
+outcome without another snapshot. The pending slot coalesces to the newest
+snapshot. This graph request-level delivery contract intentionally differs from
+temporal's normalized no-op suppression, which remains unchanged. Transport refs
+are strictly ordered by kind (Node, Edge, Derived), UUID bytes within persisted
+kinds, and `(exact result id: None before Some, layer, path, order)` for Derived;
+aggregates and local result-table indices are rejected. Exact result-id strings
+obey the composition's 1–128-byte identifier grammar. Validate the whole event
+before zero/wrong group, self or stale filtering. Unknown refs and derived refs
+from another generation are unmatched; UUID refs still resolve. Resolve all refs
+before selection replacement, then commit the source watermark only on success.
+Remote apply mutates the shared bound state, with no local revision/sequence
+bump and no new outbound event; existing pending delivery stays intact.
+`create_linked` adds the typed Rust group configuration; `create` stays compatible
+and unlinked. `pending_outbound`/`take_outbound` expose the retained snapshot;
+The S4 `poll_event` forwards this snapshot → host link channel kind `graph_select` (`interaction.md:294-297`) or same-process `coordinate_deliver`. Receiver fires `graph.select` with `source:"linked"`, never rebroadcast.
 
 ### 2.5 Disclosure
 `ToggleDisclosure{ref,action}` on a compound runs `compound_collapse_transition` then `compound_collapse` and `session_render` in one call. **Tier decision (recorded in graph-mark.md §7.1.5 and the §28 ledger):** explicit compound disclosure is a direct-tier feature bounded at `MAX_COMPOUND_TRANSITION_NODES = 1_024` source nodes (`graph_style.rs:30, 1664-1675`). Above it the op returns `GF_INTERACTION_COMPOUND_TOO_LARGE`, no state or revision change, and the companion shows "grouping is camera-driven for this graph"; large graphs get render-tier aggregates (camera-driven LOD), which are selectable (members), focusable, hover "group of k", and reject `action` with `GF_INTERACTION_INVALID`. Hidden members keep UUID-keyed state; `CompoundCollapse.flags` propagates to the representative. Proof: 1,024-node fixture toggles; 1,025 → status, revision unchanged.
@@ -184,6 +255,30 @@ has no temporal visibility (all visible). Visibility is applied at step (1) of
 and its incident edges are neither painted nor pickable in the bound session;
 re-entry restores selection without remapping.
 
+
+### 2.10 Atomic structural update (typed S3)
+`GraphSession::update(header, document, load)` validates a complete temporary
+replacement before touching the live session. This is a replacement, not a
+load patch: absent x/y means lazy deterministic seed layout; absent collapse
+means all open; absent budgets means the create defaults. Old positions do not
+implicitly persist. UUID selection, highlights, focus **and pins** survive when
+the replacement resolves them. Explicit `load.pinned` replaces the retained pin
+set; omitted pins retain surviving tags, which anchor at the new document's
+seeded positions when layout is created. Explicit x/y plus pins restores exact
+persistence without relayout. A different generation drops every derived state
+key; within one generation only exact result/layer/path/order keys survive.
+`dropped` counts removed identities per state plane, including focus and pins.
+
+A bound update checks node and persisted-edge UUID planes against the temporal
+owner **in order**, plus persisted endpoints, then reconciles that owner's
+current state under that same single registry lock. It never copies/unbinds the
+owner. A mismatched replacement is Invalid, a disposed owner Unbound, and a
+frame that changed before the transaction is Stale without session writes.
+Success reserves and increments the structural revision exactly once, clears
+publication/index/hover/ring/move preview/force state, and retains instance,
+group, coordination watermark/history/sequence and pending delivery. Failure
+preserves document/load/positions/state/binding/revision/outbound and the last
+successful op_seq. The same successful op_seq retry retains its outcome.
 
 ## 3. ABI / WASM
 Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_graphforge.ts:91-99`; the decoder `:164` and Python `DTYPE.U32` `_graphforge_container.py:49` already have it).
@@ -235,7 +330,7 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 |---|---|---|
 | S1 | Hierarchy in composition (`parent_uuid` -> `node.parent`, composition v2); identity (`ElementRef`, exact result-id table); `GraphInteractionState` extraction and 10,000-ref cap; `GraphSession` create / select / clear / focus / bind / unbind with stamps and `op_seq` idempotency | **implemented** |
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
-| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | planned |
+| S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | typed Rust implemented locally; finite-geometry, real package/assets/parity and full strict-CSP proofs pass under authorized 1,513/626-KiB limits; final independent review and CI pending |
 | S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | planned |
 | S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | planned |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | planned |
@@ -359,3 +454,22 @@ functionality decision sets the smallest next-KiB limits to 1,512 raw / 626
 gzip KiB without changing session behavior, validation or compiler profile;
 see the separate [packaging decision and validation receipt](../performance/graph-s2-package-budget-2026-10-31/README.md).
 Final independent review of the complete integrated diff remains required.
+
+### S3 local candidate
+Typed publication picking, shared coordination admission, and atomic replacement
+are implemented locally; validation receipts and remaining package/review gates
+are recorded in [S3 local evidence](../performance/graph-s3-local-2026-10-31/README.md).
+The separate [S3 review repair](../performance/graph-s3-review-repair-2026-10-31/README.md)
+records the first finite edge-arithmetic blocker repair and two historically
+rejected codegen boundary experiments. At that checkpoint the raw package gate
+failed by 221 bytes; the original S3 receipts remain unchanged.
+The separate [S3 package decision receipt](../performance/graph-s3-package-budget-2026-10-31/README.md)
+records the later independent circle-outline clip finding and local finite
+admission repair, the parent's retention of only `#[inline]` on the shared gate,
+and the authorized 1,513-KiB raw limit with gzip unchanged at 626 KiB. Fresh final
+source packages at 1,548,390 raw / 640,709 gzip bytes (922 / 315 bytes headroom).
+Real paired assets, Node native/WASM parity, native temporal seams and the
+original full strict-CSP foundation pass. Final independent review of the whole
+integrated S3 diff and CI remain pending.
+This does not establish S4 wire capacity behavior, browser/host delivery, #36,
+milestone 4, or release completion. No ABI/export/manifest version changes.

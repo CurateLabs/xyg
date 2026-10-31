@@ -1,0 +1,17 @@
+{
+  "name": "rustfmt-touched",
+  "command": [
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--config",
+    "skip_children=true",
+    "crates/xyg-engine/src/graphforge/interaction/paint.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.202,
+  "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "log": "rustfmt-touched.txt.gz",
+  "gzipSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+}

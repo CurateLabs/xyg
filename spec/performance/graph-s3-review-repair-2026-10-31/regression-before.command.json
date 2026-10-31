@@ -1,0 +1,17 @@
+{
+  "name": "regression-before",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::pick",
+    "--",
+    "--nocapture"
+  ],
+  "exitCode": 101,
+  "seconds": 46.476,
+  "rawSha256": "f599be1031f5bde334b5eac41875edbf93b2c988c13f8eb43a53c678233501d8",
+  "log": "regression-before.txt.gz",
+  "gzipSha256": "cd859b48692d379d4bdde166162fa9df850685e871df670db4154f0b21b97b37"
+}

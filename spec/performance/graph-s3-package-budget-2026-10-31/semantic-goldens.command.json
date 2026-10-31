@@ -1,0 +1,14 @@
+{
+  "name": "semantic-goldens",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/gen_graphforge_semantic_fixture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 1.697,
+  "rawSha256": "04eafdd36955c39e3fc3df387fef35eefb69c98436a0570d2ee1dcef775ebe6b",
+  "log": "semantic-goldens.txt.gz",
+  "gzipSha256": "22c8f09fff4ae063939a079fa86f907bf1add7543a5d542f29af9f7d4c99ca22"
+}

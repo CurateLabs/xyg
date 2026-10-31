@@ -1,0 +1,16 @@
+{
+  "name": "focused-after",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction",
+    "--lib"
+  ],
+  "exitCode": 0,
+  "seconds": 10.542,
+  "rawSha256": "a4e07b2e063375482b5273e46a742f549e49357fa973ee679b3b272636c8346c",
+  "log": "focused-after.txt.gz",
+  "gzipSha256": "4a29850429efcbd0b201ab50658dbe9196045e0880ed952799eb75c5932a6c2d"
+}

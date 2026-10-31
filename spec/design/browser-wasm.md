@@ -243,7 +243,7 @@ profile change. Exact source/artifact hashes, error-order preservation tests,
 and raw measurements are in the
 [S2 size-repair receipt](../performance/graph-s2-size-repair-2026-10-31/README.md).
 
-Current packaging gates are **1,512 KiB raw / 626 KiB gzip6**, a separate
+The S2 packaging gates were **1,512 KiB raw / 626 KiB gzip6**, a separate
 recorded #36 S2 functionality decision after those two measured candidates.
 The retained module adds **1,071 raw / 996 gzip bytes** over S1 through
 reachable shared changes, including compound flag propagation and temporal
@@ -257,6 +257,31 @@ slices and establish no runtime-performance or milestone acceptance. The
 historical failed receipts remain unchanged; real packaging, paired assets
 and strict-CSP browser validation are recorded separately in the
 [S2 packaging decision receipt](../performance/graph-s2-package-budget-2026-10-31/README.md).
+
+**Current packaging gates are 1,513 KiB raw / 626 KiB gzip6**
+(**1,549,312 / 641,024 bytes**), the parent's separate S3 raw-only functionality
+decision. The prior S3 child rejected both measured codegen hints because neither
+met the then-unchanged raw gate; that historical failure remains intact in the
+[S3 repair receipt](../performance/graph-s3-review-repair-2026-10-31/README.md).
+After an independent policy review, the parent retained only `#[inline]` on
+`CoordinationGate::validate` as a Pareto improvement (historically −119 raw /
+−46 gzip bytes), then authorized the smallest next-KiB raw limit. All guards,
+guard order, atomicity, profiles, dependencies, flags, signatures and exports stay
+unchanged; there is no third size candidate or runtime-performance claim.
+
+Fresh final geometry source is rebuilt and really packaged at **1,548,390 raw /
+640,709 gzip6 bytes**, with **922 / 315 bytes** headroom and optimized SHA-256
+`db698663bb9db02e50001af58e45c538cbdd9644c778d52ae82aebd6a3baa61a`.
+This is **+611 raw / +182 gzip bytes** over the S2 module, attributed to reachable
+shared coordination-gate extraction. Typed graph sessions remain unexported;
+finite outline-span admission is local S3 Rust policy, not new browser behavior.
+The new [S3 package decision receipt](../performance/graph-s3-package-budget-2026-10-31/README.md)
+binds the fresh source, actual Node 22 compression, real paired assets and
+manifests, parity, native temporal regressions and original full strict-CSP
+foundation. Earlier S1/S2/S3 receipts and fixtures remain byte-unchanged. Final
+independent review and CI remain pending; packaging establishes no #36, M4,
+hardware, ABI-slice or release completion. Further growth must still fail these
+limits, without another automatic raise.
 
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
@@ -324,7 +349,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging now enforces 1,512 KiB raw / 626 KiB gzip limits (including the recorded S1 hierarchy and S2 shared-functionality decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+packaging now enforces 1,513 KiB raw / 626 KiB gzip limits (including the recorded S1 hierarchy, S2 shared-functionality and S3 raw-only decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 

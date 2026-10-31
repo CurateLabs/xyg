@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
+use crate::coordination::{CoordinationGate, GateError};
 use crate::temporal::TemporalError;
 
 /// Hard wire and memory bound for one coordinated stable-ID replacement set.
@@ -78,7 +79,7 @@ pub struct CoordinationEvent {
 pub struct TemporalController {
     state: ControllerState,
     /// Last applied remote revision per source instance (reject stale).
-    last_remote: HashMap<u64, u64>,
+    last_remote: CoordinationGate,
     /// Pending outbound event after a local mutation (hosts poll + broadcast).
     outbound: Option<CoordinationEvent>,
 }
@@ -128,7 +129,7 @@ impl TemporalController {
                 disposed: false,
                 selection: Vec::new(),
             },
-            last_remote: HashMap::new(),
+            last_remote: CoordinationGate::default(),
             outbound: None,
         })
     }
@@ -348,19 +349,22 @@ impl TemporalController {
     fn validate_event(&self, event: &CoordinationEvent) -> Result<bool, TemporalError> {
         self.ensure_live()?;
         validate_event_shape(event)?;
-        if self.state.group_id == 0 || event.group_id != self.state.group_id {
-            return Ok(false);
-        }
-        if event.source_instance == self.state.instance_id {
-            return Err(TemporalError::SelfEcho);
-        }
-        let last = self
+        if !self
             .last_remote
-            .get(&event.source_instance)
-            .copied()
-            .unwrap_or(0);
-        if event.revision <= last {
-            return Err(TemporalError::StaleRevision);
+            .validate(
+                self.state.instance_id,
+                self.state.group_id,
+                event.source_instance,
+                event.group_id,
+                event.revision,
+            )
+            .map_err(|error| match error {
+                GateError::Invalid => TemporalError::InvalidArgument,
+                GateError::SelfEcho => TemporalError::SelfEcho,
+                GateError::Stale => TemporalError::StaleRevision,
+            })?
+        {
+            return Ok(false);
         }
         if event.range_start < self.state.domain_start || event.range_end > self.state.domain_end {
             return Err(TemporalError::InvalidArgument);
@@ -374,7 +378,7 @@ impl TemporalController {
             return Ok(false);
         }
         self.last_remote
-            .insert(event.source_instance, event.revision);
+            .commit(event.source_instance, event.revision);
         self.state.range_start = event.range_start;
         self.state.range_end = event.range_end;
         self.state.window = event.window;

@@ -1,0 +1,15 @@
+{
+  "name": "abi-final",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "scripts/gen_abi_manifest.py",
+    "--check"
+  ],
+  "exitCode": 0,
+  "seconds": 2.425,
+  "rawSha256": "039a0153fd2e38e4ecf2ff9508cd5f90c7289c090e8067e5c2ea7175205efd34",
+  "log": "abi-final.txt.gz",
+  "gzipSha256": "33ed4937b9d906e1b8096d3dac1a3aacf5076462cc2fe8d0c89c504ab4f1c5bb"
+}

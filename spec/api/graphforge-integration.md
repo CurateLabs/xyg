@@ -54,7 +54,16 @@ UUID-keyed pin set), `budgets` `[node_budget, edge_budget]` (default 200,000 /
 500,000), and `seed`. Lengths must equal the node count, positions be finite,
 flags be 0/1, budgets non-zero. At the Direct tier the session's render planes
 are byte-equal to what `layout_render` builds from the same inputs; hosts do not
-run `layout_render` beside a session. Sessions are Rust-only until the ABI slice
+run `layout_render` beside a session. Typed S3 sessions add screen-point/brush/lasso selection from the same
+publication, linked exact-identity snapshots and atomic document replacement.
+Replacement preserves surviving UUID state and pins, resets omitted load fields
+to create defaults, and drops derived state on generation/result-id changes.
+Omitted x/y does not persist old positions; retained pin tags anchor at the new
+seeded positions. Explicit x/y plus pinned restores persistence. A bound
+replacement must match its temporal owner's UUID order and persisted endpoints;
+validation and reconciliation share one lock. Admission/degraded limits and
+request-level graph snapshot sequencing are defined in graph-interaction.md
+§2.3–2.4/2.10. Sessions are Rust-only until the ABI slice
 (S4); see [graph-interaction.md](../design/graph-interaction.md).
 
 ## 2. Node host (extension host process)
@@ -180,7 +189,7 @@ composition and Python widget/notebook integration via #1015 remain open for
 | Composition | `GF_COMPOSE_REQUEST_INVALID`, `GF_COMPOSE_VERSION`, `GF_COMPOSE_INTENT_REQUIRED`, `GF_COMPOSE_INTENT_INVALID`, `GF_COMPOSE_INTENT_UNSUPPORTED`, `GF_COMPOSE_INTENT_CONFLICT`, `GF_COMPOSE_BASE_REQUIRED`, `GF_COMPOSE_GENERATION_STALE`, `GF_COMPOSE_GENERATION_MISSING`, `GF_COMPOSE_EXTRA_IDS`, `GF_COMPOSE_MISSING_IDS`, `GF_COMPOSE_DUPLICATE_ID`, `GF_COMPOSE_IDENTITY_KIND`, `GF_COMPOSE_EDGE_ENDPOINT_MISMATCH`, `GF_COMPOSE_CHANNEL_CONFLICT`, `GF_COMPOSE_TOO_LARGE`, `GF_COMPOSE_COORDINATES_REQUIRED`, `GF_COMPOSE_COORDINATES_MISSING`, `GF_COMPOSE_COORDINATES_INVALID` |
 | Scene | `GF_COMPOSE_RENDER_UNSUPPORTED`, `GF_COMPOSE_SCENE_TOO_LARGE`, `GF_COMPOSE_SCENE_INVALID`, `GF_COMPOSE_SCENE_EMPTY` (every node hidden: `renderWasmGraphForge` rejects, the document records the decision) |
 | Document decoding | `GF_COMPOSE_DOCUMENT_INVALID` (a supplied document is malformed or its sections disagree on shape) |
-| Interaction session (`InteractionStatus::code`) | `GF_INTERACTION_STALE` (destination stamp, aggregate ref, or walk against a render that is no longer current; nothing changed), `GF_INTERACTION_UNLINKED`, `GF_INTERACTION_INVALID` (malformed document or load, unknown or wrong-kind ref, stale-ordered `op_seq`, non-finite move, unreachable path), `GF_INTERACTION_BUDGET` (relayout work over 4,000,000 units), `GF_INTERACTION_CAPACITY`, `GF_INTERACTION_SELF_ECHO`, `GF_INTERACTION_STALE_REMOTE`, `GF_INTERACTION_SELECTION_TOO_LARGE` (more than 10,000 refs), `GF_INTERACTION_COMPOUND_TOO_LARGE` (disclosure on a graph over 1,024 nodes), `GF_INTERACTION_UNBOUND` (the bound temporal graph is gone), `GF_INTERACTION_REVISION_EXHAUSTED` (`render_revision` reached `u32::MAX`; the operation changed nothing and the session must be recreated). A failed operation never changes state or consumes its `op_seq`. |
+| Interaction session (`InteractionStatus::code`) | `GF_INTERACTION_STALE` (destination stamp, aggregate ref, or walk against a render that is no longer current; nothing changed), `GF_INTERACTION_UNLINKED`, `GF_INTERACTION_INVALID` (malformed document or load, unknown or wrong-kind ref, stale-ordered `op_seq`, non-finite move, unreachable path), `GF_INTERACTION_BUDGET` (query or relayout deterministic work over 4,000,000 units, or pick candidate overflow), `GF_INTERACTION_CAPACITY`, `GF_INTERACTION_SELF_ECHO`, `GF_INTERACTION_STALE_REMOTE`, `GF_INTERACTION_SELECTION_TOO_LARGE` (more than 10,000 refs), `GF_INTERACTION_COMPOUND_TOO_LARGE` (disclosure on a graph over 1,024 nodes), `GF_INTERACTION_UNBOUND` (the bound temporal graph is gone), `GF_INTERACTION_REVISION_EXHAUSTED` (`render_revision` reached `u32::MAX`; the operation changed nothing and the session must be recreated). A failed operation never changes state or consumes its `op_seq`. |
 | Native loading (`LOAD_ERROR_CODES`) | `XYG_NATIVE_UNSUPPORTED_PLATFORM`, `XYG_NATIVE_LIBRARY_MISSING`, `XYG_NATIVE_LIBRARY_PATH_INVALID`, `XYG_NATIVE_LOAD_FAILED`, `XYG_NATIVE_ABI_MISMATCH` (also a library without `xyg_abi_version`), `XYG_NODE_DEPENDENCY_MISSING` (e.g. `koffi` absent), `XYG_NODE_IMPORT_FAILED`; messages never include filesystem paths or loader text |
 | WASM init | `XYG_WASM_ABI_MISMATCH`, `XYG_WASM_SCENE_MISMATCH`, `XYG_WASM_PALETTE_MISMATCH`, `XYG_WASM_EXPORT_MISMATCH`, `XYG_WASM_IMPORTS_REJECTED`, `XYG_WASM_BUDGET_EXCEEDED`, `XYG_WASM_INSTANCE_EXHAUSTED`, `XYG_WASM_INIT_FAILED` (asset loading) |
 

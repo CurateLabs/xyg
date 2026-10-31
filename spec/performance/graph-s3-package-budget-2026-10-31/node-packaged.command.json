@@ -1,0 +1,18 @@
+{
+  "name": "node-packaged",
+  "command": [
+    "node",
+    "--test",
+    "--test-concurrency=2",
+    "--test-timeout=20000",
+    "packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+    "packages/xy-node/test/cose-wasm-parity.test.mjs",
+    "packages/xy-node/test/graphforge-cross-host.test.mjs",
+    "packages/xy-node/test/force-worker-lifecycle.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 6.025,
+  "rawSha256": "6e85e2e901582d3bab0e8b5dcd3b745e7860e889d509fad702549e9fcef01396",
+  "log": "node-packaged.txt.gz",
+  "gzipSha256": "8270d5a1ca2e243ab80af0984d74ff65eb9eea7a906cb2eed30b100419cbacf5"
+}

@@ -718,6 +718,12 @@ Forbidden:
 | `crates/xyg-engine/src/graph_interaction_state.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/composed.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/identity.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/coordination.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/coordination.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/paint.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/pick.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/pick.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/update.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/layout.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/render.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -1399,3 +1405,13 @@ Hierarchy43/44 dispatcher evidence adds test-owned
 The existing browser transport owner for `js/src/47_wasm.ts` remains unchanged;
 [the exact capture contract](geo-hierarchy-dispatch-capture.md) adds no host
 geometry, selection policy, or new public surface.
+
+
+Graph #36 S3 retains typed picking geometry in `graphforge/interaction/paint.rs`
+and its bounded index/query policy in `pick.rs`; both read the one session
+publication, never a Scene or independent layout. `interaction/update.rs`
+validates full replacements and reconciles the temporal owner's state under one
+lock. `interaction/coordination.rs` owns exact graph snapshot ordering/delivery;
+`coordination.rs` is the small validation/commit gate shared with the temporal
+controller (whose range validation and no-op behavior stay unchanged). These
+Rust-only changes introduce no host, ABI or browser policy surface.

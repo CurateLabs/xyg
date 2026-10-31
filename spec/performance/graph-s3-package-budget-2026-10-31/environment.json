@@ -1,0 +1,439 @@
+{
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "machine": "x86_64",
+  "python": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+  "pythonExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-d33e4a50/.venv/bin/python",
+  "backend": "native",
+  "nativeAbi": 396,
+  "nativePath": "/home/ubuntu/.t3/worktrees/xyg/t3-d33e4a50/target/release/libxyg_core.so",
+  "tmpdir": "/home/ubuntu/.t3/worktrees/xyg/t3-d33e4a50/target/task-tmp",
+  "toolchain": {
+    "node": {
+      "command": [
+        "node",
+        "--version"
+      ],
+      "executable": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+      "output": "v22.23.4"
+    },
+    "npm": {
+      "command": [
+        "npm",
+        "--version"
+      ],
+      "executable": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/npm",
+      "output": "10.9.9"
+    },
+    "rustc": {
+      "command": [
+        "rustc",
+        "--version",
+        "--verbose"
+      ],
+      "executable": "/home/ubuntu/.cargo/bin/rustc",
+      "output": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\nLLVM version: 22.1.2"
+    },
+    "cargo": {
+      "command": [
+        "cargo",
+        "--version"
+      ],
+      "executable": "/home/ubuntu/.cargo/bin/cargo",
+      "output": "cargo 1.96.0 (30a34c682 2026-05-25)"
+    },
+    "uv": {
+      "command": [
+        "uv",
+        "--version"
+      ],
+      "executable": "/home/ubuntu/.local/bin/uv",
+      "output": "uv 0.12.22 (x86_64-unknown-linux-gnu)"
+    },
+    "chromium": {
+      "command": [
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--version"
+      ],
+      "executable": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "output": "Google Chrome for Testing 156.0.8078.4"
+    }
+  },
+  "files": {
+    "target/release/libxyg_core.so": {
+      "bytes": 5667752,
+      "sha256": "a097cea60eb1847c5a80e13eb8d828dc5b7033ab77abe561eb2a352914897c8a"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 1707708,
+      "sha256": "57faf55aa486343112f251d195149fd3a245f9a053dd4b1b23158001e465a74c"
+    },
+    "Cargo.toml": {
+      "bytes": 456,
+      "sha256": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f"
+    },
+    "Cargo.lock": {
+      "bytes": 20648,
+      "sha256": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a"
+    },
+    ".cargo/config.toml": {
+      "bytes": 322,
+      "sha256": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92"
+    },
+    "rust-toolchain.toml": {
+      "bytes": 66,
+      "sha256": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+    },
+    "package-lock.json": {
+      "bytes": 52836,
+      "sha256": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8"
+    },
+    "packages/xy-node/package.json": {
+      "bytes": 3505,
+      "sha256": "fe7f9cf020301e3dcbe3f3c99603c17c135528d87227606d6f41296cc7af9847"
+    },
+    "packages/xy-node/package-lock.json": {
+      "bytes": 11100,
+      "sha256": "03e342a714044626343305c4dc6879904c71cdf48c800e4f47d97f918045e376"
+    },
+    "packages/xy-node/node_modules/koffi/package.json": {
+      "bytes": 2067,
+      "sha256": "b9cbc9d2d6bc91a2b00071c15c024e12edf5278d5ec576cea3a0a27c65e781bb"
+    },
+    "node_modules/binaryen/package.json": {
+      "bytes": 1378,
+      "sha256": "3c101537ea4dc095e5c2d23e540e91c04cfe0b877e8af5e854a8a1369c4ddf81"
+    },
+    "node_modules/playwright/package.json": {
+      "bytes": 1559,
+      "sha256": "6b840268612656f0639fb7d68782e8353bdf11518589d30ddf66f283c2670ed5"
+    },
+    "packages/xy-node/src/_abi_generated.js": {
+      "bytes": 335207,
+      "sha256": "34f534188fd4e2d0ae3686dda76120ea78b2abe08eead46e5db6fb94142336d3"
+    },
+    "packages/xy-node/src/abi.js": {
+      "bytes": 98489,
+      "sha256": "dd463c55fdaa1e04a291fdbf784a6e43cb415c524024c3f4830ba1dec78e42a3"
+    },
+    "packages/xy-node/src/charts.js": {
+      "bytes": 20430,
+      "sha256": "c59f658fa8b76214c9ff7d18163e0c2fa79e98d521f2e50f6db3c9a9ba1ef36e"
+    },
+    "packages/xy-node/src/chunked-columns.js": {
+      "bytes": 5051,
+      "sha256": "2b1dca81301a1235c108e7e54f529638d6e2c41a231b60638b65c8f277d332d2"
+    },
+    "packages/xy-node/src/color.js": {
+      "bytes": 25220,
+      "sha256": "a90db89647287c3c35ce46af805ae3ff99d3f45b9982e94bb8ec484cba1ba0e8"
+    },
+    "packages/xy-node/src/dom.js": {
+      "bytes": 1553,
+      "sha256": "2efbe4e98b13cc88f7209b40369ca64ed804e0abcc417f2f32d786b26e334bce"
+    },
+    "packages/xy-node/src/encode.js": {
+      "bytes": 247378,
+      "sha256": "f20519f1a21d26b969ab514ee90c4d6e857358fac8fc86d2ad05892a98428a6c"
+    },
+    "packages/xy-node/src/factorize.js": {
+      "bytes": 25757,
+      "sha256": "2c9a27d6f91894d4b8a0fd0389c754f382b6ad439685e8fe3aec789707901c57"
+    },
+    "packages/xy-node/src/figure.js": {
+      "bytes": 134554,
+      "sha256": "96a9981114f18c42810208b7a9962d4260ccc0e292df340dc33928bc7b5fc19f"
+    },
+    "packages/xy-node/src/force_scheduler.js": {
+      "bytes": 10200,
+      "sha256": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c"
+    },
+    "packages/xy-node/src/geo-allocation-attempt.js": {
+      "bytes": 12300,
+      "sha256": "8a24e9c4e22aa6967ef4e55036b796f6ca1f0d21f7299d0d88a40cc88157ba5e"
+    },
+    "packages/xy-node/src/geo-hierarchy-wire.js": {
+      "bytes": 20782,
+      "sha256": "59790b2236a200166a62177411df49ffb1c47edddea0f620f78893bb29124b96"
+    },
+    "packages/xy-node/src/geo-hierarchy.d.ts": {
+      "bytes": 3405,
+      "sha256": "74c4f060f01eebb49303c9d5c47744008663efefbf010020bb785d04dfc5999a"
+    },
+    "packages/xy-node/src/geo-hierarchy.js": {
+      "bytes": 9864,
+      "sha256": "0c28c07bf1105147fd0eb82edd2b579d219ebffd44ddf318a54762d3e905927d"
+    },
+    "packages/xy-node/src/geo-live-host.js": {
+      "bytes": 11562,
+      "sha256": "6cb5001de9e9836e49e7957a730d1a1b34facbfa4706fad1cc9b4c8524f91123"
+    },
+    "packages/xy-node/src/geo-mixed-wire.js": {
+      "bytes": 10292,
+      "sha256": "f573b2985aa28cf66d43ae90220a8372a91a900f216c04080eee509c36a7afcd"
+    },
+    "packages/xy-node/src/geo-mixed.d.ts": {
+      "bytes": 2024,
+      "sha256": "30c00a6a588ebf47682c5d46764ab382c830f5a95bb8581a331b25608e4c8ff2"
+    },
+    "packages/xy-node/src/geo-mixed.js": {
+      "bytes": 1489,
+      "sha256": "d6072633fc1aa10f8777ffb466e7be3fbe2cb012de7ddaa4eab034f084396da2"
+    },
+    "packages/xy-node/src/geo-overview-members.d.ts": {
+      "bytes": 4336,
+      "sha256": "17eca996d454f3b61d651d0f345f1272adf76db18d47734fcea84079eaed240a"
+    },
+    "packages/xy-node/src/geo-overview-members.js": {
+      "bytes": 22394,
+      "sha256": "c7b8c365d30c1bdefb788c38ec445c7c75b439e4dea939147c654b7c99955229"
+    },
+    "packages/xy-node/src/geo-overview-source.d.ts": {
+      "bytes": 9123,
+      "sha256": "f66b6a21fca6770f00b43e7f119c85b9719ae8f606954ad3aec362bce27f3cae"
+    },
+    "packages/xy-node/src/geo-overview-source.js": {
+      "bytes": 28834,
+      "sha256": "0352d2973166fd6e4d3c5d27d0f72378849b1c2052b387a31c3299013b45e834"
+    },
+    "packages/xy-node/src/geo-overview.d.ts": {
+      "bytes": 5289,
+      "sha256": "78b2cf8c83d89e2d55282d32dd9dd3b12273f97f432830045e16481c147bc63d"
+    },
+    "packages/xy-node/src/geo-overview.js": {
+      "bytes": 12593,
+      "sha256": "de65efaae204148603e05de29248d2e346cba7f7ede066a96c399ed339fb017a"
+    },
+    "packages/xy-node/src/geo-retained.d.ts": {
+      "bytes": 3552,
+      "sha256": "0a983bf9fd84db3251f555940b8760cb858e9ac75a55b8775293af8a343e066d"
+    },
+    "packages/xy-node/src/geo-retained.js": {
+      "bytes": 19133,
+      "sha256": "431414a45b5ec5bfa68bac1fb4656e03eed517eff2605b9a444fd573e2cc4030"
+    },
+    "packages/xy-node/src/geo-selected.d.ts": {
+      "bytes": 6820,
+      "sha256": "7f77ba1411f8dbf9e64505fe43817566fbb6e26c20e31233739ed318e2ec5a47"
+    },
+    "packages/xy-node/src/geo-selected.js": {
+      "bytes": 19989,
+      "sha256": "faacabe853ac8daafd7ce25814e298dc9be148abec75e0a8358d3438589f8d96"
+    },
+    "packages/xy-node/src/geo-snapshot.d.ts": {
+      "bytes": 1594,
+      "sha256": "84c45e2292896ecb409e56cf7672ee08229892898955f21d486d6ef4a0aff461"
+    },
+    "packages/xy-node/src/geo-snapshot.js": {
+      "bytes": 7745,
+      "sha256": "1e61f6fca02b6ea5acf2406d79eb0e6ceafa0ff71dcb27d5465e1b4b7f54968d"
+    },
+    "packages/xy-node/src/geo-spatial.d.ts": {
+      "bytes": 895,
+      "sha256": "38ca6190ccea496d29d0c62cd17d4537d097ffd4c62fe55c43fe3308921bba9b"
+    },
+    "packages/xy-node/src/geo-spatial.js": {
+      "bytes": 4958,
+      "sha256": "83a7da0edb48f4ddcf7f61e02da8d36062fb3ce0b154ccd4c786b1d70cd49e7f"
+    },
+    "packages/xy-node/src/geo-tiles.d.ts": {
+      "bytes": 4097,
+      "sha256": "6e138eb0602b8fc2c42b147314d6d79157f131a5f9175ec8a42f77a0da2f2dd6"
+    },
+    "packages/xy-node/src/geo-tiles.js": {
+      "bytes": 19119,
+      "sha256": "ad1dfd502f1e3b39ef2799d6d1ab9c3cdc924138ecb873d5744f01593de4fe50"
+    },
+    "packages/xy-node/src/geo-webview.d.ts": {
+      "bytes": 1128,
+      "sha256": "71317fa4afaca94e0d2012c5650de5c4ed766e7d19e05206cfe238d28e339e24"
+    },
+    "packages/xy-node/src/geo-webview.js": {
+      "bytes": 20130,
+      "sha256": "064226b45ce8225e9515ced5c53acf825d3e83769340ac14ebec902de3b00936"
+    },
+    "packages/xy-node/src/geoarrow.js": {
+      "bytes": 6837,
+      "sha256": "11d556514842eea2fb6d5c9ac1f0e349707f8e3fecb3eec619d4ab443d5aea73"
+    },
+    "packages/xy-node/src/geocatalog.js": {
+      "bytes": 13287,
+      "sha256": "32880a05684b697cbcdff25ae7e3cbdf99dec8f6d5c43fbab1a753c53a6906d0"
+    },
+    "packages/xy-node/src/geoscale.d.ts": {
+      "bytes": 16432,
+      "sha256": "d48024ef22ee0267ff358dd1f78fc1098f4ff513ad8fba908b5a86241237dd97"
+    },
+    "packages/xy-node/src/geoscale.js": {
+      "bytes": 43730,
+      "sha256": "7463bce2281f66afd11e311fa8ff8aee3c2146916dfbce9988a7669cb107761a"
+    },
+    "packages/xy-node/src/geoviewport.js": {
+      "bytes": 8016,
+      "sha256": "0275dff5da2d68c720a0301c50b32e3a38abd08a9d6a7a9bb41db3984127e958"
+    },
+    "packages/xy-node/src/graph.js": {
+      "bytes": 73879,
+      "sha256": "35ef2297291395d26f8ecb1505baf750f2fcafb2897e0251e4bd15bda2eeb4b1"
+    },
+    "packages/xy-node/src/graphforge-container.js": {
+      "bytes": 9763,
+      "sha256": "57e2250967df1322e0a5d449774a073f4687e01d45ef563e17b736d42e998a6a"
+    },
+    "packages/xy-node/src/graphforge.js": {
+      "bytes": 37338,
+      "sha256": "2ccc7cd4e88a85332202f1abe3789e9bd8644d95fdad437c59b6b0d83109bd60"
+    },
+    "packages/xy-node/src/html.js": {
+      "bytes": 6746,
+      "sha256": "19798bb407af09aa75f3f42a5ebd9e19aa7d3e34fb880a300588466dfa89a24f"
+    },
+    "packages/xy-node/src/index.js": {
+      "bytes": 14271,
+      "sha256": "f65de7532a45472324cc6ce3a0244c70dd22c7e35235d94afc870d11e42ef592"
+    },
+    "packages/xy-node/src/load.js": {
+      "bytes": 2371,
+      "sha256": "4f24b52e555cf9540fbea843394aec66222f9a3cd016a6e131e5d10490c41559"
+    },
+    "packages/xy-node/src/marks/area.js": {
+      "bytes": 2206,
+      "sha256": "5346bbdcd2a2689185ad19e9b7c28c1ceaa284b4019dc01ee76b99283d916e70"
+    },
+    "packages/xy-node/src/marks/bar.js": {
+      "bytes": 5823,
+      "sha256": "42ff71a81a4c48e94bd355a585aea875d7f1a9bc0e871855d0a94638afe084c5"
+    },
+    "packages/xy-node/src/marks/box.js": {
+      "bytes": 4235,
+      "sha256": "71734eb6249384d371105a056927fd126cbf507c43308e96f04809131e951d19"
+    },
+    "packages/xy-node/src/marks/contour.js": {
+      "bytes": 7408,
+      "sha256": "54f23e5d99ee21337f45aae6bcdceb1eb2b5220309f010f358ac9cd3c6c5b6b9"
+    },
+    "packages/xy-node/src/marks/distribution.js": {
+      "bytes": 3607,
+      "sha256": "b4126e110df74f25c9bd3afda954fe0729e8e51f8946b83e2e62da8cf3703a56"
+    },
+    "packages/xy-node/src/marks/ecdf.js": {
+      "bytes": 2932,
+      "sha256": "0762896e4f4d91ec9b37af31aa17e2f0f97c2019bf4dbd359995970416394186"
+    },
+    "packages/xy-node/src/marks/error_band.js": {
+      "bytes": 2196,
+      "sha256": "abb0375c866d1c3f8fe02c9f0cc46778d63fdbe0274ce3c83388286be3cf4c97"
+    },
+    "packages/xy-node/src/marks/errorbar.js": {
+      "bytes": 8176,
+      "sha256": "992535496c5177d21fac2d1dd09b3380de58cbc0b313c8d2d93ba925feec9622"
+    },
+    "packages/xy-node/src/marks/heatmap.js": {
+      "bytes": 4221,
+      "sha256": "c1d374b031dc7fce5f1e7c5a95fc56f1c8289b8db5cdc34e3caed16dd3e3ae47"
+    },
+    "packages/xy-node/src/marks/hexbin.js": {
+      "bytes": 3223,
+      "sha256": "04da661bcf1a6bb6fb535d328fb9def2ba618d63159f15d2f1785f5f69523d5a"
+    },
+    "packages/xy-node/src/marks/histogram.js": {
+      "bytes": 3255,
+      "sha256": "9b86a2ef14ee266297afd910ae03e470d778471b7eddc56eccb1e4525b4820ee"
+    },
+    "packages/xy-node/src/marks/line.js": {
+      "bytes": 3582,
+      "sha256": "9eab736742e098fc39e86ec9cb4ece7e9bf713b28ccb5e11c5e16d7e09e6b43d"
+    },
+    "packages/xy-node/src/marks/polar.js": {
+      "bytes": 9790,
+      "sha256": "98b077439ee65f084b786bc2e79afd532fdb67c4481071837a70e953cf1800c6"
+    },
+    "packages/xy-node/src/marks/radar.js": {
+      "bytes": 5191,
+      "sha256": "32ae99e4e07fa30a32db42c1a991ba939b101869dd7f3409eca49fbdc035a013"
+    },
+    "packages/xy-node/src/marks/ribbon.js": {
+      "bytes": 3746,
+      "sha256": "54552e4bee4aa3dcba792663e695810d61a114a619b4c6c817831c554d51255a"
+    },
+    "packages/xy-node/src/marks/scatter.js": {
+      "bytes": 9095,
+      "sha256": "c61d6761ead806bca6c5fb18964959e75f9e948c961a8eb176e1c6142326ca1d"
+    },
+    "packages/xy-node/src/marks/segments.js": {
+      "bytes": 2111,
+      "sha256": "1b6b32674828b9117d1d2e560765da4cd225bc5b17355bc4a3168f963b67acaf"
+    },
+    "packages/xy-node/src/marks/stem.js": {
+      "bytes": 2509,
+      "sha256": "55317297d5172671a722a5881bf552cae8275cbd6a0c67fde08b7e397f8bea8f"
+    },
+    "packages/xy-node/src/marks/step.js": {
+      "bytes": 4257,
+      "sha256": "6fbecbc8900f7c21e8718e46645be0dcb885df1e2b756f7d02b6062149ee882f"
+    },
+    "packages/xy-node/src/marks/triangle_mesh.js": {
+      "bytes": 3213,
+      "sha256": "5335561b75ccb2485e8760804c0e445715ed5f121262f24df2122f58e119f29f"
+    },
+    "packages/xy-node/src/marks/violin.js": {
+      "bytes": 2526,
+      "sha256": "4defc8432691a541df13abae567aa3a9014db68e818672ae5edc265043f29102"
+    },
+    "packages/xy-node/src/native-path.js": {
+      "bytes": 7305,
+      "sha256": "0f117ab853f641e10ab2f713a4f232e3411de3c59f73780c83924137f21be4f1"
+    },
+    "packages/xy-node/src/native.js": {
+      "bytes": 3291,
+      "sha256": "ae102470bdca88c3c9634b11692ebed5eb95c5f08d5af3779225f703c7300953"
+    },
+    "packages/xy-node/src/payloadTraceMaterialize.js": {
+      "bytes": 30790,
+      "sha256": "33e943b1af6851a9d28e0dcd64ba9ca3ad0aed8909b95fcd631b88d153fda24a"
+    },
+    "packages/xy-node/src/pyramid.js": {
+      "bytes": 17744,
+      "sha256": "de505c5d95366ebc7bf74dc3b70bc7e3206782fee5ed3e7c18543bffd37a992b"
+    },
+    "packages/xy-node/src/sankey.js": {
+      "bytes": 4597,
+      "sha256": "16e6ca9215868568a473f4856620cd4acb1df1bae2028d5d35dcac0660a7e44d"
+    },
+    "packages/xy-node/src/scene.js": {
+      "bytes": 314558,
+      "sha256": "17e3284f92489788f256be00be3135b6014289bf93decb849b5f380c8a66801f"
+    },
+    "packages/xy-node/src/sceneBulkNative.js": {
+      "bytes": 72064,
+      "sha256": "bd395fc8a18e013dcb53937d3f48546a9a7637a04847ef705c08fd6ba46581dc"
+    },
+    "packages/xy-node/src/temporal-graph.js": {
+      "bytes": 3025,
+      "sha256": "f3606a6526fa76215ac1ffedc720f41cb3ca5d7f578c29d61d34e809d87f2b2a"
+    },
+    "packages/xy-node/src/tooltip-columns.js": {
+      "bytes": 7189,
+      "sha256": "363538c7d375cdff560d58f7d7bb76ad34dd6cfc111057a72e7c089bbeef26f1"
+    },
+    "packages/xy-node/src/vscode.js": {
+      "bytes": 1973,
+      "sha256": "3bd5e4e3f7e6481fce78471403ee580d1003208c2921199496be26665be1e8d3"
+    },
+    "packages/xy-node/node_modules/@koromix/koffi-linux-x64/linux_x64/koffi.node": {
+      "bytes": 1150432,
+      "sha256": "a49334862f69cd3687d370dc5edbce3ee365bda8dfe1d87db973dfec835e86d3"
+    },
+    "packages/xy-node/node_modules/@koromix/koffi-linux-x64/musl_x64/koffi.node": {
+      "bytes": 1207616,
+      "sha256": "f5fba3bedf8562aaae01e2c9d57935050f259bf765e8f9772c962c5b9c4f4c87"
+    },
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome": {
+      "bytes": 301186376,
+      "sha256": "377a9fc07b495c3b8d0ab8ec1fdfd153641759f9756fea34d8dfce4de82f5025"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node": {
+      "bytes": 124902584,
+      "sha256": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90"
+    }
+  }
+}

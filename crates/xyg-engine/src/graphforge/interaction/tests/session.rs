@@ -2350,3 +2350,112 @@ fn recovery_aggregate_cap_counts_the_union_with_explicit_member_refs() {
     )
     .unwrap();
 }
+
+// S3: update must preserve the single locked world, including an incoming
+// frame advancing immediately before the one registry access.
+#[test]
+fn s3_update_and_remote_take_one_lock_and_racing_update_is_atomic() {
+    let (mut s, registry, host) = hooked_session();
+    s.select_refs(
+        header(&s, 1),
+        &[ElementRef::Node(id(1))],
+        SelectMode::Replace,
+    )
+    .unwrap();
+    let before = host.calls();
+    let revision = s.render_revision();
+    s.update(
+        header(&s, 2),
+        &standard_doc(),
+        at(&[0., 10., 20.], &[0.; 3]),
+    )
+    .unwrap();
+    assert_eq!(host.calls() - before, 1);
+    assert_eq!(s.render_revision(), revision + 1);
+    let state = registry
+        .graph
+        .lock()
+        .unwrap()
+        .as_ref()
+        .unwrap()
+        .interaction_state()
+        .clone();
+    let before = host.calls();
+    let revision = s.render_revision();
+    let h = header(&s, 3);
+    let registry2 = registry.clone();
+    host.before(before + 1, move || frame_at(&registry2, 2, 20));
+    assert_eq!(
+        s.update(h, &standard_doc(), SessionLoad::default()),
+        Err(InteractionStatus::Stale)
+    );
+    assert_eq!(host.calls() - before, 1);
+    assert_eq!(s.render_revision(), revision);
+    assert_eq!(
+        *registry
+            .graph
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .interaction_state(),
+        state
+    );
+    s.render(None).unwrap();
+    let h = header(&s, 3);
+    s.update(h, &standard_doc(), SessionLoad::default())
+        .unwrap();
+    let before = host.calls();
+    let bad = GraphCoordinationEvent {
+        group_id: 0,
+        source_instance: 8,
+        revision: 1,
+        generation: None,
+        refs: vec![],
+    };
+    assert_eq!(
+        s.apply_remote(header(&s, 4), &bad),
+        Err(InteractionStatus::Unlinked)
+    );
+    assert_eq!(host.calls() - before, 1);
+}
+
+#[test]
+fn s3_picks_obey_temporal_visibility_culling_and_current_stamp() {
+    let registry = temporal_registry();
+    let mut s = loaded(&standard_doc(), at(&[0., 100., 200.], &[0.; 3]));
+    s.bind_temporal(registry.clone(), HANDLE).unwrap();
+    frame_at(&registry, 1, 20);
+    let r = s.render(None).unwrap();
+    assert_eq!(r.member_of[1], NOT_RENDERED);
+    assert_eq!(&r.edge_render[..2], &[NOT_RENDERED; 2]);
+    // The surviving derived 3→1 route crosses the expired node's old
+    // position. It remains pickable with its own publication membership.
+    assert_eq!(r.pick_at(100., 0.).unwrap(), Some(PickTarget::Edge(0)));
+    assert_eq!(r.members_of_edge(0), &[2]);
+    frame_at(&registry, 2, 10);
+    let stale = header(&s, 1);
+    assert_eq!(
+        s.select_at(stale, 100., 0., SelectMode::Replace),
+        Err(InteractionStatus::Stale)
+    );
+    s.render(None).unwrap();
+    s.select_at(header(&s, 1), 100., 0., SelectMode::Replace)
+        .unwrap();
+    assert_eq!(selected_nodes(&s), [id(2)]);
+    let c = Camera {
+        scale_x: 1.,
+        scale_y: 1.,
+        offset_x: 0.,
+        offset_y: 0.,
+        viewport_width: 150.,
+        viewport_height: 100.,
+        dpr: 1.,
+    };
+    let r = s.render(Some(c)).unwrap();
+    assert_eq!(
+        r.pick_at(200., 0.).unwrap(),
+        None,
+        "culled node cannot pick"
+    );
+}
