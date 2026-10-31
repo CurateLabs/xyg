@@ -6083,7 +6083,6 @@ struct StyleDash {
     values: [f32; 8],
 }
 
-#[cfg(test)]
 fn encode_xyds(entries: &[StyleDash]) -> Result<Vec<u8>, SceneError> {
     if entries.is_empty() {
         return Ok(Vec::new());
@@ -11849,6 +11848,33 @@ pub struct SceneGraphParts {
     pub chrome: SceneChromeStyle,
     pub text: SceneChromeText,
     pub legend: Option<SceneLegend>,
+    pub(crate) annotations: SceneAnnotationParts,
+}
+
+/// Authored annotations of a decoded Scene, already expanded into records,
+/// styles, labels, and label backgrounds by the figure route. The composed
+/// graph rebuild carries them over verbatim (#922); `SceneAnnotationParts`
+/// never re-expands them. Record `style_ref`s index `styles`.
+#[derive(Default)]
+pub(crate) struct SceneAnnotationParts {
+    records: Vec<EncodedRecord>,
+    styles: Vec<EncodedStyle>,
+    labels: Vec<SceneLabel>,
+    label_backgrounds: Vec<Option<SceneLabelBox>>,
+}
+
+impl SceneAnnotationParts {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.records.is_empty() && self.labels.is_empty()
+    }
+
+    pub(crate) fn label_count(&self) -> usize {
+        self.labels.len()
+    }
+
+    pub(crate) fn label_text_bytes(&self) -> usize {
+        self.labels.iter().map(|label| label.text.len()).sum()
+    }
 }
 
 impl SceneDocument {
@@ -12022,69 +12048,7 @@ impl SceneDocument {
             // DOM; opaque contrast remains independent of the underlying tile.
             d.label_backgrounds.push(Some(background));
         }
-        let mut fill = Vec::with_capacity(d.styles.len() * 4);
-        let mut stroke = Vec::with_capacity(d.styles.len() * 4);
-        let mut widths = Vec::with_capacity(d.styles.len());
-        for s in &d.styles {
-            fill.extend(s.fill);
-            stroke.extend(s.stroke);
-            widths.push(s.stroke_width);
-        }
-        let kinds: Vec<_> = d.records.iter().map(|r| r.kind as u8).collect();
-        let ids: Vec<_> = d.records.iter().map(|r| r.stable_id).collect();
-        let refs: Vec<_> = d.records.iter().map(|r| r.style_ref as u32).collect();
-        let diameters: Vec<_> = d.records.iter().map(|r| r.diameter).collect();
-        let symbols: Vec<_> = d.records.iter().map(|r| r.symbol).collect();
-        let coords: [Vec<f64>; 4] =
-            std::array::from_fn(|i| d.records.iter().map(|r| r.coordinates[i]).collect());
-        let caps: Vec<_> = d
-            .styles
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| s.linecap != LINECAP_ROUND)
-            .map(|(i, s)| StyleCap {
-                style_ref: i as u32,
-                cap: s.linecap,
-            })
-            .collect();
-        let sidecar = encode_xylc(&caps)?;
-        let mut batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
-            d.layout,
-            scene_read_u64(bytes, 80)?,
-            scene_read_u64(bytes, 88)?,
-            d.x_scale,
-            d.y_scale,
-            d.chrome,
-            d.text,
-            d.legend,
-            d.labels,
-            &kinds,
-            &ids,
-            &refs,
-            &fill,
-            &stroke,
-            &widths,
-            &diameters,
-            &symbols,
-            &coords[0],
-            &coords[1],
-            &coords[2],
-            &coords[3],
-        )?
-        .with_images(d.images)?
-        .with_dashes(&sidecar)?;
-        batch.label_backgrounds = d.label_backgrounds;
-        let mut out = batch.encode();
-        let offset = SCENE_BATCH_HEADER_BYTES + d.styles.len() * SCENE_STYLE_RECORD_BYTES;
-        for (i, r) in d.records.iter().enumerate() {
-            let at = offset + i * SCENE_BATCH_RECORD_BYTES;
-            out[at + 1] = u8::from(r.visible);
-            out[at + 3] = r.annotation_tag | if r.y2 { SCENE_RECORD_Y2_BIT } else { 0 };
-            for (j, value) in r.coordinates.iter().enumerate() {
-                out[at + 16 + j * 8..at + 24 + j * 8].copy_from_slice(&value.to_le_bytes());
-            }
-        }
-        validate_scene_batch(&out)?;
+        let out = d.encode_literal(bytes)?;
         let checked = Self::decode(&out)?;
         if required
             .iter()
@@ -12142,88 +12106,20 @@ impl SceneDocument {
             style_ref: r.style_ref + base.styles.len(),
             ..*r
         }));
-        let mut fill = Vec::with_capacity(style_count * 4);
-        let mut stroke = Vec::with_capacity(style_count * 4);
-        let mut widths = Vec::with_capacity(style_count);
-        for style in base.styles.iter().chain(&front.styles) {
-            fill.extend(style.fill);
-            stroke.extend(style.stroke);
-            widths.push(style.stroke_width);
-        }
-        let kinds: Vec<_> = records.iter().map(|r| r.kind as u8).collect();
-        let ids: Vec<_> = records.iter().map(|r| r.stable_id).collect();
-        let refs: Vec<_> = records.iter().map(|r| r.style_ref as u32).collect();
-        let diameters: Vec<_> = records.iter().map(|r| r.diameter).collect();
-        let symbols: Vec<_> = records.iter().map(|r| r.symbol).collect();
-        let coords: [Vec<f64>; 4] =
-            std::array::from_fn(|i| records.iter().map(|r| r.coordinates[i]).collect());
-        let mut images = base.images.clone();
+        let mut merged = base;
         for image in &front.images {
-            if images
+            if merged
+                .images
                 .iter()
                 .any(|other| other.stable_id == image.stable_id)
             {
                 return Err(SceneError::Length);
             }
-            images.push(image.clone());
+            merged.images.push(image.clone());
         }
-        let caps: Vec<_> = base
-            .styles
-            .iter()
-            .chain(&front.styles)
-            .enumerate()
-            .filter(|(_, s)| s.linecap != LINECAP_ROUND)
-            .map(|(i, s)| StyleCap {
-                style_ref: i as u32,
-                cap: s.linecap,
-            })
-            .collect();
-        let sidecar = encode_xylc(&caps)?;
-        let mut batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
-            base.layout,
-            scene_read_u64(background, 80)?,
-            scene_read_u64(background, 88)?,
-            base.x_scale,
-            base.y_scale,
-            base.chrome,
-            base.text,
-            base.legend,
-            base.labels,
-            &kinds,
-            &ids,
-            &refs,
-            &fill,
-            &stroke,
-            &widths,
-            &diameters,
-            &symbols,
-            &coords[0],
-            &coords[1],
-            &coords[2],
-            &coords[3],
-        )?
-        .with_images(images)?
-        .with_dashes(&sidecar)?;
-        batch.label_backgrounds = base.label_backgrounds;
-        let mut out = batch.encode();
-        if scene_read_u64(&out, 16)? != count as u64
-            || scene_read_u64(&out, 24)? != style_count as u64
-        {
-            return Err(SceneError::Length);
-        }
-        // Preserve literal CSS geometry, visibility separators and topology tags.
-        // Rebuilding chrome must not reproject already-projected source records.
-        let offset = SCENE_BATCH_HEADER_BYTES + style_count * SCENE_STYLE_RECORD_BYTES;
-        for (i, record) in records.iter().enumerate() {
-            let at = offset + i * SCENE_BATCH_RECORD_BYTES;
-            out[at + 1] = u8::from(record.visible);
-            out[at + 3] = record.annotation_tag | if record.y2 { SCENE_RECORD_Y2_BIT } else { 0 };
-            for (j, value) in record.coordinates.iter().enumerate() {
-                out[at + 16 + j * 8..at + 24 + j * 8].copy_from_slice(&value.to_le_bytes());
-            }
-        }
-        validate_scene_batch(&out)?;
-        Ok(out)
+        merged.records = records;
+        merged.styles.extend(front.styles);
+        merged.encode_literal(background)
     }
     /// Frozen geographic attribution must be a legible upright label wholly
     /// inside the viewport. Bounds use the same text advance as Scene layout.
@@ -12397,21 +12293,52 @@ impl SceneDocument {
         })
     }
 
-    /// Parts a graph rebuild keeps. Polar, image, colorbar, gradient, and
-    /// authored-label Scenes are not graph charts and fail closed, as do
-    /// authored annotations: the rebuild re-emits only the graph, so it
-    /// refuses rather than silently dropping them (#34).
+    /// Parts a graph rebuild keeps. Polar, image, and colorbar Scenes are not
+    /// graph charts and fail closed. Authored annotation records, their
+    /// styles, and every label (with its background box) are split out so the
+    /// rebuild re-attaches them without a second expansion (#922); an
+    /// annotation style that carries a gradient also fails closed, since the
+    /// split cannot move gradients.
     pub(crate) fn into_graph_parts(self) -> Result<SceneGraphParts, SceneError> {
-        if self.polar.is_some()
-            || self.y2.is_some()
-            || self.colorbar.is_some()
-            || !self.images.is_empty()
-            || !self.labels.is_empty()
-            || self.records.iter().any(|record| {
-                is_scene_annotation_id(record.stable_id) || record.annotation_tag != 0
-            })
-        {
+        if self.polar.is_some() || self.y2.is_some() || self.colorbar.is_some() || !self.images.is_empty() {
             return Err(SceneError::Length);
+        }
+        let mut annotations = SceneAnnotationParts {
+            labels: self.labels,
+            label_backgrounds: self.label_backgrounds,
+            ..SceneAnnotationParts::default()
+        };
+        let mut remap = vec![None; self.styles.len()];
+        for record in &self.records {
+            // Tag 0x80 is ordinary literal geometry whatever its id (literal
+            // mode permits reserved-prefix ids), never an annotation.
+            let tagged = matches!(
+                record.annotation_tag,
+                1..=SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT
+            );
+            if record.annotation_tag == 0x80
+                || !(is_scene_annotation_id(record.stable_id) || tagged)
+            {
+                continue;
+            }
+            let source = record.style_ref;
+            let local = match remap.get(source).copied().ok_or(SceneError::Length)? {
+                Some(local) => local,
+                None => {
+                    if self.gradients.get(source).is_some_and(Option::is_some)
+                        || self.marker_glyphs.get(source).is_some_and(Option::is_some)
+                    {
+                        return Err(SceneError::Length);
+                    }
+                    annotations.styles.push(self.styles[source]);
+                    remap[source] = Some(annotations.styles.len() - 1);
+                    annotations.styles.len() - 1
+                }
+            };
+            annotations.records.push(EncodedRecord {
+                style_ref: local,
+                ..*record
+            });
         }
         Ok(SceneGraphParts {
             layout: self.layout,
@@ -12420,7 +12347,146 @@ impl SceneDocument {
             chrome: self.chrome,
             text: self.text,
             legend: self.legend,
+            annotations,
         })
+    }
+
+    /// Append `annotations` after the records of the rebuilt graph Scene
+    /// `graph` and re-encode through the literal-geometry path, so the
+    /// annotation stable ids, tags, and CSS-pixel coordinates survive and no
+    /// annotation is expanded a second time (#922). Annotation labels follow
+    /// the graph's own labels.
+    pub(crate) fn with_graph_annotations(
+        graph: &[u8],
+        annotations: SceneAnnotationParts,
+    ) -> Result<Vec<u8>, SceneError> {
+        let mut d = Self::decode(graph)?;
+        let records = d
+            .records
+            .len()
+            .checked_add(annotations.records.len())
+            .ok_or(SceneError::Limit)?;
+        let styles = d
+            .styles
+            .len()
+            .checked_add(annotations.styles.len())
+            .ok_or(SceneError::Limit)?;
+        if records > MAX_SCENE_MARKS || styles > MAX_SCENE_STYLES {
+            return Err(SceneError::Limit);
+        }
+        let style_offset = d.styles.len();
+        d.records
+            .extend(annotations.records.into_iter().map(|record| EncodedRecord {
+                style_ref: record.style_ref + style_offset,
+                ..record
+            }));
+        d.styles.extend(annotations.styles);
+        d.labels.extend(annotations.labels);
+        d.label_backgrounds.extend(annotations.label_backgrounds);
+        d.encode_literal(graph)
+    }
+
+    /// Re-encode through the literal-geometry path: records keep their
+    /// already-projected CSS coordinates, visibility, and topology tags
+    /// instead of being projected again from data space. `source` is the
+    /// encoded Scene whose two header words carry through unchanged.
+    fn encode_literal(self, source: &[u8]) -> Result<Vec<u8>, SceneError> {
+        let Self {
+            layout,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            legend,
+            labels,
+            label_backgrounds,
+            styles,
+            records,
+            images,
+            ..
+        } = self;
+        let mut fill = Vec::with_capacity(styles.len() * 4);
+        let mut stroke = Vec::with_capacity(styles.len() * 4);
+        let mut widths = Vec::with_capacity(styles.len());
+        for style in &styles {
+            fill.extend(style.fill);
+            stroke.extend(style.stroke);
+            widths.push(style.stroke_width);
+        }
+        let kinds: Vec<_> = records.iter().map(|r| r.kind as u8).collect();
+        let ids: Vec<_> = records.iter().map(|r| r.stable_id).collect();
+        let refs: Vec<_> = records.iter().map(|r| r.style_ref as u32).collect();
+        let diameters: Vec<_> = records.iter().map(|r| r.diameter).collect();
+        let symbols: Vec<_> = records.iter().map(|r| r.symbol).collect();
+        let coords: [Vec<f64>; 4] =
+            std::array::from_fn(|i| records.iter().map(|r| r.coordinates[i]).collect());
+        let dashes: Vec<_> = styles
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.dash_count != 0)
+            .map(|(i, s)| StyleDash {
+                style_ref: i as u32,
+                count: s.dash_count,
+                values: s.dash,
+            })
+            .collect();
+        let caps: Vec<_> = styles
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.linecap != LINECAP_ROUND)
+            .map(|(i, s)| StyleCap {
+                style_ref: i as u32,
+                cap: s.linecap,
+            })
+            .collect();
+        let mut sidecar = encode_xyds(&dashes)?;
+        sidecar.extend(encode_xylc(&caps)?);
+        let mut batch = SceneBatch::new_with_chrome_literal_ids_and_decorations(
+            layout,
+            scene_read_u64(source, 80)?,
+            scene_read_u64(source, 88)?,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            legend,
+            labels,
+            &kinds,
+            &ids,
+            &refs,
+            &fill,
+            &stroke,
+            &widths,
+            &diameters,
+            &symbols,
+            &coords[0],
+            &coords[1],
+            &coords[2],
+            &coords[3],
+        )?
+        .with_images(images)?
+        .with_dashes(&sidecar)?;
+        batch.label_backgrounds = label_backgrounds;
+        let mut out = batch.encode();
+        // Preserve literal CSS geometry, visibility separators and topology
+        // tags: rebuilding chrome must not reproject projected source records.
+        let offset = SCENE_BATCH_HEADER_BYTES + styles.len() * SCENE_STYLE_RECORD_BYTES;
+        for (i, record) in records.iter().enumerate() {
+            let at = offset + i * SCENE_BATCH_RECORD_BYTES;
+            out[at + 1] = u8::from(record.visible);
+            out[at + 3] = record.annotation_tag | if record.y2 { SCENE_RECORD_Y2_BIT } else { 0 };
+            for (j, value) in record.coordinates.iter().enumerate() {
+                out[at + 16 + j * 8..at + 24 + j * 8].copy_from_slice(&value.to_le_bytes());
+            }
+        }
+        // Every record and style survives one-for-one.
+        if scene_read_u64(&out, 16)? != records.len() as u64
+            || scene_read_u64(&out, 24)? != styles.len() as u64
+        {
+            return Err(SceneError::Length);
+        }
+        validate_scene_batch(&out)?;
+        Ok(out)
     }
 
     /// Logical viewport owned by the encoded Scene. StaticDocument validates
