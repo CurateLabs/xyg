@@ -1,0 +1,292 @@
+TAP version 13
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+not ok 1 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 66.897613
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-6ac01349/packages/xy-node/test/graph-session-wire.test.mjs:321:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    state-only publication preserves canonical routes
+    + actual - expected
+    
+      Float64Array(112) [
+        4.749293327331543,
+        0,
+        26.5,
+        0,
+    +   2.4375,
+    -   1.1875,
+        0,
+        0,
+        4.749293327331543,
+        0,
+        0,
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 4.749293327331543
+    1: 0
+    2: 26.5
+    3: 0
+    4: 1.1875
+    5: 0
+    6: 0
+    7: 4.749293327331543
+    8: 0
+    9: 0
+    10: 0
+    11: 0
+    12: 0
+    13: 0
+    14: 4.749124878231348
+    15: -0.04
+    16: 80.00008000031997
+    17: -0.04
+    18: 1.1875
+    19: 0
+    20: 0
+    21: 4.749124878231348
+    22: 0
+    23: 0
+    24: 0
+    25: 0
+    26: 0
+    27: 0
+    28: 33.5
+    29: 0
+    30: 52.31119251251221
+    31: 0
+    32: 1.1875
+    33: 0
+    34: 0
+    35: 3.5
+    36: 0
+    37: 0
+    38: 0
+    39: 0
+    40: 0
+    41: 0
+    42: 52.31160871315407
+    43: -0.08
+    44: 4.74861949507811
+    45: -0.08
+    46: 1.1875
+    47: 0
+    48: 0
+    49: 7.688391286845925
+    50: 0
+    51: 0
+    52: 0
+    53: 0
+    54: 0
+    55: 0
+    56: 67.6888074874878
+    57: 0
+    58: 80
+    59: 0
+    60: 1.1875
+    61: 0
+    62: 0
+    63: 7.688807487487793
+    64: 0
+    65: 0
+    66: 0
+    67: 0
+    68: 0
+    69: 0
+    70: 4.749293327331543
+    71: 0
+    72: 52.31119251251222
+    73: 0
+    74: 3.6875
+    75: 6
+    76: 4
+    77: 4.749293327331543
+    78: 0
+    79: 0
+    80: 0
+    81: 0
+    82: 0
+    83: 0
+    84: 52.31160871315407
+    85: 0.08
+    86: 4.74861949507811
+    87: 0.08
+    88: 3.6875
+    89: 6
+    90: 4
+    91: 7.688391286845925
+    92: 0
+    93: 0
+    94: 0
+    95: 0
+    96: 0
+    97: 0
+    98: 4.749124878231348
+    99: 0.04
+    100: 72.00008000031997
+    101: 0.04
+    102: 3.6875
+    103: 10
+    104: 4
+    105: 4.749124878231348
+    106: 80.00008000031997
+    107: 0.04
+    108: 72.00008000031997
+    109: 4.04
+    110: 72.00008000031997
+    111: -3.96
+  actual:
+    0: 4.749293327331543
+    1: 0
+    2: 26.5
+    3: 0
+    4: 2.4375
+    5: 0
+    6: 0
+    7: 4.749293327331543
+    8: 0
+    9: 0
+    10: 0
+    11: 0
+    12: 0
+    13: 0
+    14: 4.749124878231348
+    15: -0.04
+    16: 80.00008000031997
+    17: -0.04
+    18: 1.1875
+    19: 0
+    20: 0
+    21: 4.749124878231348
+    22: 0
+    23: 0
+    24: 0
+    25: 0
+    26: 0
+    27: 0
+    28: 33.5
+    29: 0
+    30: 52.31119251251221
+    31: 0
+    32: 1.1875
+    33: 0
+    34: 0
+    35: 3.5
+    36: 0
+    37: 0
+    38: 0
+    39: 0
+    40: 0
+    41: 0
+    42: 52.31160871315407
+    43: -0.08
+    44: 4.74861949507811
+    45: -0.08
+    46: 1.1875
+    47: 0
+    48: 0
+    49: 7.688391286845925
+    50: 0
+    51: 0
+    52: 0
+    53: 0
+    54: 0
+    55: 0
+    56: 67.6888074874878
+    57: 0
+    58: 80
+    59: 0
+    60: 1.1875
+    61: 0
+    62: 0
+    63: 7.688807487487793
+    64: 0
+    65: 0
+    66: 0
+    67: 0
+    68: 0
+    69: 0
+    70: 4.749293327331543
+    71: 0
+    72: 52.31119251251222
+    73: 0
+    74: 3.6875
+    75: 6
+    76: 4
+    77: 4.749293327331543
+    78: 0
+    79: 0
+    80: 0
+    81: 0
+    82: 0
+    83: 0
+    84: 52.31160871315407
+    85: 0.08
+    86: 4.74861949507811
+    87: 0.08
+    88: 3.6875
+    89: 6
+    90: 4
+    91: 7.688391286845925
+    92: 0
+    93: 0
+    94: 0
+    95: 0
+    96: 0
+    97: 0
+    98: 4.749124878231348
+    99: 0.04
+    100: 72.00008000031997
+    101: 0.04
+    102: 3.6875
+    103: 10
+    104: 4
+    105: 4.749124878231348
+    106: 80.00008000031997
+    107: 0.04
+    108: 72.00008000031997
+    109: 4.04
+    110: 72.00008000031997
+    111: -3.96
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-6ac01349/packages/xy-node/test/graph-session-wire.test.mjs:363:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 2 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 741.368247
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 3 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 48.311307
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 4 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 127.828065
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 5 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 44.685504
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1294.77794

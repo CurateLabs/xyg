@@ -316,6 +316,46 @@ strict-CSP foundation. Historical FAIL/diagnostic records remain unchanged.
 The 16 MiB browser default and 384 MiB maximum are unchanged. This package
 decision establishes no runtime speed, S5–S7, #36, M4 or release acceptance.
 
+**S5a bounded Rust GPU/result foundation.** The existing XYGR session replies
+now add a version-1, exactly 33-section GPU view over already published CPU
+`PaintGeometry`, with no new export, Scene/painter ABI, source style resolution,
+layout, routing or LOD path. The exact names/indices/counts, flags, reserved
+fields, fail-closed validation and action/outcome facts are normative in
+[the S5a interaction contract](graph-interaction.md#s5a-rust-gpu-publication-and-controller-result-foundation).
+Section starts retain the container's 8-byte alignment. GPU `Bytes` columns are
+raw little-endian f32 values at four-byte stride; style records retain the exact
+60-byte resolved f32/u8 layout. F64 x/y/dash `[offset,scale]` metadata stays
+CPU-side; Rust uses the established offset/scale kernels to produce every
+coordinate and attribute. Hosts must not upload CPU f64 paint geometry or narrow
+it themselves. All simultaneous focus/highlight and membership state bits remain
+available independently of visual-state precedence.
+
+Every successful post-Open publication contains the complete GPU and
+`OpOutcome`/focused-action sections, including style-only changes at the same
+revision. Open and Poll remain control replies without those sections. Aggregate
+focused stops retain stamped aggregate identity even for singleton membership;
+their UUID focus stand-in never enables singular move/pin/disclosure actions.
+Before cloning a candidate, admission adds `16,384 + 2,048n + 8,192m` bytes to
+the existing per-document source/text envelope, including Update's full new
+envelope; retained request/reply caches still charge three times actual bytes.
+Encoding failure rejects the complete candidate without advancing the successful
+publication, owner, operation sequence or retry cache. Browser default 16 MiB,
+maximum 384 MiB, native/WASM signatures and export sets, WASM ABI 35,
+Scene 34 and painter 17 are unchanged by S5a.
+
+The new [S5a local receipt](../performance/graph-s5a-local-2026-10-31/README.md)
+records bounded proof and the failed real optimized shipping measurement:
+1,872,537 raw / 764,058 gzip6 bytes, versus the unchanged 1,860,608 / 759,808
+limits (11,929 / 4,250 bytes over). Optimized SHA-256 is
+`4f27f5d20485ef5b63942c017ffb583191478fe74ecf78b9d94b1e7507f531a6`.
+The same production optimizer produces a separately labelled diagnostic module
+for native/WASM functional replay; it establishes no shipping acceptance. No
+limits, optimizer/profile/dependencies, validation or exports are relaxed, and
+there is no size experiment in this slice. Historical S4 asset measurements
+remain historical. No new shipping assets/full foundation success is claimed. This foundation adds no browser session transport/controller,
+shader, DOM/ARIA or visual emphasis pass; S5b, S6/S7, M4 and all #108 acceptance
+remain outstanding before PyPI/npm publishing.
+
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
 After merging main `4631927`, the local optimized build measures **1,542,222 raw

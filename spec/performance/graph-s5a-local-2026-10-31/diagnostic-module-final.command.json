@@ -1,0 +1,12 @@
+{
+  "name": "diagnostic-module-final",
+  "command": [
+    "node",
+    "spec/performance/graph-s5a-local-2026-10-31/diagnostic.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 52.362,
+  "rawSha256": "b997567ebc5807f7bdae2673b6d52990d23649474d4dc59bde0a96bbadd4bcf2",
+  "log": "diagnostic-module-final.txt.gz",
+  "gzipSha256": "2249c566cc30a19dd00a8dd2c7a57544f2f566da7e429ec71e63ec9f761911f5"
+}

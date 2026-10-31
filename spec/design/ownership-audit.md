@@ -720,6 +720,8 @@ Forbidden:
 | `crates/xyg-engine/src/graphforge/identity.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/coordination.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/coordination.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/gpu.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/wire/gpu.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/paint.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/pick.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/tests/pick.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

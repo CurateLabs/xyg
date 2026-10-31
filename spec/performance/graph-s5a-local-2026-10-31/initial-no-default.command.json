@@ -1,0 +1,18 @@
+{
+  "name": "initial-no-default",
+  "command": [
+    "/home/ubuntu/.cargo/bin/cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction",
+    "--no-default-features"
+  ],
+  "exitCode": 101,
+  "seconds": null,
+  "note": "Initial unsupported native test configuration; original raw log preserved, elapsed time was not measured. Existing raster-only test modules fail to compile; no product repair attempted.",
+  "log": "initial-no-default.txt.gz",
+  "rawSha256": "6636adb60ab7817c5fa94925ec6497901e50333ce176fd90e5e81a35d51c55df",
+  "gzipSha256": "ef410f7828007db50a7edc27c9b9014c60a23993cfd2929963e4d1ec47b976de"
+}

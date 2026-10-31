@@ -1,0 +1,13 @@
+{
+  "name": "wasm-shipping-final",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 138.562,
+  "rawSha256": "4c67670227a9853a0ef133b9e2639f1b61587a1f50fd3a2be8bc1c649472b6b3",
+  "log": "wasm-shipping-final.txt.gz",
+  "gzipSha256": "668decdea110d5c4c6aea3d8c54d0aa2f0d7e95629b4979311451f1b8031d8eb"
+}

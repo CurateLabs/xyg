@@ -1,0 +1,16 @@
+{
+  "name": "engine-tests-final",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction"
+  ],
+  "exitCode": 0,
+  "seconds": 42.095,
+  "rawSha256": "9e0e342f3030dfd2d9eadace37bac6f78ce220a12199ce2a291075d8ba14a5b6",
+  "log": "engine-tests-final.txt.gz",
+  "gzipSha256": "693be8639bac7b51630135e85654bb4cac32cd6e9c055714d94a167d1036e61d"
+}

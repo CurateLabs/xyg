@@ -1,4 +1,5 @@
 //! Shared XYGI/XYGR boundary (§3). Hosts own only lifetime, staging and copies.
+pub use super::gpu::validate as validate_gpu;
 pub use super::wire_paint::decode as decode_paint;
 use super::*;
 use crate::graph_interaction_state::HighlightPlane;
@@ -581,6 +582,13 @@ impl WireSession {
             .checked_add(1)?;
         let primitives = n.checked_mul(2)?.checked_add(m.checked_mul(11)?)?;
         98_304usize
+            // S5a GPU columns: old/new output, builder/final/cached copies,
+            // f64/f32/byte column scratch and focused reducer facts. At most
+            // one frame/node and eleven shafts+heads/source edge. Reserve
+            // BEFORE cloning a candidate, including Update's new envelope.
+            .checked_add(16_384)?
+            .checked_add(n.checked_mul(2048)?)?
+            .checked_add(m.checked_mul(8192)?)?
             .checked_add(document.checked_mul(48)?)?
             .checked_add(rows.checked_mul(8192)?)?
             .checked_add(
@@ -1235,11 +1243,45 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome) -> Result<V
         b.u8s(name, 0, v);
     }
     super::wire_paint::encode(&mut b, &render.paint);
+    super::gpu::encode(&mut b, render)?;
+    b.u32s(
+        "outcome.u32",
+        0,
+        &[
+            1,
+            u32::from(out.state_changed),
+            out.selected
+                .try_into()
+                .map_err(|_| InteractionStatus::Budget)?,
+            u32::from(out.disclosure.is_some()),
+        ],
+    );
+    let disclosure = out
+        .disclosure
+        .as_ref()
+        .map(|d| d.node.clone())
+        .into_iter()
+        .collect::<Vec<_>>();
+    b.bytes(
+        "disclosure.ref.bytes",
+        0,
+        &encode_refs(&transport(s, &disclosure)?)?,
+    );
+    b.u8s(
+        "disclosure.collapsed.u8",
+        0,
+        &out.disclosure
+            .as_ref()
+            .map(|d| u8::from(d.collapsed))
+            .into_iter()
+            .collect::<Vec<_>>(),
+    );
     b.u32s("node.flags.u32", 0, &render.source_node_flags);
     b.u32s("edge.flags.u32", 0, &render.source_edge_flags);
     let state = s.read_state(Clone::clone)?;
     let focus = s.focus()?.into_iter().collect::<Vec<_>>();
     b.bytes("focus.bytes", 0, &encode_refs(&transport(s, &focus)?)?);
+    focus_actions(&mut b, s, &state)?;
     b.bytes(
         "changed.refs.bytes",
         0,
@@ -1369,6 +1411,64 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome) -> Result<V
         b.bytes("outbound.bytes", 0, &encode_event(event)?);
     }
     Ok(b.finish())
+}
+
+// Facts about the displayed focus, rather than its UUID state stand-in. Reuse
+// the same stop resolver and disclosure reducer as operations; never advertise
+// an aggregate (even a singleton) as an individually movable source node.
+fn focus_actions(b: &mut Builder, s: &GraphSession, state: &GraphInteractionState) -> Result<()> {
+    use crate::graph_style::{
+        compound_collapse_transition, COMPOUND_ACTION_TOGGLE, MAX_COMPOUND_TRANSITION_NODES,
+    };
+    let render = s.published().ok_or(InteractionStatus::Stale)?;
+    let mut refs = Vec::new();
+    let mut facts = [1, 0, 0, 0, 0, 0, 0, 0];
+    if let Some(walk::Stop::Node(r)) = s.stop_of(render, state.focus()) {
+        let reference = if render.tier == crate::graph::LodTier::Aggregate {
+            ElementRef::Aggregate(AggregateRef {
+                render_revision: render.revision,
+                index: r as u32,
+            })
+        } else {
+            s.identity.node_ref(render.focus_node[r as usize] as usize)
+        };
+        if let render::Resolved::Element(ElementIndex::Node(node)) = s.resolve(&reference)? {
+            facts[2] = u32::from(s.collapsed[node] == 1);
+            facts[3] = 1;
+            facts[4] = u32::from(
+                state
+                    .pinned_nodes()
+                    .contains(&s.identity.node_uuids()[node]),
+            );
+            facts[5] = 1;
+            let n = s.identity.node_count();
+            if n <= MAX_COMPOUND_TRANSITION_NODES {
+                let ids: Vec<_> = (0..n as u64).collect();
+                let mut next = vec![0; n];
+                facts[1] = u32::from(
+                    compound_collapse_transition(
+                        &ids,
+                        &s.parent,
+                        &s.parent_valid,
+                        &s.collapsed,
+                        node as u64,
+                        COMPOUND_ACTION_TOGGLE,
+                        render.tier as u8,
+                        &mut next,
+                    )
+                    .is_some(),
+                );
+            }
+        }
+        refs.push(reference);
+    }
+    b.bytes(
+        "focus.action.ref.bytes",
+        0,
+        &encode_refs(&transport(s, &refs)?)?,
+    );
+    b.u32s("focus.action.u32", 0, &facts);
+    Ok(())
 }
 fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> Result<String> {
     let index = s
