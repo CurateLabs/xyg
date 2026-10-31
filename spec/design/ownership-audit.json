@@ -4313,6 +4313,22 @@
       "disposition": "implement-rust-wasm",
       "follow_up_issue": 59,
       "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
+      "path": "packages/xy-node/src/graphforge_layout.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/graphforge_layout_worker.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     }
   ]
 }

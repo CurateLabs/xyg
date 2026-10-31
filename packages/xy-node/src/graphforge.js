@@ -15,6 +15,7 @@
 
 import { graphChart } from "./charts.js";
 import { figure } from "./figure.js";
+export { GraphForgeLayoutController, graphforgeWebviewPayload } from "./graphforge_layout.js";
 import {
   DOCUMENT_MAGIC,
   DTYPE,
@@ -297,6 +298,8 @@ export class GraphForgeComposition {
         count: nodeUuid.length / 16,
         uuidBytes: nodeUuid,
         baseRow: get("node.base_row"),
+        parentIndices: get("node.parent") ?? null,
+        parentValidity: get("node.parent.valid") ?? null,
         name: get("node.name"),
         type: get("node.type"),
         class: get("node.class"),
@@ -353,6 +356,9 @@ export class GraphForgeComposition {
         this.edges.uuid.forEach((id, i) => { if (id != null) index.set(id, i); });
         return index;
       });
+      // Compositions are immutable snapshots, like the persisted UUID indexes.
+      // Disclosure picks need derived IDs too, without materializing attributes.
+      lazy(this, "_renderEdgeIndex", () => new Map(renderEdgeIds(this).map((id, i) => [id, i])));
     }
     if (this.kind === "table") {
       const columns = get("table.columns");
@@ -508,6 +514,19 @@ export class GraphForgeComposition {
   }
 }
 
+function renderEdgeIds(composition) {
+  const { edges } = composition;
+  // Derived edges have no persisted UUID: identify them by layer and result row.
+  return edges.uuid.map((id, i) => {
+    if (id != null) return id;
+    // One result row may yield several steps (paths, walks, cycles): the
+    // step index keeps each derived edge's id unique.
+    const layer = composition.layers[edges.layer[i]];
+    const step = edges.order != null && edges.order[i] >= 0n ? `:${edges.order[i]}` : "";
+    return `derived:${edges.layer[i]}:${Number(layer.edgeRows[i])}${step}`;
+  });
+}
+
 /** GraphData (graph.js) for a graph composition; identity is UUID text. */
 export function graphforgeGraphData(composition) {
   if (composition?.kind !== "graph") throw new TypeError("graphforgeGraphData needs a graph composition");
@@ -530,15 +549,7 @@ export function graphforgeGraphData(composition) {
       });
     }
   }
-  // Derived edges have no persisted UUID: identify them by layer and result row.
-  const edgeIds = edges.uuid.map((id, i) => {
-    if (id != null) return id;
-    // One result row may yield several steps (paths, walks, cycles): the
-    // step index keeps each derived edge's id unique.
-    const layer = composition.layers[edges.layer[i]];
-    const step = edges.order != null && edges.order[i] >= 0n ? `:${edges.order[i]}` : "";
-    return `derived:${edges.layer[i]}:${Number(layer.edgeRows[i])}${step}`;
-  });
+  const edgeIds = renderEdgeIds(composition);
   if (edges.order != null) {
     edgeAttrs.step = Float64Array.from(edges.order, (v) => (v < 0n ? Number.NaN : Number(v)));
   }
@@ -547,6 +558,8 @@ export function graphforgeGraphData(composition) {
     edgeIds,
     sources: edges.source,
     targets: edges.target,
+    parentIndices: nodes.parentIndices == null ? null : BigUint64Array.from(nodes.parentIndices, BigInt),
+    parentValidity: nodes.parentValidity,
     x: null,
     y: null,
     nodeAttrs,
@@ -779,7 +792,7 @@ export function graphforgePositions(fig, composition) {
 }
 
 /**
- * Map a pick on a `graphforgeChart` figure (a webview's `xy:click` detail
+ * Map a pick on a live payload or `graphforgeChart` figure (a webview's `xy:click` detail
  * `{trace, index}`, relayed to the extension host) to the composed element's
  * GraphForge identity. Node rows are exact below Aggregate LOD; edge segments
  * resolve through Rust's render-edge membership, so an aggregate edge reports
@@ -789,36 +802,50 @@ export function graphforgePositions(fig, composition) {
  *   `{ kind: "aggregate", trace, edgeCount, edges }`, or null off-graph.
  */
 export function graphforgePick(fig, composition, { trace, index } = {}) {
+  if (!Number.isInteger(trace) || !Number.isInteger(index) || index < 0) return null;
+  const live = fig?.pickData;
   const meta = fig?._graphMeta?.[0];
-  if (meta == null || !Number.isInteger(trace) || !Number.isInteger(index) || index < 0) return null;
-  if (trace === meta.node_trace) {
-    if (meta.tier_name === "aggregate" || index >= composition.nodes.count) {
+  if (!live && !meta) return null;
+  const nodeTrace = live ? live.nodeTrace : meta.node_trace;
+  const edgeTrace = live ? live.edgeTrace : meta.edge_trace;
+  if (trace === nodeTrace) {
+    const count = live ? live.nodes.length : meta.n_nodes;
+    if (index >= count) return null;
+    if (live ? live.aggregate : meta.tier_name === "aggregate") {
       return { kind: "aggregate", trace, nodeCount: null };
     }
-    return composition.identify("node", index);
+    // member_of maps Rust's source/subset rows to render rows. It is not an
+    // identity map after viewport culling or compound disclosure.
+    const source = live ? -1 : meta.member_of.indexOf(index);
+    const node = live ? live.nodes[index] : source < 0 ? null
+      : { uuid: meta.ids[source], ...fig.graphNodePick(trace, source) };
+    if (!node) return null;
+    const composed = composition.nodeIndex(node.uuid);
+    if (composed < 0) return null;
+    const { uuid, ...compound } = node;
+    return { ...composition.identify("node", composed), ...compound };
   }
-  if (trace === meta.edge_trace) {
-    const pick = fig.graphEdgePick(trace, index);
-    if (pick == null) return null;
-    if (pick.edge_count === 1) return composition.identify("edge", pick.source_edges[0]);
-    return {
-      kind: "aggregate",
-      trace,
-      edgeCount: pick.edge_count,
-      edges: pick.source_edges.map((edge) => composition.identify("edge", edge)),
-      truncated: pick.members_truncated,
-    };
-  }
-  return null;
+  if (trace !== edgeTrace) return null;
+  const pick = live ? live.edges[index] : fig.graphEdgePick(trace, index);
+  if (!pick) return null;
+  const sourceIds = live ? live.sourceEdgeIds : meta.compound_collapsed ? meta.source_edge_ids : null;
+  // Disclosure membership addresses the visible source subset; join its IDs
+  // back to the composition (including its existing derived-edge IDs).
+  const sourceIndex = sourceIds ? composition._renderEdgeIndex : null;
+  const identify = edge => composition.identify("edge", sourceIndex ? sourceIndex.get(sourceIds[edge]) : edge);
+  if (pick.edge_count === 1) return identify(pick.source_edges[0]);
+  return { kind: "aggregate", trace, edgeCount: pick.edge_count,
+    edges: pick.source_edges.map(identify), truncated: pick.members_truncated };
 }
 
 /**
- * The paint payload for a VS Code webview (or any browser host): the chart's
+ * Explicit synchronous batch/static payload (live views use an owner via
+ * graphforgeWebviewPayload): the chart's
  * `{spec, buffers}` plus the trace indices a pick relay needs. Post `spec` and
  * the buffer (transferable) to the webview, which calls
  * `xy.renderStandalone(el, spec, buffer)` from the local paint client.
  */
-export function graphforgeWebviewPayload(composition, opts = {}) {
+export function graphforgeStaticPayload(composition, opts = {}) {
   const fig = graphforgeChart(composition, opts);
   // Webviews relay picks, so the chart emits `xy:click` (off by default).
   fig.interaction = { click: true, ...(fig.interaction ?? {}) };

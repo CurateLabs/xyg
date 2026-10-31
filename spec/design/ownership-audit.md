@@ -1349,6 +1349,9 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-wasm/src/graphforge_session.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 
 
+| `packages/xy-node/src/graphforge_layout.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/graphforge_layout_worker.js` | Node host | `node-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

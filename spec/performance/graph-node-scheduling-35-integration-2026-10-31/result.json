@@ -1,0 +1,991 @@
+{
+  "scope": "bounded local native Node/painter functional proof; full view replacement, no S5 retained controller, no scale/competitor/release gate",
+  "sourceBase": "32f32199d3472278398c2afdda02b7f4c4ca1b9d",
+  "environment": {
+    "node": "v22.23.4",
+    "nodeExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+    "chromium": "156.0.8078.4",
+    "chromiumExecutable": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "Linux OVHC-HQS 7.0.0-31-generic #31-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug  1 04:26:38 UTC 2026 x86_64 GNU/Linux",
+    "nativeAbi": 397,
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "graphics": "ANGLE SwiftShader; software rendering; shared local environment"
+  },
+  "presentationCadenceMs": [
+    2163.3816159999997
+  ],
+  "cadenceMeaning": "Consumer ACK deliberately holds frames; presentation cadence is not native chunk cadence. Historical ladder measures scheduler-only cadence.",
+  "executables": {
+    "node": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90",
+    "chromium": "377a9fc07b495c3b8d0ab8ec1fdfd153641759f9756fea34d8dfce4de82f5025",
+    "rustupShim": "dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71"
+  },
+  "retainedObjects": "Initial/final raw painter buffers and JSON specs, screenshots, exact pick details/identities/probed hits, checkpoint position digests and byte counts; full source position arrays and intermediate payloads are not retained.",
+  "retainedPayloadHashes": {
+    "initial-spec.json": "de86e389593b618a9e5f0a17b0f843816b27f47316cc117ec6dc2b5028a30787",
+    "initial-buffer.bin": "5946b7ca37a75ed1df596821e20910a47c4c2c34dd4bc109e76edc6ea3c38eca",
+    "final-spec.json": "e89d69bcf016de1eba7abf848a6b5f2fc5ced7f1142865cfd3bf95fd979fc0ca",
+    "final-buffer.bin": "e335c0436e4d8f48745c095b4c297e23c349ed89e6a506551542f385400e9a5a"
+  },
+  "sourceHashes": {
+    "packages/xy-node/src/graphforge.js": "85ae86977d110d2f8cf8a0552ab1334711ad95cd44b5f7474139b8b6d891afd5",
+    "packages/xy-node/src/index.js": "b14c1b25eaac153da60a85de3c416720fcaa7628c1a86b91c41e98ff2fcf116c",
+    "packages/xy-node/src/vscode.js": "dc3c9c01ac72bb1509f35cc00bee5539b8c4bf5352f661ed270236745c1f0e1f",
+    "packages/xy-node/src/graph.js": "35ef2297291395d26f8ecb1505baf750f2fcafb2897e0251e4bd15bda2eeb4b1",
+    "packages/xy-node/src/figure.js": "96a9981114f18c42810208b7a9962d4260ccc0e292df340dc33928bc7b5fc19f",
+    "packages/xy-node/src/native.js": "ae102470bdca88c3c9634b11692ebed5eb95c5f08d5af3779225f703c7300953",
+    "packages/xy-node/src/_abi_generated.js": "214e76d5e8dec3beea63848bb5bf42e77b837294394bdac0e324332140f02769",
+    "packages/xy-node/test/graphforge-layout.test.mjs": "03338160071086e5a3cdb60aaca173ec0b05d0bb602756a7144563b3e8c4c905",
+    "tests/fixtures/graphforge/results/manifest.json": "9f50ce9df24ac263e4de61299f593cec38c3b3f4eb995bc2ec1d058e3af5676b",
+    "tests/fixtures/graphforge/results/base-cyclic-nodes.arrow": "9d3781a5e34781d22278bc3b5db08d17c8fb2a1ef89b807e60928f68fef0bee8",
+    "tests/fixtures/graphforge/results/base-cyclic-edges.arrow": "5e401ad23a7586f9c31e83904fe76215b4c920ab8a8c50dc15172a560623f738",
+    "packages/xy-node/src/graphforge_layout.js": "252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
+    "packages/xy-node/src/graphforge_layout_worker.js": "faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
+    "packages/xy-node/src/force_scheduler.js": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+    "packages/xy-node/src/abi.js": "dd463c55fdaa1e04a291fdbf784a6e43cb415c524024c3f4830ba1dec78e42a3",
+    "scripts/graphforge_webview_smoke.mjs": "0e93e46d493ff67bafa73941cacdfaeeef23f6d8ea497b50287d8e3b25a29494",
+    "scripts/node_release_smoke.mjs": "812701159b8d9ff38505596ec8c0be87e4b10dfd1402ea3239a1fc38feb9a8d1",
+    "benchmarks/bench_graphforge_compose.mjs": "96f06c8d7365d65e4d48c027495999c6031d538d9c65c07aed0a0e303d0369ed"
+  },
+  "firstPaintedMs": 1116.0999999046326,
+  "firstIdentityAcceptedMs": 1492,
+  "nodeColdStartupMs": 741.9434429999999,
+  "browserColdStartupMs": 426.51522899999986,
+  "navigationMs": 622,
+  "proof": {
+    "checkpoints": [
+      {
+        "phase": "initial",
+        "step": 1,
+        "revision": 1,
+        "jobId": "6ef62d25-7dd6-489e-b372-22c9f54f8bce:1",
+        "receivedMs": 401.09999990463257,
+        "paintedMs": 1116.0999999046326,
+        "coloredPixels": 6697,
+        "bufferBytes": 1084,
+        "frame": [
+          644,
+          428
+        ]
+      },
+      {
+        "phase": "complete",
+        "step": 60,
+        "revision": 1,
+        "jobId": "6ef62d25-7dd6-489e-b372-22c9f54f8bce:1",
+        "receivedMs": 2568.5999999046326,
+        "paintedMs": 3138.5999999046326,
+        "coloredPixels": 6726,
+        "bufferBytes": 1084,
+        "frame": [
+          644,
+          428
+        ]
+      }
+    ],
+    "clicks": [
+      {
+        "detail": {
+          "x": -0.01587990750737145,
+          "y": 1.9652816712714904,
+          "view": {
+            "ranges": {
+              "x": [
+                -2.1205942113844842,
+                2.223751979951607
+              ],
+              "y": [
+                -2.1197470777089884,
+                2.1194220195812554
+              ]
+            },
+            "x0": -2.1205942113844842,
+            "x1": 2.223751979951607,
+            "y0": -2.1197470777089884,
+            "y1": 2.1194220195812554,
+            "source": "click"
+          },
+          "row": {
+            "trace": 1,
+            "index": 1,
+            "x": 0.0019218207592111014,
+            "y": 1.9994455107920905,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+            "provenance_row": 1,
+            "name": "bo",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 1
+        },
+        "identity": {
+          "uuid": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9"
+        },
+        "responseMs": 14.700000286102295,
+        "atMs": 1492
+      },
+      {
+        "detail": {
+          "x": 0.03225834753031698,
+          "y": 1.3870739105212273,
+          "view": {
+            "ranges": {
+              "x": [
+                -0.7421524915892759,
+                0.778337082779681
+              ],
+              "y": [
+                -1.4908800582516086,
+                1.495667718404912
+              ]
+            },
+            "x0": -0.7421524915892759,
+            "x1": 0.778337082779681,
+            "y0": -1.4908800582516086,
+            "y1": 1.495667718404912,
+            "source": "click"
+          },
+          "row": {
+            "trace": 1,
+            "index": 1,
+            "x": 0.04646104404045592,
+            "y": 1.4111428144135048,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+            "provenance_row": 1,
+            "name": "bo",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 1
+        },
+        "identity": {
+          "uuid": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9"
+        },
+        "responseMs": 4.5,
+        "atMs": 3417.7999997138977
+      }
+    ],
+    "errors": [],
+    "started": 625,
+    "current": {
+      "spec": {
+        "protocol": 14,
+        "width": 720,
+        "height": 480,
+        "title": null,
+        "x_axis": {
+          "id": "x",
+          "label": null,
+          "range": [
+            -0.7421524915892759,
+            0.778337082779681
+          ],
+          "side": "bottom",
+          "kind": "linear",
+          "domain": [
+            -0.7421524915892759,
+            0.778337082779681
+          ],
+          "style": {
+            "axis_width": 0,
+            "axis_color": "#00000000",
+            "tick_length": 0,
+            "tick_width": 0,
+            "grid_opacity": 0,
+            "tick_label_color": "#00000000",
+            "label_color": "#00000000"
+          }
+        },
+        "y_axis": {
+          "id": "y",
+          "label": null,
+          "range": [
+            -1.4908800582516086,
+            1.495667718404912
+          ],
+          "side": "left",
+          "kind": "linear",
+          "domain": [
+            -1.4908800582516086,
+            1.495667718404912
+          ],
+          "style": {
+            "axis_width": 0,
+            "axis_color": "#00000000",
+            "tick_length": 0,
+            "tick_width": 0,
+            "grid_opacity": 0,
+            "tick_label_color": "#00000000",
+            "label_color": "#00000000"
+          }
+        },
+        "axes": {
+          "x": {
+            "id": "x",
+            "label": null,
+            "range": [
+              -0.7421524915892759,
+              0.778337082779681
+            ],
+            "side": "bottom",
+            "kind": "linear",
+            "domain": [
+              -0.7421524915892759,
+              0.778337082779681
+            ],
+            "style": {
+              "axis_width": 0,
+              "axis_color": "#00000000",
+              "tick_length": 0,
+              "tick_width": 0,
+              "grid_opacity": 0,
+              "tick_label_color": "#00000000",
+              "label_color": "#00000000"
+            }
+          },
+          "y": {
+            "id": "y",
+            "label": null,
+            "range": [
+              -1.4908800582516086,
+              1.495667718404912
+            ],
+            "side": "left",
+            "kind": "linear",
+            "domain": [
+              -1.4908800582516086,
+              1.495667718404912
+            ],
+            "style": {
+              "axis_width": 0,
+              "axis_color": "#00000000",
+              "tick_length": 0,
+              "tick_width": 0,
+              "grid_opacity": 0,
+              "tick_label_color": "#00000000",
+              "label_color": "#00000000"
+            }
+          }
+        },
+        "traces": [
+          {
+            "id": 0,
+            "kind": "segments",
+            "name": null,
+            "style": {
+              "color": "#888888",
+              "width": 1.2,
+              "opacity": 1,
+              "role": "segments"
+            },
+            "tier": "direct",
+            "n_points": 5,
+            "n_marks": 5,
+            "x_axis": "x",
+            "y_axis": "y",
+            "x0": 0,
+            "x1": 1,
+            "y0": 2,
+            "y1": 3,
+            "color": {
+              "mode": "direct_rgba",
+              "components": 4,
+              "dtype": "u8",
+              "buf": 4,
+              "n": 20
+            },
+            "size": {
+              "mode": "constant"
+            },
+            "tooltip_columns": {
+              "n": 5,
+              "keys": [
+                "source",
+                "target",
+                "edge_id",
+                "provenance_row",
+                "type",
+                "step"
+              ],
+              "kinds": [
+                "uuid",
+                "uuid",
+                "uuid",
+                "f64",
+                "text",
+                "f64"
+              ],
+              "data": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                11
+              ],
+              "present": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                10
+              ],
+              "dict": [
+                "KNOWS"
+              ]
+            },
+            "channels": {
+              "edge_ends": {
+                "mode": "direct",
+                "components": 7,
+                "dtype": "f32",
+                "buf": 12,
+                "n": 35
+              },
+              "width": {
+                "mode": "direct",
+                "components": 1,
+                "dtype": "f32",
+                "buf": 13,
+                "n": 5
+              },
+              "opacity": {
+                "mode": "direct",
+                "components": 1,
+                "dtype": "f32",
+                "buf": 14,
+                "n": 5
+              },
+              "label_plan": {
+                "mode": "direct",
+                "components": 5,
+                "dtype": "f32",
+                "buf": 15,
+                "n": 25
+              }
+            }
+          },
+          {
+            "id": 1,
+            "kind": "scatter",
+            "name": null,
+            "style": {
+              "color": null,
+              "symbol": "circle",
+              "opacity": 1
+            },
+            "tier": "direct",
+            "n_points": 4,
+            "n_marks": 4,
+            "x_axis": "x",
+            "y_axis": "y",
+            "x": 16,
+            "y": 17,
+            "color": {
+              "mode": "direct_rgba",
+              "components": 4,
+              "dtype": "u8",
+              "buf": 18,
+              "n": 16
+            },
+            "size": {
+              "mode": "constant",
+              "size": 13.5
+            },
+            "stroke": {
+              "mode": "direct_rgba",
+              "components": 4,
+              "dtype": "u8",
+              "buf": 19,
+              "n": 16
+            },
+            "tooltip_columns": {
+              "n": 4,
+              "keys": [
+                "id",
+                "provenance_row",
+                "name",
+                "type"
+              ],
+              "kinds": [
+                "uuid",
+                "f64",
+                "text",
+                "text"
+              ],
+              "data": [
+                20,
+                21,
+                22,
+                23
+              ],
+              "present": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "dict": [
+                "ada",
+                "bo",
+                "cy",
+                "di",
+                "Person"
+              ]
+            },
+            "channels": {
+              "opacity": {
+                "mode": "direct",
+                "components": 1,
+                "dtype": "f32",
+                "buf": 24,
+                "n": 4
+              },
+              "symbol": {
+                "mode": "direct",
+                "components": 1,
+                "dtype": "u8",
+                "buf": 25,
+                "n": 4
+              },
+              "stroke_width": {
+                "mode": "direct",
+                "components": 1,
+                "dtype": "f32",
+                "buf": 26,
+                "n": 4
+              },
+              "label_plan": {
+                "mode": "direct",
+                "components": 5,
+                "dtype": "f32",
+                "buf": 27,
+                "n": 20
+              }
+            }
+          }
+        ],
+        "columns": [
+          {
+            "byte_offset": 0,
+            "len": 5,
+            "offset": 0.000059003171458349435,
+            "scale": 1,
+            "kind": "float"
+          },
+          {
+            "byte_offset": 20,
+            "len": 5,
+            "offset": 0.000059003171458349435,
+            "scale": 1,
+            "kind": "float"
+          },
+          {
+            "byte_offset": 40,
+            "len": 5,
+            "offset": 0.6951866038177196,
+            "scale": 1,
+            "kind": "float"
+          },
+          {
+            "byte_offset": 60,
+            "len": 5,
+            "offset": 0.002393830076651726,
+            "scale": 1,
+            "kind": "float"
+          },
+          {
+            "byte_offset": 80,
+            "len": 20,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 100,
+            "len": 80,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 180,
+            "len": 80,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 260,
+            "len": 80,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 340,
+            "len": 40,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 380,
+            "len": 5,
+            "dtype": "u32"
+          },
+          {
+            "byte_offset": 400,
+            "len": 5,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 408,
+            "len": 40,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 448,
+            "len": 35
+          },
+          {
+            "byte_offset": 588,
+            "len": 5
+          },
+          {
+            "byte_offset": 608,
+            "len": 5
+          },
+          {
+            "byte_offset": 628,
+            "len": 25
+          },
+          {
+            "byte_offset": 728,
+            "len": 4,
+            "offset": 0.000059003171458349435,
+            "scale": 1,
+            "kind": "float"
+          },
+          {
+            "byte_offset": 744,
+            "len": 4,
+            "offset": 0.002393830076651726,
+            "scale": 1,
+            "kind": "float"
+          },
+          {
+            "byte_offset": 760,
+            "len": 16,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 776,
+            "len": 16,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 792,
+            "len": 64,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 856,
+            "len": 32,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 888,
+            "len": 4,
+            "dtype": "u32"
+          },
+          {
+            "byte_offset": 904,
+            "len": 4,
+            "dtype": "u32"
+          },
+          {
+            "byte_offset": 920,
+            "len": 4
+          },
+          {
+            "byte_offset": 936,
+            "len": 4,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 940,
+            "len": 4
+          },
+          {
+            "byte_offset": 956,
+            "len": 20
+          },
+          {
+            "byte_offset": 1036,
+            "len": 5,
+            "dtype": "u32"
+          },
+          {
+            "byte_offset": 1056,
+            "len": 5,
+            "dtype": "u32"
+          },
+          {
+            "byte_offset": 1076,
+            "len": 4,
+            "dtype": "u8"
+          },
+          {
+            "byte_offset": 1080,
+            "len": 4,
+            "dtype": "u8"
+          }
+        ],
+        "backend": "native",
+        "show_legend": true,
+        "view": {
+          "ranges": {
+            "x": [
+              -0.7421524915892759,
+              0.778337082779681
+            ],
+            "y": [
+              -1.4908800582516086,
+              1.495667718404912
+            ]
+          }
+        },
+        "interaction": {
+          "click": true
+        },
+        "graph": [
+          {
+            "layout": "preset",
+            "seed": 0,
+            "lod_tier": 0,
+            "edges_kept": 5,
+            "nodes_kept": 4,
+            "n_nodes": 4,
+            "n_edges": 5,
+            "source_n_nodes": 4,
+            "source_n_edges": 5,
+            "node_budget": 200000,
+            "edge_budget": 500000,
+            "directed": true,
+            "csr_offsets": {
+              "column": 28
+            },
+            "csr_neighbors": {
+              "column": 29
+            },
+            "node_symbol": "circle",
+            "edge_curve": "straight",
+            "style_contract": {
+              "version": 1,
+              "theme": "light",
+              "nodes": "resolved",
+              "edges": "resolved",
+              "pending_layers": [],
+              "node_metric_domain": [
+                0,
+                0
+              ],
+              "edge_metric_domain": [
+                0,
+                0
+              ]
+            },
+            "tier_name": "direct",
+            "node_trace": 1,
+            "edge_trace": 0,
+            "edge_label_segments": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "edge_label_text": [
+              "KNOWS",
+              "KNOWS",
+              "KNOWS",
+              "KNOWS",
+              "KNOWS"
+            ],
+            "node_labels": [
+              "ada",
+              "bo",
+              "cy",
+              "di"
+            ],
+            "label_accepted": {
+              "column": 30
+            },
+            "label_budget": 64,
+            "visual_states": {
+              "column": 31
+            }
+          }
+        ]
+      },
+      "revision": 1,
+      "jobId": "6ef62d25-7dd6-489e-b372-22c9f54f8bce:1",
+      "step": 60,
+      "phase": "complete",
+      "nodeTrace": 1
+    },
+    "done": true
+  },
+  "initialInteraction": {
+    "label": "initial",
+    "probedHit": {
+      "trace": 1,
+      "index": 1
+    },
+    "click": {
+      "detail": {
+        "x": -0.01587990750737145,
+        "y": 1.9652816712714904,
+        "view": {
+          "ranges": {
+            "x": [
+              -2.1205942113844842,
+              2.223751979951607
+            ],
+            "y": [
+              -2.1197470777089884,
+              2.1194220195812554
+            ]
+          },
+          "x0": -2.1205942113844842,
+          "x1": 2.223751979951607,
+          "y0": -2.1197470777089884,
+          "y1": 2.1194220195812554,
+          "source": "click"
+        },
+        "row": {
+          "trace": 1,
+          "index": 1,
+          "x": 0.0019218207592111014,
+          "y": 1.9994455107920905,
+          "x_kind": "float",
+          "y_kind": "float",
+          "id": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+          "provenance_row": 1,
+          "name": "bo",
+          "type": "Person"
+        },
+        "trace": 1,
+        "index": 1
+      },
+      "identity": {
+        "uuid": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9"
+      },
+      "responseMs": 14.700000286102295,
+      "atMs": 1492
+    },
+    "pointerToIdentityMs": 60.542773000000125,
+    "panBefore": {
+      "ranges": {
+        "x": [
+          -2.1205942113844842,
+          2.223751979951607
+        ],
+        "y": [
+          -2.1197470777089884,
+          2.1194220195812554
+        ]
+      },
+      "x0": -2.1205942113844842,
+      "x1": 2.223751979951607,
+      "y0": -2.1197470777089884,
+      "y1": 2.1194220195812554
+    },
+    "panAfter": {
+      "ranges": {
+        "x": [
+          -2.35669998265275,
+          1.987646208683341
+        ],
+        "y": [
+          -1.921655063816921,
+          2.317514033473323
+        ]
+      },
+      "x0": -2.35669998265275,
+      "x1": 1.987646208683341,
+      "y0": -1.921655063816921,
+      "y1": 2.317514033473323
+    },
+    "panResponseMs": 975.5132939999994,
+    "totalJourneyMs": 1072.512922
+  },
+  "finalInteraction": {
+    "label": "complete",
+    "probedHit": {
+      "trace": 1,
+      "index": 1
+    },
+    "click": {
+      "detail": {
+        "x": 0.03225834753031698,
+        "y": 1.3870739105212273,
+        "view": {
+          "ranges": {
+            "x": [
+              -0.7421524915892759,
+              0.778337082779681
+            ],
+            "y": [
+              -1.4908800582516086,
+              1.495667718404912
+            ]
+          },
+          "x0": -0.7421524915892759,
+          "x1": 0.778337082779681,
+          "y0": -1.4908800582516086,
+          "y1": 1.495667718404912,
+          "source": "click"
+        },
+        "row": {
+          "trace": 1,
+          "index": 1,
+          "x": 0.04646104404045592,
+          "y": 1.4111428144135048,
+          "x_kind": "float",
+          "y_kind": "float",
+          "id": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9",
+          "provenance_row": 1,
+          "name": "bo",
+          "type": "Person"
+        },
+        "trace": 1,
+        "index": 1
+      },
+      "identity": {
+        "uuid": "01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9"
+      },
+      "responseMs": 4.5,
+      "atMs": 3417.7999997138977
+    },
+    "pointerToIdentityMs": 21.900227000000086,
+    "panBefore": {
+      "ranges": {
+        "x": [
+          -0.7421524915892759,
+          0.778337082779681
+        ],
+        "y": [
+          -1.4908800582516086,
+          1.495667718404912
+        ]
+      },
+      "x0": -0.7421524915892759,
+      "x1": 0.778337082779681,
+      "y0": -1.4908800582516086,
+      "y1": 1.495667718404912
+    },
+    "panAfter": {
+      "ranges": {
+        "x": [
+          -0.8247877945441104,
+          0.6957017798248465
+        ],
+        "y": [
+          -1.3513217509312105,
+          1.6352260257253102
+        ]
+      },
+      "x0": -0.8247877945441104,
+      "x1": 0.6957017798248465,
+      "y0": -1.3513217509312105,
+      "y1": 1.6352260257253102
+    },
+    "panResponseMs": 220.75252399999954,
+    "totalJourneyMs": 256.6568749999997
+  },
+  "evidence": {
+    "events": [
+      {
+        "type": "call-returned",
+        "ms": 2.607307999999648,
+        "synchronousMs": 2.569582000000082
+      },
+      {
+        "type": "checkpoint",
+        "ms": 393.87703999999985,
+        "step": 1,
+        "phase": "initial",
+        "revision": 1,
+        "jobId": "6ef62d25-7dd6-489e-b372-22c9f54f8bce:1",
+        "packingMs": 48.64645699999983,
+        "positionSha256": "9d03b52b3a307fcf57fb12c56f98e5f8ba17ceddbc115456a5a6e636102bf4f2"
+      },
+      {
+        "type": "pick",
+        "ms": 1486.36661,
+        "exact": true,
+        "step": 1
+      },
+      {
+        "type": "accepted",
+        "ms": 2512.648414,
+        "step": 1
+      },
+      {
+        "type": "checkpoint",
+        "ms": 2557.2586559999995,
+        "step": 60,
+        "phase": "complete",
+        "revision": 1,
+        "jobId": "6ef62d25-7dd6-489e-b372-22c9f54f8bce:1",
+        "packingMs": 42.108007999999245,
+        "positionSha256": "27a2e9fae5637fd620df504210036c25beb9720dac11683589e61e45e6cb1c1a"
+      },
+      {
+        "type": "pick",
+        "ms": 3413.405996,
+        "exact": true,
+        "step": 60
+      },
+      {
+        "type": "accepted",
+        "ms": 3667.159902,
+        "step": 60
+      },
+      {
+        "type": "complete",
+        "ms": 3676.3152829999995
+      }
+    ],
+    "maxCallerTickerLagMs": 7.099690999999439,
+    "callerTickerSamples": 696,
+    "sourceNodes": 4
+  },
+  "errors": [],
+  "requests": [
+    "http://127.0.0.1:45205/",
+    "http://127.0.0.1:45205/client.js",
+    "http://127.0.0.1:45205/app.js",
+    "http://127.0.0.1:45205/start",
+    "http://127.0.0.1:45205/next",
+    "http://127.0.0.1:45205/buffer",
+    "http://127.0.0.1:45205/pick",
+    "http://127.0.0.1:45205/accept",
+    "http://127.0.0.1:45205/next",
+    "http://127.0.0.1:45205/buffer",
+    "http://127.0.0.1:45205/pick",
+    "http://127.0.0.1:45205/accept",
+    "http://127.0.0.1:45205/next"
+  ],
+  "assets": {
+    "native": "f31d05896b0ca7072f62d1b013be8d3812f559e1f844852afbe58445e1bf3be9",
+    "client": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19",
+    "clientEsm": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560",
+    "fixture": "0ad000f4d377b2ea02b36128067c25f529557f49c36b390ba7ee15f9d8acda89",
+    "runner": "c240a9204b0fc4d055f821c85c338310498e5ebe580471682ae3c832a07a081e",
+    "controller": "252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
+    "bridge": "faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
+    "scheduler": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+    "initial": "8d7bdc04149b451666ca6af7d8842a61825a441bad74691842a7bb20cd56bae5",
+    "final": "ba82ed78b89e059bc94e374e77f0f587b7242634870c5a634758adf3fb9fc9b9"
+  }
+}

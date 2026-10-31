@@ -1,0 +1,21 @@
+{
+  "name": "combined-node-tests",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graphforge-layout.test.mjs",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/graphforge-cross-host.test.mjs",
+    "packages/xy-node/test/graph.test.mjs",
+    "packages/xy-node/test/composition.test.mjs",
+    "packages/xy-node/test/force-worker-lifecycle.test.mjs",
+    "packages/xy-node/test/vscode_contract.test.mjs",
+    "packages/xy-node/test/graph-session-wire.test.mjs",
+    "packages/xy-node/test/no_browser_globals.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 16.875,
+  "rawSha256": "41298789ab24905ed5d1c40bf628e941915c3594e0525e236f8ffc3c72574d13",
+  "log": "combined-node-tests.txt.gz",
+  "gzipSha256": "c8eb0864123763256af5982e4e0568a6f93be6cf8374fd35cbba4eb956a3c27d"
+}

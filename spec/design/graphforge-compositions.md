@@ -584,24 +584,36 @@ than a category axis, their SVG/PNG export labels every bar like the browser
 (the public Scene axis admits authored ticks and labels); category axes
 themselves remain outside static export.
 
-`graphforgeWebviewPayload(composition, opts)` returns `{spec, buffer,
-nodeTrace, edgeTrace, figure, positions}` for a browser host (click events on).
+The live path is `await graphforgeWebviewPayload(owner, input, options)`, with
+one `GraphForgeLayoutController` per view. Raw input is composed in a bridge
+Worker; the existing native scheduler owns progressive force ticks, and the
+bridge packs each accepted presentation with explicit preset positions.
+The [Node scheduling contract](graphforge-node-scheduling.md) defines callbacks,
+coalescing, revisions, cancellation and teardown. Live payloads have no Figure.
 Hover rows travel as typed tooltip columns (protocol v14, graph-mark.md §2),
-not per-element JSON. `positions` (also `graphforgePositions(figure,
-composition)`) are the laid-out node positions keyed by node UUID.
-`graphforgeChart(next, { positions })` and `graphforgeWebviewPayload(next, {
-positions })` reuse them with a preset layout, skipping the force ticks, when
-every composed node has one (a recomposition of the same base with other
-layers, selection, or theme); otherwise the graph is laid out afresh. At 10k
-nodes reuse takes the payload from 1.9 s to 0.27 s with identical positions.
+not per-element JSON. Full source `positions` are keyed by node UUID and stay
+host-side, for every graph layout including non-force Aggregate output. Supplied
+live positions seed force; explicit `layout: "preset"` reuses them without
+ticks. Non-force layouts keep complete-position preset reuse. Incomplete source
+UUID coverage rejects. Render hit indices address distinct Rust-derived
+`pickData.nodes` membership, never the full source-position array.
+
+`graphforgeStaticPayload(composition, opts)` is the explicit synchronous former
+payload API, returning `{spec, buffer, nodeTrace, edgeTrace, figure, positions}`.
+Its positions (also `graphforgePositions(figure, composition)`) describe the
+laid-out nodes. This static API and `graphforgeChart(next, { positions })`
+reuse complete positions with preset layout; otherwise they lay out afresh.
+The historical static 10k-node reuse measurement reduced payload construction
+from 1.9 s to 0.27 s with identical positions; it is not live first-paint evidence.
 `decodeGraphForgeDocument` builds UUID text and lookup maps on first use, so
 decoding stays proportional to the typed planes (about 75 ms at 100k nodes).
 
-`graphforgePick(figure, composition, {trace, index})` maps a relayed pick to
-`graphforgePick(figure, composition, {trace, index})` maps a relayed pick to
-`composition.identify(...)` — node rows exactly below Aggregate LOD, edge
-segments through Rust's render-edge membership (an aggregate edge reports its
-member count, never one invented relationship).
+`graphforgePick(figureOrLivePayload, composition, {trace, index})` maps a relayed pick to
+`composition.identify(...)` through Rust-derived render-to-source membership,
+including viewport filtering and collapsed representatives. Off-render indices
+return null; Aggregate nodes report a cluster. Edge segments use Rust's
+render-edge membership (an aggregate edge reports its member count, never one
+invented relationship).
 
 `encodeGraphForgeRequest` / `composeGraphForgeRequest` /
 `decodeGraphForgeDocument` expose the raw bytes for hosts that move requests
@@ -719,12 +731,17 @@ from a resource URL and nothing may load from a CDN. Both host paths work
 under these constraints (proved by `scripts/graphforge_webview_smoke.mjs`,
 which serves the page and its assets from two origins):
 
-- **Native (extension host).** The extension host composes with
-  `@curatelabs/xyg-node/graphforge` and posts `graphforgeWebviewPayload(...)`'s
-  `{spec, buffer}` (transfer the buffer). The webview imports the local
+- **Native (extension host).** The extension host owns one
+  `GraphForgeLayoutController` per webview and awaits
+  `graphforgeWebviewPayload(owner, input, options)` from
+  `@curatelabs/xyg-node/graphforge`. It posts each accepted `{spec, buffer}`
+  presentation (transfer the buffer) and awaits `owner.dispose()` on reload or
+  teardown. The webview imports the local
   `@curatelabs/xyg` `index.js` (or `standalone.js`, `window.xy`) with its
   nonce and calls `xy.renderStandalone(el, spec, buffer)`. Any graph size
-  (Rust level-of-detail applies).
+  (Rust level-of-detail applies). UI/message routing and retained browser
+  controller updates remain separate host/S5 work; scheduling alone does not
+  establish those journeys.
 - **Direct-browser WASM (webview).** The webview fetches the local
   `wasm-worker.js` text and `xyg-wasm.wasm` bytes, creates the module Worker
   from a Blob URL (`createXygWasmWorker({workerUrl: blobUrl, wasm: bytes})`),

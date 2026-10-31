@@ -1,0 +1,259 @@
+staged xyg-node@0.0.0 at /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node35-clean-install.EMYCuq/staged/xyg-node
+staged xyg-node-linux-x64@0.0.0 at /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node35-clean-install.EMYCuq/staged/xyg-node-linux-x64
+curatelabs-xyg-node-0.0.0.tgz
+curatelabs-xyg-node-linux-x64-0.0.0.tgz
+koffi-3.1.4.tgz
+koromix-koffi-linux-x64-3.1.4.tgz
+Wrote to /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node35-clean-install.EMYCuq/consumer/package.json:
+
+{
+  "name": "consumer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+
+
+
+
+added 4 packages in 934ms
+{"graphforgeCompositionVersion":2,"graphforgeNodes":4,"graphforgeEdges":7,"package":"@curatelabs/xyg-node","platformPackage":"@curatelabs/xyg-node-linux-x64","nativeLibrary":"libxyg_core.so","abi":398,"protocol":14,"payloadBytes":24,"htmlBytes":759296}
+Building wheel...
+    Finished `release` profile [optimized] target(s) in 0.02s
+Successfully built target/task-tmp/node35-clean-install.EMYCuq/wheels/xyg-0.0.1.dev2961+ef087077-py3-none-linux_x86_64.whl
+npm notice
+npm notice 📦  @curatelabs/xyg-node@0.0.0
+npm notice Tarball Contents
+npm notice 11.4kB LICENSE
+npm notice 968B NOTICE
+npm notice 10.9kB README.md
+npm notice 757.2kB client/standalone.js
+npm notice 833B graphforge-compatibility.json
+npm notice 3.7kB package.json
+npm notice 340.1kB src/_abi_generated.js
+npm notice 98.5kB src/abi.js
+npm notice 20.4kB src/charts.js
+npm notice 5.1kB src/chunked-columns.js
+npm notice 25.2kB src/color.js
+npm notice 1.6kB src/dom.js
+npm notice 247.4kB src/encode.js
+npm notice 25.8kB src/factorize.js
+npm notice 134.6kB src/figure.js
+npm notice 10.2kB src/force_scheduler.js
+npm notice 12.3kB src/geo-allocation-attempt.js
+npm notice 20.8kB src/geo-hierarchy-wire.js
+npm notice 3.4kB src/geo-hierarchy.d.ts
+npm notice 9.9kB src/geo-hierarchy.js
+npm notice 11.6kB src/geo-live-host.js
+npm notice 10.3kB src/geo-mixed-wire.js
+npm notice 2.0kB src/geo-mixed.d.ts
+npm notice 1.5kB src/geo-mixed.js
+npm notice 4.3kB src/geo-overview-members.d.ts
+npm notice 22.4kB src/geo-overview-members.js
+npm notice 9.1kB src/geo-overview-source.d.ts
+npm notice 28.8kB src/geo-overview-source.js
+npm notice 5.3kB src/geo-overview.d.ts
+npm notice 12.6kB src/geo-overview.js
+npm notice 3.6kB src/geo-retained.d.ts
+npm notice 19.1kB src/geo-retained.js
+npm notice 6.8kB src/geo-selected.d.ts
+npm notice 20.0kB src/geo-selected.js
+npm notice 1.6kB src/geo-snapshot.d.ts
+npm notice 7.7kB src/geo-snapshot.js
+npm notice 895B src/geo-spatial.d.ts
+npm notice 5.0kB src/geo-spatial.js
+npm notice 4.1kB src/geo-tiles.d.ts
+npm notice 19.1kB src/geo-tiles.js
+npm notice 1.1kB src/geo-webview.d.ts
+npm notice 20.1kB src/geo-webview.js
+npm notice 6.8kB src/geoarrow.js
+npm notice 13.3kB src/geocatalog.js
+npm notice 16.4kB src/geoscale.d.ts
+npm notice 43.7kB src/geoscale.js
+npm notice 8.0kB src/geoviewport.js
+npm notice 73.9kB src/graph.js
+npm notice 7.0kB src/graphforge_layout_worker.js
+npm notice 6.6kB src/graphforge_layout.js
+npm notice 9.8kB src/graphforge-container.js
+npm notice 39.2kB src/graphforge.js
+npm notice 6.7kB src/html.js
+npm notice 14.3kB src/index.js
+npm notice 2.4kB src/load.js
+npm notice 2.2kB src/marks/area.js
+npm notice 5.8kB src/marks/bar.js
+npm notice 4.2kB src/marks/box.js
+npm notice 7.4kB src/marks/contour.js
+npm notice 3.6kB src/marks/distribution.js
+npm notice 2.9kB src/marks/ecdf.js
+npm notice 2.2kB src/marks/error_band.js
+npm notice 8.2kB src/marks/errorbar.js
+npm notice 4.2kB src/marks/heatmap.js
+npm notice 3.2kB src/marks/hexbin.js
+npm notice 3.3kB src/marks/histogram.js
+npm notice 3.6kB src/marks/line.js
+npm notice 9.8kB src/marks/polar.js
+npm notice 5.2kB src/marks/radar.js
+npm notice 3.7kB src/marks/ribbon.js
+npm notice 9.1kB src/marks/scatter.js
+npm notice 2.1kB src/marks/segments.js
+npm notice 2.5kB src/marks/stem.js
+npm notice 4.3kB src/marks/step.js
+npm notice 3.2kB src/marks/triangle_mesh.js
+npm notice 2.5kB src/marks/violin.js
+npm notice 7.3kB src/native-path.js
+npm notice 3.3kB src/native.js
+npm notice 30.8kB src/payloadTraceMaterialize.js
+npm notice 17.7kB src/pyramid.js
+npm notice 4.6kB src/sankey.js
+npm notice 314.6kB src/scene.js
+npm notice 72.1kB src/sceneBulkNative.js
+npm notice 3.0kB src/temporal-graph.js
+npm notice 7.2kB src/tooltip-columns.js
+npm notice 2.1kB src/vscode.js
+npm notice Tarball Details
+npm notice name: @curatelabs/xyg-node
+npm notice version: 0.0.0
+npm notice filename: curatelabs-xyg-node-0.0.0.tgz
+npm notice package size: 644.8 kB
+npm notice unpacked size: 2.8 MB
+npm notice shasum: f649465addeca78bf3eb25f57ad3b88688bbee8c
+npm notice integrity: sha512-0kvcAmoDmJpKG[...]U6PuToShqMYgQ==
+npm notice total files: 86
+npm notice
+npm notice
+npm notice 📦  @curatelabs/xyg-node-linux-x64@0.0.0
+npm notice Tarball Contents
+npm notice 11.4kB LICENSE
+npm notice 580B NOTICE
+npm notice 491B README.md
+npm notice 984B index.js
+npm notice 6.1MB libxyg_core.so
+npm notice 664B package.json
+npm notice Tarball Details
+npm notice name: @curatelabs/xyg-node-linux-x64
+npm notice version: 0.0.0
+npm notice filename: curatelabs-xyg-node-linux-x64-0.0.0.tgz
+npm notice package size: 2.8 MB
+npm notice unpacked size: 6.1 MB
+npm notice shasum: 0619d0d617bcde38f939d28f5dc5096c186c8efa
+npm notice integrity: sha512-/hNT68olLHpAG[...]o7xKkafsCAX/A==
+npm notice total files: 6
+npm notice
+npm notice
+npm notice 📦  koffi@3.1.4
+npm notice Tarball Contents
+npm notice 31.7kB CHANGELOG.md
+npm notice 1.1kB LICENSE.txt
+npm notice 2.4kB README.md
+npm notice 32.2kB cnoke.cjs
+npm notice 2.9kB doc/benchmarks.md
+npm notice 7.9kB doc/callbacks.md
+npm notice 16.3kB doc/composites.md
+npm notice 5.7kB doc/contribute.md
+npm notice 2.5kB doc/index.md
+npm notice 7.5kB doc/load.md
+npm notice 8.9kB doc/migration.md
+npm notice 3.8kB doc/misc.md
+npm notice 9.4kB doc/output.md
+npm notice 15.1kB doc/pointers.md
+npm notice 7.6kB doc/primitives.md
+npm notice 3.0kB doc/start.md
+npm notice 2.8kB doc/types.md
+npm notice 0B doc/unions.md
+npm notice 6.3kB doc/values.md
+npm notice 50B index.cjs
+npm notice 12.8kB index.d.ts
+npm notice 85B index.js
+npm notice 53B indirect.cjs
+npm notice 91B indirect.js
+npm notice 316.7kB lib/native/base/base.cc
+npm notice 174.0kB lib/native/base/base.hh
+npm notice 36.7kB lib/native/base/unicode.inc
+npm notice 2.1kB package.json
+npm notice 9.4kB src/koffi/CMakeLists.txt
+npm notice 12.9kB src/koffi/index.cjs
+npm notice 11.5kB src/koffi/index.js
+npm notice 12.9kB src/koffi/indirect.cjs
+npm notice 11.4kB src/koffi/indirect.js
+npm notice 4.0kB src/koffi/src/abi/arm64_asm.asm
+npm notice 5.0kB src/koffi/src/abi/arm64_asm.S
+npm notice 52.0kB src/koffi/src/abi/arm64.cc
+npm notice 4.5kB src/koffi/src/abi/loong64_asm.S
+npm notice 273B src/koffi/src/abi/loong64.cc
+npm notice 4.2kB src/koffi/src/abi/riscv64_asm.S
+npm notice 49.4kB src/koffi/src/abi/riscv64.cc
+npm notice 5.2kB src/koffi/src/abi/x64sysv_asm.S
+npm notice 52.5kB src/koffi/src/abi/x64sysv.cc
+npm notice 4.8kB src/koffi/src/abi/x64win_asm.asm
+npm notice 4.0kB src/koffi/src/abi/x64win_asm.S
+npm notice 39.7kB src/koffi/src/abi/x64win.cc
+npm notice 4.0kB src/koffi/src/abi/x86_asm.asm
+npm notice 4.7kB src/koffi/src/abi/x86_asm.S
+npm notice 44.1kB src/koffi/src/abi/x86.cc
+npm notice 69.1kB src/koffi/src/call.cc
+npm notice 5.5kB src/koffi/src/call.hh
+npm notice 8.8kB src/koffi/src/errno.inc
+npm notice 108.5kB src/koffi/src/ffi.cc
+npm notice 11.1kB src/koffi/src/ffi.hh
+npm notice 6.3kB src/koffi/src/parser.cc
+npm notice 1.3kB src/koffi/src/parser.hh
+npm notice 857B src/koffi/src/primitives.inc
+npm notice 2.7kB src/koffi/src/static.cjs
+npm notice 2.8kB src/koffi/src/static.js
+npm notice 2.0kB src/koffi/src/trampolines.cjs
+npm notice 22.8kB src/koffi/src/type.cc
+npm notice 2.1kB src/koffi/src/type.hh
+npm notice 36.3kB src/koffi/src/util.cc
+npm notice 14.4kB src/koffi/src/util.hh
+npm notice 6.4kB src/koffi/src/uv.cc
+npm notice 134B src/koffi/src/uv.def
+npm notice 2.5kB src/koffi/src/uv.hh
+npm notice 5.8kB src/koffi/src/win32.cc
+npm notice 3.7kB src/koffi/src/win32.hh
+npm notice 1.1kB vendor/node-addon-api/LICENSE.md
+npm notice 6.3kB vendor/node-addon-api/napi-inl.deprecated.h
+npm notice 242.2kB vendor/node-addon-api/napi-inl.h
+npm notice 124.0kB vendor/node-addon-api/napi.h
+npm notice 5.0kB vendor/node-addon-api/README.md
+npm notice 2.7kB vendor/node-api-headers/def/js_native_api.def
+npm notice 3.5kB vendor/node-api-headers/def/node_api.def
+npm notice 6.7kB vendor/node-api-headers/include/js_native_api_types.h
+npm notice 31.1kB vendor/node-api-headers/include/js_native_api.h
+npm notice 1.9kB vendor/node-api-headers/include/node_api_types.h
+npm notice 10.4kB vendor/node-api-headers/include/node_api.h
+npm notice 1.1kB vendor/node-api-headers/LICENSE
+npm notice 2.7kB vendor/node-api-headers/README.md
+npm notice Tarball Details
+npm notice name: koffi
+npm notice version: 3.1.4
+npm notice filename: koffi-3.1.4.tgz
+npm notice package size: 322.1 kB
+npm notice unpacked size: 1.8 MB
+npm notice shasum: 9551b3ad18665a27d7253025dbfe5efa3c865894
+npm notice integrity: sha512-+cxRL4eJaIYBK[...]4nK4hssUUu8PA==
+npm notice total files: 81
+npm notice
+npm notice
+npm notice 📦  @koromix/koffi-linux-x64@3.1.4
+npm notice Tarball Contents
+npm notice 271B README.md
+npm notice 8.2kB index.js
+npm notice 1.2MB linux_x64/koffi.node
+npm notice 1.2MB musl_x64/koffi.node
+npm notice 644B package.json
+npm notice Tarball Details
+npm notice name: @koromix/koffi-linux-x64
+npm notice version: 3.1.4
+npm notice filename: koromix-koffi-linux-x64-3.1.4.tgz
+npm notice package size: 735.0 kB
+npm notice unpacked size: 2.4 MB
+npm notice shasum: 5f40669295d07dd8268abb7fd0edde54de50ca06
+npm notice integrity: sha512-/TUwer7Hnm302[...]eicgK9mtIToXQ==
+npm notice total files: 5
+npm notice

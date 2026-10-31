@@ -1,0 +1,16 @@
+{
+  "name": "graphforge-tests-after-build",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graphforge-layout.test.mjs",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/graphforge-cross-host.test.mjs",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 14.115,
+  "rawSha256": "8f1aa1d693c460a985986252cbfa97e11925dcd01a6959376d2dd0c84a00c37b",
+  "log": "graphforge-tests-after-build.txt.gz",
+  "gzipSha256": "1c55ef06458a60bad35db3f3b0bc31ff2d0d26e6de52addbaceb49c849857e9a"
+}

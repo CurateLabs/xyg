@@ -1,0 +1,12 @@
+{
+  "name": "ci-step",
+  "command": [
+    "bash",
+    "spec/performance/graph-s4-foundation-contract-2026-10-31/ci-step.sh"
+  ],
+  "exitCode": 0,
+  "seconds": 15.121,
+  "rawSha256": "038608eb1fde645eae03683fdcf177233ac16e833fb0822bf747bb54a1fd6d96",
+  "log": "ci-step.txt.gz",
+  "gzipSha256": "fead374808963c08d0364aa48437e658b05e8ebfc0a435057b044b67d1027bec"
+}

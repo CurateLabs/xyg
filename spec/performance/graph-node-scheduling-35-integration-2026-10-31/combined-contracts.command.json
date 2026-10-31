@@ -1,0 +1,13 @@
+{
+  "name": "combined-contracts",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\nuv run python scripts/abi_smoke.py\nuv run python scripts/verify_wasm_assets.py\nuv run python scripts/check_release_inventory.py"
+  ],
+  "exitCode": 0,
+  "seconds": 10.806,
+  "rawSha256": "4266f9281ff579f967caecf19ad61a347595bd116fd0eea649a5a9a9b0588bc8",
+  "log": "combined-contracts.txt.gz",
+  "gzipSha256": "8226e1b43c62c99817aa5554f1a056652ceed98c311fbb37542cfebdbed3882b"
+}

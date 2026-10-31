@@ -19,7 +19,7 @@ import {
   graphforgeLedger,
   graphforgeTableHtml,
   graphforgePick,
-  graphforgeWebviewPayload,
+  graphforgeStaticPayload,
 } from "../src/graphforge.js";
 import { decodeContainer, encodeContainer, DTYPE } from "../src/graphforge-container.js";
 import { graphChart } from "../src/charts.js";
@@ -444,7 +444,7 @@ test("render requests append the canonical Scene and selections paint selected",
 
 test("webview payloads relay picks back to GraphForge identity", () => {
   const c = compose("pagerank", "node_similarity");
-  const payload = graphforgeWebviewPayload(c, { width: 480, height: 360 });
+  const payload = graphforgeStaticPayload(c, { width: 480, height: 360 });
   assert.ok(payload.buffer instanceof ArrayBuffer && payload.buffer.byteLength > 0);
   assert.equal(payload.spec.interaction.click, true, "picks need click events");
   for (let i = 0; i < c.nodes.count; i += 1) {
@@ -468,11 +468,11 @@ test("webview payloads relay picks back to GraphForge identity", () => {
 });
 
 test("recompositions reuse a layout by node UUID instead of laying out again", () => {
-  const first = graphforgeWebviewPayload(compose("pagerank"), { width: 480, height: 360 });
+  const first = graphforgeStaticPayload(compose("pagerank"), { width: 480, height: 360 });
   assert.equal(first.positions.uuid.length, first.figure.traces[first.nodeTrace].x.length);
   // Another layer over the same base: every node has a position → preset layout.
   const next = compose("pagerank", "louvain");
-  const reused = graphforgeWebviewPayload(next, { width: 480, height: 360, positions: first.positions });
+  const reused = graphforgeStaticPayload(next, { width: 480, height: 360, positions: first.positions });
   const at = new Map(first.positions.uuid.map((id, i) => [id, i]));
   next.nodes.uuid.forEach((id, i) => {
     assert.equal(reused.positions.x[i], first.positions.x[at.get(id)]);

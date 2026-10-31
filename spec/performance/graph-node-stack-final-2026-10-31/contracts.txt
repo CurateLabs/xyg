@@ -1,0 +1,5 @@
+ABI smoke: 673 checks passed against libxyg_core.so
+Packaged WASM assets verified (bytes, sha256, ABI/scene/painter versions, inline copy).
+ownership audit ok: 500 tracked production files classified
+API declarations match the preparation inventory; acceptance/classification gaps remain explicit
+ABI artifacts current (537 symbols, v398)

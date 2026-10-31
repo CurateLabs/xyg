@@ -1,0 +1,14 @@
+{
+  "name": "two-path-csp",
+  "command": [
+    "env",
+    "XYG_GRAPHFORGE_SCREENSHOT=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/spec/performance/graph-node-scheduling-35-integration-2026-10-31/webview-csp.png",
+    "node",
+    "scripts/graphforge_webview_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 10.555,
+  "rawSha256": "fc6f51d6411868105ad3713ef7d19b009281b905fd9dfc5eb245c73d649f51d7",
+  "log": "two-path-csp.txt.gz",
+  "gzipSha256": "fd2e6fc0f5a2d293a4c915a5bb41d4c43cccd37961b75a0e6dcbfcf17dbdf061"
+}

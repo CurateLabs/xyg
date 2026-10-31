@@ -1,0 +1,179 @@
+{
+  "scope": "Final Node/S4 normal-merge verification; no release cohort/milestone acceptance",
+  "artifactCommit": null,
+  "reviewedNode": "c1a277dfa094568697f42217cdd6fa65fd0f23b0",
+  "reviewedS4": "93cb8570e72d9d21cb48def6679728b10396e3cc",
+  "workingHead": "c1a277dfa094568697f42217cdd6fa65fd0f23b0",
+  "nonreceiptBinaryFullIndexDiffSha256": "d58e1badf72a56812adcd2fe048687a40694b0221c16e3d12b45839ca8c6a10b",
+  "sources": {
+    "benchmarks/bench_graphforge_compose.mjs": "96f06c8d7365d65e4d48c027495999c6031d538d9c65c07aed0a0e303d0369ed",
+    "docs/guides/serving-csp-and-offline-use.md": "9d28d4e42976d2108a1fb912f79899fea8c8e47364df0be4c20c30616c121840",
+    "docs/integrations/graphforge.md": "dac640c18d70ea22ddb4028ea3b7a394dfeba119140774d022dcbd4738912d37",
+    "examples/vanilla-ts/README.md": "5a2cd556534a9b21964ea0e3813090cba15ae30b743769f54a0b25690897eceb",
+    "examples/vanilla-ts/graphforge-live.mjs": "0ad000f4d377b2ea02b36128067c25f529557f49c36b390ba7ee15f9d8acda89",
+    "packages/xy-node/package.json": "2b999bed8650878d45b2cadc01ffd8039dc4f2d8544048a0deac0956923f508e",
+    "packages/xy-node/src/graphforge.js": "3cab9c13499fdadc893ddb086fa6f6a7a8a5f0768e2faf19ac63b74e52018875",
+    "packages/xy-node/src/graphforge_layout.js": "252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
+    "packages/xy-node/src/graphforge_layout_worker.js": "faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
+    "packages/xy-node/src/index.js": "b14c1b25eaac153da60a85de3c416720fcaa7628c1a86b91c41e98ff2fcf116c",
+    "packages/xy-node/src/vscode.js": "dc3c9c01ac72bb1509f35cc00bee5539b8c4bf5352f661ed270236745c1f0e1f",
+    "packages/xy-node/test/graphforge-layout.test.mjs": "094c85015cdabd8616cf5a197fc5f95205a255c220080c25d4fb0672dc39ede7",
+    "packages/xy-node/test/graphforge.test.mjs": "e02a35a224ccef1a5b592c9af0ae5172f599404cee976a3c110ec619b6a54ee8",
+    "packages/xy-node/test/vscode_contract.test.mjs": "ca11d661e5400d4271b0fa24ee0698204c5858816478e0ca65791e86fec2d7f6",
+    "scripts/graphforge_webview_smoke.mjs": "0e93e46d493ff67bafa73941cacdfaeeef23f6d8ea497b50287d8e3b25a29494",
+    "scripts/node_release_smoke.mjs": "812701159b8d9ff38505596ec8c0be87e4b10dfd1402ea3239a1fc38feb9a8d1",
+    "spec/api/graphforge-integration.md": "0374b44913ab6ed5607ab47dc2720d4715aaeb7f6b11efbc8c44bd38bc00ab22",
+    "spec/design/application-consumers.md": "63c7063ad2a79c6e7e21287b199251c1f78b1336712b5ddfe36504f512ea8cf1",
+    "spec/design/graph-mark.md": "543732c9ba829e64a05f2d2ed847e9249eef1d2fc3ec1b0ea00dd6fb997e7cdc",
+    "spec/design/graphforge-compositions.md": "cffb0400e43aaad9f5ec0d09b2992cd33321a0e3caeda08ee193c45912b3881c",
+    "spec/design/graphforge-node-scheduling.md": "c693cd16ac12136b94395889fc3eab36caeb6ed0af0b4e46e0a11df53a2603ca",
+    "spec/design/host-parity.md": "ac813f7f0d698a6d4c24a8e1a0440894c286074c41fa4954baa3e7141b7d26b6",
+    "spec/design/ownership-audit.json": "aa34deec3edd907581a9549da966611429075362b466a39c02afcdfb13a0ac00",
+    "spec/design/ownership-audit.md": "ab7a2f2d2f00a475df6f829d473a4581f1cfc4dcc4dfb90cff60985d2927b92c",
+    "spec/releases/0.6.0-api-inventory.json": "c2635ca9f8d8fd54fa94d03733b29f19a7ca8259f7ba38ca624cb04dd3fc4816"
+  },
+  "historicalFilesUnchanged": 2753,
+  "nativeAbi": 398,
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6052952,
+      "sha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    }
+  },
+  "commands": {
+    "capture.command.json": {
+      "name": "capture",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-node-stack-final-2026-10-31/capture.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.266,
+      "rawSha256": "955be03df944ecccc7e56b3a54b5213ed03016b084314d4403dd6bd9dc5ecde2",
+      "log": "capture.txt.gz",
+      "gzipSha256": "dc3bb5b2beea012c717984053e46e45c598c4d4d35a003c6823f6614921d3def"
+    },
+    "contracts.command.json": {
+      "name": "contracts",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run python scripts/abi_smoke.py\nuv run python scripts/verify_wasm_assets.py\nuv run python scripts/verify_ownership.py\nuv run python scripts/check_release_inventory.py\nuv run python scripts/gen_abi_manifest.py --check"
+      ],
+      "exitCode": 0,
+      "seconds": 9.402,
+      "rawSha256": "96eeebf4770d4407c40022517b5eeed95207326cd225ddf7cc500ca433bb2ab4",
+      "log": "contracts.txt.gz",
+      "gzipSha256": "a8b3f8637045e2f197a17a167e5b5086e0b4eaaa7a8bb789a5114b38cadd7e38"
+    },
+    "final-hooks.command.json": {
+      "name": "final-hooks",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run --with pre-commit pre-commit run --all-files\nuv run ruff check .\nuv run ruff format --check ."
+      ],
+      "exitCode": 0,
+      "seconds": 0.739,
+      "rawSha256": "748c973f5fbcd15b29f8d9094a400be697e754084479aaff7b40caeb4acad8b8",
+      "log": "final-hooks.txt.gz",
+      "gzipSha256": "7153e8107ed4d3ba32a0c27b6c64aed546ec33f25609c866276605a7d194cb49"
+    },
+    "full-node.command.json": {
+      "name": "full-node",
+      "command": [
+        "bash",
+        "-c",
+        "node --test --test-concurrency=4 packages/xy-node/test/*.test.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 31.402,
+      "rawSha256": "3989e6ad05e112a43fbe8614c142f3b70994aeeaf1c24ff00dc573263a2b5afd",
+      "log": "full-node.txt.gz",
+      "gzipSha256": "3432f16e2c5c7beb5e0969feeb79afbb963289d17a7d11774a3e53c8a1c6e516"
+    }
+  },
+  "installedArtifacts": {
+    "target/task-tmp/node35-clean-install.EMYCuq/wheels/xyg-0.0.1.dev2961+ef087077-py3-none-linux_x86_64.whl": {
+      "bytes": 6052468,
+      "sha256": "f524b9b8e35098e1f9317832160bcdeadba79fa7a508673a849776581e950a7b"
+    },
+    "target/task-tmp/node35-clean-install.EMYCuq/packs/koffi-3.1.4.tgz": {
+      "bytes": 322069,
+      "sha256": "a102a4084802f76da7afb20f01c34bad71727bcc283fa143906021cc32b31dea"
+    },
+    "target/task-tmp/node35-clean-install.EMYCuq/packs/curatelabs-xyg-node-linux-x64-0.0.0.tgz": {
+      "bytes": 2813795,
+      "sha256": "b0332cc77a304c56a5ea5d79b4d9c99d6929783853090be620430b06bc40fa23"
+    },
+    "target/task-tmp/node35-clean-install.EMYCuq/packs/curatelabs-xyg-node-0.0.0.tgz": {
+      "bytes": 644815,
+      "sha256": "237b4c1857dc30f5a7ae88bbb45f924a9150e0c57a4fdb7a2644d0b74c79d17b"
+    },
+    "target/task-tmp/node35-clean-install.EMYCuq/packs/koromix-koffi-linux-x64-3.1.4.tgz": {
+      "bytes": 734953,
+      "sha256": "72d02c99fcd871dfcfe223c23aab655e606ac9c3ff522084270d97499aead3a1"
+    }
+  },
+  "outputs": {},
+  "reusedInstalledAndJourney": {
+    "path": "spec/performance/graph-node-review-followup-2026-10-31/evidence.json",
+    "sha256": "287108c10042c158c26701bdf16724658b4dbbc2fdbe76c73600ec12db9ea145",
+    "basis": "No product/native/client/WASM source changes relative to reviewed Node follow-up; installed sources and all paired production assets reverified here"
+  },
+  "reusedFullFoundation": {
+    "path": "spec/performance/graph-s4-ci-repair-2026-10-31/full-foundation.json",
+    "sha256": "948636a46009aba2571b680f2f89a74018cf6d3864504306349aabe9b5049712",
+    "basis": "Rust and all paired production assets match S4 CI repair; full strict-CSP foundation reused by exact hashes; fresh native Node paint/pick/pan proof retained here"
+  }
+}

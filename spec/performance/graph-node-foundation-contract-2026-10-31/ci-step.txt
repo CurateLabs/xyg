@@ -1,0 +1,1142 @@
+
+added 3 packages, and audited 9 packages in 477ms
+
+2 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+frame leases: native/WASM direct+reduced exact bytes, full-u64, source/original disposal, picking, exact membership, full-source rows independent copy quotas, exact frozen snapshots, native six-format exports/WASM unsupported export PASS
+actual native/WASM legacy membership: 5 temporal profiles, 12 exact paged packets, full-u64 duplicate IDs/MultiPoint/source disposal PASS
+overview domain membership: 5 temporal profiles,15 complete native/WASM packets, MultiPoint row union/full IDs, exact private ACK, failed46 retry/lost46 probe, two-copy quota PASS
+allocation recovery: six full native/WASM count/Scene/member packets and five-view/retired ACK controls PASS
+selected mutation recovery: 12 full native/WASM packets, literal row/temporal goldens and exact mutation lifecycle controls PASS
+selected publication recovery: 12 full native/WASM packets, literal row/temporal goldens and exact mutation lifecycle controls PASS
+{"artifactSha256":"27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099","packets":[{"binaryBytes":7733,"binarySha256":"f4c48e7753de9c36621bb971b60a6cc97ffd7384d737f85ac8b515864cc259bb","eightSnapshots":true,"legacyBytesIdentical":true,"replayAfterIssuerGone":true,"strictRequest":true,"confirmBeforeRead":true,"twoReadQuota":true,"lostDisposeAndRelease":true},{"binaryBytes":7733,"binarySha256":"f4c48e7753de9c36621bb971b60a6cc97ffd7384d737f85ac8b515864cc259bb","eightSnapshots":true,"legacyBytesIdentical":true,"replayAfterIssuerGone":true,"strictRequest":true,"confirmBeforeRead":true,"twoReadQuota":true,"lostDisposeAndRelease":true}],"scope":"small actual native/WASM Snapshot-local6/7 proof; no performance or selected overview claim"}
+overview native/WASM: exact 256-cell temporal counts, nullable i64 extrema, half-open instant/window, full-u64 source/layer, projected Scene/pitch/cross-CRS parity, authenticated external read/write ACKs, typed nonfinal label, old data after source/index/query disposal, two-copy quotas and source-pick rejection PASS
+selected native/packagedWASM direct+reduced/indexed fullXYSE/Rows intent, i64MIN/u64MAX, consumption/failure, private continuation, exact packet parity, fiveview16handle/8Data pressure+explicitpark+failedpage recovery, outstanding-read cancellation/ACK/recovery and actualtwoWASMregistry handlecollision rejection PASS
+{"status":"passed","nativeAbi":398,"wasmAbi":35,"recordedAt":"2026-10-31T22:01:11.032Z","node":"v22.23.4","platform":"linux","architecture":"x64","wasmSha256":"27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099","wasmBytes":1860254,"wasmGzipBytes":759013,"nativeSha256":"dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a","scriptSha256":"e0893e4fdfd647a39fac93058ce2b24aee80803708db3abe2fee75233b4b59d9","cases":[{"geometry":"Point","case":0,"bytes":1000,"sha256":"85e31899e17a3290fde484540fc979257bf7b0e8c25d686e01ce6a6d648cae3b"},{"geometry":"Point","case":1,"bytes":776,"sha256":"a8c879ed24d8903299f8859a54cac496355e71b8a47bb4c6742b004aa3a2d07c"},{"geometry":"Point","case":2,"bytes":776,"sha256":"11d144605c952de99af7a985b4eed354ccc74b3ce3dda431007b4d790a74e0a3"},{"geometry":"Point","case":3,"bytes":776,"sha256":"e7f57a0e2a302e44c6797471b66899f97dec7d1b40f22e864ea9caefb114a733"},{"geometry":"Point","case":4,"bytes":776,"sha256":"4b85b43f4a6567dd74f82a6262752d02b51a0e42d51f7b5a60808f60522f9c9e"},{"geometry":"Point","case":5,"bytes":776,"sha256":"1aad9575ed3487ce1bfca36ac50742512ac7434f14a9b2a3d7f01bb15c5500d3"},{"geometry":"Point","case":6,"bytes":776,"sha256":"9b71b79881671740dc865aefe54053a3aa044a6752ab971f17c8f1683505da2b"},{"geometry":"Point","case":7,"bytes":776,"sha256":"837fa4b5f427668b3295cebae440e8fc9419097a94045f58e1a470044cbdf1a5"},{"geometry":"Point","case":8,"bytes":512,"sha256":"bbb508310c845f05827c22a8feb90114e410807bdc87ab657c9df84d164337ae"},{"geometry":"MultiPoint","case":0,"bytes":1336,"sha256":"4326cbfdc6d513a56f1bd132915f7ff0fdac44afafd42225d090741642e7b5f1"},{"geometry":"MultiPoint","case":1,"bytes":888,"sha256":"e2bf11787f2f18113f8de0f8fc773bc2e1580f09b2f9f7f51b79c19a0a1921b4"},{"geometry":"MultiPoint","case":2,"bytes":888,"sha256":"092e3d0ca5759bc0dd8d14a6b2e87a03674886783a3bb767e45dc2475faa00f6"},{"geometry":"MultiPoint","case":3,"bytes":888,"sha256":"206a6134c573d1da229e63c53a8fee5cd8eb29be79238ae6a22a40d0e70bb69a"},{"geometry":"MultiPoint","case":4,"bytes":888,"sha256":"c7f0c67331507f85eaf8666134a079644e96bb16abb67c3cb5d09b57f66dd08e"},{"geometry":"MultiPoint","case":5,"bytes":888,"sha256":"fd709703876b48542933815bdbc783ae0f54624ade67b6dbf230e94f08de2b74"},{"geometry":"MultiPoint","case":6,"bytes":888,"sha256":"61c9d42283fccf3229c9c3244a600c4f546b1ef6177e5508f76142a0ef4fa47d"},{"geometry":"MultiPoint","case":7,"bytes":888,"sha256":"b8aff42514fb6ff153b19876eaee4200a16711bb47101a071f4ebcdfb06e0d2d"},{"geometry":"MultiPoint","case":8,"bytes":512,"sha256":"c8fd782e2d2e3ed59339d002e3881e8081c9544040e3c0a71e0664178afed21b"},{"geometry":"Point","case":"reduced-members-0","bytes":760,"sha256":"3f0321f4bf9501afbaa25a573d64937678fef9db60e508e69a6ed1d08752f98a"},{"geometry":"Point","case":"reduced-members-1","bytes":131536,"sha256":"34b1c45b59a968f5a523007467d7458747fa9a9575b03d9acb047f34a5d78d3f"},{"geometry":"Point","case":"reduced-members-2","bytes":131536,"sha256":"34d75185d7956361f3b6776cc31a124bb365d4138fc2fb6b95757c76325b22bc"},{"geometry":"Point","case":"reduced-members-3","bytes":131536,"sha256":"5062564adb949c02ef1fbad4de081f4ed4f9fb3ba5f7ef6cdf66ed7cb2dd2606"},{"geometry":"Point","case":"reduced-members-4","bytes":131536,"sha256":"b57fd01bdd679bc290146c395b4aeb89325368b2aecb2f7af62848a27849f6f7"},{"geometry":"Point","case":"reduced-members-5","bytes":131536,"sha256":"bdb3d9316981af288902404ab454dc7b8a6900b63d50ebadf5b3816d7dab75f8"},{"geometry":"Point","case":"reduced-members-6","bytes":131536,"sha256":"3e89cc988b1623c9f8ed137e985578f97fe58a4bb67e013f77ad12fb8e082afa"},{"geometry":"Point","case":"reduced-members-7","bytes":131536,"sha256":"f246bd0561bd4a8bcdf603b5aa27464a89cc0b67df3d03238bc3ad77436b60c9"},{"geometry":"Point","case":"reduced-members-8","bytes":131536,"sha256":"e101e62db623ed55f29416f5e82702173c849ecce8c434d58a3cc685f986ee96"},{"geometry":"Point","case":"reduced-members-9","bytes":288,"sha256":"d8edca10ea6838b18f7a14b261a39f3716b8c8e29721241b5554eed6b07a9478"},{"geometry":"MultiPoint","case":"reduced-members-0","bytes":760,"sha256":"b4522c176f3c5f751df78c7eceb54e401ec67ceefc66f595d19ece09e25b1ebb"},{"geometry":"MultiPoint","case":"reduced-members-1","bytes":131536,"sha256":"a294cf500805e1a26f7aa17252240b984b54272d97bf3c9197d9a323c86a6c50"},{"geometry":"MultiPoint","case":"reduced-members-2","bytes":131536,"sha256":"2e91d497baa694f9282be20568144c5795c6c2dfd13948ce60b4c9b9003b7817"},{"geometry":"MultiPoint","case":"reduced-members-3","bytes":131536,"sha256":"9fdb26f0cc2c5a801c67f572d77d515eabccd4fe6541e3e1c7dc9cc07293b976"},{"geometry":"MultiPoint","case":"reduced-members-4","bytes":131536,"sha256":"41fd8cf97f5dc300a8770c8c21fa0164599d7565865c7b715fd66b4568a10957"},{"geometry":"MultiPoint","case":"reduced-members-5","bytes":288,"sha256":"9add30ee7c83860195630fbb3bb35be4406dd08956b0bb7f5d0c437aa5e8782c"}],"claims":["native/actual wasm32 exact Scene and typed IDs/time","canonical source Scene oracle","nullable signed-i64 extrema/half-open intervals","MultiPoint/null geometry/full-u64 duplicate identity","authenticated external pages/namespace","retired cancel read/write exact ACK/copy cap","malformed/local budget reject","immutable rows/retain after owner disposal","two-pass reduced Scene/source oracle and complete exact paged membership after owner disposal","corrupt/stale/work fallback preserves oldData","selected SceneData scoped full-source build admitted"],"limitations":["no browser paint or host driver","selected query42–44 parity is a separate conformance fixture","no massive latency/1B claim"]}
+{"status":"passed","recordedAt":"2026-10-31T22:01:13.086Z","node":"v22.23.4","platform":"linux","architecture":"x64","nativeAbi":398,"wasmAbi":35,"wasmBytes":1860254,"wasmGzipBytes":759013,"wasmSha256":"27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099","nativeSha256":"dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a","scriptSha256":"e2bc0f8ebb61d7b50687fcf4704409b9fc3dee691c452108586309d8bec9ac58","cases":[{"geometry":"Point","case":0,"bytes":1000,"sha256":"d7aa0db91a47705c3706795089e6f72f13dbd8d5942a4001ccaedd7e10048d65"},{"geometry":"Point","case":1,"bytes":1144,"sha256":"7fa3708a037c2b96bccb2939e2e1580ae9c0532844e17421dd806fa7fa350b3b"},{"geometry":"Point","case":2,"bytes":400,"sha256":"ca07ed017eb21e7c762e8cb03c6ec9ef34481e761a0461bc65ce64738b2c61ce"},{"geometry":"Point","case":3,"bytes":920,"sha256":"04310c35b7b7e7af987079e4f93c235735cc74e8fd4c8c1e7612b8a0e8b64703"},{"geometry":"Point","case":4,"bytes":304,"sha256":"d0de0de5ad3b20a5d2981a162555ce31246c4e989acfabc8ca6b9069660620d0"},{"geometry":"Point","case":5,"bytes":920,"sha256":"c9f903b77727702dab726a83111e1ff09fe9cb3599358b8ba39d71194e2033f6"},{"geometry":"Point","case":6,"bytes":304,"sha256":"9e60bf3dd1f388b2ec71330fd33c030c64dbedd7a94f5a12dc11373aca9f3760"},{"geometry":"Point","case":7,"bytes":920,"sha256":"3a0e99f1b9e4afc873930f0a870e314e638e6bdf811441297c0c5c6af2684772"},{"geometry":"Point","case":8,"bytes":304,"sha256":"fc046b8a7f105031eaa87df4fbdce8ea5065ab7f5d8dca08ae51f96b8a3fae17"},{"geometry":"Point","case":9,"bytes":808,"sha256":"d0516461a613345b157f67489b15c96e93ff4dbbe49e6975ddd3c044f4de4ab6"},{"geometry":"Point","case":10,"bytes":256,"sha256":"9635fb1c037932f6a66ce33bdfb21274abd7ef788de2afd5abe110bd116d2f8c"},{"geometry":"Point","case":11,"bytes":656,"sha256":"5596254d23a18335ce8128647cb8352a5f2e641bf31b94048545c802cf72d879"},{"geometry":"Point","case":12,"bytes":656,"sha256":"1082418ac4b7ad3caf61d75d88f9be6babf0960d2b61b5bfcfdc9164283fc617"},{"geometry":"Point","case":13,"bytes":1592,"sha256":"444723fbb350151f25e0301c08cc16648465da7eca5e251905c6862330835907"},{"geometry":"MultiPoint","case":0,"bytes":1336,"sha256":"c74ecbb42c0f15f777ac059bc6f401bc4b2c4493e320ab862f8ba0244b7a0f13"},{"geometry":"MultiPoint","case":1,"bytes":1480,"sha256":"b34f9035104f16612b57f51c97a239343d42885f5eecd2676083c0b3739ae8d6"},{"geometry":"MultiPoint","case":2,"bytes":544,"sha256":"734de79c9ed361e8219ec02461b5215081bbf217f36d3f2f74878b5724debf7f"},{"geometry":"MultiPoint","case":3,"bytes":1032,"sha256":"14649cc69db7c7698f882d12254e99a96b69e754422897d04c1afcd345a2ba5a"},{"geometry":"MultiPoint","case":4,"bytes":352,"sha256":"89b1011698952780d3fd999f6f3cad948b43387492c59e3ae7aaa98dd7d8eff6"},{"geometry":"MultiPoint","case":5,"bytes":1032,"sha256":"96b981b3733d3703578df69f660791afe142363bbb53d43f0fb526f63d7ea55f"},{"geometry":"MultiPoint","case":6,"bytes":352,"sha256":"3f1d8a1800f045faab1cecb56705ecb3a4b025a700b19f2c07367785c8e64d3c"},{"geometry":"MultiPoint","case":7,"bytes":1032,"sha256":"3606931cb7c65fcdca5cd43248008b3ea51a6797941ed8c7b096e7bb12d84883"},{"geometry":"MultiPoint","case":8,"bytes":352,"sha256":"2689f42e1df9d7cbefd87617df4f683a99da3735a989cde03aba2ed6a65b9bdd"},{"geometry":"MultiPoint","case":9,"bytes":808,"sha256":"4d3061021c1d8bdabfb3ae9e10b8b131b67c2082bec45800385968d802726350"},{"geometry":"MultiPoint","case":10,"bytes":256,"sha256":"993c2520de3f049f7ebe061280cc44eb20df6f2ccf05b18f133bf086c79dbb2f"},{"geometry":"MultiPoint","case":11,"bytes":656,"sha256":"4dacad54c974a9588e7282a6ccab74f3468363fe52abd4eb9288af3fba859cfa"},{"geometry":"MultiPoint","case":12,"bytes":656,"sha256":"aa08f4f5a8a258f074b10289d5aea3c258fd1afc52296365caee91d198fb46e0"},{"geometry":"MultiPoint","case":13,"bytes":1952,"sha256":"c09040009882a989079daf61a9c28de1f7b4c0e12aba0ef80d95bc1e31489ad4"},{"geometry":"Point","tier":"Cluster","case":"reduced-0","bytes":904,"sha256":"d8320ed7399f92d88d580960b6e11615dc9354978bbdc0c87ae1170785dd81b4"},{"geometry":"Point","tier":"Cluster","case":"reduced-1","bytes":131536,"sha256":"5fbf580541da296256c230def92a1fed86de1ca6fef0afadc234cbb459e6f033"},{"geometry":"Point","tier":"Cluster","case":"reduced-2","bytes":131536,"sha256":"fffa9cfbb01f3a9be27941fbe43ccc8538ba4ab859778fa77963641c4e99eeae"},{"geometry":"Point","tier":"Cluster","case":"reduced-3","bytes":131536,"sha256":"b13a99cbd8d44666bee7c06345bbc2a35ed3c09263f5e03946376b2ee41b9053"},{"geometry":"Point","tier":"Cluster","case":"reduced-4","bytes":131536,"sha256":"9d9734f252fb265fee59c31543284d2330e7bb05d7f623b5753a9ff4eed317b6"},{"geometry":"Point","tier":"Cluster","case":"reduced-5","bytes":131536,"sha256":"d9eda144ae3a9e6f027e3e149c4a8a909d6d91a9dbe7ee17f2325df771675663"},{"geometry":"Point","tier":"Cluster","case":"reduced-6","bytes":131536,"sha256":"4c3e51adcbf3be265e5d220d59ca37bd9abb58ca491f88b57a80370b54d4d1ac"},{"geometry":"Point","tier":"Cluster","case":"reduced-7","bytes":131536,"sha256":"567cf8c0e5ecba1ff473ce2800c801f46222cb2f69f28fa438dd04b2e94ff562"},{"geometry":"Point","tier":"Cluster","case":"reduced-8","bytes":131536,"sha256":"9e14067411ecc198bf005afc6a3326f370e13f169e956b93fff84485a1458009"},{"geometry":"Point","tier":"Cluster","case":"reduced-9","bytes":288,"sha256":"f5958356aa56d26844203b12c924b074f304ccce78d68b3a657e4312325ea646"},{"geometry":"Point","tier":"Density","case":"reduced-0","bytes":948,"sha256":"dc54a187737e103ce79244a3b7a11dd42ff0dc0e1d2ddda0ba0bd5a56a0dc592"},{"geometry":"Point","tier":"Density","case":"reduced-1","bytes":131536,"sha256":"b38e712e2265a83aeb651e1ddd9fec4509237ff53e0da7b405df0c0f601424ec"},{"geometry":"Point","tier":"Density","case":"reduced-2","bytes":131536,"sha256":"8f3c2f000b257db444f9591295070d57274ee8549c6ed1bc16cc51fb3eb8b3ce"},{"geometry":"Point","tier":"Density","case":"reduced-3","bytes":131536,"sha256":"270d1f4e2b7cf31ef7a6de0bb263e2006a31cf3504a13158490fbc69ee2ec099"},{"geometry":"Point","tier":"Density","case":"reduced-4","bytes":131536,"sha256":"f1fa76e82cd535f5b51a361ab35f2347f9a667ccf438c9610136330a5c93f903"},{"geometry":"Point","tier":"Density","case":"reduced-5","bytes":131536,"sha256":"c295a2d4e50c53d2f5dd60395a40ab75dbad9b5cb33c38ce2cef8355518c8f0e"},{"geometry":"Point","tier":"Density","case":"reduced-6","bytes":131536,"sha256":"e1db8d50919109ad587cddfe02fa831993fbdad09922ce079b27ff493f1a2e45"},{"geometry":"Point","tier":"Density","case":"reduced-7","bytes":131536,"sha256":"3ce12717c25c481568fa27751d04d50d4453b486424e7e5ef278695e69201d8d"},{"geometry":"Point","tier":"Density","case":"reduced-8","bytes":131536,"sha256":"4ebbc2ebea467ac1893c28bd5ac29d7a1a53cd4a5fd467f91357cba4667fcc3f"},{"geometry":"Point","tier":"Density","case":"reduced-9","bytes":288,"sha256":"594aff648cd89c0f488447dcab1fbb3c8502516420a5c07aa4e3285dafe6d023"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-0","bytes":904,"sha256":"619268a9ab8d8302df5196ac82468684d97189fbd834c96c10bf8444d60f1261"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-1","bytes":131536,"sha256":"1d087c14d3cdd7ebbce4b611dbe936f47867494d5e6abb63012c60ffdded07e3"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-2","bytes":131536,"sha256":"c7de11a7d713580d1c37e0d4aa9ac8bde406a877e0589a5e2d479495b994b856"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-3","bytes":131536,"sha256":"56b4a768d9a94ced155999de7bac55bb6ed788e4059058b815c61d9609ae9254"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-4","bytes":131536,"sha256":"f643ca95b306c1073f0c1255d34cf47be9f6c8ca6ca9f4ecd55aed15b2ab1cdd"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-5","bytes":288,"sha256":"13ee44447cbb445c9aea25b74dde9609b3e0ae1bcc6e10a3aedb65c24bdab62f"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-0","bytes":948,"sha256":"07daa46a645ca3438bd0332578645317bb5588496c256e2cfbf79317494c267b"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-1","bytes":131536,"sha256":"0c9426f0eaf79aa435a74de0b907ce6fe4ce80ac2aea697609e8214bffa4bd62"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-2","bytes":131536,"sha256":"70d8104b42f1cb47e257c6412451029b6e3fded6058bc5590cc330ed2f185237"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-3","bytes":131536,"sha256":"6dbe626d6a2c68fa1f238b5bdd177e523e3b600652e03cab4e6841b337dafd74"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-4","bytes":131536,"sha256":"e10ac4ec1d56e8963a55700bfb478c56b86c47d4f9f5849d7cb483b7a923ac0b"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-5","bytes":288,"sha256":"66c7edb23f61a5f4d06d218986ed286754439d68c6508d7432913a0c53f636b7"}],"claims":["ordinary None v1 bytes/native-WASM parity","selected canonical/selected hierarchy exact Scene+metadata+XYSE and exact hit bytes","full-u64 duplicate/null-row intent and signed-i64 time","explicit34 link and privateScope mismatch reject","unscoped43 Unsupported preserves issuedState","five independent lanes/State→Query→Data same-handle replacement","rows and frozen full intent after Source/lane disposal","two-pass selected cluster/density counts identical canonical output at32769/32770vertices","complete paged cell membership deduplicates MultiPoint original rows after Source/lane disposal"],"limitations":["no selected massive latency or1B execution claim","no public live hierarchy host controller","no browser WebGL/OS/GPU ledger claim"]}
+{"status":"passed","recordedAt":"2026-10-31T22:01:15.182Z","node":"v22.23.4","platform":"linux","architecture":"x64","nativeAbi":398,"wasmAbi":35,"wasmBytes":1860254,"wasmGzipBytes":759013,"wasmSha256":"27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099","nativeSha256":"dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a","scriptSha256":"e2bc0f8ebb61d7b50687fcf4704409b9fc3dee691c452108586309d8bec9ac58","cases":[{"geometry":"Point","case":0,"bytes":1000,"sha256":"d7aa0db91a47705c3706795089e6f72f13dbd8d5942a4001ccaedd7e10048d65"},{"geometry":"Point","case":1,"bytes":1144,"sha256":"7fa3708a037c2b96bccb2939e2e1580ae9c0532844e17421dd806fa7fa350b3b"},{"geometry":"Point","case":2,"bytes":400,"sha256":"ca07ed017eb21e7c762e8cb03c6ec9ef34481e761a0461bc65ce64738b2c61ce"},{"geometry":"Point","case":3,"bytes":920,"sha256":"04310c35b7b7e7af987079e4f93c235735cc74e8fd4c8c1e7612b8a0e8b64703"},{"geometry":"Point","case":4,"bytes":304,"sha256":"d0de0de5ad3b20a5d2981a162555ce31246c4e989acfabc8ca6b9069660620d0"},{"geometry":"Point","case":5,"bytes":920,"sha256":"c9f903b77727702dab726a83111e1ff09fe9cb3599358b8ba39d71194e2033f6"},{"geometry":"Point","case":6,"bytes":304,"sha256":"9e60bf3dd1f388b2ec71330fd33c030c64dbedd7a94f5a12dc11373aca9f3760"},{"geometry":"Point","case":7,"bytes":920,"sha256":"3a0e99f1b9e4afc873930f0a870e314e638e6bdf811441297c0c5c6af2684772"},{"geometry":"Point","case":8,"bytes":304,"sha256":"fc046b8a7f105031eaa87df4fbdce8ea5065ab7f5d8dca08ae51f96b8a3fae17"},{"geometry":"Point","case":9,"bytes":808,"sha256":"d0516461a613345b157f67489b15c96e93ff4dbbe49e6975ddd3c044f4de4ab6"},{"geometry":"Point","case":10,"bytes":256,"sha256":"9635fb1c037932f6a66ce33bdfb21274abd7ef788de2afd5abe110bd116d2f8c"},{"geometry":"Point","case":11,"bytes":656,"sha256":"5596254d23a18335ce8128647cb8352a5f2e641bf31b94048545c802cf72d879"},{"geometry":"Point","case":12,"bytes":656,"sha256":"1082418ac4b7ad3caf61d75d88f9be6babf0960d2b61b5bfcfdc9164283fc617"},{"geometry":"Point","case":13,"bytes":1592,"sha256":"444723fbb350151f25e0301c08cc16648465da7eca5e251905c6862330835907"},{"geometry":"MultiPoint","case":0,"bytes":1336,"sha256":"c74ecbb42c0f15f777ac059bc6f401bc4b2c4493e320ab862f8ba0244b7a0f13"},{"geometry":"MultiPoint","case":1,"bytes":1480,"sha256":"b34f9035104f16612b57f51c97a239343d42885f5eecd2676083c0b3739ae8d6"},{"geometry":"MultiPoint","case":2,"bytes":544,"sha256":"734de79c9ed361e8219ec02461b5215081bbf217f36d3f2f74878b5724debf7f"},{"geometry":"MultiPoint","case":3,"bytes":1032,"sha256":"14649cc69db7c7698f882d12254e99a96b69e754422897d04c1afcd345a2ba5a"},{"geometry":"MultiPoint","case":4,"bytes":352,"sha256":"89b1011698952780d3fd999f6f3cad948b43387492c59e3ae7aaa98dd7d8eff6"},{"geometry":"MultiPoint","case":5,"bytes":1032,"sha256":"96b981b3733d3703578df69f660791afe142363bbb53d43f0fb526f63d7ea55f"},{"geometry":"MultiPoint","case":6,"bytes":352,"sha256":"3f1d8a1800f045faab1cecb56705ecb3a4b025a700b19f2c07367785c8e64d3c"},{"geometry":"MultiPoint","case":7,"bytes":1032,"sha256":"3606931cb7c65fcdca5cd43248008b3ea51a6797941ed8c7b096e7bb12d84883"},{"geometry":"MultiPoint","case":8,"bytes":352,"sha256":"2689f42e1df9d7cbefd87617df4f683a99da3735a989cde03aba2ed6a65b9bdd"},{"geometry":"MultiPoint","case":9,"bytes":808,"sha256":"4d3061021c1d8bdabfb3ae9e10b8b131b67c2082bec45800385968d802726350"},{"geometry":"MultiPoint","case":10,"bytes":256,"sha256":"993c2520de3f049f7ebe061280cc44eb20df6f2ccf05b18f133bf086c79dbb2f"},{"geometry":"MultiPoint","case":11,"bytes":656,"sha256":"4dacad54c974a9588e7282a6ccab74f3468363fe52abd4eb9288af3fba859cfa"},{"geometry":"MultiPoint","case":12,"bytes":656,"sha256":"aa08f4f5a8a258f074b10289d5aea3c258fd1afc52296365caee91d198fb46e0"},{"geometry":"MultiPoint","case":13,"bytes":1952,"sha256":"c09040009882a989079daf61a9c28de1f7b4c0e12aba0ef80d95bc1e31489ad4"},{"geometry":"Point","tier":"Cluster","case":"reduced-0","bytes":904,"sha256":"d8320ed7399f92d88d580960b6e11615dc9354978bbdc0c87ae1170785dd81b4"},{"geometry":"Point","tier":"Cluster","case":"reduced-1","bytes":131536,"sha256":"5fbf580541da296256c230def92a1fed86de1ca6fef0afadc234cbb459e6f033"},{"geometry":"Point","tier":"Cluster","case":"reduced-2","bytes":131536,"sha256":"fffa9cfbb01f3a9be27941fbe43ccc8538ba4ab859778fa77963641c4e99eeae"},{"geometry":"Point","tier":"Cluster","case":"reduced-3","bytes":131536,"sha256":"b13a99cbd8d44666bee7c06345bbc2a35ed3c09263f5e03946376b2ee41b9053"},{"geometry":"Point","tier":"Cluster","case":"reduced-4","bytes":131536,"sha256":"9d9734f252fb265fee59c31543284d2330e7bb05d7f623b5753a9ff4eed317b6"},{"geometry":"Point","tier":"Cluster","case":"reduced-5","bytes":131536,"sha256":"d9eda144ae3a9e6f027e3e149c4a8a909d6d91a9dbe7ee17f2325df771675663"},{"geometry":"Point","tier":"Cluster","case":"reduced-6","bytes":131536,"sha256":"4c3e51adcbf3be265e5d220d59ca37bd9abb58ca491f88b57a80370b54d4d1ac"},{"geometry":"Point","tier":"Cluster","case":"reduced-7","bytes":131536,"sha256":"567cf8c0e5ecba1ff473ce2800c801f46222cb2f69f28fa438dd04b2e94ff562"},{"geometry":"Point","tier":"Cluster","case":"reduced-8","bytes":131536,"sha256":"9e14067411ecc198bf005afc6a3326f370e13f169e956b93fff84485a1458009"},{"geometry":"Point","tier":"Cluster","case":"reduced-9","bytes":288,"sha256":"f5958356aa56d26844203b12c924b074f304ccce78d68b3a657e4312325ea646"},{"geometry":"Point","tier":"Density","case":"reduced-0","bytes":948,"sha256":"dc54a187737e103ce79244a3b7a11dd42ff0dc0e1d2ddda0ba0bd5a56a0dc592"},{"geometry":"Point","tier":"Density","case":"reduced-1","bytes":131536,"sha256":"b38e712e2265a83aeb651e1ddd9fec4509237ff53e0da7b405df0c0f601424ec"},{"geometry":"Point","tier":"Density","case":"reduced-2","bytes":131536,"sha256":"8f3c2f000b257db444f9591295070d57274ee8549c6ed1bc16cc51fb3eb8b3ce"},{"geometry":"Point","tier":"Density","case":"reduced-3","bytes":131536,"sha256":"270d1f4e2b7cf31ef7a6de0bb263e2006a31cf3504a13158490fbc69ee2ec099"},{"geometry":"Point","tier":"Density","case":"reduced-4","bytes":131536,"sha256":"f1fa76e82cd535f5b51a361ab35f2347f9a667ccf438c9610136330a5c93f903"},{"geometry":"Point","tier":"Density","case":"reduced-5","bytes":131536,"sha256":"c295a2d4e50c53d2f5dd60395a40ab75dbad9b5cb33c38ce2cef8355518c8f0e"},{"geometry":"Point","tier":"Density","case":"reduced-6","bytes":131536,"sha256":"e1db8d50919109ad587cddfe02fa831993fbdad09922ce079b27ff493f1a2e45"},{"geometry":"Point","tier":"Density","case":"reduced-7","bytes":131536,"sha256":"3ce12717c25c481568fa27751d04d50d4453b486424e7e5ef278695e69201d8d"},{"geometry":"Point","tier":"Density","case":"reduced-8","bytes":131536,"sha256":"4ebbc2ebea467ac1893c28bd5ac29d7a1a53cd4a5fd467f91357cba4667fcc3f"},{"geometry":"Point","tier":"Density","case":"reduced-9","bytes":288,"sha256":"594aff648cd89c0f488447dcab1fbb3c8502516420a5c07aa4e3285dafe6d023"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-0","bytes":904,"sha256":"619268a9ab8d8302df5196ac82468684d97189fbd834c96c10bf8444d60f1261"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-1","bytes":131536,"sha256":"1d087c14d3cdd7ebbce4b611dbe936f47867494d5e6abb63012c60ffdded07e3"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-2","bytes":131536,"sha256":"c7de11a7d713580d1c37e0d4aa9ac8bde406a877e0589a5e2d479495b994b856"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-3","bytes":131536,"sha256":"56b4a768d9a94ced155999de7bac55bb6ed788e4059058b815c61d9609ae9254"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-4","bytes":131536,"sha256":"f643ca95b306c1073f0c1255d34cf47be9f6c8ca6ca9f4ecd55aed15b2ab1cdd"},{"geometry":"MultiPoint","tier":"Cluster","case":"reduced-5","bytes":288,"sha256":"13ee44447cbb445c9aea25b74dde9609b3e0ae1bcc6e10a3aedb65c24bdab62f"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-0","bytes":948,"sha256":"07daa46a645ca3438bd0332578645317bb5588496c256e2cfbf79317494c267b"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-1","bytes":131536,"sha256":"0c9426f0eaf79aa435a74de0b907ce6fe4ce80ac2aea697609e8214bffa4bd62"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-2","bytes":131536,"sha256":"70d8104b42f1cb47e257c6412451029b6e3fded6058bc5590cc330ed2f185237"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-3","bytes":131536,"sha256":"6dbe626d6a2c68fa1f238b5bdd177e523e3b600652e03cab4e6841b337dafd74"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-4","bytes":131536,"sha256":"e10ac4ec1d56e8963a55700bfb478c56b86c47d4f9f5849d7cb483b7a923ac0b"},{"geometry":"MultiPoint","tier":"Density","case":"reduced-5","bytes":288,"sha256":"66c7edb23f61a5f4d06d218986ed286754439d68c6508d7432913a0c53f636b7"}],"claims":["ordinary None v1 bytes/native-WASM parity","selected canonical/selected hierarchy exact Scene+metadata+XYSE and exact hit bytes","full-u64 duplicate/null-row intent and signed-i64 time","explicit34 link and privateScope mismatch reject","unscoped43 Unsupported preserves issuedState","five independent lanes/State→Query→Data same-handle replacement","rows and frozen full intent after Source/lane disposal","two-pass selected cluster/density counts identical canonical output at32769/32770vertices","complete paged cell membership deduplicates MultiPoint original rows after Source/lane disposal"],"limitations":["no selected massive latency or1B execution claim","no public live hierarchy host controller","no browser WebGL/OS/GPU ledger claim"]}
+TAP version 13
+# Subtest: native hierarchy exact Scene, independent frame/Rows/retain after disposal
+ok 1 - native hierarchy exact Scene, independent frame/Rows/retain after disposal
+  ---
+  duration_ms: 89.269754
+  type: 'test'
+  ...
+# Subtest: native mutated callback authority settles exact ACK and failed query retains old frame
+ok 2 - native mutated callback authority settles exact ACK and failed query retains old frame
+  ---
+  duration_ms: 10.859785
+  type: 'test'
+  ...
+# Subtest: native cancel pending write awaits callback settlement and exact private ACK
+ok 3 - native cancel pending write awaits callback settlement and exact private ACK
+  ---
+  duration_ms: 21.543121
+  type: 'test'
+  ...
+# Subtest: native local budget/forged ticket rejects and exact fallback retains current frame
+ok 4 - native local budget/forged ticket rejects and exact fallback retains current frame
+  ---
+  duration_ms: 5.809874
+  type: 'test'
+  ...
+# Subtest: wasm hierarchy exact Scene, independent frame/Rows/retain after disposal
+ok 5 - wasm hierarchy exact Scene, independent frame/Rows/retain after disposal
+  ---
+  duration_ms: 97.850063
+  type: 'test'
+  ...
+# Subtest: wasm mutated callback authority settles exact ACK and failed query retains old frame
+ok 6 - wasm mutated callback authority settles exact ACK and failed query retains old frame
+  ---
+  duration_ms: 369.523341
+  type: 'test'
+  ...
+# Subtest: wasm cancel pending write awaits callback settlement and exact private ACK
+ok 7 - wasm cancel pending write awaits callback settlement and exact private ACK
+  ---
+  duration_ms: 408.156734
+  type: 'test'
+  ...
+# Subtest: wasm local budget/forged ticket rejects and exact fallback retains current frame
+ok 8 - wasm local budget/forged ticket rejects and exact fallback retains current frame
+  ---
+  duration_ms: 28.897443
+  type: 'test'
+  ...
+# Subtest: native cancelled canonical read settles before ACK and terminal reply cannot publish
+ok 9 - native cancelled canonical read settles before ACK and terminal reply cannot publish
+  ---
+  duration_ms: 27.294153
+  type: 'test'
+  ...
+# Subtest: wasm cancelled canonical read settles before ACK and terminal reply cannot publish
+ok 10 - wasm cancelled canonical read settles before ACK and terminal reply cannot publish
+  ---
+  duration_ms: 68.648174
+  type: 'test'
+  ...
+# Subtest: native authentic selected Scene returns typed Unsupported and preserves old frame
+ok 11 - native authentic selected Scene returns typed Unsupported and preserves old frame
+  ---
+  duration_ms: 5.162792
+  type: 'test'
+  ...
+# Subtest: wasm authentic selected Scene returns typed Unsupported and preserves old frame
+ok 12 - wasm authentic selected Scene returns typed Unsupported and preserves old frame
+  ---
+  duration_ms: 239.419505
+  type: 'test'
+  ...
+# Subtest: native Point reduced complete membership/full IDs/nulls after owner disposal
+ok 13 - native Point reduced complete membership/full IDs/nulls after owner disposal
+  ---
+  duration_ms: 255.961775
+  type: 'test'
+  ...
+# Subtest: native MultiPoint reduced complete membership/full IDs/nulls after owner disposal
+ok 14 - native MultiPoint reduced complete membership/full IDs/nulls after owner disposal
+  ---
+  duration_ms: 186.105705
+  type: 'test'
+  ...
+# Subtest: wasm Point reduced complete membership/full IDs/nulls after owner disposal
+ok 15 - wasm Point reduced complete membership/full IDs/nulls after owner disposal
+  ---
+  duration_ms: 333.662517
+  type: 'test'
+  ...
+# Subtest: wasm MultiPoint reduced complete membership/full IDs/nulls after owner disposal
+ok 16 - wasm MultiPoint reduced complete membership/full IDs/nulls after owner disposal
+  ---
+  duration_ms: 229.46301
+  type: 'test'
+  ...
+# Subtest: two actual wasm modules with colliding Data handles cannot cross source authority
+ok 17 - two actual wasm modules with colliding Data handles cannot cross source authority
+  ---
+  duration_ms: 35.526031
+  type: 'test'
+  ...
+# Subtest: native failed Scene and hierarchy disposal retries once after coalesced pending cleanup
+ok 18 - native failed Scene and hierarchy disposal retries once after coalesced pending cleanup
+  ---
+  duration_ms: 2.959684
+  type: 'test'
+  ...
+# Subtest: wasm failed Scene and hierarchy disposal retries once after coalesced pending cleanup
+ok 19 - wasm failed Scene and hierarchy disposal retries once after coalesced pending cleanup
+  ---
+  duration_ms: 158.313818
+  type: 'test'
+  ...
+# Subtest: native public static host accepts independently retained hierarchy frame
+ok 20 - native public static host accepts independently retained hierarchy frame
+  ---
+  duration_ms: 40.795843
+  type: 'test'
+  ...
+# Subtest: strict hierarchy reply parser rejects reserved bytes and native/wasm packets match
+ok 21 - strict hierarchy reply parser rejects reserved bytes and native/wasm packets match
+  ---
+  duration_ms: 0.377222
+  type: 'test'
+  ...
+# Subtest: native: exact45 replay survives parent disposal and does not invent a Query
+ok 22 - native: exact45 replay survives parent disposal and does not invent a Query
+  ---
+  duration_ms: 77.845711
+  type: 'test'
+  ...
+# Subtest: native: exact45 replay survives parent disposal and does not invent a Query
+ok 23 - native: exact45 replay survives parent disposal and does not invent a Query
+  ---
+  duration_ms: 6.955144
+  type: 'test'
+  ...
+# Subtest: native: lost successfulConfirm retries47 before any IO, with whole recovery singleflight
+ok 24 - native: lost successfulConfirm retries47 before any IO, with whole recovery singleflight
+  ---
+  duration_ms: 6.227804
+  type: 'test'
+  ...
+# Subtest: native: lost Query10 exact retirement blocks higher nonce until cleanup; MemberData survives
+ok 25 - native: lost Query10 exact retirement blocks higher nonce until cleanup; MemberData survives
+  ---
+  duration_ms: 6.785603
+  type: 'test'
+  ...
+# Subtest: wasm: exact45 replay survives parent disposal and does not invent a Query
+ok 26 - wasm: exact45 replay survives parent disposal and does not invent a Query
+  ---
+  duration_ms: 106.572468
+  type: 'test'
+  ...
+# Subtest: wasm: exact45 replay survives parent disposal and does not invent a Query
+ok 27 - wasm: exact45 replay survives parent disposal and does not invent a Query
+  ---
+  duration_ms: 373.331585
+  type: 'test'
+  ...
+# Subtest: wasm: lost successfulConfirm retries47 before any IO, with whole recovery singleflight
+ok 28 - wasm: lost successfulConfirm retries47 before any IO, with whole recovery singleflight
+  ---
+  duration_ms: 32.480673
+  type: 'test'
+  ...
+# Subtest: wasm: lost Query10 exact retirement blocks higher nonce until cleanup; MemberData survives
+ok 29 - wasm: lost Query10 exact retirement blocks higher nonce until cleanup; MemberData survives
+  ---
+  duration_ms: 28.066883
+  type: 'test'
+  ...
+# Subtest: native: recovery coalesces callbacks and closing holds loan until exactACK
+ok 30 - native: recovery coalesces callbacks and closing holds loan until exactACK
+  ---
+  duration_ms: 13.534728
+  type: 'test'
+  ...
+# Subtest: wasm: recovery coalesces callbacks and closing holds loan until exactACK
+ok 31 - wasm: recovery coalesces callbacks and closing holds loan until exactACK
+  ---
+  duration_ms: 35.277405
+  type: 'test'
+  ...
+# Subtest: native: consumed45 release rejection keeps convertedData cleanup retryable
+ok 32 - native: consumed45 release rejection keeps convertedData cleanup retryable
+  ---
+  duration_ms: 4.610794
+  type: 'test'
+  ...
+# Subtest: native: continuation45 recovers from privatePage after every original producer is gone
+ok 33 - native: continuation45 recovers from privatePage after every original producer is gone
+  ---
+  duration_ms: 4.719178
+  type: 'test'
+  ...
+# Subtest: wasm: consumed45 release rejection keeps convertedData cleanup retryable
+ok 34 - wasm: consumed45 release rejection keeps convertedData cleanup retryable
+  ---
+  duration_ms: 32.957931
+  type: 'test'
+  ...
+# Subtest: wasm: continuation45 recovers from privatePage after every original producer is gone
+ok 35 - wasm: continuation45 recovers from privatePage after every original producer is gone
+  ---
+  duration_ms: 24.80982
+  type: 'test'
+  ...
+# Subtest: recovered complete XYOM packet native/WASM parity
+ok 36 - recovered complete XYOM packet native/WASM parity
+  ---
+  duration_ms: 0.302452
+  type: 'test'
+  ...
+# Subtest: native: lostoriginal45 already retired confirms target0 and never resurrects Query
+ok 37 - native: lostoriginal45 already retired confirms target0 and never resurrects Query
+  ---
+  duration_ms: 6.439289
+  type: 'test'
+  ...
+# Subtest: wasm: lostoriginal45 already retired confirms target0 and never resurrects Query
+ok 38 - wasm: lostoriginal45 already retired confirms target0 and never resurrects Query
+  ---
+  duration_ms: 37.493232
+  type: 'test'
+  ...
+# Subtest: native: full-row continuation survives all producer disposal, duplicate IDs and MultiPoint counts
+ok 39 - native: full-row continuation survives all producer disposal, duplicate IDs and MultiPoint counts
+  ---
+  duration_ms: 92.974269
+  type: 'test'
+  ...
+# Subtest: native: signed-time predicate remains bound through domain pages
+ok 40 - native: signed-time predicate remains bound through domain pages
+  ---
+  duration_ms: 60.119628
+  type: 'test'
+  ...
+# Subtest: native: lost46 probes the known owner once and never repeats conversion
+ok 41 - native: lost46 probes the known owner once and never repeats conversion
+  ---
+  duration_ms: 12.449276
+  type: 'test'
+  ...
+# Subtest: native: lost45 exact cleanup blocks reallocation while old frame stays valid
+ok 42 - native: lost45 exact cleanup blocks reallocation while old frame stays valid
+  ---
+  duration_ms: 8.99548
+  type: 'test'
+  ...
+# Subtest: native: callback mutation/backing capacity rejects before supply, exactACK then recovery
+ok 43 - native: callback mutation/backing capacity rejects before supply, exactACK then recovery
+  ---
+  duration_ms: 4.498562
+  type: 'test'
+  ...
+# Subtest: native: read cancellation waits callback settlement before ACK and preserves old paint
+ok 44 - native: read cancellation waits callback settlement before ACK and preserves old paint
+  ---
+  duration_ms: 4.517151
+  type: 'test'
+  ...
+# Subtest: native: rejected ACK and Data cleanup retain exact retry ownership
+ok 45 - native: rejected ACK and Data cleanup retain exact retry ownership
+  ---
+  duration_ms: 6.027944
+  type: 'test'
+  ...
+# Subtest: native: resolved rejected or malformed terminal disposal never closes a live owner
+ok 46 - native: resolved rejected or malformed terminal disposal never closes a live owner
+  ---
+  duration_ms: 4.751493
+  type: 'test'
+  ...
+# Subtest: native: lost successful ACK cancels without inventing pending-loan release
+ok 47 - native: lost successful ACK cancels without inventing pending-loan release
+  ---
+  duration_ms: 5.900953
+  type: 'test'
+  ...
+# Subtest: native: eight Data pressure leaves completed Query for exact46 retry
+ok 48 - native: eight Data pressure leaves completed Query for exact46 retry
+  ---
+  duration_ms: 12.928484
+  type: 'test'
+  ...
+# Subtest: native: public packet mutation and forged owners cannot mint continuation
+ok 49 - native: public packet mutation and forged owners cannot mint continuation
+  ---
+  duration_ms: 3.789804
+  type: 'test'
+  ...
+# Subtest: native: known46 preparation coalesces; dispose waits converted Data read settlement
+ok 50 - native: known46 preparation coalesces; dispose waits converted Data read settlement
+  ---
+  duration_ms: 7.292978
+  type: 'test'
+  ...
+# Subtest: native: inspection copies are bounded and cannot edit canonical records; two-read quota stays exact
+ok 51 - native: inspection copies are bounded and cannot edit canonical records; two-read quota stays exact
+  ---
+  duration_ms: 7.738092
+  type: 'test'
+  ...
+# Subtest: wasm: full-row continuation survives all producer disposal, duplicate IDs and MultiPoint counts
+ok 52 - wasm: full-row continuation survives all producer disposal, duplicate IDs and MultiPoint counts
+  ---
+  duration_ms: 123.347815
+  type: 'test'
+  ...
+# Subtest: wasm: signed-time predicate remains bound through domain pages
+ok 53 - wasm: signed-time predicate remains bound through domain pages
+  ---
+  duration_ms: 418.969394
+  type: 'test'
+  ...
+# Subtest: wasm: lost46 probes the known owner once and never repeats conversion
+ok 54 - wasm: lost46 probes the known owner once and never repeats conversion
+  ---
+  duration_ms: 49.797964
+  type: 'test'
+  ...
+# Subtest: wasm: lost45 exact cleanup blocks reallocation while old frame stays valid
+ok 55 - wasm: lost45 exact cleanup blocks reallocation while old frame stays valid
+  ---
+  duration_ms: 33.155444
+  type: 'test'
+  ...
+# Subtest: wasm: callback mutation/backing capacity rejects before supply, exactACK then recovery
+ok 56 - wasm: callback mutation/backing capacity rejects before supply, exactACK then recovery
+  ---
+  duration_ms: 21.340384
+  type: 'test'
+  ...
+# Subtest: wasm: read cancellation waits callback settlement before ACK and preserves old paint
+ok 57 - wasm: read cancellation waits callback settlement before ACK and preserves old paint
+  ---
+  duration_ms: 32.777208
+  type: 'test'
+  ...
+# Subtest: wasm: rejected ACK and Data cleanup retain exact retry ownership
+ok 58 - wasm: rejected ACK and Data cleanup retain exact retry ownership
+  ---
+  duration_ms: 29.133513
+  type: 'test'
+  ...
+# Subtest: wasm: resolved rejected or malformed terminal disposal never closes a live owner
+ok 59 - wasm: resolved rejected or malformed terminal disposal never closes a live owner
+  ---
+  duration_ms: 90.930055
+  type: 'test'
+  ...
+# Subtest: wasm: lost successful ACK cancels without inventing pending-loan release
+ok 60 - wasm: lost successful ACK cancels without inventing pending-loan release
+  ---
+  duration_ms: 26.104883
+  type: 'test'
+  ...
+# Subtest: wasm: eight Data pressure leaves completed Query for exact46 retry
+ok 61 - wasm: eight Data pressure leaves completed Query for exact46 retry
+  ---
+  duration_ms: 21.616026
+  type: 'test'
+  ...
+# Subtest: wasm: public packet mutation and forged owners cannot mint continuation
+ok 62 - wasm: public packet mutation and forged owners cannot mint continuation
+  ---
+  duration_ms: 23.867604
+  type: 'test'
+  ...
+# Subtest: wasm: known46 preparation coalesces; dispose waits converted Data read settlement
+ok 63 - wasm: known46 preparation coalesces; dispose waits converted Data read settlement
+  ---
+  duration_ms: 32.050908
+  type: 'test'
+  ...
+# Subtest: wasm: inspection copies are bounded and cannot edit canonical records; two-read quota stays exact
+ok 64 - wasm: inspection copies are bounded and cannot edit canonical records; two-read quota stays exact
+  ---
+  duration_ms: 27.075173
+  type: 'test'
+  ...
+# Subtest: complete normalized native/WASM multi-page XYOM bytes match
+ok 65 - complete normalized native/WASM multi-page XYOM bytes match
+  ---
+  duration_ms: 0.675077
+  type: 'test'
+  ...
+# Subtest: native: lost28 exact recovery then same-handle29
+ok 66 - native: lost28 exact recovery then same-handle29
+  ---
+  duration_ms: 72.821809
+  type: 'test'
+  ...
+# Subtest: native: lost28 exact recovery then same-handle29
+ok 67 - native: lost28 exact recovery then same-handle29
+  ---
+  duration_ms: 7.243744
+  type: 'test'
+  ...
+# Subtest: native: lost47 confirmation retries47 without a second28
+ok 68 - native: lost47 confirmation retries47 without a second28
+  ---
+  duration_ms: 4.306794
+  type: 'test'
+  ...
+# Subtest: native: lost26 and oldest-target lost10 after newer nonce
+ok 69 - native: lost26 and oldest-target lost10 after newer nonce
+  ---
+  duration_ms: 10.297041
+  type: 'test'
+  ...
+# Subtest: native: lost29 and oldest-target lost10 after newer nonce
+ok 70 - native: lost29 and oldest-target lost10 after newer nonce
+  ---
+  duration_ms: 13.740986
+  type: 'test'
+  ...
+# Subtest: native: failed29 budget admission keeps completedQuery retryable
+ok 71 - native: failed29 budget admission keeps completedQuery retryable
+  ---
+  duration_ms: 7.681488
+  type: 'test'
+  ...
+# Subtest: native: five views publish at16 handles and originals remain usable
+ok 72 - native: five views publish at16 handles and originals remain usable
+  ---
+  duration_ms: 22.44713
+  type: 'test'
+  ...
+# Subtest: native: transfer detachment leaves exact allocation recovery request intact
+ok 73 - native: transfer detachment leaves exact allocation recovery request intact
+  ---
+  duration_ms: 7.799827
+  type: 'test'
+  ...
+# Subtest: native: onIssued guard precedes28 and exclusive helper never aliases current
+ok 74 - native: onIssued guard precedes28 and exclusive helper never aliases current
+  ---
+  duration_ms: 12.045855
+  type: 'test'
+  ...
+# Subtest: wasm: lost28 exact recovery then same-handle29
+ok 75 - wasm: lost28 exact recovery then same-handle29
+  ---
+  duration_ms: 146.615964
+  type: 'test'
+  ...
+# Subtest: wasm: lost28 exact recovery then same-handle29
+ok 76 - wasm: lost28 exact recovery then same-handle29
+  ---
+  duration_ms: 356.321744
+  type: 'test'
+  ...
+# Subtest: wasm: lost47 confirmation retries47 without a second28
+ok 77 - wasm: lost47 confirmation retries47 without a second28
+  ---
+  duration_ms: 38.744947
+  type: 'test'
+  ...
+# Subtest: wasm: lost26 and oldest-target lost10 after newer nonce
+ok 78 - wasm: lost26 and oldest-target lost10 after newer nonce
+  ---
+  duration_ms: 45.473451
+  type: 'test'
+  ...
+# Subtest: wasm: lost29 and oldest-target lost10 after newer nonce
+ok 79 - wasm: lost29 and oldest-target lost10 after newer nonce
+  ---
+  duration_ms: 53.521702
+  type: 'test'
+  ...
+# Subtest: wasm: failed29 budget admission keeps completedQuery retryable
+ok 80 - wasm: failed29 budget admission keeps completedQuery retryable
+  ---
+  duration_ms: 43.897777
+  type: 'test'
+  ...
+# Subtest: wasm: five views publish at16 handles and originals remain usable
+ok 81 - wasm: five views publish at16 handles and originals remain usable
+  ---
+  duration_ms: 41.041561
+  type: 'test'
+  ...
+# Subtest: wasm: transfer detachment leaves exact allocation recovery request intact
+ok 82 - wasm: transfer detachment leaves exact allocation recovery request intact
+  ---
+  duration_ms: 19.987646
+  type: 'test'
+  ...
+# Subtest: wasm: onIssued guard precedes28 and exclusive helper never aliases current
+ok 83 - wasm: onIssued guard precedes28 and exclusive helper never aliases current
+  ---
+  duration_ms: 31.844686
+  type: 'test'
+  ...
+# Subtest: native: lost original retired allocation settles target0 before next nonce
+ok 84 - native: lost original retired allocation settles target0 before next nonce
+  ---
+  duration_ms: 12.636573
+  type: 'test'
+  ...
+# Subtest: native: lost ReleaseBirth ACK retries without secondData10
+ok 85 - native: lost ReleaseBirth ACK retries without secondData10
+  ---
+  duration_ms: 2.883546
+  type: 'test'
+  ...
+# Subtest: native: uncertain cancellation status after33-like allocation remains exact recoverable
+ok 86 - native: uncertain cancellation status after33-like allocation remains exact recoverable
+  ---
+  duration_ms: 3.205439
+  type: 'test'
+  ...
+# Subtest: wasm: lost original retired allocation settles target0 before next nonce
+ok 87 - wasm: lost original retired allocation settles target0 before next nonce
+  ---
+  duration_ms: 70.006704
+  type: 'test'
+  ...
+# Subtest: wasm: lost ReleaseBirth ACK retries without secondData10
+ok 88 - wasm: lost ReleaseBirth ACK retries without secondData10
+  ---
+  duration_ms: 24.622342
+  type: 'test'
+  ...
+# Subtest: wasm: uncertain cancellation status after33-like allocation remains exact recoverable
+ok 89 - wasm: uncertain cancellation status after33-like allocation remains exact recoverable
+  ---
+  duration_ms: 29.192976
+  type: 'test'
+  ...
+# Subtest: native: retired unknown27 cannot replace nonce before strict ReleaseBirth ACK
+ok 90 - native: retired unknown27 cannot replace nonce before strict ReleaseBirth ACK
+  ---
+  duration_ms: 3.106786
+  type: 'test'
+  ...
+# Subtest: native: whole Frame recovery coalesces read and retained membership survives original disposal
+ok 91 - native: whole Frame recovery coalesces read and retained membership survives original disposal
+  ---
+  duration_ms: 5.315431
+  type: 'test'
+  ...
+# Subtest: wasm: retired unknown27 cannot replace nonce before strict ReleaseBirth ACK
+ok 92 - wasm: retired unknown27 cannot replace nonce before strict ReleaseBirth ACK
+  ---
+  duration_ms: 15.568334
+  type: 'test'
+  ...
+# Subtest: wasm: whole Frame recovery coalesces read and retained membership survives original disposal
+ok 93 - wasm: whole Frame recovery coalesces read and retained membership survives original disposal
+  ---
+  duration_ms: 29.236088
+  type: 'test'
+  ...
+# Subtest: native: whole Index recovery is singleflight and close waits canonical chunk ACK (false)
+ok 94 - native: whole Index recovery is singleflight and close waits canonical chunk ACK (false)
+  ---
+  duration_ms: 7.335692
+  type: 'test'
+  ...
+# Subtest: native: whole Index recovery is singleflight and close waits canonical chunk ACK (true)
+ok 95 - native: whole Index recovery is singleflight and close waits canonical chunk ACK (true)
+  ---
+  duration_ms: 4.293533
+  type: 'test'
+  ...
+# Subtest: native: failed post29 publication cleanup remains on privately issued closed Query
+ok 96 - native: failed post29 publication cleanup remains on privately issued closed Query
+  ---
+  duration_ms: 4.161862
+  type: 'test'
+  ...
+# Subtest: wasm: whole Index recovery is singleflight and close waits canonical chunk ACK (false)
+ok 97 - wasm: whole Index recovery is singleflight and close waits canonical chunk ACK (false)
+  ---
+  duration_ms: 28.21847
+  type: 'test'
+  ...
+# Subtest: wasm: whole Index recovery is singleflight and close waits canonical chunk ACK (true)
+ok 98 - wasm: whole Index recovery is singleflight and close waits canonical chunk ACK (true)
+  ---
+  duration_ms: 17.084634
+  type: 'test'
+  ...
+# Subtest: wasm: failed post29 publication cleanup remains on privately issued closed Query
+ok 99 - wasm: failed post29 publication cleanup remains on privately issued closed Query
+  ---
+  duration_ms: 18.489426
+  type: 'test'
+  ...
+# Subtest: native: disposing recovering Frame waits read23 and fences publication
+ok 100 - native: disposing recovering Frame waits read23 and fences publication
+  ---
+  duration_ms: 7.801191
+  type: 'test'
+  ...
+# Subtest: wasm: disposing recovering Frame waits read23 and fences publication
+ok 101 - wasm: disposing recovering Frame waits read23 and fences publication
+  ---
+  duration_ms: 15.870952
+  type: 'test'
+  ...
+# Subtest: native: lost Forget ACK is retried without Data disposal or allocation
+ok 102 - native: lost Forget ACK is retried without Data disposal or allocation
+  ---
+  duration_ms: 3.025414
+  type: 'test'
+  ...
+# Subtest: wasm: lost Forget ACK is retried without Data disposal or allocation
+ok 103 - wasm: lost Forget ACK is retried without Data disposal or allocation
+  ---
+  duration_ms: 11.089334
+  type: 'test'
+  ...
+# Subtest: native: Query publishes once and recover cannot resurrect its closed phase
+ok 104 - native: Query publishes once and recover cannot resurrect its closed phase
+  ---
+  duration_ms: 3.031511
+  type: 'test'
+  ...
+# Subtest: wasm: Query publishes once and recover cannot resurrect its closed phase
+ok 105 - wasm: Query publishes once and recover cannot resurrect its closed phase
+  ---
+  duration_ms: 21.751488
+  type: 'test'
+  ...
+# Subtest: native: canonical retained-copy hook captures issued guard before26
+ok 106 - native: canonical retained-copy hook captures issued guard before26
+  ---
+  duration_ms: 2.814048
+  type: 'test'
+  ...
+# Subtest: wasm: canonical retained-copy hook captures issued guard before26
+ok 107 - wasm: canonical retained-copy hook captures issued guard before26
+  ---
+  duration_ms: 12.692481
+  type: 'test'
+  ...
+# Subtest: native: resolved Forget22 does not discard private cleanup descriptor
+ok 108 - native: resolved Forget22 does not discard private cleanup descriptor
+  ---
+  duration_ms: 2.605513
+  type: 'test'
+  ...
+# Subtest: wasm: resolved Forget22 does not discard private cleanup descriptor
+ok 109 - wasm: resolved Forget22 does not discard private cleanup descriptor
+  ---
+  duration_ms: 17.417132
+  type: 'test'
+  ...
+# Subtest: native: initial retained publication close waits read23 and never reattaches freed Data
+ok 110 - native: initial retained publication close waits read23 and never reattaches freed Data
+  ---
+  duration_ms: 6.389502
+  type: 'test'
+  ...
+# Subtest: native: canonical disposal/data dispatch ignores public edits for every authentic kind
+ok 111 - native: canonical disposal/data dispatch ignores public edits for every authentic kind
+  ---
+  duration_ms: 2.175238
+  type: 'test'
+  ...
+# Subtest: wasm: initial retained publication close waits read23 and never reattaches freed Data
+ok 112 - wasm: initial retained publication close waits read23 and never reattaches freed Data
+  ---
+  duration_ms: 15.990128
+  type: 'test'
+  ...
+# Subtest: wasm: canonical disposal/data dispatch ignores public edits for every authentic kind
+ok 113 - wasm: canonical disposal/data dispatch ignores public edits for every authentic kind
+  ---
+  duration_ms: 10.150784
+  type: 'test'
+  ...
+# Subtest: native: authentic host inspection uses one private admitted packet copy
+ok 114 - native: authentic host inspection uses one private admitted packet copy
+  ---
+  duration_ms: 3.594581
+  type: 'test'
+  ...
+# Subtest: wasm: authentic host inspection uses one private admitted packet copy
+ok 115 - wasm: authentic host inspection uses one private admitted packet copy
+  ---
+  duration_ms: 12.287455
+  type: 'test'
+  ...
+# Subtest: native overview rejects full selected authority atomically and before typed dispatch
+ok 116 - native overview rejects full selected authority atomically and before typed dispatch
+  ---
+  duration_ms: 85.817939
+  type: 'test'
+  ...
+# Subtest: native overview rejects empty selected authority atomically and before typed dispatch
+ok 117 - native overview rejects empty selected authority atomically and before typed dispatch
+  ---
+  duration_ms: 7.738436
+  type: 'test'
+  ...
+# Subtest: wasm overview rejects full selected authority atomically and before typed dispatch
+ok 118 - wasm overview rejects full selected authority atomically and before typed dispatch
+  ---
+  duration_ms: 88.666936
+  type: 'test'
+  ...
+# Subtest: wasm overview rejects empty selected authority atomically and before typed dispatch
+ok 119 - wasm overview rejects empty selected authority atomically and before typed dispatch
+  ---
+  duration_ms: 330.26493
+  type: 'test'
+  ...
+# Subtest: private issued producer survives public method edits and immutable copies survive index disposal
+ok 120 - private issued producer survives public method edits and immutable copies survive index disposal
+  ---
+  duration_ms: 86.740348
+  type: 'test'
+  ...
+# Subtest: resolved rejected Data disposal retains known handle and explicit retry succeeds
+ok 121 - resolved rejected Data disposal retains known handle and explicit retry succeeds
+  ---
+  duration_ms: 6.366558
+  type: 'test'
+  ...
+# Subtest: deferred28 admission is settled before index cleanup, with no handle-zero mutation
+ok 122 - deferred28 admission is settled before index cleanup, with no handle-zero mutation
+  ---
+  duration_ms: 4.689255
+  type: 'test'
+  ...
+# Subtest: lost28 blocks reallocation while original Data remains usable
+ok 123 - lost28 blocks reallocation while original Data remains usable
+  ---
+  duration_ms: 12.001964
+  type: 'test'
+  ...
+# Subtest: transferred wire requests never detach privately retained overview query authority
+ok 124 - transferred wire requests never detach privately retained overview query authority
+  ---
+  duration_ms: 5.782314
+  type: 'test'
+  ...
+# Subtest: rejected ACK retains exact private loan until retry; old paint and next query recover
+ok 125 - rejected ACK retains exact private loan until retry; old paint and next query recover
+  ---
+  duration_ms: 17.269338
+  type: 'test'
+  ...
+# Subtest: lost26 poisons only the issued duplicate guard; original stays valid and no allocation repeats
+ok 126 - lost26 poisons only the issued duplicate guard; original stays valid and no allocation repeats
+  ---
+  duration_ms: 12.93166
+  type: 'test'
+  ...
+# Subtest: lost27 retains builder guard; no guessed disposal and seed/other index remain valid
+ok 127 - lost27 retains builder guard; no guessed disposal and seed/other index remain valid
+  ---
+  duration_ms: 3.513533
+  type: 'test'
+  ...
+# Subtest: lost29 retains publication guard and blocks new query; old immutable Data survives
+ok 128 - lost29 retains publication guard and blocks new query; old immutable Data survives
+  ---
+  duration_ms: 16.184788
+  type: 'test'
+  ...
+# Subtest: foreign bridge and mutable public seed handle reject before allocation
+ok 129 - foreign bridge and mutable public seed handle reject before allocation
+  ---
+  duration_ms: 5.080456
+  type: 'test'
+  ...
+# Subtest: five issued views keep independent snapshots within existing Data/handle caps
+ok 130 - five issued views keep independent snapshots within existing Data/handle caps
+  ---
+  duration_ms: 9.491767
+  type: 'test'
+  ...
+# Subtest: private issued producer survives public method edits and immutable copies survive index disposal
+ok 131 - private issued producer survives public method edits and immutable copies survive index disposal
+  ---
+  duration_ms: 96.183924
+  type: 'test'
+  ...
+# Subtest: resolved rejected Data disposal retains known handle and explicit retry succeeds
+ok 132 - resolved rejected Data disposal retains known handle and explicit retry succeeds
+  ---
+  duration_ms: 307.533516
+  type: 'test'
+  ...
+# Subtest: deferred28 admission is settled before index cleanup, with no handle-zero mutation
+ok 133 - deferred28 admission is settled before index cleanup, with no handle-zero mutation
+  ---
+  duration_ms: 40.905815
+  type: 'test'
+  ...
+# Subtest: lost28 blocks reallocation while original Data remains usable
+ok 134 - lost28 blocks reallocation while original Data remains usable
+  ---
+  duration_ms: 23.262294
+  type: 'test'
+  ...
+# Subtest: transferred wire requests never detach privately retained overview query authority
+ok 135 - transferred wire requests never detach privately retained overview query authority
+  ---
+  duration_ms: 46.243198
+  type: 'test'
+  ...
+# Subtest: rejected ACK retains exact private loan until retry; old paint and next query recover
+ok 136 - rejected ACK retains exact private loan until retry; old paint and next query recover
+  ---
+  duration_ms: 25.678723
+  type: 'test'
+  ...
+# Subtest: lost26 poisons only the issued duplicate guard; original stays valid and no allocation repeats
+ok 137 - lost26 poisons only the issued duplicate guard; original stays valid and no allocation repeats
+  ---
+  duration_ms: 25.816999
+  type: 'test'
+  ...
+# Subtest: lost27 retains builder guard; no guessed disposal and seed/other index remain valid
+ok 138 - lost27 retains builder guard; no guessed disposal and seed/other index remain valid
+  ---
+  duration_ms: 40.837833
+  type: 'test'
+  ...
+# Subtest: lost29 retains publication guard and blocks new query; old immutable Data survives
+ok 139 - lost29 retains publication guard and blocks new query; old immutable Data survives
+  ---
+  duration_ms: 27.389953
+  type: 'test'
+  ...
+# Subtest: foreign bridge and mutable public seed handle reject before allocation
+ok 140 - foreign bridge and mutable public seed handle reject before allocation
+  ---
+  duration_ms: 22.695611
+  type: 'test'
+  ...
+# Subtest: five issued views keep independent snapshots within existing Data/handle caps
+ok 141 - five issued views keep independent snapshots within existing Data/handle caps
+  ---
+  duration_ms: 42.45414
+  type: 'test'
+  ...
+# Subtest: public native density composition exports immutable nonfinal receipt in six formats
+ok 142 - public native density composition exports immutable nonfinal receipt in six formats
+  ---
+  duration_ms: 128.903783
+  type: 'test'
+  ...
+# Subtest: public WASM bridge retagging cannot claim native export provenance
+ok 143 - public WASM bridge retagging cannot claim native export provenance
+  ---
+  duration_ms: 33.104022
+  type: 'test'
+  ...
+# Subtest: native explicit selected Point preserves original rows/full IDs/frozen intent
+ok 144 - native explicit selected Point preserves original rows/full IDs/frozen intent
+  ---
+  duration_ms: 72.474559
+  type: 'test'
+  ...
+# Subtest: native explicit selected MultiPoint preserves original rows/full IDs/frozen intent
+ok 145 - native explicit selected MultiPoint preserves original rows/full IDs/frozen intent
+  ---
+  duration_ms: 10.393983
+  type: 'test'
+  ...
+# Subtest: native failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner
+ok 146 - native failed44 preserves Query for confirmed retry and corrupt/lost44 releases known owner
+  ---
+  duration_ms: 27.026632
+  type: 'test'
+  ...
+# Subtest: native lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable
+ok 147 - native lost/corrupt43 keeps private recoverable query guard; State preflight remains reusable
+  ---
+  duration_ms: 18.956654
+  type: 'test'
+  ...
+# Subtest: two actual WASM modules with colliding numeric handles reject foreign State and producer before transport
+ok 148 - two actual WASM modules with colliding numeric handles reject foreign State and producer before transport
+  ---
+  duration_ms: 127.517613
+  type: 'test'
+  ...
+# Subtest: native cancelled borrowed hierarchy read settles exact private ACK before disposal
+ok 149 - native cancelled borrowed hierarchy read settles exact private ACK before disposal
+  ---
+  duration_ms: 331.194863
+  type: 'test'
+  ...
+# Subtest: native full Scene, Rows and frozen packets are retained for genuine Worker comparison
+ok 150 - native full Scene, Rows and frozen packets are retained for genuine Worker comparison
+  ---
+  duration_ms: 1.725332
+  type: 'test'
+  ...
+# Subtest: native five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas
+ok 151 - native five selected hierarchy lanes preserve independent camera/time and fit existing handle/Data quotas
+  ---
+  duration_ms: 29.296109
+  type: 'test'
+  ...
+# Subtest: native selected reduced Point preserves counts and complete exact membership after owner disposal
+ok 152 - native selected reduced Point preserves counts and complete exact membership after owner disposal
+  ---
+  duration_ms: 391.184062
+  type: 'test'
+  ...
+# Subtest: native selected reduced MultiPoint preserves counts and complete exact membership after owner disposal
+ok 153 - native selected reduced MultiPoint preserves counts and complete exact membership after owner disposal
+  ---
+  duration_ms: 299.771414
+  type: 'test'
+  ...
+# Subtest: native late publication abort with rejected cleanup retains known Data guard for retry
+ok 154 - native late publication abort with rejected cleanup retains known Data guard for retry
+  ---
+  duration_ms: 5.895412
+  type: 'test'
+  ...
+# Subtest: native pre-aborted drive and prepare remain retryable without dispatch
+ok 155 - native pre-aborted drive and prepare remain retryable without dispatch
+  ---
+  duration_ms: 4.735467
+  type: 'test'
+  ...
+# Subtest: optional explicit evidence retains complete cross-target parity hashes
+ok 156 - optional explicit evidence retains complete cross-target parity hashes
+  ---
+  duration_ms: 0.158409
+  type: 'test'
+  ...
+# Subtest: native explicit chart static host independently retains actual43 selected frame
+ok 157 - native explicit chart static host independently retains actual43 selected frame
+  ---
+  duration_ms: 41.419246
+  type: 'test'
+  ...
+# Subtest: native issued hierarchy operation captures original transport and storage
+ok 158 - native issued hierarchy operation captures original transport and storage
+  ---
+  duration_ms: 2.962507
+  type: 'test'
+  ...
+# Subtest: native onIssued throw rolls back before43 and same State remains reusable
+ok 159 - native onIssued throw rolls back before43 and same State remains reusable
+  ---
+  duration_ms: 6.122593
+  type: 'test'
+  ...
+# Subtest: native twenty distinct closed lanes reclaim43 receipts and issuer tracking
+ok 160 - native twenty distinct closed lanes reclaim43 receipts and issuer tracking
+  ---
+  duration_ms: 8.650129
+  type: 'test'
+  ...
+# Subtest: raw WASM callback cannot authenticate43 and never turns uncertainty into State restoration
+ok 161 - raw WASM callback cannot authenticate43 and never turns uncertainty into State restoration
+  ---
+  duration_ms: 45.248622
+  type: 'test'
+  ...
+# Subtest: native lost33 recovers same private State and retryable cleanup
+ok 162 - native lost33 recovers same private State and retryable cleanup
+  ---
+  duration_ms: 70.949276
+  type: 'test'
+  ...
+# Subtest: native corrupt33 recovers same private State and retryable cleanup
+ok 163 - native corrupt33 recovers same private State and retryable cleanup
+  ---
+  duration_ms: 4.823068
+  type: 'test'
+  ...
+# Subtest: wasm lost33 recovers same private State and retryable cleanup
+ok 164 - wasm lost33 recovers same private State and retryable cleanup
+  ---
+  duration_ms: 57.616307
+  type: 'test'
+  ...
+# Subtest: wasm corrupt33 recovers same private State and retryable cleanup
+ok 165 - wasm corrupt33 recovers same private State and retryable cleanup
+  ---
+  duration_ms: 333.44999
+  type: 'test'
+  ...
+# Subtest: native nonce attempt cleanup before dispatch allocates once and consumes tombstone
+ok 166 - native nonce attempt cleanup before dispatch allocates once and consumes tombstone
+  ---
+  duration_ms: 4.804652
+  type: 'test'
+  ...
+# Subtest: wasm nonce attempt cleanup before dispatch allocates once and consumes tombstone
+ok 167 - wasm nonce attempt cleanup before dispatch allocates once and consumes tombstone
+  ---
+  duration_ms: 16.293781
+  type: 'test'
+  ...
+# Subtest: native lost actual10 is settled by retired nonce receipt without a second State
+ok 168 - native lost actual10 is settled by retired nonce receipt without a second State
+  ---
+  duration_ms: 10.495581
+  type: 'test'
+  ...
+# Subtest: wasm lost actual10 is settled by retired nonce receipt without a second State
+ok 169 - wasm lost actual10 is settled by retired nonce receipt without a second State
+  ---
+  duration_ms: 51.553729
+  type: 'test'
+  ...
+# Subtest: native five scopes and five serial shared-scope allocations keep original paint
+ok 170 - native five scopes and five serial shared-scope allocations keep original paint
+  ---
+  duration_ms: 5.779377
+  type: 'test'
+  ...
+# Subtest: wasm five scopes and five serial shared-scope allocations keep original paint
+ok 171 - wasm five scopes and five serial shared-scope allocations keep original paint
+  ---
+  duration_ms: 16.436769
+  type: 'test'
+  ...
+# Subtest: native definite allocation-free handle pressure closes attempt without retrying33
+ok 172 - native definite allocation-free handle pressure closes attempt without retrying33
+  ---
+  duration_ms: 2.885038
+  type: 'test'
+  ...
+# Subtest: wasm definite allocation-free handle pressure closes attempt without retrying33
+ok 173 - wasm definite allocation-free handle pressure closes attempt without retrying33
+  ---
+  duration_ms: 252.112896
+  type: 'test'
+  ...
+# Subtest: native nonce tombstone cannot reconstruct consumed43 Query or44 Data
+ok 174 - native nonce tombstone cannot reconstruct consumed43 Query or44 Data
+  ---
+  duration_ms: 7.928545
+  type: 'test'
+  ...
+# Subtest: wasm nonce tombstone cannot reconstruct consumed43 Query or44 Data
+ok 175 - wasm nonce tombstone cannot reconstruct consumed43 Query or44 Data
+  ---
+  duration_ms: 37.406208
+  type: 'test'
+  ...
+# Subtest: two actual WASM producers with colliding handles reject edited Scope bridge before33
+ok 176 - two actual WASM producers with colliding handles reject edited Scope bridge before33
+  ---
+  duration_ms: 222.414437
+  type: 'test'
+  ...
+# Subtest: complete normalized native/WASM nonce controls match after original handle validation
+ok 177 - complete normalized native/WASM nonce controls match after original handle validation
+  ---
+  duration_ms: 0.875349
+  type: 'test'
+  ...
+# Subtest: native post-allocation status6 remains uncertain and recovers exact State
+ok 178 - native post-allocation status6 remains uncertain and recovers exact State
+  ---
+  duration_ms: 2.548406
+  type: 'test'
+  ...
+# Subtest: native post-allocation status-1 remains uncertain and recovers exact State
+ok 179 - native post-allocation status-1 remains uncertain and recovers exact State
+  ---
+  duration_ms: 2.107129
+  type: 'test'
+  ...
+# Subtest: wasm post-allocation status6 remains uncertain and recovers exact State
+ok 180 - wasm post-allocation status6 remains uncertain and recovers exact State
+  ---
+  duration_ms: 18.661223
+  type: 'test'
+  ...
+# Subtest: wasm post-allocation status-1 remains uncertain and recovers exact State
+ok 181 - wasm post-allocation status-1 remains uncertain and recovers exact State
+  ---
+  duration_ms: 5.740816
+  type: 'test'
+  ...
+# Subtest: delayed actual33 keeps original WASM State producer despite colliding foreign Scope edit
+ok 182 - delayed actual33 keeps original WASM State producer despite colliding foreign Scope edit
+  ---
+  duration_ms: 213.768285
+  type: 'test'
+  ...
+# Subtest: native resource rejection during uncertain replay keeps original allocation recoverable
+ok 183 - native resource rejection during uncertain replay keeps original allocation recoverable
+  ---
+  duration_ms: 1.883771
+  type: 'test'
+  ...
+# Subtest: wasm resource rejection during uncertain replay keeps original allocation recoverable
+ok 184 - wasm resource rejection during uncertain replay keeps original allocation recoverable
+  ---
+  duration_ms: 32.774029
+  type: 'test'
+  ...
+1..184
+# tests 184
+# suites 0
+# pass 184
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2725.777084
+    Finished `release` profile [optimized] target(s) in 0.02s
+(node:1326748) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1326785) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1326822) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1326833) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

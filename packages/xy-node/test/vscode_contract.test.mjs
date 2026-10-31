@@ -25,4 +25,7 @@ test("vscode.js points webviews at the host-neutral paint client", () => {
 test("vscode.js exposes the background force scheduler", async () => {
   const api = await import("../src/vscode.js");
   assert.equal(typeof api.runForceAnimation, "function");
+  assert.equal(typeof api.GraphForgeLayoutController, "function");
+  assert.equal(typeof api.graphforgeWebviewPayload, "function");
+  assert.equal(typeof api.graphforgeStaticPayload, "function");
 });

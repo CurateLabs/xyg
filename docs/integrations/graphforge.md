@@ -217,15 +217,72 @@ for native-library staging and package setup; npm publication is pending.
 
 The Node host provides APIs for integrating XYG into an extension. Adoption
 by a specific GraphForge editor is a separate integration task. To use these
-APIs, compose natively in the extension host and pass
-`graphforgeWebviewPayload(composition, options)`'s `spec` and binary `buffer`
-to the webview. The webview paints with the local client via
-`renderStandalone(el, spec, buffer)`. Relay `{trace, index}` from `xy:click`
-to the extension host and resolve it with
-`graphforgePick(figure, composition, {trace, index})`. The native graph mark
-uses Rust LOD, so this path supports larger views than the direct WASM Scene.
-With this integration, the extension owns UI, state, and message routing;
-XYG owns visualization.
+APIs, allocate one live layout owner per webview and submit the raw composition
+input. Composition, force ticks and payload packing run in native Node Workers:
+
+```javascript
+import {
+  GraphForgeLayoutController,
+  graphforgeWebviewPayload,
+} from "@curatelabs/xyg-node/vscode";
+
+const owner = new GraphForgeLayoutController(); // one per webview
+const finalPayload = await graphforgeWebviewPayload(owner, {
+  base: { tables: [nodesIpc, edgesIpc], generation },
+  layers: [{ result: pagerankIpc, intent: "graph", generation }],
+}, {
+  layout: "cose",
+  width: 900,
+  height: 600,
+  onPayload: async ({ spec, buffer, revision, jobId, step, phase }) => {
+    // Your routing must resolve after this revision is accepted by the webview.
+    await presentInWebview({ spec, buffer, revision, jobId, step, phase });
+  },
+});
+// A new call supersedes the previous call. Its rejection is observable.
+// On reload/disposal, await teardown and create a new owner for the new view.
+await owner.dispose();
+```
+
+The live function now requires an owner and returns a Promise, with no ready
+`Figure`. The final Promise settles after worker teardown. `onPayload` may
+receive initial/update/complete phases; intermediate checkpoints coalesce while
+the consumer is busy, so use the actual `step`, `revision` and `jobId`.
+Cancellation uses `signal`, `owner.cancel()` or terminal `owner.dispose()`;
+errors, timeout and supersession reject the call. Handle each render Promise.
+The default algorithm remains `force`; select `cose` and its existing options
+explicitly. Complete UUID-keyed `positions` seed a new live force job; choose
+`layout: "preset"` to reuse them without ticking. Parent hierarchy and pins are
+forwarded to Rust. Input `render` is reserved for explicit one-shot Scene export
+and is rejected on raw live requests.
+
+Send only `spec` and binary `buffer` to the local painter. Full source f64
+`positions` and `pickData` stay at the Node host, including at Aggregate LOD.
+Circle, grid and other non-force graph layouts retain the full native source
+layout before preset packing, as force checkpoints do. Complete supplied
+positions keep the static non-force preset-reuse semantics; force requests use
+them as seeds.
+For an existing composition, resolve a relayed `{trace, index}` with
+`graphforgePick(payload, composition, hit)`. Render indices address
+`payload.pickData.nodes`, whose exact UUIDs come from Rust render membership;
+they do not address the full source `payload.positions.uuid` array. Viewport
+culling and collapsed groups can remap rows even below Aggregate. Collapsed
+group picks also report their hidden membership; Aggregate node picks report a
+cluster rather than an exact UUID. Out-of-render indices return `null`. The
+webview can replace its previous view with
+`renderStandalone(el, spec, buffer)` after destroying it, as the
+[local consumer fixture](https://github.com/CurateLabs/xyg/blob/main/examples/vanilla-ts/graphforge-live.mjs)
+does. This replacement resets viewport state; retained graph updates remain
+separate controller work. This slice does not implement a VS Code UI adapter.
+
+Explicit static/batch callers use `graphforgeChart(composition, options)` for
+export or `graphforgeStaticPayload(composition, options)` for the previous
+synchronous payload and ready Figure. `composeGraphForge` without `render`
+still composes metadata synchronously; use raw input on the live API to move
+that work off the caller loop. Migrate old payload calls and their readers
+together; the live API has no synchronous overload. See the
+[Node scheduling contract](https://github.com/CurateLabs/xyg/blob/main/spec/design/graphforge-node-scheduling.md)
+for lifecycle, copy costs, rollback and the bounded functional render evidence.
 
 ## Browser WASM
 

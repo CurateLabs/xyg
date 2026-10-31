@@ -1,0 +1,14 @@
+{
+  "name": "functional-paint",
+  "command": [
+    "env",
+    "XYG_GRAPH_NODE_RECEIPT_OUTPUT=spec/performance/graph-node-scheduling-35-integration-2026-10-31/",
+    "node",
+    "spec/performance/graph-node-scheduling-35-review-repair-2026-10-31/run.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 9.268,
+  "rawSha256": "8bdaeda1d0f09b59be9c821b581ec7777997726d36d5aca8fe9718ba2ee65e31",
+  "log": "functional-paint.txt.gz",
+  "gzipSha256": "5c77f721fc3ace8270e6a068ab2c32a73a3c5b223dfb47a6c4338a227a13d87a"
+}

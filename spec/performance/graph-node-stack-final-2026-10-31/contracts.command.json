@@ -1,0 +1,13 @@
+{
+  "name": "contracts",
+  "command": [
+    "bash",
+    "-c",
+    "set -e\nuv run python scripts/abi_smoke.py\nuv run python scripts/verify_wasm_assets.py\nuv run python scripts/verify_ownership.py\nuv run python scripts/check_release_inventory.py\nuv run python scripts/gen_abi_manifest.py --check"
+  ],
+  "exitCode": 0,
+  "seconds": 9.402,
+  "rawSha256": "96eeebf4770d4407c40022517b5eeed95207326cd225ddf7cc500ca433bb2ab4",
+  "log": "contracts.txt.gz",
+  "gzipSha256": "a8b3f8637045e2f197a17a167e5b5086e0b4eaaa7a8bb789a5114b38cadd7e38"
+}

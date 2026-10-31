@@ -1,0 +1,10 @@
+{
+  "scope": "documentation-only S4 status follow-up; Node/Rust/ABI/assets unchanged",
+  "nodeIntegrationCommit": "6fbfc24c032ecd9e19d68e3ee2f2d078788ec085",
+  "s4Base": "504479e4b59db92cc7d960fa428508c67df9b95f",
+  "path": "spec/design/graph-interaction.md",
+  "sha256": "905dfef5adebca463638ca239f0551346634d80cacf5a11872624a30fecbb435",
+  "historicalIntegrationReceipt": "spec/performance/graph-node-scheduling-35-integration-2026-10-31/evidence.json",
+  "validationReuse": "all Node source, artifact, installed package and command bindings remain unchanged; shared S4 specification now labels old package failure as historical",
+  "milestoneAccepted": false
+}

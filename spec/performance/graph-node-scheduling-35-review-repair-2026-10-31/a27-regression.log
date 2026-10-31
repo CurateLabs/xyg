@@ -1,0 +1,231 @@
+TAP version 13
+# Subtest: render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+not ok 1 - render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+  ---
+  duration_ms: 166.741066
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:131:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      {
+    +   index: 0,
+    -   index: 3,
+        kind: 'node',
+        layers: [
+          {
+            layer: 0,
+            resultId: 'viewport-rank',
+    +       row: 0
+    -       row: 3
+          }
+        ],
+    +   uuid: '01a0f3fd-23dd-76d3-87e7-d765a3665ef5'
+    -   uuid: '01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    kind: 'node'
+    index: 3
+    uuid: '01a0f3fd-23ea-7a11-8101-3d3a9a5e77bd'
+    layers:
+      0:
+        layer: 0
+        resultId: 'viewport-rank'
+        row: 3
+  actual:
+    kind: 'node'
+    index: 0
+    uuid: '01a0f3fd-23dd-76d3-87e7-d765a3665ef5'
+    layers:
+      0:
+        layer: 0
+        resultId: 'viewport-rank'
+        row: 0
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:144:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+not ok 2 - Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+  ---
+  duration_ms: 159.306452
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:153:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + {
+    +   kind: 'aggregate',
+    +   nodeCount: null,
+    +   trace: 1
+    + }
+    - null
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ~
+  actual:
+    kind: 'aggregate'
+    trace: 1
+    nodeCount: ~
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:167:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+not ok 3 - collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+  ---
+  duration_ms: 159.305545
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:181:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      {
+    +   index: 1,
+    -   index: 2,
+        kind: 'node',
+        layers: [
+          {
+            layer: 0,
+            resultId: 'compound-rank',
+    +       row: 1
+    -       row: 2
+          }
+        ],
+    +   uuid: '01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9'
+    -   uuid: '01a0f3fd-23e6-71b2-a3b3-5f18fd15a547'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    kind: 'node'
+    index: 2
+    uuid: '01a0f3fd-23e6-71b2-a3b3-5f18fd15a547'
+    layers:
+      0:
+        layer: 0
+        resultId: 'compound-rank'
+        row: 2
+  actual:
+    kind: 'node'
+    index: 1
+    uuid: '01a0f3fd-23e2-76c3-b1d4-c2aadc972cc9'
+    layers:
+      0:
+        layer: 0
+        resultId: 'compound-rank'
+        row: 1
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:198:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+not ok 4 - circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+  ---
+  duration_ms: 148.01735
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:219:1'
+  failureType: 'testCodeFailure'
+  error: 'Aggregate live graphs must retain full source positions'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: ~
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:228:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: reentrant startup cancellation cannot strand a bridge or escape disposal
+not ok 5 - reentrant startup cancellation cannot strand a bridge or escape disposal
+  ---
+  duration_ms: 8018.315609
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:352:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    signal-registration:  Error: spawnSync /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node ETIMEDOUT
+    
+    null !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: ~
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:381:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+  ...
+# Subtest: non-force Aggregate source layout runs once in the bridge before preset-only packing
+not ok 6 - non-force Aggregate source layout runs once in the bridge before preset-only packing
+  ---
+  duration_ms: 324.207815
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:395:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    file:///tmp/xyg-graphforge-live-eCTmeX/circle.mjs:10
+     assert.equal(p.positions.x.length,4);assert.equal(p.spec.graph[0].tier_name,'aggregate');
+                              ^
+    
+    TypeError: Cannot read properties of null (reading 'x')
+        at file:///tmp/xyg-graphforge-live-eCTmeX/circle.mjs:10:27
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    
+    Node.js v22.23.4
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///tmp/xyg-graphforge-live-eCTmeX/circle.mjs:10:27
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-0e91c096/target/task-tmp/node35-a27-149VT5/packages/xy-node/test/graphforge-layout.test.mjs:414:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 0
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9128.316154

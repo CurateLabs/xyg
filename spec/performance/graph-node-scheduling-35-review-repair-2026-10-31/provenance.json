@@ -1,0 +1,188 @@
+{
+  "sourceBase": "a27ed2edb0d0c314bbf9bf86a6554f3cb86e7fbd",
+  "originalCanonicalDiffSha256": "8c7783d6a0e7370539a0a3d3e1e50b56b3196c86fbd8bb4e5142b3c68588b047",
+  "sourceState": "Repair applied to a27; exact source hashes bound in result.json; final repair commit/diff hash returned after commit to avoid a self-referential receipt.",
+  "native": {
+    "path": "target/release/libxyg_core.so",
+    "sha256": "c4e5cb10351366e5037e1db934464d03ab1a5302e3bc33e5791dd7b64e662841",
+    "bytes": 6040568
+  },
+  "compiler": {
+    "path": "/home/ubuntu/.rustup/toolchains/1.96.0-x86_64-unknown-linux-gnu/bin/rustc",
+    "sha256": "ba4b837efb6612dfa8d941c5a72b8a50d1d03a0f36216743b173949aa8d9eb75",
+    "bytes": 646032
+  },
+  "unmodifiedGeneratedAbi": {
+    "current": "99e89d6ba93c8debd1df7888b822581ad207011e9aead2c876f81c5b5ead3d0e",
+    "a27": "99e89d6ba93c8debd1df7888b822581ad207011e9aead2c876f81c5b5ead3d0e",
+    "dee3ea37": "99e89d6ba93c8debd1df7888b822581ad207011e9aead2c876f81c5b5ead3d0e",
+    "guardFailure": "Generated xyg_graphforge_session_create signature parameter document; inherited, no waiver or generated edit"
+  },
+  "immutableOriginalReceipt": "git diff is empty for spec/performance/graph-node-scheduling-35-2026-10-31/",
+  "unchangedControls": {
+    "Cargo.toml": {
+      "path": "Cargo.toml",
+      "sha256": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+      "bytes": 456
+    },
+    "Cargo.lock": {
+      "path": "Cargo.lock",
+      "sha256": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+      "bytes": 20648
+    },
+    "rust-toolchain.toml": {
+      "path": "rust-toolchain.toml",
+      "sha256": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+      "bytes": 66
+    },
+    "package.json": {
+      "path": "package.json",
+      "sha256": "7069837445cf48dd6ec668baa9cb41916cfddd48d2a917ef564b4db1b3f3b870",
+      "bytes": 664
+    },
+    "package-lock.json": {
+      "path": "package-lock.json",
+      "sha256": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+      "bytes": 52836
+    },
+    "packages/xy-node/package.json": {
+      "path": "packages/xy-node/package.json",
+      "sha256": "2b999bed8650878d45b2cadc01ffd8039dc4f2d8544048a0deac0956923f508e",
+      "bytes": 3537
+    },
+    "packages/xy-node/package-lock.json": {
+      "path": "packages/xy-node/package-lock.json",
+      "sha256": "03e342a714044626343305c4dc6879904c71cdf48c800e4f47d97f918045e376",
+      "bytes": 11100
+    },
+    "js/package-wasm.mjs": {
+      "path": "js/package-wasm.mjs",
+      "sha256": "01d1ed7d3e9b9d038099d1124116bda578b62e142d4efd216cc12d6ea493caf3",
+      "bytes": 10882
+    },
+    "spec/abi/xyg-abi.json": {
+      "path": "spec/abi/xyg-abi.json",
+      "sha256": "e941f55c05e90c5e36a8e816c67918820a28136aaab140e967b89a34ec9a4458",
+      "bytes": 2226187
+    },
+    "spec/wasm/abi.json": {
+      "path": "spec/wasm/abi.json",
+      "sha256": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77",
+      "bytes": 16651
+    }
+  },
+  "localReleasePairing": {
+    "scope": "Linux x64 locally built wheel/staged tarballs/offline clean install only; no registry or full-cohort qualification",
+    "wheel": {
+      "path": "dist/xyg-0.0.1.dev2951+a27ed2ed-py3-none-linux_x86_64.whl",
+      "sha256": "a6543933b2ad1d3e01a17b2ce38c43940db30fcb2675fd52426eca1adcc138a3",
+      "bytes": 4270843
+    },
+    "tarballs": [
+      {
+        "path": "target/task-tmp/repair-release-smoke/packs/curatelabs-xyg-node-0.0.0.tgz",
+        "sha256": "6b875174c0e1f09336ce4a8916cb8205c147c696e690ab65c8a688d1a16ba27a",
+        "bytes": 644721
+      },
+      {
+        "path": "target/task-tmp/repair-release-smoke/packs/curatelabs-xyg-node-linux-x64-0.0.0.tgz",
+        "sha256": "140e980ce8c8b4007651dab24c5c38415d9eef00a8d631182b1dc2cdd21cd879",
+        "bytes": 2807182
+      },
+      {
+        "path": "target/task-tmp/repair-release-smoke/packs/koffi-3.1.4.tgz",
+        "sha256": "a102a4084802f76da7afb20f01c34bad71727bcc283fa143906021cc32b31dea",
+        "bytes": 322069
+      },
+      {
+        "path": "target/task-tmp/repair-release-smoke/packs/koromix-koffi-linux-x64-3.1.4.tgz",
+        "sha256": "72d02c99fcd871dfcfe223c23aab655e606ac9c3ff522084270d97499aead3a1",
+        "bytes": 734953
+      }
+    ],
+    "installedFacadeSources": {
+      "graphforge.js": {
+        "path": "target/task-tmp/repair-release-smoke/node_modules/@curatelabs/xyg-node/src/graphforge.js",
+        "sha256": "85ae86977d110d2f8cf8a0552ab1334711ad95cd44b5f7474139b8b6d891afd5",
+        "bytes": 38905
+      },
+      "graphforge_layout.js": {
+        "path": "target/task-tmp/repair-release-smoke/node_modules/@curatelabs/xyg-node/src/graphforge_layout.js",
+        "sha256": "252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
+        "bytes": 6576
+      },
+      "graphforge_layout_worker.js": {
+        "path": "target/task-tmp/repair-release-smoke/node_modules/@curatelabs/xyg-node/src/graphforge_layout_worker.js",
+        "sha256": "faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
+        "bytes": 6954
+      },
+      "force_scheduler.js": {
+        "path": "target/task-tmp/repair-release-smoke/node_modules/@curatelabs/xyg-node/src/force_scheduler.js",
+        "sha256": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+        "bytes": 10200
+      },
+      "index.js": {
+        "path": "target/task-tmp/repair-release-smoke/node_modules/@curatelabs/xyg-node/src/index.js",
+        "sha256": "b14c1b25eaac153da60a85de3c416720fcaa7628c1a86b91c41e98ff2fcf116c",
+        "bytes": 14328
+      },
+      "vscode.js": {
+        "path": "target/task-tmp/repair-release-smoke/node_modules/@curatelabs/xyg-node/src/vscode.js",
+        "sha256": "dc3c9c01ac72bb1509f35cc00bee5539b8c4bf5352f661ed270236745c1f0e1f",
+        "bytes": 2123
+      }
+    },
+    "installedNative": {
+      "path": "target/task-tmp/repair-release-smoke/node_modules/@curatelabs/xyg-node-linux-x64/libxyg_core.so",
+      "sha256": "c4e5cb10351366e5037e1db934464d03ab1a5302e3bc33e5791dd7b64e662841",
+      "bytes": 6040568
+    },
+    "smoke": {
+      "path": "target/task-tmp/repair-release-smoke/release-smoke.mjs",
+      "sha256": "812701159b8d9ff38505596ec8c0be87e4b10dfd1402ea3239a1fc38feb9a8d1",
+      "bytes": 4679
+    }
+  },
+  "wasm": {
+    "raw": {
+      "path": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "sha256": "b84de6f1cba1d750c8dc9b275ab224e3d452944ece9f44999ee1c5fbda6de6c6",
+      "bytes": 2043777
+    },
+    "packageGate": {
+      "passed": false,
+      "optimizedGzipBytes": 755339,
+      "gzipBudgetBytes": 641024,
+      "budgetChanged": false
+    },
+    "rawDiagnostic": "Unchanged two-path smoke copy uses raw local module in temporary sandbox; actual product distribution contains no WASM because package gate failed."
+  },
+  "sourceAndArtifactBindingVerified": true,
+  "checks": {
+    "affectedNode": {
+      "passed": 132,
+      "failed": 0,
+      "skipped": 0
+    },
+    "abiSmoke": 673,
+    "baselineRegressions": {
+      "expectedFailure": true,
+      "failed": 6
+    },
+    "localPackagedSmoke": "PASS",
+    "boundedBrowserJourney": "PASS",
+    "strictCspRawWasmDiagnostic": "PASS diagnostic only",
+    "shippingPathWebviewSmoke": "FAIL missing qualified WASM",
+    "noBrowserGlobals": "FAIL inherited",
+    "wasmPackageGate": "FAIL size",
+    "fullWorktreePreCommit": "PASS: ruff check, ruff format, docs app codespell",
+    "ruffCheck": "PASS",
+    "ruffFormatCheck": "PASS: 901 files"
+  },
+  "parentOwnedFilesUntouched": [
+    "spec/design/graph-mark.md",
+    "spec/design/graphforge-compositions.md",
+    "spec/design/host-parity.md",
+    "spec/design/application-consumers.md"
+  ]
+}

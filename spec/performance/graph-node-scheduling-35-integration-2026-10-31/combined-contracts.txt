@@ -1,0 +1,3 @@
+ABI smoke: 673 checks passed against libxyg_core.so
+Packaged WASM assets verified (bytes, sha256, ABI/scene/painter versions, inline copy).
+API declarations match the preparation inventory; acceptance/classification gaps remain explicit

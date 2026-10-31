@@ -1,0 +1,122 @@
+{
+  "scope": "normal Node/S4 foundation harness merge; unchanged product and assets; no acceptance change",
+  "parent": "5058aa0f40abc8d6b4d08195a1dec51d48e1f0a6",
+  "sources": {
+    "scripts/geo_frame_leases_conformance.mjs": "2e90e6eaea3d9f2bf8367027d16d5374e5104a65e872ed7387c961a5b7b1c092",
+    "scripts/geo_overview_conformance.mjs": "48df14badcef8daccc0124d1092f22b6ae9968f0c60d9d5a1b9548b0b963218a",
+    "scripts/geo_overview_membership_engine_conformance.mjs": "3c198758b9ce52c3ad810b7487316e91c579b747d3bccba26add8f4f80bf0e60",
+    "scripts/geo_selected_conformance.mjs": "51c3d49809cc53b9df7ef0a630ba0992cfb85419235be3e81d6ac390c451e980",
+    "scripts/geo_selected_mutation_recovery_conformance.mjs": "6cd6aa5d338f6e2f78ee37ce08c09c58a9dd403af43571f70f94d7444fa1fbba",
+    "scripts/geo_selected_publication_recovery_conformance.mjs": "f00f644fc8cfdd33468f85627a3540f1acaf97023fbb2448fbdfb9a50647dd11",
+    "spec/design/browser-wasm.md": "336557f15ea13d710c706df50111bd966df89826f5e48b0b7de80c50333db71e"
+  },
+  "nonreceiptDiffSha256": "e9d4459301e7c611f735588df16a4442d60442510e48c4dd9f9b29e76f720772",
+  "shippingArtifactsUnchanged": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6052952,
+      "sha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1860254,
+      "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2499529,
+      "sha256": "7406577765e34c8e2be018081f0ed4df1db6a27e26babeb1df7ebcc1bf3da4cd"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+    }
+  },
+  "historicalFilesUnchanged": 2772,
+  "commands": {
+    "capture.command.json": {
+      "name": "capture",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-node-foundation-contract-2026-10-31/capture.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.191,
+      "rawSha256": "c59f61882ed3d747c9291422417a16ec0db51c373ccf9df166fdd6928fc635c4",
+      "log": "capture.txt.gz",
+      "gzipSha256": "ad537ca52fde17d4d274e0433ffc3917ac7f568c54698de0c7f8c2d1f2ad5312"
+    },
+    "ci-step.command.json": {
+      "name": "ci-step",
+      "command": [
+        "bash",
+        "spec/performance/graph-s4-foundation-contract-2026-10-31/ci-step.sh"
+      ],
+      "exitCode": 0,
+      "seconds": 15.121,
+      "rawSha256": "038608eb1fde645eae03683fdcf177233ac16e833fb0822bf747bb54a1fd6d96",
+      "log": "ci-step.txt.gz",
+      "gzipSha256": "fead374808963c08d0364aa48437e658b05e8ebfc0a435057b044b67d1027bec"
+    },
+    "final-hooks.command.json": {
+      "name": "final-hooks",
+      "command": [
+        "bash",
+        "-c",
+        "set -e\nuv run --with pre-commit pre-commit run --all-files\nuv run ruff check .\nuv run ruff format --check ."
+      ],
+      "exitCode": 0,
+      "seconds": 0.81,
+      "rawSha256": "46c100fb035a907de5d7514bee3225d0c45c10686658602905c3f00421a9ae0b",
+      "log": "final-hooks.txt.gz",
+      "gzipSha256": "4448000f800192d0cdee175f6d5d70bdb373c0437521b3a1c45e185a02f45bdf"
+    }
+  },
+  "reports": {
+    "geo-allocation-recovery-ci.json": "d7c07e81bfcd6b72834916b75efdb0ad5f953f2f93d23c2da24ef34eadb33777",
+    "geo-hierarchy-recovery-ci.json": "3e864ac0a475db3a2e4a1d29ad32d3de1931299c1cea80ac059cd3df4bd6cfe7",
+    "geo-overview-domain-members-ci.json": "e8d60cc88e1476d5d8778d56db6c5621741932e83e8568394cdd0915ffd72625",
+    "geo-overview-members-hosts-ci.json": "b71ba767eb2d0cc1aa4428e25ce4c80b4258147cb4aa6f37681cb79f6cc2afd1",
+    "geo-selected-mutation-recovery-ci.json": "d1cbf8559e9c12800e990234ee1db7510495dd8f5fd5ff3328c852f303d3b77e",
+    "geo-selected-publication-recovery-ci.json": "c80dbd3c987a7f5d1eddeb2aa1e7c0b2af95f052b5e1710a65ce6f1aec866609",
+    "geo-snapshot-recovery-ci.json": "ee99373043cecab8d73c8315024c9a83e4c05fdd9de7f973c0e1b5c3399066c8"
+  },
+  "ciJobLogGzipSha256": "dec960073ed3f3efb957d9a630d58465cfdc249c2dc59e72bff4c99f638db09d",
+  "workflowSha256": "1df6b1a362c3c93a1daf98f08483fd458035ac5a71fb9a6ced101ebf34051f78",
+  "copiedStepSha256": "4fda9bc8f04116e267ed74d48e1b49b4e94806194e33671a884b4f39a4e126ce"
+}

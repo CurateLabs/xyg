@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 import {
+  GraphForgeLayoutController,
   composeGraphForge,
   graphforgePick,
   graphforgeWebviewPayload,
@@ -47,7 +48,13 @@ const composition = composeGraphForge({
     { result: await arrow("louvain"), intent: "graph", generation, resultId: "result-community" },
   ],
 });
-const payload = graphforgeWebviewPayload(composition, { width: 560, height: 380, title: "Native host" });
+const owner = new GraphForgeLayoutController();
+let payload;
+try {
+  payload = await graphforgeWebviewPayload(owner, composition, { width: 560, height: 380, title: "Native host" });
+} finally {
+  await owner.dispose();
+}
 
 const nonce = randomBytes(16).toString("base64");
 const assets = new Map([
@@ -167,10 +174,7 @@ await new Promise((resolve) => pageServer.listen(0, "127.0.0.1", resolve));
 const pageOrigin = `http://127.0.0.1:${pageServer.address().port}`;
 
 const executablePath = process.env.XYG_CHROMIUM ?? process.env.CHROMIUM;
-const browser = await chromium.launch({
-  ...(executablePath ? { executablePath } : {}),
-  args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
-});
+let browser;
 const violations = [];
 const fail = (message) => { throw new Error(`graphforge webview smoke: ${message}`); };
 
@@ -185,6 +189,10 @@ async function clickNode(tab, locate) {
 }
 
 try {
+  browser = await chromium.launch({
+    ...(executablePath ? { executablePath } : {}),
+    args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
+  });
   const tab = await browser.newPage({ viewport: { width: 600, height: 820 } });
   tab.on("console", (message) => { if (/Content Security Policy|Refused to/.test(message.text())) violations.push(message.text()); });
   await tab.goto(pageOrigin);
@@ -200,7 +208,7 @@ try {
   await tab.waitForFunction(() => window.__events.some((e) => e.path === "native"), null, { timeout: 10_000 });
   const relayed = (await tab.evaluate(() => window.__events)).find((e) => e.path === "native");
   if (relayed.trace !== nativeHit.trace || relayed.index !== nativeHit.index) fail("the relayed click is not the located node");
-  const identity = graphforgePick(payload.figure, composition, relayed);
+  const identity = graphforgePick(payload, composition, relayed);
   // Independent oracle: the tooltip row painted for that element names its UUID.
   const shown = decodeTooltipRows(payload.spec, payload.buffer, payload.spec.traces[nativeHit.trace])[nativeHit.index].id;
   if (identity?.kind !== "node" || identity.uuid !== shown) fail("native pick did not map to the clicked node's UUID");
@@ -227,7 +235,9 @@ try {
   if (unexpected.length) fail(`unexpected asset requests: ${unexpected.join(", ")}`);
   console.log(`graphforge webview smoke: nonce CSP, cross-origin local assets, Blob module Worker; native pick → ${identity.kind}, WASM pick → ${selected.kind}`);
 } finally {
-  await browser.close();
-  assetServer.close();
-  pageServer.close();
+  try { await browser?.close(); } finally {
+    assetServer.closeAllConnections();
+    pageServer.closeAllConnections();
+    await Promise.all([assetServer, pageServer].map(server => new Promise(resolve => server.close(resolve))));
+  }
 }

@@ -1,0 +1,424 @@
+{
+  "status": "passed",
+  "recordedAt": "2026-10-31T22:01:15.182Z",
+  "node": "v22.23.4",
+  "platform": "linux",
+  "architecture": "x64",
+  "nativeAbi": 398,
+  "wasmAbi": 35,
+  "wasmBytes": 1860254,
+  "wasmGzipBytes": 759013,
+  "wasmSha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099",
+  "nativeSha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a",
+  "scriptSha256": "e2bc0f8ebb61d7b50687fcf4704409b9fc3dee691c452108586309d8bec9ac58",
+  "cases": [
+    {
+      "geometry": "Point",
+      "case": 0,
+      "bytes": 1000,
+      "sha256": "d7aa0db91a47705c3706795089e6f72f13dbd8d5942a4001ccaedd7e10048d65"
+    },
+    {
+      "geometry": "Point",
+      "case": 1,
+      "bytes": 1144,
+      "sha256": "7fa3708a037c2b96bccb2939e2e1580ae9c0532844e17421dd806fa7fa350b3b"
+    },
+    {
+      "geometry": "Point",
+      "case": 2,
+      "bytes": 400,
+      "sha256": "ca07ed017eb21e7c762e8cb03c6ec9ef34481e761a0461bc65ce64738b2c61ce"
+    },
+    {
+      "geometry": "Point",
+      "case": 3,
+      "bytes": 920,
+      "sha256": "04310c35b7b7e7af987079e4f93c235735cc74e8fd4c8c1e7612b8a0e8b64703"
+    },
+    {
+      "geometry": "Point",
+      "case": 4,
+      "bytes": 304,
+      "sha256": "d0de0de5ad3b20a5d2981a162555ce31246c4e989acfabc8ca6b9069660620d0"
+    },
+    {
+      "geometry": "Point",
+      "case": 5,
+      "bytes": 920,
+      "sha256": "c9f903b77727702dab726a83111e1ff09fe9cb3599358b8ba39d71194e2033f6"
+    },
+    {
+      "geometry": "Point",
+      "case": 6,
+      "bytes": 304,
+      "sha256": "9e60bf3dd1f388b2ec71330fd33c030c64dbedd7a94f5a12dc11373aca9f3760"
+    },
+    {
+      "geometry": "Point",
+      "case": 7,
+      "bytes": 920,
+      "sha256": "3a0e99f1b9e4afc873930f0a870e314e638e6bdf811441297c0c5c6af2684772"
+    },
+    {
+      "geometry": "Point",
+      "case": 8,
+      "bytes": 304,
+      "sha256": "fc046b8a7f105031eaa87df4fbdce8ea5065ab7f5d8dca08ae51f96b8a3fae17"
+    },
+    {
+      "geometry": "Point",
+      "case": 9,
+      "bytes": 808,
+      "sha256": "d0516461a613345b157f67489b15c96e93ff4dbbe49e6975ddd3c044f4de4ab6"
+    },
+    {
+      "geometry": "Point",
+      "case": 10,
+      "bytes": 256,
+      "sha256": "9635fb1c037932f6a66ce33bdfb21274abd7ef788de2afd5abe110bd116d2f8c"
+    },
+    {
+      "geometry": "Point",
+      "case": 11,
+      "bytes": 656,
+      "sha256": "5596254d23a18335ce8128647cb8352a5f2e641bf31b94048545c802cf72d879"
+    },
+    {
+      "geometry": "Point",
+      "case": 12,
+      "bytes": 656,
+      "sha256": "1082418ac4b7ad3caf61d75d88f9be6babf0960d2b61b5bfcfdc9164283fc617"
+    },
+    {
+      "geometry": "Point",
+      "case": 13,
+      "bytes": 1592,
+      "sha256": "444723fbb350151f25e0301c08cc16648465da7eca5e251905c6862330835907"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 0,
+      "bytes": 1336,
+      "sha256": "c74ecbb42c0f15f777ac059bc6f401bc4b2c4493e320ab862f8ba0244b7a0f13"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 1,
+      "bytes": 1480,
+      "sha256": "b34f9035104f16612b57f51c97a239343d42885f5eecd2676083c0b3739ae8d6"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 2,
+      "bytes": 544,
+      "sha256": "734de79c9ed361e8219ec02461b5215081bbf217f36d3f2f74878b5724debf7f"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 3,
+      "bytes": 1032,
+      "sha256": "14649cc69db7c7698f882d12254e99a96b69e754422897d04c1afcd345a2ba5a"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 4,
+      "bytes": 352,
+      "sha256": "89b1011698952780d3fd999f6f3cad948b43387492c59e3ae7aaa98dd7d8eff6"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 5,
+      "bytes": 1032,
+      "sha256": "96b981b3733d3703578df69f660791afe142363bbb53d43f0fb526f63d7ea55f"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 6,
+      "bytes": 352,
+      "sha256": "3f1d8a1800f045faab1cecb56705ecb3a4b025a700b19f2c07367785c8e64d3c"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 7,
+      "bytes": 1032,
+      "sha256": "3606931cb7c65fcdca5cd43248008b3ea51a6797941ed8c7b096e7bb12d84883"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 8,
+      "bytes": 352,
+      "sha256": "2689f42e1df9d7cbefd87617df4f683a99da3735a989cde03aba2ed6a65b9bdd"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 9,
+      "bytes": 808,
+      "sha256": "4d3061021c1d8bdabfb3ae9e10b8b131b67c2082bec45800385968d802726350"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 10,
+      "bytes": 256,
+      "sha256": "993c2520de3f049f7ebe061280cc44eb20df6f2ccf05b18f133bf086c79dbb2f"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 11,
+      "bytes": 656,
+      "sha256": "4dacad54c974a9588e7282a6ccab74f3468363fe52abd4eb9288af3fba859cfa"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 12,
+      "bytes": 656,
+      "sha256": "aa08f4f5a8a258f074b10289d5aea3c258fd1afc52296365caee91d198fb46e0"
+    },
+    {
+      "geometry": "MultiPoint",
+      "case": 13,
+      "bytes": 1952,
+      "sha256": "c09040009882a989079daf61a9c28de1f7b4c0e12aba0ef80d95bc1e31489ad4"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-0",
+      "bytes": 904,
+      "sha256": "d8320ed7399f92d88d580960b6e11615dc9354978bbdc0c87ae1170785dd81b4"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-1",
+      "bytes": 131536,
+      "sha256": "5fbf580541da296256c230def92a1fed86de1ca6fef0afadc234cbb459e6f033"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-2",
+      "bytes": 131536,
+      "sha256": "fffa9cfbb01f3a9be27941fbe43ccc8538ba4ab859778fa77963641c4e99eeae"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-3",
+      "bytes": 131536,
+      "sha256": "b13a99cbd8d44666bee7c06345bbc2a35ed3c09263f5e03946376b2ee41b9053"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-4",
+      "bytes": 131536,
+      "sha256": "9d9734f252fb265fee59c31543284d2330e7bb05d7f623b5753a9ff4eed317b6"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-5",
+      "bytes": 131536,
+      "sha256": "d9eda144ae3a9e6f027e3e149c4a8a909d6d91a9dbe7ee17f2325df771675663"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-6",
+      "bytes": 131536,
+      "sha256": "4c3e51adcbf3be265e5d220d59ca37bd9abb58ca491f88b57a80370b54d4d1ac"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-7",
+      "bytes": 131536,
+      "sha256": "567cf8c0e5ecba1ff473ce2800c801f46222cb2f69f28fa438dd04b2e94ff562"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-8",
+      "bytes": 131536,
+      "sha256": "9e14067411ecc198bf005afc6a3326f370e13f169e956b93fff84485a1458009"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Cluster",
+      "case": "reduced-9",
+      "bytes": 288,
+      "sha256": "f5958356aa56d26844203b12c924b074f304ccce78d68b3a657e4312325ea646"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-0",
+      "bytes": 948,
+      "sha256": "dc54a187737e103ce79244a3b7a11dd42ff0dc0e1d2ddda0ba0bd5a56a0dc592"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-1",
+      "bytes": 131536,
+      "sha256": "b38e712e2265a83aeb651e1ddd9fec4509237ff53e0da7b405df0c0f601424ec"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-2",
+      "bytes": 131536,
+      "sha256": "8f3c2f000b257db444f9591295070d57274ee8549c6ed1bc16cc51fb3eb8b3ce"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-3",
+      "bytes": 131536,
+      "sha256": "270d1f4e2b7cf31ef7a6de0bb263e2006a31cf3504a13158490fbc69ee2ec099"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-4",
+      "bytes": 131536,
+      "sha256": "f1fa76e82cd535f5b51a361ab35f2347f9a667ccf438c9610136330a5c93f903"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-5",
+      "bytes": 131536,
+      "sha256": "c295a2d4e50c53d2f5dd60395a40ab75dbad9b5cb33c38ce2cef8355518c8f0e"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-6",
+      "bytes": 131536,
+      "sha256": "e1db8d50919109ad587cddfe02fa831993fbdad09922ce079b27ff493f1a2e45"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-7",
+      "bytes": 131536,
+      "sha256": "3ce12717c25c481568fa27751d04d50d4453b486424e7e5ef278695e69201d8d"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-8",
+      "bytes": 131536,
+      "sha256": "4ebbc2ebea467ac1893c28bd5ac29d7a1a53cd4a5fd467f91357cba4667fcc3f"
+    },
+    {
+      "geometry": "Point",
+      "tier": "Density",
+      "case": "reduced-9",
+      "bytes": 288,
+      "sha256": "594aff648cd89c0f488447dcab1fbb3c8502516420a5c07aa4e3285dafe6d023"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Cluster",
+      "case": "reduced-0",
+      "bytes": 904,
+      "sha256": "619268a9ab8d8302df5196ac82468684d97189fbd834c96c10bf8444d60f1261"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Cluster",
+      "case": "reduced-1",
+      "bytes": 131536,
+      "sha256": "1d087c14d3cdd7ebbce4b611dbe936f47867494d5e6abb63012c60ffdded07e3"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Cluster",
+      "case": "reduced-2",
+      "bytes": 131536,
+      "sha256": "c7de11a7d713580d1c37e0d4aa9ac8bde406a877e0589a5e2d479495b994b856"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Cluster",
+      "case": "reduced-3",
+      "bytes": 131536,
+      "sha256": "56b4a768d9a94ced155999de7bac55bb6ed788e4059058b815c61d9609ae9254"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Cluster",
+      "case": "reduced-4",
+      "bytes": 131536,
+      "sha256": "f643ca95b306c1073f0c1255d34cf47be9f6c8ca6ca9f4ecd55aed15b2ab1cdd"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Cluster",
+      "case": "reduced-5",
+      "bytes": 288,
+      "sha256": "13ee44447cbb445c9aea25b74dde9609b3e0ae1bcc6e10a3aedb65c24bdab62f"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Density",
+      "case": "reduced-0",
+      "bytes": 948,
+      "sha256": "07daa46a645ca3438bd0332578645317bb5588496c256e2cfbf79317494c267b"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Density",
+      "case": "reduced-1",
+      "bytes": 131536,
+      "sha256": "0c9426f0eaf79aa435a74de0b907ce6fe4ce80ac2aea697609e8214bffa4bd62"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Density",
+      "case": "reduced-2",
+      "bytes": 131536,
+      "sha256": "70d8104b42f1cb47e257c6412451029b6e3fded6058bc5590cc330ed2f185237"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Density",
+      "case": "reduced-3",
+      "bytes": 131536,
+      "sha256": "6dbe626d6a2c68fa1f238b5bdd177e523e3b600652e03cab4e6841b337dafd74"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Density",
+      "case": "reduced-4",
+      "bytes": 131536,
+      "sha256": "e10ac4ec1d56e8963a55700bfb478c56b86c47d4f9f5849d7cb483b7a923ac0b"
+    },
+    {
+      "geometry": "MultiPoint",
+      "tier": "Density",
+      "case": "reduced-5",
+      "bytes": 288,
+      "sha256": "66c7edb23f61a5f4d06d218986ed286754439d68c6508d7432913a0c53f636b7"
+    }
+  ],
+  "claims": [
+    "ordinary None v1 bytes/native-WASM parity",
+    "selected canonical/selected hierarchy exact Scene+metadata+XYSE and exact hit bytes",
+    "full-u64 duplicate/null-row intent and signed-i64 time",
+    "explicit34 link and privateScope mismatch reject",
+    "unscoped43 Unsupported preserves issuedState",
+    "five independent lanes/State→Query→Data same-handle replacement",
+    "rows and frozen full intent after Source/lane disposal",
+    "two-pass selected cluster/density counts identical canonical output at32769/32770vertices",
+    "complete paged cell membership deduplicates MultiPoint original rows after Source/lane disposal"
+  ],
+  "limitations": [
+    "no selected massive latency or1B execution claim",
+    "no public live hierarchy host controller",
+    "no browser WebGL/OS/GPU ledger claim"
+  ]
+}
