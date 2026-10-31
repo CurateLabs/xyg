@@ -1,0 +1,15 @@
+{
+  "name": "native-seam",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py"
+  ],
+  "exitCode": 0,
+  "seconds": 1.516,
+  "rawSha256": "57be52af4623aba7a288aead2dd5009536a86c289e7cfad4320fe4586d4c738b",
+  "log": "native-seam.txt.gz",
+  "gzipSha256": "f32dec581b6f8d9524144441e48b46f9fab983034a8cafa19a1424bda6888c96"
+}

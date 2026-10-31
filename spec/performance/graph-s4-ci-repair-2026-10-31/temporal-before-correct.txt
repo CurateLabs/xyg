@@ -1,0 +1,25 @@
+
+running 1 test
+test tests::standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget ... FAILED
+
+failures:
+
+---- tests::standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget stdout ----
+
+thread 'tests::standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget' (1299111) panicked at crates/xyg-wasm/src/lib.rs:1885:13:
+assertion `left == right` failed
+  left: 3
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 72 filtered out; finished in 0.03s
+
+   Compiling xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-wasm)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/crates/xyg-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.12s
+     Running unittests src/lib.rs (target/debug/deps/xyg_wasm-3ddcfe47f3a8bc0f)
+error: test failed, to rerun pass `-p xyg-wasm --lib`

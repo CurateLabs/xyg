@@ -151,6 +151,46 @@ function wasmCall(x, handle, name, bytes) {
   return { status, output };
 }
 
+test("standalone temporal owners keep frame and replacement staging at the default arena", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const x = instance.exports;
+  const create = count => {
+    const bytes = Buffer.alloc(32 + count * 16);
+    bytes.write("XYTG");
+    [1, 32, 1, 0, count, 0, 0].forEach((word, i) => bytes.writeUInt32LE(word, 4 + i * 4));
+    for (let i = 0; i < count; i++) bytes.writeBigUInt64LE(BigInt(i + 1), 32 + i * 16);
+    return bytes;
+  };
+  const frame = revision => {
+    const bytes = Buffer.alloc(56);
+    bytes.write("XYTG");
+    [1, 56, 2].forEach((word, i) => bytes.writeUInt32LE(word, 4 + i * 4));
+    bytes.writeBigUInt64LE(BigInt(revision), 16);
+    bytes.writeBigUInt64LE(1n, 40);
+    bytes.writeBigUInt64LE(16n * 1024n * 1024n, 48);
+    return bytes;
+  };
+  for (const count of [32760, 40000]) {
+    const handle = x.xyg_wasm_instance_new(16 * 1024 * 1024);
+    assert.ok(handle > 0);
+    try {
+      const execute = bytes => wasmCall(x, handle, "xyg_wasm_temporal_graph_execute", bytes);
+      assert.equal(execute(create(count)).status, 0);
+      assert.equal(execute(frame(1)).status, 0);
+      assert.equal(execute(create(2).subarray(0, 63)).status, 2);
+      const retained = execute(frame(2));
+      assert.equal(retained.status, 0);
+      assert.equal(new DataView(retained.output.buffer).getUint32(48, true), count);
+      assert.equal(execute(create(2)).status, 0);
+      const replaced = execute(frame(3));
+      assert.equal(replaced.status, 0);
+      assert.equal(new DataView(replaced.output.buffer).getUint32(48, true), 2);
+    } finally {
+      assert.equal(x.xyg_wasm_instance_dispose(handle), 0);
+    }
+  }
+});
+
 function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
   const open = request(instance, group, 1, 0, 19, data.load);
   const handle = new BigUint64Array(1);

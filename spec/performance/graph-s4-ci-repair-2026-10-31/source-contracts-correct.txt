@@ -1,0 +1,3 @@
+ABI artifacts current (537 symbols, v398)
+ABI parity ok (537 symbols, v398; both hosts generated from the typed contract)
+ownership audit ok: 498 tracked production files classified

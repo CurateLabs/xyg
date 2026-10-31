@@ -1,0 +1,14 @@
+{
+  "name": "production-node-parity-correct",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs",
+    "packages/xy-node/test/no_browser_globals.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.706,
+  "rawSha256": "cca2dbb86f3d64f664dd355d0edf9917836a537e9da85d9eb985335abe3c4bd7",
+  "log": "production-node-parity-correct.txt.gz",
+  "gzipSha256": "eec6e7c39f9c76e4287ef5713bc26afbb3425fcb11fe923e2009905a200b9bba"
+}

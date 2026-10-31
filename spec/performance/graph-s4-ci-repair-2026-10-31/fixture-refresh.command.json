@@ -1,0 +1,14 @@
+{
+  "name": "fixture-refresh",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s4-ci-repair-2026-10-31/refresh_fixtures.py"
+  ],
+  "exitCode": 0,
+  "seconds": 7.114,
+  "rawSha256": "7caedc22b88a55546c90988b906b4298e8efa94c8d50ca3823254909cc6e400d",
+  "log": "fixture-refresh.txt.gz",
+  "gzipSha256": "67324c9190cb3ea9e4ea18969f5a94461e7e3f3ed33a7070c21e0ffab4077489"
+}

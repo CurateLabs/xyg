@@ -1,0 +1,15 @@
+........................................................................ [ 19%]
+........................................................................ [ 38%]
+........................................................................ [ 57%]
+........................................................................ [ 76%]
+........................................................................ [ 96%]
+...............                                                          [100%]
+=============================== warnings summary ===============================
+tests/test_animation_emit_cross_host.py: 12 warnings
+tests/test_tooltip_len_emit_cross_host.py: 4 warnings
+tests/test_payload_cross_host.py: 14 warnings
+  /home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/python/xyg/_payload.py:168: RuntimeWarning: more than 8 series use default colors; the default palette repeats every 8 (series 9 wears series 1's color). Pass explicit color= per series, or group series, to keep identities distinct.
+    return emit_trace_materialized(self, t, pw, xr, yr, px_width)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+375 passed, 30 warnings in 18.53s

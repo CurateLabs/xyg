@@ -1,0 +1,53 @@
+TAP version 13
+# Subtest: standalone temporal owners keep frame and replacement staging at the default arena
+ok 1 - standalone temporal owners keep frame and replacement staging at the default arena
+  ---
+  duration_ms: 48.246908
+  type: 'test'
+  ...
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 2 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 79.635805
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/packages/xy-client/dist/xyg-wasm.wasm","bytes":1860254,"sha256":"27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-6a5e6c5a/target/release/libxyg_core.so","nativeSha256":"dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a","diagnosticModule":false}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 3 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 287.907925
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 4 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 23.328476
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 5 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 74.706193
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 6 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 7.469705
+  type: 'test'
+  ...
+# Subtest: @curatelabs/xyg-node modules do not reference browser globals
+ok 7 - @curatelabs/xyg-node modules do not reference browser globals
+  ---
+  duration_ms: 23.071154
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 671.572688

@@ -285,7 +285,7 @@ limits, without another automatic raise.
 
 **S4 local session boundary.** WASM ABI 35 adds five real session exports
 (open/update/render/interact/close), executing the same Rust XYGI/XYGR codec as
-native ABI 397. Scene 34 and painter 17 are unchanged. One instance retains one
+native ABI 398 (the named-signature CI repair). Scene 34 and painter 17 are unchanged. One instance retains one
 session; all reply planes and retry bytes count toward its existing arena
 budget, together with temporal ownership, staging and admitted speculative
 work. Temporal replacement/disposal or geographic acquisition revokes the old
@@ -304,7 +304,7 @@ measurements above continue to describe their own source, not this ABI.
 stamp and default-arena admission repairs, independent correctness and policy
 review approved the source and a separately recorded functionality decision.
 Exactly two size candidates were measured; only the fixed UUID hex writer is
-retained (73 raw / 37 gzip bytes saved). The final optimized module measures
+retained (73 raw / 37 gzip bytes saved). The reviewed budget-decision module measured
 1,860,250 raw / 759,008 gzip6, leaving 358 / 800 bytes. This is 311,860 raw /
 118,299 gzip bytes above accepted S3 because the complete session machinery is
 first reachable through WASM, including resolved CPU paint and atomic state.
@@ -315,6 +315,14 @@ records the separate real shipping build, paired-asset verification and full
 strict-CSP foundation. Historical FAIL/diagnostic records remain unchanged.
 The 16 MiB browser default and 384 MiB maximum are unchanged. This package
 decision establishes no runtime speed, S5–S7, #36, M4 or release acceptance.
+
+The S4 CI repair preserves standalone XYTG staging behavior: temporal retention
+is added to `arena_resize` only alongside a retained GraphSession, matching
+co-owned temporal/session pre-admission. Standalone entity/work/output bounds
+remain unchanged; no new standalone total-residency guarantee is claimed. The
+40,000-node default-arena frame/replacement regression and native ABI 398 policy
+repair, with its fresh 1,860,254 raw / 759,013 gzip6-byte module (354 / 795 bytes
+headroom under the unchanged gates), are recorded in the [CI repair receipt](../performance/graph-s4-ci-repair-2026-10-31/README.md).
 
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
