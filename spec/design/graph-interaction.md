@@ -735,6 +735,8 @@ metadata so the existing Node browser-global guard does not confuse its FFI
 signature string with a runtime global. All 537 native binary function types,
 argument order and calling convention remain unchanged (ABI 397); official ABI
 generation updates the named-signature digest. No guard exemption or runtime
-host behavior change is involved. The final repaired module remains over the
-unchanged package gates; diagnostics and final independent review do not imply
-shipping or M4/#36 acceptance.
+host behavior change is involved. The historical repair exceeded the then-binding
+S3 package gates; its diagnostic receipt remains a failed shipping proof.
+The subsequent separate parent package decision above records real shipping
+assets under the reviewed S4 limits. CI/integration and M4/#36 acceptance remain
+pending; diagnostic execution alone establishes none of them.

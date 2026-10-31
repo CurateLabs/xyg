@@ -1,0 +1,10 @@
+{
+  "scope": "current specification status clarification only; no Rust, ABI, gate or artifact change",
+  "parent": "ffeb94d1861aec6aa6ddb7b1b505e93c92358ecc",
+  "path": "spec/design/graph-interaction.md",
+  "sha256": "905dfef5adebca463638ca239f0551346634d80cacf5a11872624a30fecbb435",
+  "historicalReceipt": "spec/performance/graph-s4-package-budget-2026-10-31/evidence.json",
+  "validationReuse": "all other 44 source bindings and all 14 artifact bindings unchanged; historical repair failure is distinguished from the later real shipping pass",
+  "integrationPending": true,
+  "milestoneAccepted": false
+}
