@@ -1,0 +1,12 @@
+{
+  "sourceFixCommit": "36be1a9b3c567b341de75a85df3b93ec39f6e1b4",
+  "acceptedMain": "c360cf2c0d652790712567522789c29ae34226f2",
+  "reviewedS2": "d47968e1eb66f269ffe7c610fb282ac5da371c7b",
+  "acceptedMainDeltaSha256": "b3c36bfedefd2c53b785a4fb554208fd126ce73e68fda52460e2bd68961590c7",
+  "expectedAndActualIndexTreeBeforeReceipt": "ae0ddfa8db07312cdbd799bafcae61f76ae81828",
+  "resolvedHistoricalConflicts": 15,
+  "reviewedProductTestSpecDiffSha256": "0b955732dadf1eea3466ef53b95f9551256bf1b846925217536f6ca735882c3d",
+  "wholePrDiffBeforeReceiptSha256": "8e04c3e7966cd9834914977503f7133e9677fe70d57ef8a2665a9edc2ede0db1",
+  "independentReviewer": "m4_s2_final_review",
+  "disposition": "approved narrow correction and history-only integration; no blockers"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s3-aggregate-style-repair-2026-10-31/measure.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.103,
+  "rawSha256": "ad6006362dbc6936924bf7e69fe91b418cae6a32b2c6c981c05c8d0184c3f2f8",
+  "log": "measure.txt.gz",
+  "gzipSha256": "17e3b112e08d2856933c4f46baefc8b726b955250462554ba1b4f5bfd859b9f0"
+}

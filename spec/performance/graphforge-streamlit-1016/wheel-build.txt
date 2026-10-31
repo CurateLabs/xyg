@@ -1,0 +1,3 @@
+Building wheel...
+    Finished `release` profile [optimized] target(s) in 0.02s
+Successfully built /tmp/graphforge-streamlit-wheel/xyg-0.0.1.dev2915+fab6aa90-py3-none-linux_x86_64.whl

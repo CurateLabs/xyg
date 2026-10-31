@@ -1,0 +1,15 @@
+{
+  "name": "interaction",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction"
+  ],
+  "exitCode": 0,
+  "seconds": 12.751,
+  "rawSha256": "370a1f3f9f0b48e70184d0bd3d85f39f270f2673f278ceb8cd7d8827351621f7",
+  "gzipSha256": "49f2de29d02e92bf4d90cbde4c403c634301f7ba854d3a0ab97599059d342a8e",
+  "log": "interaction.txt.gz"
+}
