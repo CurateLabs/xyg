@@ -747,6 +747,13 @@ membership. A selected count that cannot fit u32 refuses Budget. The existing
 `DisclosureReport` has exactly node and collapsed fields; S5a invents no member
 report. Boolean fields are 0/1 and reserved words are zero.
 
+Bind and same-owner Rebind construct their outcome from the adopted temporal
+state while holding the destination world lock: `selected` is that state's
+complete selection count, matching the state used to publish the reply.
+They do not mutate the owner's selection or synthesize changed refs or a
+selection event. Unbind still installs a fresh empty Owned state and reports
+zero. Retry bytes and failed-bind rollback retain their existing contracts.
+
 Action facts resolve focus through `stop_of` against the current publication,
 not the UUID stand-in stored in `focus.bytes`. A source-backed displayed node
 uses its exact source node reference. Aggregate tier always uses a stamped

@@ -1,0 +1,14 @@
+{
+  "name": "full-foundation",
+  "command": [
+    "env",
+    "XYG_WASM_FOUNDATION_REPORT=spec/performance/graph-s5a-bind-outcome-repair-2026-11-03/foundation.json",
+    "node",
+    "scripts/wasm_foundation_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 20.585,
+  "rawSha256": "9f70c42f7d6d3cc9136574b5112b954410ca93f73f3095202570d0ff3ea137de",
+  "log": "full-foundation.txt.gz",
+  "gzipSha256": "593e48ce789a3b6ddb9d5c37e539699fd165319e66e56ac4ed2159f0a7be819f"
+}

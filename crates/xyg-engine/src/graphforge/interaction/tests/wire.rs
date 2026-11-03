@@ -540,6 +540,102 @@ fn review_resolved_paint_roundtrip_routes_frames_aggregate_and_style_refresh() {
 }
 
 #[test]
+fn bind_outcome_counts_adopted_selection_on_initial_rebind_and_owner_change() {
+    fn assert_selection(bytes: &[u8], expected: u32) {
+        let reply = Container::decode(bytes, wire::RESULT_MAGIC).unwrap();
+        assert_eq!(
+            reply
+                .get("outcome.u32", 0)
+                .unwrap()
+                .as_u32("outcome.u32")
+                .unwrap(),
+            [1, 0, expected, 0]
+        );
+        let selected = ["node.flags.u32", "edge.flags.u32"]
+            .into_iter()
+            .map(|name| {
+                reply
+                    .get(name, 0)
+                    .unwrap()
+                    .as_u32(name)
+                    .unwrap()
+                    .iter()
+                    .filter(|flags| **flags & 2 != 0)
+                    .count()
+            })
+            .sum::<usize>();
+        assert_eq!(selected, expected as usize);
+    }
+    let host = temporal(&[id(1), id(2), id(3)]);
+    host.graph
+        .lock()
+        .unwrap()
+        .as_mut()
+        .unwrap()
+        .set_selection([id(2)], [id(11)])
+        .unwrap();
+    let mut s = opened();
+    for sequence in [2, 3] {
+        let bind = request(sequence, s.session().render_revision(), 18, |b| {
+            b.u64s("temporal.u64", 0, &[1])
+        });
+        let reply = s
+            .execute(&bind, 0, Some((host.clone(), HANDLE)))
+            .unwrap()
+            .to_vec();
+        assert_selection(&reply, 2);
+        assert_eq!(
+            s.execute(&bind, 0, Some((host.clone(), HANDLE))).unwrap(),
+            reply
+        );
+    }
+    let target = temporal(&[id(1), id(2), id(3)]);
+    target
+        .graph
+        .lock()
+        .unwrap()
+        .as_mut()
+        .unwrap()
+        .set_selection([id(3)], [])
+        .unwrap();
+    let bind = request(4, s.session().render_revision(), 18, |b| {
+        b.u64s("temporal.u64", 0, &[1])
+    });
+    let reply = s
+        .execute(&bind, 0, Some((target.clone(), HANDLE)))
+        .unwrap()
+        .to_vec();
+    assert_selection(&reply, 1);
+    assert_eq!(
+        host.graph
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .interaction_state()
+            .selection()
+            .len(),
+        2
+    );
+    let unbind = request(5, s.session().render_revision(), 18, |b| {
+        b.u64s("temporal.u64", 0, &[0])
+    });
+    assert_selection(s.execute(&unbind, 0, None).unwrap(), 0);
+    assert_eq!(
+        target
+            .graph
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .interaction_state()
+            .selection()
+            .len(),
+        1
+    );
+}
+
+#[test]
 fn review_live_owner_stamp_rebind_unbind_and_cross_owner_interleaving() {
     let host = temporal(&[id(1), id(2), id(3)]);
     let mut s = opened();

@@ -1,0 +1,8 @@
+{
+  "reviewer": "s5a_final_review",
+  "disposition": "approved; no blocking findings",
+  "reviewedNonreceiptDiffSha256": "b6fa29aa52d08e3d4743f5f1fa198c45dd4a2a251cd51873fb44df51f1774c91",
+  "historicalReceiptFilesUnchanged": 3063,
+  "screenshotsUnchangedFromReviewedS5a": 6,
+  "publicAcceptance": false
+}

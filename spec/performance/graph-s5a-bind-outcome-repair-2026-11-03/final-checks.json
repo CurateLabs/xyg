@@ -1,0 +1,53 @@
+{
+  "nonreceiptDiffSha256": "b6fa29aa52d08e3d4743f5f1fa198c45dd4a2a251cd51873fb44df51f1774c91",
+  "commands": {
+    "hooks": {
+      "name": "hooks",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 0.764,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "hooks.txt.gz",
+      "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "name": "ruff",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.14,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "ruff.txt.gz",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "name": "format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.055,
+      "rawSha256": "00f9077ec875b6b0e4f3dbf71430f4c7f83fd4b0d4d23cb0750dfe4ef2ca74c6",
+      "log": "format.txt.gz",
+      "gzipSha256": "84a189f100ddef3c8f7b46e71d6b5934850133fd8ef75e03df7a671f9b846abc"
+    }
+  }
+}

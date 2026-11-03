@@ -1,0 +1,59 @@
+
+running 2 tests
+test graphforge_session::tests::wasm_open_retry_memory_refusal_close_and_transport_conflicts ... ok
+test graphforge_session::tests::wasm_bound_frame_refresh_replacement_disposal_and_instance_isolation ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 71 filtered out; finished in 0.01s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+   Compiling xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/crates/xyg-wasm)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/crates/xyg-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.13s
+     Running unittests src/lib.rs (target/debug/deps/xyg_wasm-3ddcfe47f3a8bc0f)
+     Running unittests src/bin/geo_layers_conformance.rs (target/debug/deps/geo_layers_conformance-88cf0bd6650d2b15)
+     Running unittests src/bin/geo_scale_conformance.rs (target/debug/deps/geo_scale_conformance-2400c4182f129eff)
+     Running unittests src/bin/geo_scene_conformance.rs (target/debug/deps/geo_scene_conformance-d04cb3b8fd65264f)
+     Running unittests src/bin/geo_viewport_conformance.rs (target/debug/deps/geo_viewport_conformance-b4df62b62cbe7fe8)
+     Running unittests src/bin/xyts_conformance.rs (target/debug/deps/xyts_conformance-1a5886155bc8657c)
+     Running tests/geo_scale_budget.rs (target/debug/deps/geo_scale_budget-b44b564d88364ab7)
+     Running tests/geo_transport_budget.rs (target/debug/deps/geo_transport_budget-5a87712d34ad15b6)
+     Running tests/painter_admission_parity.rs (target/debug/deps/painter_admission_parity-3bb7b0c70b93d07b)

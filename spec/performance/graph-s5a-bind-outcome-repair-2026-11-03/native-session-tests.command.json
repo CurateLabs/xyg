@@ -1,0 +1,16 @@
+{
+  "name": "native-session-tests",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-core",
+    "graphforge_session_ffi"
+  ],
+  "exitCode": 0,
+  "seconds": 5.374,
+  "rawSha256": "069092cf452e9ea270be40ae163cf65dbe27678df38616e2d85a51ef6b612871",
+  "log": "native-session-tests.txt.gz",
+  "gzipSha256": "b3840212c653210ab9db93ee363786873b6bfbd7e0ef0f6c5f99cd8406bf768e"
+}

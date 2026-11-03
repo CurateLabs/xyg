@@ -859,8 +859,11 @@ impl WireSession {
                             visibility,
                             temporal_revision,
                         });
-                        let (mut candidate, reply) =
-                            Self::finish(candidate, &r, OpOutcome::default())?;
+                        let outcome = OpOutcome {
+                            selected: state.selection().len(),
+                            ..OpOutcome::default()
+                        };
+                        let (mut candidate, reply) = Self::finish(candidate, &r, outcome)?;
                         candidate.slot = StateSlot::Bound {
                             host: Arc::clone(&host),
                             handle,

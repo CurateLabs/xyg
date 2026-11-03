@@ -529,7 +529,15 @@ test("real native/WASM binding shares temporal frames and revokes replaced owner
     const bind = request(pair.instance, pair.group, 2, 0, 18, [field("temporal.u64", "u64", [1n])]);
     assert.equal(wasmCall(x, other, "xyg_wasm_graphforge_session_interact", bind).status, -10, "another instance cannot borrow the live owner");
     const bound = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(bound, "outcome.u32")], [1, 0, 0, 0]);
     pair.run(10, [field("uuids.uuid", "uuid", nodes.subarray(0, 16))]);
+    const detached = pair.run(18, [field("temporal.u64", "u64", [0n])]);
+    assert.deepEqual([...value(detached, "outcome.u32")], [1, 0, 0, 0]);
+    const adopted = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(adopted, "outcome.u32")], [1, 0, 1, 0], "binding adopts the existing owner selection count");
+    assert.ok(value(adopted, "node.flags.u32")[0] & 2);
+    const rebound = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(rebound, "outcome.u32")], [1, 0, 1, 0], "same-owner rebind reports the same authoritative selection");
     temporalGraphFrame(owner, { revision: 1n, cursor: 5n, range: [0n, 10n] });
     const frame = new Uint8Array(56); frame.set(Buffer.from("XYTG"));
     const fv = new DataView(frame.buffer);
@@ -542,7 +550,8 @@ test("real native/WASM binding shares temporal frames and revokes replaced owner
     const refreshed = pair.run(21);
     assert.ok(value(refreshed, "header.u32")[0] > value(bound, "header.u32")[0]);
     assert.ok(value(refreshed, "node.flags.u32")[0] & 2, "the authoritative temporal world retains selection across frames");
-    pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    const frameRebound = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(frameRebound, "outcome.u32")], [1, 0, 1, 0]);
     temporalGraphFrame(owner, { revision: 2n, cursor: 6n, range: [0n, 10n] });
     fv.setBigUint64(16, 2n, true);fv.setBigInt64(24, 6n, true);
     assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", frame).status, 0);

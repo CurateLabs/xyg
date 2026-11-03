@@ -2813,6 +2813,10 @@ requiring a Rust toolchain — an instant adoption cliff.
   The [S5a package decision receipt](performance/graph-s5a-package-budget-2026-11-03/README.md)
   owns actual shipping/paired-asset/full strict-CSP proof. Historical failures
   remain immutable. S5b/S6/S7, scale and M4/#108 acceptance remain outstanding.
+  The subsequent [binding-count correction](performance/graph-s5a-bind-outcome-repair-2026-11-03/README.md)
+  retains these limits: its fresh production artifact is 1,872,568 raw /
+  764,079 gzip6 bytes, leaving 328 / 849 bytes. It reports the adopted temporal
+  selection count without changing ownership, ABI, runtime budgets or guards.
 - **S4 session ABI growth originally failed the S3 limits.** Native ABI 397 /
   WASM ABI 35 expose the shared graph-session codec/transaction and disposable
   temporal owners, with admitted speculative work and complete retry replies.

@@ -1,0 +1,12 @@
+{
+  "name": "module-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s5a-bind-outcome-repair-2026-11-03/measure.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.142,
+  "rawSha256": "908529295132d5bf37c1fd72e62c464286ad0f278ac81935af73085a7a85e489",
+  "log": "module-measure.txt.gz",
+  "gzipSha256": "ba7b3752b2bd927779636303b1b6b238d1d047d0167f5b65006d59f799381276"
+}

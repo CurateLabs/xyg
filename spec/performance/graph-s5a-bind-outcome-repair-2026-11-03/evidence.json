@@ -1,0 +1,398 @@
+{
+  "base": "5840b4790660d8bafa59e9b5308b450c51f55713",
+  "artifactCommit": null,
+  "scope": "bound selection-count correction; no issue or release acceptance",
+  "sources": {
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "53fd23517830eec19ba3f124cee99027de61ab05913677dae74bd4386b8a90f7",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "39d5c5b45d736d6cd6dbfced663d4a2aa552f0c9486ccd1d24ceea77b3678211",
+    "packages/xy-node/test/graph-session-wire.test.mjs": "8f571505b1d6e9ef726a229e532ce149d7cd99e91ed8435b96706cd8ae9a5e29",
+    "spec/design-dossier.md": "d03808edb3a5349355e89b7a46eae125bdb9df128bafa988372aa6f17b203fda",
+    "spec/design/browser-wasm.md": "017348388ce57e73c1798906578d0d56304f9f254c18f0952eb899b0c04ede0c",
+    "spec/design/graph-interaction.md": "59d8f8f480f4d0ecabad3c23f3bf3333a50253a9f0c4179b2a0f0185c50e4735",
+    "spec/releases/0.6.0-api-inventory.json": "80ab42bc60dd6279809347b64078e446bcbc985f64b50b42d8ae295645020bf6"
+  },
+  "nonreceiptDiffSha256": "b6fa29aa52d08e3d4743f5f1fa198c45dd4a2a251cd51873fb44df51f1774c91",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6075176,
+      "sha256": "95c16daf37ce19af5a9d3b9d1f08a4d8e12580f522b2dfea90aab90f121f509e"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1872568,
+      "sha256": "862a04c4053dc32f2757a35e8a39d79e837ea276ab0b2a14cd380bfbfb89b820"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1872568,
+      "sha256": "862a04c4053dc32f2757a35e8a39d79e837ea276ab0b2a14cd380bfbfb89b820"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2515949,
+      "sha256": "56399d314eec69b5bcf229d73143c716ebc009ba89c13455962094d4f28effde"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2515949,
+      "sha256": "56399d314eec69b5bcf229d73143c716ebc009ba89c13455962094d4f28effde"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f63367d6015c0d9a5f68de97f61ad3e077d147b13656797829d55982d201085d"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f63367d6015c0d9a5f68de97f61ad3e077d147b13656797829d55982d201085d"
+    }
+  },
+  "historicalReceiptFilesUnchanged": 3063,
+  "historicalGitListingSha256": "8052d03655026ee080775f8c27991c9f3c30ed4f38c3812f0b487e332324d076",
+  "commands": {
+    "abi-smoke.command.json": {
+      "name": "abi-smoke",
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.579,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "log": "abi-smoke.txt.gz",
+      "gzipSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "after-engine.command.json": {
+      "name": "after-engine",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "-p",
+        "xyg-engine",
+        "graphforge::interaction"
+      ],
+      "exitCode": 0,
+      "seconds": 13.359,
+      "rawSha256": "eb9b2ca898d89ceba08731d50252e7aa0a8f3904e23e1803ff32095aed2d4f84",
+      "log": "after-engine.txt.gz",
+      "gzipSha256": "90a3530065843d90944726b2831e8f0ff3847c53ea11e43432d9e88d4fae4cc7"
+    },
+    "before-actual.command.json": {
+      "name": "before-actual",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=real native/WASM binding",
+        "packages/xy-node/test/graph-session-wire.test.mjs"
+      ],
+      "exitCode": 1,
+      "seconds": 0.274,
+      "rawSha256": "aeb7a738579ddf03d5c861eca549c7bfad3055b0c1c1902c1f98cd3dc75dcd0b",
+      "log": "before-actual.txt.gz",
+      "gzipSha256": "2c042ea36e269b24b0dff1709a260d45f8ecb8c6f4abd74b0b26f5f0f4b93564"
+    },
+    "before.command.json": {
+      "name": "before",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "-p",
+        "xyg-engine",
+        "bind_outcome_counts_adopted_selection_on_initial_rebind_and_owner_change"
+      ],
+      "exitCode": 101,
+      "seconds": 17.079,
+      "rawSha256": "067ef59cbeaae31ca880352286cfb84ea0444ec832c0eebe384c5ae65828d123",
+      "log": "before.txt.gz",
+      "gzipSha256": "960b5b182aa5d55f4cc4e14d829a50d1d82e939887a450dbb413ad5d6a1ae860"
+    },
+    "capture.command.json": {
+      "name": "capture",
+      "command": [
+        "python3",
+        "spec/performance/graph-s5a-bind-outcome-repair-2026-11-03/capture.py"
+      ],
+      "exitCode": 0,
+      "seconds": 1.943,
+      "rawSha256": "317552d5b8bdc0b298a626f2911d335975956b09aff3baa4cb6da4c3b8bbbc64",
+      "log": "capture.txt.gz",
+      "gzipSha256": "df0cb6a0fd98423d8cd1a3f26603990103c2a75a0e72be5245cd07546b670240"
+    },
+    "clippy.command.json": {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--offline",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exitCode": 0,
+      "seconds": 22.112,
+      "rawSha256": "07e057250561267704da6cd32500b86ef859f169df15116a2719f96451fd3d17",
+      "log": "clippy.txt.gz",
+      "gzipSha256": "2586f4a17a572c4e06ce69b0556a448d2429424491a611899b5c53233b31a052"
+    },
+    "declarations.command.json": {
+      "name": "declarations",
+      "command": [
+        "python3",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "seconds": 2.099,
+      "rawSha256": "f2737142275b336dd87cbdc6c39e1c181131432403a98ac7c4614d8f7a0a3eec",
+      "log": "declarations.txt.gz",
+      "gzipSha256": "eedd1b5a16871423c84a9e799685d37a89674b1c6bf51d1d1cb8d4a2fa67ceff"
+    },
+    "format.command.json": {
+      "name": "format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.055,
+      "rawSha256": "00f9077ec875b6b0e4f3dbf71430f4c7f83fd4b0d4d23cb0750dfe4ef2ca74c6",
+      "log": "format.txt.gz",
+      "gzipSha256": "84a189f100ddef3c8f7b46e71d6b5934850133fd8ef75e03df7a671f9b846abc"
+    },
+    "full-foundation.command.json": {
+      "name": "full-foundation",
+      "command": [
+        "env",
+        "XYG_WASM_FOUNDATION_REPORT=spec/performance/graph-s5a-bind-outcome-repair-2026-11-03/foundation.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 20.585,
+      "rawSha256": "9f70c42f7d6d3cc9136574b5112b954410ca93f73f3095202570d0ff3ea137de",
+      "log": "full-foundation.txt.gz",
+      "gzipSha256": "593e48ce789a3b6ddb9d5c37e539699fd165319e66e56ac4ed2159f0a7be819f"
+    },
+    "hooks.command.json": {
+      "name": "hooks",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 0.764,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "hooks.txt.gz",
+      "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "inventory-refresh.command.json": {
+      "name": "inventory-refresh",
+      "command": [
+        "python3",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "exitCode": 0,
+      "seconds": 5.515,
+      "rawSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+      "log": "inventory-refresh.txt.gz",
+      "gzipSha256": "829f2c1074a4f38acde3d22c1ecb789a662925c5c59afe71127d27c0648c42c7"
+    },
+    "module-measure.command.json": {
+      "name": "module-measure",
+      "command": [
+        "node",
+        "spec/performance/graph-s5a-bind-outcome-repair-2026-11-03/measure.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 0.142,
+      "rawSha256": "908529295132d5bf37c1fd72e62c464286ad0f278ac81935af73085a7a85e489",
+      "log": "module-measure.txt.gz",
+      "gzipSha256": "ba7b3752b2bd927779636303b1b6b238d1d047d0167f5b65006d59f799381276"
+    },
+    "native-build.command.json": {
+      "name": "native-build",
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "--offline",
+        "-p",
+        "xyg-core"
+      ],
+      "exitCode": 0,
+      "seconds": 112.952,
+      "rawSha256": "450a8892503ccf06a6793d24c9ae407b583c856b6df5b450de5b165796e5a0b1",
+      "log": "native-build.txt.gz",
+      "gzipSha256": "b657e4855f2e29ffb59c7f7aa0823031b6bc28ff07077eccc1e64cb5929ea9f1"
+    },
+    "native-session-tests.command.json": {
+      "name": "native-session-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "-p",
+        "xyg-core",
+        "graphforge_session_ffi"
+      ],
+      "exitCode": 0,
+      "seconds": 5.374,
+      "rawSha256": "069092cf452e9ea270be40ae163cf65dbe27678df38616e2d85a51ef6b612871",
+      "log": "native-session-tests.txt.gz",
+      "gzipSha256": "b3840212c653210ab9db93ee363786873b6bfbd7e0ef0f6c5f99cd8406bf768e"
+    },
+    "paired-assets.command.json": {
+      "name": "paired-assets",
+      "command": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.199,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "log": "paired-assets.txt.gz",
+      "gzipSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "python-session.command.json": {
+      "name": "python-session",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graph_session_abi.py"
+      ],
+      "exitCode": 0,
+      "seconds": 1.031,
+      "rawSha256": "7d42ef5504b9f8dea803cd978f146b4a7a910815a154ed9e4e59883957d8862e",
+      "log": "python-session.txt.gz",
+      "gzipSha256": "c4ecf08ef2b12eb571aac3674b4b303f57f13a76874d43e60cf17c0edbbf4293"
+    },
+    "ruff.command.json": {
+      "name": "ruff",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.14,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "ruff.txt.gz",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "shipping-package.command.json": {
+      "name": "shipping-package",
+      "command": [
+        "npm",
+        "run",
+        "build:wasm"
+      ],
+      "exitCode": 0,
+      "seconds": 238.424,
+      "rawSha256": "058d63bf0d2e16f59a49b118760425d3d3d0079f9ebc4d65815effe971077b0e",
+      "log": "shipping-package.txt.gz",
+      "gzipSha256": "665a555aedc23592c14283ec0bd2f7caa6f83383929b07e175c04e72163a4763"
+    },
+    "shipping-replay.command.json": {
+      "name": "shipping-replay",
+      "command": [
+        "env",
+        "-u",
+        "XYG_SESSION_WASM",
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "js/test/package-wasm-contract.test.mjs",
+        "js/test/package-wasm-manifest.test.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 3.757,
+      "rawSha256": "1a45e03b0db5b28414e2ba5bf5c166f1cac05750c48aeb41968592e6dfb3e3ff",
+      "log": "shipping-replay.txt.gz",
+      "gzipSha256": "7f43d96303e805dc6179e2b8068f4b44fa744e6dd908b8931f982c08ed4dbaf4"
+    },
+    "wasm-declarations.command.json": {
+      "name": "wasm-declarations",
+      "command": [
+        "python3",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "seconds": 0.11,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log": "wasm-declarations.txt.gz",
+      "gzipSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "wasm-session-tests.command.json": {
+      "name": "wasm-session-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "-p",
+        "xyg-wasm",
+        "graphforge_session"
+      ],
+      "exitCode": 0,
+      "seconds": 3.222,
+      "rawSha256": "aaa63d1b5dae4d565e5aa34dffeea10f165047f96b4dd1ce9efa7c5799cdb237",
+      "log": "wasm-session-tests.txt.gz",
+      "gzipSha256": "a4598606786c49c60f8b7f4b70c2b5136ede9cea3169711f4c58a7c12bfd95c2"
+    }
+  },
+  "module": {
+    "source": "production-dist",
+    "diagnosticModule": false,
+    "artifactCommit": null,
+    "node": "v22.23.4",
+    "bytes": 1872568,
+    "gzip6Bytes": 764079,
+    "sha256": "862a04c4053dc32f2757a35e8a39d79e837ea276ab0b2a14cd380bfbfb89b820",
+    "gzip6Sha256": "f73768daa491f1bd12dd25ce7adf2c2ed4355ac8aab05d1d840cb1062c5d4a66",
+    "rawLimit": 1872896,
+    "gzip6Limit": 764928,
+    "rawHeadroom": 328,
+    "gzip6Headroom": 849,
+    "wasmAbi": 35,
+    "sceneVersion": 34,
+    "painterVersion": 17,
+    "functionExports": 65
+  }
+}

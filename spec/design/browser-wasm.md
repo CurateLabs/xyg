@@ -391,6 +391,17 @@ retains the failed old-gate producer and diagnostic replay. Historical failures
 remain immutable. This decision establishes no runtime speed, graph scale,
 S5b/S6/S7, issue/milestone or release acceptance.
 
+The subsequent S5a binding-count repair builds the reply outcome from the
+adopted temporal selection under the existing destination world lock. Its
+fresh production module measures **1,872,568 raw / 764,079 gzip6 bytes**,
+SHA-256 `862a04c4053dc32f2757a35e8a39d79e837ea276ab0b2a14cd380bfbfb89b820`.
+It adds 27 / 16 bytes over the initial S5a artifact and passes the unchanged
+1,829/747-KiB gates with 328 / 849 bytes of headroom. No ABI, export, compiler,
+optimizer, dependency or runtime-budget change accompanies the correction.
+The [binding repair receipt](../performance/graph-s5a-bind-outcome-repair-2026-11-03/README.md)
+retains failing-before and passing-after count tests plus actual package proof;
+the earlier source/artifact receipts remain historical and unchanged.
+
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
 After merging main `4631927`, the local optimized build measures **1,542,222 raw
