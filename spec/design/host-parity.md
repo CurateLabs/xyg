@@ -2036,3 +2036,19 @@ are specified in [geographic-hosts.md](geographic-hosts.md), including public
 composition wiring, one-mount admission, release acknowledgment, actual host
 journey evidence and the remaining native live-update/orphan-recovery gates.
 This checkpoint is pending follow-up PR integration.
+
+Persisted authoring documents use the native-free
+[`@curatelabs/xyg-node/intent` contract](persisted-intent.md). The editor resolves
+project files and supplies bytes; this contract stores no canonical scenes or
+host-owned rendering policy.
+
+The shared packed tick adapter also accepts `createHostTickEngine(transport)`
+with `attachRustTicks(view, {worker: host, workerOwnership: "own"})`. This is an
+explicit native-host route for editor webviews whose origin cannot load the
+WASM module Worker. The transport relays bounded XYTK/XYTO bytes to Node's
+`tickResolvePacked`; it owns no tick generation, formatting or placement.
+Per-request identity, cancellation and disposal remain in XYG. The browser
+surface reports `rust-native` for this route and keeps `rust-wasm` for the
+existing Worker route. These are explicit hosts, never runtime fallbacks.
+`packages/xy-node/test/host-ticks.test.mjs` checks byte identity with native
+Rust, cancellation and late-response rejection.

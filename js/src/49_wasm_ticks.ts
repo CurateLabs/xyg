@@ -1,7 +1,6 @@
 import {
   XygWasmError,
   type XygWasmTask,
-  type XygWasmWorker,
 } from "./47_wasm";
 import type { ChartView } from "./50_chartview";
 import {
@@ -410,9 +409,18 @@ export function decodeWasmTickBatch(buffer: ArrayBuffer): XygWasmTickBatchResult
   return Object.freeze({ sequence, axes: Object.freeze(axes) });
 }
 
+/** Packed tick engines share Rust-owned semantics across native transports and WASM. */
+export interface XygTickEngine {
+  readonly ready: Promise<unknown>;
+  readonly hostKind?: 'native' | 'wasm';
+  allocateTickSequence(): number;
+  resolveTicks(request:ArrayBuffer,options:{sequence:number}): XygWasmTask<ArrayBuffer>;
+  dispose(): Promise<unknown> | void;
+}
+
 /** Invoke the Worker seam while preserving the Worker-owned cancellation id. */
 export function resolveWasmTicks(
-  worker: XygWasmWorker,
+  worker: XygTickEngine,
   request: XygWasmTickBatchRequest,
 ): XygWasmTask<XygWasmTickBatchResult> {
   const task = worker.resolveTicks(encodeWasmTickBatch(request), { sequence: request.sequence });
@@ -421,7 +429,7 @@ export function resolveWasmTicks(
 
 export interface XygWasmTicksOptions {
   /** Explicitly provisioned external module Worker and Rust/WASM instance. */
-  worker: XygWasmWorker;
+  worker: XygTickEngine;
   /** Borrow by default; only a dedicated Worker should be owned here. */
   workerOwnership?: "borrow" | "own";
 }
@@ -490,7 +498,7 @@ export class XygWasmTicksHandle {
 
   constructor(
     private readonly view: ChartView & any,
-    private readonly worker: XygWasmWorker,
+    private readonly worker: XygTickEngine,
     private readonly ownWorker: boolean,
   ) {}
 
@@ -995,7 +1003,7 @@ export class XygWasmTicksHandle {
       });
       this.view._tickFailure = null;
       this.view._tickFailurePublished = false;
-      if (this.view.root) this.view.root.dataset.xyTickState = "rust-wasm";
+      if (this.view.root) this.view.root.dataset.xyTickState = `rust-${this.worker.hostKind ?? "wasm"}`;
       if (this.active && !this.disposed && !this.view._destroyed && this.view._wasmTicks === this) {
         // Rust labels are unavailable to the constructor's first layout pass.
         // Reconcile them through the complete resize path so plot, mark canvas,
@@ -1140,7 +1148,7 @@ export async function attachWasmTicks(
   view._wasmTicks = handle;
   view._tickFailure = null;
   view._tickFailurePublished = false;
-  if (view.root) view.root.dataset.xyTickState = "rust-wasm";
+  if (view.root) view.root.dataset.xyTickState = `rust-${options.worker.hostKind ?? "wasm"}`;
   previous?.destroy?.();
   // Atomic cutover: the constructor could not measure Rust labels before this
   // first cache existed. Reconcile through the complete resize path so the

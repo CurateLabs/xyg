@@ -393,3 +393,8 @@ export type { XygGeoScaleBridge, XygGeoScaleQuery, XygGeoQueryBudget, XygGeoTime
 export type { XygGeoInteractionEvent } from "./61_geo_catalog";
 
 export type { GeoOverviewFrozenBinary, OverviewBinaryFreezeOptions } from './74_geo_overview_snapshot';
+
+export { createHostTickEngine, XygHostTickEngine } from './49_host_ticks';
+export type { XygHostTickTransport } from './49_host_ticks';
+export { attachWasmTicks as attachRustTicks } from './49_wasm_ticks';
+export type { XygTickEngine } from './49_wasm_ticks';
