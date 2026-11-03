@@ -1,0 +1,162 @@
+{
+  "environment": {
+    "UV_OFFLINE": "1",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481/target/release/libxyg_core.so"
+  },
+  "results": [
+    {
+      "label": "native-build",
+      "argv": [
+        "/home/ubuntu/.cargo/bin/cargo",
+        "build",
+        "--release",
+        "--offline"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:10:39.477073+00:00",
+      "elapsed_seconds": 0.164312,
+      "exit_code": 0,
+      "raw_output": "native-build.txt"
+    },
+    {
+      "label": "focused-nearby",
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_graph_session_abi.py",
+        "tests/test_abi_parity.py",
+        "tests/test_generated_abi_trace.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_audit_python_host_core.py",
+        "-q"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:10:39.641440+00:00",
+      "elapsed_seconds": 18.85717,
+      "exit_code": 0,
+      "raw_output": "focused-nearby.txt"
+    },
+    {
+      "label": "abi-smoke",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/abi_smoke.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:10:58.498640+00:00",
+      "elapsed_seconds": 0.164386,
+      "exit_code": 0,
+      "raw_output": "abi-smoke.txt"
+    },
+    {
+      "label": "abi-generated",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:10:58.663057+00:00",
+      "elapsed_seconds": 1.918422,
+      "exit_code": 0,
+      "raw_output": "abi-generated.txt"
+    },
+    {
+      "label": "ownership",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:11:00.581512+00:00",
+      "elapsed_seconds": 0.61512,
+      "exit_code": 0,
+      "raw_output": "ownership.txt"
+    },
+    {
+      "label": "python-host-inventory",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/audit_python_host_core.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:11:01.196662+00:00",
+      "elapsed_seconds": 3.420418,
+      "exit_code": 0,
+      "raw_output": "python-host-inventory.txt.gz"
+    },
+    {
+      "label": "typecheck",
+      "argv": [
+        "uv",
+        "run",
+        "ty",
+        "check",
+        "python/xyg/_graph_session.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:11:04.617114+00:00",
+      "elapsed_seconds": 0.214462,
+      "exit_code": 0,
+      "raw_output": "typecheck.txt"
+    },
+    {
+      "label": "full-hooks",
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:11:04.831607+00:00",
+      "elapsed_seconds": 0.515082,
+      "exit_code": 0,
+      "raw_output": "full-hooks.txt"
+    },
+    {
+      "label": "full-ruff-check",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:11:05.346720+00:00",
+      "elapsed_seconds": 0.064166,
+      "exit_code": 0,
+      "raw_output": "full-ruff-check.txt"
+    },
+    {
+      "label": "full-ruff-format",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+      "started_at_utc": "2026-11-03T20:11:05.410916+00:00",
+      "elapsed_seconds": 0.032063,
+      "exit_code": 0,
+      "raw_output": "full-ruff-format.txt"
+    }
+  ]
+}

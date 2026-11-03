@@ -982,6 +982,7 @@ Forbidden:
 | `python/xyg/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_geoviewport.py` | Python host | `python-host` | `keep-host`; typed XYVC/XYVR framing only; Rust owns camera/projection policy | — |
 | `python/xyg/_graph.py` | Python host | `python-host` | `keep-host`; ingest/id maps; layout is `xyg_graph_layout` | — |
+| `python/xyg/_graph_session.py` | Python host | `python-host` | `keep-host`; `GraphSession.__init__/_command/close` marshal opaque bytes into generated `_native._lib.xyg_graphforge_session_*` / `xyg_graphforge_coordinate_deliver` calls and serialize native handle lifetime/exact-capacity retries; [private transport contract](graph-session-python-transport.md) bounds Python to buffer coercion/lifecycle, with identity, sequence, admission, layout, selection, geometry and stamps in Rust | — |
 | `python/xyg/_graphforge.py` | Python host | `python-host` | `keep-host`; GraphForge composition framing/decoding and chart wiring over the Rust C ABI (Node `graphforge.js` twin) | — |
 | `python/xyg/_graphforge_container.py` | Python host | `python-host` | `keep-host`; `XYGQ`/`XYGF` container codec (byte-identical to Node and browser) | — |
 | `python/xyg/_hosts.py` | Python host | `python-host` | `keep-host` | — |
