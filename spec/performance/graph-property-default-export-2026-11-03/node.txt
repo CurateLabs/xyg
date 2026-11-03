@@ -1,0 +1,46 @@
+✔ native and WASM compose byte-identical XYGF documents on every fixture (60.39455ms)
+✔ zero-layer defaults repeat on packaged WASM with every persisted identity (36.444912ms)
+✔ composition v2 hierarchy and root conflicts match native and WASM (11.137415ms)
+✔ rendered Scenes are identical and carry every composed identity (13.427713ms)
+✔ rendered Scenes stay identical on graphs large enough to exercise layout seeding (284.379043ms)
+✔ a 100-node GraphForge run renders identical Scenes on both hosts (29.246399ms)
+✔ the browser bundle frames the same request bytes and decodes the same identities (2.642281ms)
+✔ unsupported-schema diagnostics are byte-identical on native and WASM (7.102335ms)
+✔ published Core rc.5 catalog and path-cost schema rejection match actual WASM (54.834989ms)
+✔ a request with no result layer composes the property-graph defaults (6.311511ms)
+✔ zero-layer PNG and SVG exports repeat exactly at the canonical positions (210.326439ms)
+✔ a directed property graph keeps its arrowheads in the interactive graph mark (9.931213ms)
+✔ every node and edge layer joins by UUID, matching an independent decoder (5.044201ms)
+✔ scores become the node metric plane; communities class codes (0.593668ms)
+✔ edge overlays mark members, dim context, and keep persisted identity (0.746677ms)
+✔ identity round-trips for selection: UUID → index → UUID + result rows (0.719254ms)
+✔ failures carry stable codes and no identities or values (1.77695ms)
+✔ missing and extra identity policies are explicit and recorded (1.163117ms)
+✔ diagnostics are value-free (0.750015ms)
+✔ request framing is host-neutral bytes; the document decodes identically (0.720223ms)
+✔ container numbers are little-endian bytes regardless of host order (0.246613ms)
+✔ container codec round-trips and rejects corruption (0.344102ms)
+✔ table documents with inconsistent shapes are rejected, not iterated (0.567602ms)
+✔ graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips (75.471107ms)
+✔ graph mark accepts edge visual-state flags only with edge semantic fields (8.625562ms)
+✔ the Rust ledger covers every GraphForge 0.5.2 contract (0.609243ms)
+✔ derived pairs are identified by layer and result row, never a persisted UUID (0.657994ms)
+✔ ordered overlays expose paths, step order, and position labels (3.516431ms)
+✔ scalar and category results compose as tables and bar charts, never graphs (54.124554ms)
+✔ table cells are escaped text (0.309161ms)
+✔ embeddings: parallel coordinates or explicit coordinates, never dims 0/1 (70.872879ms)
+✔ render requests append the canonical Scene and selections paint selected (0.891527ms)
+✔ webview payloads relay picks back to GraphForge identity (22.136237ms)
+✔ recompositions reuse a layout by node UUID instead of laying out again (20.28178ms)
+✔ composition identities decode lazily and agree with the planes (0.585137ms)
+✔ derived edges carry no provenance row in hover rows (2.293252ms)
+✔ unsupported result-schema versions name the schema and next action (1.4348ms)
+✔ published Core rc.5 catalog composes, including endpoint-only path costs (31.22379ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 693.923399

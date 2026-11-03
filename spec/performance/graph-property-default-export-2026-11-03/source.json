@@ -1,0 +1,35 @@
+{
+  "base": "030c79062138bb8287df2dc93ab6fdc0ecc8747b",
+  "branch": "t3/graph-default-export-proof",
+  "clean_start": true,
+  "parent_uncommitted_changes_copied": false,
+  "diff_command": [
+    "git",
+    "diff",
+    "--cached",
+    "--binary",
+    "--full-index"
+  ],
+  "source_diff_excludes_receipt": true,
+  "source_diff_sha256": "3287a24987da29371610d88592d1c8000f3d32cf8b8224fc20be9e8217d0493d",
+  "files": {
+    "tests/test_graphforge.py": "11bae3c48d41ac0e2e9b6c6b0c16a7d378c5e3abcb6b08ebc3171e083d1bfa80",
+    "packages/xy-node/test/graphforge.test.mjs": "2c4b577926f99c6d76611d4ab81777df49d311aabbbab08986680c7021bad539",
+    "packages/xy-node/test/graphforge-wasm-parity.test.mjs": "048c89e6e203789d46c3fae4aff6675ce585d384c227f8b3fbdaa208d57b4a84",
+    "tests/browser/graph_property_default_export.mjs": "ff4a7904e3ec94e8c5ee11f9d5690efba7cdeca0da13821af69d6ef4401bff30",
+    "tests/fixtures/graphforge/property_default_export.json": "07f0fb3cc214858cf1465006c3bb839885331a3a5a84cec0c58e7ee5da09efd5",
+    "spec/design/graphforge-compositions.md": "3d4db8da04ceb40ca3bb5c9b6326f49a13fcacfca4c85ddbfe0289a1a56af94b",
+    "spec/design-dossier.md": "92854bfbd8f256dd57d79236209a2369a8b3f3c7fb8a548335b4da89cdccf200",
+    "spec/design/graph-mark.md": "543732c9ba829e64a05f2d2ed847e9249eef1d2fc3ec1b0ea00dd6fb997e7cdc",
+    "spec/design/static-document.md": "e0dc937a575b4df2c804da6ca98b6517c055e94e601b92d72270c18c3a5fa68d",
+    "spec/design/host-parity.md": "ac813f7f0d698a6d4c24a8e1a0440894c286074c41fa4954baa3e7141b7d26b6",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "packages/xy-node/package-lock.json": "03e342a714044626343305c4dc6879904c71cdf48c800e4f47d97f918045e376",
+    "js/package-wasm.mjs": "3da52f2cce716e17bcf7a32ae497194c5bbdfdb0cacfd0c630231b6d5e12b4e0",
+    "tests/fixtures/graphforge/results/base-property-nodes.arrow": "625ad3c2dc13420279300339ed294d7b20b08f379b1ed5c45392168d6e3b01dc",
+    "tests/fixtures/graphforge/results/base-property-edges.arrow": "408a4c1a88ceab3f98af1b8a50fa9c1dd40c8dd9d5db1cf28c0d40b9efbac73f",
+    "tests/fixtures/graphforge/results/manifest.json": "9f50ce9df24ac263e4de61299f593cec38c3b3f4eb995bc2ec1d058e3af5676b"
+  }
+}
