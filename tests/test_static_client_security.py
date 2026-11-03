@@ -655,7 +655,8 @@ def test_authored_markers_keep_lod_and_style_channels_cpu_readable() -> None:
 def test_client_refreshes_theme_when_framework_theme_classes_change() -> None:
     """Keep canvas paint synchronized with class- and attribute-driven themes."""
     required = (
-        "new MutationObserver(() => this.refreshTheme())",
+        "this._themeMutationObserver = new MutationObserver((records) => {",
+        "target === this.root || target.contains(this.root)",
         'attributeFilter: ["class", "data-theme", "style"]',
         "this._themeMutationObserver?.disconnect();",
     )

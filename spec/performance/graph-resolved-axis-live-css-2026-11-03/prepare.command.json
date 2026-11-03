@@ -1,0 +1,12 @@
+{
+  "name": "prepare",
+  "command": [
+    "python3",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03/prepare.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.884,
+  "rawSha256": "48549461921aa51db923d697bc5a0dea6ef6d5e282ab6a4f69bd6509872eaeed",
+  "log": "prepare.txt.gz",
+  "gzipSha256": "4f20fe3d0b8f9b8e6dccaef8c2039211cf724b84125990005e9896a6123a420d"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "nearby-tests-final",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_static_client_security.py",
+    "tests/test_dual_axis_live_client.py",
+    "tests/test_live_dual_axis_cross_host.py",
+    "tests/test_static_dual_axis_cross_host.py",
+    "tests/test_scene_chrome_pack_abi.py"
+  ],
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/task-tmp",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "UV_OFFLINE": "1",
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1"
+  },
+  "exitCode": 0,
+  "seconds": 5.817,
+  "rawSha256": "af4bc793863e667db20cdcfc67e31f6d9ddbc376a61e1694efc0c753235c392a",
+  "log": "nearby-tests-final.txt.gz",
+  "gzipSha256": "6b8d3ecce455a117b6bfc61a6d5ac37e435c350aed3be188d2a0266fd9e02c15"
+}

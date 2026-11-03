@@ -1,0 +1,15 @@
+{
+  "name": "final-failing-before",
+  "command": [
+    "node",
+    "tests/browser/resolved_axis_live_css.mjs",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03",
+    "final-before",
+    "target/task-tmp/before-index.js"
+  ],
+  "exitCode": 1,
+  "seconds": 9.099,
+  "rawSha256": "b1432fea28227dcde59107149ba329f987684807b1db6fa5a31261333a92bf65",
+  "log": "final-failing-before.txt.gz",
+  "gzipSha256": "46462fa4e3f8530d95a11cad128aad1c3ec423829edee9f76540ae17a9c84129"
+}

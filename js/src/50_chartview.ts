@@ -685,10 +685,25 @@ export class ChartView {
     // scheme. Watch that cascade path as well so canvas/SVG paint refreshed
     // from --chart-* tokens stays in sync with the CSS-owned chart chrome.
     if (typeof MutationObserver !== "undefined") {
-      this._themeMutationObserver = new MutationObserver(() => this.refreshTheme());
+      this._themeMutationObserver = new MutationObserver((records) => {
+        if (records.some(({ target }) => target === this.root || target.contains(this.root))) {
+          this.refreshTheme();
+          return;
+        }
+        // Reuse this observer for authored class/inline changes on existing
+        // resolved slots. Ignore private SVG and our own clip suppression;
+        // a public-slot edit must not replace that element via a full redraw.
+        if (records.some(({ target, attributeName }) => {
+          const state = this._resolvedSpines?.get(target);
+          return state && target instanceof HTMLElement && (attributeName === "data-theme"
+            || target.getAttribute("class") !== state.publicClass
+            || target.style.cssText !== state.publicStyle);
+        })) this._resolvedSpineCssWatch?.();
+      });
       for (let node = this.root; node; node = node.parentElement) {
         this._themeMutationObserver.observe(node, {
           attributes: true,
+          subtree: node === this.root && Boolean(this.spec._resolvedScenePlot),
           attributeFilter: ["class", "data-theme", "style"],
         });
       }
@@ -7647,10 +7662,51 @@ export class ChartView {
 
 
 
+  // Pseudo-classes do not mutate attributes. Re-evaluate only the existing
+  // resolved spine projections on discrete input state changes, after the
+  // browser applies :hover/:active/:focus-within/:focus-visible. Do not draw
+  // chrome: that would replace the public elements (and their authored CSS).
+  // Ordinary charts never install this watch; no idle polling is needed.
+  _watchResolvedSpineCss() {
+    if (this._resolvedSpineCssWatch) return;
+    this._resolvedSpineCssWatch = () => {
+      if (this._resolvedSpineCssRaf != null || this._destroyed) return;
+      this._resolvedSpineCssRaf = requestAnimationFrame(() => {
+        this._resolvedSpineCssRaf = null;
+        for (const [box, state] of this._resolvedSpines || []) {
+          if (box.isConnected) this._paintResolvedSpine(box, state.vertical, state.canonical);
+        }
+      });
+    };
+    // Capture also sees controls outside the chart whose ancestor states can
+    // select it. Existing _listen/destroy owns all listener cleanup.
+    for (const type of ["pointerover", "pointerout", "pointerdown", "pointerup",
+      "pointercancel", "focusin", "focusout", "keydown", "keyup"]) {
+      this._listen(document, type, this._resolvedSpineCssWatch, { capture: true, passive: true });
+    }
+    this._listen(window, "blur", this._resolvedSpineCssWatch);
+  }
+
   // The public HTML slot remains the CSS box/cascade authority. Solid,
   // undecorated boxes project mechanically to SVG strokes; authored box
   // effects keep their existing HTML paint instead of being approximated.
   _paintResolvedSpine(box, vertical, canonical) {
+    this._watchResolvedSpineCss();
+    this._resolvedSpines ||= new Map();
+    const previous = this._resolvedSpines.get(box);
+    previous?.svg?.remove();
+    // Undo only our own suppression, preserving any later authored inline
+    // clip override. All other public class/inline styles remain untouched.
+    if (previous?.svg && box.style.clipPath === "inset(100%)"
+      && !box.style.getPropertyPriority("clip-path")) {
+      if (previous.clipValue) box.style.setProperty("clip-path", previous.clipValue, previous.clipPriority);
+      else box.style.removeProperty("clip-path");
+    }
+    const state = { vertical, canonical, svg: null,
+      publicClass: box.getAttribute("class"), publicStyle: box.style.cssText,
+      clipValue: box.style.getPropertyValue("clip-path"),
+      clipPriority: box.style.getPropertyPriority("clip-path") };
+    this._resolvedSpines.set(box, state);
     const style = getComputedStyle(box);
     const zero = (value) => Number.parseFloat(value) === 0;
     const nonNone = (value) => Boolean(value && value !== "none");
@@ -7716,7 +7772,9 @@ export class ChartView {
     // An authored !important clip rule can retain HTML rather than double paint.
     box.style.clipPath = "inset(100%)";
     if (getComputedStyle(box).clipPath !== "inset(100%)") {
-      box.style.removeProperty("clip-path"); return;
+      if (state.clipValue) box.style.setProperty("clip-path", state.clipValue, state.clipPriority);
+      else box.style.removeProperty("clip-path");
+      return;
     }
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
@@ -7724,8 +7782,16 @@ export class ChartView {
     svg.setAttribute("aria-hidden", "true");
     svg.dataset.xyResolvedSpine = box.dataset.xyAxis;
     svg.dataset.xySpineSide = box.dataset.xyAxisSide;
-    svg.style.cssText = "position:absolute;inset:0;overflow:visible;pointer-events:none";
-    svg.style.opacity = opacity; svg.style.visibility = visibility; svg.style.zIndex = zIndex;
+    // Private implementation nodes are not a second styling surface. Inline
+    // important declarations isolate even broad important host SVG rules;
+    // never apply this reset to the public HTML slot or ordinary chrome.
+    svg.style.cssText = "all:initial!important;position:absolute!important;"
+      + "display:block!important;left:0!important;top:0!important;"
+      + `width:${this.size.w}px!important;height:${this.size.h}px!important;`
+      + "overflow:visible!important;pointer-events:none!important;";
+    svg.style.setProperty("opacity", opacity, "important");
+    svg.style.setProperty("visibility", visibility, "important");
+    svg.style.setProperty("z-index", zIndex, "important");
     const line = document.createElementNS(ns, "line");
     const { x, y, width, height } = geometry;
     const coordinates = vertical
@@ -7735,7 +7801,13 @@ export class ChartView {
     line.setAttribute("stroke", paint);
     line.setAttribute("stroke-width", String(vertical ? width : height));
     line.setAttribute("stroke-linecap", "butt");
+    line.style.cssText = "all:initial!important;visibility:inherit!important;pointer-events:none!important;";
+    line.style.setProperty("stroke", paint, "important");
+    line.style.setProperty("stroke-width", String(vertical ? width : height), "important");
+    line.style.setProperty("stroke-linecap", "butt", "important");
     svg.appendChild(line); this.labels.appendChild(svg);
+    state.svg = svg;
+    state.publicStyle = box.style.cssText;
     box.dataset.xySpinePaint = "svg";
   }
 
@@ -7765,6 +7837,7 @@ export class ChartView {
       || now - this._lastLabelDraw >= labelCadenceMs;
     if (updateLabels) {
       this.labels.textContent = "";
+      this._resolvedSpines?.clear();
       this._lastLabelDraw = now;
     }
 
@@ -9162,6 +9235,9 @@ export class ChartView {
     this._themeWatch?.removeEventListener?.("change", this._onScheme);
     this._themeMutationObserver?.disconnect();
     this._themeMutationObserver = null;
+    if (this._resolvedSpineCssRaf != null) cancelAnimationFrame(this._resolvedSpineCssRaf);
+    this._resolvedSpineCssRaf = null;
+    this._resolvedSpines?.clear();
     this._dprMq?.removeEventListener?.("change", this._onDprChange);
     this._dprMq = null;
     this._unsubscribeComm?.();

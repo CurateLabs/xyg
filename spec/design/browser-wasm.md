@@ -780,9 +780,29 @@ clip rule that prevents suppressing the old box also retains HTML. This is a
 narrow solid-box projection, not a general CSS-to-SVG renderer. Motion-path
 and reflection checks require a nonempty supported computed value other than
 `none`; an absent/unsupported property does not make every spine ineligible.
-The CSS cascade is evaluated again on each chrome draw; `refreshTheme()` and the existing
-ancestor class/style theme observer recreate the paint path, so switching
-between solid, border and gradient styles leaves no stale visible copy.
+The CSS cascade is evaluated again on each chrome draw. Resolved spines also
+re-evaluate their existing public boxes after discrete pointer enter/leave,
+press/release/cancel, focus and keyboard state changes (including ancestor
+`:hover`, `:focus-within`, `:active` and control `:active` selected through
+`:has()`). One coalesced animation-frame callback updates only those
+projections; it neither redraws/replaces the public slots nor polls at idle.
+The existing theme mutation observer also watches authored class/style edits
+on resolved public slots, ignoring private SVG and its own suppression writes.
+`refreshTheme()` and ancestor class/style theme changes retain the existing
+chrome redraw path. Switching between solid, border and gradient styles
+removes the previous copy and suppression before selecting one paint path.
+Destruction cancels a pending state update and removes its input listeners.
+Ordinary charts install no resolved-spine input watch or subtree observation.
+
+Private SVG wrappers and lines have inline important implementation styles,
+including resets limited to those private nodes. Host `svg` / `svg line` rules,
+normal or important, cannot override their paint, width, transforms or other
+presentation. The resolved coordinates remain attributes, with CSS geometry
+and transforms reset; paint/opacity/visibility/stacking come only from the
+public HTML slot. The public slot receives no reset and retains normal class,
+inline and important cascade authority. As for the existing canvas token
+bridge (§36), stylesheet replacement or non-color-scheme media flips that
+have no observed state event can still require `refreshTheme()`.
 
 Default/solid resolved stroke coverage is checked against actual independent
 native SVG exports and actual browser screenshots. Authored box-effect
@@ -794,7 +814,10 @@ failures remain separately owned by #935. The [consumer repair receipt](../perfo
 records the fresh all-pixel default-property comparisons; the [R4 eligibility
 repair receipt](../performance/graph-resolved-axis-eligibility-repair-2026-11-03/README.md)
 records pointer/motion-path/reflection reproductions and compatibility repair.
-Both preserve the unchanged historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
+The [live CSS repair receipt](../performance/graph-resolved-axis-live-css-2026-11-03/README.md)
+records actual pointer/focus/active input, unrelated normal/important host SVG
+rules, and a controlled centered-HTML diagnosis with the Rust-final plot.
+These preserve the unchanged historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
 
 The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is

@@ -1,0 +1,12 @@
+{
+  "name": "final-build",
+  "command": [
+    "node",
+    "js/build.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.355,
+  "rawSha256": "35cd03d3bc58f6fba28a395784a440b9d3e4fa715113d08434cd516a2eb15f24",
+  "log": "final-build.txt.gz",
+  "gzipSha256": "6d171c68511930f6e66f2b2f4a601f967de1c91dc3d5d27d61640bf22efb4834"
+}

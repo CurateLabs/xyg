@@ -1,0 +1,16 @@
+{
+  "unchangedMatrixInputs": 149,
+  "slotPrecisionFreshProducerExact": true,
+  "historyFiles": 7058,
+  "standaloneSha256": "bdce4a092184e0feb745ea4ebfc57b3929b5ca795d5ec968f9a678e233efeea8",
+  "html": {
+    "light": {
+      "path": "spec/performance/graph-resolved-axis-live-css-2026-11-03/property/light.native.html",
+      "freshStandaloneEmbedded": true
+    },
+    "dark": {
+      "path": "spec/performance/graph-resolved-axis-live-css-2026-11-03/property/dark.native.html",
+      "freshStandaloneEmbedded": true
+    }
+  }
+}
