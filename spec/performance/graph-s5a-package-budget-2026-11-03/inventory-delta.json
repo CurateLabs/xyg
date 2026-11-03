@@ -1,0 +1,8 @@
+{
+  "changedPaths": [
+    "/sourceProvenance/baseCommit",
+    "/sourceSha256/spec/design/browser-wasm.md"
+  ],
+  "explicitGaps": 685,
+  "releaseFreeze": false
+}

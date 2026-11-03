@@ -2,6 +2,8 @@
 use super::*;
 use crate::graphforge::interaction::wire::{self, Request, WireSession};
 
+mod gpu;
+
 fn request(seq: u64, rev: u32, op: u32, extra: impl FnOnce(&mut Builder)) -> Vec<u8> {
     let mut b = Builder::new(wire::REQUEST_MAGIC);
     b.u64s("header.u64", 0, &[7, 9, seq]);

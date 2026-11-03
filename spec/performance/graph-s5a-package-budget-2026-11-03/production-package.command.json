@@ -1,0 +1,13 @@
+{
+  "name": "production-package",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 0,
+  "seconds": 48.324,
+  "rawSha256": "25148963e10d2c0cea0265ca2282847892e441d8b84c7dc9787c34ac1e5714d0",
+  "log": "production-package.txt.gz",
+  "gzipSha256": "ac08d41e60ec2e60cb3b5133c1e3729abfa47d1162079c6ac1b96b535a97b4ce"
+}

@@ -1,0 +1,22 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6ac01349/crates/xyg-engine)
+error[E0308]: mismatched types
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/gpu.rs:7:20
+    |
+  7 |         .get(name, index)
+    |          ---       ^^^^^ expected `u32`, found `usize`
+    |          |
+    |          arguments to this method are incorrect
+    |
+note: method defined here
+   --> crates/xyg-engine/src/graphforge/container.rs:452:12
+    |
+452 |     pub fn get(&self, name: &str, index: u32) -> Option<Section<'a>> {
+    |            ^^^                    ----------
+help: you can convert a `usize` to a `u32` and panic if the converted value doesn't fit
+    |
+  7 |         .get(name, index.try_into().unwrap())
+    |                         ++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `xyg-engine` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

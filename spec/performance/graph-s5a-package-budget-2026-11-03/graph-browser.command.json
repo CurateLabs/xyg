@@ -1,0 +1,12 @@
+{
+  "name": "graph-browser",
+  "command": [
+    "node",
+    "scripts/graphforge_wasm_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 2.601,
+  "rawSha256": "9233a021928befb4728b0776f74c70396707a53343ccef0fee64e8dbfcc41b2e",
+  "log": "graph-browser.txt.gz",
+  "gzipSha256": "4659fbfb1dc8f32378060afd50fac3dc852ec91531d837e2c2aa5553cbba7a75"
+}

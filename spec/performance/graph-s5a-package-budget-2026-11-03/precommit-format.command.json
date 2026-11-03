@@ -1,0 +1,16 @@
+{
+  "name": "precommit-format",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.034,
+  "rawSha256": "7798d7e6dd81f8593ba282897a1959e02d9fe473aa00ba42192da1ac5aa76577",
+  "log": "precommit-format.txt.gz",
+  "gzipSha256": "301af518f1644dcd8e90e0f81815a89a3a4871700c0a56ca7eddd1ac29926b98"
+}

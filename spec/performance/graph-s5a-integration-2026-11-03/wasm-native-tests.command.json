@@ -1,0 +1,15 @@
+{
+  "name": "wasm-native-tests",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-wasm"
+  ],
+  "exitCode": 0,
+  "seconds": 8.806,
+  "rawSha256": "2d4efb8236ba9517746986fce652e179ee15d3727f2b11a2d018a5f2274ed0e2",
+  "log": "wasm-native-tests.txt.gz",
+  "gzipSha256": "69f0f299a9d0e008e42fa0ca45794848fcae9d667c73bf125983958f5eeb702d"
+}

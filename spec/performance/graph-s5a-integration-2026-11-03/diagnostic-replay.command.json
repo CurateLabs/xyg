@@ -1,0 +1,15 @@
+{
+  "name": "diagnostic-replay",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=target/task-tmp/s5a-integration-diagnostic.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 1.103,
+  "rawSha256": "8aeb68c087fc193e72782e2f1d2bcc1e8c04bef4bd773d9b276130c9ef2ca99c",
+  "log": "diagnostic-replay.txt.gz",
+  "gzipSha256": "29e133aa177826c2cae826d860f0821fead4c02a8cde265ff7c84ce2d318d8b4"
+}

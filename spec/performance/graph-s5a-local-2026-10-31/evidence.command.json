@@ -1,0 +1,14 @@
+{
+  "name": "evidence",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s5a-local-2026-10-31/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.33,
+  "rawSha256": "0aa1342a8638d8d48720be25bbad510dcccf797ff297901ddf7fd6418de8caeb",
+  "log": "evidence.txt.gz",
+  "gzipSha256": "98ba6bd00fdd0c71135ba6ed329e0803517373bde904d07e577f5a97cecc6931"
+}

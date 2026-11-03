@@ -299,7 +299,7 @@ and diagnostic functional proofs are recorded separately in
 checkout tests do not establish shipping-asset acceptance. Historical S3
 measurements above continue to describe their own source, not this ABI.
 
-**Current S4 packaging gates are 1,817 KiB raw / 742 KiB gzip6**
+**Historical S4 packaging gates were 1,817 KiB raw / 742 KiB gzip6**
 (1,860,608 / 759,808 bytes). After complete-paint, exact-identity, live-owner
 stamp and default-arena admission repairs, independent correctness and policy
 review approved the source and a separately recorded functionality decision.
@@ -330,6 +330,66 @@ pinning the previous ABI literal. Overview reports record the loaded native and
 WASM versions. The [foundation contract repair](../performance/graph-s4-foundation-contract-2026-10-31/README.md)
 records the ABI-34 assertion failure and the actual geographic conformance rerun
 on ABI 398/35; runtime, payload, resource and package contracts are unchanged.
+
+**S5a bounded Rust GPU/result foundation.** The existing XYGR session replies
+now add a version-1, exactly 33-section GPU view over already published CPU
+`PaintGeometry`, with no new export, Scene/painter ABI, source style resolution,
+layout, routing or LOD path. The exact names/indices/counts, flags, reserved
+fields, fail-closed validation and action/outcome facts are normative in
+[the S5a interaction contract](graph-interaction.md#s5a-rust-gpu-publication-and-controller-result-foundation).
+Section starts retain the container's 8-byte alignment. GPU `Bytes` columns are
+raw little-endian f32 values at four-byte stride; style records retain the exact
+60-byte resolved f32/u8 layout. F64 x/y/dash `[offset,scale]` metadata stays
+CPU-side; Rust uses the established offset/scale kernels to produce every
+coordinate and attribute. Hosts must not upload CPU f64 paint geometry or narrow
+it themselves. All simultaneous focus/highlight and membership state bits remain
+available independently of visual-state precedence.
+
+Every successful post-Open publication contains the complete GPU and
+`OpOutcome`/focused-action sections, including style-only changes at the same
+revision. Open and Poll remain control replies without those sections. Aggregate
+focused stops retain stamped aggregate identity even for singleton membership;
+their UUID focus stand-in never enables singular move/pin/disclosure actions.
+Before cloning a candidate, admission adds `16,384 + 2,048n + 8,192m` bytes to
+the existing per-document source/text envelope, including Update's full new
+envelope; retained request/reply caches still charge three times actual bytes.
+Encoding failure rejects the complete candidate without advancing the successful
+publication, owner, operation sequence or retry cache. Browser default 16 MiB,
+maximum 384 MiB, native/WASM signatures and export sets, WASM ABI 35,
+Scene 34 and painter 17 are unchanged by S5a.
+
+The new [S5a local receipt](../performance/graph-s5a-local-2026-10-31/README.md)
+records bounded proof and the failed real optimized shipping measurement:
+1,872,537 raw / 764,058 gzip6 bytes, versus the unchanged 1,860,608 / 759,808
+limits (11,929 / 4,250 bytes over). Optimized SHA-256 is
+`4f27f5d20485ef5b63942c017ffb583191478fe74ecf78b9d94b1e7507f531a6`.
+The same production optimizer produces a separately labelled diagnostic module
+for native/WASM functional replay; it establishes no shipping acceptance. No
+limits, optimizer/profile/dependencies, validation or exports are relaxed, and
+there is no size experiment in this slice. Historical S4 asset measurements
+remain historical. No new shipping assets/full foundation success is claimed. This foundation adds no browser session transport/controller,
+shader, DOM/ARIA or visual emphasis pass; S5b, S6/S7, M4 and all #108 acceptance
+remain outstanding before PyPI/npm publishing.
+
+**Current S5a packaging gates are 1,829 KiB raw / 747 KiB gzip6**
+(1,872,896 / 764,928 bytes). Accepted-main integration measures 1,872,541 raw /
+764,063 gzip6 bytes, with optimized SHA-256
+`355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50`.
+The previous hard gates fail by 11,933 / 4,255 bytes. The parent explicitly
+retains the independently reviewed Rust GPU/result functionality at its measured
+cost: +12,287 / +5,050 bytes over accepted S4. These are the smallest next-KiB
+limits, leaving 355 / 865 bytes; no automatic future allowance is introduced.
+No size experiment, compiler/profile/toolchain/optimizer/dependency/export,
+validation or runtime-arena change accompanies this decision. The repeated
+mechanical 60-byte style writer remains unchanged; no unmeasured saving is
+assumed. `gpu::validate` is currently an inspection/test helper; S5b still must
+validate host views before upload. The separate
+[S5a package decision receipt](../performance/graph-s5a-package-budget-2026-11-03/README.md)
+records real producer, paired-asset and full strict-CSP verification; the
+[integration receipt](../performance/graph-s5a-integration-2026-11-03/README.md)
+retains the failed old-gate producer and diagnostic replay. Historical failures
+remain immutable. This decision establishes no runtime speed, graph scale,
+S5b/S6/S7, issue/milestone or release acceptance.
 
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
@@ -397,7 +457,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging now enforces 1,817 KiB raw / 742 KiB gzip limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only and S4 session-functionality decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+packaging now enforces 1,829 KiB raw / 747 KiB gzip limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only, S4 session-functionality and S5a GPU/result-functionality decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 

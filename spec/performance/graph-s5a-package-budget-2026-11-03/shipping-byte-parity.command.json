@@ -1,0 +1,18 @@
+{
+  "name": "shipping-byte-parity",
+  "command": [
+    "env",
+    "-u",
+    "XYG_SESSION_WASM",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs",
+    "js/test/package-wasm-contract.test.mjs",
+    "js/test/package-wasm-manifest.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 2.617,
+  "rawSha256": "a4c92347c92b409fe7a8beb377bb373833f73b9a8f47da6cc8becc83ba49a6d6",
+  "log": "shipping-byte-parity.txt.gz",
+  "gzipSha256": "65449db400693021b40a68a03f65a6db2e194ef0b898ffda550e51f9d3d50fb8"
+}

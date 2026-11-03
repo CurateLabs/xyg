@@ -104,7 +104,7 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1817 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1829 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
@@ -141,7 +141,13 @@ const WASM_SIZE_BUDGET_BYTES = 1817 * 1024;
 // accepted S3). Smallest next-KiB limits: 1,817 / 742, headroom 358 / 800.
 // Compiler/profile/optimizer/dependencies/exports/validation remain unchanged;
 // future growth still fails these gates, without an automatic allowance.
-const WASM_GZIP_BUDGET_BYTES = 742 * 1024;
+// S5a explicit functionality decision (graph-s5a-package-budget-2026-11-03):
+// Rust-owned GPU columns and authoritative operation/focus facts add 12,287 raw /
+// 5,050 gzip6 bytes over accepted S4. Independently reviewed integrated module:
+// 1,872,541 / 764,063. Smallest next-KiB limits: 1,829 / 747, headroom 355 / 865.
+// No size experiment or compiler/profile/optimizer/dependency/export/guard change.
+// Runtime arenas are unchanged; later growth still fails without automatic allowance.
+const WASM_GZIP_BUDGET_BYTES = 747 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
 if (bytes.length > WASM_SIZE_BUDGET_BYTES) {

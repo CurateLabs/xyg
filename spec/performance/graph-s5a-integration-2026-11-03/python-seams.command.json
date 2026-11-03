@@ -1,0 +1,17 @@
+{
+  "name": "python-seams",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py",
+    "tests/test_gen_wasm_abi.py",
+    "tests/test_ownership_audit.py"
+  ],
+  "exitCode": 4,
+  "seconds": 3.294,
+  "rawSha256": "1c5e1762ccb0a21d25efdbb0ab94e49c2a7647649500c0a4f1ef031b18c1a768",
+  "log": "python-seams.txt.gz",
+  "gzipSha256": "ab2617bf25ce8280d1e1162dafadd92b4c76da0e16aec965eabb586eca130386"
+}

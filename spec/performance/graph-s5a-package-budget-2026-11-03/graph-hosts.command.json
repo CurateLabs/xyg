@@ -1,0 +1,17 @@
+{
+  "name": "graph-hosts",
+  "command": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/graphforge-cross-host.test.mjs",
+    "packages/xy-node/test/graphforge-layout.test.mjs",
+    "packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+    "packages/xy-node/test/cose-wasm-parity.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 13.165,
+  "rawSha256": "5c828b43f590ac18029b883e58f304d6a9059a5395a147a89a967382123b057c",
+  "log": "graph-hosts.txt.gz",
+  "gzipSha256": "2de9e78430707250b76c92a3229e342c155cf0946fedcf51e54f32b9aae5dbb3"
+}

@@ -1,0 +1,59 @@
+{
+  "base": "1044cdf2175d57dbed2c5088f747f812a982dc08",
+  "nonreceiptBinaryFullIndexDiffSha256": "9a61abb4bfa1311d12078218b339eac05801bc9bd2f44c7ed7d4da7fbc3368b0",
+  "checks": {
+    "final-format.command.json": {
+      "name": "final-format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.476,
+      "rawSha256": "71f9dd99d06bc66b74bcd0855116e36004fab49fed132e374355e9a1f5f8e592",
+      "log": "final-format.txt.gz",
+      "gzipSha256": "7adc84654b2d613b65aa409f2e10d0481aa2fdb7e4a54d61d5af72ff7928a663"
+    },
+    "final-hooks.command.json": {
+      "name": "final-hooks",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 1.513,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "final-hooks.txt.gz",
+      "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "final-ruff.command.json": {
+      "name": "final-ruff",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.205,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "final-ruff.txt.gz",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    }
+  },
+  "notes": [
+    "All three required full-worktree commands passed with all new sources staged and logs written outside tracked paths.",
+    "Raw retained text logs contain original whitespace/ANSI sequences; exact compressed originals and SHA256 are preserved.",
+    "Parent S4/Node ownership omissions are retained in ownership failure logs, not repaired by this child."
+  ]
+}

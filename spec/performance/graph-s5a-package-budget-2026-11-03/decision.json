@@ -1,0 +1,22 @@
+{
+  "acceptedMain": "030c79062138bb8287df2dc93ab6fdc0ecc8747b",
+  "sourceReview": "s5a_final_review",
+  "sourceTestsDiffSha256": "c418c895a45c965ccacbb0a9315842ed7caa2e240aaa8d4981e3bb6f6a77bcd0",
+  "policyReviewer": "m4_defaults_audit",
+  "decision": "retain required Rust GPU/result functionality; adopt smallest next-KiB hard limits",
+  "previousRawLimit": 1860608,
+  "previousGzip6Limit": 759808,
+  "rawLimit": 1872896,
+  "gzip6Limit": 764928,
+  "rawBytes": 1872541,
+  "gzip6Bytes": 764063,
+  "rawHeadroom": 355,
+  "gzip6Headroom": 865,
+  "rawIncreaseOverAcceptedMain": 12287,
+  "gzip6IncreaseOverAcceptedMain": 5050,
+  "optimizedSha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50",
+  "gzip6Sha256": "83bc6c780620b8df57d0c5dd3ab6a3e382eaff64c3ca709252e71945f5244038",
+  "sizeExperiments": 0,
+  "runtimeBudgetsChanged": false,
+  "compilerProfileOptimizerDependenciesExportsGuardsChanged": false
+}

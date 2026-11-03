@@ -1,0 +1,12 @@
+{
+  "name": "capture",
+  "command": [
+    "python3",
+    "spec/performance/graph-s5a-package-budget-2026-11-03/capture.py"
+  ],
+  "exitCode": 1,
+  "seconds": 0.556,
+  "rawSha256": "78a878452bb50a2191b6837377a740160de6815868ec9a9970e63e61d7b470a1",
+  "log": "capture.txt.gz",
+  "gzipSha256": "8093c14c9562db2893ce699ecddee960539cc3623cced24b8f9736d1d7ee9e5f"
+}

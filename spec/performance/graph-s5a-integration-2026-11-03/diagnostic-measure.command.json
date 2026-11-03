@@ -1,0 +1,12 @@
+{
+  "name": "diagnostic-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-s5a-integration-2026-11-03/diagnostic.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 48.806,
+  "rawSha256": "db36ccd144e8a4b3ec0a39cb6f0db5f441eae2581b43e38e2ea790c6f8a90502",
+  "log": "diagnostic-measure.txt.gz",
+  "gzipSha256": "6f5983d963b20a374db2af31021202bbf542bf59b9dabc0a8ca39e7942bd2c82"
+}

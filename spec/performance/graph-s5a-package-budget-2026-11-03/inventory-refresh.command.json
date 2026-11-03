@@ -1,0 +1,13 @@
+{
+  "name": "inventory-refresh",
+  "command": [
+    "python3",
+    "scripts/check_release_inventory.py",
+    "--write"
+  ],
+  "exitCode": 0,
+  "seconds": 3.737,
+  "rawSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+  "log": "inventory-refresh.txt.gz",
+  "gzipSha256": "829f2c1074a4f38acde3d22c1ecb789a662925c5c59afe71127d27c0648c42c7"
+}

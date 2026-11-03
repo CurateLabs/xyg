@@ -1,0 +1,23 @@
+{
+  "name": "clippy-final",
+  "command": [
+    "cargo",
+    "clippy",
+    "--offline",
+    "-p",
+    "xyg-engine",
+    "-p",
+    "xyg-core",
+    "-p",
+    "xyg-wasm",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "exitCode": 0,
+  "seconds": 15.686,
+  "rawSha256": "960fc8ef52a2aeee2a670d9fe04d3d93213e0583a7d3c8d6d2349152a563e462",
+  "log": "clippy-final.txt.gz",
+  "gzipSha256": "0f35ed089c137371d91a1e77fc69742a33c0ee61b41e159f710e02842bb0256f"
+}

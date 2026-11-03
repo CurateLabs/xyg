@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **S1–S3 typed engine approved on the parent base; S4 shared native/WASM session wire implemented locally, merged with the parent-approved S3 aggregate-style repair; S4 package gate fails and final independent parent review remains required** (see [Implementation status](#implementation-status)).
+Status: **S1–S4 merged; bounded S5a Rust GPU/result foundation integrated locally with reviewed package-functionality limits and passing production/paired-asset/full-foundation proof; final integrated source/policy/evidence review approved; CI remains pending. S5b controller/accessibility and S6/S7 acceptance remain outstanding** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -290,7 +290,7 @@ Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_gra
 S4 native surface (`xyg-core`; assign the next ABI version and regenerate
 the manifest when signatures change; native ABI 398 has 537 functions; WASM ABI 35 has 65 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
 Request `XYGI`: `header.u64`[instance_id, group_id, op_seq]; `header.u32`[render_revision, operation, mode, policy, plane, action, commit, steps, space]; `camera.f64`; `coordinates.f64`; `refs.bytes` (kind-tagged refs; transported derived refs carry the exact result id, §2.1; byte layout fixed with the ABI); `uuids.uuid`; `remote.bytes`; `companion.u32`[page, size≤200]; `load.*` (§1.2).
-Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`; `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`. Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
+Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`; `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`; S5a `gpu.*`, `outcome.u32`, `disclosure.ref.bytes`/`disclosure.collapsed.u8`, and `focus.action.ref.bytes`/`focus.action.u32` ([exact v1 layouts below](#s5a-rust-gpu-publication-and-controller-result-foundation)). Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
 Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND, _REVISION_EXHAUSTED`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
 
 ## 4. Events (all hosts)
@@ -336,8 +336,8 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 | S1 | Hierarchy in composition (`parent_uuid` -> `node.parent`, composition v2); identity (`ElementRef`, exact result-id table); `GraphInteractionState` extraction and 10,000-ref cap; `GraphSession` create / select / clear / focus / bind / unbind with stamps and `op_seq` idempotency | **implemented** |
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
 | S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | implemented and merged through #1082; historical real package/assets/parity and full strict-CSP proof under 1,513/626-KiB limits |
-| S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; CI/integration pending |
-| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | planned |
+| S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; merged as #1083 at a970d586 (native ABI398/WASM35) |
+| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result source integrated locally; explicit 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; final integrated review approved; CI pending; S5b controller/runtime/visual acceptance remains planned |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
 
@@ -533,7 +533,7 @@ and the bounded companion/candidates page; style changes are delivered even
 at the same render revision. Position records are 80 bytes: one fixed 56-byte
 node ref, x/y f64, pinned u32 and zero reserved u32. The resolved CPU paint snapshot below uses the existing container and
 `RenderOutput.paint`; there is no second host style/layout/router or Scene path.
-No S5 painter/controller change.
+The S5a GPU/result foundation below adds no browser painter/controller change.
 
 Commands execute on an admitted speculative session and interaction state
 under one authoritative temporal world lock. Typed mutation, render, semantic
@@ -643,11 +643,163 @@ aggregate styles even for singleton memberships and omit compound frames.
 
 These f64 geometry sections are a **resolved CPU publication snapshot**, not
 vertex buffers or a new GPU wire. They allow host-independent inspection and
-replay of the same geometry used by the pick index. Subsequent generic GPU
-encoding remains Rust-owned and must use the existing §29 offset-f32/u8
-lowering. Hosts must not upload these f64 arrays directly, narrow them in
-TypeScript, or recompute semantic/router policy. S5 controller/shader/DOM/ARIA
-and emphasis rendering remain outstanding.
+replay of the same geometry used by the pick index. S5a below performs generic GPU
+encoding in Rust using the existing §29 offset-f32/u8 lowering. Hosts must not
+upload these f64 arrays directly, narrow them in TypeScript, or recompute
+semantic/router policy. S5b controller/shader/DOM/ARIA and emphasis rendering
+remain outstanding.
+
+### S5a Rust GPU publication and controller-result foundation
+
+S5a adds one Rust encoder over the **already published** `RenderOutput.paint`
+and its existing visual/emphasis/membership planes. It does not compile Scene,
+resolve source styles again, reroute, relayout, choose LOD, or alter the f64 CPU
+geometry/pick authority. Every successful command that publishes a post-Open
+result includes the complete GPU and outcome/action sections, including empty
+columns and style-only republication at the same `render_revision`. Revision
+equality is never a GPU freshness gate. Open is an ingress acknowledgment and
+Poll remains status/event only; neither invents geometry or operation facts.
+Stale structural requests retain the preceding complete publication.
+
+GPU v1 consists of exactly **33** sections with `gpu.` names. The existing XYGR
+container keeps section starts 8-byte aligned. `Bytes` coordinate/attribute
+sections below are tightly packed raw little-endian f32 columns, four bytes per
+value, with no per-value or Rust-struct padding. They can be consumed directly
+by generic scatter/segment/triangle/rectangle GPU machinery. N/M/P/H/F denote
+published node/edge/clipped-shaft/head-triangle/frame-band counts. Index ranges
+are inclusive; unlisted indices are invalid in version 1.
+
+| Section | Index | Container dtype / scalar count | Meaning |
+|---|---:|---|---|
+| `gpu.header.u32` | 0 | U32 / 8 | `[1, flags=0, N, M, P, H, F, reserved=0]` |
+| `gpu.transform.f64` | 0–2 | F64 / 2 each | `[offset, scale]`: x, y, dash origin respectively; CPU metadata only |
+| `gpu.node.coord.bytes` | 0–1 | Bytes / 4N each | mapped center x,y |
+| `gpu.shaft.coord.bytes` | 0–3 | Bytes / 4P each | clipped start x,y; end x,y |
+| `gpu.shaft.attr.bytes` | 0–3 | Bytes / 4P each | half-width, dash on, dash off, dash offset |
+| `gpu.head.coord.bytes` | 0–5 | Bytes / 4H each | triangle vertex x,y ×3 |
+| `gpu.frame.coord.bytes` | 0–3 | Bytes / 4F each | xmin,ymin,xmax,ymax |
+| `gpu.frame.width.bytes` | 0 | Bytes / 4F | frame half-width |
+| `gpu.shaft.edge.u32` | 0 | U32 / P | clipped piece → published edge; every value < M |
+| `gpu.shaft.flags.u8` | 0 | U8 / P | bit0 single_piece; all remaining bits zero |
+| `gpu.head.piece.u32` | 0 | U32 / H | strictly increasing shaft-piece index, every value < P |
+| `gpu.frame.node.u32` | 0 | U32 / F | frame → published node, every value < N |
+| `gpu.node.style.bytes` | 0 | Bytes / 60N | exact existing CPU style/layers records |
+| `gpu.edge.style.bytes` | 0 | Bytes / 60M | exact existing CPU style/layers records |
+| `gpu.node.state.u8` | 0 | U8 / 4N | state record below |
+| `gpu.edge.state.u8` | 0 | U8 / 4M | state record below |
+
+The 60-byte style stride is the exact f32/u8 layout documented above, including
+RGBA, shape, width, resolved dash/head settings, semantic layers and three zero
+reserved bytes. Its float fields already are f32 GPU attributes; no TypeScript
+narrowing or independent style interpretation is needed. State records are
+`[visual_state, emphasis, membership_flags, reserved=0]`: visual is 0–7;
+emphasis is the complete existing low-four-bit focus/path/community/external
+plane; membership_flags is the OR of member source flags masked with `0x17`
+(hovered, selected, neighbor, pinned). Simultaneous bits are preserved rather
+than inferred from the priority-selected visual state. Node and edge membership
+use their published CSR planes, including collapsed/aggregate membership.
+
+The encoder applies existing `geometry_offset`, `f32_safe_scale` and
+`encode_f32`: `encoded = f32((source - offset) * scale)`. X and y transforms
+span all centers, clipped endpoints, head vertices and frame bounds; dash
+origins use transform 2. Empty domains use `[0,1]`. The midpoint convention is
+unchanged; only a nonfinite midpoint falls back to the existing pin-zero offset
+mode. Shaft half-width/dash-on/dash-off and frame half-width use `[0,1]`.
+All f64 offsets/scales stay CPU metadata for precise reconstruction and camera
+math. A nonfinite source, scale, offset or encoded f32 returns Invalid and the
+whole candidate is discarded, including finite source domains that cannot be
+encoded finitely. No incomplete GPU publication is installed.
+
+For finite source v, offset o and positive scale s, reconstruct `q/s + o`.
+The replay bound used for the published geometry is
+`(|(v-o)*s| * 2^-23 + 2^-149)/s + 8*EPSILON_f64*max(1,|o|,|v|)`;
+it includes conservative binary32 rounding/subnormal and binary64
+reconstruction allowance. Width/dash attributes use the same bound with
+`o=0,s=1`. All clipped routes, dash origins, head triangles and frame bands
+retain CPU vector order and identity. Pass order remains **frame bands →
+shafts → heads → nodes**, with later vector entries winning within a pass;
+heads follow increasing piece index. CPU pick order remains unchanged.
+
+`gpu::validate` fails closed before a view is consumed: require all 33 known
+version-1 GPU sections, exact names/indices/dtypes/counts, checked stride
+multiplication, finite f32 columns and style floats, finite positive transforms,
+valid style/state/shaft flags and zero reserved fields, in-range edge/piece/node
+references, strictly increasing head-piece references, and matching published
+node/edge counts. Unknown extra GPU sections also fail. S5b must perform the
+same validation before constructing/uploading host views; it must not substitute
+f64 uploads or a host geometry/reference algorithm.
+
+The following additional index-zero result sections preserve the actual Rust
+operation outcome and expose focused action facts to a future policy-free
+controller:
+
+| Section | Container dtype / count | Contract |
+|---|---|---|
+| `outcome.u32` | U32 / 4 | `[version=1, state_changed, selected, disclosure_present]` |
+| `disclosure.ref.bytes` | Bytes / existing refs encoding | zero or one exact node ref, matching disclosure_present |
+| `disclosure.collapsed.u8` | U8 / disclosure_present | current collapsed 0/1 from `DisclosureReport` |
+| `focus.action.ref.bytes` | Bytes / existing refs encoding | zero or one displayed-node stop ref |
+| `focus.action.u32` | U32 / 8 | `[1, disclosure_eligible, collapsed, pin_eligible, pinned, move_capability, 0, 0]` |
+
+`state_changed`, `selected` and disclosure presence/value come directly from
+`OpOutcome`; selection size is not inferred from changed refs, flags or display
+membership. A selected count that cannot fit u32 refuses Budget. The existing
+`DisclosureReport` has exactly node and collapsed fields; S5a invents no member
+report. Boolean fields are 0/1 and reserved words are zero.
+
+Action facts resolve focus through `stop_of` against the current publication,
+not the UUID stand-in stored in `focus.bytes`. A source-backed displayed node
+uses its exact source node reference. Aggregate tier always uses a stamped
+AggregateRef, **including a singleton**, and all its singular action facts are
+zero. Edge/no-drawn-node focus has an empty ref and zero facts after the version.
+A collapsed Direct compound can contain multiple members while retaining its
+source representative's disclosure/pin/move actions. EdgeSample nodes remain
+source-backed for pin/move; the existing disclosure reducer refuses that tier.
+Disclosure eligibility probes `compound_collapse_transition` with the actual
+parent/validity/collapsed planes and tier, retaining its 1,024-source-node cap.
+Pinned reads the authoritative UUID-keyed pin set. Move capability says the
+displayed stop is a source-backed node; numeric bounds, camera, in-flight move
+target and revision admission remain validated by the existing move reducer.
+These are facts, not a second independent host policy table.
+
+Before candidate allocation, S5a adds `16,384 + 2,048n + 8,192m` bytes to each
+existing source/text-aware per-document envelope (n/m are source node/edge
+counts). Update admits the full new envelope while retaining the old one. This
+covers old/new GPU output, builder/final/cached copies and f64/f32/byte scratch,
+at most one frame per node and eleven shaft/head pieces per source edge; the
+fixed and per-node reserves also cover focused disclosure reducer scratch bounded
+at 1,024 nodes.
+Existing cache charges remain three times actual bytes and all existing caps
+remain checked. The 16 MiB tiny-session default proof and 384 MiB maximum are
+unchanged. Admission, encoding and malformed-input refusals preserve
+session/state/publication/index/cache/op-sequence/outbound/owner state. Native
+short-capacity replies preserve caller bytes and retain the complete successfully
+applied result; exact-capacity and WASM retries return those same complete bytes.
+
+Bounded source/proof and the actual unchanged-gate package result belong to the
+new [S5a local receipt](../performance/graph-s5a-local-2026-10-31/README.md).
+The real production build fails both unchanged 1,817/742-KiB gates: the
+optimized module is 1,872,537 raw / 764,058 gzip6 bytes, exceeding the limits
+by 11,929 / 4,250 bytes. A separately labelled optimized diagnostic module
+supports functional replay only; no S5a shipping assets, paired-asset or full
+foundation acceptance is claimed. Compiler/profile/optimizer/dependencies,
+exports and runtime arenas are unchanged; no size experiment or budget raise
+is part of this slice. S5a ships no browser controller, worker session transport,
+shader, DOM or ARIA integration and removes no `58_graph.ts` policy. S5b visual
+and scale work, S6/S7, M4 and all #108 acceptance remain outstanding; there is no
+PyPI/npm publishing or competitor-performance claim in this internal foundation.
+
+The subsequent accepted-main integration and explicit parent functionality
+budget decision are recorded separately in the
+[integration receipt](../performance/graph-s5a-integration-2026-11-03/README.md)
+and [package decision receipt](../performance/graph-s5a-package-budget-2026-11-03/README.md).
+Current hard package limits are 1,829 KiB raw / 747 KiB gzip6, the smallest
+next-KiB limits for the integrated 1,872,541 / 764,063-byte module. They retain
+355 / 865 bytes of headroom. The historical failed-gate and diagnostic records
+above remain unchanged. No runtime-arena, ABI/export, compiler/profile/optimizer,
+dependency or validation change is part of this package decision; graph scale
+and S5b/S6/S7 delivery remain unaccepted. The GPU validator currently has
+inspection/test callers; S5b must validate before host upload.
 
 ### S4 review repair: admission and owner transitions
 
@@ -667,6 +819,7 @@ S=min(R,10,000), Q=min((2n+11m)*4096,1,048,576), W coordination watermarks:
 | bounded tables/codec metadata | 98,304 | fixed baseline overhead; bounded section metadata is covered by document/request factors |
 | document/decoded copies | 48D | retained document, identity/style tables, old/new decoding and codec temporary copies |
 | source/publication/layout/route work | 8,192R | old/new publication/index primitives, membership, route scratch (up to 11 pieces/edge), layout and query arrays |
+| S5a GPU/result work | 16,384 + 2,048n + 8,192m | old/new GPU/output/builder copies, column scratch and bounded focused-action reducer work |
 | grid duplication | 16Q | old/new bounded grid entries; includes up to n compound bands as well as n nodes |
 | possible local state | 1,024(4S+n+1) | four capped identity planes, all possible node pins, focus; tree overhead and bounded delta/outcome/candidate copies |
 | watermarks | 128W | retained/cloned coordination gate |
