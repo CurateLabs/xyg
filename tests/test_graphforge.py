@@ -10,8 +10,10 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import struct
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -276,6 +278,103 @@ def test_zero_layer_request_composes_the_property_graph_defaults() -> None:
     # The same graph and Version compose to the same bytes.
     request = xyg.encode_graphforge_request(base=_base("property"), render=render)
     assert compose_graphforge_request(request) == compose_graphforge_request(request)
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_property_default_exports_repeat_exactly_without_changing_positions(
+    theme: str, tmp_path: Path
+) -> None:
+    """#934 bounded proof: actual PNG/SVG bytes, not only XYGF/Scene bytes.
+
+    Set XYG_GRAPH_PROPERTY_EVIDENCE to retain inputs/outputs for the packaged
+    browser proof in tests/browser/graph_property_default_export.mjs.
+    """
+    fixture = json.loads((RESULTS.parent / "property_default_export.json").read_text())
+    render = {"width": fixture["width"], "height": fixture["height"], "theme": theme}
+    requests = [
+        xyg.encode_graphforge_request(base=_base("property"), render=render) for _ in range(2)
+    ]
+    documents = [compose_graphforge_request(request) for request in requests]
+    assert requests[0] == requests[1]
+    assert documents[0] == documents[1]
+    compositions = [xyg.decode_graphforge_document(document) for document in documents]
+    c = compositions[0]
+    assert c.layers == [] and c.directed
+    assert list(c.nodes.uuid) == fixture["nodeUuid"]
+    assert list(c.edges.uuid) == fixture["edgeUuid"]
+    assert list(c.edges.source) == fixture["source"]
+    assert list(c.edges.target) == fixture["target"]
+    assert list(c.nodes.label) == fixture["captions"]
+    assert list(c.edges.type) == list(c.edges.label) == fixture["types"]
+    assert list(c.edges.status) == [1] * 5
+    assert [row["text"] for row in c.legend["rows"]] == fixture["legend"]
+    for kind, key in (("node", "nodeUuid"), ("edge", "edgeUuid")):
+        for index, uuid in enumerate(fixture[key]):
+            identity = c.identify(kind, index)
+            assert identity["uuid"] == uuid and identity["layers"] == []
+            if kind == "edge":
+                assert identity["source"] == fixture["nodeUuid"][fixture["source"][index]]
+                assert identity["target"] == fixture["nodeUuid"][fixture["target"][index]]
+
+    out = Path(os.environ.get("XYG_GRAPH_PROPERTY_EVIDENCE", tmp_path))
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{theme}.xygq").write_bytes(requests[0])
+    (out / f"{theme}.xygf").write_bytes(documents[0])
+    outputs = {}
+    for format in ("svg", "png"):
+        exports = [
+            _native.scene_static_export(
+                composition.scene["bytes"],
+                format,
+                width=fixture["width"],
+                height=fixture["height"],
+                scale=1,
+            )
+            for composition in compositions
+        ]
+        assert exports[0] == exports[1], f"{theme}: repeated {format} export differs"
+        outputs[format] = exports[0]
+        (out / f"{theme}.{format}").write_bytes(exports[0])
+
+    svg = ET.fromstring(outputs["svg"])
+    slots = lambda slot: [e for e in svg.iter() if e.get("data-xy-slot") == slot]  # noqa: E731
+    captions = slots("graph_label")
+    assert [int(e.get("data-xy-stable-id")) for e in captions] == list(range(2**32, 2**32 + 5))
+    # The documented culler may truncate a caption, but cannot replace its identity.
+    for element, full in zip(captions, fixture["captions"], strict=True):
+        assert element.text == full or (
+            element.text.endswith("…") and full.startswith(element.text[:-1])
+        )
+    assert [e.text for e in slots("legend_label")] == fixture["legend"]
+    assert not any(text in outputs["svg"].decode() for text in set(fixture["types"]))
+    # The first two shafts are parallel relationships; the loop has three
+    # segments. Every shaft/loop is followed by two non-degenerate arrow wings.
+    lines = [e.get("points") for e in svg.iter() if e.tag.endswith("}polyline")]
+    points = [[tuple(map(float, p.split(","))) for p in line.split()] for line in lines]
+    assert len(points) == 17
+    assert points[0] != points[3], "parallel relationships lost their separate routes"
+    assert points[6][1] == points[7][0] and points[7][1] == points[8][0]
+    assert points[8][1] == points[6][0], "self-loop route is not closed"
+    for a, b in ((1, 2), (4, 5), (9, 10), (12, 13), (15, 16)):
+        assert points[a][0] == points[b][0]
+        assert points[a][1] != points[b][1] and points[a][0] != points[a][1]
+
+    # Inspect the public initial chart too. No preset coordinates or new
+    # layout is supplied to make the canonical and native positions agree.
+    chart = xyg.graphforge_chart(c, **render)
+    fig = chart.figure()
+    node = fig.traces[fig._graph_meta[0]["node_trace"]]
+    assert list(node.x.values) == list(c.scene["x"])
+    assert list(node.y.values) == list(c.scene["y"])
+    again = xyg.graphforge_chart(compositions[1], **render)
+    native_svg, native_png = chart.to_svg(), chart.to_png(scale=1)
+    assert native_svg == again.to_svg()
+    assert native_png == again.to_png(scale=1)
+    (out / f"{theme}.native.svg").write_text(native_svg)
+    (out / f"{theme}.native.png").write_bytes(native_png)
+    from conftest import probe_document
+
+    (out / f"{theme}.native.html").write_text(probe_document(chart, ""))
 
 
 def test_directed_property_graph_keeps_its_arrowheads_in_the_interactive_mark() -> None:

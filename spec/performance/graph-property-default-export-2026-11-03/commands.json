@@ -1,0 +1,99 @@
+[
+  {
+    "label": "stage-native",
+    "argv": [
+      "python3",
+      "scripts/stage_node_platform_natives.py",
+      "--lib",
+      "target/release/libxyg_core.so"
+    ],
+    "environment": {},
+    "exit_code": 0,
+    "output": "stage-native.txt"
+  },
+  {
+    "label": "python",
+    "argv": [
+      "uv",
+      "run",
+      "pytest",
+      "tests/test_graphforge.py",
+      "tests/test_graphforge_semantic_evidence.py",
+      "-q"
+    ],
+    "environment": {
+      "XYG_GRAPH_PROPERTY_EVIDENCE": "/tmp/graph-property-final"
+    },
+    "exit_code": 0,
+    "output": "python.txt"
+  },
+  {
+    "label": "node",
+    "argv": [
+      "node",
+      "--test",
+      "packages/xy-node/test/graphforge.test.mjs",
+      "packages/xy-node/test/graphforge-wasm-parity.test.mjs"
+    ],
+    "environment": {
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-45a7b1fc/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 0,
+    "output": "node.txt"
+  },
+  {
+    "label": "browser",
+    "argv": [
+      "node",
+      "tests/browser/graph_property_default_export.mjs",
+      "/tmp/graph-property-final"
+    ],
+    "environment": {
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-45a7b1fc/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 1,
+    "output": "browser.txt"
+  },
+  {
+    "label": "pre-commit",
+    "argv": [
+      "uv",
+      "run",
+      "--with",
+      "pre-commit",
+      "pre-commit",
+      "run",
+      "--all-files"
+    ],
+    "environment": {},
+    "exit_code": 0,
+    "output": "pre-commit.txt"
+  },
+  {
+    "label": "ruff-check",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "."
+    ],
+    "environment": {},
+    "exit_code": 0,
+    "output": "ruff-check.txt"
+  },
+  {
+    "label": "ruff-format",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "environment": {},
+    "exit_code": 0,
+    "output": "ruff-format.txt"
+  }
+]
