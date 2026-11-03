@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "--with",
+    "pre-commit",
+    "pre-commit",
+    "run",
+    "--all-files"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "5840b4790660d8bafa59e9b5308b450c51f55713",
+  "exitCode": 0,
+  "seconds": 1.346,
+  "log": "slice1-hooks.log",
+  "logSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+  "environment": {
+    "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  }
+}

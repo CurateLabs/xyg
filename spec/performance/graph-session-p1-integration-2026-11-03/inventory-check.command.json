@@ -1,0 +1,13 @@
+{
+  "name": "inventory-check",
+  "command": [
+    "python3",
+    "scripts/check_release_inventory.py",
+    "--check"
+  ],
+  "exitCode": 2,
+  "seconds": 0.056,
+  "rawSha256": "daa53ee0d390d8bc11ad34e8990a21d9b3667a74e2ecbb52511d6108117da9ad",
+  "log": "inventory-check.txt.gz",
+  "gzipSha256": "94b0e2f23adee38f7161312c087f3eac5d1435c68d9334cca3a570cd84885f99"
+}

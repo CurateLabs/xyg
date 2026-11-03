@@ -1,0 +1,15 @@
+{
+  "name": "diagnostic-existing-replay",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=target/task-tmp/p1-combined-diagnostic.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 1.054,
+  "rawSha256": "e4b7735cae2b5c829cca09eea0a37186ec7f0340dbd245fe7736c86fe8db1dea",
+  "log": "diagnostic-existing-replay.txt.gz",
+  "gzipSha256": "af9734123c28a4f5825d0dcd5a70ed6463067063ee5e0525c639b8e4d49e0a29"
+}

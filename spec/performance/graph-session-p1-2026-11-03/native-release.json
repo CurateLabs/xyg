@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "cargo",
+    "build",
+    "-p",
+    "xyg-core",
+    "--release"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "5cbef0afe860f35739047486cca3c84afc03f006",
+  "exitCode": 0,
+  "seconds": 111.715,
+  "log": "native-release.log",
+  "logSha256": "6fd4e5e9eaf16f0fa908ce73fd77a51b3839168e9c6f99e1bbaee5733b9c9c9f",
+  "environment": {
+    "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "CARGO_TARGET_DIR": "target/task-tmp/p1"
+  }
+}

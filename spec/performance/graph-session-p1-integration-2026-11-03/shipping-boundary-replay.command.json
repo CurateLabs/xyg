@@ -1,0 +1,15 @@
+{
+  "name": "shipping-boundary-replay",
+  "command": [
+    "env",
+    "-u",
+    "XYG_SESSION_WASM",
+    "node",
+    "spec/performance/graph-session-p1-2026-11-03/boundary-replay.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.239,
+  "rawSha256": "b26624104b5068b8a620dc12fde98ce21e30bef35e2daa6861fb34239696b71f",
+  "log": "shipping-boundary-replay.txt.gz",
+  "gzipSha256": "33411c76a89f05729f2ad7216f348af2392b7893127f915a6d2e56c02c44d649"
+}

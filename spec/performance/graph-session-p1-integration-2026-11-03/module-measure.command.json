@@ -1,0 +1,12 @@
+{
+  "name": "module-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-session-p1-integration-2026-11-03/measure.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.108,
+  "rawSha256": "00d1dcb6bb1ba64642acab96ffdb1c035529f3cbb89fec3734147c91c6dd9896",
+  "log": "module-measure.txt.gz",
+  "gzipSha256": "79649eaf78a578c04eae077ba65a96ba8bedd1ba20c159cc64b3d212f2103e37"
+}

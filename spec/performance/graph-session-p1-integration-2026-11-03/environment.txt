@@ -1,0 +1,10 @@
+{
+  "node": "v22.23.4",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "binaryen": "132.0.0",
+  "cargoConfig": "# Keep the safe engine at O3. Bound inlining for the direct-browser artifact;\n# same-source correctness/ABBA evidence: spec/benchmarks/wasm-geographic-profile-local.json.\n# This target-specific setting never affects the native cdylib.\n[target.wasm32-unknown-unknown]\nrustflags = [\"-C\", \"llvm-args=--inline-threshold=100\"]\n",
+  "RUSTFLAGS": null,
+  "CARGO_ENCODED_RUSTFLAGS": null,
+  "CARGO_TARGET_DIR": null
+}

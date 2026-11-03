@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py",
+    "tests/test_graphforge.py",
+    "tests/test_gen_wasm_abi.py",
+    "tests/test_verify_ownership.py"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "5cbef0afe860f35739047486cca3c84afc03f006",
+  "exitCode": 0,
+  "seconds": 4.907,
+  "log": "python-seams.log",
+  "logSha256": "d43b754a5078cb08afc35ca4a52331efefee8f05b8761b034e2631d5ad1955ae",
+  "environment": {
+    "PATH": "/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/target/task-tmp/p1/release/libxyg_core.so"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "capture",
+  "command": [
+    "python3",
+    "spec/performance/graph-session-p1-integration-2026-11-03/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.314,
+  "rawSha256": "51332f86c224eda4d30130cb2a909dd13fa6e50815739c2285f153435643cb6d",
+  "log": "capture.txt.gz",
+  "gzipSha256": "02f4e2e68855cb90d26959162db8e956bc8328e3667994c1c6dcaeaa5a551954"
+}

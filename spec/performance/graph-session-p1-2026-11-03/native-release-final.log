@@ -1,0 +1,4 @@
+    Blocking waiting for file lock on build directory
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-engine)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-core)
+    Finished `release` profile [optimized] target(s) in 1m 55s

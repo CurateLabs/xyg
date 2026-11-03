@@ -127,6 +127,10 @@ pub struct SessionLoad {
     /// `(node_budget, edge_budget)`.
     pub budgets: Option<(u64, u64)>,
     pub seed: u64,
+    /// Opt-in one-tick initial publication retaining its force state.
+    pub progressive: bool,
+    /// Existing configured CoSE policy (defaults preserve legacy behavior).
+    pub cose: crate::graph::CoseOptions,
 }
 
 /// Opaque handle of a temporal graph in its owner's registry.
@@ -220,6 +224,8 @@ pub struct GraphSession {
     collapsed: Vec<u8>,
     budgets: (u64, u64),
     seed: u64,
+    progressive: bool,
+    cose: crate::graph::CoseOptions,
     slot: StateSlot,
     render_revision: u32,
     last_op: Option<(u64, OpOutcome)>,
@@ -258,6 +264,7 @@ impl GraphSession {
         load: SessionLoad,
         instance_id: u64,
     ) -> Result<Self, InteractionStatus> {
+        if !load.cose.is_valid() { return invalid(); }
         let doc = ComposedDocument::decode(document).map_err(|_| InteractionStatus::Invalid)?;
         let identity =
             GraphIdentity::from_document(&doc).map_err(|_| InteractionStatus::Invalid)?;
@@ -381,6 +388,8 @@ impl GraphSession {
             collapsed,
             budgets,
             seed: load.seed,
+            progressive: load.progressive,
+            cose: load.cose,
             slot: StateSlot::Owned(Box::new(state)),
             render_revision: 0,
             last_op: None,

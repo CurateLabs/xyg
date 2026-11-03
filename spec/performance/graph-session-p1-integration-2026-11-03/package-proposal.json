@@ -1,0 +1,13 @@
+{
+  "status": "proposal only; old shipping failure retained; not adopted",
+  "measuredRawBytes": 1881508,
+  "measuredGzip6Bytes": 768134,
+  "baselineE91RawBytes": 1872568,
+  "baselineE91Gzip6Bytes": 764079,
+  "growthRaw": 8940,
+  "growthGzip6": 4055,
+  "proposedRawKiB": 1838,
+  "proposedGzip6KiB": 751,
+  "optimizedSha256": "717440524b63cf87e0127161c128c4f81efdca87e5112f9b05a42e820b456fde",
+  "scope": "Complete resolvable selection/result-row publication and opt-in progressive retained layout. No speculative size experiment, compiler/profile/optimizer/dependency/export/guard/arena change. Independent assessment before any adoption."
+}

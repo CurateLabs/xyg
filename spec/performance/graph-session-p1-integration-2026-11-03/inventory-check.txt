@@ -1,0 +1,2 @@
+usage: check_release_inventory.py [-h] [--write] [--require-classified]
+check_release_inventory.py: error: unrecognized arguments: --check

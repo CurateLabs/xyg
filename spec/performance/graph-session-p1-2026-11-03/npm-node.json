@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "npm",
+    "ci",
+    "--prefix",
+    "packages/xy-node"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "5cbef0afe860f35739047486cca3c84afc03f006",
+  "exitCode": 0,
+  "seconds": 0.467,
+  "log": "npm-node.log",
+  "logSha256": "ebc1901303acb6daf68afaeab4134344ae085cad4a9cf39ebe6c38a0842819b5",
+  "environment": {
+    "PATH": "/tmp/xyg-m4-combined-validation-20261031/node-toolchain/node_modules/node-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  }
+}

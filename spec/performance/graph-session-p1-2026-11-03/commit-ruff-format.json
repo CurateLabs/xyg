@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "5cbef0afe860f35739047486cca3c84afc03f006",
+  "exitCode": 0,
+  "seconds": 0.045,
+  "log": "commit-ruff-format.log",
+  "logSha256": "7798d7e6dd81f8593ba282897a1959e02d9fe473aa00ba42192da1ac5aa76577",
+  "environment": {
+    "PATH": "/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  }
+}
