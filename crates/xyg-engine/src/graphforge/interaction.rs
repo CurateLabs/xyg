@@ -37,6 +37,7 @@ use crate::projection::validate_parent_forest;
 use crate::temporal_graph::TemporalGraph;
 
 mod coordination;
+mod gpu;
 mod layout;
 mod paint;
 mod pick;

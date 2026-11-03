@@ -1,0 +1,14 @@
+{
+  "name": "setup-python",
+  "command": [
+    "uv",
+    "sync",
+    "--group",
+    "dev"
+  ],
+  "exitCode": 0,
+  "seconds": 127.125,
+  "rawSha256": "749997c470a1277a8e4245040963048839dfb2d875737feb6b710a76921d8302",
+  "log": "setup-python.txt.gz",
+  "gzipSha256": "1f8343b3a6571587d7e1b4b7aa454999bb07d799cd9b15f5bbfe9fd9f1563f82"
+}

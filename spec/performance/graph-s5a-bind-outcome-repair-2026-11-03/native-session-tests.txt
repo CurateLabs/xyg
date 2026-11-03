@@ -1,0 +1,18 @@
+
+running 9 tests
+test graphforge_session_ffi::tests::bound_native_owner_is_authoritative_and_disposal_blocks_cached_replies_until_unbind ... ok
+test graphforge_session_ffi::tests::destroyed_handles_and_raced_entry_clones_stay_unbound ... ok
+test graphforge_session_ffi::tests::coordinate_delivery_uses_shared_event_codec_and_never_rebroadcasts ... ok
+test graphforge_session_ffi::tests::native_temporal_adapter_rechecks_disposal_after_waiting_for_operation_lock ... ok
+test graphforge_session_ffi::tests::pointer_validation_precedes_execution_and_endpoint_types_are_strict ... ok
+test graphforge_session_ffi::tests::poll_short_does_not_consume_or_duplicate_event_and_style_refreshes_same_revision ... ok
+test graphforge_session_ffi::tests::registry_enforces_256_live_sessions_and_recovers_capacity_without_reuse ... ok
+test graphforge_session_ffi::tests::resource_and_update_refusals_do_not_consume_sequence_or_replace_document ... ok
+test graphforge_session_ffi::tests::zero_short_exact_retry_is_atomic_and_create_retry_survives_commands ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 0.12s
+
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/crates/xyg-engine)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/crates/xyg-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.21s
+     Running unittests src/lib.rs (target/debug/deps/xyg_core-840e708af8c37a74)

@@ -1,0 +1,16 @@
+{
+  "name": "gpu-extreme-tests",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction::tests::wire::gpu"
+  ],
+  "exitCode": 0,
+  "seconds": 12.824,
+  "rawSha256": "04d66c4eb87d8fc0c0e854c9b86a7951f6e17f56ac2eda179c6685a1579ae965",
+  "log": "gpu-extreme-tests.txt.gz",
+  "gzipSha256": "c4c6bf2177be1d7b8c960de9c82ddc91780effde0850f7f402a823ccb4ab46ab"
+}

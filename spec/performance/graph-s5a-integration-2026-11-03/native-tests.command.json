@@ -1,0 +1,17 @@
+{
+  "name": "native-tests",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-core",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 25.863,
+  "rawSha256": "b6cd5100974922414a81bd4ca171aac4041af978e5e0e2b4f1c9e51e6e97363c",
+  "log": "native-tests.txt.gz",
+  "gzipSha256": "110f8a002d784a9c178a764fed9fe53001746b492a96418054a1111d27146a0e"
+}

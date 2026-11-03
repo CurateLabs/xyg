@@ -1,0 +1,25 @@
+{
+  "parent": "1044cdf2175d57dbed2c5088f747f812a982dc08",
+  "baselineLibrarySha256": "f31d05896b0ca7072f62d1b013be8d3812f559e1f844852afbe58445e1bf3be9",
+  "currentLibrarySha256": "aca906ba6738f5578ab6bd31f0a6e0ca2efe35b0e94003f303c3573e91abe2df",
+  "controls": [
+    {
+      "operation": "render",
+      "beforeBytes": 3136,
+      "afterBytes": 5824,
+      "beforeSha256": "72fa0bd4febb9dd489ed1257449b3d49fd624087db9cef6f7c91bc70b823bfa0",
+      "afterSha256": "a702cc671437f430682a2261dfd094f6e34eeb5296c4a3a05917599f9e029814",
+      "unchangedSections": 35,
+      "newSections": 38
+    },
+    {
+      "operation": "same_revision_select",
+      "beforeBytes": 3464,
+      "afterBytes": 6152,
+      "beforeSha256": "7a4c1b9c8203e337cc549b7f019214ab2ada2a13a58cbc8d92196408b023a221",
+      "afterSha256": "e5e391b2f38b0348498265fc1432f604912a3cb2b38410126de4f6de3168d60c",
+      "unchangedSections": 36,
+      "newSections": 38
+    }
+  ]
+}

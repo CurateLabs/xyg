@@ -1,0 +1,15 @@
+{
+  "name": "actual-replay-v2",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=target/task-tmp/s5a-diagnostic.wasm",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 1.085,
+  "rawSha256": "e5f16e2f1bfb3c7bdfcc2501df8ec73389bc3c3fc807a30d0c49750671b2abd5",
+  "log": "actual-replay-v2.txt.gz",
+  "gzipSha256": "b47fc41f4ff9a19c12c945894533f506d6d619d69cb81bfd4d9df40885749565"
+}

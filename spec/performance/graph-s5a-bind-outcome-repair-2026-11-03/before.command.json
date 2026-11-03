@@ -1,0 +1,16 @@
+{
+  "name": "before",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-engine",
+    "bind_outcome_counts_adopted_selection_on_initial_rebind_and_owner_change"
+  ],
+  "exitCode": 101,
+  "seconds": 17.079,
+  "rawSha256": "067ef59cbeaae31ca880352286cfb84ea0444ec832c0eebe384c5ae65828d123",
+  "log": "before.txt.gz",
+  "gzipSha256": "960b5b182aa5d55f4cc4e14d829a50d1d82e939887a450dbb413ad5d6a1ae860"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "before-build",
+  "command": [
+    "cargo",
+    "build",
+    "--offline",
+    "-p",
+    "xyg-core",
+    "--release",
+    "--manifest-path",
+    "target/task-tmp/s5a-parent-source/Cargo.toml",
+    "--target-dir",
+    "target/task-tmp/s5a-parent-target"
+  ],
+  "exitCode": 0,
+  "seconds": 118.306,
+  "rawSha256": "a930fc00140fe0ad55a75bab8b9cdc107a385637455bd88e80675a5de29a6b67",
+  "log": "before-build.txt.gz",
+  "gzipSha256": "9df3ef6db2271c3ae671f950112370720d7d741c2a91327a3ecefaf671486a71"
+}

@@ -34,6 +34,122 @@ function equalBytes(actual, expected, label) {
   assert.equal(Buffer.compare(left, right), 0, `${label}${differences ? `: ${differences}` : ""}`);
 }
 
+// Inspection oracle only: compare Rust's GPU buffers with its CPU publication.
+// This code does not generate geometry or own rendering policy.
+function assertGpuPublication(bytes, operation) {
+  const sections = decodeContainer(bytes, "XYGR");
+  if (operation === 19 || operation === 22) {
+    assert.ok(![...sections.keys()].some((key) => /^(gpu\.|focus\.action\.|outcome\.|disclosure\.)/.test(key)), "control acknowledgements carry no invented publication/outcome");
+    return;
+  }
+  const get = (name, dtype, index = 0) => {
+    const section = sections.get(`${name}#${index}`);
+    assert.ok(section, `required ${name}#${index}`);
+    assert.equal(section.dtype, DTYPE[dtype], `${name} dtype`);
+    return section.value;
+  };
+  const header = get("gpu.header.u32", "u32");
+  assert.equal(header.length, 8);
+  const [version, flags, n, m, pieces, heads, frames, reserved] = header;
+  assert.deepEqual([version, flags, reserved], [1, 0, 0]);
+  const centers = get("paint.node.center.f64", "f64");
+  const cpuPieces = get("paint.piece.geometry.f64", "f64");
+  const cpuIndices = get("paint.piece.index.u64", "u64");
+  const cpuFrames = get("paint.frame.geometry.f64", "f64");
+  assert.equal(centers.length, n * 2);
+  assert.equal(cpuPieces.length, pieces * 14);
+  assert.equal(cpuIndices.length, pieces * 2);
+  assert.equal(cpuFrames.length, frames * 5);
+  const transforms = [0, 1, 2].map((index) => {
+    const v = get("gpu.transform.f64", "f64", index);
+    assert.equal(v.length, 2);
+    assert.ok(v.every(Number.isFinite) && v[1] > 0);
+    return v;
+  });
+  const column = (name, index, count) => {
+    const bytes = get(name, "bytes", index);
+    assert.equal(bytes.length, count * 4, `${name}#${index} count`);
+    const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    return Array.from({ length: count }, (_, i) => v.getFloat32(i * 4, true));
+  };
+  const compare = (actual, expected, transform, label) => {
+    const [offset, scale] = transform;
+    assert.equal(actual.length, expected.length);
+    actual.forEach((f, i) => {
+      assert.ok(Number.isFinite(f), `${label} finite`);
+      const encoded = (expected[i] - offset) * scale;
+      const decoded = f / scale + offset;
+      // IEEE binary32 nearest rounding plus binary64 reconstruction arithmetic.
+      const bound = (Math.abs(encoded) * 2 ** -23 + 2 ** -149) / scale
+        + 8 * Number.EPSILON * Math.max(1, Math.abs(offset), Math.abs(expected[i]));
+      assert.ok(Math.abs(decoded - expected[i]) <= bound, `${label}[${i}]: ${decoded} vs ${expected[i]}, bound ${bound}`);
+    });
+  };
+  for (let axis = 0; axis < 2; axis++) {
+    compare(column("gpu.node.coord.bytes", axis, n), Array.from({ length: n }, (_, i) => centers[i * 2 + axis]), transforms[axis], `node axis ${axis}`);
+  }
+  for (let i = 0; i < 4; i++) {
+    compare(column("gpu.shaft.coord.bytes", i, pieces), Array.from({ length: pieces }, (_, p) => cpuPieces[p * 14 + i]), transforms[i % 2], `shaft column ${i}`);
+    compare(column("gpu.shaft.attr.bytes", i, pieces), Array.from({ length: pieces }, (_, p) => cpuPieces[p * 14 + 4 + i]), i === 3 ? transforms[2] : [0, 1], `shaft attribute ${i}`);
+    compare(column("gpu.frame.coord.bytes", i, frames), Array.from({ length: frames }, (_, p) => cpuFrames[p * 5 + i]), transforms[i % 2], `frame column ${i}`);
+  }
+  compare(column("gpu.frame.width.bytes", 0, frames), Array.from({ length: frames }, (_, i) => cpuFrames[i * 5 + 4]), [0, 1], "frame width");
+  const headPieces = get("gpu.head.piece.u32", "u32");
+  assert.deepEqual([...headPieces], Array.from({ length: pieces }, (_, i) => i).filter((i) => (cpuIndices[i * 2 + 1] & 2n) !== 0n), "head order and piece identity");
+  assert.equal(headPieces.length, heads);
+  for (let i = 0; i < 6; i++) {
+    compare(column("gpu.head.coord.bytes", i, heads), [...headPieces].map((p) => cpuPieces[p * 14 + 8 + i]), transforms[i % 2], `head column ${i}`);
+  }
+  assert.deepEqual([...get("gpu.shaft.edge.u32", "u32")], Array.from({ length: pieces }, (_, i) => Number(cpuIndices[i * 2])), "clipped pieces retain published edge identity/order");
+  assert.deepEqual([...get("gpu.shaft.flags.u8", "u8")], Array.from({ length: pieces }, (_, i) => Number(cpuIndices[i * 2 + 1] & 1n)));
+  assert.deepEqual([...get("gpu.frame.node.u32", "u32")], [...get("paint.frame.node.u64", "u64")].map(Number));
+  for (const [kind, count] of [["node", n], ["edge", m]]) {
+    const styles = get(`gpu.${kind}.style.bytes`, "bytes");
+    assert.equal(styles.length, count * 60);
+    assert.deepEqual(styles, get(`paint.${kind}.style.bytes`, "bytes"), `${kind} RGBA, shape, width, layers and ordering`);
+    const state = get(`gpu.${kind}.state.u8`, "u8");
+    const visuals = get(kind === "node" ? "render.visual_states.u8" : "render.edge_visual_states.u8", "u8");
+    const emphasis = get(kind === "node" ? "render.emphasis.u8" : "render.edge_emphasis.u8", "u8");
+    const offsets = get(`render.${kind}_member_offsets.u64`, "u64");
+    const members = get(`render.${kind}_members.u64`, "u64");
+    const sourceFlags = get(`${kind}.flags.u32`, "u32");
+    assert.equal(state.length, count * 4);
+    assert.equal(visuals.length, count);
+    for (let i = 0; i < count; i++) {
+      let memberFlags = 0;
+      for (let j = Number(offsets[i]); j < Number(offsets[i + 1]); j++) memberFlags |= sourceFlags[Number(members[j])] & 0x17;
+      assert.deepEqual([...state.subarray(i * 4, i * 4 + 4)], [visuals[i], emphasis[i], memberFlags, 0], `${kind} simultaneous emphasis/state bits`);
+    }
+  }
+  const outcome = get("outcome.u32", "u32");
+  assert.equal(outcome.length, 4);
+  assert.equal(outcome[0], 1);
+  assert.ok(outcome[1] <= 1 && outcome[3] <= 1);
+  const disclosure = get("disclosure.ref.bytes", "bytes");
+  assert.equal(new DataView(disclosure.buffer, disclosure.byteOffset).getUint32(0, true), outcome[3]);
+  const collapsed = get("disclosure.collapsed.u8", "u8");
+  assert.equal(collapsed.length, outcome[3]);
+  assert.ok(collapsed.every((v) => v <= 1));
+  const action = get("focus.action.u32", "u32");
+  assert.equal(action.length, 8);
+  assert.equal(action[0], 1);
+  assert.ok([...action.subarray(1, 6)].every((v) => v <= 1));
+  assert.deepEqual([...action.subarray(6)], [0, 0]);
+  const target = get("focus.action.ref.bytes", "bytes");
+  const tv = new DataView(target.buffer, target.byteOffset, target.byteLength);
+  const targetCount = tv.getUint32(0, true);
+  assert.ok(targetCount <= 1);
+  if (!targetCount) assert.deepEqual([...action.subarray(1)], Array(7).fill(0));
+  else {
+    const kind = tv.getUint32(8, true);
+    assert.ok(kind === 0 || kind === 3, "action identity is a node or exact aggregate stop");
+    if (kind === 3) {
+      assert.equal(get("render.tier.u32", "u32")[0], 2);
+      assert.deepEqual([...action.subarray(1)], Array(7).fill(0), "aggregate UUID stand-ins cannot enable singular actions");
+    }
+  }
+}
+
 function request(instance, group, sequence, revision, operation, sections = [], words = {}) {
   const header = [revision, operation, 0, 0, 0, 0, 0, 0, 0];
   for (const [index, number] of Object.entries(words)) header[Number(index)] = number;
@@ -53,6 +169,10 @@ function refs(elements) {
     const at = 8 + i * 56;
     view.setUint32(at, element.kind, true);
     if (element.uuid) out.set(element.uuid, at + 8);
+    if (element.kind === 3) {
+      view.setUint32(at + 24, element.index, true);
+      view.setUint32(at + 28, element.revision, true);
+    }
     if (element.kind === 2) {
       view.setUint32(at + 24, element.layer, true);
       view.setBigUint64(at + 32, element.path, true);
@@ -197,7 +317,9 @@ function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
   assert.equal(native.xyGraphforgeSessionCreate(ptr(data.document), BigInt(data.document.length), ptr(open), BigInt(open.length), instance, group, native.pointer(handle, "uint64_t *")), 0);
   const wasm = x.xyg_wasm_instance_new(budget);
   assert.ok(wasm > 0);
-  assert.equal(wasmCall(x, wasm, "xyg_wasm_graphforge_session_open", open).status, 0);
+  const opened = wasmCall(x, wasm, "xyg_wasm_graphforge_session_open", open);
+  assert.equal(opened.status, 0);
+  assertGpuPublication(opened.output, 19);
   let sequence = 1;
   let revision = 0;
   return {
@@ -215,6 +337,8 @@ function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
       const wasmResult = wasmCall(x, wasm, name, bytes);
       assert.equal(wasmResult.status, 0, `operation ${operation}`);
       equalBytes(wasmResult.output, nativeBytes, `operation ${operation} native/WASM bytes`);
+      assertGpuPublication(nativeBytes, operation);
+      assertGpuPublication(wasmResult.output, operation);
       assert.deepEqual(wasmCall(x, wasm, name, bytes).output, nativeBytes, `operation ${operation} WASM retry bytes`);
       const header = value(nativeBytes, "header.u32");
       if (header) revision = header[0];
@@ -254,8 +378,10 @@ test("actual native ABI and real WASM replay one GraphSession byte contract", as
     assert.equal(nativeCall(native.xyGraphforgeSessionRender, sender.handle, malformedContainer, 0).status, -3);
     assert.equal(wasmCall(x, sender.wasm, "xyg_wasm_graphforge_session_render", malformedContainer).status, -3, "wasm32 checked names/alignment refuses without a trap");
     const initial = sender.run(21);
+    assert.deepEqual([...value(initial, "outcome.u32")], [1, 0, 0, 0]);
     const selected = sender.run(10, [field("uuids.uuid", "uuid", data.nodes.subarray(0, 16))]);
     assert.equal(value(initial, "header.u32")[0], value(selected, "header.u32")[0]);
+    assert.deepEqual([...value(selected, "outcome.u32")], [1, 1, 2, 0]);
     assert.ok(value(selected, "node.flags.u32")[0] & 2);
     assert.ok(value(selected, "edge.flags.u32")[data.persisted] & 2, "shared UUID selects both kinds");
     assert.notDeepEqual(value(initial, "render.visual_states.u8"), value(selected, "render.visual_states.u8"));
@@ -263,6 +389,21 @@ test("actual native ABI and real WASM replay one GraphSession byte contract", as
     const focused = sender.run(6, [field("refs.bytes", "bytes", node)]);
     assert.equal(value(focused, "header.u32")[0], value(selected, "header.u32")[0]);
     assert.ok(value(focused, "render.emphasis.u8").some((v) => v & 1));
+    const unchangedFocus = sender.run(6, [field("refs.bytes", "bytes", node)]);
+    assert.equal(value(unchangedFocus, "outcome.u32")[1], 0, "actual unchanged reducer outcome is serialized");
+    sender.run(0, [field("coordinates.f64", "f64", [0, 0])]);
+    sender.run(12, [field("refs.bytes", "bytes", node)], { 4: 0 });
+    sender.run(12, [field("refs.bytes", "bytes", node)], { 4: 1 });
+    const simultaneous = sender.run(12, [field("refs.bytes", "bytes", node)], { 4: 2 });
+    assert.equal(value(simultaneous, "header.u32")[0], value(initial, "header.u32")[0]);
+    assert.equal(value(simultaneous, "gpu.node.state.u8")[1], 15, "focus/path/community/external coexist");
+    assert.equal(value(simultaneous, "gpu.node.state.u8")[2] & 3, 3, "hover and selection coexist with all emphasis bits");
+    assert.notDeepEqual(value(simultaneous, "gpu.node.state.u8"), value(initial, "gpu.node.state.u8"), "same revision republishes fresh GPU attributes");
+    assert.notDeepEqual(value(simultaneous, "gpu.node.style.bytes"), value(initial, "gpu.node.style.bytes"));
+    assert.deepEqual(value(simultaneous, "paint.piece.index.u64"), value(initial, "paint.piece.index.u64"), "state-only publication keeps piece identity/order");
+    assert.deepEqual(value(simultaneous, "render.node_x.f64"), value(initial, "render.node_x.f64"));
+    assert.deepEqual(value(simultaneous, "render.node_y.f64"), value(initial, "render.node_y.f64"));
+    assert.notDeepEqual(value(simultaneous, "gpu.shaft.attr.bytes"), value(initial, "gpu.shaft.attr.bytes"), "same-revision Rust-resolved edge width is refreshed too");
     sender.run(8, [], { 5: 1 });
     sender.run(0, [field("coordinates.f64", "f64", [0, 0])]);
     sender.run(2, [field("coordinates.f64", "f64", [-10, -10, 50, 10])]);
@@ -388,7 +529,15 @@ test("real native/WASM binding shares temporal frames and revokes replaced owner
     const bind = request(pair.instance, pair.group, 2, 0, 18, [field("temporal.u64", "u64", [1n])]);
     assert.equal(wasmCall(x, other, "xyg_wasm_graphforge_session_interact", bind).status, -10, "another instance cannot borrow the live owner");
     const bound = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(bound, "outcome.u32")], [1, 0, 0, 0]);
     pair.run(10, [field("uuids.uuid", "uuid", nodes.subarray(0, 16))]);
+    const detached = pair.run(18, [field("temporal.u64", "u64", [0n])]);
+    assert.deepEqual([...value(detached, "outcome.u32")], [1, 0, 0, 0]);
+    const adopted = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(adopted, "outcome.u32")], [1, 0, 1, 0], "binding adopts the existing owner selection count");
+    assert.ok(value(adopted, "node.flags.u32")[0] & 2);
+    const rebound = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(rebound, "outcome.u32")], [1, 0, 1, 0], "same-owner rebind reports the same authoritative selection");
     temporalGraphFrame(owner, { revision: 1n, cursor: 5n, range: [0n, 10n] });
     const frame = new Uint8Array(56); frame.set(Buffer.from("XYTG"));
     const fv = new DataView(frame.buffer);
@@ -401,7 +550,8 @@ test("real native/WASM binding shares temporal frames and revokes replaced owner
     const refreshed = pair.run(21);
     assert.ok(value(refreshed, "header.u32")[0] > value(bound, "header.u32")[0]);
     assert.ok(value(refreshed, "node.flags.u32")[0] & 2, "the authoritative temporal world retains selection across frames");
-    pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    const frameRebound = pair.run(18, [field("temporal.u64", "u64", [1n])]);
+    assert.deepEqual([...value(frameRebound, "outcome.u32")], [1, 0, 1, 0]);
     temporalGraphFrame(owner, { revision: 2n, cursor: 6n, range: [0n, 10n] });
     fv.setBigUint64(16, 2n, true);fv.setBigInt64(24, 6n, true);
     assert.equal(wasmCall(x, pair.wasm, "xyg_wasm_temporal_graph_execute", frame).status, 0);
@@ -497,6 +647,7 @@ test("real native/WASM resolved routes, heads, frames and aggregate singleton se
     field("status","u32",[0]),field("kind","utf8","graph"),field("composition.version","u32",[2]),
     field("node.uuid","uuid",nodes),field("node.parent","u32",[0,0,0]),field("node.parent.valid","u8",[0,1,1]),
     field("node.class","u8",[1,2,3]),field("node.epistemic","u8",[1,2,3]),field("edge.uuid","uuid",edges),
+    field("edge.epistemic","u8",[1,2,3,1]),field("edge.status","u8",[1,2,3,1]),
     field("edge.derived","u8",[0,0,0,0]),field("edge.layer","u32",Array(4).fill(0xffffffff)),
     field("edge.order","i64",Array(4).fill(-1n)),field("edge.path","u64",Array(4).fill(0xffffffffffffffffn)),
     field("edge.source","u64",[0n,0n,1n,1n]),field("edge.target","u64",[1n,1n,1n,2n]),field("graph.directed","u8",[1]),
@@ -509,6 +660,23 @@ test("real native/WASM resolved routes, heads, frames and aggregate singleton se
     assert.ok(idx.some((v,i)=>i%2===1 && (v&2n)!==0n));
     assert.equal([...idx].filter((v,i)=>i%2===0 && v===2n).length,3);
     assert.ok(value(r,"paint.frame.node.u64").length>0);
+    assert.ok(value(r,"paint.piece.geometry.f64").some((v, i) => i % 14 === 5 && v > 0), "actual dashed strokes are exercised");
+    const rootRef = refs([{ kind: 0, uuid: nodes.subarray(0, 16) }]);
+    const rootFocus = pair.run(6, [field("refs.bytes", "bytes", rootRef)]);
+    assert.deepEqual([...value(rootFocus, "focus.action.u32")], [1, 1, 0, 1, 0, 1, 0, 0]);
+    const collapsed = pair.run(9, [field("refs.bytes", "bytes", rootRef)], { 5: 1 });
+    assert.deepEqual([...value(collapsed, "outcome.u32")].filter((_, i) => i !== 2), [1, 1, 1]);
+    assert.deepEqual(value(collapsed, "disclosure.ref.bytes"), rootRef);
+    assert.deepEqual([...value(collapsed, "disclosure.collapsed.u8")], [1]);
+    assert.equal(value(collapsed, "focus.action.u32")[2], 1);
+    pair.run(9, [field("refs.bytes", "bytes", rootRef)], { 5: 2 });
+    const pin = pair.run(13, [field("refs.bytes", "bytes", rootRef)], { 5: 1 });
+    assert.equal(value(pin, "focus.action.u32")[4], 1);
+    const edgeSample = pair.run(20, [...data.load, field("load.budgets.u64", "u64", [100n, 1n])]);
+    assert.equal(value(edgeSample, "render.tier.u32")[0], 1);
+    const sampleFocus = pair.run(6, [field("refs.bytes", "bytes", rootRef)]);
+    assert.equal(value(sampleFocus, "focus.action.u32")[1], 0, "EdgeSample disclosure is rejected by the actual reducer");
+    assert.equal(value(sampleFocus, "focus.action.u32")[5], 1, "EdgeSample nodes remain source-backed");
     const load=data.load.map(s=>s.name==="load.x.f64"?{...s,values:[0,0.1,60]}:s);
     load.push(field("load.budgets.u64","u64",[2n,100n]));
     const aggregate=pair.run(20,load);
@@ -517,5 +685,11 @@ test("real native/WASM resolved routes, heads, frames and aggregate singleton se
     assert.ok([...offsets].some((v,i)=>i>0&&v-offsets[i-1]===1n));
     assert.equal(value(aggregate,"paint.frame.node.u64").length,0);
     assert.equal(value(aggregate,"paint.node.style.bytes").length,2*60);
+    for (let index = 0; index < offsets.length - 1; index++) {
+      const focusedAggregate = pair.run(6, [field("refs.bytes", "bytes", refs([{ kind: 3, index, revision: value(aggregate, "header.u32")[0] }]))]);
+      assert.deepEqual([...value(focusedAggregate, "focus.action.u32")], [1, 0, 0, 0, 0, 0, 0, 0], "single and multiple member aggregate stops deny singular node actions");
+      const target = value(focusedAggregate, "focus.action.ref.bytes");
+      assert.equal(new DataView(target.buffer, target.byteOffset).getUint32(8, true), 3);
+    }
   } finally {pair.close();}
 });

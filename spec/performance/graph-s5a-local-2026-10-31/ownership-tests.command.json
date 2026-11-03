@@ -1,0 +1,15 @@
+{
+  "name": "ownership-tests",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "tests/test_verify_ownership.py",
+    "-q"
+  ],
+  "exitCode": 1,
+  "seconds": 3.909,
+  "rawSha256": "085bb4a84950c62e7666f27ada22ccb6380652686cfece83e579ab00b1cd4408",
+  "log": "ownership-tests.txt.gz",
+  "gzipSha256": "968f3a98155394af82ec5abf0390657ffd36e4d016dd4167299e516275c8ea71"
+}

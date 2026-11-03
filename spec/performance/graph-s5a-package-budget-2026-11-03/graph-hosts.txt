@@ -1,0 +1,466 @@
+TAP version 13
+# Subtest: the golden covers compound, disconnected, coincident, and both repulsion tiers, seeded and authored
+ok 1 - the golden covers compound, disconnected, coincident, and both repulsion tiers, seeded and authored
+  ---
+  duration_ms: 1.94062
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: path-default
+ok 2 - native Node CoSE matches the golden bitwise: path-default
+  ---
+  duration_ms: 3.43237
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: path-default-seeded
+ok 3 - native Node CoSE matches the golden bitwise: path-default-seeded
+  ---
+  duration_ms: 0.984057
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: compound
+ok 4 - native Node CoSE matches the golden bitwise: compound
+  ---
+  duration_ms: 1.083879
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: compound-seeded
+ok 5 - native Node CoSE matches the golden bitwise: compound-seeded
+  ---
+  duration_ms: 0.724566
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: disconnected
+ok 6 - native Node CoSE matches the golden bitwise: disconnected
+  ---
+  duration_ms: 0.586476
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: disconnected-seeded
+ok 7 - native Node CoSE matches the golden bitwise: disconnected-seeded
+  ---
+  duration_ms: 0.766109
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: pinned-bounds-initial
+ok 8 - native Node CoSE matches the golden bitwise: pinned-bounds-initial
+  ---
+  duration_ms: 3.359959
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: coincident-start
+ok 9 - native Node CoSE matches the golden bitwise: coincident-start
+  ---
+  duration_ms: 1.155327
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-200-exact-tier
+ok 10 - native Node CoSE matches the golden bitwise: random-200-exact-tier
+  ---
+  duration_ms: 19.006629
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-200-exact-tier-seeded
+ok 11 - native Node CoSE matches the golden bitwise: random-200-exact-tier-seeded
+  ---
+  duration_ms: 18.240437
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-700-grid-tier-compound
+ok 12 - native Node CoSE matches the golden bitwise: random-700-grid-tier-compound
+  ---
+  duration_ms: 65.422651
+  type: 'test'
+  ...
+# Subtest: native Node CoSE matches the golden bitwise: random-700-grid-tier-compound-seeded
+ok 13 - native Node CoSE matches the golden bitwise: random-700-grid-tier-compound-seeded
+  ---
+  duration_ms: 58.886569
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: path-default
+ok 14 - direct-WASM CoSE matches native bitwise: path-default
+  ---
+  duration_ms: 83.145344
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: path-default-seeded
+ok 15 - direct-WASM CoSE matches native bitwise: path-default-seeded
+  ---
+  duration_ms: 17.23521
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: compound
+ok 16 - direct-WASM CoSE matches native bitwise: compound
+  ---
+  duration_ms: 11.531698
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: compound-seeded
+ok 17 - direct-WASM CoSE matches native bitwise: compound-seeded
+  ---
+  duration_ms: 17.251796
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: disconnected
+ok 18 - direct-WASM CoSE matches native bitwise: disconnected
+  ---
+  duration_ms: 9.601528
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: disconnected-seeded
+ok 19 - direct-WASM CoSE matches native bitwise: disconnected-seeded
+  ---
+  duration_ms: 9.098646
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: pinned-bounds-initial
+ok 20 - direct-WASM CoSE matches native bitwise: pinned-bounds-initial
+  ---
+  duration_ms: 8.790404
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: coincident-start
+ok 21 - direct-WASM CoSE matches native bitwise: coincident-start
+  ---
+  duration_ms: 9.978736
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-200-exact-tier
+ok 22 - direct-WASM CoSE matches native bitwise: random-200-exact-tier
+  ---
+  duration_ms: 23.388761
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-200-exact-tier-seeded
+ok 23 - direct-WASM CoSE matches native bitwise: random-200-exact-tier-seeded
+  ---
+  duration_ms: 32.270111
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound
+ok 24 - direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound
+  ---
+  duration_ms: 75.136299
+  type: 'test'
+  ...
+# Subtest: direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound-seeded
+ok 25 - direct-WASM CoSE matches native bitwise: random-700-grid-tier-compound-seeded
+  ---
+  duration_ms: 82.08806
+  type: 'test'
+  ...
+# Subtest: Node frames and composes the Python-pinned GraphForge bytes for every case
+ok 26 - Node frames and composes the Python-pinned GraphForge bytes for every case
+  ---
+  duration_ms: 41.8085
+  type: 'test'
+  ...
+# Subtest: default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+ok 27 - default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+  ---
+  duration_ms: 501.18475
+  type: 'test'
+  ...
+# Subtest: presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+ok 28 - presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+  ---
+  duration_ms: 609.695937
+  type: 'test'
+  ...
+# Subtest: concurrent owners, supersession, late callback and reload remain isolated
+ok 29 - concurrent owners, supersession, late callback and reload remain isolated
+  ---
+  duration_ms: 732.141841
+  type: 'test'
+  ...
+# Subtest: pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+ok 30 - pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+  ---
+  duration_ms: 1198.827388
+  type: 'test'
+  ...
+# Subtest: compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+ok 31 - compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+  ---
+  duration_ms: 280.649114
+  type: 'test'
+  ...
+# Subtest: render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+ok 32 - render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+  ---
+  duration_ms: 156.540394
+  type: 'test'
+  ...
+# Subtest: Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+ok 33 - Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+  ---
+  duration_ms: 433.7151
+  type: 'test'
+  ...
+# Subtest: collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+ok 34 - collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+  ---
+  duration_ms: 151.418613
+  type: 'test'
+  ...
+# Subtest: circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+ok 35 - circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+  ---
+  duration_ms: 1721.386988
+  type: 'test'
+  ...
+# Subtest: real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+ok 36 - real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+  ---
+  duration_ms: 3389.752549
+  type: 'test'
+  ...
+# Subtest: existing CoSE golden/options remain bit-exact in the reused real native worker
+ok 37 - existing CoSE golden/options remain bit-exact in the reused real native worker
+  ---
+  duration_ms: 962.655306
+  type: 'test'
+  ...
+# Subtest: explicit static layouts and analytical intents still pack off-loop without force
+ok 38 - explicit static layouts and analytical intents still pack off-loop without force
+  ---
+  duration_ms: 470.855388
+  type: 'test'
+  ...
+# Subtest: reentrant startup cancellation cannot strand a bridge or escape disposal
+ok 39 - reentrant startup cancellation cannot strand a bridge or escape disposal
+  ---
+  duration_ms: 1300.585348
+  type: 'test'
+  ...
+# Subtest: non-force Aggregate source layout runs once in the bridge before preset-only packing
+ok 40 - non-force Aggregate source layout runs once in the bridge before preset-only packing
+  ---
+  duration_ms: 974.487864
+  type: 'test'
+  ...
+# Subtest: native and WASM compose byte-identical XYGF documents on every fixture
+ok 41 - native and WASM compose byte-identical XYGF documents on every fixture
+  ---
+  duration_ms: 99.42492
+  type: 'test'
+  ...
+# Subtest: composition v2 hierarchy and root conflicts match native and WASM
+ok 42 - composition v2 hierarchy and root conflicts match native and WASM
+  ---
+  duration_ms: 301.901098
+  type: 'test'
+  ...
+# Subtest: rendered Scenes are identical and carry every composed identity
+ok 43 - rendered Scenes are identical and carry every composed identity
+  ---
+  duration_ms: 21.17555
+  type: 'test'
+  ...
+# Subtest: rendered Scenes stay identical on graphs large enough to exercise layout seeding
+ok 44 - rendered Scenes stay identical on graphs large enough to exercise layout seeding
+  ---
+  duration_ms: 397.907937
+  type: 'test'
+  ...
+# Subtest: a 100-node GraphForge run renders identical Scenes on both hosts
+ok 45 - a 100-node GraphForge run renders identical Scenes on both hosts
+  ---
+  duration_ms: 149.883843
+  type: 'test'
+  ...
+# Subtest: the browser bundle frames the same request bytes and decodes the same identities
+ok 46 - the browser bundle frames the same request bytes and decodes the same identities
+  ---
+  duration_ms: 31.853716
+  type: 'test'
+  ...
+# Subtest: unsupported-schema diagnostics are byte-identical on native and WASM
+ok 47 - unsupported-schema diagnostics are byte-identical on native and WASM
+  ---
+  duration_ms: 9.031637
+  type: 'test'
+  ...
+# Subtest: published Core rc.5 catalog and path-cost schema rejection match actual WASM
+ok 48 - published Core rc.5 catalog and path-cost schema rejection match actual WASM
+  ---
+  duration_ms: 78.971515
+  type: 'test'
+  ...
+# Subtest: a request with no result layer composes the property-graph defaults
+ok 49 - a request with no result layer composes the property-graph defaults
+  ---
+  duration_ms: 8.671934
+  type: 'test'
+  ...
+# Subtest: a directed property graph keeps its arrowheads in the interactive graph mark
+ok 50 - a directed property graph keeps its arrowheads in the interactive graph mark
+  ---
+  duration_ms: 19.612736
+  type: 'test'
+  ...
+# Subtest: every node and edge layer joins by UUID, matching an independent decoder
+ok 51 - every node and edge layer joins by UUID, matching an independent decoder
+  ---
+  duration_ms: 19.756013
+  type: 'test'
+  ...
+# Subtest: scores become the node metric plane; communities class codes
+ok 52 - scores become the node metric plane; communities class codes
+  ---
+  duration_ms: 4.975881
+  type: 'test'
+  ...
+# Subtest: edge overlays mark members, dim context, and keep persisted identity
+ok 53 - edge overlays mark members, dim context, and keep persisted identity
+  ---
+  duration_ms: 2.205503
+  type: 'test'
+  ...
+# Subtest: identity round-trips for selection: UUID → index → UUID + result rows
+ok 54 - identity round-trips for selection: UUID → index → UUID + result rows
+  ---
+  duration_ms: 1.012002
+  type: 'test'
+  ...
+# Subtest: failures carry stable codes and no identities or values
+ok 55 - failures carry stable codes and no identities or values
+  ---
+  duration_ms: 2.102537
+  type: 'test'
+  ...
+# Subtest: missing and extra identity policies are explicit and recorded
+ok 56 - missing and extra identity policies are explicit and recorded
+  ---
+  duration_ms: 1.999328
+  type: 'test'
+  ...
+# Subtest: diagnostics are value-free
+ok 57 - diagnostics are value-free
+  ---
+  duration_ms: 1.616496
+  type: 'test'
+  ...
+# Subtest: request framing is host-neutral bytes; the document decodes identically
+ok 58 - request framing is host-neutral bytes; the document decodes identically
+  ---
+  duration_ms: 1.967925
+  type: 'test'
+  ...
+# Subtest: container numbers are little-endian bytes regardless of host order
+ok 59 - container numbers are little-endian bytes regardless of host order
+  ---
+  duration_ms: 0.523898
+  type: 'test'
+  ...
+# Subtest: container codec round-trips and rejects corruption
+ok 60 - container codec round-trips and rejects corruption
+  ---
+  duration_ms: 0.561352
+  type: 'test'
+  ...
+# Subtest: table documents with inconsistent shapes are rejected, not iterated
+ok 61 - table documents with inconsistent shapes are rejected, not iterated
+  ---
+  duration_ms: 1.050535
+  type: 'test'
+  ...
+# Subtest: graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+ok 62 - graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+  ---
+  duration_ms: 191.323393
+  type: 'test'
+  ...
+# Subtest: graph mark accepts edge visual-state flags only with edge semantic fields
+ok 63 - graph mark accepts edge visual-state flags only with edge semantic fields
+  ---
+  duration_ms: 6.819092
+  type: 'test'
+  ...
+# Subtest: the Rust ledger covers every GraphForge 0.5.2 contract
+ok 64 - the Rust ledger covers every GraphForge 0.5.2 contract
+  ---
+  duration_ms: 0.625364
+  type: 'test'
+  ...
+# Subtest: derived pairs are identified by layer and result row, never a persisted UUID
+ok 65 - derived pairs are identified by layer and result row, never a persisted UUID
+  ---
+  duration_ms: 0.795026
+  type: 'test'
+  ...
+# Subtest: ordered overlays expose paths, step order, and position labels
+ok 66 - ordered overlays expose paths, step order, and position labels
+  ---
+  duration_ms: 7.046957
+  type: 'test'
+  ...
+# Subtest: scalar and category results compose as tables and bar charts, never graphs
+ok 67 - scalar and category results compose as tables and bar charts, never graphs
+  ---
+  duration_ms: 65.140798
+  type: 'test'
+  ...
+# Subtest: table cells are escaped text
+ok 68 - table cells are escaped text
+  ---
+  duration_ms: 0.325608
+  type: 'test'
+  ...
+# Subtest: embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+ok 69 - embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+  ---
+  duration_ms: 92.874389
+  type: 'test'
+  ...
+# Subtest: render requests append the canonical Scene and selections paint selected
+ok 70 - render requests append the canonical Scene and selections paint selected
+  ---
+  duration_ms: 1.359725
+  type: 'test'
+  ...
+# Subtest: webview payloads relay picks back to GraphForge identity
+ok 71 - webview payloads relay picks back to GraphForge identity
+  ---
+  duration_ms: 40.04934
+  type: 'test'
+  ...
+# Subtest: recompositions reuse a layout by node UUID instead of laying out again
+ok 72 - recompositions reuse a layout by node UUID instead of laying out again
+  ---
+  duration_ms: 31.910922
+  type: 'test'
+  ...
+# Subtest: composition identities decode lazily and agree with the planes
+ok 73 - composition identities decode lazily and agree with the planes
+  ---
+  duration_ms: 0.625843
+  type: 'test'
+  ...
+# Subtest: derived edges carry no provenance row in hover rows
+ok 74 - derived edges carry no provenance row in hover rows
+  ---
+  duration_ms: 1.679601
+  type: 'test'
+  ...
+# Subtest: unsupported result-schema versions name the schema and next action
+ok 75 - unsupported result-schema versions name the schema and next action
+  ---
+  duration_ms: 1.015407
+  type: 'test'
+  ...
+# Subtest: published Core rc.5 catalog composes, including endpoint-only path costs
+ok 76 - published Core rc.5 catalog composes, including endpoint-only path costs
+  ---
+  duration_ms: 48.854221
+  type: 'test'
+  ...
+1..76
+# tests 76
+# suites 0
+# pass 76
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13120.705356

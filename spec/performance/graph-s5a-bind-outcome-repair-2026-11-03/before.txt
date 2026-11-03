@@ -1,0 +1,24 @@
+
+running 1 test
+test graphforge::interaction::tests::wire::bind_outcome_counts_adopted_selection_on_initial_rebind_and_owner_change ... FAILED
+
+failures:
+
+---- graphforge::interaction::tests::wire::bind_outcome_counts_adopted_selection_on_initial_rebind_and_owner_change stdout ----
+
+thread 'graphforge::interaction::tests::wire::bind_outcome_counts_adopted_selection_on_initial_rebind_and_owner_change' (1828906) panicked at crates/xyg-engine/src/graphforge/interaction/tests/wire.rs:546:9:
+assertion `left == right` failed
+  left: [1, 0, 0, 0]
+ right: [1, 0, 2, 0]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    graphforge::interaction::tests::wire::bind_outcome_counts_adopted_selection_on_initial_rebind_and_owner_change
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1806 filtered out; finished in 0.00s
+
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.03s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+error: test failed, to rerun pass `-p xyg-engine --lib`

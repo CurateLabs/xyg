@@ -2789,7 +2789,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   for source/artifact hashes, real paired assets, native/WASM parity and the
   full strict-CSP foundation. This establishes no speed, hardware, session ABI,
   release or milestone completion; independent final review and CI remain pending.
-- **Current S4 WASM packaging limits:** 1,817 KiB raw / 742 KiB gzip6
+- **Historical S4 WASM packaging limits:** 1,817 KiB raw / 742 KiB gzip6
   (1,860,608 / 759,808 bytes). After independent correctness/evidence review and
   exactly two measured size candidates, the parent adopts the smallest next-KiB
   functionality budget for the reviewed 1,860,250 / 759,008-byte module. Only the
@@ -2802,6 +2802,21 @@ requiring a Rust toolchain — an instant adoption cliff.
   [S4 package decision receipt](performance/graph-s4-package-budget-2026-10-31/README.md)
   owns real shipping assets and full strict-CSP validation; old failures remain
   immutable. This establishes no speed, S5–S7, #36, M4 or release acceptance.
+- **Current S5a WASM packaging limits:** 1,829 KiB raw / 747 KiB gzip6
+  (1,872,896 / 764,928 bytes). Rust GPU columns and authoritative operation/focus
+  facts add 12,287 / 5,050 bytes over accepted S4. The integrated 1,872,541 /
+  764,063-byte module fails the previous gates by 11,933 / 4,255 bytes.
+  After independent source and measurement review, the parent adopts the
+  smallest next-KiB functionality limits, leaving 355 / 865 bytes. No size
+  experiment, profile/toolchain/optimizer/dependency/export/validation or
+  runtime-arena change accompanies this decision; future growth still fails.
+  The [S5a package decision receipt](performance/graph-s5a-package-budget-2026-11-03/README.md)
+  owns actual shipping/paired-asset/full strict-CSP proof. Historical failures
+  remain immutable. S5b/S6/S7, scale and M4/#108 acceptance remain outstanding.
+  The subsequent [binding-count correction](performance/graph-s5a-bind-outcome-repair-2026-11-03/README.md)
+  retains these limits: its fresh production artifact is 1,872,568 raw /
+  764,079 gzip6 bytes, leaving 328 / 849 bytes. It reports the adopted temporal
+  selection count without changing ownership, ABI, runtime budgets or guards.
 - **S4 session ABI growth originally failed the S3 limits.** Native ABI 397 /
   WASM ABI 35 expose the shared graph-session codec/transaction and disposable
   temporal owners, with admitted speculative work and complete retry replies.

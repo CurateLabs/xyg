@@ -1,0 +1,47 @@
+TAP version 13
+# Subtest: standalone temporal owners keep frame and replacement staging at the default arena
+ok 1 - standalone temporal owners keep frame and replacement staging at the default arena
+  ---
+  duration_ms: 44.989966
+  type: 'test'
+  ...
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 2 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 111.001684
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/s5a-integration-diagnostic.wasm","bytes":1872541,"sha256":"355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so","nativeSha256":"708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15","diagnosticModule":true}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 3 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 597.190725
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 4 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 23.47127
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 5 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 92.762865
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 6 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 25.890966
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1060.957498

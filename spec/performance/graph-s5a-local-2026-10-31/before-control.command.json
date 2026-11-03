@@ -1,0 +1,14 @@
+{
+  "name": "before-control",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-s5a-local-2026-10-31/before_control.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.21,
+  "rawSha256": "4dc215a79d461e2ea45a320ad84baa06c47a00c6e805cfd97c8d1108d49623ae",
+  "log": "before-control.txt.gz",
+  "gzipSha256": "1db7b05b096ac39bbb6844de2db8e49e732186c3fb9b8f53ce89712f7e389506"
+}

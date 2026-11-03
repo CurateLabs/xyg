@@ -1,0 +1,15 @@
+{
+  "name": "python-session",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py"
+  ],
+  "exitCode": 0,
+  "seconds": 1.031,
+  "rawSha256": "7d42ef5504b9f8dea803cd978f146b4a7a910815a154ed9e4e59883957d8862e",
+  "log": "python-session.txt.gz",
+  "gzipSha256": "c4ecf08ef2b12eb571aac3674b4b303f57f13a76874d43e60cf17c0edbbf4293"
+}

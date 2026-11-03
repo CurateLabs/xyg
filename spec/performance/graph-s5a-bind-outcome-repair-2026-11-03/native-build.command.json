@@ -1,0 +1,16 @@
+{
+  "name": "native-build",
+  "command": [
+    "cargo",
+    "build",
+    "--release",
+    "--offline",
+    "-p",
+    "xyg-core"
+  ],
+  "exitCode": 0,
+  "seconds": 112.952,
+  "rawSha256": "450a8892503ccf06a6793d24c9ae407b583c856b6df5b450de5b165796e5a0b1",
+  "log": "native-build.txt.gz",
+  "gzipSha256": "b657e4855f2e29ffb59c7f7aa0823031b6bc28ff07077eccc1e64cb5929ea9f1"
+}

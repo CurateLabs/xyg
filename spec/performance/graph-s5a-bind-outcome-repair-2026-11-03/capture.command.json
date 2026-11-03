@@ -1,0 +1,12 @@
+{
+  "name": "capture",
+  "command": [
+    "python3",
+    "spec/performance/graph-s5a-bind-outcome-repair-2026-11-03/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 1.943,
+  "rawSha256": "317552d5b8bdc0b298a626f2911d335975956b09aff3baa4cb6da4c3b8bbbc64",
+  "log": "capture.txt.gz",
+  "gzipSha256": "df0cb6a0fd98423d8cd1a3f26603990103c2a75a0e72be5245cd07546b670240"
+}

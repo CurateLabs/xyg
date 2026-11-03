@@ -1,0 +1,24 @@
+
+running 4 tests
+test graphforge::interaction::tests::wire::gpu::gpu_added_admission_refuses_before_candidate_and_keeps_exact_retry_delivery ... ok
+test graphforge::interaction::tests::wire::gpu::gpu_offset_preserves_small_deltas_and_normalizes_extreme_finite_domains ... ok
+test graphforge::interaction::tests::wire::gpu::gpu_precision_retains_clipping_heads_routes_frames_and_cpu_index ... ok
+test graphforge::interaction::tests::wire::gpu::gpu_view_rejects_missing_planes_bad_types_counts_refs_flags_nan_and_reserved ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 1802 filtered out; finished in 0.03s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-6ac01349/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.75s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+     Running unittests src/bin/geo_hierarchy_bench.rs (target/debug/deps/geo_hierarchy_bench-65077abe13f18b2c)
+     Running unittests src/bin/geo_scale_bench.rs (target/debug/deps/geo_scale_bench-3248208b6d85f135)

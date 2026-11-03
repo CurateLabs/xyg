@@ -1,0 +1,17 @@
+{
+  "name": "package-contracts",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_verify_wasm_assets.py",
+    "tests/test_wasm_inline_artifact_contract.py",
+    "tests/test_wasm_tick_host_assets.py"
+  ],
+  "exitCode": 0,
+  "seconds": 5.611,
+  "rawSha256": "edb680a66afc2955f4d039717d7cd363769d353754e4a3894418a4cf83ee8a64",
+  "log": "package-contracts.txt.gz",
+  "gzipSha256": "a20004b002838f9699ba302bdd8259d5390fc5619382cb0372d23e6eccc79e16"
+}

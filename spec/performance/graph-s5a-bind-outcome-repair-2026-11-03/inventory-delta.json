@@ -1,0 +1,8 @@
+{
+  "contractChanged": false,
+  "explicitGaps": 685,
+  "changedSourceHashes": [
+    "spec/design/browser-wasm.md"
+  ],
+  "baseProvenanceUpdated": true
+}

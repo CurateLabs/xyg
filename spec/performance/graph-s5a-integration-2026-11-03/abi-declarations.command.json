@@ -1,0 +1,13 @@
+{
+  "name": "abi-declarations",
+  "command": [
+    "python3",
+    "scripts/gen_abi_manifest.py",
+    "--check"
+  ],
+  "exitCode": 0,
+  "seconds": 1.818,
+  "rawSha256": "f2737142275b336dd87cbdc6c39e1c181131432403a98ac7c4614d8f7a0a3eec",
+  "log": "abi-declarations.txt.gz",
+  "gzipSha256": "eedd1b5a16871423c84a9e799685d37a89674b1c6bf51d1d1cb8d4a2fa67ceff"
+}

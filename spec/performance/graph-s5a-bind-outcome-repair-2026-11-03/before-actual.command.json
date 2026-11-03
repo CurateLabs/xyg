@@ -1,0 +1,14 @@
+{
+  "name": "before-actual",
+  "command": [
+    "node",
+    "--test",
+    "--test-name-pattern=real native/WASM binding",
+    "packages/xy-node/test/graph-session-wire.test.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 0.274,
+  "rawSha256": "aeb7a738579ddf03d5c861eca549c7bfad3055b0c1c1902c1f98cd3dc75dcd0b",
+  "log": "before-actual.txt.gz",
+  "gzipSha256": "2c042ea36e269b24b0dff1709a260d45f8ecb8c6f4abd74b0b26f5f0f4b93564"
+}

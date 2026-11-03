@@ -1,0 +1,14 @@
+{
+  "base": "5840b4790660d8bafa59e9b5308b450c51f55713",
+  "unchangedSources": {
+    "Cargo.toml": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    ".cargo/config.toml": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92",
+    "js/package-wasm.mjs": "faebc6d4d8c09d6346321b397a04d890ec354aadbb1e209232f6635e19e8873a",
+    "js/optimize-wasm.mjs": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658",
+    "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+  },
+  "compilerProfileOptimizerBudgetsExportsChanged": false
+}

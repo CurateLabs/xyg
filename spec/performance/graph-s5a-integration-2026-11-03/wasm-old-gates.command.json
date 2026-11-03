@@ -1,0 +1,13 @@
+{
+  "name": "wasm-old-gates",
+  "command": [
+    "npm",
+    "run",
+    "build:wasm"
+  ],
+  "exitCode": 1,
+  "seconds": 124.639,
+  "rawSha256": "c38100c92bed608a06f2bbed932f22e8e48a61f640038afd90f256edbbdcee17",
+  "log": "wasm-old-gates.txt.gz",
+  "gzipSha256": "450d57f1f7ce45fb32d2300c34f0407aba70aae05767a2acd987f5103b87ddd0"
+}

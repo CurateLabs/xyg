@@ -1,0 +1,16 @@
+{
+  "name": "after-engine",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-engine",
+    "graphforge::interaction"
+  ],
+  "exitCode": 0,
+  "seconds": 13.359,
+  "rawSha256": "eb9b2ca898d89ceba08731d50252e7aa0a8f3904e23e1803ff32095aed2d4f84",
+  "log": "after-engine.txt.gz",
+  "gzipSha256": "90a3530065843d90944726b2831e8f0ff3847c53ea11e43432d9e88d4fae4cc7"
+}
