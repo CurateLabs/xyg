@@ -1,0 +1,29 @@
+{
+  "base": "5840b4790660d8bafa59e9b5308b450c51f55713",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "branch": "t3/rust-graph-session-p1",
+  "sources": {
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "Cargo.toml": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+    "crates/xyg-engine/src/graphforge/composed.rs": "761dbcea13e0e418e7e323de142583d88b082fa0cb7e78c50adb68e1f677a4fb",
+    "crates/xyg-engine/src/graphforge/identity.rs": "02996ff750385f8e870d52c82d7eb7746e77fa2b98ce1f455cfcdcb29c87065f",
+    "crates/xyg-engine/src/graphforge/interaction.rs": "5c117f23dc2dc46adcab57b72cea3b58dcf18a2f22f43e0d73d1578ebb488549",
+    "crates/xyg-engine/src/graphforge/interaction/coordination.rs": "42d79f608adb8e3d91c039254f42c41ef33d3a321b7ed08dac52d62d7a239115",
+    "crates/xyg-engine/src/graphforge/interaction/layout.rs": "9ff7447f58562ed6b99ee9a384b1be80792b088aabcecea0bd10c0458f94edb9",
+    "crates/xyg-engine/src/graphforge/interaction/render.rs": "6033da77ea761cdfe733210c5b453f5d434512979df0c76abc0a0cd781a20703",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "c05be6831bfae1feaa925fced63cc1dd4d278f1bfb430f83e644e10b2d5905b9",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/p1.rs": "d59dc7c34271dd784e4bf231ef094cba71f2eaead60ae225276a2be0849b036a",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "4daa0734071dfcae7d424fd8b20888568b7c7a72be36a74355c74f8e10eb84d9",
+    "js/optimize-wasm.mjs": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658",
+    "js/package-wasm.mjs": "faebc6d4d8c09d6346321b397a04d890ec354aadbb1e209232f6635e19e8873a",
+    "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "package.json": "7069837445cf48dd6ec668baa9cb41916cfddd48d2a917ef564b4db1b3f3b870",
+    "packages/xy-node/test/graph-session-wire.test.mjs": "52624d13e86db265c0ec4c9f0a248ed7c0a4debc0c85832ac849a5a0c6b7c737",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    "spec/design/graph-interaction.md": "dc67538cd00c5e9462448834cb684953462eba1d27ab548e4074c2d154eda3f3",
+    "spec/design/graphforge-node-scheduling.md": "d7691bdcee89da1632614798754019ba109ec4fc818ce2f6472473a9250fdbe9",
+    "spec/design/ownership-audit.json": "5be267eb7eb22c9efd3be960bc3ce6df505b7c2cd6cb9fb16a6d4d27b4e3ac7e",
+    "spec/design/ownership-audit.md": "d8db78d2afc029139b0f884d11a027e2877ec68fb98d57a68205e43ac6e16813",
+    "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+  }
+}

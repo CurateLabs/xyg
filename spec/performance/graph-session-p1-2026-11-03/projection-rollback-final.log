@@ -1,0 +1,16 @@
+    Blocking waiting for file lock on build directory
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 46.26s
+     Running unittests src/lib.rs (target/task-tmp/p1/debug/deps/xyg_engine-7ae6b16ad685de05)
+
+running 7 tests
+test graphforge::interaction::tests::wire::p1::completed_steps_stops_at_native_convergence_not_requested_chunks ... ok
+test graphforge::interaction::tests::wire::p1::progressive_load_strictness_and_legacy_zero_keeps_300_seed ... ok
+test graphforge::interaction::tests::wire::p1::progressive_bound_visibility_pins_and_disposal_invalidate_without_consuming_retry ... ok
+test graphforge::interaction::tests::wire::p1::projection_update_uses_replacement_rows_and_malformed_planes_rollback ... ok
+test graphforge::interaction::tests::wire::p1::complete_projection_modes_noop_clear_unlinked_and_exact_rows ... ok
+test graphforge::interaction::tests::wire::p1::progressive_pin_move_cancel_and_update_invalidate_checkpoint ... ok
+test graphforge::interaction::tests::wire::p1::progressive_first_paint_and_chunks_share_configured_force_checkpoint_with_pins_and_parents ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 1806 filtered out; finished in 0.05s
+

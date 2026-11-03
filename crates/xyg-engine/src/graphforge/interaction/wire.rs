@@ -267,10 +267,10 @@ impl<'a> Request<'a> {
                 "companion.u32" if matches!(operation, 17 | RENDER) => Some(Dtype::U32),
                 "temporal.u64" if operation == 18 => Some(Dtype::U64),
                 "document.bytes" if matches!(operation, OPEN | UPDATE) => Some(Dtype::Bytes),
-                "load.x.f64" | "load.y.f64" if matches!(operation, OPEN | UPDATE) => {
+                "load.x.f64" | "load.y.f64" | "load.cose.f64" | "load.cose.bounds.f64" if matches!(operation, OPEN | UPDATE) => {
                     Some(Dtype::F64)
                 }
-                "load.collapsed.u8" | "load.pinned.u8" if matches!(operation, OPEN | UPDATE) => {
+                "load.collapsed.u8" | "load.pinned.u8" | "load.progressive.u8" if matches!(operation, OPEN | UPDATE) => {
                     Some(Dtype::U8)
                 }
                 "load.budgets.u64" | "load.seed.u64" if matches!(operation, OPEN | UPDATE) => {
@@ -357,6 +357,25 @@ impl<'a> Request<'a> {
             })
             .transpose()?
             .unwrap_or(0);
+        let progressive = match self.container.get("load.progressive.u8", 0).map(|s| s.payload) {
+            None | Some([0]) => false,
+            Some([1]) => true,
+            _ => return bad(),
+        };
+        let mut cose = crate::graph::CoseOptions::default();
+        if let Some(values) = f64s("load.cose.f64")? {
+            let [ideal_edge_length, repulsion_strength, gravity_strength, cooling_factor, overlap_padding, component_spacing] = values.as_slice() else { return bad(); };
+            cose = crate::graph::CoseOptions {
+                ideal_edge_length: *ideal_edge_length, repulsion_strength: *repulsion_strength,
+                gravity_strength: *gravity_strength, cooling_factor: *cooling_factor,
+                overlap_padding: *overlap_padding, component_spacing: *component_spacing,
+                bounds: None,
+            };
+        }
+        if let Some(values) = f64s("load.cose.bounds.f64")? {
+            cose.bounds = Some(values.try_into().map_err(|_| InteractionStatus::Invalid)?);
+        }
+        if !cose.is_valid() { return bad(); }
         Ok(SessionLoad {
             x: f64s("load.x.f64")?,
             y: f64s("load.y.f64")?,
@@ -364,6 +383,8 @@ impl<'a> Request<'a> {
             pinned: flags("load.pinned.u8"),
             budgets,
             seed,
+            progressive,
+            cose,
         })
     }
     pub fn temporal(&self) -> Result<u64> {
@@ -1225,15 +1246,12 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
     let mut refs = transport(s, &s.identity.refs_of(state.selection()))?;
     if refs.len() != state.selection().len() || refs.len() > MAX_GRAPH_SELECTION_REFS { return bad(); }
     refs.sort_by(super::coordination::compare);
-    let work = doc.layer_count().checked_mul(refs.len().checked_add(1).ok_or(InteractionStatus::Budget)?)
+    let work = doc.layer_count().checked_mul(refs.len().checked_mul(2).and_then(|n| n.checked_add(1)).ok_or(InteractionStatus::Budget)?)
         .ok_or(InteractionStatus::Budget)?;
     if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); }
     let resolved = refs.iter().map(|r| s.identity.resolve(r).map_err(|_| InteractionStatus::Invalid))
         .collect::<Result<Vec<_>>>()?;
-    let planes = (0..doc.layer_count()).map(|layer| Ok((
-        gf(doc.rows(layer as u32, true, s.identity.node_count()))?,
-        gf(doc.rows(layer as u32, false, s.identity.edge_count()))?,
-    ))).collect::<Result<Vec<_>>>()?;
+    let planes = gf(doc.row_planes(s.identity.node_count(), s.identity.edge_count()))?;
     let row = |index: ElementIndex, layer: usize| -> Option<u64> {
         let (plane, i) = match index {
             ElementIndex::Node(i) => (planes[layer].0?, i),
@@ -1477,7 +1495,10 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome, document: &
         positions.extend_from_slice(&0u32.to_le_bytes());
     }
     b.bytes("positions.changed.bytes", 0, &positions);
-    if let Some(report) = out.relayout {
+    if let Some(report) = out.relayout.or_else(|| {
+        if s.progressive { s.relayout.as_ref().map(|r| r.report()) } else { None }
+    }) {
+        b.u64s("relayout.steps.u64", 0, &[report.completed_steps]);
         b.f64s("relayout.alpha.f64", 0, &[report.alpha]);
         b.u8s("relayout.done.u8", 0, &[u8::from(report.done)]);
     }

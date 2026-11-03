@@ -140,6 +140,26 @@ impl<'a> ComposedDocument<'a> {
         }).transpose()
     }
 
+    /// Build only per-layer descriptors in one section pass, then project
+    /// selected indices without a source-wide scan or repeated section lookup.
+    pub(crate) fn row_planes(&self, nodes: usize, edges: usize) -> GfResult<Vec<(Option<&'a [u8]>, Option<&'a [u8]>)>> {
+        let mut planes = vec![(None, None); self.layers];
+        for (name, layer, section) in &self.container.sections {
+            let node = match *name {
+                "layer.node_rows" => true,
+                "layer.edge_rows" => false,
+                _ => continue,
+            };
+            let count = if node { nodes } else { edges };
+            if section.dtype != super::container::Dtype::U64 || section.count != count {
+                return Err(invalid("result row plane type/count mismatch"));
+            }
+            let plane = planes.get_mut(*layer as usize).ok_or_else(|| invalid("result row layer is out of range"))?;
+            if node { plane.0 = Some(section.payload); } else { plane.1 = Some(section.payload); }
+        }
+        Ok(planes)
+    }
+
     pub(crate) fn result_id_ref(&self, layer: usize) -> GfResult<Option<&'a str>> {
         self.container.get("layer.result_id", layer as u32)
             .map(|s| s.as_utf8("layer.result_id").map_err(retype)).transpose()

@@ -195,3 +195,19 @@ full source coordinates or intermediate payloads. The original receipt is
 immutable: its phrase “render payloads ... are retained” was broader than its
 actual final spec, counts, identities and position digests. Repair evidence
 makes no milestone, S5, scale, release qualification or #108 acceptance claim.
+
+## Bounded retained-session P1 seam (2026-11-03)
+
+The additive GraphSession ingress in [graph-interaction.md §1.2/§2.6](graph-interaction.md#26-positions-and-relayout)
+allows a host to schedule one retained configured CoSE session off its event loop:
+`load.progressive.u8=[1]` yields one initial native tick; opcode 15 continues that
+same force state. Optional `load.cose.f64[6]` and `load.cose.bounds.f64[4]` use the
+existing Rust options validation. Absent/zero progressive retains 300 initial
+ticks. Authored positions paint directly and seed a force state only on the first
+step; unauthored pins anchor after seeding. `relayout.steps.u64` counts actual
+native ticks, including the first checkpoint; callbacks must not infer progress
+from callback counts. Selection/hover/camera preserve continuation, while existing
+pin/position/visibility/replacement invalidations restart it. This supplies Rust
+mechanisms only: the Node scheduler described above is unchanged, Python workers,
+widgets/channel, browser controller/public APIs and #35 acceptance remain separate.
+No scale or package qualification follows from this bounded seam.
