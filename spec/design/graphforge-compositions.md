@@ -379,6 +379,24 @@ keyboard navigation of the graph are owned by #36, not by this composition. Note
 application proof remains tracked by #1015/#1016. #1009 is closed and is no
 longer a hold on this work; these remaining #934 acceptance gaps are open.
 
+The bounded 2026-11-03 default-property proof on accepted `030c7906`
+([receipt](../performance/graph-property-default-export-2026-11-03/README.md))
+checks two fresh zero-layer compositions in light/dark at 640×420: repeated
+PNG/SVG bytes through both canonical-Scene and public native-chart exports,
+exact Python/Node/packaged-WASM documents, all five node and five relationship
+UUIDs, captions, label legend, distinct parallel routes, the loop, and arrow
+wings. Default native chart f64 positions equal the canonical positions without
+a supplied layout. Real packaged Worker painting preserves every stable ID;
+node/route coordinates and caption anchors/text match the SVG within 0.01 CSS
+px. **Partial evidence, failed presentation acceptance:** full-image canonical
+PNG versus WASM browser paint exceeds the existing graph visual thresholds in
+both themes, while the native chart matches its own export. Canonical Scene
+versus the initial native chart also fails: axis/home-view/caption presentation
+differs, and the native chart's dark request retains a white background. The
+normal smoke invocation returns failure and retains the unmasked screenshots,
+configuration and metrics. These observations do not waive #935 or complete
+#934, #36 S5–S7, M4, or #108; production repair is separate from this proof.
+
 ### 4.5 Derived edges
 
 Derived edges are analytical relationships a result asserts between base
