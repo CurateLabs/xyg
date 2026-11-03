@@ -128,6 +128,43 @@ UUID refs still apply. `SelectUuids{uuids}`: a UUID naming both a node and an
 edge selects **both**; `SelectRefs` disambiguates by kind.
 
 
+### 2.1.1 Complete selection/result-row publication (bounded P1)
+Every successful publication reply (Render, Update, or interaction; not Open's
+acknowledgment or Poll's event) adds these index-0 sections. The snapshot is
+independent of `changed.refs.bytes`, coordination group, and outbound delivery:
+
+| Section | Exact meaning |
+|---|---|
+| `selection.refs.bytes` | Existing refs encoding; complete selected canonical transport identities, ≤10,000, sorted by `coordination::compare`; no aggregates or local result slots |
+| `selection.indices.u64` | N source node/edge indices aligned with refs (kind comes from each ref) |
+| `selection.layer_offsets.u64` | CSR N+1 offsets, first 0, last M |
+| `selection.layers.u32` | M original layer indices, ascending within each selected element |
+| `selection.rows.u64` | M exact original result rows from that element's node/edge row plane; omit `u64::MAX` |
+| `selection.result_ids.texts` | TextList L original layer IDs; absent ID has an empty placeholder |
+| `selection.result_ids.valid.u8` | L validity flags; 0 absent, 1 present (including empty string) |
+
+IDs preserve arbitrary UTF-8, Unicode, spaces and long strings exactly. Missing
+inapplicable row planes mean no mapping; present planes must be u64 with the
+source node/edge count. Empty selection has valid empty refs, empty indices,
+empty layer/row arrays and offsets `[0]`; layer ID tables remain complete.
+Projection uses `GraphInteractionState.selection`, `GraphIdentity.refs_of`,
+`to_transport`, `resolve`, and the existing coordination comparator. UPDATE
+projects the candidate's **new document**, inside the bounded transaction.
+Projection/remap/resource failures preserve sequence, state, publication,
+outbound event and retry bytes. Short caller buffers retain the same complete
+reply under the existing capacity retry contract.
+
+Row access borrows optional planes without source-sized row vectors. Publication
+visits selected elements × original layers, counts actual non-sentinel mappings
+before allocating output tables, and rejects work above the existing interaction
+ceiling. Before candidate cloning, admission additionally reserves 4,096 bytes,
+256 bytes per possible selected source element (capped at 10,000), 256 per layer,
+and 128 per possible selected entry in each present row plane. The existing
+text envelope covers exact-ID copies; new reservations include CSR/table scratch,
+builder/final buffers and the existing 3× reply-cache charge. This conservative
+envelope can refuse sparse multi-layer documents; it never raises session caps.
+No source-wide element×layer output scratch is allocated.
+
 ### 2.2 Operations (`GraphInteractionEvent`)
 ```
 0 Hover{x,y} 1 SelectAt{x,y,mode} 2 Brush{bounds,mode,policy} 3 Lasso{pts,mode,policy} 4 Clear

@@ -128,6 +128,23 @@ impl<'a> ComposedDocument<'a> {
             .transpose()
     }
 
+    /// Borrow optional result rows without expanding a source-sized plane.
+    /// Missing/inapplicable planes have no mapping; present planes are strict.
+    pub(crate) fn rows(&self, layer: u32, node: bool, count: usize) -> GfResult<Option<&'a [u8]>> {
+        let name = if node { "layer.node_rows" } else { "layer.edge_rows" };
+        self.container.get(name, layer).map(|s| {
+            if s.dtype != super::container::Dtype::U64 || s.count != count {
+                return Err(invalid("result row plane type/count mismatch"));
+            }
+            Ok(s.payload)
+        }).transpose()
+    }
+
+    pub(crate) fn result_id_ref(&self, layer: usize) -> GfResult<Option<&'a str>> {
+        self.container.get("layer.result_id", layer as u32)
+            .map(|s| s.as_utf8("layer.result_id").map_err(retype)).transpose()
+    }
+
     /// Result row of every composed edge in `layer` (`u64::MAX` absent).
     pub fn edge_rows(&self, layer: u32) -> GfResult<Vec<u64>> {
         self.section("layer.edge_rows", layer)?

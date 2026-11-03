@@ -645,7 +645,25 @@ impl WireSession {
         text = text
             .checked_add(m.checked_mul(longest).ok_or(InteractionStatus::Budget)?)
             .ok_or(InteractionStatus::Budget)?;
-        Self::charge(bytes.len(), n, m, watermarks, text).ok_or(InteractionStatus::Budget)
+        let mut projection = n.checked_add(m).ok_or(InteractionStatus::Budget)?
+            .min(MAX_GRAPH_SELECTION_REFS).checked_mul(256)
+            .and_then(|v| v.checked_add(4096)).ok_or(InteractionStatus::Budget)?;
+        // Reserve all new tables/scratch BEFORE cloning the candidate. No
+        // source-sized row Vec: each plane contributes at most the selection cap.
+        for (name, _, section) in &c.sections {
+            if matches!(*name, "layer.node_rows" | "layer.edge_rows") {
+                let count = if *name == "layer.node_rows" { n } else { m };
+                if section.dtype != Dtype::U64 || section.count != count { return bad(); }
+                projection = projection.checked_add(count.min(MAX_GRAPH_SELECTION_REFS)
+                    .checked_mul(128).ok_or(InteractionStatus::Budget)?)
+                    .ok_or(InteractionStatus::Budget)?;
+            } else if *name == "layer.schema" {
+                projection = projection.checked_add(256).ok_or(InteractionStatus::Budget)?;
+            }
+        }
+        Self::charge(bytes.len(), n, m, watermarks, text)
+            .and_then(|v| v.checked_add(projection))
+            .ok_or(InteractionStatus::Budget)
     }
     fn state_charge(state: &GraphInteractionState) -> Option<usize> {
         let mut count = state.pinned_nodes().len().checked_add(1)?;
@@ -820,7 +838,7 @@ impl WireSession {
                 };
             let (candidate, reply) = if r.temporal()? == 0 {
                 next.unbind()?;
-                let (candidate, reply) = Self::finish(next, &r, OpOutcome::default())?;
+                let (candidate, reply) = Self::finish(next, &r, OpOutcome::default(), &self.document)?;
                 (Some(candidate), reply)
             } else {
                 let (host, handle) = bind.ok_or(InteractionStatus::Unbound)?;
@@ -860,7 +878,7 @@ impl WireSession {
                             temporal_revision,
                         });
                         let (mut candidate, reply) =
-                            Self::finish(candidate, &r, OpOutcome::default())?;
+                            Self::finish(candidate, &r, OpOutcome::default(), &self.document)?;
                         candidate.slot = StateSlot::Bound {
                             host: Arc::clone(&host),
                             handle,
@@ -946,7 +964,7 @@ impl WireSession {
                     }
                     let mut next = session.candidate(&world);
                     let outcome = apply(&mut next, &r)?;
-                    let (mut next, reply) = Self::finish(next, &r, outcome)?;
+                    let (mut next, reply) = Self::finish(next, &r, outcome, &self.document)?;
                     if reply
                         .len()
                         .checked_mul(3)
@@ -992,6 +1010,7 @@ impl WireSession {
         mut next: GraphSession,
         r: &Request<'_>,
         outcome: OpOutcome,
+        document: &[u8],
     ) -> Result<(GraphSession, Vec<u8>)> {
         let camera = if r.operation == RENDER {
             r.camera()?
@@ -999,7 +1018,7 @@ impl WireSession {
             next.camera
         };
         next.render(camera)?;
-        let reply = serialize(&mut next, r, &outcome)?;
+        let reply = serialize(&mut next, r, &outcome, if r.operation == UPDATE { r.document()? } else { document })?;
         next.transaction_world = None;
         Ok((next, reply))
     }
@@ -1199,7 +1218,61 @@ fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
         })
         .collect()
 }
-fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome) -> Result<Vec<u8>> {
+// Complete snapshot, independent of changed.refs and coordination. Work is
+// O(layers * selected), with borrowed row planes and exact u64 source rows.
+fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteractionState, bytes: &[u8]) -> Result<()> {
+    let doc = gf(ComposedDocument::decode(bytes))?;
+    let mut refs = transport(s, &s.identity.refs_of(state.selection()))?;
+    if refs.len() != state.selection().len() || refs.len() > MAX_GRAPH_SELECTION_REFS { return bad(); }
+    refs.sort_by(super::coordination::compare);
+    let work = doc.layer_count().checked_mul(refs.len().checked_add(1).ok_or(InteractionStatus::Budget)?)
+        .ok_or(InteractionStatus::Budget)?;
+    if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); }
+    let resolved = refs.iter().map(|r| s.identity.resolve(r).map_err(|_| InteractionStatus::Invalid))
+        .collect::<Result<Vec<_>>>()?;
+    let planes = (0..doc.layer_count()).map(|layer| Ok((
+        gf(doc.rows(layer as u32, true, s.identity.node_count()))?,
+        gf(doc.rows(layer as u32, false, s.identity.edge_count()))?,
+    ))).collect::<Result<Vec<_>>>()?;
+    let row = |index: ElementIndex, layer: usize| -> Option<u64> {
+        let (plane, i) = match index {
+            ElementIndex::Node(i) => (planes[layer].0?, i),
+            ElementIndex::Edge(i) => (planes[layer].1?, i),
+        };
+        let value = u64_at(plane, i * 8);
+        (value != u64::MAX).then_some(value)
+    };
+    // Count the actual sparse output before allocating it. Reservation above
+    // includes builder/final/retry copies (existing cache charge is 3x bytes).
+    let count = resolved.iter().try_fold(0usize, |sum, &index| {
+        sum.checked_add((0..planes.len()).filter(|&layer| row(index, layer).is_some()).count())
+    }).ok_or(InteractionStatus::Budget)?;
+    let mut indices = Vec::with_capacity(refs.len());
+    let mut offsets = Vec::with_capacity(refs.len() + 1);
+    let mut layers = Vec::with_capacity(count);
+    let mut rows = Vec::with_capacity(count);
+    offsets.push(0);
+    for index in resolved {
+        indices.push(match index { ElementIndex::Node(i) | ElementIndex::Edge(i) => i as u64 });
+        for layer in 0..planes.len() {
+            if let Some(value) = row(index, layer) { layers.push(layer as u32); rows.push(value); }
+        }
+        offsets.push(rows.len() as u64);
+    }
+    let ids = (0..doc.layer_count()).map(|i| gf(doc.result_id_ref(i))).collect::<Result<Vec<_>>>()?;
+    let texts = ids.iter().map(|id| id.unwrap_or("")).collect::<Vec<_>>();
+    let valid = ids.iter().map(|id| u8::from(id.is_some())).collect::<Vec<_>>();
+    b.bytes("selection.refs.bytes", 0, &encode_refs(&refs)?);
+    b.u64s("selection.indices.u64", 0, &indices);
+    b.u64s("selection.layer_offsets.u64", 0, &offsets);
+    b.u32s("selection.layers.u32", 0, &layers);
+    b.u64s("selection.rows.u64", 0, &rows);
+    b.texts("selection.result_ids.texts", 0, &texts);
+    b.u8s("selection.result_ids.valid.u8", 0, &valid);
+    Ok(())
+}
+
+fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome, document: &[u8]) -> Result<Vec<u8>> {
     let mut b = Builder::new(RESULT_MAGIC);
     b.u32s("status.u32", 0, &[0]);
     let render = s.published().ok_or(InteractionStatus::Stale)?;
@@ -1279,6 +1352,7 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome) -> Result<V
     b.u32s("node.flags.u32", 0, &render.source_node_flags);
     b.u32s("edge.flags.u32", 0, &render.source_edge_flags);
     let state = s.read_state(Clone::clone)?;
+    selection_projection(&mut b, s, &state, document)?;
     let focus = s.focus()?.into_iter().collect::<Vec<_>>();
     b.bytes("focus.bytes", 0, &encode_refs(&transport(s, &focus)?)?);
     focus_actions(&mut b, s, &state)?;
