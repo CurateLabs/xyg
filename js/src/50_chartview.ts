@@ -7829,15 +7829,24 @@ export class ChartView {
           ? s.frame_sides
           : [xAxis.side || "bottom", yAxis.side || "left"]);
       const explicitFrameSides = !polarGeom && Array.isArray(s.frame_sides);
+      // Resolved Scene boundaries are stroke centerlines. Ordinary host axes
+      // retain their existing interior box geometry and minimum thickness.
+      const spineWidth = (axis) => Math.max(
+        axis.tick_resolution === "rust_scene" ? 0 : 1,
+        this._axisStyleNumber(axis, "axis_width", 1),
+      );
+      const spineOrigin = (axis, edge, width, highSide) => edge - (
+        axis.tick_resolution === "rust_scene" ? width / 2 : (highSide ? width : 0)
+      );
       if (!hideY || explicitFrameSides) {
-        const yWidth = Math.max(1, this._axisStyleNumber(yAxis, "axis_width", 1));
+        const yWidth = spineWidth(yAxis);
         if (frameSides.includes("left")) {
-          rule(yAxis, p.x, p.y, yWidth, p.h, "axis_color", "axis_line", "", "left");
+          rule(yAxis, spineOrigin(yAxis, p.x, yWidth, false), p.y, yWidth, p.h, "axis_color", "axis_line", "", "left");
         }
         if (frameSides.includes("right")) {
           rule(
             yAxis,
-            p.x + p.w - yWidth,
+            spineOrigin(yAxis, p.x + p.w, yWidth, true),
             p.y,
             yWidth,
             p.h,
@@ -7849,15 +7858,15 @@ export class ChartView {
         }
       }
       if (!hideX || explicitFrameSides) {
-        const xHeight = Math.max(1, this._axisStyleNumber(xAxis, "axis_width", 1));
+        const xHeight = spineWidth(xAxis);
         if (frameSides.includes("top")) {
-          rule(xAxis, p.x, p.y, p.w, xHeight, "axis_color", "axis_line", "", "top");
+          rule(xAxis, p.x, spineOrigin(xAxis, p.y, xHeight, false), p.w, xHeight, "axis_color", "axis_line", "", "top");
         }
         if (frameSides.includes("bottom")) {
           rule(
             xAxis,
             p.x,
-            p.y + p.h - xHeight,
+            spineOrigin(xAxis, p.y + p.h, xHeight, true),
             p.w,
             xHeight,
             "axis_color",
@@ -7869,14 +7878,14 @@ export class ChartView {
       }
       for (const axis of extraXAxes) {
         if (this._axisTickLabelStrategy(axis) === "none" && axis.tick_resolution !== "rust_scene") continue; // the static SVG keeps the frame spine
-        const h = Math.max(1, this._axisStyleNumber(axis, "axis_width", 1));
-        const y = axis.side === "top" ? p.y : p.y + p.h - h;
+        const h = spineWidth(axis);
+        const y = spineOrigin(axis, axis.side === "top" ? p.y : p.y + p.h, h, axis.side !== "top");
         rule(axis, p.x, y, p.w, h, "axis_color", "axis_line", "", axis.side);
       }
       for (const axis of extraYAxes) {
         if (this._axisTickLabelStrategy(axis) === "none" && axis.tick_resolution !== "rust_scene") continue;
-        const w = Math.max(1, this._axisStyleNumber(axis, "axis_width", 1));
-        const x = axis.side === "left" ? p.x : p.x + p.w - w;
+        const w = spineWidth(axis);
+        const x = spineOrigin(axis, axis.side === "left" ? p.x : p.x + p.w, w, axis.side !== "left");
         rule(axis, x, p.y, w, p.h, "axis_color", "axis_line", "", axis.side);
       }
 

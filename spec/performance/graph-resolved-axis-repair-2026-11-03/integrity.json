@@ -1,0 +1,46 @@
+{
+  "status": "bounded local projection/preservation passes; canonical authored plot and full-image AC fail",
+  "diagnosis_files_unchanged": 76,
+  "ordinary_case_records_unchanged": 111,
+  "visible_authored_spines_checked_against_actual_native_svg": 150,
+  "all_111_resolved_authored_width_and_rgba_checks_pass": true,
+  "canonical_plot_failure_count": 108,
+  "canonical_plot_failures_are_unchanged_from_f006": true,
+  "ordinary_screenshots_unchanged": [
+    "hidden.dpr1.25.ordinary.png",
+    "hidden.dpr1.ordinary.png",
+    "hidden.dpr2.ordinary.png",
+    "w0-bottom-left-opaque.dpr1.25.ordinary.png",
+    "w0-bottom-left-opaque.dpr1.ordinary.png",
+    "w0-bottom-left-opaque.dpr2.ordinary.png",
+    "w0.5-top-right-alpha.dpr1.25.ordinary.png",
+    "w0.5-top-right-alpha.dpr1.ordinary.png",
+    "w0.5-top-right-alpha.dpr2.ordinary.png",
+    "w1-bottom-left-opaque.dpr1.25.ordinary.png",
+    "w1-bottom-left-opaque.dpr1.ordinary.png",
+    "w1-bottom-left-opaque.dpr2.ordinary.png"
+  ],
+  "all_case_plots_axis_specs_and_paints_unchanged": true,
+  "canonical_and_native_exports_unchanged": {
+    "light.xygq": "4c223f5278ce85be02979b256b8f47611ca475bb7ea7b5297dca949509fdc9b7",
+    "light.xygf": "384a1cac368b5193aec75bc7ab814a031b0bef6eee718442d41cce2e91b755e5",
+    "light.svg": "c03e603dce1cbea3474a1ad15b5f290e52cf779a30f51cc437eda111124c97a5",
+    "light.png": "e2d861aa5103f33bb40d1c13c8cd00d7e1c7d23fd3261a66c5aa37f42d6fc9ab",
+    "light.native.svg": "2e5ea3a0db4b79e51cb19f0df5d662a5974ff035eda1bdbeab664400b4f96fa7",
+    "light.native.png": "1eeb34a8c78ee154081923402f925faa59a701d739552a995148692c952db556",
+    "dark.xygq": "b4e0ef2a78d87f9e07e1be883aed454d1d3db56d99cf534b8f46dc63df4aaaaf",
+    "dark.xygf": "da7c7a1c5f2568b19f06513e007055bffda13506cb4e82e6e4a38f76389fe6d2",
+    "dark.svg": "ee7684978fe6891b65efede1f796970593c7139586dc5a0dd2747353e2d6c193",
+    "dark.png": "4e16c04b50092ec0427d8dc0c6db1a1db5a572849d0b3c10673b6e4ea88173e8",
+    "dark.native.svg": "5299f86665fe09fef085f3129a6360071bb69f396a8f1312fdc283010783ac2a",
+    "dark.native.png": "cd43743307026997e1bb9d9663122096970d0efcfa8806cf7820c69d91c380ae"
+  },
+  "untouched_property_helper_sha256": "a9cc95b2bc1958abfa5e7f8b4b20a67706d0742f088b6c219eb8d33f801ffef8",
+  "full_helper_expected_actual_exit": 1,
+  "full_helper_failure_labels": [
+    "light: wasm_scene pixels",
+    "light: scene_vs_initial_native pixels",
+    "dark: wasm_scene pixels",
+    "dark: scene_vs_initial_native pixels"
+  ]
+}

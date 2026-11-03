@@ -694,8 +694,30 @@ rotation applies to both sides. Rust reduces equivalent full turns into the
 each display anchor from the original angle and any authored anchor. Thus
 `350` degrees paints as `-10` degrees with its original anchor, rather than
 clamping to the wire limit or deriving alignment from the reduced sign. The
-browser applies those anchors literally. The authored collision header at
-bytes 76-79 is zeroed in the painter. The client accepts exactly
+browser applies those anchors literally.
+
+For these `rust_scene` axes, Cartesian spine coordinates are stroke centerlines on the Rust plot boundary: a vertical DIV's
+perpendicular origin is `boundary_x - axis_width/2`, and a horizontal DIV's is
+`boundary_y - axis_width/2`. Segment length stays canonical. The browser honors
+the finite nonnegative resolved width, including zero and subpixel values, on
+all four sides and resolved secondary/extra axes, without rounding, pixel
+snapping or DPR offsets. Paint, alpha, visibility, ticks and layout stay
+Rust-owned. Ordinary axes without this discriminator retain their existing
+interior-aligned boxes and minimum 1px thickness. Public `axis_line` classes and
+inline slot styles keep their cascade precedence; authored CSS geometric
+width/height overrides do not feed back into spine placement. Endpoint caps
+remain a separate limitation: native raster strokes are round-capped, while
+canonical SVG and DIV spines retain flat ends; this projection contract does
+not assert arbitrary endpoint pixel equality. Native property-graph home-view,
+caption and theme parity remain separately tracked by #935. Fractional-edge DIV
+background rasterization remains browser-dependent: centered DOM geometry alone does not
+establish native pixel-coverage equality. The bounded default-graph full-image
+comparison still fails its unchanged fraction limit after this projection
+repair. Existing top/right/y2 authored cases also retain a pre-existing extra
+gutter discrepancy between the browser plot and the canonical Rust plot;
+local spine centering does not repair that layout gap. See the [repair receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
+
+The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is
 incompatible`) and the Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
 TypeScript validates and materializes those decisions

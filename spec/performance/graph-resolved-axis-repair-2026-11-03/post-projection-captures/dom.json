@@ -1,0 +1,4051 @@
+{
+  "purpose": "DIAGNOSTIC ONLY: no acceptance waiver or production fix",
+  "browser": "156.0.8078.4",
+  "interventions": [],
+  "assets": {
+    "/nodes.arrow": {
+      "bytes": 1168,
+      "sha256": "625ad3c2dc13420279300339ed294d7b20b08f379b1ed5c45392168d6e3b01dc"
+    },
+    "/edges.arrow": {
+      "bytes": 968,
+      "sha256": "408a4c1a88ceab3f98af1b8a50fa9c1dd40c8dd9d5db1cf28c0d40b9efbac73f"
+    },
+    "/index.js": {
+      "bytes": 757313,
+      "sha256": "351fa5038800204a13a99ae9cb91612472e3368f6d7ecd4829d589e39b16acd7"
+    },
+    "/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "/xyg-wasm.wasm": {
+      "bytes": 1872541,
+      "sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50"
+    }
+  },
+  "captures": {
+    "light.dpr1": {
+      "wasm": {
+        "devicePixelRatio": 1,
+        "viewDpr": 1,
+        "plot": {
+          "x": 52,
+          "y": 24,
+          "w": 572,
+          "h": 352
+        },
+        "size": {
+          "w": 640,
+          "h": 420
+        },
+        "viewport": {
+          "width": 640,
+          "height": 420,
+          "visualScale": 1
+        },
+        "root": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "relative",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "class": "xy",
+            "data-xy-slot": "root",
+            "data-xy-own-bg": "",
+            "role": "region",
+            "aria-label": "Interactive chart",
+            "aria-describedby": "xy-a11y-1-summary",
+            "data-xy-context-state": "ready",
+            "style": "position: relative; width: 640px; height: 420px; --xy-legend-max-width: 560px; --xy-legend-max-height: 340px; user-select: none; background: rgb(255, 255, 255); --chart-bg: rgba(248 250 252 / 1);"
+          }
+        },
+        "labels": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "absolute",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "data-xy-slot": "labels",
+            "style": "position: absolute; inset: 0px; pointer-events: none;"
+          }
+        },
+        "axes": [
+          {
+            "box": {
+              "x": 51.5,
+              "y": 24,
+              "width": 1,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "51.5px",
+              "top": "24px",
+              "right": "587.5px",
+              "bottom": "44px",
+              "width": "1px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 51.5px; top: 24px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 352px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 52,
+              "y": 375.5,
+              "width": 572,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "375.5px",
+              "right": "16px",
+              "bottom": "43.5px",
+              "width": "572px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 52px; top: 375.5px; pointer-events: none; --xy-axis-rule-width: 572px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          }
+        ],
+        "ticks": [
+          {
+            "box": {
+              "x": 199.9375,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "199.951px",
+              "top": "376px",
+              "right": "439.062px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 199.951px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 349.046875,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "349.053px",
+              "top": "376px",
+              "right": "289.953px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 349.053px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 498.140625,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "498.155px",
+              "top": "376px",
+              "right": "140.859px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 498.155px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 320.421875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "320.433px",
+              "right": "588px",
+              "bottom": "98.5781px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 320.433px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 258.8125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "258.819px",
+              "right": "588px",
+              "bottom": "160.188px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 258.819px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 197.203125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "197.206px",
+              "right": "588px",
+              "bottom": "221.797px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 197.206px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 135.578125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "135.593px",
+              "right": "588px",
+              "bottom": "283.422px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 135.593px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 73.96875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "73.9795px",
+              "right": "588px",
+              "bottom": "345.031px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 73.9795px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          }
+        ],
+        "axisSpec": {
+          "x": {
+            "id": "x",
+            "scale": "linear",
+            "range": [
+              52,
+              624
+            ],
+            "tick_values": [
+              200.4513397216797,
+              349.5531311035156,
+              498.6549072265625
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "2",
+              "4",
+              "6"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "bottom": 0,
+              "top": 0
+            },
+            "tick_label_anchors": {
+              "bottom": "center",
+              "top": "start"
+            },
+            "tick_sides": [
+              "bottom"
+            ],
+            "tick_label_sides": [
+              "bottom"
+            ],
+            "grid": true,
+            "side": "bottom",
+            "style": {
+              "axis_color": "rgba(31 41 55 / 1)",
+              "grid_color": "rgba(31 41 55 / 0.14901960784313725)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "tick_label_color": "rgba(31 41 55 / 1)",
+              "label_color": "rgba(31 41 55 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          },
+          "y": {
+            "id": "y",
+            "scale": "linear",
+            "range": [
+              376,
+              24
+            ],
+            "tick_values": [
+              320.93280029296875,
+              259.3194885253906,
+              197.70614624023438,
+              136.09280395507812,
+              74.47947692871094
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "-40",
+              "-30",
+              "-20",
+              "-10",
+              "0"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "left": 0,
+              "right": 0
+            },
+            "tick_label_anchors": {
+              "left": "end",
+              "right": "start"
+            },
+            "tick_sides": [
+              "left"
+            ],
+            "tick_label_sides": [
+              "left"
+            ],
+            "grid": true,
+            "side": "left",
+            "style": {
+              "axis_color": "rgba(31 41 55 / 1)",
+              "grid_color": "rgba(31 41 55 / 0.14901960784313725)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "tick_label_color": "rgba(31 41 55 / 1)",
+              "label_color": "rgba(31 41 55 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          }
+        },
+        "frameSides": [
+          "bottom",
+          "left"
+        ],
+        "canvases": [
+          {
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 572,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "24px",
+              "right": "16px",
+              "bottom": "44px",
+              "width": "572px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "canvas",
+              "tabindex": "0",
+              "role": "img",
+              "aria-describedby": "xy-a11y-1-summary",
+              "width": "572",
+              "height": "352",
+              "data-xy-gl-host": "shared",
+              "style": "position: absolute; left: 52px; top: 24px; width: 572px; height: 352px; touch-action: none;",
+              "data-xy-ctx": "live",
+              "aria-label": "Plot area. Use Arrow keys to explore data points in series data order; Home and End jump to the first and last point; Escape closes the readout."
+            },
+            "backingWidth": 572,
+            "backingHeight": 352,
+            "ratioX": 1,
+            "ratioY": 1
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "chrome",
+              "width": "640",
+              "height": "420",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 640,
+            "backingHeight": 420,
+            "ratioX": 1,
+            "ratioY": 1
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "annotation_layer",
+              "width": "640",
+              "height": "420",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 640,
+            "backingHeight": 420,
+            "ratioX": 1,
+            "ratioY": 1
+          }
+        ]
+      },
+      "canonicalSvgBrowser": {
+        "devicePixelRatio": 1,
+        "svg": {
+          "width": 640,
+          "height": 420
+        },
+        "axes": [
+          {
+            "attributes": {
+              "x1": "200.45",
+              "y1": "376",
+              "x2": "200.45",
+              "y2": "380",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 200.4499969482422,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "349.55",
+              "y1": "376",
+              "x2": "349.55",
+              "y2": "380",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 349.54998779296875,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "498.65",
+              "y1": "376",
+              "x2": "498.65",
+              "y2": "380",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 498.6499938964844,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "376",
+              "x2": "624",
+              "y2": "376",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 376,
+              "width": 572,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "320.93",
+              "x2": "52",
+              "y2": "320.93",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 320.92999267578125,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "259.32",
+              "x2": "52",
+              "y2": "259.32",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 259.32000732421875,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "197.71",
+              "x2": "52",
+              "y2": "197.71",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 197.7100067138672,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "136.09",
+              "x2": "52",
+              "y2": "136.09",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 136.08999633789062,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "74.48",
+              "x2": "52",
+              "y2": "74.48",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 74.4800033569336,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "24",
+              "x2": "52",
+              "y2": "376",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 0,
+              "height": 352
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          }
+        ]
+      },
+      "errors": []
+    },
+    "light.dpr2": {
+      "wasm": {
+        "devicePixelRatio": 2,
+        "viewDpr": 2,
+        "plot": {
+          "x": 52,
+          "y": 24,
+          "w": 572,
+          "h": 352
+        },
+        "size": {
+          "w": 640,
+          "h": 420
+        },
+        "viewport": {
+          "width": 640,
+          "height": 420,
+          "visualScale": 1
+        },
+        "root": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "relative",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "class": "xy",
+            "data-xy-slot": "root",
+            "data-xy-own-bg": "",
+            "role": "region",
+            "aria-label": "Interactive chart",
+            "aria-describedby": "xy-a11y-1-summary",
+            "data-xy-context-state": "ready",
+            "style": "position: relative; width: 640px; height: 420px; --xy-legend-max-width: 560px; --xy-legend-max-height: 340px; user-select: none; background: rgb(255, 255, 255); --chart-bg: rgba(248 250 252 / 1);"
+          }
+        },
+        "labels": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "absolute",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "data-xy-slot": "labels",
+            "style": "position: absolute; inset: 0px; pointer-events: none;"
+          }
+        },
+        "axes": [
+          {
+            "box": {
+              "x": 51.5,
+              "y": 24,
+              "width": 1,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "51.5px",
+              "top": "24px",
+              "right": "587.5px",
+              "bottom": "44px",
+              "width": "1px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 51.5px; top: 24px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 352px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 52,
+              "y": 375.5,
+              "width": 572,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "375.5px",
+              "right": "16px",
+              "bottom": "43.5px",
+              "width": "572px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 52px; top: 375.5px; pointer-events: none; --xy-axis-rule-width: 572px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          }
+        ],
+        "ticks": [
+          {
+            "box": {
+              "x": 199.9375,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "199.951px",
+              "top": "376px",
+              "right": "439.062px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 199.951px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 349.046875,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "349.053px",
+              "top": "376px",
+              "right": "289.953px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 349.053px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 498.140625,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "498.155px",
+              "top": "376px",
+              "right": "140.859px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 498.155px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 320.421875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "320.433px",
+              "right": "588px",
+              "bottom": "98.5781px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 320.433px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 258.8125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "258.819px",
+              "right": "588px",
+              "bottom": "160.188px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 258.819px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 197.203125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "197.206px",
+              "right": "588px",
+              "bottom": "221.797px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 197.206px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 135.578125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "135.593px",
+              "right": "588px",
+              "bottom": "283.422px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 135.593px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 73.96875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "73.9795px",
+              "right": "588px",
+              "bottom": "345.031px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(31, 41, 55)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 73.9795px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(31,41,55,1);"
+            }
+          }
+        ],
+        "axisSpec": {
+          "x": {
+            "id": "x",
+            "scale": "linear",
+            "range": [
+              52,
+              624
+            ],
+            "tick_values": [
+              200.4513397216797,
+              349.5531311035156,
+              498.6549072265625
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "2",
+              "4",
+              "6"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "bottom": 0,
+              "top": 0
+            },
+            "tick_label_anchors": {
+              "bottom": "center",
+              "top": "start"
+            },
+            "tick_sides": [
+              "bottom"
+            ],
+            "tick_label_sides": [
+              "bottom"
+            ],
+            "grid": true,
+            "side": "bottom",
+            "style": {
+              "axis_color": "rgba(31 41 55 / 1)",
+              "grid_color": "rgba(31 41 55 / 0.14901960784313725)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "tick_label_color": "rgba(31 41 55 / 1)",
+              "label_color": "rgba(31 41 55 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          },
+          "y": {
+            "id": "y",
+            "scale": "linear",
+            "range": [
+              376,
+              24
+            ],
+            "tick_values": [
+              320.93280029296875,
+              259.3194885253906,
+              197.70614624023438,
+              136.09280395507812,
+              74.47947692871094
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "-40",
+              "-30",
+              "-20",
+              "-10",
+              "0"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "left": 0,
+              "right": 0
+            },
+            "tick_label_anchors": {
+              "left": "end",
+              "right": "start"
+            },
+            "tick_sides": [
+              "left"
+            ],
+            "tick_label_sides": [
+              "left"
+            ],
+            "grid": true,
+            "side": "left",
+            "style": {
+              "axis_color": "rgba(31 41 55 / 1)",
+              "grid_color": "rgba(31 41 55 / 0.14901960784313725)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "tick_label_color": "rgba(31 41 55 / 1)",
+              "label_color": "rgba(31 41 55 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(31 41 55 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          }
+        },
+        "frameSides": [
+          "bottom",
+          "left"
+        ],
+        "canvases": [
+          {
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 572,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "24px",
+              "right": "16px",
+              "bottom": "44px",
+              "width": "572px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "canvas",
+              "tabindex": "0",
+              "role": "img",
+              "aria-describedby": "xy-a11y-1-summary",
+              "width": "1144",
+              "height": "704",
+              "data-xy-gl-host": "shared",
+              "style": "position: absolute; left: 52px; top: 24px; width: 572px; height: 352px; touch-action: none;",
+              "data-xy-ctx": "live",
+              "aria-label": "Plot area. Use Arrow keys to explore data points in series data order; Home and End jump to the first and last point; Escape closes the readout."
+            },
+            "backingWidth": 1144,
+            "backingHeight": 704,
+            "ratioX": 2,
+            "ratioY": 2
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "chrome",
+              "width": "1280",
+              "height": "840",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 1280,
+            "backingHeight": 840,
+            "ratioX": 2,
+            "ratioY": 2
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "annotation_layer",
+              "width": "1280",
+              "height": "840",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 1280,
+            "backingHeight": 840,
+            "ratioX": 2,
+            "ratioY": 2
+          }
+        ]
+      },
+      "canonicalSvgBrowser": {
+        "devicePixelRatio": 2,
+        "svg": {
+          "width": 640,
+          "height": 420
+        },
+        "axes": [
+          {
+            "attributes": {
+              "x1": "200.45",
+              "y1": "376",
+              "x2": "200.45",
+              "y2": "380",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 200.4499969482422,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "349.55",
+              "y1": "376",
+              "x2": "349.55",
+              "y2": "380",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 349.54998779296875,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "498.65",
+              "y1": "376",
+              "x2": "498.65",
+              "y2": "380",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 498.6499938964844,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "376",
+              "x2": "624",
+              "y2": "376",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 376,
+              "width": 572,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "320.93",
+              "x2": "52",
+              "y2": "320.93",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 320.92999267578125,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "259.32",
+              "x2": "52",
+              "y2": "259.32",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 259.32000732421875,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "197.71",
+              "x2": "52",
+              "y2": "197.71",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 197.7100067138672,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "136.09",
+              "x2": "52",
+              "y2": "136.09",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 136.08999633789062,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "74.48",
+              "x2": "52",
+              "y2": "74.48",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 74.4800033569336,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "24",
+              "x2": "52",
+              "y2": "376",
+              "stroke": "rgba(31,41,55,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 0,
+              "height": 352
+            },
+            "computed": {
+              "stroke": "rgb(31, 41, 55)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          }
+        ]
+      },
+      "errors": []
+    },
+    "dark.dpr1": {
+      "wasm": {
+        "devicePixelRatio": 1,
+        "viewDpr": 1,
+        "plot": {
+          "x": 52,
+          "y": 24,
+          "w": 572,
+          "h": 352
+        },
+        "size": {
+          "w": 640,
+          "h": 420
+        },
+        "viewport": {
+          "width": 640,
+          "height": 420,
+          "visualScale": 1
+        },
+        "root": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "relative",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgb(3, 7, 18)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "class": "xy",
+            "data-xy-slot": "root",
+            "data-xy-own-bg": "",
+            "role": "region",
+            "aria-label": "Interactive chart",
+            "aria-describedby": "xy-a11y-1-summary",
+            "data-xy-context-state": "ready",
+            "style": "position: relative; width: 640px; height: 420px; --xy-legend-max-width: 560px; --xy-legend-max-height: 340px; user-select: none; background: rgb(3, 7, 18); --chart-bg: rgba(17 24 39 / 1);"
+          }
+        },
+        "labels": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "absolute",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "data-xy-slot": "labels",
+            "style": "position: absolute; inset: 0px; pointer-events: none;"
+          }
+        },
+        "axes": [
+          {
+            "box": {
+              "x": 51.5,
+              "y": 24,
+              "width": 1,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "51.5px",
+              "top": "24px",
+              "right": "587.5px",
+              "bottom": "44px",
+              "width": "1px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 51.5px; top: 24px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 352px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 52,
+              "y": 375.5,
+              "width": 572,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "375.5px",
+              "right": "16px",
+              "bottom": "43.5px",
+              "width": "572px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 52px; top: 375.5px; pointer-events: none; --xy-axis-rule-width: 572px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          }
+        ],
+        "ticks": [
+          {
+            "box": {
+              "x": 199.9375,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "199.951px",
+              "top": "376px",
+              "right": "439.062px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 199.951px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 349.046875,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "349.053px",
+              "top": "376px",
+              "right": "289.953px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 349.053px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 498.140625,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "498.155px",
+              "top": "376px",
+              "right": "140.859px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 498.155px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 320.421875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "320.433px",
+              "right": "588px",
+              "bottom": "98.5781px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 320.433px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 258.8125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "258.819px",
+              "right": "588px",
+              "bottom": "160.188px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 258.819px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 197.203125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "197.206px",
+              "right": "588px",
+              "bottom": "221.797px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 197.206px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 135.578125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "135.593px",
+              "right": "588px",
+              "bottom": "283.422px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 135.593px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 73.96875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "73.9795px",
+              "right": "588px",
+              "bottom": "345.031px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 73.9795px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          }
+        ],
+        "axisSpec": {
+          "x": {
+            "id": "x",
+            "scale": "linear",
+            "range": [
+              52,
+              624
+            ],
+            "tick_values": [
+              200.4513397216797,
+              349.5531311035156,
+              498.6549072265625
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "2",
+              "4",
+              "6"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "bottom": 0,
+              "top": 0
+            },
+            "tick_label_anchors": {
+              "bottom": "center",
+              "top": "start"
+            },
+            "tick_sides": [
+              "bottom"
+            ],
+            "tick_label_sides": [
+              "bottom"
+            ],
+            "grid": true,
+            "side": "bottom",
+            "style": {
+              "axis_color": "rgba(229 231 235 / 1)",
+              "grid_color": "rgba(229 231 235 / 0.16470588235294117)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "tick_label_color": "rgba(229 231 235 / 1)",
+              "label_color": "rgba(229 231 235 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          },
+          "y": {
+            "id": "y",
+            "scale": "linear",
+            "range": [
+              376,
+              24
+            ],
+            "tick_values": [
+              320.93280029296875,
+              259.3194885253906,
+              197.70614624023438,
+              136.09280395507812,
+              74.47947692871094
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "-40",
+              "-30",
+              "-20",
+              "-10",
+              "0"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "left": 0,
+              "right": 0
+            },
+            "tick_label_anchors": {
+              "left": "end",
+              "right": "start"
+            },
+            "tick_sides": [
+              "left"
+            ],
+            "tick_label_sides": [
+              "left"
+            ],
+            "grid": true,
+            "side": "left",
+            "style": {
+              "axis_color": "rgba(229 231 235 / 1)",
+              "grid_color": "rgba(229 231 235 / 0.16470588235294117)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "tick_label_color": "rgba(229 231 235 / 1)",
+              "label_color": "rgba(229 231 235 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          }
+        },
+        "frameSides": [
+          "bottom",
+          "left"
+        ],
+        "canvases": [
+          {
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 572,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "24px",
+              "right": "16px",
+              "bottom": "44px",
+              "width": "572px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "canvas",
+              "tabindex": "0",
+              "role": "img",
+              "aria-describedby": "xy-a11y-1-summary",
+              "width": "572",
+              "height": "352",
+              "data-xy-gl-host": "shared",
+              "style": "position: absolute; left: 52px; top: 24px; width: 572px; height: 352px; touch-action: none;",
+              "data-xy-ctx": "live",
+              "aria-label": "Plot area. Use Arrow keys to explore data points in series data order; Home and End jump to the first and last point; Escape closes the readout."
+            },
+            "backingWidth": 572,
+            "backingHeight": 352,
+            "ratioX": 1,
+            "ratioY": 1
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "chrome",
+              "width": "640",
+              "height": "420",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 640,
+            "backingHeight": 420,
+            "ratioX": 1,
+            "ratioY": 1
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "annotation_layer",
+              "width": "640",
+              "height": "420",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 640,
+            "backingHeight": 420,
+            "ratioX": 1,
+            "ratioY": 1
+          }
+        ]
+      },
+      "canonicalSvgBrowser": {
+        "devicePixelRatio": 1,
+        "svg": {
+          "width": 640,
+          "height": 420
+        },
+        "axes": [
+          {
+            "attributes": {
+              "x1": "200.45",
+              "y1": "376",
+              "x2": "200.45",
+              "y2": "380",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 200.4499969482422,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "349.55",
+              "y1": "376",
+              "x2": "349.55",
+              "y2": "380",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 349.54998779296875,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "498.65",
+              "y1": "376",
+              "x2": "498.65",
+              "y2": "380",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 498.6499938964844,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "376",
+              "x2": "624",
+              "y2": "376",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 376,
+              "width": 572,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "320.93",
+              "x2": "52",
+              "y2": "320.93",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 320.92999267578125,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "259.32",
+              "x2": "52",
+              "y2": "259.32",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 259.32000732421875,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "197.71",
+              "x2": "52",
+              "y2": "197.71",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 197.7100067138672,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "136.09",
+              "x2": "52",
+              "y2": "136.09",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 136.08999633789062,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "74.48",
+              "x2": "52",
+              "y2": "74.48",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 74.4800033569336,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "24",
+              "x2": "52",
+              "y2": "376",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 0,
+              "height": 352
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          }
+        ]
+      },
+      "errors": []
+    },
+    "dark.dpr2": {
+      "wasm": {
+        "devicePixelRatio": 2,
+        "viewDpr": 2,
+        "plot": {
+          "x": 52,
+          "y": 24,
+          "w": 572,
+          "h": 352
+        },
+        "size": {
+          "w": 640,
+          "h": 420
+        },
+        "viewport": {
+          "width": 640,
+          "height": 420,
+          "visualScale": 1
+        },
+        "root": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "relative",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgb(3, 7, 18)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "class": "xy",
+            "data-xy-slot": "root",
+            "data-xy-own-bg": "",
+            "role": "region",
+            "aria-label": "Interactive chart",
+            "aria-describedby": "xy-a11y-1-summary",
+            "data-xy-context-state": "ready",
+            "style": "position: relative; width: 640px; height: 420px; --xy-legend-max-width: 560px; --xy-legend-max-height: 340px; user-select: none; background: rgb(3, 7, 18); --chart-bg: rgba(17 24 39 / 1);"
+          }
+        },
+        "labels": {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 420
+          },
+          "computed": {
+            "position": "absolute",
+            "left": "0px",
+            "top": "0px",
+            "right": "0px",
+            "bottom": "0px",
+            "width": "640px",
+            "height": "420px",
+            "boxSizing": "content-box",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "opacity": "1",
+            "padding": "0px",
+            "borderTopWidth": "0px",
+            "borderRightWidth": "0px",
+            "borderBottomWidth": "0px",
+            "borderLeftWidth": "0px",
+            "borderTopStyle": "none",
+            "borderTopColor": "rgb(0, 0, 0)",
+            "borderRadius": "0px",
+            "transform": "none",
+            "transformOrigin": "320px 210px",
+            "translate": "none",
+            "scale": "none",
+            "zoom": "1"
+          },
+          "attributes": {
+            "data-xy-slot": "labels",
+            "style": "position: absolute; inset: 0px; pointer-events: none;"
+          }
+        },
+        "axes": [
+          {
+            "box": {
+              "x": 51.5,
+              "y": 24,
+              "width": 1,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "51.5px",
+              "top": "24px",
+              "right": "587.5px",
+              "bottom": "44px",
+              "width": "1px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 51.5px; top: 24px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 352px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 52,
+              "y": 375.5,
+              "width": 572,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "375.5px",
+              "right": "16px",
+              "bottom": "43.5px",
+              "width": "572px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-slot": "axis_line",
+              "style": "position: absolute; left: 52px; top: 375.5px; pointer-events: none; --xy-axis-rule-width: 572px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          }
+        ],
+        "ticks": [
+          {
+            "box": {
+              "x": 199.9375,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "199.951px",
+              "top": "376px",
+              "right": "439.062px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 199.951px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 349.046875,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "349.053px",
+              "top": "376px",
+              "right": "289.953px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 349.053px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 498.140625,
+              "y": 376,
+              "width": 1,
+              "height": 4
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "498.155px",
+              "top": "376px",
+              "right": "140.859px",
+              "bottom": "40px",
+              "width": "1px",
+              "height": "4px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "0.5px 2px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "x",
+              "data-xy-axis-side": "bottom",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 498.155px; top: 376px; pointer-events: none; --xy-axis-rule-width: 1px; --xy-axis-rule-height: 4px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 320.421875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "320.433px",
+              "right": "588px",
+              "bottom": "98.5781px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 320.433px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 258.8125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "258.819px",
+              "right": "588px",
+              "bottom": "160.188px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 258.819px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 197.203125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "197.206px",
+              "right": "588px",
+              "bottom": "221.797px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 197.206px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 135.578125,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "135.593px",
+              "right": "588px",
+              "bottom": "283.422px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 135.593px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          },
+          {
+            "box": {
+              "x": 48,
+              "y": 73.96875,
+              "width": 4,
+              "height": 1
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "48px",
+              "top": "73.9795px",
+              "right": "588px",
+              "bottom": "345.031px",
+              "width": "4px",
+              "height": "1px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgb(229, 231, 235)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "2px 0.5px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-axis": "y",
+              "data-xy-axis-side": "left",
+              "data-xy-tick-kind": "major",
+              "data-xy-slot": "tick_mark",
+              "style": "position: absolute; left: 48px; top: 73.9795px; pointer-events: none; --xy-axis-rule-width: 4px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint: rgba(229,231,235,1);"
+            }
+          }
+        ],
+        "axisSpec": {
+          "x": {
+            "id": "x",
+            "scale": "linear",
+            "range": [
+              52,
+              624
+            ],
+            "tick_values": [
+              200.4513397216797,
+              349.5531311035156,
+              498.6549072265625
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "2",
+              "4",
+              "6"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "bottom": 0,
+              "top": 0
+            },
+            "tick_label_anchors": {
+              "bottom": "center",
+              "top": "start"
+            },
+            "tick_sides": [
+              "bottom"
+            ],
+            "tick_label_sides": [
+              "bottom"
+            ],
+            "grid": true,
+            "side": "bottom",
+            "style": {
+              "axis_color": "rgba(229 231 235 / 1)",
+              "grid_color": "rgba(229 231 235 / 0.16470588235294117)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "tick_label_color": "rgba(229 231 235 / 1)",
+              "label_color": "rgba(229 231 235 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          },
+          "y": {
+            "id": "y",
+            "scale": "linear",
+            "range": [
+              376,
+              24
+            ],
+            "tick_values": [
+              320.93280029296875,
+              259.3194885253906,
+              197.70614624023438,
+              136.09280395507812,
+              74.47947692871094
+            ],
+            "minor_tick_values": [],
+            "tick_labels": [
+              "-40",
+              "-30",
+              "-20",
+              "-10",
+              "0"
+            ],
+            "tick_resolution": "rust_scene",
+            "tick_label_strategy": "preserve",
+            "tick_stagger": false,
+            "tick_label_angles": {
+              "left": 0,
+              "right": 0
+            },
+            "tick_label_anchors": {
+              "left": "end",
+              "right": "start"
+            },
+            "tick_sides": [
+              "left"
+            ],
+            "tick_label_sides": [
+              "left"
+            ],
+            "grid": true,
+            "side": "left",
+            "style": {
+              "axis_color": "rgba(229 231 235 / 1)",
+              "grid_color": "rgba(229 231 235 / 0.16470588235294117)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "tick_label_color": "rgba(229 231 235 / 1)",
+              "label_color": "rgba(229 231 235 / 1)",
+              "axis_width": 1,
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 4,
+              "tick_direction": "out",
+              "tick_label_size": 12,
+              "label_size": 12
+            },
+            "minor_style": {
+              "grid_color": "rgba(0 0 0 / 0)",
+              "tick_color": "rgba(229 231 235 / 1)",
+              "grid_width": 1,
+              "tick_width": 1,
+              "tick_length": 0,
+              "tick_direction": "out"
+            },
+            "label": ""
+          }
+        },
+        "frameSides": [
+          "bottom",
+          "left"
+        ],
+        "canvases": [
+          {
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 572,
+              "height": 352
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "52px",
+              "top": "24px",
+              "right": "16px",
+              "bottom": "44px",
+              "width": "572px",
+              "height": "352px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "286px 176px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "canvas",
+              "tabindex": "0",
+              "role": "img",
+              "aria-describedby": "xy-a11y-1-summary",
+              "width": "1144",
+              "height": "704",
+              "data-xy-gl-host": "shared",
+              "style": "position: absolute; left: 52px; top: 24px; width: 572px; height: 352px; touch-action: none;",
+              "data-xy-ctx": "live",
+              "aria-label": "Plot area. Use Arrow keys to explore data points in series data order; Home and End jump to the first and last point; Escape closes the readout."
+            },
+            "backingWidth": 1144,
+            "backingHeight": 704,
+            "ratioX": 2,
+            "ratioY": 2
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "chrome",
+              "width": "1280",
+              "height": "840",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 1280,
+            "backingHeight": 840,
+            "ratioX": 2,
+            "ratioY": 2
+          },
+          {
+            "box": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 420
+            },
+            "computed": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "right": "0px",
+              "bottom": "0px",
+              "width": "640px",
+              "height": "420px",
+              "boxSizing": "content-box",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "opacity": "1",
+              "padding": "0px",
+              "borderTopWidth": "0px",
+              "borderRightWidth": "0px",
+              "borderBottomWidth": "0px",
+              "borderLeftWidth": "0px",
+              "borderTopStyle": "none",
+              "borderTopColor": "rgb(0, 0, 0)",
+              "borderRadius": "0px",
+              "transform": "none",
+              "transformOrigin": "320px 210px",
+              "translate": "none",
+              "scale": "none",
+              "zoom": "1"
+            },
+            "attributes": {
+              "data-xy-slot": "annotation_layer",
+              "width": "1280",
+              "height": "840",
+              "style": "position: absolute; inset: 0px; pointer-events: none; width: 640px; height: 420px;"
+            },
+            "backingWidth": 1280,
+            "backingHeight": 840,
+            "ratioX": 2,
+            "ratioY": 2
+          }
+        ]
+      },
+      "canonicalSvgBrowser": {
+        "devicePixelRatio": 2,
+        "svg": {
+          "width": 640,
+          "height": 420
+        },
+        "axes": [
+          {
+            "attributes": {
+              "x1": "200.45",
+              "y1": "376",
+              "x2": "200.45",
+              "y2": "380",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 200.4499969482422,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "349.55",
+              "y1": "376",
+              "x2": "349.55",
+              "y2": "380",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 349.54998779296875,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "498.65",
+              "y1": "376",
+              "x2": "498.65",
+              "y2": "380",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 498.6499938964844,
+              "y": 376,
+              "width": 0,
+              "height": 4
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "376",
+              "x2": "624",
+              "y2": "376",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 376,
+              "width": 572,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "320.93",
+              "x2": "52",
+              "y2": "320.93",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 320.92999267578125,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "259.32",
+              "x2": "52",
+              "y2": "259.32",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 259.32000732421875,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "197.71",
+              "x2": "52",
+              "y2": "197.71",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 197.7100067138672,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "136.09",
+              "x2": "52",
+              "y2": "136.09",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 136.08999633789062,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "48",
+              "y1": "74.48",
+              "x2": "52",
+              "y2": "74.48",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 48,
+              "y": 74.4800033569336,
+              "width": 4,
+              "height": 0
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          },
+          {
+            "attributes": {
+              "x1": "52",
+              "y1": "24",
+              "x2": "52",
+              "y2": "376",
+              "stroke": "rgba(229,231,235,1.000000)",
+              "stroke-width": "1"
+            },
+            "box": {
+              "x": 52,
+              "y": 24,
+              "width": 0,
+              "height": 352
+            },
+            "computed": {
+              "stroke": "rgb(229, 231, 235)",
+              "strokeWidth": "1px",
+              "strokeLinecap": "butt",
+              "transform": "none"
+            }
+          }
+        ]
+      },
+      "errors": []
+    }
+  },
+  "outputs": {
+    "dark.dpr1.canonical-svg-browser.png": "be7003d560423f57cf44c1823e2f6e2d57ceb85abbf17272851cdc619d04c64c",
+    "dark.dpr1.canonical.png": "4e16c04b50092ec0427d8dc0c6db1a1db5a572849d0b3c10673b6e4ea88173e8",
+    "dark.dpr1.wasm.png": "11713b13495c1d6ceabdb3176641ea4a5a802c3aee555beb8ae329511f1cbebb",
+    "dark.dpr2.canonical-svg-browser.png": "f74ef06d6dca1bc6dd0ddc2f7b520bba81124dccbe3bd4ec297cc5d384d84d78",
+    "dark.dpr2.canonical.png": "0114d8bfb200d0174e7ca51602c68513a44d92e6121a32a5f60e894e6aac4b4d",
+    "dark.dpr2.wasm.png": "8f7f51aa266b2006ff1765593d02fcefbc3dc92d48fa0523e569480b7d7e69ea",
+    "light.dpr1.canonical-svg-browser.png": "edcb60cbdac35bb88efb03f5a40d83f90ff3dbefe8ab57664bab3bc6f653efe5",
+    "light.dpr1.canonical.png": "e2d861aa5103f33bb40d1c13c8cd00d7e1c7d23fd3261a66c5aa37f42d6fc9ab",
+    "light.dpr1.wasm.png": "32f693087fc6c36ecfbde70713d03ab7b852633ec9926893fe52e10060083c35",
+    "light.dpr2.canonical-svg-browser.png": "70b3b7ddce66c71b0a1b1453c80ecf1448956982f518985782f13558fc5a06fc",
+    "light.dpr2.canonical.png": "f5fb812e96148fdc4a28290fc7fcc39268ee54bf3c3b63949bcca4ab82ca49cf",
+    "light.dpr2.wasm.png": "aff9ce449bdb275d589b9a98c32b7f60bb6bff090e46e89ee2677ce60d2bd27a"
+  }
+}

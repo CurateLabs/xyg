@@ -1,0 +1,2 @@
+Diagnosis and ordinary geometry/images preserved; authored widths/paint, exports, identities, routes, captions and helper immutability verified. Canonical plot/full-image failures retained.
+Canonical authored plot comparison FAIL: 108 pre-existing mismatches; normal exit 1.
