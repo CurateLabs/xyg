@@ -1,0 +1,20 @@
+{
+  "name": "native-tests",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_python_transport.py",
+    "tests/test_graph_session_abi.py",
+    "tests/test_abi_parity.py",
+    "tests/test_generated_abi_trace.py",
+    "tests/test_verify_ownership.py",
+    "tests/test_audit_python_host_core.py"
+  ],
+  "exitCode": 0,
+  "seconds": 23.591,
+  "rawSha256": "184760edcbc7c91fd1d65dd08c3975b97d4011dc1f131dbdc958500bc19a080f",
+  "log": "native-tests.txt.gz",
+  "gzipSha256": "19b7d1a15e34512d5eb5ae23a26df45a2b7970ee203d915e611df9ab42e94bfa"
+}

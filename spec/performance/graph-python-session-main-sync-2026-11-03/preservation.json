@@ -1,0 +1,13 @@
+{
+  "reviewedHead": "3aea79dd0d58fe1f06f33e1fe3f8436a14dd9c2f",
+  "acceptedMain": "6ffc1ad1e772338931b1dda998032af2841ae5e4",
+  "reviewedProductionPathsUnchanged": 525,
+  "transportHashes": {
+    "python/xyg/_graph_session.py": "7694218c81a6a9ca004d9f0eb22d47800cc72310c91d210213f83807eceaebc4",
+    "tests/test_graph_session_python_transport.py": "082d74c92f3de994aebe7813627e2dfdff83ed63ffc3145bce569c447ac07857",
+    "spec/design/graph-session-python-transport.md": "8e730ed98a3bea3fa01a6a09bbe6221c0c65acc5262cc51fb84baa565de313ca"
+  },
+  "historicalReceiptsUnchanged": true,
+  "mainDeltaIsAcceptedPropertyProof": true,
+  "validationReuse": "Original 3aea transport/native 83 tests, ABI673, and e91 production/foundation proofs remain valid: all producer and transport bytes match; fresh main CI required. No stale local binary is used for a new native qualification claim."
+}

@@ -1,0 +1,23 @@
+{
+  "accepted_base": "030c79062138bb8287df2dc93ab6fdc0ecc8747b",
+  "head_at_validation": "030c79062138bb8287df2dc93ab6fdc0ecc8747b",
+  "branch": "t3/private-graph-session-transport",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+  "native_source_tree": "ea5050ff4680e0a7119f40949ae634464d373177",
+  "native_source_unchanged": true,
+  "files_sha256": {
+    "python/xyg/_graph_session.py": "1c940acc09a75ced0d2f910369c4cdf4c7908b08770c6c5491e0f193c6d98dc0",
+    "tests/test_graph_session_python_transport.py": "803c30aa8c67b21d363a73c638cbcb2794aad429515dd9215f46812534ce97a8",
+    "tests/test_graph_session_abi.py": "30223edcbce95670ce10a487d2e6d418f6264a16b20764d96240f069688d2173",
+    "python/xyg/_native.py": "bde85238e94b41def219f1dcf347c62da63d3e5496f259d761d1fbb749b31fc1",
+    "python/xyg/_abi_generated.py": "2bd6ed6b088bb0af13442021836d1632773cfecc50ac4a900e5639e7d6553062",
+    "spec/design/graph-session-python-transport.md": "42b55a87d9f7f4e47dadad1bf40161c24055e36784c81f9f339c79f8e4f52a30",
+    "spec/design/graph-interaction.md": "70aed60f2ab7c3eb3081d35f59ab04b3fa14b936cf717a78047504fd1b50d7e9",
+    "spec/design/ownership-audit.json": "0faa8720b6ac2259efef22689716a1e2faf583afdafb273c347113f4239effb9",
+    "spec/design/ownership-audit.md": "b326506866680cd924a196a867b5454b4d01512779077c12a185d0320a4cb1c9",
+    "crates/xyg-core/src/graphforge_session_ffi.rs": "067e86421a9bea9166fd3799b1c65c7463be0508f68515299f75fea336c3a108",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "e5f87a0454eb9a79c42fc87783f29d6c6a812cb6d1a22bfecf45465502706c7f",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+  }
+}

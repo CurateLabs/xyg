@@ -1,0 +1,61 @@
+{
+  "parent": "e91fe2f7531cc808987d0af0868c321c55e51066",
+  "unchangedProducerSourceFiles": 296,
+  "producerGitListingSha256": "c990b0440252898c60834549d0ee118cdb3a0efbb08c0c61a71e5706a37330df",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6075176,
+      "sha256": "95c16daf37ce19af5a9d3b9d1f08a4d8e12580f522b2dfea90aab90f121f509e"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 757131,
+      "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 757162,
+      "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1872568,
+      "sha256": "862a04c4053dc32f2757a35e8a39d79e837ea276ab0b2a14cd380bfbfb89b820"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1872568,
+      "sha256": "862a04c4053dc32f2757a35e8a39d79e837ea276ab0b2a14cd380bfbfb89b820"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2515949,
+      "sha256": "56399d314eec69b5bcf229d73143c716ebc009ba89c13455962094d4f28effde"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2515949,
+      "sha256": "56399d314eec69b5bcf229d73143c716ebc009ba89c13455962094d4f28effde"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f63367d6015c0d9a5f68de97f61ad3e077d147b13656797829d55982d201085d"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f63367d6015c0d9a5f68de97f61ad3e077d147b13656797829d55982d201085d"
+    }
+  },
+  "rebuilt": false,
+  "reason": "Rust and JS producer source and exact built artifacts unchanged from reviewed parent"
+}
