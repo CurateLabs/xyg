@@ -400,6 +400,121 @@ def test_byte_views_accepted_and_invalid_wire_left_to_rust(session) -> None:
     assert error.value.status == Status.INVALID
 
 
+@pytest.mark.parametrize("field", ["instance_id", "group_id", "document", "opening"])
+def test_constructor_input_callbacks_can_close_and_open_native_sessions(field) -> None:
+    if field in {"document", "opening"} and sys.version_info < (3, 12):
+        pytest.skip("Python buffer callbacks require Python 3.12")
+    code = """
+import runpy
+import sys
+from xyg import _native
+from xyg._graph_session import GraphSession, GraphSessionError
+
+helpers = runpy.run_path('tests/test_graph_session_python_transport.py')
+open_session, request = helpers['_open'], helpers['_request']
+assert _native._lib.xyg_abi_version() == 398
+instance = 0x505954485245454E
+callbacks = []
+
+with open_session(instance + 1) as peer:
+    def reenter():
+        peer.close()
+        with open_session(instance + 2) as nested:
+            helpers['_decode'](nested.render(request(instance + 2, 2, 21)))
+        callbacks.append('closed/opened/rendered')
+
+    class Scalar:
+        def __init__(self, value):
+            self.value = value
+        def __index__(self):
+            reenter()
+            return self.value
+
+    class Buffer(bytes):
+        def __buffer__(self, flags):
+            reenter()
+            return memoryview(bytes(self))
+
+    document = helpers['_document']()
+    opening = request(instance, 1, 19, extra=helpers['_load']())
+    values = dict(document=document, opening=opening, instance_id=instance, group_id=9)
+    field = sys.argv[1]
+    values[field] = Scalar(values[field]) if field.endswith('_id') else Buffer(values[field])
+    with GraphSession(**values) as session:
+        helpers['_decode'](session.render(request(instance, 2, 21)))
+    assert callbacks == ['closed/opened/rendered']
+    try:
+        peer.render(request(instance + 1, 2, 21))
+    except GraphSessionError as error:
+        assert error.status is None and str(error) == 'graph session is closed'
+    else:
+        raise AssertionError('peer closure was lost')
+print('native398: constructor callback completed')
+"""
+    # subprocess.run kills and reaps the child on timeout, so the regression
+    # cannot strand a thread holding the module lock in the pytest process.
+    result = subprocess.run(
+        [sys.executable, "-c", code, field],
+        capture_output=True,
+        text=True,
+        timeout=8,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "native398: constructor callback completed"
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 12), reason="Python buffer callbacks require Python 3.12"
+)
+@pytest.mark.parametrize("close_target", [False, True])
+def test_command_buffer_callback_reenters_and_rechecks_native_lifetime(close_target) -> None:
+    code = """
+import runpy
+import sys
+from xyg import _native
+from xyg._graph_session import GraphSessionError
+
+helpers = runpy.run_path('tests/test_graph_session_python_transport.py')
+open_session, request = helpers['_open'], helpers['_request']
+assert _native._lib.xyg_abi_version() == 398
+instance = 0x505954485245434D
+close_target = sys.argv[1] == 'True'
+callbacks = []
+
+with open_session(instance) as session, open_session(instance + 1) as peer:
+    class Buffer(bytearray):
+        def __buffer__(self, flags):
+            (session if close_target else peer).close()
+            with open_session(instance + 2) as nested:
+                helpers['_decode'](nested.render(request(instance + 2, 2, 21)))
+            callbacks.append('closed/opened/rendered')
+            return memoryview(original)
+
+    original = request(instance, 2, 21)
+    if close_target:
+        try:
+            session.render(Buffer(original))
+        except GraphSessionError as error:
+            assert error.status is None and str(error) == 'graph session is closed'
+        else:
+            raise AssertionError('command used a handle closed during its snapshot')
+    else:
+        reply = session.render(Buffer(original))
+        helpers['_decode'](reply)
+        assert session.render(original) == reply
+    assert callbacks == ['closed/opened/rendered']
+print('native398: command callback completed')
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(close_target)],
+        capture_output=True,
+        text=True,
+        timeout=8,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "native398: command callback completed"
+
+
 def test_private_import_does_not_load_widget_stack_or_export_public_api() -> None:
     code = """
 import sys

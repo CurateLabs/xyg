@@ -54,6 +54,16 @@ booleans, and fit unsigned u64 without truncation. Zero identities, empty
 buffers, wire schema and all Rust product limits remain Rust validation.
 Type/bounds exceptions have fixed, value-free messages.
 
+Constructor identity normalization and document/opening snapshots run before
+acquiring the lifecycle lock. Integer-indexing scalars can execute caller code
+in `__index__`; supported buffer subclasses can likewise execute Python buffer
+callbacks. Neither callback may run under the non-reentrant lifecycle lock.
+Commands first check local closure under the lock, release it to snapshot the
+request, then reacquire it and recheck the handle before any FFI. Thus initially
+closed wrappers still refuse before input conversion, and a callback or another
+thread closing the wrapper during conversion cannot leave a usable stale
+handle. Native alias revocation continues to be validated by Rust as Unbound.
+
 Each input is snapshotted once into a private ctypes u8 allocation. A command
 holds that same allocation, byte length, native handle and request bytes
 throughout its query and copy retries. Python never consumes, increments or
@@ -77,7 +87,7 @@ It retains no graph buffers or result cache after return (dossier §27/§29).
 
 ## Serialized lifecycle and failures
 
-One module-level lock serializes all wrapper construction, complete
+One module-level lock serializes native handle creation, complete
 query/copy transactions and close calls, including calls on different Python
 wrappers. This intentionally conservative P0 boundary prevents a close or
 another operation from intervening between sizing and exact copying. It
@@ -120,9 +130,15 @@ stale, wrong-instance/group, malformed and conflicting replay refusals;
 unchanged sequence/cache after refusal; independent lifetimes; native Open
 aliasing; bound-owner disposal and unbind recovery; deterministic threaded
 close ordering; repeated close; input boundaries and private import isolation.
+Bounded subprocess regressions also exercise indexable constructor scalars and
+supported buffer callbacks that close/open/render other native sessions, plus
+closure during command conversion. Timeout kills and reaps a regressed child,
+so a deadlock cannot strand a thread holding the parent test process's lock.
 The existing raw ctypes proof remains in `tests/test_graph_session_abi.py`.
-The append-only local receipt is
+The original append-only local receipt is
 [graph-python-session-transport-2026-11-03](../performance/graph-python-session-transport-2026-11-03/README.md).
+The independent-review reentrancy repair has a separate append-only
+[repair receipt](../performance/graph-python-session-transport-reentrancy-repair-2026-11-03/README.md).
 
 P1 design is still needed for full selection/per-layer identity projection
 missing from XYGR and the fast-seed seam. P2+ still owns widgets, channel and

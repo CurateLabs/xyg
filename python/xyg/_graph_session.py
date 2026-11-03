@@ -93,9 +93,10 @@ class GraphSession:
         group_id: int,
     ) -> None:
         self._handle: int | None = None
+        # Index/buffer protocols can call user code which opens or closes sessions.
+        instance, group = _u64(instance_id), _u64(group_id)
+        document_input, opening_input = _input(document), _input(opening)
         with _lifecycle_lock:
-            instance, group = _u64(instance_id), _u64(group_id)
-            document_input, opening_input = _input(document), _input(opening)
             handle = ct.c_uint64()
             _check_status(
                 _native._lib.xyg_graphforge_session_create(
@@ -117,8 +118,12 @@ class GraphSession:
 
     def _command(self, symbol: str, request: bytes | bytearray | memoryview) -> bytes:
         with _lifecycle_lock:
+            self._require_handle()
+        data = _input(request)
+        with _lifecycle_lock:
+            # Conversion ran outside the lock; a callback or another thread may
+            # have closed this wrapper. Never carry a handle across conversion.
             handle = self._require_handle()
-            data = _input(request)
             function = getattr(_native._lib, symbol)
             output = None
             capacity = 0
