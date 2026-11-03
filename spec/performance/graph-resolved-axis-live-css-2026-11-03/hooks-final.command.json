@@ -1,0 +1,26 @@
+{
+  "name": "hooks-final",
+  "command": [
+    "uv",
+    "run",
+    "--with",
+    "pre-commit",
+    "pre-commit",
+    "run",
+    "--all-files"
+  ],
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/task-tmp",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "UV_OFFLINE": "1",
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1"
+  },
+  "exitCode": 0,
+  "seconds": 0.553,
+  "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+  "log": "hooks-final.txt.gz",
+  "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+}

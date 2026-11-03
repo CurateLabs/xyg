@@ -1,0 +1,24 @@
+{
+  "name": "proof-before",
+  "command": [
+    "node",
+    "tests/browser/resolved_axis_live_css.mjs",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03",
+    "proof-before",
+    "target/task-tmp/before-index.js"
+  ],
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/task-tmp",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "UV_OFFLINE": "1",
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1"
+  },
+  "exitCode": 1,
+  "seconds": 12.681,
+  "rawSha256": "a776b70ad2a83eff910e3d4e303aecc7dfe46a44ee000171d5f4127ba23d26e4",
+  "log": "proof-before.txt.gz",
+  "gzipSha256": "c149077d2006decd3ebdec66f77c58e1a5e8f86d6d0b826b62493d11712fad61"
+}

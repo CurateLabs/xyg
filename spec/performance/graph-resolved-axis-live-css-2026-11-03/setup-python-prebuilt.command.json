@@ -1,0 +1,17 @@
+{
+  "name": "setup-python-prebuilt",
+  "command": [
+    "env",
+    "XYG_SKIP_CARGO=1",
+    "XYG_SKIP_NODE=1",
+    "uv",
+    "sync",
+    "--group",
+    "dev"
+  ],
+  "exitCode": 0,
+  "seconds": 1.455,
+  "rawSha256": "b13004e84f16b4f7891fa98b1d5d27ee0a8c316dc9df5b6edc389ef4bd2f4bc3",
+  "log": "setup-python-prebuilt.txt.gz",
+  "gzipSha256": "a7dce0acba49872ab8bd0b3f41bbd999cf28abd8bc2179f1b7d9f4d736943479"
+}

@@ -1,0 +1,2052 @@
+{
+  "browser": "156.0.8078.4",
+  "asset": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/task-tmp/resolved-spine-188f-baseline/packages/xy-client/dist/index.js",
+    "sha256": "351fa5038800204a13a99ae9cb91612472e3368f6d7ecd4829d589e39b16acd7"
+  },
+  "cases": [
+    {
+      "name": "idle",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "hover-enter",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(255, 0, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "hover-leave",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "focus-within",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "keyboard-active-down",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": true,
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "keyboard-active-up",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "focus-leave",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "active-down",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": true
+      },
+      "controlActive": true,
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "active-up",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-normal",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-normal",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-geometry-normal",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-geometry-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "public-class-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(180, 30, 60)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "12px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 12
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "public-inline-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(4, 5, 6)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "10px",
+        "clipPath": "none",
+        "priority": "important",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 10
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-idle",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-hover",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgba(0, 0, 0, 0)",
+        "backgroundImage": "linear-gradient(90deg, rgb(255, 0, 0), rgb(0, 0, 255))",
+        "borderWidth": "2px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 84,
+          "height": 12
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-leave",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "idle",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "hover-enter",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(255, 0, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "hover-leave",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "focus-within",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "keyboard-active-down",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": true,
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "keyboard-active-up",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "focus-leave",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "active-down",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": true
+      },
+      "controlActive": true,
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "active-up",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-normal",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-normal",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-geometry-normal",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-geometry-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "public-class-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(180, 30, 60)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "12px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 12
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "public-inline-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(4, 5, 6)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "10px",
+        "clipPath": "none",
+        "priority": "important",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 10
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-idle",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-hover",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgba(0, 0, 0, 0)",
+        "backgroundImage": "linear-gradient(90deg, rgb(255, 0, 0), rgb(0, 0, 255))",
+        "borderWidth": "2px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 84,
+          "height": 12
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-leave",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "idle",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "hover-enter",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(255, 0, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "hover-leave",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "focus-within",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "keyboard-active-down",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": true,
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "keyboard-active-up",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "focus-leave",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "active-down",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": true
+      },
+      "controlActive": true,
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "active-up",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-normal",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-normal",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-geometry-normal",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "host-geometry-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "public-class-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(180, 30, 60)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "12px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 12
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "public-inline-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(4, 5, 6)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "10px",
+        "clipPath": "none",
+        "priority": "important",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 10
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-idle",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-hover",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgba(0, 0, 0, 0)",
+        "backgroundImage": "linear-gradient(90deg, rgb(255, 0, 0), rgb(0, 0, 255))",
+        "borderWidth": "2px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 84,
+          "height": 12
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    },
+    {
+      "name": "effect-leave",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "controlActive": false,
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "height": "8px",
+        "clipPath": "none",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "html",
+      "svg": null,
+      "manualCalls": []
+    }
+  ],
+  "failures": [],
+  "masks": [],
+  "manualRefreshAfterSetup": false
+}

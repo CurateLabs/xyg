@@ -1,0 +1,13 @@
+{
+  "name": "html-diagnosis-fixed",
+  "command": [
+    "node",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03/html-diagnosis.mjs",
+    "html-diagnosis-fixed"
+  ],
+  "exitCode": 0,
+  "seconds": 3.928,
+  "rawSha256": "ca3e93f2dfc299de9dced852675e6bdfd9077f5f414376de8223169af7fc5b0f",
+  "log": "html-diagnosis-fixed.txt.gz",
+  "gzipSha256": "3f77846d91e0f7471c025e97a6c6c1e0be13293837981809c471c7e88870e5b2"
+}

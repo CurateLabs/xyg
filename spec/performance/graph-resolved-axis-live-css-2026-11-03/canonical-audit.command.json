@@ -1,0 +1,23 @@
+{
+  "name": "canonical-audit",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03/canonical-proof.py"
+  ],
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/task-tmp",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "UV_OFFLINE": "1",
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1"
+  },
+  "exitCode": 0,
+  "seconds": 1.097,
+  "rawSha256": "fe4fda5f7f561ba5410c9cedae7796c8e3bf8512c63aa757b5b489a91c5804f2",
+  "log": "canonical-audit.txt.gz",
+  "gzipSha256": "41b57c54c9ace98d8f922cbcc7db8d50f000f1c5ed13668294c715a898065874"
+}
