@@ -2802,6 +2802,8 @@ export class ChartView {
       const svg: any = document.createElementNS(ns, "svg");
       svg.setAttribute("width", String(this.size.w)); svg.setAttribute("height", String(this.size.h));
       svg.style.cssText = "position:absolute;inset:0;overflow:visible;pointer-events:none";
+      // Rust already placed the frame and text; this SVG is not an HTML box.
+      svg.dataset.xyLegendResolved = "";
       this._applySlot(svg, "legend"); svg.setAttribute("role", "list");
       const frame = document.createElementNS(ns, "rect");
       for (const [key, value] of Object.entries({ x, y, width, height })) frame.setAttribute(key, String(value));
