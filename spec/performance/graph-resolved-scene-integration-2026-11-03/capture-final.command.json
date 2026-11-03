@@ -1,0 +1,12 @@
+{
+  "name": "capture-final",
+  "command": [
+    "python3",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 1.106,
+  "rawSha256": "895dbff6e0d9392f2b36228f2c5e05a8ead872f7747e0a02910c7ed954c94c20",
+  "log": "capture-final.txt.gz",
+  "gzipSha256": "5a11c317b0028423ccb865804e2eec70facb352f0e2a8a67c5d0de6293b97913"
+}

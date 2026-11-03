@@ -1,0 +1,18 @@
+node:fs:560
+  return binding.open(
+                 ^
+
+Error: ENOENT: no such file or directory, open 'packages/xy-client/dist/favicon.ico'
+    at Object.openSync (node:fs:560:18)
+    at Object.readFileSync (node:fs:444:35)
+    at Server.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/spine-style-debug.mjs:5:385)
+    at Server.emit (node:events:519:28)
+    at parserOnIncoming (node:_http_server:1186:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'packages/xy-client/dist/favicon.ico'
+}
+
+Node.js v22.23.4

@@ -1,0 +1,22 @@
+{
+  "target/release/libxyg_core.so": {
+    "bytes": 6075160,
+    "sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15",
+    "f006_sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15"
+  },
+  "packages/xyg-node-linux-x64/libxyg_core.so": {
+    "bytes": 6075160,
+    "sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15",
+    "f006_sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15"
+  },
+  "packages/xy-client/dist/xyg-wasm.wasm": {
+    "bytes": 1872541,
+    "sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50",
+    "f006_sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50"
+  },
+  "packages/xy-client/dist/wasm-worker.js": {
+    "bytes": 53710,
+    "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1",
+    "f006_sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+  }
+}

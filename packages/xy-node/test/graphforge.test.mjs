@@ -23,6 +23,7 @@ import {
 } from "../src/graphforge.js";
 import { decodeContainer, encodeContainer, DTYPE } from "../src/graphforge-container.js";
 import { graphChart } from "../src/charts.js";
+import { sceneStaticExport } from "../src/scene.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const RESULTS = path.join(ROOT, "tests/fixtures/graphforge/results");
@@ -73,6 +74,45 @@ test("a request with no result layer composes the property-graph defaults", () =
   assert.ok(c.scene.bytes.length > 0);
   assert.deepEqual(composeGraphForge(input).scene.bytes, c.scene.bytes);
   assert.ok(graphforgeLedger().some((row) => row.schema === "entity_graph" && row.disposition === "entity-graph"));
+});
+
+test("zero-layer PNG and SVG exports repeat exactly at the canonical positions", () => {
+  const fixture = JSON.parse(fs.readFileSync(path.join(RESULTS, "../property_default_export.json")));
+  for (const theme of fixture.themes) {
+    const render = { width: fixture.width, height: fixture.height, theme };
+    const first = composeGraphForge({ base: base("property"), render });
+    const second = composeGraphForge({ base: base("property"), render });
+    assert.deepEqual(first.nodes.uuid, fixture.nodeUuid);
+    assert.deepEqual(first.edges.uuid, fixture.edgeUuid);
+    assert.deepEqual([...first.edges.source].map(Number), fixture.source);
+    assert.deepEqual([...first.edges.target].map(Number), fixture.target);
+    assert.deepEqual(first.nodes.label, fixture.captions);
+    assert.deepEqual(first.edges.type, fixture.types);
+    assert.deepEqual(first.legend.rows.map((row) => row.text), fixture.legend);
+    for (const [kind, ids] of [["node", fixture.nodeUuid], ["edge", fixture.edgeUuid]]) {
+      ids.forEach((uuid, index) => {
+        const identity = first.identify(kind, index);
+        assert.equal(identity.uuid, uuid);
+        assert.deepEqual(identity.layers, []);
+        if (kind === "edge") {
+          assert.equal(identity.source, fixture.nodeUuid[fixture.source[index]]);
+          assert.equal(identity.target, fixture.nodeUuid[fixture.target[index]]);
+        }
+      });
+    }
+    assert.deepEqual(first.scene.bytes, second.scene.bytes);
+    for (const format of ["png", "svg"]) {
+      const opts = { ...render, scale: 1 };
+      assert.deepEqual(sceneStaticExport(first.scene.bytes, format, opts), sceneStaticExport(second.scene.bytes, format, opts));
+    }
+    const fig = graphforgeChart(first, render);
+    const laid = fig._graphPositions[0];
+    assert.deepEqual(laid.x, first.scene.x, "the default public path must keep the canonical x positions");
+    assert.deepEqual(laid.y, first.scene.y, "the default public path must keep the canonical y positions");
+    const again = graphforgeChart(second, render);
+    assert.deepEqual(fig.toPng({ scale: 1 }), again.toPng({ scale: 1 }));
+    assert.deepEqual(fig.toSvg(), again.toSvg());
+  }
 });
 
 test("a directed property graph keeps its arrowheads in the interactive graph mark", () => {

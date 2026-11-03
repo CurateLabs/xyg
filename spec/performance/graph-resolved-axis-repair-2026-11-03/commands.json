@@ -1,0 +1,388 @@
+[
+  {
+    "name": "authored-inputs",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "tests/browser/resolved_axis_spines.py",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/inputs"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.3269941806793213,
+    "log": "authored-inputs.txt"
+  },
+  {
+    "name": "matrix-before",
+    "argv": [
+      "node",
+      "tests/browser/resolved_axis_spines.mjs",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/inputs",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/before"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 35.90291500091553,
+    "log": "matrix-before.txt"
+  },
+  {
+    "name": "client-build",
+    "argv": [
+      "node",
+      "js/build.mjs"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 1.1241614818572998,
+    "log": "client-build.txt.gz",
+    "log_encoding": "gzip; raw output preserved"
+  },
+  {
+    "name": "reuse-check",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "-c",
+      "import hashlib,json;from pathlib import Path;p=Path(\"spec/performance/graph-resolved-legend-repair-2026-11-03/artifacts.json\");old=json.loads(p.read_text())[\"generated_assets\"];paths=[\"target/release/libxyg_core.so\",\"packages/xyg-node-linux-x64/libxyg_core.so\",\"packages/xy-client/dist/xyg-wasm.wasm\",\"packages/xy-client/dist/wasm-worker.js\"];result={n:{\"bytes\":Path(n).stat().st_size,\"sha256\":hashlib.sha256(Path(n).read_bytes()).hexdigest(),\"f006_sha256\":old[n][\"sha256\"]} for n in paths};assert all(v[\"sha256\"]==v[\"f006_sha256\"] for v in result.values());Path(\"spec/performance/graph-resolved-axis-repair-2026-11-03/reuse.json\").write_text(json.dumps({\"native_wasm_rebuilt\":False,\"reason\":\"unchanged producer sources and exact f006 artifacts\",\"files\":result},indent=2)+\"\\n\");print(json.dumps(result,indent=2))"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.07105302810668945,
+    "log": "reuse-check.txt"
+  },
+  {
+    "name": "paired-assets",
+    "argv": [
+      "python3",
+      "scripts/verify_wasm_assets.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.1163337230682373,
+    "log": "paired-assets.txt"
+  },
+  {
+    "name": "property-producer",
+    "argv": [
+      "uv",
+      "run",
+      "pytest",
+      "tests/test_graphforge.py",
+      "-k",
+      "property_default_exports",
+      "-q"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_GRAPH_PROPERTY_EVIDENCE": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/spec/performance/graph-resolved-axis-repair-2026-11-03/property"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 1.0910346508026123,
+    "log": "property-producer.txt"
+  },
+  {
+    "name": "ordinary-render-smoke",
+    "argv": [
+      "python3",
+      "scripts/render_smoke_nonumpy.py",
+      "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 19.94302988052368,
+    "log": "ordinary-render-smoke.txt"
+  },
+  {
+    "name": "matrix-after",
+    "argv": [
+      "node",
+      "tests/browser/resolved_axis_spines.mjs",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/inputs",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/after"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 35.69859766960144,
+    "log": "matrix-after.txt"
+  },
+  {
+    "name": "property-browser",
+    "argv": [
+      "node",
+      "tests/browser/graph_property_default_export.mjs",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/property"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 4.352608680725098,
+    "log": "property-browser.txt"
+  },
+  {
+    "name": "nearest-python",
+    "argv": [
+      "uv",
+      "run",
+      "pytest",
+      "tests/test_static_client_security.py",
+      "tests/test_dual_axis_live_client.py",
+      "tests/test_live_dual_axis_cross_host.py",
+      "tests/test_static_dual_axis_cross_host.py",
+      "tests/test_scene_chrome_pack_abi.py",
+      "-q"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 4.179995536804199,
+    "log": "nearest-python.txt"
+  },
+  {
+    "name": "regression-ruff",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "tests/browser/resolved_axis_spines.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.023695707321166992,
+    "log": "regression-ruff.txt"
+  },
+  {
+    "name": "regression-format",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "tests/browser/resolved_axis_spines.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.0684061050415039,
+    "log": "regression-format.txt"
+  },
+  {
+    "name": "regression-js-syntax",
+    "argv": [
+      "node",
+      "--check",
+      "tests/browser/resolved_axis_spines.mjs"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.037633419036865234,
+    "log": "regression-js-syntax.txt"
+  },
+  {
+    "name": "remaining-coverage-probe",
+    "argv": [
+      "node",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/probe.mjs",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/post-projection-captures",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/property"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 4.157834053039551,
+    "log": "remaining-coverage-probe.txt"
+  },
+  {
+    "name": "graph-browser",
+    "argv": [
+      "node",
+      "scripts/graphforge_wasm_smoke.mjs"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 2.0555191040039062,
+    "log": "graph-browser.txt"
+  },
+  {
+    "name": "foundation",
+    "argv": [
+      "node",
+      "scripts/wasm_foundation_smoke.mjs"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 12.201516151428223,
+    "log": "foundation.txt"
+  },
+  {
+    "name": "preservation-audit",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/verify.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 0.2729151248931885,
+    "log": "preservation-audit.txt"
+  },
+  {
+    "name": "preservation-and-canonical-audit",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/verify.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 0.5843737125396729,
+    "log": "preservation-and-canonical-audit.txt"
+  },
+  {
+    "name": "final-canonical-and-preservation-audit",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "spec/performance/graph-resolved-axis-repair-2026-11-03/verify.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 0.5159914493560791,
+    "log": "final-canonical-and-preservation-audit.txt"
+  },
+  {
+    "name": "final-hooks",
+    "argv": [
+      "uv",
+      "run",
+      "--with",
+      "pre-commit",
+      "pre-commit",
+      "run",
+      "--all-files"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 1.1421661376953125,
+    "log": "final-hooks.txt"
+  },
+  {
+    "name": "final-ruff",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "."
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.20393800735473633,
+    "log": "final-ruff.txt"
+  },
+  {
+    "name": "final-format",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.03238534927368164,
+    "log": "final-format.txt"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "name": "matrix-producer",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "tests/browser/resolved_axis_spines.py",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/inputs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.329,
+  "rawSha256": "526cd4a39635afab127c68be235133e6f12367586b7727d1fda52b28930a1907",
+  "log": "matrix-producer.txt.gz",
+  "gzipSha256": "57b657fea802c499f22b408a56261df24417b889a6676cc4e101343de6c076d4"
+}

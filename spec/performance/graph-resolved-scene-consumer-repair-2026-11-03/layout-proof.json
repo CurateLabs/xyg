@@ -1,0 +1,21 @@
+{
+  "canonical_svg_plot_cases": 111,
+  "canonical_failures": [],
+  "ordinary_case_records_identical_to_188f": 111,
+  "ordinary_screenshots_identical_to_188f": [
+    "hidden.dpr1.25.ordinary.png",
+    "hidden.dpr1.ordinary.png",
+    "hidden.dpr2.ordinary.png",
+    "w0-bottom-left-opaque.dpr1.25.ordinary.png",
+    "w0-bottom-left-opaque.dpr1.ordinary.png",
+    "w0-bottom-left-opaque.dpr2.ordinary.png",
+    "w0.5-top-right-alpha.dpr1.25.ordinary.png",
+    "w0.5-top-right-alpha.dpr1.ordinary.png",
+    "w0.5-top-right-alpha.dpr2.ordinary.png",
+    "w1-bottom-left-opaque.dpr1.25.ordinary.png",
+    "w1-bottom-left-opaque.dpr1.ordinary.png",
+    "w1-bottom-left-opaque.dpr2.ordinary.png"
+  ],
+  "historical_files_unchanged": 350,
+  "scope": "layout-only candidate; product SVG paint pending compatibility decision"
+}

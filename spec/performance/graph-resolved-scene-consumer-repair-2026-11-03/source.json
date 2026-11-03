@@ -1,0 +1,97 @@
+{
+  "base": "188f7450bff332e0be6a80bf97b15b86e74b48ae",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+  "branch": "t3/resolved-svg-legend-style",
+  "source_diff_argv": [
+    "git",
+    "diff",
+    "--cached",
+    "--binary",
+    "--full-index",
+    "188f7450bff332e0be6a80bf97b15b86e74b48ae",
+    "--",
+    "js/src/48_wasm_scene.ts",
+    "js/src/50_chartview.ts",
+    "spec/design/browser-wasm.md",
+    "tests/browser/resolved_axis_spines.mjs",
+    "tests/browser/resolved_axis_slots.mjs",
+    "tests/browser/resolved_axis_precision.mjs"
+  ],
+  "source_diff_sha256": "8352b03bd1b4ccacc11ae73b3f34d38a551769f0719c1eaeff595fae38d00102",
+  "source_diff_excludes_receipts": true,
+  "source_files": {
+    "js/src/48_wasm_scene.ts": "73b216838264cbaabf702e0ee92317a66bc5be550257234cbe9428d78bbf1f04",
+    "js/src/50_chartview.ts": "a3ba61708f1ec970a714b87785c58d835c7917fa47e98ff83592940fd70a5197",
+    "spec/design/browser-wasm.md": "cb38a258d999338a47f201d5f1f0392fbece5ea000479a6b218ff1b89d3c7ab7",
+    "tests/browser/resolved_axis_spines.mjs": "ad678d41ed76e85889006a4df971495cae5fec5a81cb2b2059b7ea3e77e5a03f",
+    "tests/browser/resolved_axis_slots.mjs": "10d5b3894bd0ea027f3bd82214b5e1f2f6ce963acaf38fea8a0f1330ac0e3799",
+    "tests/browser/resolved_axis_precision.mjs": "1233e221f6fde9b8023d8805f954085d91bb9a3ca77368017a626a5b8ecb196a"
+  },
+  "actual_artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 760650,
+      "sha256": "6cef37f9b430526cc0a4626cba7f56b67d4b67cf6161fbe0bd1f454fae45ec4f"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 760681,
+      "sha256": "15491897882f373acd4c9a5f9a0378d185d72e888a7e7b6308ca08ba11c43444"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 19000,
+      "sha256": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2515913,
+      "sha256": "b6b1fdee068dc7e020c18c20fed8deb18f7853b13ae5e7203e2436850c47497d"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "aac7645639b0a8ef29b5049bda1a7c9abde91b368d77b5bb9998551b3e5954b3"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1872541,
+      "sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 760650,
+      "sha256": "6cef37f9b430526cc0a4626cba7f56b67d4b67cf6161fbe0bd1f454fae45ec4f"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 760681,
+      "sha256": "15491897882f373acd4c9a5f9a0378d185d72e888a7e7b6308ca08ba11c43444"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2515913,
+      "sha256": "b6b1fdee068dc7e020c18c20fed8deb18f7853b13ae5e7203e2436850c47497d"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "aac7645639b0a8ef29b5049bda1a7c9abde91b368d77b5bb9998551b3e5954b3"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1872541,
+      "sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6075160,
+      "sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15"
+    },
+    "packages/xyg-node-linux-x64/libxyg_core.so": {
+      "bytes": 6075160,
+      "sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15"
+    }
+  },
+  "native_wasm_rebuilt": false,
+  "python": "3.12.15",
+  "node": "v22.23.4",
+  "chromium": "156.0.8078.4",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43"
+}

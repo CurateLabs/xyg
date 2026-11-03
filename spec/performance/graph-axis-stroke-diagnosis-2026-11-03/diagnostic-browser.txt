@@ -1,0 +1,11 @@
+file:///home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xy-node/src/graphforge-container.js:132
+  const fail = (reason) => { throw new RangeError(`malformed ${magic} container: ${reason}`); };
+                                   ^
+
+RangeError: malformed XYGF container: text offsets
+    at fail (file:///home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xy-node/src/graphforge-container.js:132:36)
+    at decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xy-node/src/graphforge-container.js:172:47)
+    at decodeGraphForgeDocument (file:///home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xy-node/src/graphforge.js:222:20)
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-42669f21/spec/performance/graph-axis-stroke-diagnosis-2026-11-03/probe.mjs:38:19
+
+Node.js v22.23.4

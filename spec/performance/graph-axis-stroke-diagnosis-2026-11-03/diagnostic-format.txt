@@ -1,0 +1,2 @@
+Would reformat: spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py
+1 file would be reformatted, 1 file already formatted

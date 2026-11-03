@@ -728,8 +728,75 @@ rotation applies to both sides. Rust reduces equivalent full turns into the
 each display anchor from the original angle and any authored anchor. Thus
 `350` degrees paints as `-10` degrees with its original anchor, rather than
 clamping to the wire limit or deriving alignment from the reduced sign. The
-browser applies those anchors literally. The authored collision header at
-bytes 76-79 is zeroed in the painter. The client accepts exactly
+browser applies those anchors literally.
+
+At the resolved-Scene consumer boundary, the decoder privately carries the exact
+Rust-final plot rectangle from XYPB into ChartView. `_layout()` uses that bound
+directly: decoded padding is not an ordinary responsive padding floor, and
+browser title/tick/secondary-axis gutter measurements must not add room to it.
+This private bound does not change ordinary host padding or layout semantics;
+setting an axis's tick discriminator alone does not supply a final plot.
+
+For `tick_resolution: "rust_scene"` axes, Cartesian spine coordinates are stroke
+centerlines on the Rust plot boundary. The public HTML `axis_line` slot box has
+perpendicular origin `boundary - axis_width/2` and canonical segment length.
+The browser honors finite nonnegative resolved widths, including zero and
+subpixel values, on all four sides and resolved secondary/extra axes, without
+rounding, pixel snapping or DPR offsets. Paint, alpha, visibility and ticks stay
+Rust-owned. Ordinary axes keep their existing interior-aligned HTML boxes,
+minimum 1px thickness, CSS paint and layout.
+
+Undecorated solid resolved boxes paint through genuine SVG `line` strokes in
+the existing labels layer, with flat ends. The HTML slot remains the class and
+inline cascade authority. An undecorated reference box of the already-resolved
+geometry distinguishes CSS used-value quantization from authored geometry
+changes, without a rounding rule: when the used rectangles match, SVG keeps
+the original decoded coordinates and width literally (for example width .3,
+not the DOM box's .296875). When authored CSS changes that rectangle, its actual
+paint box mechanically maps to the SVG segment and thickness. Its solid
+background maps to stroke color, and
+its opacity, visibility and stacking level carry across. Authored width/height
+or position overrides retain that CSS box's footprint; they do not change Rust
+layout or re-center the public box around a newly resolved width. The private
+SVG carries no duplicate public slot. The HTML box is clipped only while its
+SVG paints, so solid alpha is not painted twice and public computed background
+and box measurements remain available.
+
+Plain-CSS chrome compatibility (§36) also includes box effects. The adapter
+conservatively keeps HTML paint, with no SVG copy, for background images
+(including gradients), borders/border images, padding, rounded corners,
+shadows, painted outlines, filters/backdrop filters, transforms (including
+individual translate/rotate/scale or zoom), supported non-`none` motion paths,
+supported non-`none` `-webkit-box-reflect` on the box, masks, clipping, non-normal blend
+mode, non-border-box background clipping, non-visible overflow, generated
+pseudo-element content, animations or nonzero transitions. Non-absolute,
+non-block or content-hidden boxes also stay HTML. Effective `pointer-events`
+other than `none` also retains HTML: clipping the public slot and substituting
+a pointer-transparent SVG must not remove an authored hit/click/hover region,
+including important class overrides. Transformed/zoomed/motion-path ancestors
+or a labels layer with top/left border or padding retain HTML because a screen
+rectangle cannot faithfully invert that CSS geometry. An authored important
+clip rule that prevents suppressing the old box also retains HTML. This is a
+narrow solid-box projection, not a general CSS-to-SVG renderer. Motion-path
+and reflection checks require a nonempty supported computed value other than
+`none`; an absent/unsupported property does not make every spine ineligible.
+The CSS cascade is evaluated again on each chrome draw; `refreshTheme()` and the existing
+ancestor class/style theme observer recreate the paint path, so switching
+between solid, border and gradient styles leaves no stale visible copy.
+
+Default/solid resolved stroke coverage is checked against actual independent
+native SVG exports and actual browser screenshots. Authored box-effect
+fallback promises browser/CSS appearance, with no invented native export
+parity. Native raster strokes still have round caps while canonical SVG and
+browser SVG/HTML spines have flat ends; arbitrary endpoint pixel equality is
+not asserted. Native property-graph initial home-view, caption and theme
+failures remain separately owned by #935. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
+records the fresh all-pixel default-property comparisons; the [R4 eligibility
+repair receipt](../performance/graph-resolved-axis-eligibility-repair-2026-11-03/README.md)
+records pointer/motion-path/reflection reproductions and compatibility repair.
+Both preserve the unchanged historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
+
+The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is
 incompatible`) and the Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
 TypeScript validates and materializes those decisions

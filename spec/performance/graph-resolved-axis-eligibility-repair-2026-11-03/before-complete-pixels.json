@@ -1,0 +1,110 @@
+{
+  "phase": "before-complete",
+  "support": {
+    "motion": true,
+    "reflection": true
+  },
+  "candidate_asset": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/axis-eligibility-25d-assets/index.js",
+    "sha256": "6cef37f9b430526cc0a4626cba7f56b67d4b67cf6161fbe0bd1f454fae45ec4f"
+  },
+  "comparisons": {
+    "control-solid": {
+      "all_pixels": 76800,
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "mean_max_channel_difference": 0.0,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "motion-ancestor": {
+      "all_pixels": 76800,
+      "different_pixels": 4533,
+      "max_channel_difference": 252,
+      "mean_max_channel_difference": 13.9663671875,
+      "baseline_exact_red_pixels": 612,
+      "candidate_exact_red_pixels": 3746
+    },
+    "motion-box": {
+      "all_pixels": 76800,
+      "different_pixels": 3454,
+      "max_channel_difference": 238,
+      "mean_max_channel_difference": 9.923359375,
+      "baseline_exact_red_pixels": 563,
+      "candidate_exact_red_pixels": 3769
+    },
+    "pointer-important": {
+      "all_pixels": 76800,
+      "different_pixels": 368,
+      "max_channel_difference": 237,
+      "mean_max_channel_difference": 1.0733333333333333,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "pointer-important.switch0": {
+      "all_pixels": 76800,
+      "different_pixels": 368,
+      "max_channel_difference": 237,
+      "mean_max_channel_difference": 1.0733333333333333,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "pointer-important.switch1": {
+      "all_pixels": 76800,
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "mean_max_channel_difference": 0.0,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "pointer-important.switch2": {
+      "all_pixels": 76800,
+      "different_pixels": 368,
+      "max_channel_difference": 237,
+      "mean_max_channel_difference": 1.0733333333333333,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "pointer-inline": {
+      "all_pixels": 76800,
+      "different_pixels": 368,
+      "max_channel_difference": 237,
+      "mean_max_channel_difference": 1.0733333333333333,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "pointer-inline.switch0": {
+      "all_pixels": 76800,
+      "different_pixels": 368,
+      "max_channel_difference": 237,
+      "mean_max_channel_difference": 1.0733333333333333,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "pointer-inline.switch1": {
+      "all_pixels": 76800,
+      "different_pixels": 0,
+      "max_channel_difference": 0,
+      "mean_max_channel_difference": 0.0,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "pointer-inline.switch2": {
+      "all_pixels": 76800,
+      "different_pixels": 368,
+      "max_channel_difference": 237,
+      "mean_max_channel_difference": 1.0733333333333333,
+      "baseline_exact_red_pixels": 692,
+      "candidate_exact_red_pixels": 692
+    },
+    "reflection": {
+      "all_pixels": 76800,
+      "different_pixels": 640,
+      "max_channel_difference": 252,
+      "mean_max_channel_difference": 2.0254166666666666,
+      "baseline_exact_red_pixels": 1332,
+      "candidate_exact_red_pixels": 692
+    }
+  },
+  "purpose": "Every pixel compared; feature-specific counts are diagnostics only"
+}

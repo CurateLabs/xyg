@@ -1,0 +1,125 @@
+{
+  "browser.json": {
+    "bytes": 28556,
+    "sha256": "9f1a938a85cf7c37e629f40143229b61f23d69174425bd30f620e2fc3688546e"
+  },
+  "dark.native.browser.png": {
+    "bytes": 10186,
+    "sha256": "0671b7174b9d411e86c0a4e53243b58390fe34eaf62d93cf10a368d7f0e43e27"
+  },
+  "dark.native.html": {
+    "bytes": 766787,
+    "sha256": "c32ac8681ab41c483792ef825c782d577cb553fc2e49117b291e35a9dc3eceae"
+  },
+  "dark.native.png": {
+    "bytes": 17933,
+    "sha256": "cd43743307026997e1bb9d9663122096970d0efcfa8806cf7820c69d91c380ae"
+  },
+  "dark.native.svg": {
+    "bytes": 4414,
+    "sha256": "5299f86665fe09fef085f3129a6360071bb69f396a8f1312fdc283010783ac2a"
+  },
+  "dark.png": {
+    "bytes": 63769,
+    "sha256": "4e16c04b50092ec0427d8dc0c6db1a1db5a572849d0b3c10673b6e4ea88173e8"
+  },
+  "dark.svg": {
+    "bytes": 8476,
+    "sha256": "ee7684978fe6891b65efede1f796970593c7139586dc5a0dd2747353e2d6c193"
+  },
+  "dark.wasm.browser.png": {
+    "bytes": 16362,
+    "sha256": "82c6bfd18868e12d6f4b847f1ccdabeec162a5ab20d009280659cbc9bd8e2cfd"
+  },
+  "dark.xygf": {
+    "bytes": 7952,
+    "sha256": "da7c7a1c5f2568b19f06513e007055bffda13506cb4e82e6e4a38f76389fe6d2"
+  },
+  "dark.xygq": {
+    "bytes": 2520,
+    "sha256": "b4e0ef2a78d87f9e07e1be883aed454d1d3db56d99cf534b8f46dc63df4aaaaf"
+  },
+  "light.native.browser.png": {
+    "bytes": 10302,
+    "sha256": "3b134361cbaa9e57907c7c485d12082f79fd31bc0a49346dc8f1fbbbfc0ba21a"
+  },
+  "light.native.html": {
+    "bytes": 766788,
+    "sha256": "87d47fa427693e450c7ffbb2b73ed36aa4cd61cc9082805902dd2fe92e189647"
+  },
+  "light.native.png": {
+    "bytes": 18095,
+    "sha256": "1eeb34a8c78ee154081923402f925faa59a701d739552a995148692c952db556"
+  },
+  "light.native.svg": {
+    "bytes": 4350,
+    "sha256": "2e5ea3a0db4b79e51cb19f0df5d662a5974ff035eda1bdbeab664400b4f96fa7"
+  },
+  "light.png": {
+    "bytes": 62046,
+    "sha256": "e2d861aa5103f33bb40d1c13c8cd00d7e1c7d23fd3261a66c5aa37f42d6fc9ab"
+  },
+  "light.svg": {
+    "bytes": 8302,
+    "sha256": "c03e603dce1cbea3474a1ad15b5f290e52cf779a30f51cc437eda111124c97a5"
+  },
+  "light.wasm.browser.png": {
+    "bytes": 16292,
+    "sha256": "9fbfcc01c5be951dd979826697d61dfee2895759f5853a3f2d4ff685e2a86aab"
+  },
+  "light.xygf": {
+    "bytes": 7952,
+    "sha256": "384a1cac368b5193aec75bc7ab814a031b0bef6eee718442d41cce2e91b755e5"
+  },
+  "light.xygq": {
+    "bytes": 2520,
+    "sha256": "4c223f5278ce85be02979b256b8f47611ca475bb7ea7b5297dca949509fdc9b7"
+  },
+  "observations.json": {
+    "bytes": 20996,
+    "sha256": "049733b66fe714e46ce5ab274dda0ad3372d09c3c03d8895e65156f6f61e4726"
+  },
+  "generated_html_note": "HTML is reproduced by the Python test; only its size/hash is retained to avoid committing two inline copies of the generated client.",
+  "target/release/libxyg_core.so": {
+    "bytes": 6052952,
+    "sha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a"
+  },
+  "packages/xyg-node-linux-x64/libxyg_core.so": {
+    "bytes": 6052952,
+    "sha256": "dd65cfcfb9251ebbc5d95cefe9eb78f9ee80dcdbf841a820a1a47bc0f022197a"
+  },
+  "packages/xy-client/dist/index.js": {
+    "bytes": 757131,
+    "sha256": "a87608e1f25db80b90d3fbaef4c1298ed9be937bdaf900f5628dab5963b2a560"
+  },
+  "packages/xy-client/dist/standalone.js": {
+    "bytes": 757162,
+    "sha256": "a2392b6f6de840bede4d48a0ba25d2555d4fab8b947e4814fb6c4b0997729f19"
+  },
+  "packages/xy-client/dist/wasm-worker.js": {
+    "bytes": 53710,
+    "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+  },
+  "packages/xy-client/dist/xyg-wasm.wasm": {
+    "bytes": 1860254,
+    "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099"
+  },
+  "packages/xy-client/dist/xyg-wasm.manifest.json": {
+    "bytes": 226,
+    "sha256": "cba3719fa12650e73734c7983d89870c3c7e8c932f609a5aaff50f23c872c152"
+  },
+  "wasm_gzip6_bytes": 755818,
+  "wasm_gates": {
+    "raw": 1860608,
+    "gzip": 759808
+  },
+  "wasm_manifest": {
+    "schema_version": 1,
+    "artifact": "xyg-wasm.wasm",
+    "sha256": "27835ac2610b53ffb79af2a2db1510547fe8be334cad0eebf06b347986bd9099",
+    "bytes": 1860254,
+    "abi_version": 35,
+    "scene_version": 34,
+    "painter_version": 17
+  }
+}

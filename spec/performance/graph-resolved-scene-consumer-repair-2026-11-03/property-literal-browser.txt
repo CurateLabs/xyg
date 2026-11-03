@@ -1,0 +1,154 @@
+{
+  "pixels": {
+    "light": {
+      "wasm_scene": {
+        "mean_max_channel_diff": 1.4715736607142857,
+        "fraction_over_96": 0.003950892857142857,
+        "passed": true
+      },
+      "native_chart": {
+        "mean_max_channel_diff": 2.557715773809524,
+        "fraction_over_96": 0.009308035714285715,
+        "passed": true
+      },
+      "scene_vs_initial_native": {
+        "mean_max_channel_diff": 11.272161458333333,
+        "fraction_over_96": 0.028463541666666668,
+        "passed": false
+      },
+      "wasm_label_geometry": {
+        "max_css_pixel_error": 0.004000000000019099,
+        "texts_match": true,
+        "passed": true
+      },
+      "wasm_legend_geometry": {
+        "local_frame_error": 0,
+        "screen_frame_error": 0,
+        "screen_text_anchor_error": 0,
+        "swatch_attribute_error": 0.0000015258789005656581,
+        "canonical_frame": {
+          "x": "467.25",
+          "y": "32",
+          "width": "148.75",
+          "height": "98",
+          "fill": "rgba(255,255,255,0.933333)",
+          "stroke": "rgba(75,85,99,1.000000)"
+        },
+        "actual_frame": {
+          "attributes": {
+            "x": "467.25",
+            "y": "32",
+            "width": "148.75",
+            "height": "98",
+            "fill": "rgba(255 255 255 / 0.9333333333333333)",
+            "stroke": "rgba(75 85 99 / 1)"
+          },
+          "box": {
+            "x": 467.25,
+            "y": 32,
+            "width": 148.75,
+            "height": 98
+          }
+        },
+        "passed": true
+      },
+      "wasm_node_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "passed": true
+      },
+      "wasm_route_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "pieces_by_stable_id": {
+          "1": 3,
+          "2": 3,
+          "3": 5,
+          "4": 3,
+          "5": 3
+        },
+        "passed": true
+      }
+    },
+    "dark": {
+      "wasm_scene": {
+        "mean_max_channel_diff": 1.4738616071428572,
+        "fraction_over_96": 0.003962053571428571,
+        "passed": true
+      },
+      "native_chart": {
+        "mean_max_channel_diff": 2.390472470238095,
+        "fraction_over_96": 0.008311011904761904,
+        "passed": true
+      },
+      "scene_vs_initial_native": {
+        "mean_max_channel_diff": 236.71340773809524,
+        "fraction_over_96": 0.9927752976190476,
+        "passed": false
+      },
+      "wasm_label_geometry": {
+        "max_css_pixel_error": 0.004000000000019099,
+        "texts_match": true,
+        "passed": true
+      },
+      "wasm_legend_geometry": {
+        "local_frame_error": 0,
+        "screen_frame_error": 0,
+        "screen_text_anchor_error": 0,
+        "swatch_attribute_error": 0.0000015258789005656581,
+        "canonical_frame": {
+          "x": "467.25",
+          "y": "32",
+          "width": "148.75",
+          "height": "98",
+          "fill": "rgba(17,24,39,0.933333)",
+          "stroke": "rgba(170,178,191,1.000000)"
+        },
+        "actual_frame": {
+          "attributes": {
+            "x": "467.25",
+            "y": "32",
+            "width": "148.75",
+            "height": "98",
+            "fill": "rgba(17 24 39 / 0.9333333333333333)",
+            "stroke": "rgba(170 178 191 / 1)"
+          },
+          "box": {
+            "x": 467.25,
+            "y": 32,
+            "width": 148.75,
+            "height": 98
+          }
+        },
+        "passed": true
+      },
+      "wasm_node_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "passed": true
+      },
+      "wasm_route_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "pieces_by_stable_id": {
+          "1": 3,
+          "2": 3,
+          "3": 5,
+          "4": 3,
+          "5": 3
+        },
+        "passed": true
+      }
+    }
+  },
+  "failures": [
+    {
+      "label": "light: scene_vs_initial_native pixels",
+      "mean_max_channel_diff": 11.272161458333333,
+      "fraction_over_96": 0.028463541666666668,
+      "passed": false
+    },
+    {
+      "label": "dark: scene_vs_initial_native pixels",
+      "mean_max_channel_diff": 236.71340773809524,
+      "fraction_over_96": 0.9927752976190476,
+      "passed": false
+    }
+  ]
+}

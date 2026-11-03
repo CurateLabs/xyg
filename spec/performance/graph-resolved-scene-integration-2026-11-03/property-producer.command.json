@@ -1,0 +1,19 @@
+{
+  "name": "property-producer",
+  "command": [
+    "env",
+    "XYG_GRAPH_PROPERTY_EVIDENCE=spec/performance/graph-resolved-scene-integration-2026-11-03/property",
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graphforge.py",
+    "-k",
+    "property_default_exports"
+  ],
+  "exitCode": 0,
+  "seconds": 0.887,
+  "rawSha256": "9bfec3e95896acf78ec0e87f8847162b8b4ac9db786fb15328dae439f8888905",
+  "log": "property-producer.txt.gz",
+  "gzipSha256": "f478b17143832e94186f9c616aaf5253392bf6cb5afb2019845876b7a802a308"
+}

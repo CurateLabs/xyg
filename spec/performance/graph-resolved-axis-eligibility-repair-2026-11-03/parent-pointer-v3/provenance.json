@@ -1,0 +1,15 @@
+{
+  "read_only_parent_copy": {
+    "probe-v3.mjs": {
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/axis-pointer-review/probe-v3.mjs",
+      "bytes": 3479,
+      "sha256": "3e95a35fbf61eaa42bbfd5f375f9cca6689a0f856e72dd67f34abe5767bc912a"
+    },
+    "observations-v3.json": {
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/axis-pointer-review/observations-v3.json",
+      "bytes": 2083,
+      "sha256": "b07c246353835d1b811bdf6d7cb3386a28d164580c78663dd1e370e362165a10"
+    }
+  },
+  "v1_v2": "Parent reports initial no-hit fixture attempts, not product proof failures."
+}

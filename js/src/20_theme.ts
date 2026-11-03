@@ -126,6 +126,7 @@ export const XY_CHROME_CSS = `
 :where(.xy [data-xy-slot="tooltip"][data-xy-custom-tooltip]){background:transparent;border:none;padding:0;box-shadow:none}
 :where(.xy [data-xy-slot="tooltip_label"])::after{content:": "}
 :where(.xy [data-xy-slot="legend"]){left:var(--xy-legend-left,auto);right:var(--xy-legend-right,auto);top:var(--xy-legend-top,auto);bottom:var(--xy-legend-bottom,auto);transform:var(--xy-legend-transform,none);max-width:var(--xy-legend-max-width);max-height:var(--xy-legend-max-height);gap:2px;font-size:11px;background:var(--chart-legend-bg,rgba(128,128,128,.08));border-radius:4px;padding:4px 8px;color:var(--chart-text,inherit)}
+:where(.xy [data-xy-slot="legend"][data-xy-legend-resolved]){padding:0;background:transparent;border-radius:0}
 :where(.xy [data-xy-slot="legend_title"]){font-weight:400;text-align:center}
 :where(.xy [data-xy-slot="legend_swatch"]){display:inline-block;width:var(--xy-legend-swatch-width,12px);height:var(--xy-legend-swatch-height,10px);vertical-align:-1px;background:var(--xy-legend-swatch-paint,transparent);border-radius:2px;margin-right:var(--xy-legend-swatch-margin-right,5px);fill:var(--xy-legend-swatch-fill);stroke:var(--xy-legend-swatch-stroke);stroke-width:var(--xy-legend-swatch-stroke-width);stroke-dasharray:var(--xy-legend-swatch-dasharray)}
 :where(.xy [data-xy-slot="legend_swatch"] > svg){display:block;width:100%;height:100%}

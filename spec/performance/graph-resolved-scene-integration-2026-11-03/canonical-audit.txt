@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "native_svg_plot_cases": 111,
+  "actual_svg_spines_checked": 276,
+  "geometry_tolerance_css_pixels": 0.01,
+  "ordinary_records_identical_to_188f": 111,
+  "ordinary_screenshots_identical_to_188f": [
+    "hidden.dpr1.25.ordinary.png",
+    "hidden.dpr1.ordinary.png",
+    "hidden.dpr2.ordinary.png",
+    "w0-bottom-left-opaque.dpr1.25.ordinary.png",
+    "w0-bottom-left-opaque.dpr1.ordinary.png",
+    "w0-bottom-left-opaque.dpr2.ordinary.png",
+    "w0.5-top-right-alpha.dpr1.25.ordinary.png",
+    "w0.5-top-right-alpha.dpr1.ordinary.png",
+    "w0.5-top-right-alpha.dpr2.ordinary.png",
+    "w1-bottom-left-opaque.dpr1.25.ordinary.png",
+    "w1-bottom-left-opaque.dpr1.ordinary.png",
+    "w1-bottom-left-opaque.dpr2.ordinary.png"
+  ],
+  "historical_files_unchanged": 2436,
+  "adjacent_raw_pixel_samples": 3036,
+  "exact_raw_sample_matches": 2368,
+  "pixel_samples_are_diagnostics_not_a_new_gate": true,
+  "endpoint_cap_parity_claimed": false
+}

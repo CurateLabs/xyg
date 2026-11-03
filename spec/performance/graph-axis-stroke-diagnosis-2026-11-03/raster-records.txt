@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py", line 45, in <module>
+    assert offset >= 0, (theme, scale, points)
+           ^^^^^^^^^^^
+AssertionError: ('light', 1, [52.0, 376.0, 624.0, 376.0])

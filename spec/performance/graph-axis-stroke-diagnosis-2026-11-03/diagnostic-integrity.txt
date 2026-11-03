@@ -1,0 +1,1 @@
+HEAD remains f006; no tracked or staged changes; full gate retains four failures; exact S5a module retained.

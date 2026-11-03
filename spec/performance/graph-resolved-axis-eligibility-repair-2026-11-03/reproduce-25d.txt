@@ -1,0 +1,15 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.evaluate: TypeError: e.getScreenCTM(...).toJSON is not a function
+    at eval (eval at evaluate (:303:30), <anonymous>:14:217)
+    at Array.map (<anonymous>)
+    at window.observe (eval at evaluate (:303:30), <anonymous>:14:78)
+    at window.setup (eval at evaluate (:303:30), <anonymous>:39:16)
+    at async <anonymous>:329:30
+    at /home/ubuntu/.t3/worktrees/xyg/t3-42669f21/tests/browser/resolved_axis_eligibility.mjs:96:33 {
+  log: []
+}
+
+Node.js v22.23.4

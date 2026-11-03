@@ -1,0 +1,7 @@
+import json, os, subprocess, sys, time
+from pathlib import Path
+root=Path.cwd();out=root/'spec/performance/graph-axis-stroke-diagnosis-2026-11-03'
+name=sys.argv[1];argv=sys.argv[2:];env=os.environ.copy();env['PATH']=str(root/'target/task-tmp/node-v22.23.4-linux-x64/bin')+':/home/ubuntu/.cargo/bin:'+env['PATH'];env['XYG_CHROMIUM']='/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome'
+start=time.time()
+with (out/(name+'.txt')).open('w') as log:r=subprocess.run(argv,env=env,stdout=log,stderr=subprocess.STDOUT)
+p=out/'commands.json';rows=json.loads(p.read_text()) if p.exists() else [];rows.append(dict(name=name,argv=argv,cwd=str(root),environment={k:env[k] for k in ['PATH','XYG_CHROMIUM','XYG_NATIVE_LIB','XYG_GRAPH_PROPERTY_EVIDENCE'] if k in env},exit_code=r.returncode,elapsed_seconds=time.time()-start,log=name+'.txt'));p.write_text(json.dumps(rows,indent=2)+'\n');print(name,r.returncode);sys.exit(r.returncode)

@@ -1,0 +1,15 @@
+{
+  "name": "eligibility",
+  "command": [
+    "node",
+    "tests/browser/resolved_axis_eligibility.mjs",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03",
+    "after",
+    "packages/xy-client/dist/index.js"
+  ],
+  "exitCode": 0,
+  "seconds": 7.475,
+  "rawSha256": "2263cedd22ce65b6a9be50c65c02b441a969c88a52f6b1656d18e9c796e4fcc0",
+  "log": "eligibility.txt.gz",
+  "gzipSha256": "8e87f7d0f7e2b0aa7b418595a512847906beb4e3018b2b4ae56bb3ceb3468ed0"
+}

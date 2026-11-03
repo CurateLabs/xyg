@@ -700,6 +700,16 @@ export class ChartView {
   }
 
   _layout() {
+    // XYPB already carries Rust-final CSS-pixel geometry. Padding in this
+    // private consumer is a resolved rectangle, not an ordinary host floor.
+    if (this.spec._resolvedScenePlot) {
+      this.plot = { ...this.spec._resolvedScenePlot };
+      this._legendRect = null;
+      this._compactVerticalColorbar = false;
+      this._rightAxisRoom = this._topAxisRoom = this._bottomAxisRoom = this._titleRoom = 0;
+      this._titleWrapWidth = this.plot.w;
+      return;
+    }
     // Plot rect from the current size — margins fixed, data area flexes.
     const compact = this.size.w < 520;
     // Explicit padding (spec.padding = [top,right,bottom,left]) overrides the
@@ -2802,6 +2812,8 @@ export class ChartView {
       const svg: any = document.createElementNS(ns, "svg");
       svg.setAttribute("width", String(this.size.w)); svg.setAttribute("height", String(this.size.h));
       svg.style.cssText = "position:absolute;inset:0;overflow:visible;pointer-events:none";
+      // Rust already placed the frame and text; this SVG is not an HTML box.
+      svg.dataset.xyLegendResolved = "";
       this._applySlot(svg, "legend"); svg.setAttribute("role", "list");
       const frame = document.createElementNS(ns, "rect");
       for (const [key, value] of Object.entries({ x, y, width, height })) frame.setAttribute(key, String(value));
@@ -7635,6 +7647,98 @@ export class ChartView {
 
 
 
+  // The public HTML slot remains the CSS box/cascade authority. Solid,
+  // undecorated boxes project mechanically to SVG strokes; authored box
+  // effects keep their existing HTML paint instead of being approximated.
+  _paintResolvedSpine(box, vertical, canonical) {
+    const style = getComputedStyle(box);
+    const zero = (value) => Number.parseFloat(value) === 0;
+    const nonNone = (value) => Boolean(value && value !== "none");
+    const decorated = style.pointerEvents !== "none"
+      || nonNone(style.offsetPath) || nonNone(style.getPropertyValue("-webkit-box-reflect"))
+      || style.backgroundImage !== "none" || style.boxShadow !== "none"
+      || style.filter !== "none" || style.backdropFilter !== "none"
+      || style.transform !== "none" || style.translate !== "none"
+      || style.rotate !== "none" || style.scale !== "none" || Number(style.zoom) !== 1
+      || style.maskImage !== "none" || style.borderImageSource !== "none"
+      || style.overflowX !== "visible" || style.overflowY !== "visible"
+      || style.contentVisibility !== "visible"
+      || style.clipPath !== "none" || style.clip !== "auto"
+      || style.mixBlendMode !== "normal" || style.backgroundClip !== "border-box"
+      || style.position !== "absolute" || style.display !== "block"
+      || style.animationName !== "none"
+      || style.transitionDuration.split(",").some((value) => Number.parseFloat(value) !== 0)
+      || [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth,
+        style.borderLeftWidth, style.paddingTop, style.paddingRight,
+        style.paddingBottom, style.paddingLeft, style.borderTopLeftRadius,
+        style.borderTopRightRadius, style.borderBottomRightRadius,
+        style.borderBottomLeftRadius].some((value) => !zero(value))
+      || (style.outlineStyle !== "none" && !zero(style.outlineWidth))
+      || ["::before", "::after"].some((pseudo) => {
+        const content = getComputedStyle(box, pseudo).content;
+        return content !== "none" && content !== "normal";
+      });
+    // Screen rectangles cannot recover a rotated/skewed CSS box. Keep that
+    // authored appearance in HTML, including effects on its containing layers.
+    let transformed = false;
+    for (let node = box.parentElement; node; node = node.parentElement) {
+      const parentStyle = getComputedStyle(node);
+      if (parentStyle.transform !== "none" || parentStyle.translate !== "none"
+        || parentStyle.rotate !== "none" || parentStyle.scale !== "none"
+        || Number(parentStyle.zoom) !== 1 || nonNone(parentStyle.offsetPath)) {
+        transformed = true; break;
+      }
+    }
+    box.dataset.xySpinePaint = "html";
+    if (decorated || transformed) return;
+    const rect = box.getBoundingClientRect(), origin = this.labels.getBoundingClientRect();
+    const labelsStyle = getComputedStyle(this.labels);
+    if ([labelsStyle.borderTopWidth, labelsStyle.borderLeftWidth,
+      labelsStyle.paddingTop, labelsStyle.paddingLeft].some((value) => !zero(value))) return;
+    // CSS used boxes quantize subpixels. Compare with an undecorated box of
+    // the already-resolved geometry, rather than rounding Rust coordinates or
+    // mistaking ordinary browser quantization for an authored size override.
+    const reference = document.createElement("div");
+    reference.style.cssText = "all:initial!important;position:absolute!important;"
+      + `left:${canonical.x}px!important;top:${canonical.y}px!important;`
+      + `width:${canonical.width}px!important;height:${canonical.height}px!important;`
+      + "visibility:hidden!important;pointer-events:none!important;";
+    this.labels.appendChild(reference);
+    const nativeBox = reference.getBoundingClientRect();
+    reference.remove();
+    const unchanged = ["x", "y", "width", "height"].every((key) => rect[key] === nativeBox[key]);
+    const geometry = unchanged ? canonical
+      : { x: rect.x - origin.x, y: rect.y - origin.y, width: rect.width, height: rect.height };
+    const paint = style.backgroundColor, opacity = style.opacity, visibility = style.visibility;
+    const zIndex = style.zIndex;
+    // Clipping suppresses only the old box paint. It leaves the public slot's
+    // computed background, dimensions, class/inline cascade and DOM box intact.
+    // An authored !important clip rule can retain HTML rather than double paint.
+    box.style.clipPath = "inset(100%)";
+    if (getComputedStyle(box).clipPath !== "inset(100%)") {
+      box.style.removeProperty("clip-path"); return;
+    }
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", String(this.size.w)); svg.setAttribute("height", String(this.size.h));
+    svg.setAttribute("aria-hidden", "true");
+    svg.dataset.xyResolvedSpine = box.dataset.xyAxis;
+    svg.dataset.xySpineSide = box.dataset.xyAxisSide;
+    svg.style.cssText = "position:absolute;inset:0;overflow:visible;pointer-events:none";
+    svg.style.opacity = opacity; svg.style.visibility = visibility; svg.style.zIndex = zIndex;
+    const line = document.createElementNS(ns, "line");
+    const { x, y, width, height } = geometry;
+    const coordinates = vertical
+      ? { x1: x + width / 2, y1: y, x2: x + width / 2, y2: y + height }
+      : { x1: x, y1: y + height / 2, x2: x + width, y2: y + height / 2 };
+    for (const [key, value] of Object.entries(coordinates)) line.setAttribute(key, String(value));
+    line.setAttribute("stroke", paint);
+    line.setAttribute("stroke-width", String(vertical ? width : height));
+    line.setAttribute("stroke-linecap", "butt");
+    svg.appendChild(line); this.labels.appendChild(svg);
+    box.dataset.xySpinePaint = "svg";
+  }
+
   _drawChrome() {
     // View, resize, and animation paints all converge here. The attachment
     // deduplicates identical snapshots and retains its last-good Rust result
@@ -7817,25 +7921,37 @@ export class ChartView {
         if (tickKind) d.dataset.xyTickKind = tickKind;
         this._applySlot(d, slot);
         this.labels.appendChild(d);
+        if (slot === "axis_line" && styleAxis?.tick_resolution === "rust_scene") {
+          this._paintResolvedSpine(d, String(styleAxis.id).startsWith("y"), { x: left, y: top, width: w, height: h });
+        }
       };
       // Under polar the frame is one ring drawn on the chrome canvas below;
       // "side" has no polar meaning, so frame_sides is not consulted. Axis
-      // spines are background-coloured DIVs and cannot express a circle.
+      // Cartesian spine boxes/strokes do not express a circle.
       const frameSides = polarGeom
         ? []
         : (Array.isArray(s.frame_sides)
           ? s.frame_sides
           : [xAxis.side || "bottom", yAxis.side || "left"]);
       const explicitFrameSides = !polarGeom && Array.isArray(s.frame_sides);
+      // Resolved Scene boundaries are stroke centerlines. Ordinary host axes
+      // retain their existing interior box geometry and minimum thickness.
+      const spineWidth = (axis) => Math.max(
+        axis.tick_resolution === "rust_scene" ? 0 : 1,
+        this._axisStyleNumber(axis, "axis_width", 1),
+      );
+      const spineOrigin = (axis, edge, width, highSide) => edge - (
+        axis.tick_resolution === "rust_scene" ? width / 2 : (highSide ? width : 0)
+      );
       if (!hideY || explicitFrameSides) {
-        const yWidth = Math.max(1, this._axisStyleNumber(yAxis, "axis_width", 1));
+        const yWidth = spineWidth(yAxis);
         if (frameSides.includes("left")) {
-          rule(yAxis, p.x, p.y, yWidth, p.h, "axis_color", "axis_line", "", "left");
+          rule(yAxis, spineOrigin(yAxis, p.x, yWidth, false), p.y, yWidth, p.h, "axis_color", "axis_line", "", "left");
         }
         if (frameSides.includes("right")) {
           rule(
             yAxis,
-            p.x + p.w - yWidth,
+            spineOrigin(yAxis, p.x + p.w, yWidth, true),
             p.y,
             yWidth,
             p.h,
@@ -7847,15 +7963,15 @@ export class ChartView {
         }
       }
       if (!hideX || explicitFrameSides) {
-        const xHeight = Math.max(1, this._axisStyleNumber(xAxis, "axis_width", 1));
+        const xHeight = spineWidth(xAxis);
         if (frameSides.includes("top")) {
-          rule(xAxis, p.x, p.y, p.w, xHeight, "axis_color", "axis_line", "", "top");
+          rule(xAxis, p.x, spineOrigin(xAxis, p.y, xHeight, false), p.w, xHeight, "axis_color", "axis_line", "", "top");
         }
         if (frameSides.includes("bottom")) {
           rule(
             xAxis,
             p.x,
-            p.y + p.h - xHeight,
+            spineOrigin(xAxis, p.y + p.h, xHeight, true),
             p.w,
             xHeight,
             "axis_color",
@@ -7867,14 +7983,14 @@ export class ChartView {
       }
       for (const axis of extraXAxes) {
         if (this._axisTickLabelStrategy(axis) === "none" && axis.tick_resolution !== "rust_scene") continue; // the static SVG keeps the frame spine
-        const h = Math.max(1, this._axisStyleNumber(axis, "axis_width", 1));
-        const y = axis.side === "top" ? p.y : p.y + p.h - h;
+        const h = spineWidth(axis);
+        const y = spineOrigin(axis, axis.side === "top" ? p.y : p.y + p.h, h, axis.side !== "top");
         rule(axis, p.x, y, p.w, h, "axis_color", "axis_line", "", axis.side);
       }
       for (const axis of extraYAxes) {
         if (this._axisTickLabelStrategy(axis) === "none" && axis.tick_resolution !== "rust_scene") continue;
-        const w = Math.max(1, this._axisStyleNumber(axis, "axis_width", 1));
-        const x = axis.side === "left" ? p.x : p.x + p.w - w;
+        const w = spineWidth(axis);
+        const x = spineOrigin(axis, axis.side === "left" ? p.x : p.x + p.w, w, axis.side !== "left");
         rule(axis, x, p.y, w, p.h, "axis_color", "axis_line", "", axis.side);
       }
 

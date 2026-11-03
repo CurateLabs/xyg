@@ -1,0 +1,1079 @@
+[
+  {
+    "dpr": 1,
+    "native": {
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "scale": "linear",
+          "range": [
+            46,
+            306.625
+          ],
+          "tick_values": [
+            46,
+            176.3125,
+            306.625
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.0",
+            "0.5",
+            "1.0"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "bottom": 0,
+            "top": 0
+          },
+          "tick_label_anchors": {
+            "bottom": "center",
+            "top": "start"
+          },
+          "tick_sides": [
+            "bottom"
+          ],
+          "tick_label_sides": [
+            "bottom"
+          ],
+          "grid": true,
+          "side": "bottom",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        },
+        "y": {
+          "id": "y",
+          "scale": "linear",
+          "range": [
+            204,
+            6
+          ],
+          "tick_values": [
+            204,
+            154.5,
+            105,
+            55.5,
+            6
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.00",
+            "0.25",
+            "0.50",
+            "0.75",
+            "1.00"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "left": 0,
+            "right": 0
+          },
+          "tick_label_anchors": {
+            "left": "end",
+            "right": "start"
+          },
+          "tick_sides": [
+            "left"
+          ],
+          "tick_label_sides": [
+            "left"
+          ],
+          "grid": true,
+          "side": "left",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        }
+      },
+      "rows": [
+        {
+          "axis": "y",
+          "side": "left",
+          "paint": "svg",
+          "box": {
+            "x": 45.84375,
+            "y": 6,
+            "width": 0.296875,
+            "height": 198
+          },
+          "line": {
+            "x1": "46",
+            "y1": "6",
+            "x2": "46",
+            "y2": "204",
+            "stroke": "rgba(32, 32, 32, 0.55)",
+            "stroke-width": "0.3",
+            "stroke-linecap": "butt"
+          }
+        },
+        {
+          "axis": "x",
+          "side": "bottom",
+          "paint": "svg",
+          "box": {
+            "x": 46,
+            "y": 203.84375,
+            "width": 260.625,
+            "height": 0.296875
+          },
+          "line": {
+            "x1": "46",
+            "y1": "204",
+            "x2": "306.625",
+            "y2": "204",
+            "stroke": "rgba(32, 32, 32, 0.55)",
+            "stroke-width": "0.3",
+            "stroke-linecap": "butt"
+          }
+        }
+      ]
+    },
+    "authored": {
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "scale": "linear",
+          "range": [
+            46,
+            306.625
+          ],
+          "tick_values": [
+            46,
+            176.3125,
+            306.625
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.0",
+            "0.5",
+            "1.0"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "bottom": 0,
+            "top": 0
+          },
+          "tick_label_anchors": {
+            "bottom": "center",
+            "top": "start"
+          },
+          "tick_sides": [
+            "bottom"
+          ],
+          "tick_label_sides": [
+            "bottom"
+          ],
+          "grid": true,
+          "side": "bottom",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        },
+        "y": {
+          "id": "y",
+          "scale": "linear",
+          "range": [
+            204,
+            6
+          ],
+          "tick_values": [
+            204,
+            154.5,
+            105,
+            55.5,
+            6
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.00",
+            "0.25",
+            "0.50",
+            "0.75",
+            "1.00"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "left": 0,
+            "right": 0
+          },
+          "tick_label_anchors": {
+            "left": "end",
+            "right": "start"
+          },
+          "tick_sides": [
+            "left"
+          ],
+          "tick_label_sides": [
+            "left"
+          ],
+          "grid": true,
+          "side": "left",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        }
+      },
+      "rows": [
+        {
+          "axis": "y",
+          "side": "left",
+          "paint": "svg",
+          "box": {
+            "x": 17.109375,
+            "y": 19.234375,
+            "width": 0.59375,
+            "height": 0.6875
+          },
+          "line": {
+            "x1": "17.40625",
+            "y1": "19.234375",
+            "x2": "17.40625",
+            "y2": "19.921875",
+            "stroke": "rgba(180, 30, 60, 0.5)",
+            "stroke-width": "0.59375",
+            "stroke-linecap": "butt"
+          }
+        },
+        {
+          "axis": "x",
+          "side": "bottom",
+          "paint": "svg",
+          "box": {
+            "x": 17.109375,
+            "y": 19.234375,
+            "width": 0.59375,
+            "height": 0.6875
+          },
+          "line": {
+            "x1": "17.109375",
+            "y1": "19.578125",
+            "x2": "17.703125",
+            "y2": "19.578125",
+            "stroke": "rgba(180, 30, 60, 0.5)",
+            "stroke-width": "0.6875",
+            "stroke-linecap": "butt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dpr": 1.25,
+    "native": {
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "scale": "linear",
+          "range": [
+            46,
+            306.625
+          ],
+          "tick_values": [
+            46,
+            176.3125,
+            306.625
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.0",
+            "0.5",
+            "1.0"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "bottom": 0,
+            "top": 0
+          },
+          "tick_label_anchors": {
+            "bottom": "center",
+            "top": "start"
+          },
+          "tick_sides": [
+            "bottom"
+          ],
+          "tick_label_sides": [
+            "bottom"
+          ],
+          "grid": true,
+          "side": "bottom",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        },
+        "y": {
+          "id": "y",
+          "scale": "linear",
+          "range": [
+            204,
+            6
+          ],
+          "tick_values": [
+            204,
+            154.5,
+            105,
+            55.5,
+            6
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.00",
+            "0.25",
+            "0.50",
+            "0.75",
+            "1.00"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "left": 0,
+            "right": 0
+          },
+          "tick_label_anchors": {
+            "left": "end",
+            "right": "start"
+          },
+          "tick_sides": [
+            "left"
+          ],
+          "tick_label_sides": [
+            "left"
+          ],
+          "grid": true,
+          "side": "left",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        }
+      },
+      "rows": [
+        {
+          "axis": "y",
+          "side": "left",
+          "paint": "svg",
+          "box": {
+            "x": 45.84375,
+            "y": 6,
+            "width": 0.296875,
+            "height": 198
+          },
+          "line": {
+            "x1": "46",
+            "y1": "6",
+            "x2": "46",
+            "y2": "204",
+            "stroke": "rgba(32, 32, 32, 0.55)",
+            "stroke-width": "0.3",
+            "stroke-linecap": "butt"
+          }
+        },
+        {
+          "axis": "x",
+          "side": "bottom",
+          "paint": "svg",
+          "box": {
+            "x": 46,
+            "y": 203.84375,
+            "width": 260.625,
+            "height": 0.296875
+          },
+          "line": {
+            "x1": "46",
+            "y1": "204",
+            "x2": "306.625",
+            "y2": "204",
+            "stroke": "rgba(32, 32, 32, 0.55)",
+            "stroke-width": "0.3",
+            "stroke-linecap": "butt"
+          }
+        }
+      ]
+    },
+    "authored": {
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "scale": "linear",
+          "range": [
+            46,
+            306.625
+          ],
+          "tick_values": [
+            46,
+            176.3125,
+            306.625
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.0",
+            "0.5",
+            "1.0"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "bottom": 0,
+            "top": 0
+          },
+          "tick_label_anchors": {
+            "bottom": "center",
+            "top": "start"
+          },
+          "tick_sides": [
+            "bottom"
+          ],
+          "tick_label_sides": [
+            "bottom"
+          ],
+          "grid": true,
+          "side": "bottom",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        },
+        "y": {
+          "id": "y",
+          "scale": "linear",
+          "range": [
+            204,
+            6
+          ],
+          "tick_values": [
+            204,
+            154.5,
+            105,
+            55.5,
+            6
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.00",
+            "0.25",
+            "0.50",
+            "0.75",
+            "1.00"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "left": 0,
+            "right": 0
+          },
+          "tick_label_anchors": {
+            "left": "end",
+            "right": "start"
+          },
+          "tick_sides": [
+            "left"
+          ],
+          "tick_label_sides": [
+            "left"
+          ],
+          "grid": true,
+          "side": "left",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        }
+      },
+      "rows": [
+        {
+          "axis": "y",
+          "side": "left",
+          "paint": "svg",
+          "box": {
+            "x": 17.109375,
+            "y": 19.234375,
+            "width": 0.59375,
+            "height": 0.6875
+          },
+          "line": {
+            "x1": "17.40625",
+            "y1": "19.234375",
+            "x2": "17.40625",
+            "y2": "19.921875",
+            "stroke": "rgba(180, 30, 60, 0.5)",
+            "stroke-width": "0.59375",
+            "stroke-linecap": "butt"
+          }
+        },
+        {
+          "axis": "x",
+          "side": "bottom",
+          "paint": "svg",
+          "box": {
+            "x": 17.109375,
+            "y": 19.234375,
+            "width": 0.59375,
+            "height": 0.6875
+          },
+          "line": {
+            "x1": "17.109375",
+            "y1": "19.578125",
+            "x2": "17.703125",
+            "y2": "19.578125",
+            "stroke": "rgba(180, 30, 60, 0.5)",
+            "stroke-width": "0.6875",
+            "stroke-linecap": "butt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dpr": 2,
+    "native": {
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "scale": "linear",
+          "range": [
+            46,
+            306.625
+          ],
+          "tick_values": [
+            46,
+            176.3125,
+            306.625
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.0",
+            "0.5",
+            "1.0"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "bottom": 0,
+            "top": 0
+          },
+          "tick_label_anchors": {
+            "bottom": "center",
+            "top": "start"
+          },
+          "tick_sides": [
+            "bottom"
+          ],
+          "tick_label_sides": [
+            "bottom"
+          ],
+          "grid": true,
+          "side": "bottom",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        },
+        "y": {
+          "id": "y",
+          "scale": "linear",
+          "range": [
+            204,
+            6
+          ],
+          "tick_values": [
+            204,
+            154.5,
+            105,
+            55.5,
+            6
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.00",
+            "0.25",
+            "0.50",
+            "0.75",
+            "1.00"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "left": 0,
+            "right": 0
+          },
+          "tick_label_anchors": {
+            "left": "end",
+            "right": "start"
+          },
+          "tick_sides": [
+            "left"
+          ],
+          "tick_label_sides": [
+            "left"
+          ],
+          "grid": true,
+          "side": "left",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        }
+      },
+      "rows": [
+        {
+          "axis": "y",
+          "side": "left",
+          "paint": "svg",
+          "box": {
+            "x": 45.84375,
+            "y": 6,
+            "width": 0.296875,
+            "height": 198
+          },
+          "line": {
+            "x1": "46",
+            "y1": "6",
+            "x2": "46",
+            "y2": "204",
+            "stroke": "rgba(32, 32, 32, 0.55)",
+            "stroke-width": "0.3",
+            "stroke-linecap": "butt"
+          }
+        },
+        {
+          "axis": "x",
+          "side": "bottom",
+          "paint": "svg",
+          "box": {
+            "x": 46,
+            "y": 203.84375,
+            "width": 260.625,
+            "height": 0.296875
+          },
+          "line": {
+            "x1": "46",
+            "y1": "204",
+            "x2": "306.625",
+            "y2": "204",
+            "stroke": "rgba(32, 32, 32, 0.55)",
+            "stroke-width": "0.3",
+            "stroke-linecap": "butt"
+          }
+        }
+      ]
+    },
+    "authored": {
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "scale": "linear",
+          "range": [
+            46,
+            306.625
+          ],
+          "tick_values": [
+            46,
+            176.3125,
+            306.625
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.0",
+            "0.5",
+            "1.0"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "bottom": 0,
+            "top": 0
+          },
+          "tick_label_anchors": {
+            "bottom": "center",
+            "top": "start"
+          },
+          "tick_sides": [
+            "bottom"
+          ],
+          "tick_label_sides": [
+            "bottom"
+          ],
+          "grid": true,
+          "side": "bottom",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        },
+        "y": {
+          "id": "y",
+          "scale": "linear",
+          "range": [
+            204,
+            6
+          ],
+          "tick_values": [
+            204,
+            154.5,
+            105,
+            55.5,
+            6
+          ],
+          "minor_tick_values": [],
+          "tick_labels": [
+            "0.00",
+            "0.25",
+            "0.50",
+            "0.75",
+            "1.00"
+          ],
+          "tick_resolution": "rust_scene",
+          "tick_label_strategy": "preserve",
+          "tick_stagger": false,
+          "tick_label_angles": {
+            "left": 0,
+            "right": 0
+          },
+          "tick_label_anchors": {
+            "left": "end",
+            "right": "start"
+          },
+          "tick_sides": [
+            "left"
+          ],
+          "tick_label_sides": [
+            "left"
+          ],
+          "grid": true,
+          "side": "left",
+          "style": {
+            "axis_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_color": "rgba(32 32 32 / 0.1411764705882353)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "tick_label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "label_color": "rgba(32 32 32 / 0.8509803921568627)",
+            "axis_width": 0.3,
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out",
+            "tick_label_size": 12,
+            "label_size": 12
+          },
+          "minor_style": {
+            "grid_color": "rgba(0 0 0 / 0)",
+            "tick_color": "rgba(32 32 32 / 0.5490196078431373)",
+            "grid_width": 1,
+            "tick_width": 1,
+            "tick_length": 0,
+            "tick_direction": "out"
+          },
+          "label": ""
+        }
+      },
+      "rows": [
+        {
+          "axis": "y",
+          "side": "left",
+          "paint": "svg",
+          "box": {
+            "x": 17.109375,
+            "y": 19.234375,
+            "width": 0.59375,
+            "height": 0.6875
+          },
+          "line": {
+            "x1": "17.40625",
+            "y1": "19.234375",
+            "x2": "17.40625",
+            "y2": "19.921875",
+            "stroke": "rgba(180, 30, 60, 0.5)",
+            "stroke-width": "0.59375",
+            "stroke-linecap": "butt"
+          }
+        },
+        {
+          "axis": "x",
+          "side": "bottom",
+          "paint": "svg",
+          "box": {
+            "x": 17.109375,
+            "y": 19.234375,
+            "width": 0.59375,
+            "height": 0.6875
+          },
+          "line": {
+            "x1": "17.109375",
+            "y1": "19.578125",
+            "x2": "17.703125",
+            "y2": "19.578125",
+            "stroke": "rgba(180, 30, 60, 0.5)",
+            "stroke-width": "0.6875",
+            "stroke-linecap": "butt"
+          }
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,36 @@
+import gzip, hashlib, json, platform, subprocess
+from pathlib import Path
+root=Path.cwd(); out=root/'spec/performance/graph-resolved-legend-repair-2026-11-03'
+sha=lambda b:hashlib.sha256(b).hexdigest()
+write=lambda name,v:(out/name).write_text(json.dumps(v,indent=2)+'\n')
+base='b705c96cbd21f023c0d744c7ae9699686e07998d'
+sources=['js/src/20_theme.ts','js/src/50_chartview.ts','tests/browser/graph_property_default_export.mjs']
+diff=subprocess.check_output(['git','diff','--binary','--full-index',base,'--',*sources]);(out/'source.patch').write_bytes(diff)
+source_paths=sources+['spec/design-dossier.md','spec/design/graph-mark.md','spec/design/graphforge-compositions.md','tests/test_graphforge.py','tests/fixtures/graphforge/property_default_export.json','tests/fixtures/graphforge/results/manifest.json','tests/fixtures/graphforge/results/base-property-nodes.arrow','tests/fixtures/graphforge/results/base-property-edges.arrow','scripts/wasm_foundation_smoke.mjs','tests/browser/wasm_foundation_page.mjs','js/build.mjs','js/package-wasm.mjs','spec/wasm/abi.json']
+write('source.json',dict(parent='5840b479',dependency='bce5339b8d07edf2dae213aca2c6d1f4b9eec70c',implementation_base=base,branch=subprocess.check_output(['git','branch','--show-current'],text=True).strip(),worktree=str(root),source_diff_argv=['git','diff','--binary','--full-index',base,'--',*sources],source_diff_sha256=sha(diff),source_diff_excludes_receipt=True,files={p:sha((root/p).read_bytes()) for p in source_paths},before_files={p:sha(subprocess.check_output(['git','show',f'{base}:{p}'])) for p in sources},browser_probe_source_identical_between_captures=True))
+# The baseline probe was captured after adding observation-only harness changes;
+# the production before bytes are the implementation base.
+old_changes=subprocess.check_output(['git','diff','--name-only',base,'--','spec/performance',':(exclude)spec/performance/graph-resolved-legend-repair-2026-11-03'],text=True).splitlines();assert old_changes==[]
+checks={}
+for theme in ['light','dark']:
+ for suffix in ['xygq','xygf','png','svg','native.png','native.svg']:
+  name=f'{theme}.{suffix}';a=(out/'before'/name).read_bytes();b=(out/'after'/name).read_bytes();assert a==b;checks[name]=sha(a)
+ before=json.loads((out/'before/browser.json').read_text());after=json.loads((out/'after/browser.json').read_text())
+ for key in ['painted','points','routes','labels','legend','slotCascade']:
+  assert before['themes'][theme]['wasm'][key]==after['themes'][theme]['wasm'][key],key
+ assert before['themes'][theme]['native']==after['themes'][theme]['native']
+ assert before['themes'][theme]['errors']==after['themes'][theme]['errors']==[]
+ for name in ['native_chart','scene_vs_initial_native','wasm_label_geometry','wasm_node_geometry','wasm_route_geometry']:
+  assert before['pixels'][theme][name]==after['pixels'][theme][name],name
+expected='355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50'
+wasm=root/'packages/xy-client/dist/xyg-wasm.wasm';assert sha(wasm.read_bytes())==expected
+write('integrity.json',dict(status='passed',historical_receipt_changed_paths=old_changes,historical_receipt_base=base,unchanged_exports=checks,unchanged_browser_facts=['all identities','captions','node positions','route and arrowhead pieces','slot cascade','native observations','page errors'],wasm_sha256=expected,full_helper_exit_codes=[1,1],after_failure_labels=[f['label'] for f in after['failures']]))
+html={}
+for p in sorted(out.glob('*/*.native.html')):
+ b=p.read_bytes();name=str(p.relative_to(out));html[name]=dict(bytes=len(b),sha256=sha(b),lossless_gzip=name+'.gz');p.with_name(p.name+'.gz').write_bytes(gzip.compress(b,mtime=0));p.unlink()
+assets=['target/release/libxyg_core.so','packages/xyg-node-linux-x64/libxyg_core.so']+[str(p.relative_to(root)) for d in ['packages/xy-client/dist','python/xyg/static'] for p in (root/d).glob('*') if p.is_file()]
+entry=lambda p:dict(bytes=p.stat().st_size,sha256=sha(p.read_bytes()))
+write('artifacts.json',dict(generated_assets={p:entry(root/p) for p in assets},native_html_uncompressed=html,receipt_outputs={str(p.relative_to(out)):entry(p) for d in ['before','after'] for p in (out/d).iterdir() if p.is_file()},foundation={str(p.relative_to(out)):entry(p) for p in out.glob('foundation.json*')}))
+node=root/'target/task-tmp/node-v22.23.4-linux-x64/bin/node'
+write('environment.json',dict(platform=platform.platform(),machine=platform.machine(),python=platform.python_version(),node=subprocess.check_output([str(node),'--version'],text=True).strip(),node_path=str(node.resolve()),rust=subprocess.check_output(['/home/ubuntu/.cargo/bin/rustc','--version'],text=True).strip(),browser=after['browser'],browser_path='/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome',browser_sha256=sha(Path('/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome').read_bytes()),native=after['native'],git_merge_parents=subprocess.check_output(['git','show','-s','--format=%P',base],text=True).strip().split(),proof_review=dict(reviewer='m4_defaults_audit',reference='98ea5d7f14bdf32491917d64f87d9ec1317797c87d7c39f4899a1bf75f0ff99b',scope='dependency only, supplied by parent')))
+print('Historical receipts, exports, browser facts and exact S5a module preserved; source/artifact/environment inventories written.')

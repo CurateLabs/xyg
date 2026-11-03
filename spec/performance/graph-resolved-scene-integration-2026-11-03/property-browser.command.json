@@ -1,0 +1,13 @@
+{
+  "name": "property-browser",
+  "command": [
+    "node",
+    "tests/browser/graph_property_default_export.mjs",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/property"
+  ],
+  "exitCode": 1,
+  "seconds": 5.5,
+  "rawSha256": "0ac5f296390582f1d10228518ff0bd69fe706088df2ea26e347e2850a176367a",
+  "log": "property-browser.txt.gz",
+  "gzipSha256": "40f7558713b5edc2e760ee09c4fac3d74d8b2f98d4115400bf471aa6dbb70cb8"
+}

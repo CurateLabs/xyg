@@ -1,0 +1,449 @@
+{
+  "cases": 222,
+  "failures": [
+    {
+      "name": "w0-bottom-left-opaque.dpr1.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-alpha.dpr1.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-transparent.dpr1.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-top-right-opaque.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0-top-right-alpha.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0-top-right-transparent.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0.5-bottom-left-opaque.dpr1.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-bottom-left-alpha.dpr1.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-bottom-left-transparent.dpr1.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-top-right-opaque.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w0.5-top-right-alpha.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w0.5-top-right-transparent.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w1-bottom-left-opaque.dpr1.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-bottom-left-alpha.dpr1.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-bottom-left-transparent.dpr1.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-top-right-opaque.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1-top-right-alpha.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1-top-right-transparent.dpr1.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1.5-bottom-left-opaque.dpr1.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-bottom-left-alpha.dpr1.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-bottom-left-transparent.dpr1.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-top-right-opaque.dpr1.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w1.5-top-right-alpha.dpr1.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w1.5-top-right-transparent.dpr1.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w2-bottom-left-opaque.dpr1.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-bottom-left-alpha.dpr1.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-bottom-left-transparent.dpr1.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-top-right-opaque.dpr1.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w2-top-right-alpha.dpr1.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w2-top-right-transparent.dpr1.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w3-bottom-left-opaque.dpr1.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-bottom-left-alpha.dpr1.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-bottom-left-transparent.dpr1.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-top-right-opaque.dpr1.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "w3-top-right-alpha.dpr1.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "w3-top-right-transparent.dpr1.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "hidden.dpr1.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-opaque.dpr1.25.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-alpha.dpr1.25.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-transparent.dpr1.25.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-top-right-opaque.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0-top-right-alpha.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0-top-right-transparent.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0.5-bottom-left-opaque.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-bottom-left-alpha.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-bottom-left-transparent.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-top-right-opaque.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w0.5-top-right-alpha.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w0.5-top-right-transparent.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w1-bottom-left-opaque.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-bottom-left-alpha.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-bottom-left-transparent.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-top-right-opaque.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1-top-right-alpha.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1-top-right-transparent.dpr1.25.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1.5-bottom-left-opaque.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-bottom-left-alpha.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-bottom-left-transparent.dpr1.25.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-top-right-opaque.dpr1.25.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w1.5-top-right-alpha.dpr1.25.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w1.5-top-right-transparent.dpr1.25.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w2-bottom-left-opaque.dpr1.25.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-bottom-left-alpha.dpr1.25.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-bottom-left-transparent.dpr1.25.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-top-right-opaque.dpr1.25.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w2-top-right-alpha.dpr1.25.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w2-top-right-transparent.dpr1.25.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w3-bottom-left-opaque.dpr1.25.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-bottom-left-alpha.dpr1.25.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-bottom-left-transparent.dpr1.25.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-top-right-opaque.dpr1.25.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "w3-top-right-alpha.dpr1.25.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "w3-top-right-transparent.dpr1.25.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "hidden.dpr1.25.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-opaque.dpr2.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-alpha.dpr2.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-bottom-left-transparent.dpr2.resolved",
+      "message": "y width: 1 != 0"
+    },
+    {
+      "name": "w0-top-right-opaque.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0-top-right-alpha.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0-top-right-transparent.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.625"
+    },
+    {
+      "name": "w0.5-bottom-left-opaque.dpr2.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-bottom-left-alpha.dpr2.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-bottom-left-transparent.dpr2.resolved",
+      "message": "y left x: 46 != 45.75"
+    },
+    {
+      "name": "w0.5-top-right-opaque.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w0.5-top-right-alpha.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w0.5-top-right-transparent.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.375"
+    },
+    {
+      "name": "w1-bottom-left-opaque.dpr2.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-bottom-left-alpha.dpr2.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-bottom-left-transparent.dpr2.resolved",
+      "message": "y left x: 46 != 45.5"
+    },
+    {
+      "name": "w1-top-right-opaque.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1-top-right-alpha.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1-top-right-transparent.dpr2.resolved",
+      "message": "y right x: 263.625 != 264.125"
+    },
+    {
+      "name": "w1.5-bottom-left-opaque.dpr2.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-bottom-left-alpha.dpr2.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-bottom-left-transparent.dpr2.resolved",
+      "message": "y left x: 46 != 45.25"
+    },
+    {
+      "name": "w1.5-top-right-opaque.dpr2.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w1.5-top-right-alpha.dpr2.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w1.5-top-right-transparent.dpr2.resolved",
+      "message": "y right x: 263.125 != 263.875"
+    },
+    {
+      "name": "w2-bottom-left-opaque.dpr2.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-bottom-left-alpha.dpr2.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-bottom-left-transparent.dpr2.resolved",
+      "message": "y left x: 46 != 45"
+    },
+    {
+      "name": "w2-top-right-opaque.dpr2.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w2-top-right-alpha.dpr2.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w2-top-right-transparent.dpr2.resolved",
+      "message": "y right x: 262.625 != 263.625"
+    },
+    {
+      "name": "w3-bottom-left-opaque.dpr2.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-bottom-left-alpha.dpr2.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-bottom-left-transparent.dpr2.resolved",
+      "message": "y left x: 46 != 44.5"
+    },
+    {
+      "name": "w3-top-right-opaque.dpr2.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "w3-top-right-alpha.dpr2.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "w3-top-right-transparent.dpr2.resolved",
+      "message": "y right x: 261.625 != 263.125"
+    },
+    {
+      "name": "hidden.dpr2.resolved",
+      "message": "y width: 1 != 0"
+    }
+  ]
+}

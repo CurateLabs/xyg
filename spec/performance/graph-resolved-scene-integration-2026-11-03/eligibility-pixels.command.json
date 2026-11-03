@@ -1,0 +1,15 @@
+{
+  "name": "eligibility-pixels",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/pixel-proof.py",
+    "after"
+  ],
+  "exitCode": 0,
+  "seconds": 0.513,
+  "rawSha256": "865fe7ee0eaec8b87b0bc30fc50959295f1df894581256bd822accd49d254d89",
+  "log": "eligibility-pixels.txt.gz",
+  "gzipSha256": "9daa538b58bd1a3ff33047ed4518201d7b1f11944f93262322b3664b9883a864"
+}
