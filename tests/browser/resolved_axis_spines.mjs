@@ -58,7 +58,8 @@ try{
       const r=e.getBoundingClientRect(),s=getComputedStyle(e),probe=document.createElement('span');probe.style.color=e.style.getPropertyValue('--xy-axis-rule-paint');el.appendChild(probe);const paint=getComputedStyle(probe).color;probe.remove();
       return {axis:e.dataset.xyAxis,side:e.dataset.xyAxisSide,box:{x:r.x-root.x,y:r.y-root.y,width:r.width,height:r.height},inline:{left:e.style.left,top:e.style.top,width:e.style.width,height:e.style.height},privateWidth:e.style.getPropertyValue('--xy-axis-rule-width'),privateHeight:e.style.getPropertyValue('--xy-axis-rule-height'),computed:{backgroundColor:s.backgroundColor,transform:s.transform,borderWidth:s.borderWidth,opacity:s.opacity},resolvedPaint:paint,className:e.getAttribute('class')};
      });
-     const snapshot=()=>({plot:{...view.plot},axes:axes(),axisSpec:structuredClone(view.axes),dpr:devicePixelRatio,viewDpr:view.dpr});
+     const spines=()=>[...el.querySelectorAll('[data-xy-resolved-spine]')].map(e=>({axis:e.dataset.xyResolvedSpine,side:e.dataset.xySpineSide,attributes:Object.fromEntries([...e.firstElementChild.attributes].map(a=>[a.name,a.value])),boxPaint:el.querySelector(`[data-xy-slot="axis_line"][data-xy-axis="${e.dataset.xyResolvedSpine}"][data-xy-axis-side="${e.dataset.xySpineSide}"]`).dataset.xySpinePaint}));
+     const snapshot=()=>({plot:{...view.plot},axes:axes(),axisSpec:structuredClone(view.axes),dpr:devicePixelRatio,viewDpr:view.dpr,...(lane==='resolved'?{spines:spines()}:{})});
      const initial=snapshot();
      if(item.name==='w1-bottom-left-opaque'){
       // Consumer-extension seam: clone already Rust-resolved axis descriptors
@@ -80,14 +81,35 @@ try{
     check(key,()=>{
      assert.equal(record.dpr,dpr);assert.equal(record.viewDpr,dpr);geometry(record,lane==='resolved');
      if(item.name!=='hidden')assert.equal(record.axes.length,item.sides==='bottom-left'?3:2);
+     if(lane==='resolved')for(const state of [record,record.extra,record.classOverride,record.inlineOverride].filter(Boolean)){
+      assert.equal(state.spines.length,state.axes.length);
+      for(const spine of state.spines){
+       const box=state.axes.find(e=>e.axis===spine.axis&&e.side===spine.side).box,a=spine.attributes,vertical=spine.axis.startsWith('y');
+       assert.equal(spine.boxPaint,'svg');assert.equal(a['stroke-linecap'],'butt');
+       close(Number(a.x1),box.x+(vertical?box.width/2:0),'stroke x1');close(Number(a.x2),box.x+(vertical?box.width/2:box.width),'stroke x2');
+       close(Number(a.y1),box.y+(vertical?0:box.height/2),'stroke y1');close(Number(a.y2),box.y+(vertical?box.height:box.height/2),'stroke y2');
+       close(Number(a['stroke-width']),vertical?box.width:box.height,'stroke width');
+      }
+     }
      if(record.extra){geometry(record.extra,lane==='resolved');assert.deepEqual(record.extra.plot,record.extra.originalPlot);assert.ok(record.extra.axes.some(e=>e.axis==='x2'));assert.ok(record.extra.axes.some(e=>e.axis==='y3'));}
      if(record.classOverride){
       for(let i=0;i<record.axes.length;i++){const a=record.axes[i],b=record.classOverride.axes[i];assert.equal(b.className,'axis-probe');close(b.box.width,7,'class width');close(b.box.height,9,'class height');assert.equal(b.inline.left,a.inline.left);assert.equal(b.inline.top,a.inline.top);assert.equal(b.computed.backgroundColor,'rgb(1, 2, 3)');}
       for(const e of record.inlineOverride.axes){assert.equal(e.className,'axis-probe');assert.deepEqual(e.box,{x:17,y:19,width:13,height:15});assert.equal(e.computed.backgroundColor,'rgb(4, 5, 6)');}
      }
     });
-    if(['w1-bottom-left-opaque','w0.5-top-right-alpha','w0-bottom-left-opaque','hidden'].includes(item.name)){
+    if(lane==='resolved'||['w1-bottom-left-opaque','w0.5-top-right-alpha','w0-bottom-left-opaque','hidden'].includes(item.name)){
      await page.locator('#chart').screenshot({path:path.join(output,`${key}.png`)});
+    }
+    if(lane==='resolved'){
+     // Actual independent native export in a browser image, never a supplied
+     // plot or replacement geometry for the product chart.
+     await page.evaluate(async name=>{
+      const img=document.createElement('img');img.id='canonical';img.width=320;img.height=240;img.style.cssText='display:block;width:320px;height:240px';
+      img.src=URL.createObjectURL(new Blob([await(await fetch(`/inputs/${name}.svg`)).text()],{type:'image/svg+xml'}));
+      document.body.appendChild(img);await img.decode();
+     },item.name);
+     await page.locator('#canonical').screenshot({path:path.join(output,`${key}.native-svg.png`)});
+     await page.evaluate(()=>{const img=document.getElementById('canonical');URL.revokeObjectURL(img.src);img.remove();});
     }
     results.cases.push({key,item,lane,...record});
     await page.evaluate(()=>window.view.destroy());

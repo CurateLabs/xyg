@@ -1,0 +1,80 @@
+{
+  "light.dpr1": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1,
+    "mean_max_channel_diff": 1.4715736607142857,
+    "fraction_over_96": 0.003950892857142857,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true
+  },
+  "light.dpr1.25": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1.25,
+    "mean_max_channel_diff": 1.3594595238095237,
+    "fraction_over_96": 0.003657142857142857,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true
+  },
+  "light.dpr2": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 2,
+    "mean_max_channel_diff": 1.4608417038690475,
+    "fraction_over_96": 0.003938802083333333,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true
+  },
+  "dark.dpr1": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1,
+    "mean_max_channel_diff": 1.4738616071428572,
+    "fraction_over_96": 0.003962053571428571,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true
+  },
+  "dark.dpr1.25": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1.25,
+    "mean_max_channel_diff": 1.3554619047619048,
+    "fraction_over_96": 0.003488095238095238,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true
+  },
+  "dark.dpr2": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 2,
+    "mean_max_channel_diff": 1.4623158482142857,
+    "fraction_over_96": 0.00376953125,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true
+  }
+}

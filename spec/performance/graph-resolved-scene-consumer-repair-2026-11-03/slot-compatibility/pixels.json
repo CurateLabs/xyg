@@ -1,0 +1,23 @@
+{
+  "solid": {
+    "pixels_different": 0,
+    "html_blue_pixels": 0,
+    "svg_blue_pixels": 0,
+    "html_unique_colors": 2,
+    "svg_unique_colors": 2
+  },
+  "border": {
+    "pixels_different": 368,
+    "html_blue_pixels": 368,
+    "svg_blue_pixels": 0,
+    "html_unique_colors": 3,
+    "svg_unique_colors": 2
+  },
+  "gradient": {
+    "pixels_different": 640,
+    "html_blue_pixels": 0,
+    "svg_blue_pixels": 0,
+    "html_unique_colors": 186,
+    "svg_unique_colors": 1
+  }
+}

@@ -1,0 +1,1 @@
+graphforge WASM smoke: 9 identities painted, 264 derived rows, pick → node, table 16 rows, stale → GF_COMPOSE_GENERATION_STALE

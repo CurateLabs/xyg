@@ -1,0 +1,29 @@
+{
+  "purpose": "Separate diagnostic SVG kernel control, never product proof",
+  "records": [
+    {
+      "mode": "inline",
+      "x": 306.62,
+      "name": "inline.x306.62.png",
+      "devicePixelRatio": 1.25
+    },
+    {
+      "mode": "inline",
+      "x": 306.625,
+      "name": "inline.x306.625.png",
+      "devicePixelRatio": 1.25
+    },
+    {
+      "mode": "image",
+      "x": 306.62,
+      "name": "image.x306.62.png",
+      "devicePixelRatio": 1.25
+    },
+    {
+      "mode": "image",
+      "x": 306.625,
+      "name": "image.x306.625.png",
+      "devicePixelRatio": 1.25
+    }
+  ]
+}

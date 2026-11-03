@@ -1,0 +1,2108 @@
+{
+  "light.dpr1": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1,
+    "mean_max_channel_diff": 1.4715736607142857,
+    "fraction_over_96": 0.003950892857142857,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true,
+    "samples": [
+      {
+        "pixel": [
+          300,
+          372
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          373
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          374
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          375
+        ],
+        "canonical": [
+          139,
+          145,
+          153
+        ],
+        "wasm": [
+          140,
+          145,
+          154
+        ],
+        "canonical-svg-browser": [
+          140,
+          146,
+          154
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          376
+        ],
+        "canonical": [
+          143,
+          148,
+          155
+        ],
+        "wasm": [
+          143,
+          147,
+          155
+        ],
+        "canonical-svg-browser": [
+          143,
+          148,
+          155
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          377
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          378
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          379
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          48,
+          200
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          49,
+          200
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          50,
+          200
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          51,
+          200
+        ],
+        "canonical": [
+          143,
+          148,
+          155
+        ],
+        "wasm": [
+          143,
+          147,
+          155
+        ],
+        "canonical-svg-browser": [
+          143,
+          148,
+          155
+        ]
+      },
+      {
+        "pixel": [
+          52,
+          200
+        ],
+        "canonical": [
+          139,
+          145,
+          153
+        ],
+        "wasm": [
+          140,
+          145,
+          154
+        ],
+        "canonical-svg-browser": [
+          140,
+          146,
+          154
+        ]
+      },
+      {
+        "pixel": [
+          53,
+          200
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          54,
+          200
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          55,
+          200
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      }
+    ]
+  },
+  "light.dpr1.25": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1.25,
+    "mean_max_channel_diff": 1.3594595238095237,
+    "fraction_over_96": 0.003657142857142857,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true,
+    "samples": [
+      {
+        "pixel": [
+          375,
+          466
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          467
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          468
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          469
+        ],
+        "canonical": [
+          113,
+          120,
+          129
+        ],
+        "wasm": [
+          112,
+          120,
+          129
+        ],
+        "canonical-svg-browser": [
+          112,
+          119,
+          129
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          470
+        ],
+        "canonical": [
+          115,
+          122,
+          130
+        ],
+        "wasm": [
+          115,
+          122,
+          130
+        ],
+        "canonical-svg-browser": [
+          115,
+          121,
+          130
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          471
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          472
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          473
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          61,
+          250
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          62,
+          250
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          63,
+          250
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          64,
+          250
+        ],
+        "canonical": [
+          115,
+          122,
+          130
+        ],
+        "wasm": [
+          115,
+          122,
+          130
+        ],
+        "canonical-svg-browser": [
+          115,
+          121,
+          130
+        ]
+      },
+      {
+        "pixel": [
+          65,
+          250
+        ],
+        "canonical": [
+          113,
+          120,
+          129
+        ],
+        "wasm": [
+          112,
+          120,
+          129
+        ],
+        "canonical-svg-browser": [
+          112,
+          119,
+          129
+        ]
+      },
+      {
+        "pixel": [
+          66,
+          250
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          67,
+          250
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          68,
+          250
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      }
+    ]
+  },
+  "light.dpr2": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 2,
+    "mean_max_channel_diff": 1.4608417038690475,
+    "fraction_over_96": 0.003938802083333333,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true,
+    "samples": [
+      {
+        "pixel": [
+          600,
+          748
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          749
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          750
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          751
+        ],
+        "canonical": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical-svg-browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          752
+        ],
+        "canonical": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical-svg-browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          753
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          754
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          755
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          100,
+          400
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          101,
+          400
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          102,
+          400
+        ],
+        "canonical": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical-svg-browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          103,
+          400
+        ],
+        "canonical": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical-svg-browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          104,
+          400
+        ],
+        "canonical": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical-svg-browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          105,
+          400
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          106,
+          400
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          107,
+          400
+        ],
+        "canonical": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical-svg-browser": [
+          248,
+          250,
+          252
+        ]
+      }
+    ]
+  },
+  "dark.dpr1": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1,
+    "mean_max_channel_diff": 1.4738616071428572,
+    "fraction_over_96": 0.003962053571428571,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true,
+    "samples": [
+      {
+        "pixel": [
+          300,
+          372
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          373
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          374
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          375
+        ],
+        "canonical": [
+          123,
+          128,
+          137
+        ],
+        "wasm": [
+          123,
+          128,
+          137
+        ],
+        "canonical-svg-browser": [
+          123,
+          128,
+          137
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          376
+        ],
+        "canonical": [
+          116,
+          119,
+          127
+        ],
+        "wasm": [
+          116,
+          119,
+          127
+        ],
+        "canonical-svg-browser": [
+          116,
+          119,
+          127
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          377
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          378
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          379
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          48,
+          200
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          49,
+          200
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          50,
+          200
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          51,
+          200
+        ],
+        "canonical": [
+          116,
+          119,
+          127
+        ],
+        "wasm": [
+          116,
+          119,
+          127
+        ],
+        "canonical-svg-browser": [
+          116,
+          119,
+          127
+        ]
+      },
+      {
+        "pixel": [
+          52,
+          200
+        ],
+        "canonical": [
+          123,
+          128,
+          137
+        ],
+        "wasm": [
+          123,
+          128,
+          137
+        ],
+        "canonical-svg-browser": [
+          123,
+          128,
+          137
+        ]
+      },
+      {
+        "pixel": [
+          53,
+          200
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          54,
+          200
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          55,
+          200
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      }
+    ]
+  },
+  "dark.dpr1.25": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 1.25,
+    "mean_max_channel_diff": 1.3554619047619048,
+    "fraction_over_96": 0.003488095238095238,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true,
+    "samples": [
+      {
+        "pixel": [
+          375,
+          466
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          467
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          468
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          469
+        ],
+        "canonical": [
+          149,
+          153,
+          161
+        ],
+        "wasm": [
+          149,
+          153,
+          162
+        ],
+        "canonical-svg-browser": [
+          150,
+          153,
+          162
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          470
+        ],
+        "canonical": [
+          144,
+          147,
+          153
+        ],
+        "wasm": [
+          144,
+          147,
+          154
+        ],
+        "canonical-svg-browser": [
+          144,
+          147,
+          154
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          471
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          472
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          375,
+          473
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          61,
+          250
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          62,
+          250
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          63,
+          250
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          64,
+          250
+        ],
+        "canonical": [
+          144,
+          147,
+          153
+        ],
+        "wasm": [
+          144,
+          147,
+          154
+        ],
+        "canonical-svg-browser": [
+          144,
+          147,
+          154
+        ]
+      },
+      {
+        "pixel": [
+          65,
+          250
+        ],
+        "canonical": [
+          149,
+          153,
+          161
+        ],
+        "wasm": [
+          149,
+          153,
+          162
+        ],
+        "canonical-svg-browser": [
+          150,
+          153,
+          162
+        ]
+      },
+      {
+        "pixel": [
+          66,
+          250
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          67,
+          250
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          68,
+          250
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      }
+    ]
+  },
+  "dark.dpr2": {
+    "purpose": "additional full-image diagnostic; untouched property helper is authoritative at DPR 1",
+    "devicePixelRatio": 2,
+    "mean_max_channel_diff": 1.4623158482142857,
+    "fraction_over_96": 0.00376953125,
+    "plot": {
+      "x": 52,
+      "y": 24,
+      "w": 572,
+      "h": 352
+    },
+    "svg_attrs_equal_to_actual_native_svg": true,
+    "samples": [
+      {
+        "pixel": [
+          600,
+          748
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          749
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          750
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          751
+        ],
+        "canonical": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical-svg-browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          752
+        ],
+        "canonical": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical-svg-browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          753
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          754
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          755
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          100,
+          400
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          101,
+          400
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          102,
+          400
+        ],
+        "canonical": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical-svg-browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          103,
+          400
+        ],
+        "canonical": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical-svg-browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          104,
+          400
+        ],
+        "canonical": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical-svg-browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          105,
+          400
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          106,
+          400
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          107,
+          400
+        ],
+        "canonical": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical-svg-browser": [
+          17,
+          24,
+          39
+        ]
+      }
+    ]
+  }
+}

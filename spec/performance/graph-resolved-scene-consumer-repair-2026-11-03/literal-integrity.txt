@@ -1,0 +1,332 @@
+{
+  "status": "PASS within bounded consumer scope; whole property helper remains FAIL",
+  "helper_sha256": "a9cc95b2bc1958abfa5e7f8b4b20a67706d0742f088b6c219eb8d33f801ffef8",
+  "helper_unchanged_from_188f": true,
+  "unchanged_limits": {
+    "width": 640,
+    "height": 420,
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "deviceScaleFactor": 1,
+    "layoutOverrides": null,
+    "masks": [],
+    "pixelLimits": {
+      "meanMaxChannelDiffExclusive": 3.5,
+      "fractionOver96Exclusive": 0.01
+    },
+    "geometryToleranceCssPixels": 0.01
+  },
+  "property_before": {
+    "light": {
+      "wasm_scene": {
+        "mean_max_channel_diff": 2.216078869047619,
+        "fraction_over_96": 0.010747767857142857,
+        "passed": false
+      },
+      "native_chart": {
+        "mean_max_channel_diff": 2.557715773809524,
+        "fraction_over_96": 0.009308035714285715,
+        "passed": true
+      },
+      "scene_vs_initial_native": {
+        "mean_max_channel_diff": 11.272161458333333,
+        "fraction_over_96": 0.028463541666666668,
+        "passed": false
+      },
+      "wasm_label_geometry": {
+        "max_css_pixel_error": 0.004000000000019099,
+        "texts_match": true,
+        "passed": true
+      },
+      "wasm_legend_geometry": {
+        "local_frame_error": 0,
+        "screen_frame_error": 0,
+        "screen_text_anchor_error": 0,
+        "swatch_attribute_error": 1.5258789005656581e-06,
+        "canonical_frame": {
+          "x": "467.25",
+          "y": "32",
+          "width": "148.75",
+          "height": "98",
+          "fill": "rgba(255,255,255,0.933333)",
+          "stroke": "rgba(75,85,99,1.000000)"
+        },
+        "actual_frame": {
+          "attributes": {
+            "x": "467.25",
+            "y": "32",
+            "width": "148.75",
+            "height": "98",
+            "fill": "rgba(255 255 255 / 0.9333333333333333)",
+            "stroke": "rgba(75 85 99 / 1)"
+          },
+          "box": {
+            "x": 467.25,
+            "y": 32,
+            "width": 148.75,
+            "height": 98
+          }
+        },
+        "passed": true
+      },
+      "wasm_node_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "passed": true
+      },
+      "wasm_route_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "pieces_by_stable_id": {
+          "1": 3,
+          "2": 3,
+          "3": 5,
+          "4": 3,
+          "5": 3
+        },
+        "passed": true
+      }
+    },
+    "dark": {
+      "wasm_scene": {
+        "mean_max_channel_diff": 2.2179017857142855,
+        "fraction_over_96": 0.010755208333333334,
+        "passed": false
+      },
+      "native_chart": {
+        "mean_max_channel_diff": 2.390472470238095,
+        "fraction_over_96": 0.008311011904761904,
+        "passed": true
+      },
+      "scene_vs_initial_native": {
+        "mean_max_channel_diff": 236.71340773809524,
+        "fraction_over_96": 0.9927752976190476,
+        "passed": false
+      },
+      "wasm_label_geometry": {
+        "max_css_pixel_error": 0.004000000000019099,
+        "texts_match": true,
+        "passed": true
+      },
+      "wasm_legend_geometry": {
+        "local_frame_error": 0,
+        "screen_frame_error": 0,
+        "screen_text_anchor_error": 0,
+        "swatch_attribute_error": 1.5258789005656581e-06,
+        "canonical_frame": {
+          "x": "467.25",
+          "y": "32",
+          "width": "148.75",
+          "height": "98",
+          "fill": "rgba(17,24,39,0.933333)",
+          "stroke": "rgba(170,178,191,1.000000)"
+        },
+        "actual_frame": {
+          "attributes": {
+            "x": "467.25",
+            "y": "32",
+            "width": "148.75",
+            "height": "98",
+            "fill": "rgba(17 24 39 / 0.9333333333333333)",
+            "stroke": "rgba(170 178 191 / 1)"
+          },
+          "box": {
+            "x": 467.25,
+            "y": 32,
+            "width": 148.75,
+            "height": 98
+          }
+        },
+        "passed": true
+      },
+      "wasm_node_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "passed": true
+      },
+      "wasm_route_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "pieces_by_stable_id": {
+          "1": 3,
+          "2": 3,
+          "3": 5,
+          "4": 3,
+          "5": 3
+        },
+        "passed": true
+      }
+    }
+  },
+  "property_after": {
+    "light": {
+      "wasm_scene": {
+        "mean_max_channel_diff": 1.4715736607142857,
+        "fraction_over_96": 0.003950892857142857,
+        "passed": true
+      },
+      "native_chart": {
+        "mean_max_channel_diff": 2.557715773809524,
+        "fraction_over_96": 0.009308035714285715,
+        "passed": true
+      },
+      "scene_vs_initial_native": {
+        "mean_max_channel_diff": 11.272161458333333,
+        "fraction_over_96": 0.028463541666666668,
+        "passed": false
+      },
+      "wasm_label_geometry": {
+        "max_css_pixel_error": 0.004000000000019099,
+        "texts_match": true,
+        "passed": true
+      },
+      "wasm_legend_geometry": {
+        "local_frame_error": 0,
+        "screen_frame_error": 0,
+        "screen_text_anchor_error": 0,
+        "swatch_attribute_error": 1.5258789005656581e-06,
+        "canonical_frame": {
+          "x": "467.25",
+          "y": "32",
+          "width": "148.75",
+          "height": "98",
+          "fill": "rgba(255,255,255,0.933333)",
+          "stroke": "rgba(75,85,99,1.000000)"
+        },
+        "actual_frame": {
+          "attributes": {
+            "x": "467.25",
+            "y": "32",
+            "width": "148.75",
+            "height": "98",
+            "fill": "rgba(255 255 255 / 0.9333333333333333)",
+            "stroke": "rgba(75 85 99 / 1)"
+          },
+          "box": {
+            "x": 467.25,
+            "y": 32,
+            "width": 148.75,
+            "height": 98
+          }
+        },
+        "passed": true
+      },
+      "wasm_node_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "passed": true
+      },
+      "wasm_route_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "pieces_by_stable_id": {
+          "1": 3,
+          "2": 3,
+          "3": 5,
+          "4": 3,
+          "5": 3
+        },
+        "passed": true
+      }
+    },
+    "dark": {
+      "wasm_scene": {
+        "mean_max_channel_diff": 1.4738616071428572,
+        "fraction_over_96": 0.003962053571428571,
+        "passed": true
+      },
+      "native_chart": {
+        "mean_max_channel_diff": 2.390472470238095,
+        "fraction_over_96": 0.008311011904761904,
+        "passed": true
+      },
+      "scene_vs_initial_native": {
+        "mean_max_channel_diff": 236.71340773809524,
+        "fraction_over_96": 0.9927752976190476,
+        "passed": false
+      },
+      "wasm_label_geometry": {
+        "max_css_pixel_error": 0.004000000000019099,
+        "texts_match": true,
+        "passed": true
+      },
+      "wasm_legend_geometry": {
+        "local_frame_error": 0,
+        "screen_frame_error": 0,
+        "screen_text_anchor_error": 0,
+        "swatch_attribute_error": 1.5258789005656581e-06,
+        "canonical_frame": {
+          "x": "467.25",
+          "y": "32",
+          "width": "148.75",
+          "height": "98",
+          "fill": "rgba(17,24,39,0.933333)",
+          "stroke": "rgba(170,178,191,1.000000)"
+        },
+        "actual_frame": {
+          "attributes": {
+            "x": "467.25",
+            "y": "32",
+            "width": "148.75",
+            "height": "98",
+            "fill": "rgba(17 24 39 / 0.9333333333333333)",
+            "stroke": "rgba(170 178 191 / 1)"
+          },
+          "box": {
+            "x": 467.25,
+            "y": 32,
+            "width": 148.75,
+            "height": 98
+          }
+        },
+        "passed": true
+      },
+      "wasm_node_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "passed": true
+      },
+      "wasm_route_geometry": {
+        "max_css_pixel_error": 0.0049999999999954525,
+        "pieces_by_stable_id": {
+          "1": 3,
+          "2": 3,
+          "3": 5,
+          "4": 3,
+          "5": 3
+        },
+        "passed": true
+      }
+    }
+  },
+  "normal_helper_exit_code": 1,
+  "remaining_failures": [
+    {
+      "label": "light: scene_vs_initial_native pixels",
+      "mean_max_channel_diff": 11.272161458333333,
+      "fraction_over_96": 0.028463541666666668,
+      "passed": false
+    },
+    {
+      "label": "dark: scene_vs_initial_native pixels",
+      "mean_max_channel_diff": 236.71340773809524,
+      "fraction_over_96": 0.9927752976190476,
+      "passed": false
+    }
+  ],
+  "native_exports_byte_identical": {
+    "light.xygq": "4c223f5278ce85be02979b256b8f47611ca475bb7ea7b5297dca949509fdc9b7",
+    "light.xygf": "384a1cac368b5193aec75bc7ab814a031b0bef6eee718442d41cce2e91b755e5",
+    "light.svg": "c03e603dce1cbea3474a1ad15b5f290e52cf779a30f51cc437eda111124c97a5",
+    "light.png": "e2d861aa5103f33bb40d1c13c8cd00d7e1c7d23fd3261a66c5aa37f42d6fc9ab",
+    "light.native.svg": "2e5ea3a0db4b79e51cb19f0df5d662a5974ff035eda1bdbeab664400b4f96fa7",
+    "light.native.png": "1eeb34a8c78ee154081923402f925faa59a701d739552a995148692c952db556",
+    "dark.xygq": "b4e0ef2a78d87f9e07e1be883aed454d1d3db56d99cf534b8f46dc63df4aaaaf",
+    "dark.xygf": "da7c7a1c5f2568b19f06513e007055bffda13506cb4e82e6e4a38f76389fe6d2",
+    "dark.svg": "ee7684978fe6891b65efede1f796970593c7139586dc5a0dd2747353e2d6c193",
+    "dark.png": "4e16c04b50092ec0427d8dc0c6db1a1db5a572849d0b3c10673b6e4ea88173e8",
+    "dark.native.svg": "5299f86665fe09fef085f3129a6360071bb69f396a8f1312fdc283010783ac2a",
+    "dark.native.png": "cd43743307026997e1bb9d9663122096970d0efcfa8806cf7820c69d91c380ae"
+  },
+  "identities_routes_heads_captions_legend_and_slot_cascade_unchanged": true,
+  "slot_captures": 144,
+  "live_switch_runs": 6,
+  "html_fallback_screenshots_identical_to_188f": 57,
+  "solid_projection_screenshots_identical_to_188f": 15,
+  "native_and_wasm_rebuilt": false
+}

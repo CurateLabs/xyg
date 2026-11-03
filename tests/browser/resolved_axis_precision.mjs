@@ -1,0 +1,20 @@
+// Resolved widths stay literal even when CSS used boxes quantize to 1/64px.
+// Authored geometry changes still map the actual public CSS footprint.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {createServer} from 'node:http';
+import {chromium} from 'playwright';
+const receipt=path.resolve(process.argv[2]),out=path.join(receipt,'precision');fs.mkdirSync(out,{recursive:true});
+const server=createServer((req,res)=>{if(req.url==='/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><style>body{margin:0}</style><div id="chart"></div>');return;}const name=path.basename(req.url);try{const bytes=fs.readFileSync(name==='precision.scene'?path.join(receipt,name):path.join('packages/xy-client/dist',name));res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':name.endsWith('.wasm')?'application/wasm':'application/octet-stream');res.end(bytes);}catch{res.writeHead(404);res.end();}});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const browser=await chromium.launch({executablePath:process.env.XYG_CHROMIUM,args:['--no-sandbox','--hide-scrollbars','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const results=[];
+try{for(const dpr of [1,1.25,2]){
+ const page=await browser.newPage({viewport:{width:320,height:240},deviceScaleFactor:dpr});await page.goto(`http://127.0.0.1:${server.address().port}/`);
+ const record=await page.evaluate(async()=>{const client=await import('/index.js');window.worker=client.createXygWasmWorker({workerUrl:'/wasm-worker.js',wasm:'/xyg-wasm.wasm'});await worker.ready;window.view=await client.renderWasmScene({el:document.getElementById('chart'),worker,scene:await(await fetch('/precision.scene')).arrayBuffer()});await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const observe=()=>({plot:{...view.plot},axes:structuredClone(view.axes),rows:[...view.labels.querySelectorAll('[data-xy-slot="axis_line"]')].map(box=>{const r=box.getBoundingClientRect(),o=view.labels.getBoundingClientRect(),svg=view.labels.querySelector(`[data-xy-resolved-spine="${box.dataset.xyAxis}"]`);return {axis:box.dataset.xyAxis,side:box.dataset.xyAxisSide,paint:box.dataset.xySpinePaint,box:{x:r.x-o.x,y:r.y-o.y,width:r.width,height:r.height},line:Object.fromEntries([...svg.firstElementChild.attributes].map(a=>[a.name,a.value]))};})});window.observe=observe;return observe();});
+ for(const row of record.rows){const a=row.line,axis=record.axes[row.axis],p=record.plot;assert.equal(row.paint,'svg');assert.equal(Number(a['stroke-width']),axis.style.axis_width);assert.notEqual(Number(a['stroke-width']),row.axis.startsWith('y')?row.box.width:row.box.height);assert.equal(Number(a.x1),p.x);assert.equal(Number(a.y2),p.y+p.h);if(row.axis.startsWith('y')){assert.equal(Number(a.x2),p.x);assert.equal(Number(a.y1),p.y);}else{assert.equal(Number(a.x2),p.x+p.w);assert.equal(Number(a.y1),p.y+p.h);}}
+ await page.locator('#chart').screenshot({path:path.join(out,`native.dpr${dpr}.png`)});
+ const authored=await page.evaluate(async()=>{view.spec.dom={styles:{axis_line:{width:.6,height:.7,left:17.1234,top:19.2345,background:'rgba(180,30,60,.5)'}}};view.refreshTheme();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return observe();});
+ for(const row of authored.rows){const a=row.line,b=row.box,v=row.axis.startsWith('y');assert.equal(row.paint,'svg');assert.equal(Number(a['stroke-width']),v?b.width:b.height);assert.equal(Number(a.x1),b.x+(v?b.width/2:0));assert.equal(Number(a.y1),b.y+(v?0:b.height/2));assert.equal(Number(a.x2),b.x+(v?b.width/2:b.width));assert.equal(Number(a.y2),b.y+(v?b.height:b.height/2));}
+ await page.locator('#chart').screenshot({path:path.join(out,`authored.dpr${dpr}.png`)});results.push({dpr,native:record,authored});await page.evaluate(()=>{view.destroy();worker.dispose();});await page.close();
+}}finally{await browser.close();server.close();}
+fs.writeFileSync(path.join(out,'observations.json'),JSON.stringify(results,null,2)+'\n');console.log('PASS: literal .3 resolved widths and canonical centerlines; authored fractional CSS footprints, DPR 1/1.25/2.');
