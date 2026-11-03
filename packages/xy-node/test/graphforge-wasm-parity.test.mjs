@@ -108,6 +108,37 @@ test("native and WASM compose byte-identical XYGF documents on every fixture", {
   assert.ok(compared >= 100, `compared ${compared} requests`);
 });
 
+test("zero-layer defaults repeat on packaged WASM with every persisted identity", async () => {
+  // An acceptance proof must fail for a missing real artifact, never skip.
+  assert.ok(fs.existsSync(WASM) && fs.existsSync(BUNDLE), "build the packaged WASM/client artifacts first");
+  const wasm = await loadWasm();
+  const client = await import(pathToFileURL(BUNDLE).href);
+  const fixture = JSON.parse(fs.readFileSync(path.join(RESULTS, "../property_default_export.json")));
+  for (const theme of fixture.themes) {
+    const input = { base: base("property"), render: { width: fixture.width, height: fixture.height, theme } };
+    const request = encodeGraphForgeRequest(input);
+    assert.deepEqual(new Uint8Array(client.encodeWasmGraphForgeRequest(input)), request);
+    const document = composeGraphForgeRequest(request);
+    const first = wasm(request);
+    assert.deepEqual(first, document);
+    assert.deepEqual(wasm(request), first, "fresh WASM composition is deterministic");
+    const composition = client.decodeWasmGraphForgeDocument(first);
+    assert.deepEqual(composition.nodeUuid, fixture.nodeUuid);
+    assert.deepEqual(composition.edgeUuid, fixture.edgeUuid);
+    fixture.nodeUuid.forEach((uuid, index) => {
+      assert.equal(composition.identifyStableId((1n << 32n) + BigInt(index)).uuid, uuid);
+    });
+    fixture.edgeUuid.forEach((uuid, index) => {
+      const identity = composition.identifyStableId(BigInt(index + 1));
+      assert.equal(identity.uuid, uuid);
+      assert.equal(identity.source, fixture.nodeUuid[fixture.source[index]]);
+      assert.equal(identity.target, fixture.nodeUuid[fixture.target[index]]);
+      assert.equal(identity.type, fixture.types[index]);
+      assert.deepEqual(identity.layers, []);
+    });
+  }
+});
+
 test("composition v2 hierarchy and root conflicts match native and WASM", { skip }, async () => {
   const wasm = await loadWasm();
   const fixture = (name) => fs.readFileSync(path.join(ROOT, `tests/fixtures/graphforge/${name}.arrow`));
