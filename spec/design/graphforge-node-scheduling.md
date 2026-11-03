@@ -211,3 +211,11 @@ pin/position/visibility/replacement invalidations restart it. This supplies Rust
 mechanisms only: the Node scheduler described above is unchanged, Python workers,
 widgets/channel, browser controller/public APIs and #35 acceptance remain separate.
 No scale or package qualification follows from this bounded seam.
+
+The P1 review repair makes an empty retained session report `done=1` without
+inventing a completed tick (native alpha may remain 1). Hosts can terminate
+initially empty/all-hidden jobs and empty states rebuilt after visibility changes.
+A move Preview/Commit before the first presentation honors the one-tick seed
+when opted in, then invalidates the force continuation under the existing move
+contract; absent/zero progressive keeps the legacy 300-step seed. Failed wire
+requests install neither seed/move/pin state nor sequence/retry changes.

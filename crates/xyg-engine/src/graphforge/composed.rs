@@ -13,6 +13,14 @@ pub struct ComposedDocument<'a> {
     layers: usize,
 }
 
+/// Borrowed per-composition provenance, indexed by the original layer.
+#[derive(Clone, Copy, Default)]
+pub(crate) struct ProjectionLayer<'a> {
+    pub node_rows: Option<&'a [u8]>,
+    pub edge_rows: Option<&'a [u8]>,
+    pub result_id: Option<&'a str>,
+}
+
 fn invalid(message: impl Into<String>) -> GfError {
     GfError::new("GF_INTERACTION_INVALID", message)
 }
@@ -140,29 +148,35 @@ impl<'a> ComposedDocument<'a> {
         }).transpose()
     }
 
-    /// Build only per-layer descriptors in one section pass, then project
-    /// selected indices without a source-wide scan or repeated section lookup.
-    pub(crate) fn row_planes(&self, nodes: usize, edges: usize) -> GfResult<Vec<(Option<&'a [u8]>, Option<&'a [u8]>)>> {
-        let mut planes = vec![(None, None); self.layers];
+    /// Section visits, per-layer output descriptors, and both sparse row passes.
+    pub(crate) fn projection_work(&self, selected: usize) -> Option<usize> {
+        self.layers.checked_mul(selected.checked_mul(2)?.checked_add(1)?)?
+            .checked_add(self.container.sections.len())
+    }
+
+    /// Read rows and exact IDs together in one bounded section pass. Missing
+    /// planes/IDs remain absent; present empty IDs retain their validity.
+    pub(crate) fn projection_layers(&self, nodes: usize, edges: usize) -> GfResult<Vec<ProjectionLayer<'a>>> {
+        let mut layers = vec![ProjectionLayer::default(); self.layers];
         for (name, layer, section) in &self.container.sections {
-            let node = match *name {
-                "layer.node_rows" => true,
-                "layer.edge_rows" => false,
-                _ => continue,
-            };
+            if !matches!(*name, "layer.node_rows" | "layer.edge_rows" | "layer.result_id") {
+                continue;
+            }
+            let entry = layers.get_mut(*layer as usize)
+                .ok_or_else(|| invalid("result projection layer is out of range"))?;
+            if *name == "layer.result_id" {
+                entry.result_id = Some(section.as_utf8(name).map_err(retype)?);
+                continue;
+            }
+            let node = *name == "layer.node_rows";
             let count = if node { nodes } else { edges };
             if section.dtype != super::container::Dtype::U64 || section.count != count {
                 return Err(invalid("result row plane type/count mismatch"));
             }
-            let plane = planes.get_mut(*layer as usize).ok_or_else(|| invalid("result row layer is out of range"))?;
-            if node { plane.0 = Some(section.payload); } else { plane.1 = Some(section.payload); }
+            if node { entry.node_rows = Some(section.payload); }
+            else { entry.edge_rows = Some(section.payload); }
         }
-        Ok(planes)
-    }
-
-    pub(crate) fn result_id_ref(&self, layer: usize) -> GfResult<Option<&'a str>> {
-        self.container.get("layer.result_id", layer as u32)
-            .map(|s| s.as_utf8("layer.result_id").map_err(retype)).transpose()
+        Ok(layers)
     }
 
     /// Result row of every composed edge in `layer` (`u64::MAX` absent).

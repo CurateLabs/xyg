@@ -1,0 +1,156 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-engine)
+   Compiling xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-core)
+   Compiling xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-wasm)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 18.28s
+     Running unittests src/lib.rs (target/task-tmp/p1/debug/deps/xyg_core-ab75be67d9f8c0ff)
+
+running 67 tests
+test geo_scale_abi_tests::output_admission_precedes_registry_mutation ... ok
+test graphforge_ffi_tests::compose_round_trips_documents_and_errors ... ok
+test graphforge_ffi_tests::ledger_and_version_are_exposed ... ok
+test graphforge_session_ffi::tests::bound_native_owner_is_authoritative_and_disposal_blocks_cached_replies_until_unbind ... ok
+test graphforge_session_ffi::tests::coordinate_delivery_uses_shared_event_codec_and_never_rebroadcasts ... ok
+test graphforge_session_ffi::tests::destroyed_handles_and_raced_entry_clones_stay_unbound ... ok
+test graphforge_session_ffi::tests::native_temporal_adapter_rechecks_disposal_after_waiting_for_operation_lock ... ok
+test graphforge_session_ffi::tests::pointer_validation_precedes_execution_and_endpoint_types_are_strict ... ok
+test graphforge_session_ffi::tests::poll_short_does_not_consume_or_duplicate_event_and_style_refreshes_same_revision ... ok
+test graphforge_session_ffi::tests::registry_enforces_256_live_sessions_and_recovers_capacity_without_reuse ... ok
+test graphforge_session_ffi::tests::resource_and_update_refusals_do_not_consume_sequence_or_replace_document ... ok
+test graphforge_session_ffi::tests::zero_short_exact_retry_is_atomic_and_create_retry_survives_commands ... ok
+test tests::argsort_histogram_contour_and_hex_groups_ffi ... ok
+test tests::artist_alpha_css_abi_bounds_its_input ... ok
+test tests::binned_ecdf_ffi_is_compact_bounded_and_atomic ... ok
+test tests::box_geometry_query_short_copy_and_empty_outlier_plane_are_safe ... ok
+test tests::colormap_lut_and_density_linear_ffi ... ok
+test tests::colormap_stops_resolves_names_and_reversal ... ok
+test tests::combine_plot_default_padding_matches_engine ... ok
+test tests::configured_cose_abi_preserves_pins_and_rejects_compound_cycles ... ok
+test tests::default_palette_abi_is_versioned_bounded_and_atomic ... ok
+test tests::ffi_guard_maps_panic_to_sentinel ... ok
+test tests::geo_column_abi_reads_back_planes_metadata_and_fails_closed ... ok
+test tests::geo_column_abi_rejects_new_validation_codes ... ok
+test tests::geo_column_abi_rejects_over_budget_lengths_before_reading ... ok
+test tests::geo_column_abi_round_trips_point ... ok
+test tests::geom_helpers_ffi ... ok
+test tests::graph_force_abi_never_exposes_overflowed_positions ... ok
+test tests::graph_force_abi_rejects_nonfinite_initial_positions ... ok
+test tests::graph_projection_abi_rejects_missing_endpoint ... ok
+test tests::graph_projection_abi_roundtrip_and_stable_errors ... ok
+test tests::grid_size_products_that_overflow_are_rejected ... ok
+test tests::hexbin_ffi_auto_policy_and_explicit_range ... ok
+test tests::histogram_bins_ffi_is_bounded_and_atomic ... ok
+test tests::histogram_edges_write_capacity_and_resource_contract ... ok
+test tests::index_emitting_entry_points_reject_u32_overflowing_len ... ok
+test tests::legend_box_layout_keeps_classes_title_prefix ... ok
+test tests::legend_normalize_and_best_loc_ffi ... ok
+test tests::payload_density_grid_materialize_identity_ffi ... ok
+test tests::payload_tier_and_visible_mask_ffi ... ok
+test tests::polar_abi_bytes_reads_packed_view_or_empty ... ok
+test tests::product_output_fit_decides_without_allocating_the_output ... ok
+test tests::product_support_diagnostic_reports_exact_required_buffer_size ... ok
+test tests::raster_framebuffer_abis_validate_capacity_before_writing ... ok
+test tests::recut_polar_plot_insets_authored_padding ... ok
+test tests::required_grid_len_enforces_all_slice_bounds ... ok
+test tests::rgba_grid_abis_reject_short_capacity_without_writing ... ok
+test tests::scene_authoring_envelope_is_exact_bounded_and_legacy_compatible ... ok
+test tests::scene_batch_abi_is_bounded_and_rejects_malformed_records ... ok
+test tests::scene_layout_axis_format_abi_is_bounded_utf8_without_nul ... ok
+test tests::scene_pack_product_resolves_kind_and_heatmap_envelope ... ok
+test tests::scene_scale_abi_rejects_malformed_boundaries ... ok
+test tests::scene_support_abi_queries_copies_and_rejects_unknown_bits ... ok
+test tests::semantic_legend_query_and_short_copy_are_capacity_safe ... ok
+test tests::static_document_failures_without_a_diagnostic_leave_out_untouched ... ok
+test tests::static_document_rejection_diagnostic_buffer_contract ... ok
+test tests::temporal_poll_initializes_all_outputs_on_failure ... ok
+test tests::temporal_selection_abi_is_exact_and_poll_capacity_is_atomic ... ok
+test tests::text_block_measure_normalizes_crlf ... ok
+test tests::tick_format_matches_engine_cartesian_labels ... ok
+test tests::tick_label_layout_end_anchor_rotate_keeps_all ... ok
+test tests::tick_window_filter_keeps_seam_crossing_degree_ticks ... ok
+test tests::tight_layout_solve_matches_empty_wide_defaults ... ok
+test tests::transition_key_ffi_accepts_empty_null_spans_and_rejects_bad_pointers ... ok
+test tests::transition_key_ffi_reports_duplicate_rows_and_invalid_data ... ok
+test tests::violin_rects_query_and_short_copy_are_capacity_safe ... ok
+test tests::y_axis_left_room_titled_matches_engine ... ok
+
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running unittests src/lib.rs (target/task-tmp/p1/debug/deps/xyg_wasm-3ddcfe47f3a8bc0f)
+
+running 73 tests
+test aggregate::tests::budgets_peak ... ok
+test aggregate::tests::empty_count_and_color_emit_zero_filled_native_parity_grids ... ok
+test aggregate::tests::resumes ... ok
+test aggregate::tests::stream_keeps_only_count_grid_and_one_bounded_chunk ... ok
+test compile::tests::auto_domain_from_columns_uses_engine_pad ... ok
+test compile::tests::auto_domain_overrides_header_lo_hi ... ok
+test compile::tests::compound_semantic_graph_is_byte_exact_with_native_abi89 ... ok
+test compile::tests::compound_semantic_graph_rejects_hostile_planes_and_utf8 ... ok
+test compile::tests::default_bar_width_tracks_spacing_and_domain ... ok
+test compile::tests::legacy_xycc_stable_ids_remain_run_boundaries ... ok
+test compile::tests::packed_scatter_compiles_to_canonical_scene ... ok
+test compile::tests::semantic_graph_checkpoint_validates_node_edge_boundary_and_planes ... ok
+test compile::tests::semantic_graph_rejects_huge_viewport_and_insufficient_peak_before_columns ... ok
+test compile::tests::semantic_graph_request_compiles_to_the_canonical_scene_and_legend ... ok
+test compile::tests::semantic_graph_request_rejects_reserved_and_trailing_data ... ok
+test compile::tests::typed_series_auto_margins_compile_on_the_wasm_foundation_tiny_viewport ... ok
+test compile::tests::typed_series_expands_defaults_and_stable_ids_in_rust ... ok
+test compile::tests::typed_series_preserves_transferred_per_record_stable_ids ... ok
+test compile::tests::unknown_flags_and_trailing_bytes_fail_closed ... ok
+test dashboard::tests::packed_plan_preserves_input_order_and_exact_bytes ... ok
+test geo::tests::bounded_parser_rejects_every_truncation_and_reserved_bit ... ok
+test geo::tests::catalog_output_resource_cancel_recovery_and_dispose ... ok
+test geo::tests::generated_identity_plane_is_in_peak_budget ... ok
+test geo::tests::packed_and_typed_ingress_feed_identical_rebuildable_caches ... ok
+test geo::tests::pending_compile_sequence_is_protected_before_publication ... ok
+test geo::tests::rejected_old_geo_calls_preserve_newer_aggregate_staging ... ok
+test geo::tests::retained_scale_uses_shared_registry_and_rejects_ordinary_lanes ... ok
+test geo::tests::scene_framing_rejects_all_truncation_before_projection ... ok
+test geo::tests::scene_output_resource_cancel_recovery_and_dispose_are_atomic ... ok
+test geo::tests::source_is_released_on_success_error_cancel_and_stale ... ok
+test geo::tests::viewport_output_cancel_recovery_and_dispose_are_atomic ... ok
+test graphforge_session::tests::wasm_bound_frame_refresh_replacement_disposal_and_instance_isolation ... ok
+test graphforge_session::tests::wasm_open_retry_memory_refusal_close_and_transport_conflicts ... ok
+test temporal::tests::create_step_and_dispose_are_packed_and_rust_owned ... ok
+test temporal::tests::selection_decode_rejects_counts_above_the_product_limit ... ok
+test temporal_graph::tests::bound_access_and_frames_share_one_canonical_state ... ok
+test temporal_graph::tests::explicit_disposal_is_idempotent_and_drops_canonical_storage ... ok
+test temporal_graph::tests::generations_reject_cross_instance_or_replacement_handles ... ok
+test temporal_graph::tests::owner_is_send_sync_and_disposal_serializes_with_active_access ... ok
+test temporal_graph::tests::replacement_and_instance_drop_revoke_outstanding_arcs ... ok
+test tests::aggregate_accepts_nonzero_staging_offset ... ok
+test tests::aggregate_checkpoints_cancel_and_allow_newer_viewport ... ok
+test tests::checkpointed_compile_can_cancel_after_progress_and_releases_staging ... ok
+test tests::compound_transition_uses_rust_policy_and_refuses_aggregate_lod_atomically ... ok
+test tests::default_palette_exports_are_engine_owned_and_fail_closed ... ok
+test tests::every_aggregate_clear_invalidates_its_sequence ... ok
+test tests::fragmented_scene_returns_stable_resource_limit_without_output ... ok
+test tests::fragmented_typed_series_returns_stable_resource_limit_without_output ... ok
+test tests::graph_edge_heavy_construction_peak_is_rejected_before_decode ... ok
+test tests::graph_instances_are_independent_and_malformed_requests_fail_closed ... ok
+test tests::graph_progress_is_revision_safe_cancellable_and_keeps_pins ... ok
+test tests::graphforge_compose_matches_the_native_c_abi ... ok
+test tests::lifecycle_bounds_and_generation_handles_fail_closed ... ok
+test tests::malformed_and_incompatible_scene_versions_are_distinct ... ok
+test tests::massive_density_policy_matches_native_hosts_without_source_allocation ... ok
+test tests::prepare_releases_staging_before_painter_budget ... ok
+test tests::raw_scene_export_supersedes_nonzero_offset_aggregate_in_shared_arena ... ok
+test tests::registry_caps_aggregate_declared_instance_budgets ... ok
+test tests::rejected_compile_requests_release_large_staging_before_small_retry ... ok
+test tests::rejected_validate_and_prepare_release_large_staging ... ok
+test tests::scene_annotations_prepare_lowers_xyar_through_the_real_wasm_seam ... ok
+test tests::scene_annotations_prepare_projects_xyat_against_decoded_scene ... ok
+test tests::scene_paint_uses_engine_checked_f32_output ... ok
+test tests::scene_v4_status_cancel_stale_and_diagnostics_are_stable ... ok
+test tests::stale_raw_scene_export_does_not_cancel_newer_aggregate ... ok
+test tests::standalone_temporal_graph_can_stage_frames_and_replacement_at_default_budget ... ok
+test tests::stream_aggregate_cancels_between_chunks ... ok
+test tests::stream_aggregate_uses_bounded_chunks_and_existing_xyao_output ... ok
+test tests::typed_columns_compile_and_paint_through_wasm ... ok
+test tests::typed_series_large_then_small_does_not_retain_capacity_across_operations ... ok
+test tests::typed_series_peak_budget_rejects_before_allocating_and_clears_output ... ok
+test tests::zero_sequence_aggregate_step_does_not_mutate_an_idle_arena ... ok
+test tests::zero_sequence_dashboard_plan_consumes_staging_before_rejection ... ok
+
+test result: ok. 73 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+

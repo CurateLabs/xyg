@@ -1244,18 +1244,19 @@ fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
 fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteractionState, bytes: &[u8]) -> Result<()> {
     let doc = gf(ComposedDocument::decode(bytes))?;
     let mut refs = transport(s, &s.identity.refs_of(state.selection()))?;
-    if refs.len() != state.selection().len() || refs.len() > MAX_GRAPH_SELECTION_REFS { return bad(); }
+    // The temporal owner may retain derived keys belonging to another
+    // composition. refs_of deliberately omits those without mutating the owner.
+    if refs.len() > MAX_GRAPH_SELECTION_REFS { return bad(); }
     refs.sort_by(super::coordination::compare);
-    let work = doc.layer_count().checked_mul(refs.len().checked_mul(2).and_then(|n| n.checked_add(1)).ok_or(InteractionStatus::Budget)?)
-        .ok_or(InteractionStatus::Budget)?;
+    let work = doc.projection_work(refs.len()).ok_or(InteractionStatus::Budget)?;
     if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); }
     let resolved = refs.iter().map(|r| s.identity.resolve(r).map_err(|_| InteractionStatus::Invalid))
         .collect::<Result<Vec<_>>>()?;
-    let planes = gf(doc.row_planes(s.identity.node_count(), s.identity.edge_count()))?;
+    let planes = gf(doc.projection_layers(s.identity.node_count(), s.identity.edge_count()))?;
     let row = |index: ElementIndex, layer: usize| -> Option<u64> {
         let (plane, i) = match index {
-            ElementIndex::Node(i) => (planes[layer].0?, i),
-            ElementIndex::Edge(i) => (planes[layer].1?, i),
+            ElementIndex::Node(i) => (planes[layer].node_rows?, i),
+            ElementIndex::Edge(i) => (planes[layer].edge_rows?, i),
         };
         let value = u64_at(plane, i * 8);
         (value != u64::MAX).then_some(value)
@@ -1277,9 +1278,8 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
         }
         offsets.push(rows.len() as u64);
     }
-    let ids = (0..doc.layer_count()).map(|i| gf(doc.result_id_ref(i))).collect::<Result<Vec<_>>>()?;
-    let texts = ids.iter().map(|id| id.unwrap_or("")).collect::<Vec<_>>();
-    let valid = ids.iter().map(|id| u8::from(id.is_some())).collect::<Vec<_>>();
+    let texts = planes.iter().map(|layer| layer.result_id.unwrap_or("")).collect::<Vec<_>>();
+    let valid = planes.iter().map(|layer| u8::from(layer.result_id.is_some())).collect::<Vec<_>>();
     b.bytes("selection.refs.bytes", 0, &encode_refs(&refs)?);
     b.u64s("selection.indices.u64", 0, &indices);
     b.u64s("selection.layer_offsets.u64", 0, &offsets);

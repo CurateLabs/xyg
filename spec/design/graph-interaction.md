@@ -134,11 +134,20 @@ edge selects **both**; `SelectRefs` disambiguates by kind.
 ### 2.1.1 Complete selection/result-row publication (bounded P1)
 Every successful publication reply (Render, Update, or interaction; not Open's
 acknowledgment or Poll's event) adds these index-0 sections. The snapshot is
-independent of `changed.refs.bytes`, coordination group, and outbound delivery:
+independent of `changed.refs.bytes`, coordination group, and outbound delivery.
+It is the complete **resolvable per-composition** projection of the shared owner:
+`GraphIdentity::refs_of` omits foreign derived keys whose full exact identity
+(result ID, layer, path, order) does not resolve in this composition. It does not
+change the owner's selection or drop valid local identities because they are hidden, collapsed or offscreen.
+Two sessions with identical canonical UUID planes may bind one owner while
+having overlay IDs A/B: B publishes its resolvable subset after A selects an
+A-only derived edge, including on bind/rebind and exact retries. This is not a
+remap error. `outcome.u32[2]` (`outcome.selected`) remains the full adopted-owner
+selection count, so it may exceed the number of `selection.refs` in a reply.
 
 | Section | Exact meaning |
 |---|---|
-| `selection.refs.bytes` | Existing refs encoding; complete selected canonical transport identities, ≤10,000, sorted by `coordination::compare`; no aggregates or local result slots |
+| `selection.refs.bytes` | Existing refs encoding; complete resolvable selected canonical transport identities, ≤10,000, sorted by `coordination::compare`; no aggregates or local result slots |
 | `selection.indices.u64` | N source node/edge indices aligned with refs (kind comes from each ref) |
 | `selection.layer_offsets.u64` | CSR N+1 offsets, first 0, last M |
 | `selection.layers.u32` | M original layer indices, ascending within each selected element |
@@ -148,7 +157,7 @@ independent of `changed.refs.bytes`, coordination group, and outbound delivery:
 
 IDs preserve arbitrary UTF-8, Unicode, spaces and long strings exactly. Missing
 inapplicable row planes mean no mapping; present planes must be u64 with the
-source node/edge count. Empty selection has valid empty refs, empty indices,
+source node/edge count. An empty per-composition snapshot has valid empty refs, empty indices,
 empty layer/row arrays and offsets `[0]`; layer ID tables remain complete.
 Projection uses `GraphInteractionState.selection`, `GraphIdentity.refs_of`,
 `to_transport`, `resolve`, and the existing coordination comparator. UPDATE
@@ -159,9 +168,16 @@ reply under the existing capacity retry contract.
 
 Row access borrows optional planes without source-sized row vectors. Publication
 visits selected elements × original layers, counts actual non-sentinel mappings
-before allocating output tables, and admits `layers × (2 × selected + 1)`
-work units (two row probes per cell plus per-layer descriptors) against the
-existing interaction ceiling. Before candidate cloning, admission additionally reserves 4,096 bytes,
+before allocating output tables, and admits
+`document_sections + layers × (2 × resolvable_selected + 1)` work units against
+the existing interaction ceiling. Borrowed result IDs and optional node/edge
+row planes are gathered together in one section pass; IDs are not looked up
+once per layer with a linear container search. Present IDs must be UTF-8 of the
+correct dtype, including present-empty strings. Out-of-range projection layer
+indices fail safely; duplicate sections remain container errors. The remaining
+units cover two row probes per selected/layer cell and per-layer output tables.
+This bounds the P1 projection pass; the generic container decoder and existing
+identity reader are unchanged. Before candidate cloning, admission additionally reserves 4,096 bytes,
 256 bytes per possible selected source element (capped at 10,000), 256 per layer,
 and 128 per possible selected entry in each present row plane. The existing
 text envelope covers exact-ID copies; new reservations include CSR/table scratch,
@@ -295,7 +311,13 @@ alpha/cooling, RNG and hierarchy without reconstruction. Pins without positions
 retain legacy ingress acceptance: seed first, then anchor those initial positions
 by setting the existing force state's pin mask for continuation. Complete authored
 `load.x/y` paint directly; their first RelayoutStep constructs CoSE at those
-coordinates with UUID pins. Invisible sources use the existing centroid parking.
+coordinates with UUID pins. A Preview or Commit before the first Render uses
+the same configured one-tick seed when progressive, or the legacy 300-tick seed
+when absent/zero, then applies the move delta. Seeded positions remain local
+until validation succeeds; a failed wire candidate does not install positions,
+pins, a move origin or a retry/sequence update. The successful move invalidates
+continuation as usual, so the next step constructs at the moved coordinates.
+Invisible sources use the existing centroid parking.
 `load.cose.f64` has exactly six finite values in the order in §1.2;
 `load.cose.bounds.f64` has exactly four values. Each optional plane independently
 uses existing `CoseOptions` defaults when absent; existing `CoseOptions::is_valid`
@@ -307,8 +329,10 @@ progressive must have exactly one byte, 0 or 1.
 Each retained state counts actual completed native ticks. `relayout.steps.u64[1]`
 is additive beside `relayout.alpha.f64[1]` and `relayout.done.u8[1]` on step
 replies and progressive publications with retained state, including the first
-paint. Empty native states complete zero ticks; settled states count no further
-ticks even if a host requests more. Counts restart when a new force state is
+paint. Empty retained native states report `done=1` with alpha unchanged and
+zero completed ticks, including initially empty/all-hidden owners and a new
+empty state built after visibility invalidation. Empty and settled states count
+no further ticks even if a host requests more. Counts restart when a new force state is
 built. Selection, hover, focus, camera and style republication preserve
 continuation. Existing invalidation remains: pin changes, position changes
 (including move preview/commit/cancel), binding, temporal-frame visibility changes

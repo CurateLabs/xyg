@@ -1,0 +1,36 @@
+{
+  "base": "ec3b738eda52c8d55c27989bdcf8d6017d320bed",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "branch": "t3/rust-graph-session-p1",
+  "native": {
+    "path": "target/task-tmp/p1/release/libxyg_core.so",
+    "sha256": "79f9662368a9af1a0353604e153651fb68715b7cb19e3fdbc96b3456729a7190"
+  },
+  "sources": {
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "Cargo.toml": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+    "crates/xyg-engine/src/graphforge/composed.rs": "503fb6308e5b5da108224be7c2a8d51325963b7906c82bdbd1fa0f69d30a82f6",
+    "crates/xyg-engine/src/graphforge/interaction/layout.rs": "e1776a625f6a8befcf57e62fc7a90a146d374d72b0c5cd5e7de4e64cfbfb68d3",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/p1.rs": "c0215e3a8f1796731e46fb43f540d8c1e3d4c21c0c2041c8bc3703d089e7a73b",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "208cef9ea2545e0d1162a5ade4f002c108a3a0893986c8a0ac012f781ee6db50",
+    "js/optimize-wasm.mjs": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658",
+    "js/package-wasm.mjs": "faebc6d4d8c09d6346321b397a04d890ec354aadbb1e209232f6635e19e8873a",
+    "packages/xy-node/test/graph-session-wire.test.mjs": "52624d13e86db265c0ec4c9f0a248ed7c0a4debc0c85832ac849a5a0c6b7c737",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    "spec/design/graph-interaction.md": "2440423e3f5ecd7c99be758182d9b8031ad8c36d26b53f4d3e5ab5082818a4c5",
+    "spec/design/graphforge-node-scheduling.md": "b3b0c2e608a10d6a27b08092bd22414fb68fa75360f697ab3b80459689ccc3f5",
+    "spec/performance/graph-session-p1-review-repair-2026-11-03/native-regression.mjs": "fece8e8a240a513aa774943ea78059cf3d5aa198da1e42c0934b89883a162806"
+  },
+  "package": {
+    "rerun": false,
+    "status": "prior shipping FAIL remains unresolved; no fresh WASM artifact or size claim",
+    "priorReceipt": "../graph-session-p1-2026-11-03/artifacts.json"
+  },
+  "versions": {
+    "nativeAbi": 398,
+    "wasmAbi": 35,
+    "scene": 34,
+    "painter": 17
+  },
+  "parentBindCountRepair": "e91fe2f7531cc808987d0af0868c321c55e51066 must be preserved on integration; bind path unchanged by this repair"
+}

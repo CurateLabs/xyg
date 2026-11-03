@@ -98,7 +98,7 @@ pub(super) struct Relayout {
 
 impl Relayout {
     pub(super) fn report(&self) -> RelayoutReport {
-        RelayoutReport { alpha: self.force.alpha, done: self.force.alpha < RELAYOUT_SETTLED_ALPHA,
+        RelayoutReport { alpha: self.force.alpha, done: self.active.is_empty() || self.force.alpha < RELAYOUT_SETTLED_ALPHA,
             completed_steps: self.completed_steps }
     }
 }
@@ -161,9 +161,6 @@ impl GraphSession {
             self.positions = Some(self.initial_positions(vis)?);
             return Ok(());
         }
-        let work = vis.node.iter().filter(|&&v| v == 1).count()
-            + vis.edge.iter().filter(|&&v| v == 1).count();
-        if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); }
         let (problem, mut force) = self.seed_layout(vis, 1)?;
         let positions = self.source_positions(&problem, &force);
         let mut pins = vec![0; self.identity.node_count()];
@@ -183,11 +180,19 @@ impl GraphSession {
 
     /// Keep freshly seeded positions local until an operation is admitted.
     fn initial_positions(&mut self, vis: &Visible) -> Result<(Vec<f64>, Vec<f64>), InteractionStatus> {
-        let (problem, layout) = self.seed_layout(vis, INITIAL_LAYOUT_STEPS)?;
+        let steps = if self.progressive { 1 } else { INITIAL_LAYOUT_STEPS };
+        let (problem, layout) = self.seed_layout(vis, steps)?;
         Ok(self.source_positions(&problem, &layout))
     }
 
     fn seed_layout(&mut self, vis: &Visible, steps: u32) -> Result<(Problem, ForceState), InteractionStatus> {
+        if self.progressive {
+            let live = vis.node.iter().filter(|&&v| v == 1).count()
+                + vis.edge.iter().filter(|&&v| v == 1).count();
+            if u64::from(steps) * live as u64 > MAX_GRAPH_INTERACTION_WORK {
+                return Err(InteractionStatus::Budget);
+            }
+        }
         let problem = self.layout_problem(vis);
         let m = problem.active.len();
         let mut layout = ForceState::new_configured(
@@ -443,27 +448,22 @@ impl GraphSession {
             }
             // A settled/native-empty state executes no further ticks.
             retained.completed_steps = completed_steps - u64::from(steps - completed);
-            let completed_steps = retained.completed_steps;
             session.work += u64::from(steps) * (active + live_edges) as u64;
             let force = &retained.force;
             if !force.alpha.is_finite() || force.x.iter().chain(&force.y).any(|v| !v.is_finite()) {
                 session.relayout = None;
                 return Err(InteractionStatus::Invalid);
             }
-            let alpha = force.alpha;
             if let Some((px, py)) = session.positions.as_mut() {
                 for (k, &node) in retained.active.iter().enumerate() {
                     px[node] = force.x[k];
                     py[node] = force.y[k];
                 }
             }
+            let report = retained.report();
             session.bump();
             let mut outcome = session.outcome(world, true);
-            outcome.relayout = Some(RelayoutReport {
-                alpha,
-                done: alpha < RELAYOUT_SETTLED_ALPHA,
-                completed_steps,
-            });
+            outcome.relayout = Some(report);
             Ok(outcome)
         })
     }
