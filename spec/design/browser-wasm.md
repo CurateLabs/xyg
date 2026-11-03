@@ -732,15 +732,21 @@ Plain-CSS chrome compatibility (§36) also includes box effects. The adapter
 conservatively keeps HTML paint, with no SVG copy, for background images
 (including gradients), borders/border images, padding, rounded corners,
 shadows, painted outlines, filters/backdrop filters, transforms (including
-individual translate/rotate/scale or zoom), masks, clipping, non-normal blend
+individual translate/rotate/scale or zoom), supported non-`none` motion paths,
+supported non-`none` `-webkit-box-reflect` on the box, masks, clipping, non-normal blend
 mode, non-border-box background clipping, non-visible overflow, generated
 pseudo-element content, animations or nonzero transitions. Non-absolute,
-non-block or content-hidden boxes also stay HTML. Transformed/zoomed ancestors
+non-block or content-hidden boxes also stay HTML. Effective `pointer-events`
+other than `none` also retains HTML: clipping the public slot and substituting
+a pointer-transparent SVG must not remove an authored hit/click/hover region,
+including important class overrides. Transformed/zoomed/motion-path ancestors
 or a labels layer with top/left border or padding retain HTML because a screen
 rectangle cannot faithfully invert that CSS geometry. An authored important
 clip rule that prevents suppressing the old box also retains HTML. This is a
-narrow solid-box projection, not a general CSS-to-SVG renderer. The CSS cascade
-is evaluated again on each chrome draw; `refreshTheme()` and the existing
+narrow solid-box projection, not a general CSS-to-SVG renderer. Motion-path
+and reflection checks require a nonempty supported computed value other than
+`none`; an absent/unsupported property does not make every spine ineligible.
+The CSS cascade is evaluated again on each chrome draw; `refreshTheme()` and the existing
 ancestor class/style theme observer recreate the paint path, so switching
 between solid, border and gradient styles leaves no stale visible copy.
 
@@ -751,8 +757,10 @@ parity. Native raster strokes still have round caps while canonical SVG and
 browser SVG/HTML spines have flat ends; arbitrary endpoint pixel equality is
 not asserted. Native property-graph initial home-view, caption and theme
 failures remain separately owned by #935. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
-records the fresh all-pixel default-property comparisons and the unchanged
-historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
+records the fresh all-pixel default-property comparisons; the [R4 eligibility
+repair receipt](../performance/graph-resolved-axis-eligibility-repair-2026-11-03/README.md)
+records pointer/motion-path/reflection reproductions and compatibility repair.
+Both preserve the unchanged historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
 
 The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is

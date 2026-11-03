@@ -1,0 +1,3839 @@
+{
+  "purpose": "Real public-slot compatibility; supported features only; no masks or supplied plot",
+  "browser": "156.0.8078.4",
+  "probeSourceSha256": "76ac4d51afe8419f52c189715f2bde6b6d6be1cd061c2300d32b370afbc848df",
+  "assets": {
+    "baseline": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/resolved-spine-188f-baseline/packages/xy-client/dist/index.js",
+      "sha256": "351fa5038800204a13a99ae9cb91612472e3368f6d7ecd4829d589e39b16acd7"
+    },
+    "candidate": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xy-client/dist/index.js",
+      "sha256": "b2c2066b1d6ed2687a1a248c3f7e8eb1541d4bf6a39ae56a75a99968b5a13f6b"
+    },
+    "wasm": {
+      "path": "packages/xy-client/dist/xyg-wasm.wasm",
+      "sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50"
+    },
+    "worker": {
+      "path": "packages/xy-client/dist/wasm-worker.js",
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+    }
+  },
+  "cases": [
+    {
+      "lane": "baseline",
+      "name": "control-solid",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": []
+    },
+    {
+      "lane": "baseline",
+      "name": "pointer-inline",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "auto",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "baseline",
+      "name": "pointer-important",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "baseline",
+      "name": "motion-box",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 70.63603210449219,
+          "y": 72.63603210449219,
+          "width": 62.22540283203125,
+          "height": 62.22540283203125
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "path(\"M 60 60 L 140 140\")",
+          "offsetDistance": "35px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe motion-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": []
+    },
+    {
+      "lane": "baseline",
+      "name": "motion-ancestor",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 137.27207946777344,
+          "y": 88.78679656982422,
+          "width": 62.22540283203125,
+          "height": 62.22539520263672
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": -33.84776306152344,
+            "y": -73.84776306152344,
+            "width": 395.97979736328125,
+            "height": 395.97979736328125
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "path(\"M 150 110 L 190 150\")",
+            "offsetDistance": "20px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": []
+    },
+    {
+      "lane": "baseline",
+      "name": "reflection",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "below 4px none"
+        }
+      },
+      "className": "eligibility-probe reflection-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": []
+    },
+    {
+      "lane": "candidate",
+      "name": "control-solid",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "inset(100%)",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe",
+      "inlinePointerEvents": "none",
+      "paint": "svg",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [
+        {
+          "axis": "x",
+          "side": "bottom",
+          "attributes": {
+            "x1": "17",
+            "y1": "23",
+            "x2": "97",
+            "y2": "23",
+            "stroke": "rgb(255, 0, 0)",
+            "stroke-width": "8",
+            "stroke-linecap": "butt"
+          },
+          "matrix": {
+            "a": 1,
+            "b": 0,
+            "c": 0,
+            "d": 1,
+            "e": 0,
+            "f": 0
+          }
+        }
+      ]
+    },
+    {
+      "lane": "candidate",
+      "name": "pointer-inline",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "auto",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "candidate",
+      "name": "pointer-important",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "candidate",
+      "name": "motion-box",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 70.63603210449219,
+          "y": 72.63603210449219,
+          "width": 62.22540283203125,
+          "height": 62.22540283203125
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "path(\"M 60 60 L 140 140\")",
+          "offsetDistance": "35px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe motion-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": []
+    },
+    {
+      "lane": "candidate",
+      "name": "motion-ancestor",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 137.27207946777344,
+          "y": 88.78679656982422,
+          "width": 62.22540283203125,
+          "height": 62.22539520263672
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": -33.84776306152344,
+            "y": -73.84776306152344,
+            "width": 395.97979736328125,
+            "height": 395.97979736328125
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "path(\"M 150 110 L 190 150\")",
+            "offsetDistance": "20px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": []
+    },
+    {
+      "lane": "candidate",
+      "name": "reflection",
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "below 4px none"
+        }
+      },
+      "className": "eligibility-probe reflection-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": []
+    }
+  ],
+  "switches": [
+    {
+      "lane": "baseline",
+      "variant": "pointer-inline",
+      "mode": "auto",
+      "iteration": 0,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "auto",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "baseline",
+      "variant": "pointer-inline",
+      "mode": "none",
+      "iteration": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": false,
+        "hitTag": "DIV",
+        "hitSlot": "axis_band",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 1,
+        "hover": false
+      }
+    },
+    {
+      "lane": "baseline",
+      "variant": "pointer-inline",
+      "mode": "auto",
+      "iteration": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "auto",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 2,
+        "hover": true
+      }
+    },
+    {
+      "lane": "baseline",
+      "variant": "pointer-important",
+      "mode": "auto",
+      "iteration": 0,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "baseline",
+      "variant": "pointer-important",
+      "mode": "none",
+      "iteration": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": false,
+        "hitTag": "DIV",
+        "hitSlot": "axis_band",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 1,
+        "hover": false
+      }
+    },
+    {
+      "lane": "baseline",
+      "variant": "pointer-important",
+      "mode": "auto",
+      "iteration": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 2,
+        "hover": true
+      }
+    },
+    {
+      "lane": "candidate",
+      "variant": "pointer-inline",
+      "mode": "auto",
+      "iteration": 0,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "auto",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "candidate",
+      "variant": "pointer-inline",
+      "mode": "none",
+      "iteration": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "inset(100%)",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "none",
+      "paint": "svg",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [
+        {
+          "axis": "x",
+          "side": "bottom",
+          "attributes": {
+            "x1": "17",
+            "y1": "23",
+            "x2": "97",
+            "y2": "23",
+            "stroke": "rgb(255, 0, 0)",
+            "stroke-width": "8",
+            "stroke-linecap": "butt"
+          },
+          "matrix": {
+            "a": 1,
+            "b": 0,
+            "c": 0,
+            "d": 1,
+            "e": 0,
+            "f": 0
+          }
+        }
+      ],
+      "interaction": {
+        "hitPublicSlot": false,
+        "hitTag": "DIV",
+        "hitSlot": "axis_band",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 1,
+        "hover": false
+      }
+    },
+    {
+      "lane": "candidate",
+      "variant": "pointer-inline",
+      "mode": "auto",
+      "iteration": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe",
+      "inlinePointerEvents": "auto",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 2,
+        "hover": true
+      }
+    },
+    {
+      "lane": "candidate",
+      "variant": "pointer-important",
+      "mode": "auto",
+      "iteration": 0,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 0,
+        "clicks": 1,
+        "hover": true
+      }
+    },
+    {
+      "lane": "candidate",
+      "variant": "pointer-important",
+      "mode": "none",
+      "iteration": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "none",
+          "zIndex": "99",
+          "clipPath": "inset(100%)",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "svg",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [
+        {
+          "axis": "x",
+          "side": "bottom",
+          "attributes": {
+            "x1": "17",
+            "y1": "23",
+            "x2": "97",
+            "y2": "23",
+            "stroke": "rgb(255, 0, 0)",
+            "stroke-width": "8",
+            "stroke-linecap": "butt"
+          },
+          "matrix": {
+            "a": 1,
+            "b": 0,
+            "c": 0,
+            "d": 1,
+            "e": 0,
+            "f": 0
+          }
+        }
+      ],
+      "interaction": {
+        "hitPublicSlot": false,
+        "hitTag": "DIV",
+        "hitSlot": "axis_band",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 1,
+        "hover": false
+      }
+    },
+    {
+      "lane": "candidate",
+      "variant": "pointer-important",
+      "mode": "auto",
+      "iteration": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "dpr": 1,
+      "support": {
+        "motion": true,
+        "reflection": true
+      },
+      "publicBox": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "client": {
+          "width": 80,
+          "height": 8
+        },
+        "computed": {
+          "width": "80px",
+          "height": "8px",
+          "pointerEvents": "auto",
+          "zIndex": "99",
+          "clipPath": "none",
+          "transform": "none",
+          "translate": "none",
+          "rotate": "none",
+          "scale": "none",
+          "offsetPath": "none",
+          "offsetDistance": "0px",
+          "offsetRotate": "auto 0deg",
+          "offsetAnchor": "auto",
+          "webkitBoxReflect": "none"
+        }
+      },
+      "className": "eligibility-probe pointer-probe pointer-important",
+      "inlinePointerEvents": "none",
+      "paint": "html",
+      "ancestors": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "none",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        },
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 240
+          },
+          "client": {
+            "width": 320,
+            "height": 240
+          },
+          "computed": {
+            "width": "320px",
+            "height": "240px",
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "clipPath": "none",
+            "transform": "none",
+            "translate": "none",
+            "rotate": "none",
+            "scale": "none",
+            "offsetPath": "none",
+            "offsetDistance": "0px",
+            "offsetRotate": "auto 0deg",
+            "offsetAnchor": "auto",
+            "webkitBoxReflect": "none"
+          }
+        }
+      ],
+      "svg": [],
+      "interaction": {
+        "hitPublicSlot": true,
+        "hitTag": "DIV",
+        "hitSlot": "axis_line",
+        "stack": [
+          {
+            "tag": "DIV",
+            "slot": "axis_line"
+          },
+          {
+            "tag": "DIV",
+            "slot": "axis_band"
+          },
+          {
+            "tag": "DIV",
+            "slot": "root"
+          },
+          {
+            "tag": "DIV",
+            "slot": null
+          },
+          {
+            "tag": "BODY",
+            "slot": null
+          },
+          {
+            "tag": "HTML",
+            "slot": null
+          }
+        ],
+        "clicksBefore": 1,
+        "clicks": 2,
+        "hover": true
+      }
+    }
+  ],
+  "skipped": [],
+  "failures": []
+}

@@ -1,0 +1,55 @@
+{
+  "frozen_25d_sha256": "6cef37f9b430526cc0a4626cba7f56b67d4b67cf6161fbe0bd1f454fae45ec4f",
+  "no_production_source_change": "Same exact 25d module as historical reference, same producer SVG bytes, unchanged worker/WASM",
+  "comparisons_to_historical_25d": {
+    "w1-top-right-opaque.dpr1.25.resolved.png": {
+      "different_pixels": 1,
+      "max_channel_difference": 2
+    },
+    "w0-top-right-transparent.dpr2.resolved.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    },
+    "w0-top-right-transparent.dpr1.25.resolved.native-svg.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    },
+    "w1-top-right-opaque.dpr2.resolved.native-svg.png": {
+      "different_pixels": 5,
+      "max_channel_difference": 1
+    },
+    "w1-top-right-alpha.dpr2.resolved.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    },
+    "w1-top-right-alpha.dpr1.25.resolved.native-svg.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    },
+    "w1-top-right-alpha.dpr2.resolved.native-svg.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    },
+    "w0-top-right-transparent.dpr2.resolved.native-svg.png": {
+      "different_pixels": 5,
+      "max_channel_difference": 1
+    },
+    "w1-top-right-alpha.dpr1.25.resolved.png": {
+      "different_pixels": 1,
+      "max_channel_difference": 2
+    },
+    "w1-top-right-opaque.dpr2.resolved.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    },
+    "w0-top-right-transparent.dpr1.25.resolved.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    },
+    "w1-top-right-opaque.dpr1.25.resolved.native-svg.png": {
+      "different_pixels": 0,
+      "max_channel_difference": 0
+    }
+  },
+  "purpose": "DIAGNOSTIC ONLY; no alternate product paint or acceptance gate"
+}

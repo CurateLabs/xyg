@@ -7653,7 +7653,10 @@ export class ChartView {
   _paintResolvedSpine(box, vertical, canonical) {
     const style = getComputedStyle(box);
     const zero = (value) => Number.parseFloat(value) === 0;
-    const decorated = style.backgroundImage !== "none" || style.boxShadow !== "none"
+    const nonNone = (value) => Boolean(value && value !== "none");
+    const decorated = style.pointerEvents !== "none"
+      || nonNone(style.offsetPath) || nonNone(style.getPropertyValue("-webkit-box-reflect"))
+      || style.backgroundImage !== "none" || style.boxShadow !== "none"
       || style.filter !== "none" || style.backdropFilter !== "none"
       || style.transform !== "none" || style.translate !== "none"
       || style.rotate !== "none" || style.scale !== "none" || Number(style.zoom) !== 1
@@ -7682,7 +7685,7 @@ export class ChartView {
       const parentStyle = getComputedStyle(node);
       if (parentStyle.transform !== "none" || parentStyle.translate !== "none"
         || parentStyle.rotate !== "none" || parentStyle.scale !== "none"
-        || Number(parentStyle.zoom) !== 1) {
+        || Number(parentStyle.zoom) !== 1 || nonNone(parentStyle.offsetPath)) {
         transformed = true; break;
       }
     }

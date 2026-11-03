@@ -1,0 +1,43 @@
+{
+  "cases": 12,
+  "switches": 12,
+  "skipped": [],
+  "failures": [
+    {
+      "name": "pointer-inline",
+      "message": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "pointer-important",
+      "message": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "motion-box",
+      "message": "Expected values to be strictly equal:\n\n'svg' !== 'html'\n"
+    },
+    {
+      "name": "motion-ancestor",
+      "message": "Expected values to be strictly equal:\n\n'svg' !== 'html'\n"
+    },
+    {
+      "name": "reflection",
+      "message": "Expected values to be strictly equal:\n\n'svg' !== 'html'\n"
+    },
+    {
+      "name": "pointer-inline switch 0",
+      "message": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "pointer-inline switch 2",
+      "message": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "pointer-important switch 0",
+      "message": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "pointer-important switch 2",
+      "message": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    }
+  ]
+}
