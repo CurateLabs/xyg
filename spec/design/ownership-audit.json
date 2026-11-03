@@ -3491,6 +3491,14 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_graph_session.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_graph_static.py",
       "current_owner": "Python host",
       "policy": "python-host",

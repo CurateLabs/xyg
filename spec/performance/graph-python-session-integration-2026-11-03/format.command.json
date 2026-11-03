@@ -1,0 +1,16 @@
+{
+  "name": "format",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.035,
+  "rawSha256": "b1a0218cc79256e68fdf1cddea9eecab5d5985ff2d2dd8b03b4849c1547feaff",
+  "log": "format.txt.gz",
+  "gzipSha256": "ea2ffe4f194adf4b79b0305bb062be28eb17416fcf1ede21c0be64f6e99a11fb"
+}

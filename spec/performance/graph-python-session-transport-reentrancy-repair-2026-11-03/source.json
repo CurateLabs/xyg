@@ -1,0 +1,20 @@
+{
+  "repair_base": "346256a1c4386bb4f2c3b05e54e9d489afd1ee87",
+  "accepted_native_base": "030c79062138bb8287df2dc93ab6fdc0ecc8747b",
+  "branch": "t3/private-graph-session-transport",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-200ab481",
+  "original_receipt_tree": "2c7bfed7ec18406a821a0c9a7d8e1de4ea28ba96",
+  "original_receipt_unchanged": true,
+  "native_source_unchanged": true,
+  "files_sha256": {
+    "python/xyg/_graph_session.py": "7694218c81a6a9ca004d9f0eb22d47800cc72310c91d210213f83807eceaebc4",
+    "tests/test_graph_session_python_transport.py": "082d74c92f3de994aebe7813627e2dfdff83ed63ffc3145bce569c447ac07857",
+    "tests/test_graph_session_abi.py": "30223edcbce95670ce10a487d2e6d418f6264a16b20764d96240f069688d2173",
+    "spec/design/graph-session-python-transport.md": "8e730ed98a3bea3fa01a6a09bbe6221c0c65acc5262cc51fb84baa565de313ca",
+    "python/xyg/_native.py": "bde85238e94b41def219f1dcf347c62da63d3e5496f259d761d1fbb749b31fc1",
+    "python/xyg/_abi_generated.py": "2bd6ed6b088bb0af13442021836d1632773cfecc50ac4a900e5639e7d6553062",
+    "spec/design/graph-interaction.md": "70aed60f2ab7c3eb3081d35f59ab04b3fa14b936cf717a78047504fd1b50d7e9",
+    "spec/design/ownership-audit.json": "0faa8720b6ac2259efef22689716a1e2faf583afdafb273c347113f4239effb9",
+    "spec/design/ownership-audit.md": "b326506866680cd924a196a867b5454b4d01512779077c12a185d0320a4cb1c9"
+  }
+}

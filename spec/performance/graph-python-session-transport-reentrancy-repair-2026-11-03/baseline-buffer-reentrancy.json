@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "pytest",
+    "tests/test_graph_session_python_transport.py",
+    "-k",
+    "command_buffer_callback and False",
+    "-q",
+    "--tb=short"
+  ],
+  "implementation_commit": "346256a1c4386bb4f2c3b05e54e9d489afd1ee87",
+  "implementation_unmodified": true,
+  "tests_include_new_regression": true,
+  "exit_code": 1,
+  "elapsed_seconds": 8.698235,
+  "expected": "one failure: supported bytearray subclass callback deadlocks; subprocess timeout after 8 seconds; child killed and reaped"
+}

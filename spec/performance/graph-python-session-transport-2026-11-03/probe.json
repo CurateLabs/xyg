@@ -1,0 +1,18 @@
+{
+  "fixture": {
+    "source_nodes": 2,
+    "source_edges": 1
+  },
+  "actual_native_abi": 398,
+  "request_bytes": 200,
+  "request_sha256": "7bd82bb5401a273630b80f00d276c77526c5db4badfa7414e5ee108f7e99e8b0",
+  "complete_xygr_bytes": 3152,
+  "reply_sha256": "dbac621528c40d4ffcde50a580eee62e2419ae3b04261dc1531e28567dab1712",
+  "byte_identical_same_op_replay": true,
+  "native_xygr_status_u32": [
+    0
+  ],
+  "render_revision": 1,
+  "render_sections_present": true,
+  "reproduce": "runpy.run_path(\"tests/test_graph_session_python_transport.py\"); _open(0x5059544850524F42), _request(instance, 2, 21), session.render(request)"
+}

@@ -1,0 +1,141 @@
+{
+  "parent": "e91fe2f7531cc808987d0af0868c321c55e51066",
+  "reviewedChild": "322e4b951c5f7728ff75f66ed8f3107139facc5a",
+  "artifactCommit": null,
+  "nonreceiptDiffSha256": "916d18d9d4f24bc6eecd19ba61f33d041ea31fd5117d0d60fa098f3c093412e8",
+  "sources": {
+    "python/xyg/_graph_session.py": "7694218c81a6a9ca004d9f0eb22d47800cc72310c91d210213f83807eceaebc4",
+    "spec/design/graph-session-python-transport.md": "8e730ed98a3bea3fa01a6a09bbe6221c0c65acc5262cc51fb84baa565de313ca",
+    "spec/design/ownership-audit.json": "ade7f092baa6b62cddb0e70d7ecb99ba9bdd071bca650c2234c7dc43e3831ee7",
+    "spec/design/ownership-audit.md": "6659cd82cc23013181686454056aac33fdb1f74196d7b46decaf2e986d0a7cc1",
+    "tests/test_graph_session_python_transport.py": "082d74c92f3de994aebe7813627e2dfdff83ed63ffc3145bce569c447ac07857",
+    "spec/design/graph-interaction.md": "ccda4c358f2b94a451aad47737d4b1f2eff57064a0fe1ce83650b804efc4d410"
+  },
+  "historicalFilesUnchanged": 3181,
+  "commands": {
+    "inventory.command.json": {
+      "name": "inventory",
+      "command": [
+        "python3",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "seconds": 4.577,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "log": "inventory.txt.gz",
+      "gzipSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+    },
+    "native-smoke.command.json": {
+      "name": "native-smoke",
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.184,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "log": "native-smoke.txt.gz",
+      "gzipSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "native-tests.command.json": {
+      "name": "native-tests",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_graph_session_abi.py",
+        "tests/test_abi_parity.py",
+        "tests/test_generated_abi_trace.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_audit_python_host_core.py"
+      ],
+      "exitCode": 0,
+      "seconds": 23.591,
+      "rawSha256": "184760edcbc7c91fd1d65dd08c3975b97d4011dc1f131dbdc958500bc19a080f",
+      "log": "native-tests.txt.gz",
+      "gzipSha256": "19b7d1a15e34512d5eb5ae23a26df45a2b7970ee203d915e611df9ab42e94bfa"
+    },
+    "ownership.command.json": {
+      "name": "ownership",
+      "command": [
+        "python3",
+        "scripts/verify_ownership.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.736,
+      "rawSha256": "1d5b9bbf98c5a2fd29d68e141974cfe7ec91334985f614921a2963cbdb35ce73",
+      "log": "ownership.txt.gz",
+      "gzipSha256": "9ca65de85436a11f67fe8cc24ce098a3deb64e1736262dfcbd2d8024ce1224c9"
+    },
+    "typecheck.command.json": {
+      "name": "typecheck",
+      "command": [
+        "uv",
+        "run",
+        "ty",
+        "check",
+        "python/xyg/_graph_session.py"
+      ],
+      "exitCode": 0,
+      "seconds": 0.542,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "typecheck.txt.gz",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format.command.json": {
+      "name": "format",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.035,
+      "rawSha256": "b1a0218cc79256e68fdf1cddea9eecab5d5985ff2d2dd8b03b4849c1547feaff",
+      "log": "format.txt.gz",
+      "gzipSha256": "ea2ffe4f194adf4b79b0305bb062be28eb17416fcf1ede21c0be64f6e99a11fb"
+    },
+    "hooks.command.json": {
+      "name": "hooks",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "seconds": 0.573,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "log": "hooks.txt.gz",
+      "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff.command.json": {
+      "name": "ruff",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "seconds": 0.071,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log": "ruff.txt.gz",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    }
+  },
+  "nativeLibrary": "target/release/libxyg_core.so",
+  "nativeSha256": "95c16daf37ce19af5a9d3b9d1f08a4d8e12580f522b2dfea90aab90f121f509e",
+  "nativeABI": 398,
+  "producerReuse": "reuse-controls.json",
+  "publicAPIChanged": false
+}
