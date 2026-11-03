@@ -1,0 +1,14 @@
+{
+  "index.js": {
+    "bytes": 763072,
+    "sha256": "3b194aebda9a2d8f30e0503f01310d944efb72edcca4701777a3c211803ddf70",
+    "matches_parent_78_expected": true,
+    "paired_copy_exact": true
+  },
+  "standalone.js": {
+    "bytes": 763103,
+    "sha256": "bdce4a092184e0feb745ea4ebfc57b3929b5ca795d5ec968f9a678e233efeea8",
+    "matches_parent_78_expected": true,
+    "paired_copy_exact": true
+  }
+}

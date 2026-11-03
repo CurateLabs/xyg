@@ -1,0 +1,15 @@
+{
+  "cases": 101,
+  "all_requests_exact": true,
+  "exact_reviewed_2ed_outputs": true,
+  "changes_from_original_e768_native": [
+    {
+      "case": "property graph + render",
+      "sections": [
+        "scene.canonical:0"
+      ]
+    }
+  ],
+  "all_other_sections_exact": true,
+  "positions_ids_relationships_classes_statuses_captions_legend_exact": true
+}

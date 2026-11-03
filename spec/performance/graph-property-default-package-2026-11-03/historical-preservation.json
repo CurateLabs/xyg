@@ -1,0 +1,12 @@
+{
+  "2ed544dcb85698f21d0f5db297320490ce26c8ee": {
+    "files": 7229,
+    "git_blob_map_sha256": "9e0feb77da20925446f38fb18babd33f48d2c6a8120e138c82ede4766c55db5f",
+    "all_worktree_blobs_exact": true
+  },
+  "78b4b69f76b955ab19bd365f0492711cc3c06c1f": {
+    "files": 8229,
+    "git_blob_map_sha256": "3900ca4f372f23f66e378ae60ba4e9e8fbea5f14358a96de7427f500efe5fdee",
+    "all_worktree_blobs_exact": true
+  }
+}

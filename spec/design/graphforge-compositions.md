@@ -418,13 +418,17 @@ full-image helper passes all three comparisons in both themes (geometry
 within 0.005 CSS px), with exact Python/Node documents and exports, unchanged
 f64 source positions and identities, and repeated export bytes. The fixture
 now paints the two home-visible captions from the public plan, retaining all
-five source captions. All 99 cross-host requests and every document section
+five source captions. All 101 cross-host requests and every document section
 except the property-render `scene.canonical` remain byte-identical to the
-parent. The shipping package gate still rejects the actual production module
-at 1,922,561 raw / 783,148 gzip6 bytes against unchanged 1,882,112 / 769,024
-limits. Functional checks use those exact rejected production bytes; this
-does not qualify a package or close the remaining intent/digest/safe-pair
-scope of #935, #934, #36 S5b/S6/S7, M4, or #108.
+parent. That historical shipping producer rejected the actual production
+module at 1,922,561 raw / 783,148 gzip6 bytes against the then-current
+1,882,112 / 769,024 limits; its rejected-byte functional proof remains
+historical. The [new package decision and erratum receipt](../performance/graph-property-default-package-2026-11-03/README.md)
+corrects the old prose count (99 → 101, as already recorded in the raw
+comparison), preserves the old receipt unchanged, and records the separately
+approved 1,878/765-KiB functionality gates and fresh combined CSS/property
+shipping qualification. None of this closes #935 intent/digest/safe-pair,
+#934, #36 S5b/S6/S7, M4 or #108, or authorizes publication.
 
 ### 4.5 Derived edges
 
