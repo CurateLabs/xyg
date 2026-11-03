@@ -2831,6 +2831,19 @@ requiring a Rust toolchain — an instant adoption cliff.
   review remains required. Runtime bounds remain 16/384 MiB; the massive-graph
   admission ladder, public host/controller/notebook work and M4/#108 acceptance
   remain outstanding. This package decision establishes no performance win.
+- **Bounded property-default presentation repair (#934/#935):** existing public
+  graph home-domain, hidden-axis and caption policies now govern zero-layer
+  property canonical Scenes (graphforge-compositions §4.4a). Native ABI 399 adds
+  only the shared semantic chrome palette accessor; WASM/Scene/painter stay
+  35/34/17. The actual optimized production module is 1,922,561 raw / 783,148
+  gzip6 bytes, failing the unchanged current P1 gates by 40,449 / 14,124 bytes.
+  All six unmasked property full-image pairs and the full strict-CSP foundation
+  pass against those exact rejected production bytes. This is functional
+  evidence, not package qualification or an allowance to increase the gates.
+  The [append-only receipt](performance/graph-property-default-presentation-2026-11-03/README.md)
+  retains that failure, source/artifact hashes, unchanged historical evidence,
+  and scoped preservation checks; parent integration and independent review
+  remain required. No comparative performance or milestone completion claim.
 - **S4 session ABI growth originally failed the S3 limits.** Native ABI 397 /
   WASM ABI 35 expose the shared graph-session codec/transaction and disposable
   temporal owners, with admitted speculative work and complete retry replies.

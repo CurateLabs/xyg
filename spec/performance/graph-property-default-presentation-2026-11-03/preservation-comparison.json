@@ -1,0 +1,16 @@
+{
+  "cases": 101,
+  "native_abis": [
+    398,
+    399
+  ],
+  "changed": [
+    {
+      "case": "property graph + render",
+      "sections": [
+        "scene.canonical:0"
+      ]
+    }
+  ],
+  "all_other_sections_exact": true
+}

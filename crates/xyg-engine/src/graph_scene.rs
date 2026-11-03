@@ -691,6 +691,45 @@ pub struct GraphHomeLayout<'a> {
     pub base_y: (f64, f64),
 }
 
+impl GraphHomeLayout<'_> {
+    /// Shared cartesian shell for hidden-axis graph home views (§8).
+    pub fn plot(&self, domain: [f64; 4]) -> Result<crate::scene::PlotLayout, SceneError> {
+        let (left, right, top, bottom) =
+            crate::scene::cartesian_scene_margins(crate::scene::CartesianLayoutRequest {
+                viewport_width: self.viewport_width,
+                viewport_height: self.viewport_height,
+                authored_padding: self.padding,
+                title: self.title,
+                x_label: "",
+                y_label: "",
+                x_kind: crate::scene::ScaleKind::Linear,
+                x_lo: domain[0],
+                x_hi: domain[1],
+                x_constant: 1.0,
+                x_mask_nonpositive: false,
+                x_format: None,
+                x_tick_kind: 0,
+                y_kind: crate::scene::ScaleKind::Linear,
+                y_lo: domain[2],
+                y_hi: domain[3],
+                y_constant: 1.0,
+                y_mask_nonpositive: false,
+                y_format: None,
+                y_tick_kind: 0,
+                colorbar_side: crate::scene::ColorbarSide::None,
+                collision: crate::scene::TickCollisionLayout::default(),
+            })?;
+        crate::scene::PlotLayout::new(
+            self.viewport_width,
+            self.viewport_height,
+            left,
+            right,
+            top,
+            bottom,
+        )
+    }
+}
+
 /// What is drawn around one data anchor, in CSS px on each side.
 #[derive(Clone, Copy, Debug)]
 struct Extent {
@@ -928,32 +967,13 @@ pub fn graph_home_domain(
         return None;
     }
     let plot = |domain: [f64; 4]| -> Option<(f64, f64)> {
-        let (left, right, top, bottom) =
-            crate::scene::cartesian_scene_margins(crate::scene::CartesianLayoutRequest {
-                viewport_width: layout.viewport_width,
-                viewport_height: layout.viewport_height,
-                authored_padding: layout.padding,
-                title: layout.title,
-                x_label: "",
-                y_label: "",
-                x_kind: crate::scene::ScaleKind::Linear,
-                x_lo: domain[0],
-                x_hi: domain[1],
-                x_constant: 1.0,
-                x_mask_nonpositive: false,
-                x_format: None,
-                x_tick_kind: 0,
-                y_kind: crate::scene::ScaleKind::Linear,
-                y_lo: domain[2],
-                y_hi: domain[3],
-                y_constant: 1.0,
-                y_mask_nonpositive: false,
-                y_format: None,
-                y_tick_kind: 0,
-                colorbar_side: crate::scene::ColorbarSide::None,
-                collision: crate::scene::TickCollisionLayout::default(),
-            })
-            .ok()?;
+        let rect = layout.plot(domain).ok()?;
+        let (left, right, top, bottom) = (
+            rect.left,
+            layout.viewport_width - rect.right,
+            rect.top,
+            layout.viewport_height - rect.bottom,
+        );
         let (w, h) = (
             layout.viewport_width - left - right,
             layout.viewport_height - top - bottom,

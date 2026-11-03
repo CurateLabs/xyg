@@ -1489,12 +1489,18 @@ fn a_zero_layer_request_composes_the_base_graph_end_to_end() {
     assert_eq!((source[0], target[0]), (source[1], target[1]));
     assert_eq!((source[2], target[2]), (1, 1));
     // The Scene paints every node and every relationship, including the loop.
-    let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
+    let scene = doc
+        .0
+        .get("scene.canonical", 0)
+        .unwrap()
+        .as_bytes("s")
+        .unwrap();
     let document = crate::scene::SceneDocument::decode(scene).unwrap();
     assert_eq!(painted_edge_ids(&document), (1..=5).collect());
-    let svg = document.to_svg();
     for node in 0..5u64 {
-        assert!(svg.contains(&format!("data-xy-stable-id=\"{}\"", (1u64 << 32) + node)));
+        assert!(document.interaction_records().iter().any(|r| {
+            r.kind == crate::scene::SceneRecordKind::Scatter && r.stable_id == (1u64 << 32) + node
+        }));
     }
 }
 
@@ -1540,10 +1546,20 @@ fn default_relationship_types_label_below_every_node_caption() {
     assert_eq!(doc.texts("edge.label", 0), types);
     assert_eq!(doc.f64s("edge.label_priority", 0), vec![-1.0; 5]);
     assert!(doc.f64s("node.label_priority", 0).iter().all(|&p| p == 0.0));
-    // The static Scene prints node captions only; types wait for hover.
-    let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
+    // The shared public graph plan reveals two captions at this home scale.
+    let scene = doc
+        .0
+        .get("scene.canonical", 0)
+        .unwrap()
+        .as_bytes("s")
+        .unwrap();
     let svg = crate::scene::SceneDocument::decode(scene).unwrap().to_svg();
-    assert!(svg.contains("ada") && svg.contains("Prof"));
+    assert!(svg.contains("ada") && svg.contains("00000005"));
+    assert!(!svg.contains(">Prof<"));
+    assert_eq!(
+        doc.texts("node.label", 0),
+        ["ada", "Prof", "Acme", "00000004", "00000005"]
+    );
     assert!(!svg.contains("KNOWS") && !svg.contains("WORKS_AT"));
 }
 
@@ -1563,8 +1579,15 @@ fn directed_default_views_mark_every_edge_for_an_arrowhead_and_undirected_ones_d
         .contains(&"directed relationship"));
     let scene = |bytes: &[u8]| {
         let doc = Doc::new(bytes);
-        let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
-        crate::scene::SceneDocument::decode(scene).unwrap().record_count()
+        let scene = doc
+            .0
+            .get("scene.canonical", 0)
+            .unwrap()
+            .as_bytes("s")
+            .unwrap();
+        crate::scene::SceneDocument::decode(scene)
+            .unwrap()
+            .record_count()
     };
     assert!(scene(&directed) > scene(&undirected));
 }

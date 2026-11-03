@@ -31,6 +31,7 @@ import {
   xyGraphforgeDocumentDestroy,
   xyGraphforgeDocumentLen,
   xyGraphforgeLedgerTsv,
+  xyGraphSemanticChromeRgba8,
 } from "./native.js";
 
 export { decodeContainer, encodeContainer } from "./graphforge-container.js";
@@ -745,12 +746,22 @@ function graphforgeGraphChart(composition, opts) {
   const data = graphforgeGraphData(composition);
   const preset = presetPositions(composition, positions);
   if (preset) Object.assign(data, preset);
-  return graphChart(data, undefined, {
+  const fig = graphChart(data, undefined, {
     ...graphforgeGraphOptions(composition, { theme }),
     ...rest,
     ...(preset ? { layout: "preset" } : {}),
     ...(chartLegend && items.length ? { legend: chartLegend } : {}),
   });
+  if (!composition.layers.length) {
+    const rgba = new Uint8Array(16);
+    if (Number(xyGraphSemanticChromeRgba8(theme === "dark" ? 1 : 0, pointer(rgba, "uint8_t *"), BigInt(rgba.length))) !== 16) {
+      throw new Error("native semantic chrome copy failed");
+    }
+    const keys = ["background", "--chart-bg", "--chart-text", "--chart-grid"];
+    const chrome = Object.fromEntries(keys.map((key, i) => [key, `#${Buffer.from(rgba.subarray(i * 4, i * 4 + 4)).toString("hex")}`]));
+    fig.style = { ...chrome, ...fig.style, ...rest.style };
+  }
+  return fig;
 }
 
 /**

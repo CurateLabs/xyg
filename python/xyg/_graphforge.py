@@ -734,6 +734,8 @@ def _graph_chart(composition: GraphForgeComposition, props: dict[str, Any]) -> A
         edge_label_priority=edges.label_priority if labelled else None,
         semantic_legend=False,
     )
+    if not composition.layers:
+        props["style"] = {**_native.graph_semantic_chrome(theme), **(props.get("style") or {})}
     chart = c.graph_chart(mark, **props)
     items = _legend_items(composition, theme)
     if items:

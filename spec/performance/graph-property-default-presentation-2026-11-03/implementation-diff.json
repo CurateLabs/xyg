@@ -1,0 +1,8 @@
+{
+  "parent": "e768ce25194bf3ebcc1a0de1df37696da3948295",
+  "format": "git diff --cached --no-color --no-ext-diff --no-textconv --binary --full-index --src-prefix=a/ --dst-prefix=b/; excluding this new receipt directory",
+  "sha256": "1dc59233554364cf9c92a8a5b962a3e227c9baa9366703d6a189f8e18fb9f5e6",
+  "bytes": 565948,
+  "source_sha256": "2268a29aaab52a747360a22023cfb96a86ab4b0f5f11bafd99bd63c88a491da4",
+  "independent_review": "Required from parent before integration/PR; not performed by implementation agent"
+}

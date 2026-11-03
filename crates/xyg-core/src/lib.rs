@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 398;
+pub const ABI_VERSION: u32 = 399;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -11407,6 +11407,39 @@ pub unsafe extern "C" fn xyg_default_palette_utf8(out: *mut u8, out_cap: usize) 
             offset = end;
         }
         required
+    })
+}
+
+/// Copy the shared semantic chart/plot/foreground/grid RGBA8 rows (ABI 399).
+/// Invalid theme or null nonempty output returns `usize::MAX`; a short
+/// capacity returns 16 without writing. No Scene or layout is constructed.
+///
+/// # Safety
+/// `out` addresses `out_cap` writable bytes when capacity is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_semantic_chrome_rgba8(
+    theme: u8,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    let Some(rows) = xyg_engine::graph_style::semantic_chrome_palette(theme) else {
+        return usize::MAX;
+    };
+    if out_cap == 0 {
+        return 16;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    if out_cap < 16 {
+        return 16;
+    }
+    ffi_guard(usize::MAX, || {
+        let dest = std::slice::from_raw_parts_mut(out, 16);
+        for (slot, row) in dest.chunks_exact_mut(4).zip(rows) {
+            slot.copy_from_slice(&row);
+        }
+        16
     })
 }
 

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 398
-#define XYG_ABI_SIGNATURE_SHA256 "11aaa11bd88b7c974284d88fd96295a938f0b17d811ce820132f0b22aeef7ffa"
+#define XYG_ABI_VERSION 399
+#define XYG_ABI_SIGNATURE_SHA256 "7f47f1219fe2c0df0402f0bdd7646ad07543c99c5b396c20ec97752359982bab"
 
 #ifdef __cplusplus
 extern "C" {
@@ -188,6 +188,7 @@ int32_t xyg_graph_projection_counts(uint64_t handle, uint64_t * out_nodes, uint6
 int32_t xyg_graph_projection_create(const void * descriptor, uint64_t * out_handle);
 int32_t xyg_graph_projection_destroy(uint64_t handle);
 uint64_t xyg_graph_sample_edges(uint64_t n_edges, uint64_t budget, uint64_t * out_indices);
+size_t xyg_graph_semantic_chrome_rgba8(uint8_t theme, uint8_t * out, size_t out_cap);
 int32_t xyg_graph_semantic_legend(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, uint64_t capacity, uint8_t * out_field, uint8_t * out_value, uint8_t * out_rgba, uint8_t * out_shape, uint64_t * out_count);
 int32_t xyg_graph_semantic_legend_text(uint32_t field, uint32_t value, uint8_t * out, uint64_t capacity, uint64_t * out_len);
 int32_t xyg_graph_semantic_paint_layers(uint32_t version, uint32_t theme, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * halo_rgba, float * halo_extent, uint8_t * body_rgba, float * body_width, uint8_t * stroke_rgba, float * dash_px, uint8_t * head);

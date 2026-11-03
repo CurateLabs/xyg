@@ -184,7 +184,7 @@ via #1015 remain open for #35:
 
 | Constant | Value | Where |
 |---|---|---|
-| Native C ABI | 398 | `abiVersion()`, `xyg_abi_version` |
+| Native C ABI | 399 | `abiVersion()`, `xyg_abi_version`; shared semantic chrome accessor |
 | WASM ABI | 35 | `XYG_WASM_ABI_VERSION`, `xyg_wasm_abi_version` |
 | Scene | 34 | `SCENE_VERSION` |
 | Paint protocol | 14 | `PROTOCOL_VERSION` (per-axis ranges and y2 bindings) |

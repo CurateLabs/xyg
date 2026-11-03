@@ -9988,6 +9988,23 @@ def default_png_export_scale() -> float:
     return float(_lib.xyg_default_png_export_scale())
 
 
+def graph_semantic_chrome(theme: str) -> dict[str, str]:
+    """Mechanically map the Rust semantic chrome rows to existing style slots."""
+    if theme not in ("light", "dark"):
+        raise ValueError("graph theme must be light or dark")
+    out = np.empty(16, dtype=np.uint8)
+    if int(_lib.xyg_graph_semantic_chrome_rgba8(theme == "dark", _ptr_u8(out), out.size)) != 16:
+        raise RuntimeError("native semantic chrome copy failed")
+    return {
+        key: "#" + bytes(row).hex()
+        for key, row in zip(
+            ("background", "--chart-bg", "--chart-text", "--chart-grid"),
+            out.reshape(4, 4),
+            strict=True,
+        )
+    }
+
+
 def graph_default_edge_color() -> str:
     """Rust-owned default graph edge paint (#898)."""
     need = int(_lib.xyg_graph_default_edge_color_utf8(0, 0))

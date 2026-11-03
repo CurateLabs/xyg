@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/.venv/bin/python",
+    "spec/performance/graph-property-default-presentation-2026-11-03/preservation.py",
+    "spec/performance/graph-property-default-presentation-2026-11-03/preservation.before.json"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab",
+  "started": "2026-11-03T23:12:51.327091+00:00",
+  "finished": "2026-11-03T23:12:51.608492+00:00",
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_PROPERTY_EVIDENCE": null,
+    "CARGO_TARGET_DIR": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python"
+  },
+  "log_sha256": "30ec09fc15d89cb9ccef4a4c30103885dad5095cfaf77cb22c5c3a05c57db32f"
+}
