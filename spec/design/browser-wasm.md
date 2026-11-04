@@ -175,6 +175,44 @@ Worker adapter owns memory/lifecycle/status transport, and the existing
 TypeScript/WebGL client retains paint, pick, gestures, accessibility, and DOM
 chrome.
 
+## Explicit retained graph attachment (bounded S5b)
+
+The experimental `attachWasmGraphSession` path takes complete XYGF bytes,
+existing load inputs and an explicit seven-f64 session camera. It opens initially
+Owned, unlinked state and exposes `ready`, `refreshRender`, `snapshot` and async
+`dispose`. It borrows one drained packaged Worker and owns its serialized,
+non-cancellable graph lane through CLOSE. Ordinary compiler/job/temporal/geo
+acquisition is rejected before staging while attached; a geographic transition
+must not implicitly revoke that controller. Caller-owned Worker disposal follows
+attachment disposal. XYGR does not echo instance identity: response admission
+uses the issued Worker request and attachment lifetime, with separate outer
+Worker sequence, exact-u64 operation sequence and render revision.
+
+`63_graph_session_wire.ts` uses the factored raw named-section decoder without
+eager CPU geometry planes. `63_graph_gpu.ts` validates all 33 GPU-v1 sections
+before direct f32/u8/style/index upload through existing `GLHost` lifecycle and
+paint conventions. GPU coordinates already are CSS screen coordinates; only
+offset/scale reconstruction and viewport/DPR presentation apply. Every success
+repaints even at the same revision. Complete semantic/GPU validation precedes
+publication; refusal retains the last accepted picture. A stale reply requires
+Render recovery before more input. The path never calls canonicalScene,
+`prepareScene`, `layoutWasmCose` or legacy graph-mark compilation. Existing
+`renderWasmGraphForge` canonicalScene behavior remains unchanged.
+
+The controller owns keyboard capture, focus, ARIA, text-only Rust companion
+pages and event dispatch. Rust owns focus order, selection, identities,
+provenance, summary and aligned row refs. Pointer/hover/link/temporal/update/
+force scheduling and the rest of S5b/S6/S7 remain open. The legacy CSR path is
+retained for ordinary `spec.graph` until S6 supplies its attachment/identity
+migration; the explicit attachment never reaches it or generic CPU selection.
+Exact hover/picked ref publication remains a Rust wire gap. No ABI, arena,
+package gate, compiler/profile/optimizer/dependency or guard changes accompany
+this TypeScript/Worker vertical. It implies no performance or release acceptance.
+The [full design contract](graph-interaction.md#bounded-explicit-s5b-attachment),
+[helper API](../api/browser-wasm.md#experimental-retained-graph-session) and
+[append-only receipt](../performance/graph-s5b-attachment-2026-11-04/README.md)
+record the bounded contract and actual proof.
+
 ## Foundation artifacts
 
 | Artifact | Role |
@@ -188,6 +226,9 @@ chrome.
 | `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
 | `js/src/49_wasm_semantic_graph.ts` | Packed direct-tier `XYGG` semantic planes; Rust emits styles, primitives, and legend |
 | `js/src/49_wasm_graphforge.ts` | GraphForge `XYGQ` framing, `XYGF` decoding, Scene stable-ID → UUID identity, text-only tables; no joins or policy |
+| `js/src/63_graph_controller.ts` | Experimental explicit retained graph keyboard, DOM, ARIA and lifetime controller |
+| `js/src/63_graph_session_wire.ts` | Internal XYGI framing and complete semantic XYGR decoding; no graph policy |
+| `js/src/63_graph_gpu.ts` | GPU-v1 trust-boundary validation and raw buffer presentation through existing GLHost |
 | `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
 | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
@@ -382,8 +423,8 @@ limits, leaving 355 / 865 bytes; no automatic future allowance is introduced.
 No size experiment, compiler/profile/toolchain/optimizer/dependency/export,
 validation or runtime-arena change accompanies this decision. The repeated
 mechanical 60-byte style writer remains unchanged; no unmeasured saving is
-assumed. `gpu::validate` is currently an inspection/test helper; S5b still must
-validate host views before upload. The separate
+assumed. `gpu::validate` remains the Rust inspection/test helper; the bounded explicit
+S5b attachment now applies the same trust-boundary checks before host upload. The separate
 [S5a package decision receipt](../performance/graph-s5a-package-budget-2026-11-03/README.md)
 records real producer, paired-asset and full strict-CSP verification; the
 [integration receipt](../performance/graph-s5a-integration-2026-11-03/README.md)

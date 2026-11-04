@@ -30,6 +30,7 @@ type Lifecycle = "idle" | "initializing" | "initialized" | "failed" | "disposed"
 let lifecycle: Lifecycle = "idle";
 let operationBudgetBytes = 0;
 let retainedGeoMode=false;
+let graphSessionLifetime: number | null = null;
 let evidenceCapability: string | null = null;
 let initializedModule: WebAssembly.Module | null = null;
 let compileLeaf = false;
@@ -1196,8 +1197,67 @@ function runGeoIngest(message: any, owned = false) {
   }
 }
 
+// Session commands execute at receipt, never in a cancellable/deferred job.
+// Export statuses have GF_INTERACTION vocabulary, independent of generic WASM.
+const GRAPH_SESSION_STATUS = ["SUCCESS", "STALE", "UNLINKED", "INVALID", "BUDGET", "CAPACITY", "SELF_ECHO", "STALE_REMOTE", "SELECTION_TOO_LARGE", "COMPOUND_TOO_LARGE", "UNBOUND", "REVISION_EXHAUSTED"];
+function runGraphSession(message: any) {
+  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "Worker is not initialized"); return; }
+  const operation = message.type.slice("graph.session.".length);
+  if (!Number.isSafeInteger(message.lifetime) || message.lifetime <= 0 || retainedGeoMode
+      || (graphSessionLifetime !== null && graphSessionLifetime !== message.lifetime)
+      || !["open", "update", "render", "interact", "close"].includes(operation)
+      || (graphSessionLifetime === null && operation !== "open")) {
+    error(message.requestId, "GF_INTERACTION_INVALID", "Invalid retained graph ownership", -3); return;
+  }
+  if (!admitOperationSequence(message)) return;
+  try {
+    let status: number;
+    if (operation === "close") status = exports.xyg_wasm_graphforge_session_close(handle);
+    else {
+      if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < 32 || message.request.byteLength > operationBudgetBytes) {
+        error(message.requestId, "GF_INTERACTION_INVALID", "Malformed graph session request", -3); return;
+      }
+      if (operation === "open" && (queued.size || activeCompile || activeGraph || activeAggregate || activeAggregateStream || activeTick || tickQueue.length)) {
+        error(message.requestId, "GF_INTERACTION_INVALID", "Graph attachment requires a drained Worker", -3); return;
+      }
+      const staging = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
+      if (staging !== XYG_WASM_STATUS.OK) {
+        rustError(message.requestId, "GF_INTERACTION_BUDGET", readXygWasmError(exports, handle), -4); return;
+      }
+      const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
+      if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("Invalid graph staging range");
+      new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
+      const execute = operation === "open" ? exports.xyg_wasm_graphforge_session_open
+        : operation === "update" ? exports.xyg_wasm_graphforge_session_update
+        : operation === "render" ? exports.xyg_wasm_graphforge_session_render
+        : exports.xyg_wasm_graphforge_session_interact;
+      status = execute(handle, 0, message.request.byteLength);
+    }
+    if (status !== 0) {
+      rustError(message.requestId, `GF_INTERACTION_${GRAPH_SESSION_STATUS[-status] ?? "INVALID"}`, readXygWasmError(exports, handle), status); return;
+    }
+    // Failure never reads old output. CLOSE has no publication bytes.
+    let bytes = new ArrayBuffer(0);
+    if (operation !== "close") {
+      const ptr = exports.xyg_wasm_output_ptr(handle) >>> 0, length = exports.xyg_wasm_output_len(handle) >>> 0;
+      if (!ptr || length < 32 || length > operationBudgetBytes || ptr + length > exports.memory.buffer.byteLength) throw new Error("Invalid complete XYGR range");
+      bytes = new Uint8Array(exports.memory.buffer, ptr, length).slice().buffer;
+    }
+    graphSessionLifetime = operation === "close" ? null : message.lifetime;
+    reply(message.requestId, { bytes, sequence: message.sequence, lifetime: message.lifetime }, [bytes]);
+  } catch (cause) {
+    lifecycle = "failed"; disposeRust();
+    error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM graph session trapped");
+  }
+}
+
 scope.onmessage = (event: MessageEvent<any>) => {
   const message = event.data;
+  if (graphSessionLifetime !== null && !["dispose", "evidence.lifecycle"].includes(message?.type) && !message?.type?.startsWith("graph.session.")) {
+    error(message?.requestId, "GF_INTERACTION_INVALID", "Close the retained graph session before acquiring another Worker lane", -3); return;
+  }
+  if (message?.type?.startsWith("graph.session.")) { runGraphSession(message); return; }
+
   if(retainedGeoMode&&!['dispose','cancel','evidence.lifecycle','geo.transport.acquire','geo.frame.prepare','geo.tile.frame.prepare','geo.scale.execute','geo.scale.read','geo.tile.execute','geo.tile.read','geo.snapshot.execute','geo.snapshot.read'].includes(message?.type)){
     error(message?.requestId,'XYG_WASM_INVALID_ARGUMENT','This retained geographic Worker requires a separate ordinary chart Worker for other product lanes',XYG_WASM_STATUS.INVALID_ARGUMENT);return;
   }

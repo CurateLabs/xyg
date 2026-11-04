@@ -96,3 +96,16 @@ inventory retains **685 explicit review gaps**; no classification was added or
 changed. The [metadata repair receipt](../performance/graph-property-default-metadata-2026-11-03/README.md)
 preserves both preceding repository-gate failures and the exact semantic delta.
 This preparation snapshot remains unaccepted as a baseline freeze.
+
+
+The bounded S5b attachment preparation adds the explicitly `@experimental`
+`attachWasmGraphSession` value and its five exported option/handle/snapshot/camera/
+load types. The regenerated inventory records those declarations and the actual
+new source hashes; it still contains **685 explicit review gaps**. No existing
+classification was changed to manufacture a freeze. Snapshot fields reference
+internal semantic/ref types, and static declarations alone do not establish
+keyboard timing, GPU validation, Worker ownership or complete behavioral
+acceptance. The [helper API](../api/browser-wasm.md#experimental-retained-graph-session)
+and [attachment receipt](../performance/graph-s5b-attachment-2026-11-04/README.md)
+retain that scope. Broader S5b/S6/S7, #36/M4 and #108 remain open; this inventory
+is still preparation, not an accepted API freeze or publication decision.

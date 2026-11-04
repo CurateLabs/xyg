@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-913c4718/spec/performance/graph-s5b-attachment-2026-11-04/capture.py", line 83, in <module>
+    assert len(module) == 1922561 and len(packed) == 783148
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

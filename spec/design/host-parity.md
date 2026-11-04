@@ -1513,6 +1513,24 @@ reorders the result.
 
 ---
 
+The experimental explicit browser `attachWasmGraphSession` uses the same
+retained Rust graph session and existing XYGI/XYGR exports. Complete XYGF ingress
+and an explicit seven-f64 camera enter initially Owned, unlinked state.
+TypeScript only frames commands, validates complete replies, paints raw GPU-v1
+buffers through existing GL primitives, and presents keyboard/ARIA/companion
+controls. Rust alone chooses focus, selection/provenance, companion candidates
+and summary. u64 identity/provenance remains exact `bigint`; a projected selection
+length is not the global selected count. The Worker lane is serialized and
+non-cancellable; competing ownership is refused before mutation, and borrowed
+Worker disposal follows async session CLOSE. This bounded path has no
+canonicalScene/legacy-graph compile, CSR neighborhood, generic CPU hit-test or
+selection-mask dependency. Ordinary `spec.graph` intentionally omits host-only
+identity planes and still needs the S6 legacy attachment; its CSR path remains.
+No native/Node session-controller parity, broad S5b/S6/S7, #36/M4/#108 acceptance
+or performance claim follows from this vertical. See the
+[attachment contract](graph-interaction.md#bounded-explicit-s5b-attachment) and
+[proof receipt](../performance/graph-s5b-attachment-2026-11-04/README.md).
+
 ## 2. Placement rule (Rust owns decisions)
 
 | Lives in | Examples |

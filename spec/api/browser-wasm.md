@@ -23,6 +23,75 @@ await chart.dispose();
 await worker.dispose(); // required for the default borrowed ownership
 ```
 
+## Experimental retained graph session
+
+`attachWasmGraphSession({ el, worker, instanceId, document, load?, camera })`
+attaches one initially Owned, unlinked Rust graph session to an available,
+drained **packaged** Worker. This is the bounded experimental #36 S5b
+keyboard/GPU/companion vertical, not an accepted stable API or #108 freeze.
+`document` is the complete XYGF byte document, including its header; reuse
+`composeWasmGraphForge(...).result.bytes`. `instanceId` is an exact nonzero u64
+`bigint`. `camera` is required in session order
+`[scale_x, scale_y, offset_x, offset_y, viewport_width, viewport_height, dpr]`;
+scales accept either sign except zero. Rust validates finite camera values and
+positive viewport/DPR. Optional `load` forwards existing session-local `x`/`y`,
+`collapsed`, `pinned`, `budgets`, `seed`, `progressive`, `cose` and `coseBounds`
+inputs; hierarchy comes from the XYGF document. No browser autorange runs.
+
+```js
+import { attachWasmGraphSession } from "@curatelabs/xyg";
+
+// worker and composed come from createXygWasmWorker and composeWasmGraphForge.
+const graph = attachWasmGraphSession({
+  el,
+  worker,
+  instanceId: 1n,
+  document: composed.result.bytes,
+  camera: [1, -1, 20, 300, 640, 360, devicePixelRatio],
+});
+await graph.ready;
+const snapshot = graph.snapshot();
+await graph.refreshRender([1, -1, 20, 300, 800, 450, devicePixelRatio]);
+await graph.dispose(); // drains accepted commands, then CLOSEs the session
+await worker.dispose(); // caller-owned Worker: dispose only after graph above
+```
+
+The handle exposes only `ready: Promise<snapshot>`,
+`refreshRender(camera?): Promise<snapshot>`, `snapshot(): snapshot | null` and
+`dispose(): Promise<void>`. The Worker is borrowed and survives attachment
+cleanup; a second simultaneous attachment or competing Worker lane is refused.
+Calls while one UI action is outstanding refuse with `XYG_WASM_GRAPH_BUSY`.
+Snapshot is null before first installation and after disposal. It includes the accepted camera/revision, exact selection/provenance,
+changed refs, focus/action facts, authoritative outcome count, disclosure facts,
+Rust summary and paged companion. u64 indices/rows/path/order use `bigint`;
+absent and explicitly empty result IDs remain distinct. Selection projections
+need not equal `outcome.selected`, the global Rust count.
+
+Tab enters the application surface. Arrows step Rust focus (Right/Down +1,
+Left/Up −1); Enter replaces selection with focus, Ctrl/Meta+Enter toggles,
+and Escape clears. Tab/Shift+Tab leave normally. Busy/unaccepted keys remain
+unsuppressed. Escape calls `preventDefault` only after Rust confirms a state
+change; the asynchronous reply cannot retroactively cancel an already executed
+browser default action. Empty Escape propagates. A visible static focus ring
+and polite Rust-summary live region accompany a following table. Previous/Next
+page 50 Rust companion rows; each Select button uses its aligned Rust ref.
+Labels and summary are rendered as text.
+
+Bubbling `xy:graph-render`, `xy:graph-focus` and `xy:graph-select` carry accepted
+snapshots. `xy:graph-stale` requires `refreshRender()` before more input;
+`xy:graph-error` carries a code/message. Refusals preserve the preceding accepted
+picture. Disposal is asynchronous and idempotent, immediately suppresses late
+DOM/events, and drains the non-cancellable lane before CLOSE. A lost/ambiguous
+Worker reply is terminal rather than proof that mutation was cancelled.
+
+This path does not call the canonicalScene route; `renderWasmGraphForge` keeps
+its existing API. There is no raw arbitrary-interaction API, pointer/hover,
+brush/lasso, disclosure, move/pin/relayout, structural update, temporal binding,
+linking, force scheduler, or legacy click alias. Broader S5b/S6/S7 and
+#36/M4/#108 acceptance remain open. Exact hover/picked refs still need a later
+Rust result projection. See the [design contract](../design/graph-interaction.md#bounded-explicit-s5b-attachment)
+and [bounded proof receipt](../performance/graph-s5b-attachment-2026-11-04/README.md).
+
 ## Dynamic viewport ticks
 
 The dynamic-tick seam introduced in WASM ABI 23 is carried by current WASM ABI

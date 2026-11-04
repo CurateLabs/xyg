@@ -386,7 +386,7 @@ void main() {
 // Marker signed distance in gl_PointCoord-centered space (d in [-0.5,0.5]),
 // <0 inside, 0 at the boundary. Symbols match the annotation markers plus
 // triangle. With u_symbol=0 and no stroke this reduces to the old circle.
-const MARKER_SDF_GLSL = `
+export const MARKER_SDF_GLSL = `
 float xySegmentDistance(vec2 p, vec2 a, vec2 b) {
   vec2 e = b - a;
   return length(p - a - e * clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0));

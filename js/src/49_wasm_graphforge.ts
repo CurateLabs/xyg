@@ -121,19 +121,19 @@ export function encodeGraphForgeContainer(magic: string, sections: Array<{ name:
   return out;
 }
 
-/** Named-section container decoder: `Map<"name#index", Section>`. */
-export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<string, Section> {
-  const bytes = bytesOf(input, "container");
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+/** Borrowed section spans; no eager source/CPU geometry decoding. @internal */
+export interface GraphForgeRawSection { name: string; index: number; dtype: number; count: number; bytes: Uint8Array }
+export function decodeGraphForgeSections(input: Bytes, magic: string): Map<string, GraphForgeRawSection> {
+  const bytes = bytesOf(input, "container"), view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const fail = (reason: string): never => { throw new XygWasmError("GF_COMPOSE_DOCUMENT_INVALID", `malformed ${magic} container: ${reason}`); };
   if (bytes.length < HEADER_BYTES || new TextDecoder().decode(bytes.subarray(0, 4)) !== magic) fail("magic");
   if (view.getUint32(4, true) !== CONTAINER_VERSION) fail("version");
   const count = view.getUint32(8, true), names = view.getUint32(12, true);
-  if (count > MAX_ENTRIES || view.getBigUint64(16, true) !== BigInt(bytes.length)) fail("header");
-  const namesStart = HEADER_BYTES + count * ENTRY_BYTES, payloadStart = align8(namesStart + names);
+  if (count > MAX_ENTRIES || view.getBigUint64(16, true) !== BigInt(bytes.length) || view.getBigUint64(24, true) !== 0n) fail("header");
+  const namesStart = HEADER_BYTES + count * ENTRY_BYTES, payloadStart = Math.ceil((namesStart + names) / 8) * 8;
   if (payloadStart > bytes.length) fail("names");
   const decoder = new TextDecoder("utf-8", { fatal: true });
-  const sections = new Map<string, Section>();
+  const sections = new Map<string, GraphForgeRawSection>(), spans: [number, number][] = [];
   for (let i = 0; i < count; i++) {
     const at = HEADER_BYTES + i * ENTRY_BYTES;
     const nameOffset = view.getUint32(at, true), nameLength = view.getUint32(at + 4, true);
@@ -141,10 +141,41 @@ export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<stri
     const name = decoder.decode(bytes.subarray(namesStart + nameOffset, namesStart + nameOffset + nameLength));
     if (!NAME.test(name)) fail("name");
     const dtype = view.getUint32(at + 8, true), index = view.getUint32(at + 12, true);
-    const offset = Number(view.getBigUint64(at + 16, true)), n = Number(view.getBigUint64(at + 24, true));
-    const length = Number(view.getBigUint64(at + 32, true));
+    const offset64 = view.getBigUint64(at + 16, true), n64 = view.getBigUint64(at + 24, true), length64 = view.getBigUint64(at + 32, true);
+    if (offset64 > BigInt(bytes.length) || length64 > BigInt(bytes.length) || n64 > BigInt(Number.MAX_SAFE_INTEGER)) fail("section range");
+    const offset = Number(offset64), n = Number(n64), length = Number(length64);
     if (offset % 8 || offset < payloadStart || offset + length > bytes.length) fail("section range");
     const payload = bytes.subarray(offset, offset + length);
+    if (dtype === DT.texts) {
+      const head = (n + 1) * 8; if (!Number.isSafeInteger(head) || length < head) fail("texts");
+      const v = new DataView(payload.buffer, payload.byteOffset, payload.byteLength), textLength = BigInt(length - head);
+      let previous = 0n;
+      for (let k = 0; k <= n; k++) {
+        const current = v.getBigUint64(k * 8, true);
+        if (current < previous || current > textLength || (k === 0 && current !== 0n)) fail("text offsets");
+        previous = current;
+      }
+      if (previous !== textLength) fail("text offsets");
+    } else {
+      const width = WIDTH[dtype]; if (width === undefined || n64 * BigInt(width) !== length64) fail("section size");
+    }
+    const key = `${name}#${index}`;
+    if (sections.has(key)) fail("duplicate section");
+    sections.set(key, { name, index, dtype, count: n, bytes: payload });
+    spans.push([offset, offset + length]);
+  }
+  spans.sort((a,b) => a[0]-b[0] || a[1]-b[1]);
+  for (let i=1; i<spans.length; i++) if (spans[i-1]![1] > spans[i]![0]) fail("overlapping sections");
+  return sections;
+}
+
+/** Named-section container decoder: `Map<"name#index", Section>`. */
+export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<string, Section> {
+  const raw = decodeGraphForgeSections(input, magic), sections = new Map<string, Section>();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  const fail = (reason: string): never => { throw new XygWasmError("GF_COMPOSE_DOCUMENT_INVALID", `malformed ${magic} container: ${reason}`); };
+  for (const [key, section] of raw) {
+    const { name, index, dtype, count: n, bytes: payload } = section, length = payload.length;
     let value: any;
     if (dtype === DT.texts) {
       const head = (n + 1) * 8; if (length < head) fail("texts");
@@ -170,8 +201,6 @@ export function decodeGraphForgeContainer(input: Bytes, magic: string): Map<stri
         default: value = payload.slice(); break;
       }
     }
-    const key = `${name}#${index}`;
-    if (sections.has(key)) fail("duplicate section");
     sections.set(key, { name, index, dtype, count: n, value });
   }
   return sections;

@@ -903,6 +903,9 @@ Forbidden:
 | `js/src/57_viewstate.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/58_graph.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/60_entries.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `js/src/63_graph_controller.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; explicit S5b keyboard/DOM/ARIA/companion/lifetime only | — |
+| `js/src/63_graph_gpu.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; GPU-v1 validation/raw-buffer paint through GLHost | — |
+| `js/src/63_graph_session_wire.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; internal XYGI/XYGR framing, no graph policy | #59 |
 | `js/src/wasm_abi_generated.ts` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
 | `js/src/wasm_inline_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/wasm_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
@@ -1436,3 +1439,20 @@ lock. `interaction/coordination.rs` owns exact graph snapshot ordering/delivery;
 `coordination.rs` is the small validation/commit gate shared with the temporal
 controller (whose range validation and no-op behavior stay unchanged). These
 Rust-only changes introduce no host, ABI or browser policy surface.
+
+
+Bounded #36 S5b adds the three TypeScript product files listed above.
+`47_wasm.ts` owns the one serialized non-cancellable retained graph byte lane,
+exact request retention, reply/lifetime matching and CLOSE/drain lifecycle;
+`wasm_worker.ts` stages only existing session exports and copies a complete
+successful XYGR reply. Both reject unrelated compiler/job/geo ownership before
+staging can mutate the retained session. `49_wasm_graphforge.ts` factors raw
+named-section/UUID framing without eagerly decoding unused CPU planes.
+`40_gl.ts` retains generic GL lifecycle and raw-buffer paint ownership. The
+controller never scans source rows, resolves identities, calculates selection
+or CSR neighborhoods, generates geometry/styles, or calls legacy CPU hit-test/
+selection paths. `58_graph.ts` remains for ordinary host graph payloads until
+S6; this bounded attachment does not remove that migration debt. Exact hover/
+picked-ref wire projection and broader S5b/S6/S7 remain open. See the
+[contract](graph-interaction.md#bounded-explicit-s5b-attachment) and
+[append-only proof](../performance/graph-s5b-attachment-2026-11-04/README.md).

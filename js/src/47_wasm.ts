@@ -402,6 +402,7 @@ export class XygWasmWorker {
   /** Admit the fixed geographic transport credit before copying/framing retained
    * product inputs. This Worker then uses the bounded retained execution mode. */
   acquireGeoTransport():Promise<void>{
+    if (graphWorkerAttachments.has(this)) throw new XygWasmError("GF_INTERACTION_INVALID", "Close the attached graph session before acquiring geographic transport", -3);
     return this.geoTransportAdmission??=(async()=>{
       await geographicOrigin(this).ready;geographicDispatch.assertLive.call(this,true);const requestId=geographicDispatch.allocateRequest.call(this),result=geographicDispatch.promiseFor.call(this,requestId) as Promise<unknown>;
       try{geographicOrigin(this).post({type:'geo.transport.acquire',requestId});}
@@ -1004,6 +1005,8 @@ export class XygWasmWorker {
 
   dispose(): Promise<void> {
     if(this.disposal)return this.disposal;
+    const graph = graphWorkerAttachments.get(this);
+    if (graph) return graph.close().catch(() => {}).then(() => this.dispose());
     this.disposed = true;
     return this.disposal=(async()=>{
     const disposedError = new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
@@ -1104,6 +1107,7 @@ export class XygWasmWorker {
   private assertLive(retained=false) {
     if (retained) geographicOrigin(this);
     if (this.disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
+    if (graphWorkerAttachments.has(this)) throw new XygWasmError("GF_INTERACTION_INVALID", "Close the attached graph session before using another Worker product lane", -3);
     if(!retained&&this.geoTransportAdmission)throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT","Ordinary operations require a separate Worker from retained geographic transport");
   }
 }
@@ -1162,4 +1166,91 @@ export function reserveGeoWorkerInput(worker: XygWasmWorker, bridge: XygGeoScale
 
 export function createXygWasmWorker(options: XygWasmWorkerOptions | XygInlineWasmWorkerOptions): XygWasmWorker {
   return new XygWasmWorker(options);
+}
+
+/** @internal One non-cancellable retained byte lane, issued only to the explicit
+ * graph controller. Not exported through 60_entries.ts. Request bytes survive
+ * the transfer until resolution; op_seq belongs to Rust, not this transport. */
+type GraphSessionExport = "open" | "update" | "render" | "interact";
+interface GraphWorkerAttachment {
+  execute(operation: GraphSessionExport, request: Uint8Array): Promise<ArrayBuffer>;
+  close(): Promise<void>;
+}
+const graphWorkerAttachments = new WeakMap<XygWasmWorker, GraphWorkerAttachment>();
+let nextGraphLifetime = 1;
+export function claimGraphWorker(worker: XygWasmWorker): GraphWorkerAttachment {
+  if (!(worker instanceof XygWasmWorker)) throw new TypeError("A packaged WASM Worker is required");
+  const origin = geographicOrigin(worker);
+  if (worker["inline"] || worker["disposed"] || worker["geoTransportAdmission"] || graphWorkerAttachments.has(worker)) {
+    throw new XygWasmError("GF_INTERACTION_INVALID", "Graph attachment requires an available packaged Worker", -3);
+  }
+  const lifetime = nextGraphLifetime++;
+  if (!Number.isSafeInteger(lifetime)) throw new RangeError("Graph attachment lifetime exhausted");
+  let chain: Promise<unknown> = Promise.resolve(), closing = false, opened = false, closePromise: Promise<void> | null = null;
+  let queued = 0, bytesHeld = 0;
+  const live = () => {
+    if (origin.terminal || worker["disposed"] || graphWorkerAttachments.get(worker) !== attachment) {
+      throw new XygWasmError("XYG_WASM_DISPOSED", "Graph Worker lifetime ended");
+    }
+  };
+  const terminal = (cause: unknown) => {
+    const error = cause instanceof XygWasmError ? cause : new XygWasmError("XYG_WASM_WORKER_ERROR", String(cause));
+    origin.terminal = true; worker["disposed"] = true;
+    origin.terminate(); geographicDispatch.failAll.call(worker, error);
+    return error;
+  };
+  const send = async (operation: GraphSessionExport | "close", retained?: Uint8Array): Promise<ArrayBuffer> => {
+    await origin.ready; live();
+    // No pre-existing deferred job may later stage over the retained instance.
+    if (operation === "open" && !opened && worker["pending"].size) {
+      throw new XygWasmError("GF_INTERACTION_INVALID", "Graph attachment requires a drained Worker", -3);
+    }
+    const sequence = worker["nextSequence"]++, requestId = geographicDispatch.allocateRequest.call(worker);
+    if (sequence > 0xffffffff) throw new RangeError("Worker sequence exhausted");
+    const response = geographicDispatch.promiseFor.call(worker, requestId) as Promise<any>;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // The retained exact bytes are never transferred or mutated. An ambiguous
+      // lost reply ends this Worker lifetime; it is never treated as cancellation.
+      const request = retained?.slice().buffer;
+      origin.post({ type: `graph.session.${operation}`, requestId, sequence, lifetime, request }, request ? [request] : []);
+      const reply = await Promise.race([response, new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(terminal(new XygWasmError("XYG_WASM_GRAPH_REPLY_LOST", "Graph reply timed out; mutation outcome is unknown"))), 60_000);
+      })]);
+      if (reply?.sequence !== sequence || reply?.lifetime !== lifetime || !(reply?.bytes instanceof ArrayBuffer)) {
+        throw terminal(new XygWasmError("XYG_WASM_MESSAGE_ERROR", "Graph reply does not match its issued request lifetime"));
+      }
+      if (operation === "open") opened = true;
+      return reply.bytes;
+    } catch (cause) {
+      if (!(cause instanceof XygWasmError) || !cause.code.startsWith("GF_INTERACTION_")) throw terminal(cause);
+      throw cause;
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+      worker["pending"].delete(requestId);
+    }
+  };
+  const attachment: GraphWorkerAttachment = Object.freeze({
+    execute(operation: GraphSessionExport, request: Uint8Array) {
+      live();
+      if (closing) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment is closing");
+      if (!(request instanceof Uint8Array) || !request.byteLength || request.byteLength > origin.maxArenaBytes) throw new RangeError("Graph request exceeds Worker arena");
+      if (queued >= 8 || bytesHeld + request.byteLength > origin.maxArenaBytes) throw new RangeError("Graph command lane is busy");
+      const retained = request.slice(); queued++; bytesHeld += retained.byteLength;
+      const result = chain.then(() => send(operation, retained));
+      chain = result.catch(() => {});
+      return result.finally(() => { queued--; bytesHeld -= retained.byteLength; });
+    },
+    close() {
+      if (closePromise) return closePromise;
+      closing = true;
+      closePromise = (async () => {
+        try { await chain; if (opened && !origin.terminal && !worker["disposed"]) await send("close"); }
+        finally { if (graphWorkerAttachments.get(worker) === attachment) graphWorkerAttachments.delete(worker); }
+      })();
+      return closePromise;
+    },
+  });
+  graphWorkerAttachments.set(worker, attachment);
+  return attachment;
 }

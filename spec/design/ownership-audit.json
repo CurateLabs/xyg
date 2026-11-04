@@ -2379,6 +2379,30 @@
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     },
     {
+      "path": "js/src/63_graph_controller.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/63_graph_gpu.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/63_graph_session_wire.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
       "path": "js/src/64_geo_retained_controller.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",
