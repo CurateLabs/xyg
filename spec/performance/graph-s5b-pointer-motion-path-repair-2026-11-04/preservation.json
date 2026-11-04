@@ -1,0 +1,12 @@
+{
+  "parent": "27c9dc3bb9e8f4c7cda190249b43a397b3a9bfcc",
+  "historicalFilesRechecked": 9205,
+  "historicalHashesManifest": "before-identity.json",
+  "allHistoricalBytesUnchanged": true,
+  "inventoryChangedKeys": [
+    "sourceProvenance",
+    "sourceSha256"
+  ],
+  "inventoryGapCount": 685,
+  "declarationsAndClassificationsUnchanged": true
+}

@@ -94,8 +94,13 @@ Clicks map the displayed canvas content box into the accepted CSS viewport,
 excluding borders/padding and supporting positive axis-aligned CSS matrix
 scaling, offsets and ancestor scrolling. No DPR or data-camera transform is
 applied. Rotation/shear/perspective/reflections/3D matrices, individual CSS
-transform properties, non-fill object-fit, canvas-local scrolling and clicks
-outside the content box are unsupported and submit no command. There is no
+transform properties, active CSS motion paths on the canvas or any ancestor
+(including across shadow roots), non-fill object-fit, canvas-local scrolling and clicks
+outside the content box are unsupported and submit no command. A non-`none`
+computed `offset-path` is rejected regardless of offset distance/rotation/anchor,
+even when computed transform/rotate remain `none`; default motion properties
+with no active path remain eligible. [Motion-path proof](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
+records actual canvas/ancestor clicks and preserved browser defaults. There is no
 hover or picked-target event/API; `xy:graph-select` retains the complete accepted
 Rust selection snapshot. See the [bounded pointer receipt](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
 for the actual mouse and native/WASM byte proofs.

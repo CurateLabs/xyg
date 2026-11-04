@@ -417,6 +417,34 @@ try {
       const before=await page.evaluate(()=>window.__graphSession.commands.length),point=await page.evaluate(()=>{const s=window.__graphSession;return s.pointerClient(s.pointerPoint('node',1));});await page.mouse.click(...point);assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),before);
       await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();await s.handle.refreshRender();});return {ok:true,code,terminalCommands:0};
     });
+    for (const target of ['canvas','ancestor']) {
+      const baseline=!!process.env.XYG_GRAPH_MOTION_BASELINE;
+      await run(`${baseline?'before-mis-pick':'reject'}-active-motion-path-on-${target}-trusted-canvas-click`, async () => {
+        await page.evaluate(id=>window.__graphSession.pointerFixture('routes',BigInt(id)),target==='canvas'?'50':'51');
+        await click('node',2); // Keep an accepted nonempty selection to detect a wrong blank pick.
+        await page.locator('[data-pointer-fixture] canvas').scrollIntoViewIfNeeded();
+        const point=await page.evaluate(target=>window.__graphSession.motionPoint(target),target);
+        assert.equal(point.predicate.transform,'none');assert.equal(point.predicate.rotate,'none');assert.notEqual(point.predicate.offsetPath,'none');assert.equal(point.predicate.offsetRotate,'30deg');
+        assert.equal(point.hit,'CANVAS','the actual visibly transformed graph point must hit canvas');
+        const before=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash};});
+        await page.mouse.click(...point.client);await pointerIdle();
+        const after=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer,c=s.commands.at(-1);return {commands:s.commands.length,products:s.products.slice(-1),events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash,delivery:p.motionDelivery,lastOperation:c.operation,lastCoordinates:c.operation===1?s.values(c.bytes,'coordinates.f64'):null};});
+        const result={ok:true,target,point,delivery:after.delivery,before:{commands:before.commands,events:before.events,snapshot:before.snapshot,pixels:before.pixels,hash:before.hash},after:{commands:after.commands,events:after.events,snapshot:after.snapshot,pixels:after.pixels,lastOperation:after.lastOperation,lastCoordinates:after.lastCoordinates,hash:after.hash},geometryUnchanged:before.geometry===after.geometry};
+        console.log('motion-path raw proof',JSON.stringify(result,(_,v)=>typeof v==='bigint'?String(v):v));
+        assert.equal(after.delivery.trusted,true);assert.equal(after.delivery.target,'CANVAS');assert.equal(after.delivery.canvas,true);
+        if(baseline) {
+          assert.equal(after.commands,before.commands+1);assert.equal(after.lastOperation,1);assert.equal(after.delivery.defaultPrevented,true);
+          assert.equal(after.snapshot.outcome.selected,0);assert.notDeepEqual(after.snapshot,before.snapshot);assert.equal(after.hash,before.hash);
+        } else {
+          assert.equal(after.commands,before.commands);assert.equal(after.events,before.events);assert.equal(after.delivery.defaultPrevented,false);
+          assert.deepEqual(after.snapshot,before.snapshot);assert.equal(after.pixels,before.pixels);assert.equal(after.geometry,before.geometry);assert.equal(after.hash,`#motion-path-${target}`);
+          assert.equal(await page.evaluate(start=>window.__graphSession.products.length===start,before.products),true);
+        }
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();});
+        return result;
+      });
+    }
+
   }
   await run("old-same-ABI-module-missing-clear-fact-fails-closed", () => check(async () => {
     const s = window.__graphSession, worker = s.makeWorker("/old-same-abi.wasm"); await worker.ready; const el = s.container();

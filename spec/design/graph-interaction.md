@@ -1142,9 +1142,18 @@ scales/translations, offsets, borders, padding, border-box sizing and ancestor
 scrolling are supported. No DPR multiplication or data-camera transform is
 applied: Rust's paint/pick geometry already uses CSS screen coordinates.
 Rotation, shear, perspective, reflected/3D matrices, individual CSS
-rotate/scale/translate properties, non-fill object-fit, canvas-local scrolling,
+rotate/scale/translate properties, active CSS motion paths on the canvas or
+any traversed ancestor (including across shadow roots), non-fill object-fit, canvas-local scrolling,
 disconnected/degenerate boxes, and points outside the content box pass without
-commands. These are presentation-admission boundaries, not TypeScript hit policy.
+commands. Motion-path eligibility is checked separately as computed
+`offset-path != none`: its offset distance/rotation/anchor can transform the
+canvas while computed `transform` and individual `rotate` both remain `none`.
+Every active path is conservatively rejected, including axis-aligned paths;
+default motion properties with `offset-path: none` do not block ordinary input.
+These are presentation-admission boundaries, not TypeScript hit policy.
+The [motion-path repair receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
+retains the real canvas/ancestor before-failure and trusted-click repair proofs.
+The original pointer receipt remains immutable; broader acceptance is unchanged.
 
 The internal encoder admits `coordinates?: readonly [number, number]` only for
 operation1, requires exactly two finite numbers, and emits only existing

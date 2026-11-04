@@ -1,0 +1,20 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+125 !== 124
+
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:439:18
+    at async run (file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:32:52)
+    at async file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:422:7 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 125,
+  expected: 124,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.4

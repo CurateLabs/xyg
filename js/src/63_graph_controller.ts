@@ -176,6 +176,9 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     if (!win || !canvas.isConnected || canvas.scrollLeft || canvas.scrollTop) return null;
     for (let element: Element | null = canvas; element;) {
       const style = win.getComputedStyle(element);
+      // Motion-path distance/rotation/anchor are separate from transform's
+      // matrix. Reject every active path, including on shadow ancestors.
+      if (style.offsetPath !== "none") return null;
       if (style.perspective !== "none" || style.rotate !== "none" || style.scale !== "none" || style.translate !== "none") return null;
       if (style.transform !== "none") {
         const matrix = new DOMMatrixReadOnly(style.transform);

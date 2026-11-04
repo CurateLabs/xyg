@@ -25,6 +25,9 @@ property table below does not imply geographic CSS input support.
 Experimental retained GraphForge interaction has a separate
 [bounded primary-click/keyboard capability contract](../design/graph-interaction.md#bounded-explicit-s5b-attachment)
 and [mouse/byte-replay evidence](../performance/graph-s5b-pointer-selection-2026-11-04/README.md).
+Active CSS motion paths on the canvas or its ancestors are unsupported,
+even when computed transform/rotate are none; [trusted-click repair evidence](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
+records command rejection and preserved browser defaults.
 This adds exact Rust-owned selection to that opt-in browser attachment;
 it does not establish hover/gesture, public-host, scale or competitor acceptance.
 

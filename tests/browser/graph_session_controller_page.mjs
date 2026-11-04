@@ -202,3 +202,29 @@ state.pointerSnapshot = () => {
 };
 
 state.geometryStamp = bytes => state.json([...decodeContainer(bytes,'XYGR').values()].filter(s=>/^(paint\..*(center|geometry|index)|gpu\..*(coord|attr)|render\..*members)/.test(s.name)).map(s=>[s.name,s.index,[...s.value]]));
+
+// A DOM-only visual-coordinate oracle for unsupported motion paths. A transparent
+// sibling probe follows the same CSS motion as the canvas, or inherits the
+// ancestor motion. Its point is measured by the browser, never by product code.
+state.motionPoint = async target => {
+  const p=state.pointer, canvas=p.el.querySelector('canvas'), surface=canvas.parentElement;
+  p.el.style.cssText='position:relative;width:640px;height:320px';
+  surface.style.cssText='position:relative;width:640px;height:320px';
+  canvas.style.display='block'; p.el.lastElementChild.style.visibility='hidden';
+  const motion='offset-path:path("M 450 150 L 700 150");offset-distance:0px;offset-rotate:30deg;offset-anchor:0px 0px';
+  const element=target==='canvas'?canvas:p.el; element.style.cssText+=';'+motion;
+  const probe=document.createElement('div');
+  probe.style.cssText='position:absolute;left:0;top:0;width:640px;height:320px;pointer-events:none;'+(target==='canvas'?motion:'');
+  const marker=document.createElement('span'),css=state.pointerPoint('node',1);
+  marker.style.cssText=`position:absolute;left:${css[0]}px;top:${css[1]}px;width:0;height:0;pointer-events:none`;
+  probe.append(marker);surface.append(probe);
+  const link=document.createElement('a');link.href=`#motion-path-${target}`;link.style.display='block';surface.before(link);link.append(surface);
+  const rect=marker.getBoundingClientRect(), style=getComputedStyle(element), client=[rect.x,rect.y];
+  p.motionDelivery=null;
+  p.el.addEventListener('click',event=>{p.motionDelivery={trusted:event.isTrusted,target:event.target.tagName,canvas:event.target===canvas,clientX:event.clientX,clientY:event.clientY,defaultPrevented:event.defaultPrevented};});
+  return {css,client,predicate:{transform:style.transform,rotate:style.rotate,offsetPath:style.offsetPath,offsetDistance:style.offsetDistance,offsetRotate:style.offsetRotate,offsetAnchor:style.offsetAnchor},hit:document.elementFromPoint(...client)?.tagName};
+};
+state.canvasDigest = async () => {
+  const c=state.pointer.el.querySelector('canvas'),data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+  return [...new Uint8Array(await crypto.subtle.digest('SHA-256',data))].map(b=>b.toString(16).padStart(2,'0')).join('');
+};

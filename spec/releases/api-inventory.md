@@ -126,3 +126,11 @@ admission boundaries. The refreshed inventory still has 685 explicit gaps and
 remains unaccepted as a freeze; broader hover/gesture/public-host and S5b/S6/S7
 acceptance are outstanding. [Pointer proof and limits](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
 retain this distinction.
+
+The narrow pointer motion-path repair refresh changes no declaration or
+classification. Active CSS motion paths on the canvas or traversed/shadow
+ancestors now reject pointer admission even when the transform matrix and
+individual rotate are none. Ordinary no-path defaults remain eligible. The
+[motion-path receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
+records the source/artifact provenance and real regressions; the actual685 gaps
+and unaccepted freeze/broader scope remain unchanged.

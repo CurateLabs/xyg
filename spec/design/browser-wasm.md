@@ -209,7 +209,12 @@ Primary clicks use existing SelectAt1 with raw two-f64 CSS content-box
 coordinates: Replace, Shift Add, Ctrl/Meta Toggle (Toggle wins with Shift).
 Positive axis-aligned CSS matrix scales, border/padding/offset/ancestor-scroll
 mapping are supported; unsupported transforms and out-of-content clicks submit
-no command. Input is synchronously admitted only while live/idle/nonstale, with
+no command. Active CSS motion paths (`offset-path != none`) on the canvas or
+any traversed/shadow ancestor are rejected independently of the transform
+matrix: motion distance/rotation/anchor are not part of `DOMMatrix(transform)`.
+This includes axis-aligned active paths; default motion properties with no path
+remain eligible. The [motion-path repair receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
+retains the actual before failure and native-default-preserving mouse proofs. Input is synchronously admitted only while live/idle/nonstale, with
 no busy/stale replay. Blank Replace preserves highlights and SelectAt preserves
 Rust logical focus. The [pointer receipt](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
 records exact real mouse and complete native/WASM byte proof and limits.
