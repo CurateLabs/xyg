@@ -230,10 +230,51 @@ def test_rust_runtime_switches_are_inventoried_but_test_fixtures_are_not(tmp_pat
     )
     external = source / "graphforge/interaction/tests/wire"
     external.mkdir(parents=True)
-    (external / "corpus.rs").write_text('fn fixture() { std::env::var("XYG_PICK_CORPUS"); }\n')
+    (external / "corpus.rs").write_text(
+        '#![cfg(test)]\nfn fixture() { std::env::var("XYG_PICK_CORPUS"); }\n'
+    )
     result = inventory.environment_inventory(tmp_path, inventory.PythonInventory(tmp_path))
     assert [item["name"] for item in result] == ["XYG_SIMD"]
     assert 'v != "0"' in result[0]["lookups"][0]["expression"]
+
+
+@pytest.mark.parametrize(
+    ("guard", "production"),
+    [
+        ("", True),
+        ("#![cfg(not(test))]\n", True),
+        ("#[cfg(test)]\n", True),
+        ("// #![cfg(test)]\n", True),
+        ("\n#![cfg(test)]\n", True),  # Unrecognized placement scans conservatively.
+        ("#![cfg(test)]\n", False),
+    ],
+)
+def test_external_rust_modules_require_a_leading_module_wide_test_guard(
+    tmp_path: Path, guard: str, production: bool
+):
+    (tmp_path / "hatch_build.py").write_text("")
+    source = tmp_path / "crates/xyg-engine/src"
+    (source / "tests").mkdir(parents=True)
+    (source / "lib.rs").write_text("pub mod tests;\npub mod live;\n")
+    body = 'pub fn enabled() { std::env::var("XYG_PRODUCTION_UNDER_TESTS"); }\n'
+    fixture = source / "tests/mod.rs"
+    fixture.write_text(guard + body)
+    (source / "live.rs").write_text(body)
+
+    def lookups():
+        result = inventory.environment_inventory(tmp_path, inventory.PythonInventory(tmp_path))
+        assert [row["name"] for row in result] == ["XYG_PRODUCTION_UNDER_TESTS"]
+        assert result[0]["status"] == "unclassified"
+        return {row["source"] for row in result[0]["lookups"]}
+
+    expected = {"crates/xyg-engine/src/live.rs"}
+    if production:
+        expected.add("crates/xyg-engine/src/tests/mod.rs")
+    assert lookups() == expected
+    if not production:
+        # Removing the verified guard must reveal the same production lookup.
+        fixture.write_text(body)
+        assert lookups() == expected | {"crates/xyg-engine/src/tests/mod.rs"}
 
 
 @pytest.mark.parametrize("typed", [False, True])

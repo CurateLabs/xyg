@@ -460,15 +460,15 @@ def environment_inventory(root: Path, python: PythonInventory) -> list[dict[str,
             )
     for crate in ("xyg-engine", "xyg-core"):
         for path in sorted((root / "crates" / crate / "src").rglob("*.rs")):
-            # External Rust test modules are reached only through cfg(test),
-            # just like inline test modules excluded below. Their fixture
-            # selectors are not production operator configuration.
-            if (
-                "bin" in path.parts
-                or "tests" in path.relative_to(root / "crates" / crate / "src").parts
-            ):
+            if "bin" in path.parts:
                 continue
-            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", path.read_text(), maxsplit=1)[0]
+            text = path.read_text()
+            # This exact leading inner attribute gates the entire module,
+            # even if its parent declares it unconditionally. A directory
+            # name, outer attribute or changed/missing guard proves nothing.
+            if text.startswith("#![cfg(test)]\n"):
+                continue
+            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", text, maxsplit=1)[0]
             for match in re.finditer(
                 r'(?:std::)?env::var(?:_os)?\("((?:XYG?_[A-Z0-9_]+)|CODSPEED_ENV)"\)', text
             ):

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 //! R4 actual-query correctness and replay corpus. Product remains exact R2.
 use super::*;
 use crate::graph::LodTier;

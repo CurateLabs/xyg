@@ -1,0 +1,6 @@
+ownership audit failed:
+- unclassified production source: crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs; add one ownership-audit.json entry and the human ledger row
+- unclassified production source: crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs; add one ownership-audit.json entry and the human ledger row
+- unclassified production source: crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs; add one ownership-audit.json entry and the human ledger row
+- unclassified production source: crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs; add one ownership-audit.json entry and the human ledger row
+- unclassified production source: crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs; add one ownership-audit.json entry and the human ledger row

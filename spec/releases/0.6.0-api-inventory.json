@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+  "baseCommit":"01f1072985b891d75015290999381f66d901d049",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1373,7 +1373,7 @@
   "python/xyg/pyplot/_ticker.py":"94ab8ae124e14bcf5d3f75b53f34476f4e0e13849c21c36026263f2986b5ccd8",
   "python/xyg/temporal_controller.py":"b2707a686ec1707378cac98c1eba70b39b75a3a26f4c8d10974140634806f6b0",
   "python/xyg/temporal_graph.py":"f872b808275748032edd52502935928525cc32bd0663f7cf8b81c401ef5ac9b8",
-  "scripts/check_release_inventory.py":"f4865f923f7b48b664a3fb3228974e6ad79ba3b8e194eae581a69098d12b7ed2",
+  "scripts/check_release_inventory.py":"0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
   "scripts/check_release_version.py":"49fc49be846049e2200d897eb585a084d4359d2ff8d87d2391d8e3d14dc1382e",
   "scripts/gen_abi_manifest.py":"66e426507717973dfdf463bb586e3082be909e995c54ec8e128a52147ad0ec1c",
   "scripts/publish_node_packages.py":"9f6742a5969e0e19dacb837364b7a08a179d991be5e46daeeb4a83aed55e1c80",

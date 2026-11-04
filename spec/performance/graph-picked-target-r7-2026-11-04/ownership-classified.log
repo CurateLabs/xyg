@@ -1,0 +1,11 @@
+ownership audit failed:
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs rationale must match policy 'rust-engine'
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs rationale must match policy 'rust-engine'
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs rationale must match policy 'rust-engine'
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs rationale must match policy 'rust-engine'
+- invalid classification: crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs rationale must match policy 'rust-engine'
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs
+- human audit stale: spec/design/ownership-audit.md is missing file ledger row crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs
