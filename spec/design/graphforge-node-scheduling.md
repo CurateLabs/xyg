@@ -223,6 +223,15 @@ initial trusted click/pan and viewport-reset inspection deliberately hold the
 HTTP ACK in a separate run. The latter confirms replacement resets the panned
 view to the next payload's ranges. No production behavior or limits changed.
 
+The [accepted-main sync receipt](../performance/graph-node-first-paint-1k-accepted-main-sync-2026-11-04/README.md)
+records the normal merge of accepted main `2fbbe5f0` into reviewed repair
+`562a2adf`. Production sources, runnable proof helpers, raw browser captures and
+runtime artifact bytes are unchanged; this sync reuses the recorded observations
+and makes no fresh browser, worker-loading or native-build claim. Parent-reported
+review approval and resolution of both proof-runner findings cover `562a2adf`;
+the sync candidate requires independent final review. The conflicted remote
+head had only skipped reviewer checks, not passing production CI.
+
 This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
 unheld initial trusted response, public browser progressive scheduling and
 Python notebook/widget delivery/cancellation remain acceptance work. The

@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+  "baseCommit":"562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
