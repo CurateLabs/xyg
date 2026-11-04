@@ -534,6 +534,20 @@ document sections, so sections can be added without a version bump;
 changes. Version 2 makes the document the single carrier of the compound
 hierarchy (`node.parent`); sessions refuse any other version. Requests are strict: unknown request sections fail.
 
+The Node decoder accepts `Uint8Array`, `ArrayBuffer`, and Node `Buffer`
+inputs (including pooled, offset and unaligned views). Its `u32`, `u64`,
+`i64`, and `f64` outputs copy exactly the section payload into an aligned,
+independent allocation; neither direction aliases the input, and backing
+allocation prefix/suffix bytes cannot become extra values. Text-list u64
+offsets use the same bounded copy. Numeric framing preserves BigInts and f64
+values, including nonfinite values; consuming Rust operations
+retain their own finiteness rules. The byte format, validation and endian
+policy are unchanged. The browser twin receives ordinary `Uint8Array` or
+`ArrayBuffer` bytes, for which its existing `slice()` copies the actual span.
+The [Node Buffer codec receipt](../performance/node-buffer-codec-2026-11-04/README.md)
+records the pre-fix failure and scoped regression proof; it does not establish
+M4 completion or release readiness.
+
 ### 5.2 Request (`XYGQ`)
 
 | Section | dtype | Meaning |

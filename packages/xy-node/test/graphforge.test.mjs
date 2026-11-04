@@ -6,6 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+// Register pure codec regressions in the existing GraphForge test entry too.
+import "./graphforge-container.test.mjs";
 
 import {
   GRAPHFORGE_COMPOSITION_VERSION,

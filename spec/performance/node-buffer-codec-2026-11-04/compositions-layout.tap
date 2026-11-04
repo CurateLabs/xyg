@@ -1,0 +1,502 @@
+TAP version 13
+# Subtest: normalize + circle runLayout emits positions and meta
+ok 1 - normalize + circle runLayout emits positions and meta
+  ---
+  duration_ms: 4.559379
+  type: 'test'
+  ...
+# Subtest: configured CoSE rejects non-positive iterations instead of dropping options
+ok 2 - configured CoSE rejects non-positive iterations instead of dropping options
+  ---
+  duration_ms: 0.682236
+  type: 'test'
+  ...
+# Subtest: composeGraph + figure.buildPayload protocol subset
+ok 3 - composeGraph + figure.buildPayload protocol subset
+  ---
+  duration_ms: 29.859333
+  type: 'test'
+  ...
+# Subtest: composeGraph helper returns traces ready for figure
+ok 4 - composeGraph helper returns traces ready for figure
+  ---
+  duration_ms: 1.204305
+  type: 'test'
+  ...
+# Subtest: graph ships tooltip_rows plus continuous size and color channels
+ok 5 - graph ships tooltip_rows plus continuous size and color channels
+  ---
+  duration_ms: 12.781483
+  type: 'test'
+  ...
+# Subtest: graph ships CSS color lists as direct_rgba
+ok 6 - graph ships CSS color lists as direct_rgba
+  ---
+  duration_ms: 14.099761
+  type: 'test'
+  ...
+# Subtest: composeGraph rejects tooltip_rows length mismatch
+ok 7 - composeGraph rejects tooltip_rows length mismatch
+  ---
+  duration_ms: 3.422702
+  type: 'test'
+  ...
+# Subtest: PayloadWriter ships continuous size_ch buffers
+ok 8 - PayloadWriter ships continuous size_ch buffers
+  ---
+  duration_ms: 3.124368
+  type: 'test'
+  ...
+# Subtest: force_scheduler chunked setImmediate completes
+ok 9 - force_scheduler chunked setImmediate completes
+  ---
+  duration_ms: 12.973473
+  type: 'test'
+  ...
+# Subtest: force_scheduler worker transports CoSE options and pins without host math
+ok 10 - force_scheduler worker transports CoSE options and pins without host math
+  ---
+  duration_ms: 118.640768
+  type: 'test'
+  ...
+# Subtest: force_scheduler stops after the first converged completion phase
+ok 11 - force_scheduler stops after the first converged completion phase
+  ---
+  duration_ms: 1.64026
+  type: 'test'
+  ...
+# Subtest: force_scheduler rejects and terminates when a progress callback fails
+ok 12 - force_scheduler rejects and terminates when a progress callback fails
+  ---
+  duration_ms: 117.698992
+  type: 'test'
+  ...
+# Subtest: force_scheduler never turns a misspelled mode into main-thread work
+ok 13 - force_scheduler never turns a misspelled mode into main-thread work
+  ---
+  duration_ms: 0.568726
+  type: 'test'
+  ...
+# Subtest: default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+ok 14 - default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs
+  ---
+  duration_ms: 425.798036
+  type: 'test'
+  ...
+# Subtest: presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+ok 15 - presentation coalesces to latest source checkpoint while preserving initial/final and exact IDs
+  ---
+  duration_ms: 677.865001
+  type: 'test'
+  ...
+# Subtest: concurrent owners, supersession, late callback and reload remain isolated
+ok 16 - concurrent owners, supersession, late callback and reload remain isolated
+  ---
+  duration_ms: 828.910195
+  type: 'test'
+  ...
+# Subtest: pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+ok 17 - pre-abort, callback failure, cancellation, timeout and disposal are observable and terminal
+  ---
+  duration_ms: 1301.118379
+  type: 'test'
+  ...
+# Subtest: compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+ok 18 - compound parent planes and bit-exact pins reach real CoSE; Aggregate retains full source positions
+  ---
+  duration_ms: 299.881232
+  type: 'test'
+  ...
+# Subtest: render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+ok 19 - render-node membership resolves viewport source 3 to row 0, with exact UUID and provenance
+  ---
+  duration_ms: 164.54696
+  type: 'test'
+  ...
+# Subtest: Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+ok 20 - Direct, EdgeSample and Aggregate keep distinct render membership, node bounds and exact edge semantics
+  ---
+  duration_ms: 446.82579
+  type: 'test'
+  ...
+# Subtest: collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+ok 21 - collapsed groups and hidden source rows retain UUID, group membership and remapped edge provenance
+  ---
+  duration_ms: 151.542192
+  type: 'test'
+  ...
+# Subtest: circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+ok 22 - circle/grid retain the complete native source layout at Aggregate and seed bit-exact CoSE pins
+  ---
+  duration_ms: 1731.091977
+  type: 'test'
+  ...
+# Subtest: real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+ok 23 - real workers only: force trap, no second force packing, native destruction and both exits precede teardown
+  ---
+  duration_ms: 3148.142201
+  type: 'test'
+  ...
+# Subtest: existing CoSE golden/options remain bit-exact in the reused real native worker
+ok 24 - existing CoSE golden/options remain bit-exact in the reused real native worker
+  ---
+  duration_ms: 955.413366
+  type: 'test'
+  ...
+# Subtest: explicit static layouts and analytical intents still pack off-loop without force
+ok 25 - explicit static layouts and analytical intents still pack off-loop without force
+  ---
+  duration_ms: 469.639409
+  type: 'test'
+  ...
+# Subtest: reentrant startup cancellation cannot strand a bridge or escape disposal
+ok 26 - reentrant startup cancellation cannot strand a bridge or escape disposal
+  ---
+  duration_ms: 1322.681126
+  type: 'test'
+  ...
+# Subtest: non-force Aggregate source layout runs once in the bridge before preset-only packing
+ok 27 - non-force Aggregate source layout runs once in the bridge before preset-only packing
+  ---
+  duration_ms: 1070.473512
+  type: 'test'
+  ...
+# Subtest: Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 28 - Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 3.982711
+  type: 'test'
+  ...
+# Subtest: Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 29 - Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.657215
+  type: 'test'
+  ...
+# Subtest: Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+ok 30 - Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.277114
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 31 - ArrayBuffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 1.159874
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 32 - ArrayBuffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.281609
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 33 - ArrayBuffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.186325
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 34 - unaligned Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.924984
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 35 - unaligned Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.249637
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+ok 36 - unaligned Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.493339
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 37 - unaligned DataView: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 1.316486
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 38 - unaligned DataView: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.279201
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: generic f64 framing preserves nonfinite values for downstream policy
+ok 39 - unaligned DataView: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.114261
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 40 - pooled Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 2.257377
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 41 - pooled Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.183549
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 42 - pooled Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.096752
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 43 - odd backing Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.474613
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 44 - odd backing Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.111914
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 45 - odd backing Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.095156
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 46 - aligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.555407
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 47 - aligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.132832
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 48 - aligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.160696
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 49 - unaligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.989701
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 50 - unaligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.142794
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 51 - unaligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.102686
+  type: 'test'
+  ...
+# Subtest: Buffer and Uint8Array reject the same malformed section bytes
+ok 52 - Buffer and Uint8Array reject the same malformed section bytes
+  ---
+  duration_ms: 3.610628
+  type: 'test'
+  ...
+# Subtest: a request with no result layer composes the property-graph defaults
+ok 53 - a request with no result layer composes the property-graph defaults
+  ---
+  duration_ms: 3.75248
+  type: 'test'
+  ...
+# Subtest: zero-layer PNG and SVG exports repeat exactly at the canonical positions
+ok 54 - zero-layer PNG and SVG exports repeat exactly at the canonical positions
+  ---
+  duration_ms: 221.394443
+  type: 'test'
+  ...
+# Subtest: a directed property graph keeps its arrowheads in the interactive graph mark
+ok 55 - a directed property graph keeps its arrowheads in the interactive graph mark
+  ---
+  duration_ms: 13.043045
+  type: 'test'
+  ...
+# Subtest: every node and edge layer joins by UUID, matching an independent decoder
+ok 56 - every node and edge layer joins by UUID, matching an independent decoder
+  ---
+  duration_ms: 13.801219
+  type: 'test'
+  ...
+# Subtest: scores become the node metric plane; communities class codes
+ok 57 - scores become the node metric plane; communities class codes
+  ---
+  duration_ms: 0.954475
+  type: 'test'
+  ...
+# Subtest: edge overlays mark members, dim context, and keep persisted identity
+ok 58 - edge overlays mark members, dim context, and keep persisted identity
+  ---
+  duration_ms: 1.457601
+  type: 'test'
+  ...
+# Subtest: identity round-trips for selection: UUID → index → UUID + result rows
+ok 59 - identity round-trips for selection: UUID → index → UUID + result rows
+  ---
+  duration_ms: 1.405416
+  type: 'test'
+  ...
+# Subtest: failures carry stable codes and no identities or values
+ok 60 - failures carry stable codes and no identities or values
+  ---
+  duration_ms: 2.688191
+  type: 'test'
+  ...
+# Subtest: missing and extra identity policies are explicit and recorded
+ok 61 - missing and extra identity policies are explicit and recorded
+  ---
+  duration_ms: 2.180588
+  type: 'test'
+  ...
+# Subtest: diagnostics are value-free
+ok 62 - diagnostics are value-free
+  ---
+  duration_ms: 1.338031
+  type: 'test'
+  ...
+# Subtest: request framing is host-neutral bytes; the document decodes identically
+ok 63 - request framing is host-neutral bytes; the document decodes identically
+  ---
+  duration_ms: 1.486008
+  type: 'test'
+  ...
+# Subtest: container numbers are little-endian bytes regardless of host order
+ok 64 - container numbers are little-endian bytes regardless of host order
+  ---
+  duration_ms: 0.344646
+  type: 'test'
+  ...
+# Subtest: container codec round-trips and rejects corruption
+ok 65 - container codec round-trips and rejects corruption
+  ---
+  duration_ms: 0.447749
+  type: 'test'
+  ...
+# Subtest: table documents with inconsistent shapes are rejected, not iterated
+ok 66 - table documents with inconsistent shapes are rejected, not iterated
+  ---
+  duration_ms: 0.933577
+  type: 'test'
+  ...
+# Subtest: graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+ok 67 - graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+  ---
+  duration_ms: 94.636176
+  type: 'test'
+  ...
+# Subtest: graph mark accepts edge visual-state flags only with edge semantic fields
+ok 68 - graph mark accepts edge visual-state flags only with edge semantic fields
+  ---
+  duration_ms: 9.357002
+  type: 'test'
+  ...
+# Subtest: the Rust ledger covers every GraphForge 0.5.2 contract
+ok 69 - the Rust ledger covers every GraphForge 0.5.2 contract
+  ---
+  duration_ms: 0.633616
+  type: 'test'
+  ...
+# Subtest: derived pairs are identified by layer and result row, never a persisted UUID
+ok 70 - derived pairs are identified by layer and result row, never a persisted UUID
+  ---
+  duration_ms: 0.995829
+  type: 'test'
+  ...
+# Subtest: ordered overlays expose paths, step order, and position labels
+ok 71 - ordered overlays expose paths, step order, and position labels
+  ---
+  duration_ms: 4.580033
+  type: 'test'
+  ...
+# Subtest: scalar and category results compose as tables and bar charts, never graphs
+ok 72 - scalar and category results compose as tables and bar charts, never graphs
+  ---
+  duration_ms: 59.555239
+  type: 'test'
+  ...
+# Subtest: table cells are escaped text
+ok 73 - table cells are escaped text
+  ---
+  duration_ms: 2.353402
+  type: 'test'
+  ...
+# Subtest: embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+ok 74 - embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+  ---
+  duration_ms: 56.137169
+  type: 'test'
+  ...
+# Subtest: render requests append the canonical Scene and selections paint selected
+ok 75 - render requests append the canonical Scene and selections paint selected
+  ---
+  duration_ms: 0.997261
+  type: 'test'
+  ...
+# Subtest: webview payloads relay picks back to GraphForge identity
+ok 76 - webview payloads relay picks back to GraphForge identity
+  ---
+  duration_ms: 18.630559
+  type: 'test'
+  ...
+# Subtest: recompositions reuse a layout by node UUID instead of laying out again
+ok 77 - recompositions reuse a layout by node UUID instead of laying out again
+  ---
+  duration_ms: 53.72539
+  type: 'test'
+  ...
+# Subtest: composition identities decode lazily and agree with the planes
+ok 78 - composition identities decode lazily and agree with the planes
+  ---
+  duration_ms: 0.943374
+  type: 'test'
+  ...
+# Subtest: derived edges carry no provenance row in hover rows
+ok 79 - derived edges carry no provenance row in hover rows
+  ---
+  duration_ms: 2.988482
+  type: 'test'
+  ...
+# Subtest: unsupported result-schema versions name the schema and next action
+ok 80 - unsupported result-schema versions name the schema and next action
+  ---
+  duration_ms: 1.395887
+  type: 'test'
+  ...
+# Subtest: published Core rc.5 catalog composes, including endpoint-only path costs
+ok 81 - published Core rc.5 catalog composes, including endpoint-only path costs
+  ---
+  duration_ms: 41.648064
+  type: 'test'
+  ...
+# Subtest: property-only Rust chrome precedes authored styles and preserves layered chrome
+ok 82 - property-only Rust chrome precedes authored styles and preserves layered chrome
+  ---
+  duration_ms: 19.688919
+  type: 'test'
+  ...
+1..82
+# tests 82
+# suites 0
+# pass 82
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13162.394102

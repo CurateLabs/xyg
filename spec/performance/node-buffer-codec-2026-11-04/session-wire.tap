@@ -1,0 +1,54 @@
+TAP version 13
+# Subtest: standalone temporal owners keep frame and replacement staging at the default arena
+ok 1 - standalone temporal owners keep frame and replacement staging at the default arena
+  ---
+  duration_ms: 66.130943
+  type: 'test'
+  ...
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 2 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 174.163896
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm","bytes":1922723,"sha256":"6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-bd15da75/target/release/libxyg_core.so","nativeSha256":"3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6","diagnosticModule":true}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 3 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 824.00728
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 4 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 53.185816
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 5 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 114.221567
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 6 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 25.304651
+  type: 'test'
+  ...
+# Subtest: captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+ok 7 - captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+  ---
+  duration_ms: 27.852335
+  type: 'test'
+  ...
+# {"capture":"/home/ubuntu/.t3/worktrees/xyg/t3-bd15da75/spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/captured-requests.json.gz","requests":19,"selectAt":17,"bytesCompared":"complete XYGR including GPU, selection, provenance and focus"}
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1485.38152
