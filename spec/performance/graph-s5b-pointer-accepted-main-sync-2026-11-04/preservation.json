@@ -1,0 +1,136 @@
+{
+  "parents": [
+    "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0",
+    "d6fcacfd482d425a731c5b1ebd492e32dc8a15b4"
+  ],
+  "acceptedMainEqualsReviewedController": "c3013b30bf97ce63b1f381a71d4ca1be38e75427",
+  "entireAcceptedTree": "4cde4a0ea4f24125d5c2bdafc2c1bde72cd263eb",
+  "landing": {
+    "pr": 1091,
+    "time": "2026-11-04T04:35:11Z",
+    "commit": "d6fcacfd482d425a731c5b1ebd492e32dc8a15b4"
+  },
+  "changedNonreceiptPaths": [
+    "spec/design/browser-wasm.md",
+    "spec/design/graph-interaction.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "protectedNonreceiptFilesByteExact": 2796,
+  "currentContractChange": false,
+  "classificationOrCapabilityOrNamingPolicyChange": false,
+  "inventoryChangedKeys": [
+    "sourceProvenance",
+    "sourceSha256"
+  ],
+  "preparationGaps": 685,
+  "freezeAccepted": false,
+  "qualifiedProductionInputsByteExact": 301,
+  "qualifiedActualArtifactsByteExact": 15,
+  "actualArtifacts": {
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2120259,
+      "sha256": "3f53a4747010f6cfc9e7f308c73d35a81d68cd2f6ffecaafb1860aa3cf9053b0"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6108424,
+      "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 795056,
+      "sha256": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 795085,
+      "sha256": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1922723,
+      "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2582821,
+      "sha256": "ef2471595d9fa061b6f7ebb821baa93e199a3839b5d0825192c79c210a63f535"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "2a7df6701bbd0fcd1f5313c433bb4306fd30cc674ee8c78090929f408b1571e0"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 795056,
+      "sha256": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 795085,
+      "sha256": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1922723,
+      "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2582821,
+      "sha256": "ef2471595d9fa061b6f7ebb821baa93e199a3839b5d0825192c79c210a63f535"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "2a7df6701bbd0fcd1f5313c433bb4306fd30cc674ee8c78090929f408b1571e0"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 19000,
+      "sha256": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95"
+    }
+  },
+  "optimized": {
+    "bytes": 1922723,
+    "gzip6": 783181,
+    "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273",
+    "gzip6Sha256": "5ed44e4d8802ddcdfb48dbe0aded7206d8228e9f9970a868b2bb8aaec35e5d4a",
+    "limits": {
+      "raw": 1923072,
+      "gzip6": 783360
+    },
+    "headroom": {
+      "raw": 349,
+      "gzip6": 179
+    }
+  },
+  "versions": {
+    "native": 399,
+    "wasm": 35,
+    "scene": 34,
+    "painter": 17
+  },
+  "historyFilesByParent": {
+    "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0": 9828,
+    "d6fcacfd482d425a731c5b1ebd492e32dc8a15b4": 9174
+  },
+  "historicalUnionCount": 9828,
+  "historicalUnionSha256": "04a07e71f22db7cd6541cb25948fe89f6213cf089f1c036762e33ab16a382e5e",
+  "resolvedStatusAndInventoryPatchSha256": "4b273e51dd22ceb0ca55c9bc857ae29167bcc19a6ba05a9c9a65b6450c8c1563",
+  "proofReuse": {
+    "source": "graph-s5b-pointer-native-input-repair-2026-11-04",
+    "browserJourneys": 69,
+    "freshNativeCoordinateCapturedRequests": 19,
+    "selectAt": 17,
+    "completeNativeWasmBrowserXygrParity": true,
+    "wireShippingTests": 26,
+    "focusedContracts": 88,
+    "fullUnfilteredFoundation": "passed",
+    "condition": "exact approved production/helper/test source and actual artifact identity",
+    "freshRuntimeBuildOrBrowserRerunClaim": false
+  },
+  "pending": [
+    "parent independent final sync review",
+    "pre-push hooks",
+    "#1092 main acceptance",
+    "broader #35/#36/M4/#108 and S5b/S6/S7"
+  ]
+}

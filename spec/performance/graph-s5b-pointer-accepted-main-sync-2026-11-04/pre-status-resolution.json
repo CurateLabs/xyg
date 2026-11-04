@@ -1,0 +1,16 @@
+{
+  "allApprovedNonreceiptFilesExact": 2799,
+  "conflictsResolvedFromApproved207": [
+    "js/src/63_graph_controller.ts",
+    "js/src/63_graph_session_wire.ts",
+    "js/test/graph-session-controller-wire.test.mjs",
+    "scripts/graph_session_controller_wasm_smoke.mjs",
+    "spec/api/browser-wasm.md",
+    "spec/design/browser-wasm.md",
+    "spec/design/graph-interaction.md",
+    "spec/releases/0.6.0-api-inventory.json",
+    "spec/releases/api-inventory.md",
+    "tests/browser/graph_session_controller_page.mjs"
+  ],
+  "additionalSourceChanges": []
+}
