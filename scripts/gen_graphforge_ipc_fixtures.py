@@ -136,6 +136,53 @@ def flat_captions() -> None:
     _write("captions_nodes.arrow", nodes)
 
 
+def code_captions(directory: Path = ROOT) -> None:
+    """Code-only Airport entities and flat caption precedence, without Core.
+
+    The entity shape matches Core's ``MATCH (n:Airport) RETURN n`` for nodes
+    carrying only ``code``. Flat rows also cover null/empty fallthrough and
+    preserve the existing name/title/label precedence.
+    """
+    ids = [_uuid(3, i + 1) for i in range(7)]
+    entities = pa.table(
+        {
+            "n": pa.array(
+                [
+                    {"node_uuid": ids[i], "labels": ["Airport"], "code": code}
+                    for i, code in enumerate(["MHK", "DEN"])
+                ],
+                type=pa.struct(
+                    [
+                        ("node_uuid", pa.binary(16)),
+                        ("labels", pa.list_(pa.string())),
+                        ("code", pa.string()),
+                    ]
+                ),
+            )
+        }
+    )
+    flat = pa.table(
+        {
+            "node_uuid": pa.array(ids, type=pa.binary(16)),
+            "name": pa.array(["Name", None, None, None, "", None, None], type=pa.string()),
+            "title": pa.array(["Title", "Title", None, None, "", None, None], type=pa.string()),
+            "label": pa.array(["Label", "Label", "Label", None, "", None, None], type=pa.string()),
+            "code": pa.array(["MHK", "MHK", "MHK", "MHK", "DEN", "", None], type=pa.string()),
+        }
+    )
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, table in (
+        ("code_captions_entities", entities),
+        ("code_captions_flat", flat),
+        ("code_captions_empty", entities.slice(0, 0)),
+    ):
+        with (
+            pa.OSFile(str(directory / f"{name}.arrow"), "wb") as sink,
+            pa.ipc.new_file(sink, table.schema) as writer,
+        ):
+            writer.write_table(table)
+
+
 def _hierarchy_fixtures() -> None:
     """Flat node tables over the `dag` result-fixture base with a `parent_uuid` column.
 
@@ -173,6 +220,7 @@ def main() -> None:
     ROOT.mkdir(parents=True, exist_ok=True)
     property_graph(args.results_directory)
     flat_captions()
+    code_captions()
 
     _hierarchy_fixtures()
     nodes = pa.table(

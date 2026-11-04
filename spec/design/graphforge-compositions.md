@@ -208,11 +208,20 @@ The same entity may appear in many rows (`RETURN a, r, b`); identical UUIDs
 merge (counted as `GF_BASE_MERGED_ENTITIES`), and a relationship seen twice
 must name the same endpoints (`GF_BASE_EDGE_CONFLICT`). Relationships whose
 endpoints are not base nodes fail (`GF_BASE_ENDPOINT_MISSING`). Node display
-names come from the first non-empty of the `name`, `title`, and `label`
+names come from the first non-empty text value of `name`, `title`, `label`, and `code`
 properties/columns, in that order (flat tables included), the
 node type from `labels[0]`, and the relationship type from `rel_type`. Bounds:
 20M nodes, 50M relationships (`GF_COMPOSE_TOO_LARGE`). No layer ever mutates
 the base graph: the composed node/edge order is the base order.
+
+`code` is a final caption candidate for entities such as code-only Airports;
+it never replaces a supplied name, title, or label, and never replaces UUID
+identity. Empty, null, and non-text caption values are skipped. This policy
+lives in Rust's shared base collector for entity structs and flat tables.
+Typed entity tables with zero rows are valid empty graphs. They retain schema
+validation and generation provenance; missing graph input still fails with
+`GF_COMPOSE_BASE_REQUIRED`, non-entity tables with `GF_BASE_SCHEMA`, and
+relationships missing endpoints with `GF_BASE_ENDPOINT_MISSING`.
 
 **Hierarchy (`parent_uuid`).** A flat node table may carry a nullable
 `parent_uuid` column (same name as the Python `GraphData` mapping default). A
@@ -337,7 +346,7 @@ no base still fails with `GF_COMPOSE_BASE_REQUIRED`, and layers still check
 |---|---|
 | Node class | `labels[0]` ranked like any group (§4.4 node-group): the six largest labels (ties by ascending label text) get codes 1–6; with more than seven labels the rest share 7 (`GF_COMPOSE_GROUPS_BUCKETED`, no layer). Unlabeled nodes stay class 0. The palette is the shared categorical palette |
 | Legend | one node row per label class present, labeled with the label text, `other labels (n)` for the shared bucket, and `no label` for class 0 when labeled nodes also exist |
-| Node caption | the first non-empty of `name`, `title`, `label` (§4.1), else the last eight hex digits of the node UUID (the random tail of a UUIDv7); nodes that fell back are counted in `GF_COMPOSE_CAPTION_IDENTITY` |
+| Node caption | the first non-empty text value of `name`, `title`, `label`, `code` (§4.1), else the last eight hex digits of the node UUID (the random tail of a UUIDv7); nodes that fell back are counted in `GF_COMPOSE_CAPTION_IDENTITY` |
 | Relationship type | `edge.type` carries it for hover and selection; `edge.label` repeats it with `edge.label_priority` −1, below every node caption (0), so the graph mark's zoom-monotone label plan (`graph_label_plan`) ranks types after captions and shows them as zoom frees room |
 | Direction | when `graph.directed` is 1 every base relationship gets edge `status` 1, the directional-overlay signal that `graph_style` resolves to a target-end arrowhead in both the graph mark and the Scene, with a `directed relationship` legend row. Undirected graphs keep status 0 and no arrowheads (layered compositions keep their per-layer status) |
 | Layout | the graph mark's seeded force layout (§6.3: seed 0, 300 ticks over every composed edge) |
@@ -689,7 +698,7 @@ edge `j + 1`) back to the composition with
 `XygGraphForgeComposition.identifyStableId`. The Scene is direct tier: at most
 1,024 composed nodes plus edges and the semantic Scene's primitive bound
 (`GF_COMPOSE_SCENE_TOO_LARGE`); larger graphs use the native graph mark,
-whose Rust level-of-detail applies. A composition that hides every node has
+whose Rust level-of-detail applies. A typed empty base or a composition that hides every node has
 nothing to lay out: the document carries no `scene.*` sections and records
 `GF_COMPOSE_SCENE_EMPTY`, and `renderWasmGraphForge` rejects it with that
 code so the host shows its empty state. Non-graph

@@ -87,6 +87,38 @@ test("a directed property graph keeps its arrowheads in the interactive graph ma
   assert.deepEqual([...heads(false)], [0]);
 });
 
+test("code-only Airport entities compose named, exportable property graphs without replacing UUIDs", () => {
+  const tables = [fs.readFileSync(path.join(ROOT, "tests/fixtures/graphforge/code_captions_entities.arrow"))];
+  const input = { base: { tables, generation: generationOf("property") } };
+  const c = composeGraphForge(input);
+  assert.deepEqual([...c.nodes.label], ["MHK", "DEN"]);
+  assert.equal(c.nodes.uuid[0], "03000000-0000-0000-0000-000000000001");
+  assert.equal(c.baseGeneration, generationOf("property"));
+  assert.equal(c.edges.count, 0);
+  const options = { width: 480, height: 320, theme: "light" };
+  const a = graphforgeStaticPayload(c, options);
+  const b = graphforgeStaticPayload(composeGraphForge(input), options);
+  assert.deepEqual(a.positions, b.positions);
+  assert.deepEqual(a.figure.toSvg(), b.figure.toSvg());
+  // Native caption culling may omit a node near the plot edge. Painted
+  // captions still use the composed codes; both source captions are above.
+  assert.match(Buffer.from(a.figure.toSvg()).toString("utf8"), />(MHK|DEN)</);
+  assert.deepEqual(a.figure.toPng(), b.figure.toPng());
+});
+
+test("typed empty entity results compose and export an empty graph", () => {
+  const tables = [fs.readFileSync(path.join(ROOT, "tests/fixtures/graphforge/code_captions_empty.arrow"))];
+  const c = composeGraphForge({ base: { tables }, render: { width: 480, height: 320 } });
+  assert.equal(c.nodes.count, 0);
+  assert.equal(c.edges.count, 0);
+  assert.equal(c.scene, null);
+  assert.ok(c.decisions.some((d) => d.code === "GF_COMPOSE_SCENE_EMPTY"));
+  const { figure, positions } = graphforgeStaticPayload(c, { width: 480, height: 320 });
+  assert.equal(positions.uuid.length, 0);
+  assert.ok(figure.toSvg().length > 0);
+  assert.ok(figure.toPng().length > 0);
+});
+
 test("every node and edge layer joins by UUID, matching an independent decoder", () => {
   for (const name of Object.keys(EXPECT.layers)) {
     const composition = compose(name);

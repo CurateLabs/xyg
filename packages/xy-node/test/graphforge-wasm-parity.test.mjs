@@ -79,6 +79,15 @@ function cases() {
     render: { width: 640, height: 420, theme: "dark", title: "GraphForge" },
   }]);
   out.push(["property graph", { base: base("property"), layers: [] }]);
+  for (const fixture of ["code_captions_entities", "code_captions_flat", "code_captions_empty"]) {
+    out.push([fixture, {
+      base: {
+        tables: [fs.readFileSync(path.join(ROOT, `tests/fixtures/graphforge/${fixture}.arrow`))],
+        generation: gen,
+      },
+      render: { width: 480, height: 320, theme: "light" },
+    }]);
+  }
   out.push(["property graph + render", {
     base: base("property"),
     layers: [],

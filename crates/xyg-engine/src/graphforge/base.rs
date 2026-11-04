@@ -30,7 +30,7 @@ use crate::projection::{
 pub const MAX_BASE_NODES: usize = 20_000_000;
 pub const MAX_BASE_EDGES: usize = 50_000_000;
 /// Name-like node properties, in caption order.
-pub const CAPTION_PROPERTIES: [&str; 3] = ["name", "title", "label"];
+pub const CAPTION_PROPERTIES: [&str; 4] = ["name", "title", "label", "code"];
 /// Per-label text bound (display labels are truncated far earlier).
 pub const MAX_LABEL_BYTES: usize = 1024;
 /// Optional flat-node-table column naming each node's compound parent.
@@ -39,7 +39,7 @@ pub const PARENT_FIELD: &str = "parent_uuid";
 #[derive(Debug, Default)]
 pub struct BaseGraph {
     pub node_uuid: Vec<Uuid>,
-    /// Display name: the first non-empty of `name`, `title`, `label`
+    /// Display name: the first non-empty of `name`, `title`, `label`, `code`
     /// ([`CAPTION_PROPERTIES`]), bounded.
     pub node_name: Vec<Option<String>>,
     /// First GraphForge label (`labels[0]`).
@@ -339,7 +339,8 @@ impl Collector {
         if names.contains(&"node_uuid") {
             // Flat node table.
             let ids = uuids(&table.column("node_uuid").unwrap(), true)?;
-            let names = Self::captions(CAPTION_PROPERTIES.map(|name| table.column(name)), ids.len());
+            let names =
+                Self::captions(CAPTION_PROPERTIES.map(|name| table.column(name)), ids.len());
             let kinds = Self::first_labels(table.column("labels"), ids.len());
             let parents = match table.column(PARENT_FIELD) {
                 Some(column) => {
@@ -439,9 +440,6 @@ impl Collector {
                 "GF_BASE_ENDPOINT_MISSING",
                 format!("{missing} relationship(s) name an endpoint absent from the base nodes"),
             ));
-        }
-        if self.graph.node_uuid.is_empty() {
-            return Err(GfError::new("GF_BASE_EMPTY", "the base graph has no nodes"));
         }
         self.resolve_hierarchy()?;
         Ok(self.graph)
@@ -606,6 +604,51 @@ mod tests {
         assert_eq!(
             graph.node_name,
             [Some("Name A".to_owned()), Some("Label B".to_owned())]
+        );
+    }
+
+    #[test]
+    fn code_only_airport_entities_keep_their_captions_and_identities() {
+        let nodes = std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/code_captions_entities.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let graph = build(&[read_table(&nodes).unwrap()], None, true).unwrap();
+        assert_eq!(graph.node_name, [Some("MHK".into()), Some("DEN".into())]);
+        assert_eq!(
+            graph.node_type,
+            [Some("Airport".into()), Some("Airport".into())]
+        );
+        assert_eq!(
+            graph.node_uuid[0],
+            [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        );
+    }
+
+    #[test]
+    fn flat_code_captions_follow_existing_names_and_skip_empty_values() {
+        let nodes = std::fs::read(format!(
+            "{}/../../tests/fixtures/graphforge/code_captions_flat.arrow",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let graph = build(&[read_table(&nodes).unwrap()], None, true).unwrap();
+        assert_eq!(
+            graph
+                .node_name
+                .iter()
+                .map(|s| s.as_deref())
+                .collect::<Vec<_>>(),
+            [
+                Some("Name"),
+                Some("Title"),
+                Some("Label"),
+                Some("MHK"),
+                Some("DEN"),
+                None,
+                None
+            ]
         );
     }
 

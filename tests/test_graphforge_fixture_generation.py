@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import runpy
 from pathlib import Path
 
 import pytest
@@ -41,3 +42,11 @@ def test_property_producer_restores_files_and_manifest(tmp_path, existing_manife
     first = {path.name: path.read_bytes() for path in results.iterdir()}
     producer.property_graph(results)
     assert {path.name: path.read_bytes() for path in results.iterdir()} == first
+
+
+def test_code_caption_producer_restores_committed_fixtures(tmp_path):
+    pytest.importorskip("pyarrow")
+    producer = runpy.run_path(str(ROOT / "scripts/gen_graphforge_ipc_fixtures.py"))
+    producer["code_captions"](tmp_path)
+    for path in tmp_path.iterdir():
+        assert path.read_bytes() == (ROOT / "tests/fixtures/graphforge" / path.name).read_bytes()

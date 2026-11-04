@@ -53,6 +53,14 @@ XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run pytest tests/test_
 
 ## Property-graph defaults and arrowhead correction (#934)
 
+`code_captions_{entities,flat,empty}.arrow` pin code-only Airport entity
+captions (`MHK`, `DEN`), flat name/title/label/code precedence with null/empty
+fallthrough, and the same entity schema with zero rows. The synthetic producer
+`code_captions()` in `gen_graphforge_ipc_fixtures.py` regenerates them without
+Core. Rust, Python and Node tests assert the captions and preserved UUIDs;
+native/WASM request parity includes all three fixtures. No historical property
+or semantic golden changes for this caption extension.
+
 The historical Scene32 evidence above remains unchanged. #934 moves canonical
 semantic Scene arrowheads from target centers to the painted marker outlines,
 so current Scene, painter, SVG, raster and PNG hashes intentionally differ from

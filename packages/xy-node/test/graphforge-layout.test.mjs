@@ -19,6 +19,19 @@ const input = () => ({ base: { tables: [read(base.nodes), read(base.edges)], gen
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const digest = p => createHash("sha256").update(Buffer.from(p.x.buffer)).update(Buffer.from(p.y.buffer)).digest("hex");
 
+test("a typed empty Cypher result completes native layout with a paintable empty payload", async () => {
+  const owner = new GraphForgeLayoutController();
+  try {
+    const tables = [readFileSync(new URL("tests/fixtures/graphforge/code_captions_empty.arrow", root))];
+    const payload = await owner.render({ base: { tables } }, { layout: "cose", iterations: 2, width: 480, height: 320 });
+    assert.equal(payload.phase, "complete");
+    assert.equal(payload.positions.uuid.length, 0);
+    assert.ok(payload.buffer.byteLength > 0);
+    assert.deepEqual(payload.pickData.nodes, []);
+    assert.deepEqual(payload.pickData.edges, []);
+  } finally { await owner.dispose(); }
+});
+
 // Real native checks: scheduling changes must not introduce a second force pass.
 test("default live API requires an owner, schedules revisioned native checkpoints and preserves source UUIDs", async () => {
   await assert.rejects(graphforgeWebviewPayload(composeGraphForge(input())), /requires.*owner/);

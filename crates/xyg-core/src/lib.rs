@@ -16027,11 +16027,19 @@ pub unsafe extern "C" fn xyg_graph_layout(
     }
     let n = n_nodes as usize;
     let e = n_edges as usize;
-    if out_x.is_null() || out_y.is_null() {
+    if n > 0 && (out_x.is_null() || out_y.is_null()) {
         return -1;
     }
-    let out_x = std::slice::from_raw_parts_mut(out_x, n);
-    let out_y = std::slice::from_raw_parts_mut(out_y, n);
+    let out_x = if n == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_x, n)
+    };
+    let out_y = if n == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_y, n)
+    };
     let sources = if e == 0 {
         &[][..]
     } else if sources.is_null() {
@@ -16049,11 +16057,19 @@ pub unsafe extern "C" fn xyg_graph_layout(
     ffi_guard(-1, || {
         let ok = match layout {
             graph::LAYOUT_PRESET => {
-                if in_x.is_null() || in_y.is_null() {
+                if n > 0 && (in_x.is_null() || in_y.is_null()) {
                     return -1;
                 }
-                let ix = std::slice::from_raw_parts(in_x, n);
-                let iy = std::slice::from_raw_parts(in_y, n);
+                let ix = if n == 0 {
+                    &[][..]
+                } else {
+                    std::slice::from_raw_parts(in_x, n)
+                };
+                let iy = if n == 0 {
+                    &[][..]
+                } else {
+                    std::slice::from_raw_parts(in_y, n)
+                };
                 graph::layout_preset(ix, iy, out_x, out_y)
             }
             graph::LAYOUT_GRID => {
@@ -16341,12 +16357,23 @@ pub unsafe extern "C" fn xyg_graph_force_tick(
     out_y: *mut f64,
     out_alpha: *mut f64,
 ) -> i32 {
-    if out_x.is_null() || out_y.is_null() || out_alpha.is_null() {
+    if n_nodes > usize::MAX as u64
+        || out_alpha.is_null()
+        || (n_nodes > 0 && (out_x.is_null() || out_y.is_null()))
+    {
         return -1;
     }
     let n = n_nodes as usize;
-    let out_x = std::slice::from_raw_parts_mut(out_x, n);
-    let out_y = std::slice::from_raw_parts_mut(out_y, n);
+    let out_x = if n == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_x, n)
+    };
+    let out_y = if n == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_y, n)
+    };
     ffi_guard(-1, || {
         match graph::force_tick(handle, steps, out_x, out_y) {
             Some(alpha) => {
@@ -16607,7 +16634,7 @@ pub unsafe extern "C" fn xyg_graph_build_render(
     }
     let node_budget = node_budget.max(1);
     let edge_budget = edge_budget.max(1);
-    let Ok(out_node_cap) = usize::try_from(node_budget.min(n_nodes.max(1))) else {
+    let Ok(out_node_cap) = usize::try_from(node_budget.min(n_nodes)) else {
         return -1;
     };
     let Ok(out_edge_cap) = usize::try_from(edge_budget) else {
@@ -32024,6 +32051,89 @@ mod tests {
         assert_eq!(out_y, [19.0; 2]);
         assert_eq!(alpha, 23.0);
         assert_eq!(unsafe { xyg_graph_force_destroy(handle) }, 1);
+    }
+
+    #[test]
+    fn graph_layout_abi_accepts_null_coordinates_only_for_empty_graphs() {
+        use std::ptr::{null, null_mut};
+        unsafe {
+            for layout in [
+                graph::LAYOUT_PRESET,
+                graph::LAYOUT_CIRCLE,
+                graph::LAYOUT_COSE,
+            ] {
+                assert_eq!(
+                    xyg_graph_layout(
+                        layout,
+                        0,
+                        0,
+                        null(),
+                        null(),
+                        null(),
+                        null(),
+                        null(),
+                        0,
+                        0,
+                        null_mut(),
+                        null_mut()
+                    ),
+                    0
+                );
+                assert_eq!(
+                    xyg_graph_layout(
+                        layout,
+                        1,
+                        0,
+                        null(),
+                        null(),
+                        null(),
+                        null(),
+                        null(),
+                        0,
+                        0,
+                        null_mut(),
+                        null_mut()
+                    ),
+                    -1
+                );
+            }
+            for algorithm in [graph::LAYOUT_FORCE, graph::LAYOUT_COSE] {
+                let mut handle = 0;
+                assert_eq!(
+                    xyg_graph_force_create(
+                        0,
+                        0,
+                        null(),
+                        null(),
+                        null(),
+                        null(),
+                        0,
+                        algorithm,
+                        &mut handle
+                    ),
+                    0
+                );
+                let mut alpha = -1.0;
+                assert_eq!(
+                    xyg_graph_force_tick(handle, 0, 2, null_mut(), null_mut(), &mut alpha),
+                    0
+                );
+                assert!(alpha.is_finite());
+                assert_eq!(
+                    xyg_graph_force_tick(handle, 1, 2, null_mut(), null_mut(), &mut alpha),
+                    -1
+                );
+                assert_eq!(
+                    xyg_graph_force_tick(handle, 0, 2, null_mut(), null_mut(), null_mut()),
+                    -1
+                );
+                assert_eq!(xyg_graph_force_destroy(handle), 1);
+                assert_eq!(
+                    xyg_graph_force_tick(handle, 0, 2, null_mut(), null_mut(), &mut alpha),
+                    -1
+                );
+            }
+        }
     }
 
     #[test]

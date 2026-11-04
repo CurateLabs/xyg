@@ -290,6 +290,24 @@ def test_directed_property_graph_keeps_its_arrowheads_in_the_interactive_mark() 
     assert head_bits(False) == {0}
 
 
+@pytest.mark.parametrize(
+    ("fixture", "captions"),
+    [
+        ("code_captions_entities", ["MHK", "DEN"]),
+        ("code_captions_flat", ["Name", "Title", "Label", "MHK", "DEN", "00000006", "00000007"]),
+        ("code_captions_empty", []),
+    ],
+)
+def test_code_caption_property_graphs(fixture: str, captions: list[str]) -> None:
+    table = (ROOT / "tests/fixtures/graphforge" / f"{fixture}.arrow").read_bytes()
+    c = xyg.compose_graphforge(base={"tables": [table], "generation": _gen("property")})
+    assert list(c.nodes.label) == captions
+    if captions:
+        assert c.nodes.uuid[0] == "03000000-0000-0000-0000-000000000001"
+    assert c.base_generation == _gen("property")
+    assert c.edges.count == 0
+
+
 def test_large_parallel_coordinates_keep_every_segment_identity() -> None:
     from types import SimpleNamespace
 

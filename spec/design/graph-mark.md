@@ -396,6 +396,15 @@ rather than scanning every occupied cell for every node.
 
 ## 5. Progressive layout ticks (REQ-CORE-6)
 
+Empty graphs use the same native layout path. `xyg_graph_layout` and
+`xyg_graph_force_tick` accept null coordinate buffers only when `n_nodes` is
+zero, lowering them to empty Rust slices without dereferencing null. Force
+ticks still require a live handle, matching node count and non-null alpha
+output; non-empty coordinate buffers retain their existing validation.
+`xyg_graph_build_render` requires zero node-output slots for zero input nodes,
+matching the shared host allocation contract; it does not invent a node slot.
+No signature or ABI version changes for this correction.
+
 ```mermaid
 sequenceDiagram
   participant Host as Python_or_Node
