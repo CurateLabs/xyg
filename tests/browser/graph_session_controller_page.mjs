@@ -159,7 +159,18 @@ state.pointerFixture = async (kind="routes", id=36n) => {
   const p=state.pointer={el,worker,handle,id,nodes,edges,document,load,camera,events:[],trusted:[],errors:[]};
   el.addEventListener("xy:graph-select",e=>p.events.push(e.detail));
   for(const kind of ["error","stale"]) el.addEventListener(`xy:graph-${kind}`,e=>p.errors.push(e.detail));
-  el.querySelector("canvas").addEventListener("click",e=>p.trusted.push({trusted:e.isTrusted,button:e.button,detail:e.detail,clientX:e.clientX,clientY:e.clientY}));
+  el.querySelector("canvas").addEventListener("click",e=>{
+    // TEST ONLY: read native offsets during dispatch, independently of the
+    // controller. clientWidth/Height use the padding box (not CSS width/rect).
+    const c=e.currentTarget,style=getComputedStyle(c),padding=[parseFloat(style.paddingLeft),parseFloat(style.paddingTop)],
+      extent=[c.clientWidth-padding[0]-parseFloat(style.paddingRight),c.clientHeight-padding[1]-parseFloat(style.paddingBottom)],
+      offsets=[e.offsetX,e.offsetY],view=p.handle.snapshot()?.camera??p.camera;
+    const record={trusted:e.isTrusted,canvas:e.target===c,button:e.button,detail:e.detail,clientX:e.clientX,clientY:e.clientY,offsets,padding,extent,zoom:c.currentCSSZoom,
+      nativeCoordinates:offsets.map((v,i)=>(v-padding[i])*view[i+4]/extent[i])};
+    p.trusted.push(record);
+    const command=state.commands.at(-1);
+    if(command?.instanceId===p.id&&command.operation===1) command.nativeEvent=record;
+  });
   return true;
 };
 state.pointerPoint = (kind,index=0) => {
@@ -259,4 +270,31 @@ state.slotPoint = (kind,nested=false) => {
   const walk=composed=>{const chain=[];for(let element=canvas;element;){chain.push(describe(element));const root=element.getRootNode();element=(composed?element.assignedSlot:null)??element.parentElement??(root instanceof ShadowRoot?root.host:null);}return chain;};
   const r=probe.getBoundingClientRect(),client=[r.x,r.y];
   return {kind,nested,css,client,hit:document.elementFromPoint(...client)?.tagName,legacyWalk:walk(false),composedWalk:walk(true),wrapper:describe(outerTree.wrapper)};
+};
+
+// TEST ONLY: native DIV/BODY hosts with closed roots deliberately conceal the
+// assigned slots from the controller's public ancestry walk. The marker is a
+// browser display oracle; Rust geometry only chooses the intended graph point.
+state.closedPoint = ({kind,tag='div',named=true,nested=false}) => {
+  const p=state.pointer,c=p.el.querySelector('canvas'),surface=c.parentElement;
+  p.el.style.cssText='position:relative;width:640px;height:320px';
+  surface.style.cssText='position:relative;width:640px;height:320px';c.style.display='block';p.el.lastElementChild.style.visibility='hidden';
+  const host=document.createElement(tag);host.style.cssText='display:block;margin:0;position:fixed;left:200px;top:50px;width:640px;height:320px;z-index:10000';
+  const make=host=>{const root=host.attachShadow({mode:'closed'}),wrapper=document.createElement('div'),slot=document.createElement('slot');
+    wrapper.style.cssText='position:relative;width:640px;height:320px;transform-origin:0 0';if(named)slot.name='chart';wrapper.append(slot);root.append(wrapper);return wrapper;};
+  const wrapper=make(host);p.el.before(host);p.closedHost=host;let owner=host,innerWrapper;
+  if(nested){const inner=document.createElement(tag==='div'?'body':'div');inner.style.cssText='display:block;margin:0;width:640px;height:320px';if(named)inner.slot='chart';host.append(inner);innerWrapper=make(inner);owner=inner;}
+  p.el.slot=named?'chart':'';owner.append(p.el);
+  if(kind==='rotate')wrapper.style.transform='rotate(30deg)';
+  if(kind==='motion')wrapper.style.cssText+=';offset-path:path("M 450 150 L 700 150");offset-distance:0px;offset-rotate:30deg;offset-anchor:0px 0px';
+  if(kind==='zoom14')wrapper.style.zoom='1.4';
+  if(kind==='zoom125')wrapper.style.zoom='1.25';
+  if(kind==='net2'){wrapper.style.zoom='2';innerWrapper.style.zoom='0.5';}
+  if(kind==='net14'){wrapper.style.zoom='1.4';innerWrapper.style.zoom=String(1/1.4);}
+  const css=state.pointerPoint('node',1),probe=document.createElement('span');probe.style.cssText=`position:absolute;left:${css[0]}px;top:${css[1]}px;width:0;height:0;pointer-events:none`;surface.append(probe);
+  const link=document.createElement('a');link.href=`#closed-${tag}-${named?'named':'default'}-${kind}-${nested?'nested-':''}DPR${devicePixelRatio}`;link.style.display='block';surface.before(link);link.append(surface);
+  p.closedDelivery=null;p.el.addEventListener('click',e=>{p.closedDelivery={trusted:e.isTrusted,canvas:e.target===c,target:e.target.tagName,clientX:e.clientX,clientY:e.clientY,defaultPrevented:e.defaultPrevented};});
+  const chain=[];for(let el=c;el;){const st=getComputedStyle(el);chain.push({tag:el.tagName,transform:st.transform,rotate:st.rotate,offsetPath:st.offsetPath,slot:el.assignedSlot?.tagName??null});const root=el.getRootNode();el=el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}
+  const rect=probe.getBoundingClientRect(),client=[rect.x,rect.y],st=getComputedStyle(wrapper);
+  return {kind,tag,named,nested,fragment:new URL(link.href).hash,css,client,hit:document.elementFromPoint(...client)?.tagName,chain,zoom:c.currentCSSZoom,canvasStyleZoom:getComputedStyle(c).zoom,dpr:devicePixelRatio,wrapper:{transform:st.transform,rotate:st.rotate,offsetPath:st.offsetPath,zoom:st.zoom}};
 };

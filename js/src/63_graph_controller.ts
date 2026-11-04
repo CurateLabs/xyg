@@ -169,11 +169,15 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       } catch (error) { report(error); }
     }
   };
-  // Presentation mapping only. Rust picks against its accepted CSS-screen
-  // geometry. Reject unsupported transforms instead of guessing graph targets.
+  // Native dispatch-local coordinates are authoritative at browser precision.
+  // Rust alone picks. Public ancestry guards are conservative, not proof that
+  // closed shadow roots contain no transforms.
   function clickCoordinates(event: MouseEvent): readonly [number, number] | null {
     const canvas = painter.canvas, win = doc.defaultView;
-    if (!win || !canvas.isConnected || canvas.scrollLeft || canvas.scrollTop) return null;
+    if (!event.isTrusted || event.target !== canvas || !win || !canvas.isConnected || canvas.scrollLeft || canvas.scrollTop) return null;
+    const zoom = (canvas as HTMLCanvasElement & { readonly currentCSSZoom?: number }).currentCSSZoom;
+    const offsetX = event.offsetX, offsetY = event.offsetY;
+    if (!Number.isFinite(zoom) || zoom !== 1 || !Number.isFinite(offsetX) || !Number.isFinite(offsetY)) return null;
     for (let element: Element | null = canvas; element;) {
       const style = win.getComputedStyle(element);
       // Motion-path distance/rotation/anchor are separate from transform's
@@ -188,20 +192,21 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       // Slots supply displayed ancestors before the light-DOM parent does.
       element = element.assignedSlot ?? element.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
     }
-    const style = win.getComputedStyle(canvas), rect = canvas.getBoundingClientRect();
+    const style = win.getComputedStyle(canvas);
     if (style.objectFit !== "fill") return null;
-    const left = parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
-    const top = parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop);
-    const horizontal = left + parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
-    const vertical = top + parseFloat(style.borderBottomWidth) + parseFloat(style.paddingBottom);
+    const left = parseFloat(style.paddingLeft);
+    const top = parseFloat(style.paddingTop);
+    const horizontal = parseFloat(style.borderLeftWidth) + left + parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
+    const vertical = parseFloat(style.borderTopWidth) + top + parseFloat(style.borderBottomWidth) + parseFloat(style.paddingBottom);
     const width = parseFloat(style.width), height = parseFloat(style.height);
     const borderWidth = width + (style.boxSizing === "border-box" ? 0 : horizontal);
     const borderHeight = height + (style.boxSizing === "border-box" ? 0 : vertical);
     const contentWidth = borderWidth - horizontal, contentHeight = borderHeight - vertical;
-    if (![left, top, borderWidth, borderHeight, contentWidth, contentHeight, rect.width, rect.height].every(Number.isFinite) ||
-        contentWidth <= 0 || contentHeight <= 0 || rect.width <= 0 || rect.height <= 0) return null;
-    const x = (event.clientX - rect.left) * borderWidth / rect.width - left;
-    const y = (event.clientY - rect.top) * borderHeight / rect.height - top;
+    if (![left, top, borderWidth, borderHeight, contentWidth, contentHeight].every(Number.isFinite) ||
+        contentWidth <= 0 || contentHeight <= 0) return null;
+    // offsetX/Y originate at the padding edge, excluding the border already.
+    // Never infer zoom or invert a transformed bounding rectangle here.
+    const x = offsetX - left, y = offsetY - top;
     if (x < 0 || y < 0 || x >= contentWidth || y >= contentHeight) return null;
     return [x * camera[4] / contentWidth, y * camera[5] / contentHeight];
   }

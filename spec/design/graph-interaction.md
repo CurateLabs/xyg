@@ -1135,36 +1135,44 @@ publication, expands aggregate membership and atomically applies the mode.
 Blank Replace replaces selection with empty; blank Add/Toggle are noops. None
 of these become Clear: highlight planes survive blank Replace.
 
-Coordinates map the actual displayed canvas **content box** (excluding border
-and padding), using its bounding rectangle and computed box dimensions, into
-the accepted camera's viewport width/height. Positive axis-aligned CSS matrix
-scales/translations, offsets, borders, padding, border-box sizing and ancestor
-scrolling are supported. Presentation eligibility follows composed ancestry:
-prefer the element's available `assignedSlot` before `parentElement`, then use
-`ShadowRoot.host` when there is no DOM parent. Repeating that order checks slot
-wrappers and nested slot/host assignments rather than jumping directly from a
-slotted light-DOM container to its host. Existing matrix, individual transform,
-perspective and active motion-path guards apply at every visited element.
-Untransformed and ordinary axis-aligned-scaled slotted graphs retain selection;
-slot assignment alone is not a reason to refuse input. The walk is evaluated
-synchronously for each click; it introduces no observer or graph-pick policy.
-The [slotted-ancestor repair receipt](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
-records actual pre-fix mis-picks, transformed-wrapper rejection, positive slot
-selection and nested-host proof. No DPR multiplication or data-camera transform is
-applied: Rust's paint/pick geometry already uses CSS screen coordinates.
-Rotation, shear, perspective, reflected/3D matrices, individual CSS
-rotate/scale/translate properties, active CSS motion paths on the canvas or
-any traversed ancestor (including across shadow roots), non-fill object-fit, canvas-local scrolling,
-disconnected/degenerate boxes, and points outside the content box pass without
-commands. Motion-path eligibility is checked separately as computed
-`offset-path != none`: its offset distance/rotation/anchor can transform the
-canvas while computed `transform` and individual `rotate` both remain `none`.
-Every active path is conservatively rejected, including axis-aligned paths;
-default motion properties with `offset-path: none` do not block ordinary input.
-These are presentation-admission boundaries, not TypeScript hit policy.
-The [motion-path repair receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
-retains the real canvas/ancestor before-failure and trusted-click repair proofs.
-The original pointer receipt remains immutable; broader acceptance is unchanged.
+Only a trusted native click whose target is the owned painter canvas is
+eligible. Read finite `offsetX`/`offsetY` synchronously during dispatch: these
+browser-local coordinates originate at the target's **padding edge**, ignoring
+transforms. Subtract computed canvas padding, **not border**, reject points
+outside its content box, and scale only to the accepted camera viewport
+width/height. Native reported coordinates are authoritative at **browser
+precision**; rounding is browser-dependent and there is no subpixel promise.
+No bounding-rectangle inversion, DPR multiplication, data-camera transform,
+zoom division, cached event or fractional-pointer workaround is applied.
+
+Require the public effective `canvas.currentCSSZoom` to be finite and **exactly
+1** (strict equality, no tolerance). Missing, invalid or nonunit capability
+refuses input without a command or cancellation. Computed canvas `zoom: 1`
+alone cannot certify effective zoom through closed slots. Nested zooms whose
+reported effective product is exactly1 remain eligible. Positive axis-aligned
+CSS matrix scales/translations, offsets, borders, padding, border-box sizing
+and ancestor scrolling remain supported at native browser precision.
+
+The synchronous inspectable-ancestry walk retains available `assignedSlot`
+before `parentElement`, then `ShadowRoot.host` fallback. At every **visited**
+element it conservatively refuses rotation, shear, perspective, reflected/3D
+matrices, individual CSS rotate/scale/translate and active `offset-path != none`
+(including axis-aligned paths). Motion distance/rotation/anchor are separate
+from `DOMMatrix(transform)`; default motion properties without a path do not
+block input. Non-fill object-fit, canvas-local scrolling, disconnected or
+degenerate boxes also refuse. These are presentation guards, not graph hit
+policy. Plain and ordinary scaled slotted graphs remain eligible.
+
+Public `assignedSlot` hides closed-shadow assignments. This walk **does not
+certify absence of hidden transforms**. Closed-root rotations/motion paths may
+therefore be eligible: trusted browser-local offsets supply the coordinates,
+with the same strict effective-zoom requirement. No closed-root introspection
+or blanket slot refusal is added. The [native input repair receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md)
+retains fresh actual mouse/native-coordinate/full-byte replay proof. Earlier
+[slot](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
+and [motion](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
+receipts remain immutable historical evidence; their rectangle-derived
+coordinate captures do not qualify this native-input contract.
 
 The internal encoder admits `coordinates?: readonly [number, number]` only for
 operation1, requires exactly two finite numbers, and emits only existing

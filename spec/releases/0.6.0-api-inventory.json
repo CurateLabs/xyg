@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"da52bca32651077ddf53d9fdd014245731b6d087",
+  "baseCommit":"04476ac36d6b9dce84810b07629aae68ad2f6f56",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1243,7 +1243,7 @@
   "js/src/61_geo_catalog.ts":"4bdefad88ea4f03ee248e8f74be223b47de36c149b4c90f1f682859f5550e412",
   "js/src/62_geographic_controller.ts":"7ca5120bdf72d08409ed36673367ccb407379103d716100da21aad97d5fc8a6f",
   "js/src/63_geo_source.ts":"18c9241c630189f89960fd70804b0f72c73703f44b34d3b663a56a754d1c2f97",
-  "js/src/63_graph_controller.ts":"df8cc74c72442546aa3c6c2ff03bc8d501dca38b9de4292dba139fbc494ea4b0",
+  "js/src/63_graph_controller.ts":"a5406fdbf2dbb6117ec0f64f7578970897a7622ede117f54a98ea08f9187da9d",
   "js/src/63_graph_gpu.ts":"a6c0df5ba0584524c18e78a5f490816e8ad9f7e21fe56554918d430a059478f8",
   "js/src/63_graph_session_wire.ts":"dbaef3a34adc4127dadc729875d103728d870ed808945d17fc63f907637bc005",
   "js/src/64_geo_retained_controller.ts":"9f7a585b3bc0e00dbe9385d897334a1ccf4de57fd9ed9393eec22560090c2982",
@@ -1382,9 +1382,9 @@
   "spec/abi/xyg-abi.json":"8c8392feab94c798fad38eb7890269b6b2846598c9930e4315160cf990591298",
   "spec/abi/xyg.h":"730994cae2a3fef48f4f80faea8757e0f57f5e2d001b946ff46ee8c6ce5ef194",
   "spec/api/api-examples.md":"f6bc43d28cf9ba88855561ff41bd62eb2f3a823c71ca2c87c5356e1b2a2fa094",
-  "spec/api/browser-wasm.md":"bbd03f8ef3e8c8989fa037bb4caf4f2465482fbb1726e48d97bb9ec5379005cc",
+  "spec/api/browser-wasm.md":"7ab775b061bb98d0f0c6f430c935318a651b0f4f1cb3976229d49157ef3a1f0a",
   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
-  "spec/design/browser-wasm.md":"239692b1fe1a1550be3fedba9cd78a9008c3e4d6316499b79283f25b872c240e",
+  "spec/design/browser-wasm.md":"eb322bf99d8db9f8453af4ea6f21ddeab275b9195745c8ce1cf5e27e6358013f",
   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
   "spec/design/host-parity.md":"27cdebe933898fddd4eba7a35176bce3cce757f376ee2ed71b9db7ac8abe2d91",
   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",

@@ -259,8 +259,14 @@ try {
       const raw = await page.evaluate(() => { const s=window.__graphSession,c=s.commands.at(-1); return {count:s.commands.length,products:s.products.slice(-1),operation:c.operation,revision:c.revision,coordinates:s.values(c.bytes,'coordinates.f64'),event:s.pointer.trusted.at(-1),words:[...new Uint32Array(s.section(c.bytes,'header.u32').slice().buffer)]}; });
       assert.equal(raw.count,point.count+1); assert.equal(raw.operation,1);
       assert.deepEqual(await page.evaluate(start=>window.__graphSession.products.slice(start),point.products),["graph.session.interact"]);
+      assert.equal(raw.event.trusted,true);assert.equal(raw.event.canvas,true);
+      if(process.env.XYG_GRAPH_NATIVE_BASELINE) {
       const delivered=await page.evaluate(event=>{const s=window.__graphSession,c=s.pointer.el.querySelector('canvas'),r=c.getBoundingClientRect(),style=getComputedStyle(c);const l=parseFloat(style.borderLeftWidth)+parseFloat(style.paddingLeft),t=parseFloat(style.borderTopWidth)+parseFloat(style.paddingTop),h=l+parseFloat(style.borderRightWidth)+parseFloat(style.paddingRight),v=t+parseFloat(style.borderBottomWidth)+parseFloat(style.paddingBottom),bw=parseFloat(style.width)+(style.boxSizing==='border-box'?0:h),bh=parseFloat(style.height)+(style.boxSizing==='border-box'?0:v),camera=s.pointer.handle.snapshot().camera;return [((event.clientX-r.left)*bw/r.width-l)*camera[4]/(bw-h),((event.clientY-r.top)*bh/r.height-t)*camera[5]/(bh-v)];},raw.event);
       raw.coordinates.forEach((v,i)=>assert.ok(Math.abs(v-delivered[i])<1e-8,`${v} != delivered ${delivered[i]}`));
+      }else{
+        assert.equal(raw.event.zoom,1);
+        assert.deepEqual(raw.coordinates,raw.event.nativeCoordinates,'raw f64 must equal the synchronous native offset oracle');
+      }
       return {point,raw,snapshot:await pointerSnapshot()};
     };
     await run("primary-mouse-exact-node-replace-shiftAdd-CtrlMetaToggle-and-rawf64", async () => {
@@ -303,8 +309,8 @@ try {
       const unchanged=await page.evaluate(before=>{const s=window.__graphSession,after=s.publication();const names=['paint.node.center.f64','paint.piece.geometry.f64','paint.frame.geometry.f64','render.node_members.u64','render.edge_members.u64'];return names.every(name=>s.json([...s.section(new Uint8Array(before),name)])===s.json([...s.section(after,name)]));},before.bytes);
       assert.equal(unchanged,true);assert.equal(replace.snapshot.revision,before.snapshot.revision);assert.deepEqual(replace.snapshot.focus,before.snapshot.focus);
       if(process.env.XYG_GRAPH_POINTER_CAPTURE) {
-        const capture=await page.evaluate(()=>{const s=window.__graphSession;return s.commands.filter(c=>c.instanceId===36n).map(c=>({operation:c.operation,request:[...c.bytes],reply:[...s.replies.find(r=>r.requestId===c.requestId&&r.sequence===c.sequence&&r.lifetime===c.lifetime).bytes]}));});
-        await writeFile(process.env.XYG_GRAPH_POINTER_CAPTURE,JSON.stringify(capture.map(c=>({operation:c.operation,request:Buffer.from(c.request).toString('base64'),reply:Buffer.from(c.reply).toString('base64')})),null,2)+'\n');
+        const capture=await page.evaluate(()=>{const s=window.__graphSession;return s.commands.filter(c=>c.instanceId===36n).map(c=>({operation:c.operation,nativeEvent:c.nativeEvent,request:[...c.bytes],reply:[...s.replies.find(r=>r.requestId===c.requestId&&r.sequence===c.sequence&&r.lifetime===c.lifetime).bytes]}));});
+        await writeFile(process.env.XYG_GRAPH_POINTER_CAPTURE,JSON.stringify(capture.map(c=>({operation:c.operation,nativeEvent:c.nativeEvent,request:Buffer.from(c.request).toString('base64'),reply:Buffer.from(c.reply).toString('base64')})),null,2)+'\n');
       }
       return {ok:true,add,toggle,replace,unchanged};
     });
@@ -468,6 +474,59 @@ try {
           if(unsupported){assert.notDeepEqual(after.snapshot,before.snapshot);assert.equal(after.snapshot.outcome.selected,0);}else{assert.deepEqual(after.snapshot.selection.refs,[{kind:0,uuid:'02000000-0000-0000-0000-000000000000'}]);assert.equal(after.snapshot.outcome.selected,1);assert.equal(after.geometry,before.geometry);assert.deepEqual(after.snapshot.focus,before.snapshot.focus);}
         }
         await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.slotHost.remove();});return result;
+      });
+    }
+
+    const nativeBaseline=process.env.XYG_GRAPH_NATIVE_BASELINE;
+    const cdp=await page.context().newCDPSession(page);
+    const closedCases=nativeBaseline?[[1,'rotate','div',true,false]]:
+      [1,2].flatMap(dpr=>[
+        ...['div','body'].flatMap(tag=>[true,false].flatMap(named=>['rotate','motion'].map(kind=>[dpr,kind,tag,named,false]))),
+        [dpr,'zoom14','div',true,false],[dpr,'zoom125','body',false,false],
+        [dpr,'net2','div',false,true],[dpr,'net14','body',true,true],
+        [dpr,'rotate','div',true,true],[dpr,'motion','body',false,true]
+      ]);
+    for(const [dpr,kind,tag,named,nested] of closedCases){
+      await run(`native-closed-${tag}-${named?'named':'default'}-${kind}-${nested?'nested-':''}DPR${dpr}`,async()=>{
+        await cdp.send('Emulation.setDeviceMetricsOverride',{width:2800,height:1500,deviceScaleFactor:dpr,mobile:false});
+        await page.evaluate(()=>window.__graphSession.pointerFixture('routes',90n));await click('node',2);
+        const point=await page.evaluate(options=>window.__graphSession.closedPoint(options),{kind,tag,named,nested});
+        assert.equal(point.hit,'CANVAS');assert.equal(point.dpr,dpr);assert.equal(point.canvasStyleZoom,'1');
+        assert.ok(point.chain.every(e=>e.transform==='none'&&e.rotate==='none'&&e.offsetPath==='none'&&e.slot===null));
+        const before=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash};});
+        await page.mouse.click(...point.client);await pointerIdle();
+        const after=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer,c=s.commands.at(-1);return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash,delivery:p.closedDelivery,event:p.trusted.at(-1),coordinates:c.operation===1?s.values(c.bytes,'coordinates.f64'):null};});
+        const result={ok:true,point,before,after};console.log('closed-native raw proof',JSON.stringify(result,(_,v)=>typeof v==='bigint'?String(v):v));
+        assert.equal(after.delivery.trusted,true);assert.equal(after.delivery.canvas,true);assert.equal(after.delivery.target,'CANVAS');
+        const refuse=kind.startsWith('zoom');
+        if(nativeBaseline==='1'){
+          assert.equal(after.commands,before.commands+1);assert.equal(after.delivery.defaultPrevented,true);assert.equal(after.snapshot.outcome.selected,0);
+          assert.notDeepEqual(after.coordinates,after.event.nativeCoordinates);
+        }else if(refuse){
+          assert.notEqual(point.zoom,1);assert.equal(after.commands,before.commands);assert.equal(after.products,before.products);assert.equal(after.events,before.events);
+          assert.deepEqual(after.snapshot,before.snapshot);assert.equal(after.pixels,before.pixels);assert.equal(after.delivery.defaultPrevented,false);assert.equal(after.hash,point.fragment);assert.notEqual(before.hash,point.fragment);
+        }else{
+          assert.equal(point.zoom,1);assert.equal(after.commands,before.commands+1);assert.equal(after.products,before.products+1);assert.equal(after.events,before.events+1);
+          assert.equal(after.delivery.defaultPrevented,true);assert.equal(after.hash,before.hash);
+          assert.deepEqual(after.coordinates,after.event.nativeCoordinates);assert.deepEqual(after.snapshot.selection.refs,[{kind:0,uuid:'02000000-0000-0000-0000-000000000000'}]);
+        }
+        assert.equal(after.geometry,before.geometry);assert.deepEqual(after.snapshot.focus,before.snapshot.focus);assert.equal(after.snapshot.revision,before.snapshot.revision);
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.closedHost.remove();});return result;
+      });
+    }
+    await cdp.send('Emulation.clearDeviceMetricsOverride');await cdp.detach();
+    if(!nativeBaseline) for(const capability of ['missing','nan','infinite','nonunit']){
+      await run(`effective-zoom-${capability}-test-only-capability-seam-refuses-trusted-click`,async()=>{
+        await page.evaluate(()=>window.__graphSession.pointerFixture('routes',91n));await click('node',2);
+        const point=await page.evaluate(capability=>{const s=window.__graphSession,c=s.pointer.el.querySelector('canvas'),surface=c.parentElement,link=document.createElement('a');link.href=`#capability-refusal-${capability}`;surface.before(link);link.append(surface);
+          Object.defineProperty(c,'currentCSSZoom',{configurable:true,value:({missing:undefined,nan:NaN,infinite:Infinity,nonunit:1+Number.EPSILON})[capability]});
+          s.pointer.capabilityDelivery=null;c.addEventListener('click',e=>s.pointer.capabilityDelivery={trusted:e.isTrusted,canvas:e.target===c,defaultPrevented:e.defaultPrevented});return s.pointerClient(s.pointerPoint('node',1));},capability);
+        const before=await page.evaluate(async()=>{const s=window.__graphSession;return {commands:s.commands.length,products:s.products.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),events:s.pointer.events.length,geometry:s.geometryStamp(s.publication())};});
+        await page.mouse.click(...point);await pointerIdle();
+        const after=await page.evaluate(async()=>{const s=window.__graphSession;return {commands:s.commands.length,products:s.products.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),events:s.pointer.events.length,geometry:s.geometryStamp(s.publication())};});
+        const delivery=await page.evaluate(()=>window.__graphSession.pointer.capabilityDelivery);
+        assert.deepEqual(after,before);assert.deepEqual(delivery,{trusted:true,canvas:true,defaultPrevented:false});assert.equal(await page.evaluate(()=>location.hash),`#capability-refusal-${capability}`);
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();});return {ok:true,capability,seam:'test-only own-property effective-zoom override',before,after,delivery};
       });
     }
 

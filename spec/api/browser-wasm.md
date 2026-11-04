@@ -90,26 +90,29 @@ pick and aggregate membership. Blank Replace empties selection while preserving
 highlights; blank Add/Toggle do nothing. DOM focus may move to the application
 surface; Rust logical focus does not change.
 
-Clicks map the displayed canvas content box into the accepted CSS viewport,
-excluding borders/padding and supporting positive axis-aligned CSS matrix
-scaling, offsets and ancestor scrolling. Eligibility walks composed ancestry:
-available `assignedSlot` before `parentElement`, then `ShadowRoot.host`, so slot
-wrappers and nested host/slot assignments receive the same transform and
-motion-path checks. Plain and ordinary axis-aligned-scaled slotted containers
-remain eligible; slots are not blanket-refused. [Actual slot regression proof](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
-retains the before-failure and trusted mouse/default-action cases.
-No DPR or data-camera transform is
-applied. Rotation/shear/perspective/reflections/3D matrices, individual CSS
-transform properties, active CSS motion paths on the canvas or any ancestor
-(including across shadow roots), non-fill object-fit, canvas-local scrolling and clicks
-outside the content box are unsupported and submit no command. A non-`none`
-computed `offset-path` is rejected regardless of offset distance/rotation/anchor,
-even when computed transform/rotate remain `none`; default motion properties
-with no active path remain eligible. [Motion-path proof](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
-records actual canvas/ancestor clicks and preserved browser defaults. There is no
-hover or picked-target event/API; `xy:graph-select` retains the complete accepted
-Rust selection snapshot. See the [bounded pointer receipt](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
-for the actual mouse and native/WASM byte proofs.
+Only trusted native clicks targeting the owned canvas are eligible. Finite
+`offsetX`/`offsetY` are read during dispatch at the padding edge; subtract canvas
+padding (not border), reject outside content, then scale to the accepted CSS
+viewport. Native reported coordinates are authoritative at browser precision;
+there is no subpixel promise, rectangle inversion, DPR/data-camera transform
+or guessed zoom division. The public effective `canvas.currentCSSZoom` must
+be finite and **strictly1**, without tolerance. Missing/invalid/nonunit values
+refuse commands and preserve the native default; computed canvas zoom is
+insufficient. Net-unit nested zoom remains eligible when the reported product
+is exactly1.
+
+Inspectable ancestry still follows available `assignedSlot` before
+`parentElement`, then `ShadowRoot.host`. Visited rotations/shears/perspective/
+reflections/3D matrices, individual transform properties and active motion
+paths are conservatively refused, as are non-fill object-fit, canvas scrolling
+and degenerate boxes. Default motion properties without a path pass. Closed
+slots hide assignments: the walk does **not** certify absence of hidden
+transforms. Hidden rotations/motion may be eligible using native local offsets
+and the same strict effective-zoom guard. Plain/scaled slots remain usable.
+See the [input contract and fresh proof](../design/graph-interaction.md#bounded-explicit-s5b-attachment)
+and [native input receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md).
+There is no hover/picked-target event/API; `xy:graph-select` still carries the
+complete accepted Rust selection snapshot.
 
 Bubbling `xy:graph-render`, `xy:graph-focus` and `xy:graph-select` carry accepted
 snapshots. `xy:graph-stale` requires `refreshRender()` before more input;

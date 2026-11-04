@@ -1,0 +1,25 @@
+{
+  "base": "04476ac36d6b9dce84810b07629aae68ad2f6f56",
+  "historyFilesPreservedByteExact": 9572,
+  "inventoryChangedKeys": [
+    "sourceProvenance",
+    "sourceSha256"
+  ],
+  "gaps": 685,
+  "nativeBrowserJourneys": 69,
+  "browserVersion": "156.0.8078.4",
+  "freshCaptureSha256": "3acfe244e7ebb0c24ee003b6a78268bc5c0ebadba8ca33c58e623d0a88fb1e16",
+  "freshCaptureGzipSha256": "f74f282792a5a71d9f4718277670c897d91affc4d42fa3c0b6a5021ff1a5abc9",
+  "requests": 19,
+  "selectAt": 17,
+  "requestIndicesDifferentFromHistoricalRectangleCapture": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "qualification": "Fresh native-coordinate capture and full native/WASM/browser XYGR byte replay; old capture remains historical only"
+}
+

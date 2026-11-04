@@ -141,3 +141,11 @@ and shadow-host fallback, applying existing guards to nested display wrappers.
 Plain/scaled slots remain eligible. [Slot proof and disposition](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
 retain the actual failure/repair and source/artifact provenance; the685 explicit
 gaps, preparation-only freeze and broader acceptance limits remain unchanged.
+
+The native pointer-input repair preserves every API declaration/classification
+and the685 preparation gaps. Trusted native event offsets at browser precision,
+strict effective currentCSSZoom1 and conservative inspectable-ancestry guards
+replace rectangle-derived coordinate mapping; closed roots do not certify
+transform absence. This is a body/behavior provenance refresh, not an accepted
+freeze or broader S5b/M4/#36/#108 acceptance. See the
+[native input receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md).

@@ -207,23 +207,24 @@ retained for ordinary `spec.graph` until S6 supplies its attachment/identity
 migration; the explicit attachment never reaches it or generic CPU selection.
 Primary clicks use existing SelectAt1 with raw two-f64 CSS content-box
 coordinates: Replace, Shift Add, Ctrl/Meta Toggle (Toggle wins with Shift).
-Positive axis-aligned CSS matrix scales, border/padding/offset/ancestor-scroll
-mapping are supported; unsupported transforms and out-of-content clicks submit
-no command. Active CSS motion paths (`offset-path != none`) on the canvas or
-any traversed/shadow ancestor are rejected independently of the transform
-matrix: motion distance/rotation/anchor are not part of `DOMMatrix(transform)`.
-Eligibility walks the composed display ancestry using available `assignedSlot`
-before `parentElement`, followed by `ShadowRoot.host` as needed. Slot wrappers
-and nested host assignments therefore receive the same guards; plain and
-axis-aligned-scaled slotted graphs retain primary-click selection. The
-[slotted-ancestor receipt](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
-records the actual pre-fix failure and transformed/positive/nested mouse proof.
-This includes axis-aligned active paths; default motion properties with no path
-remain eligible. The [motion-path repair receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
-retains the actual before failure and native-default-preserving mouse proofs. Input is synchronously admitted only while live/idle/nonstale, with
-no busy/stale replay. Blank Replace preserves highlights and SelectAt preserves
-Rust logical focus. The [pointer receipt](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
-records exact real mouse and complete native/WASM byte proof and limits.
+Trusted native clicks must target the owned canvas. Finite dispatch-time
+`offsetX`/`offsetY` originate at the padding edge: subtract padding, not border,
+reject outside content, and scale only to accepted viewport dimensions.
+Native reported coordinates are authoritative at browser precision, with no
+subpixel promise or bounding-rectangle inversion. Public effective
+`canvas.currentCSSZoom` must be finite and strictly1, without tolerance;
+missing/invalid/nonunit values refuse without commands/cancellation. No DPR,
+data-camera or guessed zoom division is applied. Borders/padding/offsets,
+ordinary CSS matrix scales and net-unit nested zoom remain supported.
+Available `assignedSlot` precedes DOM parent then shadow host. Unsupported
+transforms and active motion paths on **inspectable visited** elements remain
+conservatively refused. Closed slots hide assignments, so this walk does not
+certify absence of hidden transforms; hidden rotations/motion may be eligible
+using browser-local offsets with the effective-zoom guard. See the
+[native input repair receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md)
+for fresh mouse/full-byte parity evidence and precision/capability limits.
+Input is synchronously admitted only while live/idle/nonstale, without replay.
+Blank Replace preserves highlights; SelectAt preserves Rust logical focus.
 Exact hover/picked ref publication remains a Rust wire gap. No ABI, arena,
 package gate, compiler/profile/optimizer/dependency or guard changes accompany
 this TypeScript/Worker vertical. It implies no performance or release acceptance.
