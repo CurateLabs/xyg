@@ -1,0 +1,38 @@
+{
+  "commandExits": {
+    "final-inventory-check.command.json": 0,
+    "final-merge-attempt.command.json": 1,
+    "final-capability.command.json": 0,
+    "final-naming.command.json": 0,
+    "final-hooks.command.json": 0,
+    "final-ruff-check.command.json": 0,
+    "final-product-root.command.json": 0,
+    "final-metadata.command.json": 0,
+    "final-inventory-write.command.json": 0,
+    "final-ruff-format.command.json": 0,
+    "final-identities.command.json": 0,
+    "final-codec.command.json": 0
+  },
+  "expectedMergeConflict": "Scheduling paragraph retained both scopes and updated status; inventory officially regenerated",
+  "validationCommandsAllPass": true,
+  "tests": {
+    "codec": 25,
+    "metadata": 61,
+    "naming": 149
+  },
+  "normalParents": [
+    "a7ae010fdf5f38fca2f9b8bba8ef4070139e2b39",
+    "7c581024f968519c074e990b4eb6a34ffe2fbd96"
+  ],
+  "intermediate20FilesExact": true,
+  "captureSourceMapsExact": 6,
+  "runtimeArtifactFilesExact": 8,
+  "allInheritedPerformanceFilesExact": 10390,
+  "incomingAcceptedMainSyncFilesExact": 51,
+  "productionBuildTestsExactAtBuffer": true,
+  "inventoryGaps": 685,
+  "inventoryContractsClassificationAcceptanceUnchanged": true,
+  "proofRerun": false,
+  "newSyncCI": "Not run; old eb9 CI does not qualify this candidate",
+  "independentFinalReview": "Required before parent push"
+}
