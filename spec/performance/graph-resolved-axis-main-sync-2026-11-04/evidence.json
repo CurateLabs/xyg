@@ -1,0 +1,240 @@
+{
+  "firstParent": "8a5922af4b33bfd67f2aefe71f613847d6fdcb08",
+  "acceptedMainParent": "3c66580731dde0b10a1f18465c0d0df9e73f8862",
+  "firstParentTree": "6ff6ea18ecc434b665e271b6521cf045ab93dadc",
+  "acceptedMainTree": "b9f1a546159ca949b62bb644f90e3139b58ba9fb",
+  "sourceIdentity": {
+    "path": "source-preservation.json",
+    "bytes": 4426616,
+    "sha256": "df585e3c484bc1048d6546ef17ebb4960df16b56e6f692e4eeaaacca138a448e"
+  },
+  "qualifiedArtifactReuse": {
+    "path": "artifact-manifest.json",
+    "bytes": 4342,
+    "sha256": "61247c3d67d8e240f381eac4b3fb0a445903db0525c964135b3a7bd13d681e82"
+  },
+  "metadataBinaryFullIndexDiffFrom8a": {
+    "bytes": 3528,
+    "sha256": "6503768d59ab490e954f99523f182f0932264f1b3d7faab048e2d098086a268c"
+  },
+  "wholePrNonreceiptBinaryFullIndexDiffFromAcceptedMain": {
+    "bytes": 97338,
+    "sha256": "50f33afee6481e6db3c018ad00cf59bc0126028acc0ed39f80c783e2c7ea5ecc"
+  },
+  "metadataSources": {
+    "spec/design/graph-interaction.md": {
+      "bytes": 82473,
+      "sha256": "ddb333a97a06a296fc9abcbbd3a72aac1cd6f83550bba7a3f2f7b99fa0e9c507"
+    },
+    "spec/releases/0.6.0-api-inventory.json": {
+      "bytes": 991349,
+      "sha256": "006460b1e2cab3173118e42daea1fb518e5899b259b2935fa8f4f6c9e7950c75"
+    }
+  },
+  "receiptTools": {
+    "artifacts.mjs": {
+      "bytes": 2681,
+      "sha256": "a12011f717f9f9b58eac548b156b6902b632ac779430d13b24cb249f76ae5168"
+    },
+    "capture.py": {
+      "bytes": 4050,
+      "sha256": "e32cd506ec1c0165447fd4d4d6e5bd2a4f332b151aac582e7c06d5e523340662"
+    },
+    "preserve.py": {
+      "bytes": 5834,
+      "sha256": "ce5c688f7c69290e96eef48b03b0b439d4be767f137138bfaea8d5c7474749f8"
+    },
+    "run.py": {
+      "bytes": 1693,
+      "sha256": "2cbdbca73695ad36a2d4363143441d462b7eab358a0a40821281130953dd2266"
+    }
+  },
+  "commands": {
+    "artifact-reuse": {
+      "recordSha256": "3e0e7a33070e6ade371a9125883784a7cf93496beec75fddbf09fcc6096e2e00",
+      "argv": [
+        "node",
+        "spec/performance/graph-resolved-axis-main-sync-2026-11-04/artifacts.mjs"
+      ],
+      "exitCode": 0
+    },
+    "hooks": {
+      "recordSha256": "079f87d0fcf6e3f03865f9de62c0dc95f98f7f2f086942c7e9e5ce1852b6c371",
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0
+    },
+    "inventory-check": {
+      "recordSha256": "4eafb0a1ad442cbdc415331854bb47ab7ecb111d238de3b177aa31e9633b85fe",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0
+    },
+    "inventory-write": {
+      "recordSha256": "8b8594e6313d22dddad9116a540f152e037efe2070f572a1334efad348fd09df",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "exitCode": 0
+    },
+    "merge-main": {
+      "recordSha256": "d748fb25dd3fb7be724e902f44ae10501ee044fad2b59c18b8d573c4b6c07c97",
+      "argv": [
+        "git",
+        "merge",
+        "--no-commit",
+        "3c66580731dde0b10a1f18465c0d0df9e73f8862"
+      ],
+      "exitCode": 1
+    },
+    "metadata-tests": {
+      "recordSha256": "1e4567e0ed6eeeff550d83f92294ac53ea9e4b6690ba73dbafa2e53413d6f312",
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_gen_wasm_abi.py"
+      ],
+      "exitCode": 0
+    },
+    "native-declarations": {
+      "recordSha256": "828060241604737eacb0b478ef70f03117695a9e87c07d0a5d18551844acd194",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exitCode": 0
+    },
+    "ownership": {
+      "recordSha256": "7ebb63701f610cc6299f2877df19365b0fd174bd0ec5d3c425b918d2201bc7f6",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exitCode": 0
+    },
+    "preservation-exact": {
+      "recordSha256": "7bb2177b772ad81304e8947bcba4bce21d3d67d6896a432cc635222ff8c4fe07",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-main-sync-2026-11-04/preserve.py"
+      ],
+      "exitCode": 1
+    },
+    "preservation": {
+      "recordSha256": "0184991184679de632193f30ebe1472ab6acaf5d4ab5a3333b86ca5b3c0d76af",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-main-sync-2026-11-04/preserve.py"
+      ],
+      "exitCode": 1
+    },
+    "receipt-format": {
+      "recordSha256": "958802170211548f4f9dd393ce7609a1dbec656ca442a2eedadbbfdff365e289",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "spec/performance/graph-resolved-axis-main-sync-2026-11-04"
+      ],
+      "exitCode": 0
+    },
+    "receipt-lint": {
+      "recordSha256": "d8c1e417af0c0bbe720cec647974cfd7240af700858cd357ce72d9ba058f1734",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "spec/performance/graph-resolved-axis-main-sync-2026-11-04"
+      ],
+      "exitCode": 0
+    },
+    "ruff-check": {
+      "recordSha256": "37e936fa0516f571c45561c5cbf3ad3dc184e0764d82a0d67a0456b8abe6c4df",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0
+    },
+    "ruff-format": {
+      "recordSha256": "45e1e7004e4ba6ca3250f5d6fb4b9f82c3d0167b0b3b1351297373c5e547782e",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0
+    },
+    "source-proof": {
+      "recordSha256": "4b9df358717e1950422c884c87817100cb68033f433d6b0475ec4cb4b7df4b3f",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-main-sync-2026-11-04/preserve.py"
+      ],
+      "exitCode": 0
+    },
+    "typecheck": {
+      "recordSha256": "7b9698b1f99531803247551190c3da95df140a9ea3e3af4e21df0fbb04845e8c",
+      "argv": [
+        "uv",
+        "run",
+        "ty",
+        "check",
+        "python"
+      ],
+      "exitCode": 0
+    },
+    "wasm-declarations": {
+      "recordSha256": "37b992feed60e944b75e9a6d9ca78c30099fae24714f18d613bab984bd1f1a68",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "exitCode": 0
+    }
+  },
+  "freshNativeWasmBrowserBuild": false,
+  "freshBrowserRuntimeQualification": false,
+  "independentReview": "Required after the final committed candidate; parent-owned, not claimed here"
+}
