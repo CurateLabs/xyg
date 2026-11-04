@@ -98,6 +98,13 @@ XYG. The stale-name gate checks these structural locations directly so prose
 or package metadata cannot regress while the explicitly versioned exceptions
 above remain available.
 
+The repository-qualified `examples/osm/osmium-rs/src/lib.rs` is the legitimate
+entrypoint of the independent `osmpbf-nodes` auxiliary Rust crate for OSM data
+preparation. It is not the core C ABI location or a deferred product rename.
+The gate permits this exact path in source manifests and documentation,
+including an absolute checkout prefix. Relative lookalike prefixes, other
+qualified crate paths and filename/child-path suffixes receive no new allowance.
+
 ## 3. Migration order (no mixed intermediate artifact)
 
 The rule: **no published artifact may combine an old host wrapper with a
@@ -131,6 +138,12 @@ one reviewed PR on `main` before any release tag:
    The old `xy` import is intentionally absent after the clean cutover.
 6. **Stale-name gate** — `scripts/check_stale_names.py` turns the policy in
    §0/§2 into a repository-wide check.
+
+The retired root `src/lib.rs` ABI location remains barred; the current ABI
+source is `crates/xyg-core/src/lib.rs`. The exact auxiliary OSM entrypoint in
+§2 is a path-level allowance only: manifests and JSON files remain audited,
+and retired identities elsewhere on the same line or in the same file still
+fail. No historical manifest needs an annotation, escaped key or digest edit.
 
 Safety properties: the ABI version bump plus the symbol-prefix change make old
 and new libraries mutually unloadable by the wrong wrapper (an old wrapper

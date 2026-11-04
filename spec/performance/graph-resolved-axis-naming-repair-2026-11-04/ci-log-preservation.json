@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-resolved-axis-naming-repair-2026-11-04/preserve-ci.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.07,
+  "environment": {
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1",
+    "UV_OFFLINE": "1",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "rawSha256": "597b3773e4eb5330cda158068a6a6fd36147d6ede239f11ce26a340b60b0db46",
+  "gzipSha256": "d6f33312cb07503ba280c1badf38cae8ee59bed688b218ba6f0676f05cb0ed76",
+  "log": "ci-log-preservation.log.gz"
+}
