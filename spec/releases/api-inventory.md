@@ -134,3 +134,10 @@ individual rotate are none. Ordinary no-path defaults remain eligible. The
 [motion-path receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
 records the source/artifact provenance and real regressions; the actual685 gaps
 and unaccepted freeze/broader scope remain unchanged.
+
+The narrow slotted-ancestor repair refresh adds no declaration or classification.
+Pointer eligibility follows available assigned slots before light-DOM parents
+and shadow-host fallback, applying existing guards to nested display wrappers.
+Plain/scaled slots remain eligible. [Slot proof and disposition](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
+retain the actual failure/repair and source/artifact provenance; the685 explicit
+gaps, preparation-only freeze and broader acceptance limits remain unchanged.

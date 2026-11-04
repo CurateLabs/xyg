@@ -1,0 +1,1 @@
+built minified @curatelabs/xyg plus static WASM worker; copied paint and tick-worker bundles into python/xyg/static

@@ -1139,7 +1139,18 @@ Coordinates map the actual displayed canvas **content box** (excluding border
 and padding), using its bounding rectangle and computed box dimensions, into
 the accepted camera's viewport width/height. Positive axis-aligned CSS matrix
 scales/translations, offsets, borders, padding, border-box sizing and ancestor
-scrolling are supported. No DPR multiplication or data-camera transform is
+scrolling are supported. Presentation eligibility follows composed ancestry:
+prefer the element's available `assignedSlot` before `parentElement`, then use
+`ShadowRoot.host` when there is no DOM parent. Repeating that order checks slot
+wrappers and nested slot/host assignments rather than jumping directly from a
+slotted light-DOM container to its host. Existing matrix, individual transform,
+perspective and active motion-path guards apply at every visited element.
+Untransformed and ordinary axis-aligned-scaled slotted graphs retain selection;
+slot assignment alone is not a reason to refuse input. The walk is evaluated
+synchronously for each click; it introduces no observer or graph-pick policy.
+The [slotted-ancestor repair receipt](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
+records actual pre-fix mis-picks, transformed-wrapper rejection, positive slot
+selection and nested-host proof. No DPR multiplication or data-camera transform is
 applied: Rust's paint/pick geometry already uses CSS screen coordinates.
 Rotation, shear, perspective, reflected/3D matrices, individual CSS
 rotate/scale/translate properties, active CSS motion paths on the canvas or

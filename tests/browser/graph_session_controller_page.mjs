@@ -228,3 +228,35 @@ state.canvasDigest = async () => {
   const c=state.pointer.el.querySelector('canvas'),data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256',data))].map(b=>b.toString(16).padStart(2,'0')).join('');
 };
+
+// Test-only composed-tree fixtures: the chart remains light DOM, assigned to a
+// slot whose shadow wrapper controls its actual display. A zero-size marker
+// inherits that display and supplies a browser-measured visual coordinate.
+state.slotPoint = (kind,nested=false) => {
+  const p=state.pointer, canvas=p.el.querySelector('canvas'), surface=canvas.parentElement;
+  p.el.style.cssText='position:relative;width:640px;height:320px';
+  surface.style.cssText='position:relative;width:640px;height:320px';
+  canvas.style.display='block';p.el.lastElementChild.style.visibility='hidden';
+  const outer=document.createElement('xy-slot-fixture');
+  outer.style.cssText='display:block;position:fixed;left:200px;top:50px;width:640px;height:320px;z-index:10000';
+  const makeShadow=host=>{
+    const root=host.attachShadow({mode:'open'}), wrapper=document.createElement('div'),slot=document.createElement('slot');
+    wrapper.style.cssText='position:relative;width:640px;height:320px;transform-origin:0 0';slot.name='chart';wrapper.append(slot);root.append(wrapper);
+    return {root,wrapper,slot};
+  };
+  const outerTree=makeShadow(outer);p.el.before(outer);p.slotHost=outer;
+  let owner=outer;
+  if(nested){const inner=document.createElement('xy-inner-slot-fixture');inner.style.cssText='display:block;width:640px;height:320px';inner.slot='chart';outer.append(inner);makeShadow(inner);owner=inner;}
+  p.el.slot='chart';owner.append(p.el);
+  if(kind==='rotate') outerTree.wrapper.style.transform='rotate(30deg)';
+  if(kind==='motion') outerTree.wrapper.style.cssText+=';offset-path:path("M 450 150 L 700 150");offset-distance:0px;offset-rotate:30deg;offset-anchor:0px 0px';
+  if(kind==='scale') outerTree.wrapper.style.transform='scale(0.8,0.75)';
+  const probe=document.createElement('span'),css=state.pointerPoint('node',1);
+  probe.style.cssText=`position:absolute;left:${css[0]}px;top:${css[1]}px;width:0;height:0;pointer-events:none`;surface.append(probe);
+  const link=document.createElement('a');link.href=`#slot-${nested?'nested-':''}${kind}`;link.style.display='block';surface.before(link);link.append(surface);
+  p.slotDelivery=null;p.el.addEventListener('click',event=>{p.slotDelivery={trusted:event.isTrusted,target:event.target.tagName,canvas:event.target===canvas,clientX:event.clientX,clientY:event.clientY,defaultPrevented:event.defaultPrevented};});
+  const describe=element=>{const s=getComputedStyle(element);return {tag:element.tagName,transform:s.transform,rotate:s.rotate,scale:s.scale,translate:s.translate,perspective:s.perspective,offsetPath:s.offsetPath,assignedSlot:element.assignedSlot?.tagName??null};};
+  const walk=composed=>{const chain=[];for(let element=canvas;element;){chain.push(describe(element));const root=element.getRootNode();element=(composed?element.assignedSlot:null)??element.parentElement??(root instanceof ShadowRoot?root.host:null);}return chain;};
+  const r=probe.getBoundingClientRect(),client=[r.x,r.y];
+  return {kind,nested,css,client,hit:document.elementFromPoint(...client)?.tagName,legacyWalk:walk(false),composedWalk:walk(true),wrapper:describe(outerTree.wrapper)};
+};

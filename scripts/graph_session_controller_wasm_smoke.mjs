@@ -445,6 +445,32 @@ try {
       });
     }
 
+    for (const [kind,nested] of [['rotate',false],['motion',false],['plain',false],['scale',false],['rotate',true],['scale',true]]) {
+      const unsupported=kind==='rotate'||kind==='motion',baseline=!!process.env.XYG_GRAPH_SLOT_BASELINE;
+      await run(`${unsupported&&baseline?'before-mis-pick':unsupported?'reject':'accept'}-${nested?'nested-':''}slotted-${kind}-trusted-canvas`, async () => {
+        await page.evaluate(id=>window.__graphSession.pointerFixture('routes',BigInt(id)),String(60+['rotate','motion','plain','scale'].indexOf(kind)+(nested?10:0)));
+        await click('node',2);
+        const point=await page.evaluate(([kind,nested])=>window.__graphSession.slotPoint(kind,nested),[kind,nested]);
+        assert.equal(point.hit,'CANVAS');assert.equal(point.composedWalk.filter(e=>e.tag==='SLOT').length,nested?2:1);
+        assert.ok(point.legacyWalk.every(e=>e.transform==='none'&&e.rotate==='none'&&e.offsetPath==='none'));
+        const before=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash};});
+        let positive=null;
+        if(unsupported){await page.mouse.click(...point.client);await pointerIdle();}else{positive=await click('node',1);}
+        const after=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer,c=s.commands.at(-1);return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash,delivery:p.slotDelivery,lastOperation:c.operation,lastCoordinates:c.operation===1?s.values(c.bytes,'coordinates.f64'):null};});
+        const result={ok:true,point,delivery:after.delivery,before:{commands:before.commands,snapshot:before.snapshot,pixels:before.pixels,hash:before.hash},after:{commands:after.commands,snapshot:after.snapshot,pixels:after.pixels,hash:after.hash,lastOperation:after.lastOperation,lastCoordinates:after.lastCoordinates},geometryUnchanged:before.geometry===after.geometry,positive};
+        console.log('slot raw proof',JSON.stringify(result,(_,v)=>typeof v==='bigint'?String(v):v));
+        assert.equal(after.delivery.trusted,true);assert.equal(after.delivery.target,'CANVAS');assert.equal(after.delivery.canvas,true);
+        if(unsupported&&!baseline){
+          assert.equal(after.commands,before.commands);assert.equal(after.products,before.products);assert.equal(after.events,before.events);assert.equal(after.delivery.defaultPrevented,false);
+          assert.deepEqual(after.snapshot,before.snapshot);assert.equal(after.pixels,before.pixels);assert.equal(after.geometry,before.geometry);assert.equal(after.hash,`#slot-${nested?'nested-':''}${kind}`);
+        }else{
+          assert.equal(after.commands,before.commands+1);assert.equal(after.lastOperation,1);assert.equal(after.delivery.defaultPrevented,true);assert.equal(after.hash,before.hash);
+          if(unsupported){assert.notDeepEqual(after.snapshot,before.snapshot);assert.equal(after.snapshot.outcome.selected,0);}else{assert.deepEqual(after.snapshot.selection.refs,[{kind:0,uuid:'02000000-0000-0000-0000-000000000000'}]);assert.equal(after.snapshot.outcome.selected,1);assert.equal(after.geometry,before.geometry);assert.deepEqual(after.snapshot.focus,before.snapshot.focus);}
+        }
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.slotHost.remove();});return result;
+      });
+    }
+
   }
   await run("old-same-ABI-module-missing-clear-fact-fails-closed", () => check(async () => {
     const s = window.__graphSession, worker = s.makeWorker("/old-same-abi.wasm"); await worker.ready; const el = s.container();

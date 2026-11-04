@@ -1,0 +1,12 @@
+{
+  "base": "da52bca32651077ddf53d9fdd014245731b6d087",
+  "historicalFiles": 9473,
+  "historicalManifest": "before-identity.json",
+  "allHistoricalBytesUnchanged": true,
+  "inventoryChangedKeys": [
+    "sourceProvenance",
+    "sourceSha256"
+  ],
+  "declarationsAndClassificationsUnchanged": true,
+  "explicitGaps": 685
+}

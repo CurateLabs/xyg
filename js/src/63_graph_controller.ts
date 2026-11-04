@@ -185,7 +185,8 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
         if (!matrix.is2D || matrix.b !== 0 || matrix.c !== 0 || matrix.a <= 0 || matrix.d <= 0) return null;
       }
       const root = element.getRootNode();
-      element = element.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
+      // Slots supply displayed ancestors before the light-DOM parent does.
+      element = element.assignedSlot ?? element.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
     }
     const style = win.getComputedStyle(canvas), rect = canvas.getBoundingClientRect();
     if (style.objectFit !== "fill") return null;

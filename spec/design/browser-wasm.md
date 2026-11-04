@@ -212,6 +212,12 @@ mapping are supported; unsupported transforms and out-of-content clicks submit
 no command. Active CSS motion paths (`offset-path != none`) on the canvas or
 any traversed/shadow ancestor are rejected independently of the transform
 matrix: motion distance/rotation/anchor are not part of `DOMMatrix(transform)`.
+Eligibility walks the composed display ancestry using available `assignedSlot`
+before `parentElement`, followed by `ShadowRoot.host` as needed. Slot wrappers
+and nested host assignments therefore receive the same guards; plain and
+axis-aligned-scaled slotted graphs retain primary-click selection. The
+[slotted-ancestor receipt](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
+records the actual pre-fix failure and transformed/positive/nested mouse proof.
 This includes axis-aligned active paths; default motion properties with no path
 remain eligible. The [motion-path repair receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
 retains the actual before failure and native-default-preserving mouse proofs. Input is synchronously admitted only while live/idle/nonstale, with

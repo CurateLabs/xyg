@@ -92,7 +92,13 @@ surface; Rust logical focus does not change.
 
 Clicks map the displayed canvas content box into the accepted CSS viewport,
 excluding borders/padding and supporting positive axis-aligned CSS matrix
-scaling, offsets and ancestor scrolling. No DPR or data-camera transform is
+scaling, offsets and ancestor scrolling. Eligibility walks composed ancestry:
+available `assignedSlot` before `parentElement`, then `ShadowRoot.host`, so slot
+wrappers and nested host/slot assignments receive the same transform and
+motion-path checks. Plain and ordinary axis-aligned-scaled slotted containers
+remain eligible; slots are not blanket-refused. [Actual slot regression proof](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
+retains the before-failure and trusted mouse/default-action cases.
+No DPR or data-camera transform is
 applied. Rotation/shear/perspective/reflections/3D matrices, individual CSS
 transform properties, active CSS motion paths on the canvas or any ancestor
 (including across shadow roots), non-fill object-fit, canvas-local scrolling and clicks
