@@ -228,6 +228,9 @@ def test_rust_runtime_switches_are_inventoried_but_test_fixtures_are_not(tmp_pat
     (source / "simd.rs").write_text(
         'pub fn enabled() { std::env::var_os("XYG_SIMD").is_none_or(|v| v != "0"); }\n#[cfg(test)] mod tests { fn fixture() { std::env::var("XYG_TEST_ONLY"); } }\n'
     )
+    external = source / "graphforge/interaction/tests/wire"
+    external.mkdir(parents=True)
+    (external / "corpus.rs").write_text('fn fixture() { std::env::var("XYG_PICK_CORPUS"); }\n')
     result = inventory.environment_inventory(tmp_path, inventory.PythonInventory(tmp_path))
     assert [item["name"] for item in result] == ["XYG_SIMD"]
     assert 'v != "0"' in result[0]["lookups"][0]["expression"]

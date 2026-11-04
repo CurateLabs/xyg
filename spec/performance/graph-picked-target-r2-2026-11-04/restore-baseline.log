@@ -1,0 +1,5 @@
+HEAD: 207ebdbdaa2ec8b0360c571683eb0fa6165e02c0
+Tracked source/spec baseline restored; saved R2 patch applies cleanly.
+?? spec/performance/graph-picked-target-checkpoint-2026-11-04/
+?? spec/performance/graph-picked-target-r2-2026-11-04/
+

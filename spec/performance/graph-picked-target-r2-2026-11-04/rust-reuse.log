@@ -1,0 +1,11 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.31s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+
+running 3 tests
+test graphforge::interaction::wire::projection_reuse_tests::r2_projection_matches_frozen_r1_bytes_for_empty_duplicate_miss_group_and_exact_ids ... ok
+test graphforge::interaction::wire::projection_reuse_tests::r2_full_selection_plus_duplicate_query_source_is_not_a_selection_cap_increase ... ok
+test graphforge::interaction::wire::projection_reuse_tests::r2_combined_work_admission_precedes_projection_descriptors_and_output_allocation ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 1826 filtered out; finished in 0.12s
+

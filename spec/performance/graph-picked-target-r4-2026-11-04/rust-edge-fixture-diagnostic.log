@@ -1,0 +1,20 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.34s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+
+running 1 test
+actual query fixture Direct
+
+thread 'graphforge::interaction::tests::wire::picked_checkpoint::actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts' (2144796) panicked at crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:101:32:
+no actual point: tier=Direct target=Edge(0) pieces=[EdgePiece { edge: 0, single_piece: true, start: [26.74988148044097, 99.96], end: [113.25011851955904, 99.96], half_width: 1.1875, dash: (0.0, 0.0), dash_offset: 6.749881480440971, head: None }, EdgePiece { edge: 1, single_piece: true, start: [36.75, 100.0], end: [113.25, 100.0], half_width: 1.1875, dash: (0.0, 0.0), dash_offset: 6.75, head: None }, EdgePiece { edge: 2, single_piece: true, start: [113.25011851955902, 100.04], end: [26.749881480440962, 100.04], half_width: 1.1875, dash: (0.0, 0.0), dash_offset: 6.749881480440971, head: None }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test graphforge::interaction::tests::wire::picked_checkpoint::actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts ... FAILED
+
+failures:
+
+failures:
+    graphforge::interaction::tests::wire::picked_checkpoint::actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1831 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p xyg-engine --lib`

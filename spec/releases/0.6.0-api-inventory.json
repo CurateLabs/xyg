@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+  "baseCommit":"eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1373,7 +1373,7 @@
   "python/xyg/pyplot/_ticker.py":"94ab8ae124e14bcf5d3f75b53f34476f4e0e13849c21c36026263f2986b5ccd8",
   "python/xyg/temporal_controller.py":"b2707a686ec1707378cac98c1eba70b39b75a3a26f4c8d10974140634806f6b0",
   "python/xyg/temporal_graph.py":"f872b808275748032edd52502935928525cc32bd0663f7cf8b81c401ef5ac9b8",
-  "scripts/check_release_inventory.py":"f354f75aa859918c5d275c2c5da86abf4931136207005006847f81541d5354cc",
+  "scripts/check_release_inventory.py":"f4865f923f7b48b664a3fb3228974e6ad79ba3b8e194eae581a69098d12b7ed2",
   "scripts/check_release_version.py":"49fc49be846049e2200d897eb585a084d4359d2ff8d87d2391d8e3d14dc1382e",
   "scripts/gen_abi_manifest.py":"66e426507717973dfdf463bb586e3082be909e995c54ec8e128a52147ad0ec1c",
   "scripts/publish_node_packages.py":"9f6742a5969e0e19dacb837364b7a08a179d991be5e46daeeb4a83aed55e1c80",
@@ -1384,7 +1384,7 @@
   "spec/api/api-examples.md":"f6bc43d28cf9ba88855561ff41bd62eb2f3a823c71ca2c87c5356e1b2a2fa094",
   "spec/api/browser-wasm.md":"7ab775b061bb98d0f0c6f430c935318a651b0f4f1cb3976229d49157ef3a1f0a",
   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
-  "spec/design/browser-wasm.md":"a0d0ecba333188d681d9ff2a129aef1b186b36de959aaec1ac56127851de056c",
+  "spec/design/browser-wasm.md":"0a5469ed427bee4ad8854d0eee18eff1a2c61a435d0866262bc129fc90695563",
   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
   "spec/design/host-parity.md":"81fcd7fee6ff643ef4d5a398010478d360f901760400136f1463645875266743",
   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",

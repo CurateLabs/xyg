@@ -188,6 +188,106 @@ builder/final buffers and the existing 3× reply-cache charge. This conservative
 envelope can refuse sparse multi-layer documents; it never raises session caps.
 No source-wide element×layer output scratch is allocated.
 
+### 2.1.2 Rust-only query receipt checkpoint (not integrated hover)
+
+Hover (operation 0) uses header action 0 for a point query with exactly two
+finite `coordinates.f64` values. Action 1 is typed Leave and forbids the
+coordinates section entirely. Other actions and inapplicable fields refuse
+Invalid. Leave clears only transient hover and performs no pick query; selection,
+focus, pins, highlights and geometry retain their existing semantics.
+
+Successful Hover and SelectAt replies alone add five index-zero sections:
+
+| Section | Dtype/count | Meaning |
+|---|---|---|
+| `pick.header.u32` | U32/8 | `[1, operation, action, queried_revision, kind, form, 0, 0]` |
+| `pick.query.u64` | U64/5 | `[instance_id, op_seq, render_index, member_count, source_index]` |
+| `pick.ref.bytes` | Bytes/existing refs encoding | zero or one exact canonical transport ref |
+| `pick.layers.u32` | U32/M | ascending original layer indices |
+| `pick.rows.u64` | U64/M | aligned original result rows, omitting existing absent-row `u64::MAX` |
+
+Kind is 0 miss/leave, 1 render node, 2 render edge. Form is 0 none, 1 source,
+2 group. Kind explicitly makes `render_index` absent for 0; form explicitly
+makes `source_index` absent unless 1. Absent scalar slots are canonically zero;
+zero is **not** an absence sentinel (source/render index zero remains valid).
+None has zero members, no ref and empty provenance. A group has its actual
+render index/member count, no ref and empty provenance. Aggregate tier nodes
+**and edges always use group form, including singletons**. Direct/EdgeSample
+hits use the actual painted source mapping and exact canonical reference;
+a collapsed Direct representative retains its real source UUID even when its
+member count exceeds one. This is not a keyboard-focus stand-in projection.
+
+The actual `PickTarget`, pre-mutation request stamp, membership count and
+optional source identity are captured in `OpOutcome` at the original single
+point query before state changes. Serialization never repicks or reconstructs
+from selection/focus/flags. The stamp describes that request and pre-query
+publication, not an indefinitely current target. Open, Poll and unrelated
+operations omit all receipt sections. Same-revision style changes and exact
+retries retain the actual query result. Existing stale/refusal transaction
+atomicity applies to receipt construction too.
+
+Provenance reuses `selection.result_ids.texts`/`valid.u8`, preserving absent vs
+present-empty UTF-8. Selection and the optional source borrow projection planes
+once. The picked source index is appended after the resolved selected indices,
+even when already selected. One counted CSR projection handles both sparse
+passes. Combined-target work is admitted before allocating resolved-index and
+borrowed-plane scratch; indices and offsets reserve combined-target count and
+count+1, and layer/row arrays reserve the exact counted mappings. Selection
+emits only the original prefix (including its N+1 offsets); pick emits the row
+suffix. Empty selection, miss, leave and group results preserve valid empty
+slices. The extra provenance entry does not increase the 10,000-ref selection
+cap. The canonical pick ref is encoded from a borrowed one-element slice (or
+empty slice), without a second Vec/ref clone.
+Pre-candidate reservations retain the additional 4,096 fixed bytes and 128
+bytes per present row plane for receipt/scratch/builder/final/cache copies,
+including the extra combined target. No source×layer cache or UUID group
+expansion is introduced; runtime caps remain fixed.
+
+This checkpoint changes no C/WASM signature or browser public interface. The
+existing semantic decoder accepts additive container sections and leaves these
+raw sections unconsumed. TypeScript coalescing/controller hover, public events,
+tooltips, linking and legacy replacement remain unimplemented and unaccepted.
+Production budget qualification is required before any such next phase. The
+685 API preparation gaps remain; the baseline freeze remains **UNACCEPTED**.
+
+The R4 correctness checkpoint retains exact R2 product bytes and inline
+`Option<PickReceipt>`; the rejected R3 Arc experiment is not retained. Test-only
+thread-local probes count actual point calls, admitted combined targets, plane
+borrows, sparse row probes and output-allocation phases. Leave and retries make
+zero point calls; real-query budget/work/cap refusals preserve retained state and
+retry bytes. These phase probes are not a general allocator/RSS measurement.
+The [R4 diagnostic receipt](../performance/graph-picked-target-r4-2026-11-04/README.md)
+records actual-query tier/identity/provenance tests, the frozen R2 full-wire
+transcript and full C/WASM byte replay using an explicitly isolated rejected R2
+module. Small diagnostic cases use the existing 16 MiB arena; the 10,000-selection
+case uses the existing 384 MiB maximum, with no changed limit or default.
+Diagnostic correctness is not package, CSP, controller, release or integration
+qualification. The old 1,878/765-KiB gates rejected R2. After completed independent
+functionality and exact-R4 correctness reviews, a separate explicit parent
+decision adopts exactly 1,882/768 KiB (1,927,168/786,432 bytes). R2 measures
+1,926,555/785,546, leaving 613/886 bytes; no further allowance or size experiment
+is authorized. Fresh production packaging, paired assets, full unfiltered CSP
+and old-controller compatibility are recorded separately in the
+[R5 receipt](../performance/graph-picked-target-r5-2026-11-04/README.md).
+This does not expose receipts through the browser controller or accept #36,
+M4/#108 or the 685 preparation gaps; baseline freeze remains UNACCEPTED.
+Independent final source and policy review is required before integration.
+
+The [R6 current-golden migration](../performance/graph-picked-target-r6-2026-11-04/README.md)
+retains all historical captures and R5's failed exact comparison. A fresh actual
+shipping-browser capture supplies the current default full-byte replay golden:
+19 requests / 17 SelectAt, with all request bytes unchanged. The migration test
+compares each pre-existing section's exact dtype/index/count and raw payload;
+only the five versioned pick sections are added to SelectAt. Open/Render remain
+fully byte-exact. It validates actual request/revision stamps, explicit kind/form,
+source/render mapping, canonical/derived ref bytes and original-row provenance.
+The existing semantic controller retains these as unknown raw sections without
+exposing a public pick API. Fresh native/shipping-WASM replay uses full replies;
+no section filtering, normalization or weakened identity comparison is allowed.
+The reviewed Node exact-span Buffer decoder repair is inherited from eb9ea4c7;
+no Rust production or mapper behavior changes in this migration. Scoped proof
+and explicit size policy do not constitute #36/M4/#108 or freeze acceptance.
+
 ### 2.2 Operations (`GraphInteractionEvent`)
 ```
 0 Hover{x,y} 1 SelectAt{x,y,mode} 2 Brush{bounds,mode,policy} 3 Lasso{pts,mode,policy} 4 Clear
@@ -916,7 +1016,7 @@ The subsequent accepted-main integration and explicit parent functionality
 budget decision are recorded separately in the
 [integration receipt](../performance/graph-s5a-integration-2026-11-03/README.md)
 and [package decision receipt](../performance/graph-s5a-package-budget-2026-11-03/README.md).
-Current hard package limits are 1,829 KiB raw / 747 KiB gzip6, the smallest
+Historical S5a hard package limits were 1,829 KiB raw / 747 KiB gzip6, the smallest
 next-KiB limits for the integrated 1,872,541 / 764,063-byte module. They retain
 355 / 865 bytes of headroom. The historical failed-gate and diagnostic records
 above remain unchanged. No runtime-arena, ABI/export, compiler/profile/optimizer,
