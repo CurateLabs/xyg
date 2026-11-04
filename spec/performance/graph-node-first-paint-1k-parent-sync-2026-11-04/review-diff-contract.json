@@ -1,0 +1,33 @@
+{
+  "finalCommit": "Reported after commit in final handoff; no tracked self-referential diff hash.",
+  "bases": [
+    "2568ac711d912625d54d083e38b29d51b415ad5c",
+    "7195d070843d507757213e7816862072eed9f39b"
+  ],
+  "commandPrefix": [
+    "git",
+    "-c",
+    "core.quotePath=true",
+    "diff",
+    "--binary",
+    "--full-index",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--no-color"
+  ],
+  "wholeSuffix": [
+    "BASE",
+    "HEAD",
+    "--"
+  ],
+  "nonReceiptSuffix": [
+    "BASE",
+    "HEAD",
+    "--",
+    ".",
+    ":(exclude)spec/performance/**"
+  ],
+  "digest": "SHA-256 of exact emitted patch bytes",
+  "outputDirectory": "target/task-tmp/node-first-paint-sync-final-review/",
+  "meaning": "Final tree diff, preserving both merge histories; non-receipt excludes only spec/performance/**. No performance or independent-review acceptance."
+}

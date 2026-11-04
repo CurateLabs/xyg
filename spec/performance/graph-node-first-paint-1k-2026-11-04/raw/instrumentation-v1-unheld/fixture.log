@@ -1,0 +1,9 @@
+XYG_GRAPHFORGE_LIVE_URL=http://127.0.0.1:44299
+{"audit":"WORKER","threadId":0,"event":"init","id":2449,"hrtimeNs":"3506944678653200"}
+{"audit":"WORKER","threadId":1,"event":"init","id":2295,"hrtimeNs":"3506944855392287"}
+{"audit":"WORKER","threadId":1,"event":"destroy","id":2295,"hrtimeNs":"3506945276837349"}
+{"audit":"WORKER","threadId":0,"event":"destroy","id":2449,"hrtimeNs":"3506946126043125"}
+{"audit":"WORKER","threadId":0,"event":"init","id":2727,"hrtimeNs":"3506947427544830"}
+{"audit":"WORKER","threadId":3,"event":"init","id":2295,"hrtimeNs":"3506947553491965"}
+{"audit":"WORKER","threadId":3,"event":"destroy","id":2295,"hrtimeNs":"3506947703690504"}
+{"audit":"WORKER","threadId":0,"event":"destroy","id":2727,"hrtimeNs":"3506947707552357"}

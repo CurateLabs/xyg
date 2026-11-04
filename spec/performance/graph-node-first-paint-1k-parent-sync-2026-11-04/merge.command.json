@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "git",
+    "merge",
+    "--no-commit",
+    "--no-ff",
+    "2568ac711d912625d54d083e38b29d51b415ad5c"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb",
+  "started": "2026-11-04T04:52:55.050869+00:00",
+  "finished": "2026-11-04T04:52:55.190052+00:00",
+  "elapsedSeconds": 0.1391854020766914,
+  "exitCode": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/.venv/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "PYTHONPATH": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null
+  },
+  "outputSha256": {
+    "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "96bb6a194a796153cbd0c640642866371219451832063763d544b942a8d97c4e"
+  }
+}

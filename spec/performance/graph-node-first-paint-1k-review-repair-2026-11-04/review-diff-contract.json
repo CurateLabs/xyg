@@ -1,0 +1,31 @@
+{
+  "bases": [
+    "2568ac711d912625d54d083e38b29d51b415ad5c",
+    "c3d2e4aa19bcfbf9940775819f03c71cc0934472"
+  ],
+  "commandPrefix": [
+    "git",
+    "-c",
+    "core.quotePath=true",
+    "diff",
+    "--binary",
+    "--full-index",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--no-color"
+  ],
+  "wholeSuffix": [
+    "BASE",
+    "HEAD",
+    "--"
+  ],
+  "nonReceiptSuffix": [
+    "BASE",
+    "HEAD",
+    "--",
+    ".",
+    ":(exclude)spec/performance/**"
+  ],
+  "meaning": "SHA-256 of exact final post-commit patch bytes; computed outside tracked tree to avoid self-reference.",
+  "outputDirectory": "target/task-tmp/node-first-paint-review-repair-final-review/"
+}

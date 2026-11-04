@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py", line 143, in <module>
+    main()
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py", line 76, in main
+    oid = oid_bytes.decode()
+          ^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'decode'. Did you mean: 'encode'?

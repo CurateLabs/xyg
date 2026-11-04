@@ -1,0 +1,67 @@
+{
+  "candidateBefore": "7195d070843d507757213e7816862072eed9f39b",
+  "intendedPrBase": "2568ac711d912625d54d083e38b29d51b415ad5c",
+  "acceptedMain": "d6fcacfd482d425a731c5b1ebd492e32dc8a15b4",
+  "metadataChanges": {
+    "7195d070843d507757213e7816862072eed9f39b": {
+      "changedTopLevelFields": [
+        "sourceProvenance",
+        "sourceSha256"
+      ],
+      "changedSourceHashes": [
+        "spec/design/browser-wasm.md",
+        "spec/design/host-parity.md"
+      ],
+      "sourceProvenanceBefore": {
+        "baseCommit": "b574038e9b00a1e85a4355e63770ec05c8cd5642",
+        "meaning": "generation-time working-tree bytes; source hashes may differ after body-only edits"
+      },
+      "sourceProvenanceAfter": {
+        "baseCommit": "7195d070843d507757213e7816862072eed9f39b",
+        "meaning": "generation-time working-tree bytes; source hashes may differ after body-only edits"
+      }
+    },
+    "2568ac711d912625d54d083e38b29d51b415ad5c": {
+      "changedTopLevelFields": [
+        "sourceProvenance",
+        "sourceSha256"
+      ],
+      "changedSourceHashes": [
+        "spec/design/host-parity.md"
+      ],
+      "sourceProvenanceBefore": {
+        "baseCommit": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0",
+        "meaning": "generation-time working-tree bytes; source hashes may differ after body-only edits"
+      },
+      "sourceProvenanceAfter": {
+        "baseCommit": "7195d070843d507757213e7816862072eed9f39b",
+        "meaning": "generation-time working-tree bytes; source hashes may differ after body-only edits"
+      }
+    }
+  },
+  "unchangedContractsClassificationAcceptanceAndGaps": true,
+  "gaps": 685,
+  "proofFilesPreserved": 86,
+  "runtimeArtifactSha256": {
+    "target/release/libxyg_core.so": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+    "packages/xy-client/dist/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "packages/xy-client/dist/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "packages/xy-client/dist/wasm-inline-worker.js": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+    "packages/xy-client/dist/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "python/xyg/static/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "python/xyg/static/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "python/xyg/static/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+  },
+  "proofIdentityReuseOnly": true,
+  "browserOrNativeBuildOrMeasurementRerun": false,
+  "proofClockBases": "Host checkpoint ms: Node performance.now minus server /start. Browser received/paint/GPU/ACK ms: page performance.now minus beginGraph. Parent startup/interaction observations use runner performance.now; no cross-clock subtraction. Painted time is an observation upper bound after two rAFs and pixel readback, not scanout timing.",
+  "timingsUnchanged": {
+    "firstCheckpointHostMs": 302.6054230000001,
+    "firstPaintedBrowserMs": 887.9000000953674,
+    "firstGpuPickReadyBrowserMs": 966.8000001907349,
+    "unheldPaintIntervalsMs": [
+      570
+    ]
+  },
+  "scope": "Metadata-only parent sync. Existing partial 1k evidence and limits unchanged; no performance acceptance."
+}

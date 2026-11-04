@@ -1,0 +1,16 @@
+diff --cc spec/releases/0.6.0-api-inventory.json
+index 4bedb4fe,99213de5..00000000
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@@ -1195,7 -1195,7 +1195,11 @@@
+   "releaseLine":"0.6.0",
+   "schema":"xyg.release-api-inventory/v1",
+   "sourceProvenance":{
+++<<<<<<< HEAD
+ +  "baseCommit":"c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+++=======
++   "baseCommit":"207ebdbdaa2ec8b0360c571683eb0fa6165e02c0",
+++>>>>>>> 2fbbe5f038032841bcb095a9e101421e25771496
+    "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+   },
+   "sourceSha256":{

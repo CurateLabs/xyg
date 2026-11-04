@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py", line 142, in <module>
+    main()
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py", line 87, in main
+    assert actual == cache[oid] or permitted, (revision, path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('2568ac711d912625d54d083e38b29d51b415ad5c', 'spec/design/dual-host-parity-matrix.md')

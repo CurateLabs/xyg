@@ -1,0 +1,130 @@
+{
+  "scope": "Test-only loader/provenance cases; no force callbacks, browser paint or cadence. Variant is exact known parent bytes plus the retained UTF-8 marker.",
+  "knownParentSha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+  "variantSha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+  "variantRecipe": {
+    "sourceSha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+    "trailerUtf8": "\nTEST-ONLY PROVENANCE TRAILER; no executable/force code changed\n"
+  },
+  "cases": [
+    {
+      "case": "actual-override-vs-target",
+      "selectedNative": {
+        "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "resolvedSelectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "sha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+        "bytes": 6108488,
+        "abi": 399,
+        "matchesKnownParentArtifact": false,
+        "origin": {
+          "declaredKind": "unknown",
+          "meaning": "No origin declaration; byte identity alone proves neither reuse nor rebuild history."
+        }
+      },
+      "independentlyBound": {
+        "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "resolvedSelectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "sha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+        "abi": 399,
+        "independentFileHashAndAbiBinding": true
+      },
+      "conventionalTarget": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+        "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6"
+      }
+    },
+    {
+      "case": "declared-reuse-mismatch-rejected",
+      "exit": 1,
+      "stdout": "",
+      "stderr": "node:internal/modules/run_main:123\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: declared origin expected identity differs from actual loaded file\n+ actual - expected\n\n+ '3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6'\n- '5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d'\n\n    at attestNative (file:///home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.mjs:16:10)\n    at file:///home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/worker-audit.mjs:14:120 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: '3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6',\n  expected: '5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.4\n"
+    },
+    {
+      "case": "known-bytes-origin-unknown",
+      "native": {
+        "selectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+        "resolvedSelectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+        "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+        "bytes": 6108424,
+        "abi": 399,
+        "matchesKnownParentArtifact": true,
+        "origin": {
+          "declaredKind": "unknown",
+          "meaning": "No origin declaration; byte identity alone proves neither reuse nor rebuild history."
+        }
+      }
+    },
+    {
+      "case": "scripted-origin-declaration-reuse",
+      "native": {
+        "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "resolvedSelectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "sha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+        "bytes": 6108488,
+        "abi": 399,
+        "matchesKnownParentArtifact": false,
+        "origin": {
+          "declaredKind": "reuse",
+          "declaration": {
+            "kind": "reuse",
+            "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+            "expectedSha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d"
+          },
+          "recordPath": "/tmp/xyg-native-evidence-7rtTxF/origin.json",
+          "recordSha256": "a4db8a4056b36c44314ffc2e96f715c9360667fe9732c33cba1d657440be9ace",
+          "meaning": "Explicit operator declaration; byte/record identity checked, operation history not independently inferred."
+        }
+      }
+    },
+    {
+      "case": "scripted-origin-declaration-copied",
+      "native": {
+        "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "resolvedSelectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "sha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+        "bytes": 6108488,
+        "abi": 399,
+        "matchesKnownParentArtifact": false,
+        "origin": {
+          "declaredKind": "copied",
+          "declaration": {
+            "kind": "copied",
+            "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+            "expectedSha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+            "sourcePath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so"
+          },
+          "recordPath": "/tmp/xyg-native-evidence-7rtTxF/origin.json",
+          "recordSha256": "c62c5bd4aa3561256628e91cd754f5b2abc3850820b9f7d36f78f93e5e7643aa",
+          "meaning": "Explicit operator declaration; byte/record identity checked, operation history not independently inferred."
+        }
+      }
+    },
+    {
+      "case": "scripted-origin-declaration-rebuilt",
+      "native": {
+        "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "resolvedSelectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+        "sha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+        "bytes": 6108488,
+        "abi": 399,
+        "matchesKnownParentArtifact": false,
+        "origin": {
+          "declaredKind": "rebuilt",
+          "declaration": {
+            "kind": "rebuilt",
+            "selectedPath": "/tmp/xyg-native-evidence-7rtTxF/selected-libxyg_core.so",
+            "expectedSha256": "5b16ecf08d47bea710e2f499542d9e117f9ab25acce6a9eb10545672e312e72d",
+            "buildRecord": "/tmp/xyg-native-evidence-7rtTxF/test-only-build-record.txt"
+          },
+          "recordPath": "/tmp/xyg-native-evidence-7rtTxF/origin.json",
+          "recordSha256": "2a7e76083cef0445fb98bb8a25375f9c719f2e562a7d34567914327df769402a",
+          "meaning": "Explicit operator declaration; byte/record identity checked, operation history not independently inferred.",
+          "buildRecord": {
+            "path": "/tmp/xyg-native-evidence-7rtTxF/test-only-build-record.txt",
+            "sha256": "b730fa6f9a0ec398d3d84fcc22e7108c3693006368368b425d068be6401eaf8f"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1955,9 +1955,25 @@ client must not grow a parallel “JS layout/LOD” product path.
   only `+ − × ÷ √` and `portable_sin_cos`. Checkpoint-delivery latency and cadence
   evidence is historical (`cb78c1f4`, 1k–1M nodes, three hosts), predating
   #1078's Node checkpoint acceptance/cleanup contract. It is not current-main
-  timing or first-paint evidence. Render-based first paint/interactivity,
-  default Node async composition and Python widget/notebook integration
-  (#1015) remain open for #35. The historical receipt is committed under
+  timing or first-paint evidence. The default Node live payload route now uses
+  `GraphForgeLayoutController` and bridge/force Workers; synchronous
+  `composeGraphForge` remains explicit metadata/static/batch composition
+  ([Node contract](graphforge-node-scheduling.md)). The issue's literal async
+  `composeGraphForge` wording still needs an explicit acceptance clarification.
+  The bounded 1k [render receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
+  supersedes the frozen historical runners, directly observes the selected
+  native path/hash/ABI in fixture and bridge/force Workers, and separates byte
+  identity from unknown/declared origin. Earlier conventional-path hashes do
+  not retroactively attest selection. Held update ACKs are drained and reset
+  is checked on the first replacement. It records actual initial/final paint
+  and GPU node-hit readiness, with trusted
+  UUID/pan inspection separated from unheld presentation. Intermediate steps
+  coalesced away; one initial-to-final interval is not sustained progress
+  cadence. Remaining for #35 are the rendered size ladder and unheld initial
+  trusted interaction, public browser progressive attachment/scheduling, and
+  Python widget/notebook progressive integration (#1015). Retained opcode 15
+  alone does not attach a public scheduler. The historical receipt is committed
+  under
   `spec/performance/cose-progressive-ladder-2026-10-20/`. Policy and results:
   `graph-mark.md` §4 "CoSE cross-host parity".
 - **Box-select:** reuses the existing scatter/segments selection path — no

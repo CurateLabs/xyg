@@ -1,0 +1,64 @@
+{
+  "commandExits": {
+    "capability-check.command.json": 0,
+    "capability-regenerate.command.json": 0,
+    "focused-tests.command.json": 0,
+    "hooks.command.json": 0,
+    "inventory-check.command.json": 0,
+    "inventory-regenerate.command.json": 0,
+    "metadata-tests.command.json": 0,
+    "naming-tests.command.json": 0,
+    "naming-whole-repository.command.json": 0,
+    "preservation-final.command.json": 0,
+    "preservation.command.json": 0,
+    "ruff-check.command.json": 0,
+    "ruff-format.command.json": 0
+  },
+  "focusedTests": 23,
+  "metadataTests": 61,
+  "namingTests": 149,
+  "wholeRepositoryNamingAudit": "passed; final audit follows handoff/manifest generation",
+  "allFilesPreCommit": "passed",
+  "ruffCheck": "passed",
+  "ruffFormatCheck": "passed",
+  "protectedHistoricalFiles": 361,
+  "runtimeFileHashes": 8,
+  "captureSourceMaps": 6,
+  "productionChanged": false,
+  "inventoryChangedFields": [
+    "sourceProvenance"
+  ],
+  "contractsClassificationsAcceptanceChanged": false,
+  "gaps": 685,
+  "newBrowserOrForceCapture": false,
+  "newNativeOrClientBuild": false,
+  "newProductionCiResult": "unavailable; parent must push reviewed sync to trigger actual CI",
+  "remoteReviewerChecksReportedByParent": {
+    "CodeRabbit": "SKIPPED",
+    "Macroscope": "SKIPPED"
+  },
+  "review": "Prior 562a approval only; new sync requires parent independent final review.",
+  "actualAuditorFailures": [],
+  "mergeConflict": "Resolved official generation-base provenance only; raw conflict retained.",
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "nodeToolchain": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin",
+    "pythonTooling": "project uv",
+    "browser": "not run in this sync",
+    "nativeOrigin": "unknown, historical known-parent byte identity true"
+  },
+  "protectedObservations": {
+    "unheld": {
+      "resultSha256": "5c807c8aedbbc1e8f785c95ad3dc92db938bfbf0fa8ea0da56e32350fd3d5853",
+      "sourceBase": "c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+      "status": "passed",
+      "meaning": "Unmodified historical runtime observation; not rerun in this sync."
+    },
+    "held": {
+      "resultSha256": "9a517c6925779383dffc10f9a573fc632424cae0e1c3fb5846761ec276e739d2",
+      "sourceBase": "c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+      "status": "passed",
+      "meaning": "Unmodified historical runtime observation; not rerun in this sync."
+    }
+  }
+}

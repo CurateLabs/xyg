@@ -1,0 +1,24 @@
+{
+  "focusedTests": {
+    "command": "node --test spec/performance/graph-node-first-paint-1k-2026-11-04/protocol.test.mjs spec/performance/graph-node-first-paint-1k-2026-11-04/verify-receipt.test.mjs",
+    "exitCode": 0,
+    "pass": 8
+  },
+  "mandatoryCommands": [
+    {
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exitCode": 0
+    },
+    {
+      "command": "uv run ruff check .",
+      "exitCode": 0
+    },
+    {
+      "command": "uv run ruff format --check .",
+      "exitCode": 0
+    }
+  ],
+  "productionFilesChanged": false,
+  "historicalReceiptsChanged": false,
+  "externalReview": "Required from parent before PR; not performed or self-approved by implementing test agent."
+}

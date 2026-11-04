@@ -1,0 +1,13 @@
+Initial local validation assumed provenance lived in a top-level baseCommit field.
+The official inspector instead emits sourceProvenance. This was a verifier schema
+assumption, not a generator/auditor failure or contract drift. The corrected
+verification allows only the actual sourceProvenance/sourceSha256 fields and
+requires all remaining fields, contracts, classifications, acceptance and all
+685 gaps to equal both parents exactly.
+
+Captured initial output:
+dict_keys(['acceptance', 'contractSha256', 'contracts', 'gaps', 'inspector', 'releaseLine', 'schema', 'sourceProvenance', 'sourceSha256'])
+7195 changed keys ['sourceProvenance', 'sourceSha256'] gaps 685
+Traceback (most recent call last):
+  File "<stdin>", line 9, in <module>
+AssertionError: ['sourceProvenance', 'sourceSha256']

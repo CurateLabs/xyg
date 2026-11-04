@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify_preservation.py", line 129, in <module>
+    main()
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify_preservation.py", line 68, in main
+    key = (event["threadId"], event["id"])
+                              ~~~~~^^^^^^
+KeyError: 'id'

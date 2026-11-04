@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: actual override-selected fixture file differs from conventional target; default origin is unknown
+ok 1 - actual override-selected fixture file differs from conventional target; default origin is unknown
+  ---
+  duration_ms: 341.689927
+  type: 'test'
+  ...
+# Subtest: actual exact-platform package wins over a different override without changing production resolver
+ok 2 - actual exact-platform package wins over a different override without changing production resolver
+  ---
+  duration_ms: 152.919661
+  type: 'test'
+  ...
+# Subtest: declared reuse of known parent fails closed when actual selected identity differs
+ok 3 - declared reuse of known parent fails closed when actual selected identity differs
+  ---
+  duration_ms: 88.076829
+  type: 'test'
+  ...
+# Subtest: matching known-parent bytes never silently infer reuse or pre-run rebuild history
+ok 4 - matching known-parent bytes never silently infer reuse or pre-run rebuild history
+  ---
+  duration_ms: 42.66933
+  type: 'test'
+  ...
+# Subtest: explicit reuse/copy/rebuild declarations remain declarations; rebuilt requires an inspectable record
+ok 5 - explicit reuse/copy/rebuild declarations remain declarations; rebuilt requires an inspectable record
+  ---
+  duration_ms: 202.55811
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 933.656969

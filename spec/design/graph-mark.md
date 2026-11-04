@@ -380,10 +380,25 @@ worker preset packing; see [the Node scheduling contract](graphforge-node-schedu
 Every live graph layout retains a complete f64 source snapshot, including
 circle/grid at Aggregate; Rust-derived render membership has separate indexing.
 Its bounded four-node native/painter receipt proves initial and changed later
-paint, UUID picks and pan through full view replacement. **Remaining for #35:**
+paint, UUID picks and pan through full view replacement. The additional
+[1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
+supersedes the frozen historical 1k runners with update-ACK draining, first-
+replacement camera inspection and directly observed selected native path/hash/ABI
+in fixture and bridge/force Workers. Origin is unknown unless explicitly declared;
+matching old bytes does not prove reuse or a pre-run rebuild history. The new
+capture preserves the ring/chord rung, seed and CoSE policy and records visible pixels
+and GPU node-hit readiness under automatic ACKs. Only initial/final frames
+were presented, so their single interval does not establish sustained cadence.
+Trusted UUID/pan checks on the settled frame and deliberately held initial
+inspection are separate from that interval. **Remaining for #35:**
 render-based first-paint/interactivity measurements on the large-data ladder,
-retained S5 updates, and Python widget/notebook progressive delivery plus
-rerender/dispose cancellation (#1015). The historical
+unheld initial trusted response, default public browser progressive scheduling,
+and Python widget/notebook progressive delivery plus rerender/dispose
+cancellation (#1015). The Node replacement consumer still resets its camera;
+the separate explicit S5b attachment and retained opcode 15 mechanism do not
+establish public progressive scheduling. Literal async `composeGraphForge`
+issue wording needs clarification against the adopted synchronous static/batch
+contract before closure. The historical
 receipt predates #1078's Node checkpoint acceptance and cleanup contract (§5)
 and is not current-main timing evidence.
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid

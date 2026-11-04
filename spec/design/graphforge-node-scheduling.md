@@ -174,8 +174,10 @@ browser startup, host checkpoint delivery, actual painted frames/pixels, pointer
 pick/UUID response and pan response. A consumer ACK deliberately holds each
 frame for inspection, so its final frame interval is not tick cadence. Later
 positions replace a whole `ChartView`, following the existing vanilla consumer;
-viewport continuity and retained updates remain S5. No WASM runtime is used by
-this proof, and no diagnostic WASM artifact is promoted to shipping status.
+this consumer does not preserve viewport continuity or use retained updates.
+The separate explicit S5b attachment is not this live replacement route. No WASM
+runtime is used by this proof, and no diagnostic WASM artifact is promoted to
+shipping status.
 
 The existing 1k/10k/100k/1M receipts measure scheduler checkpoints, not render
 first paint. This four-node functional journey neither replaces that ladder nor
@@ -195,6 +197,48 @@ full source coordinates or intermediate payloads. The original receipt is
 immutable: its phrase “render payloads ... are retained” was broader than its
 actual final spec, counts, identities and position digests. Repair evidence
 makes no milestone, S5, scale, release qualification or #108 acceptance claim.
+
+The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
+contains the current runnable helpers and fresh browser captures. The original
+1k receipt and parent-sync receipt remain immutable historical records; their
+runners are superseded. Their conventional-path hashes do not retroactively
+attest the native file actually selected by the loader. The current helper
+observes existing `nativeLibraryPath` / ABI exports in the fixture and inherited
+bridge/force Workers; the runner independently hashes and ABI-binds that exact
+selected path. Origin defaults to unknown, separately from known-parent byte
+identity. Held inspection drains each genuine update ACK with a bounded deadline
+and matching job/revision/step; camera reset is checked on the first replacement,
+which may be an update. Scripted ACK cases test this protocol only and are not
+native callbacks or presentation-cadence evidence. The real capture still
+uses the historical ring/chord topology, seed 7, default CoSE options and
+10-tick chunks through the existing live controller. Its explicit 401-tick cap
+matches that rung; the live default cap remains 300. Automatic ACKs follow
+normal shared-painter frames and evidence probes, with no deliberate hold.
+Only steps 1 and 401 were presented: intermediate checkpoints coalesced while
+the initial frame was rendering/probed. The one recorded frame interval is
+not evidence of sustained update cadence. Host checkpoint arrival, visible
+Canvas2D pixel observation, GPU node-hit readiness and cold startup use distinct
+recorded clocks. A trusted final-frame UUID click/pan is outside cadence;
+initial trusted click/pan and viewport-reset inspection deliberately hold the
+HTTP ACK in a separate run. The latter confirms replacement resets the panned
+view to the next payload's ranges. No production behavior or limits changed.
+
+The [accepted-main sync receipt](../performance/graph-node-first-paint-1k-accepted-main-sync-2026-11-04/README.md)
+records the normal merge of accepted main `2fbbe5f0` into reviewed repair
+`562a2adf`. Production sources, runnable proof helpers, raw browser captures and
+runtime artifact bytes are unchanged; this sync reuses the recorded observations
+and makes no fresh browser, worker-loading or native-build claim. Parent-reported
+review approval and resolution of both proof-runner findings cover `562a2adf`;
+the sync candidate requires independent final review. The conflicted remote
+head had only skipped reviewer checks, not passing production CI.
+
+This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
+unheld initial trusted response, public browser progressive scheduling and
+Python notebook/widget delivery/cancellation remain acceptance work. The
+adopted explicit synchronous `composeGraphForge` contract also needs an
+explicit resolution of the issue's literal async-compose wording before
+closure. Retained `load.progressive` / opcode 15 mechanisms below do not
+supply those public host schedulers.
 
 ## Bounded retained-session P1 seam (2026-11-03)
 

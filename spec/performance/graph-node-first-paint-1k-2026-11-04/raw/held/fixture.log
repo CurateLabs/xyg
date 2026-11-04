@@ -1,0 +1,5 @@
+XYG_GRAPHFORGE_LIVE_URL=http://127.0.0.1:44425
+{"audit":"WORKER","threadId":0,"event":"init","id":2429,"hrtimeNs":"3507199917023512"}
+{"audit":"WORKER","threadId":1,"event":"init","id":2295,"hrtimeNs":"3507200060340286"}
+{"audit":"WORKER","threadId":1,"event":"destroy","id":2295,"hrtimeNs":"3507200525403823"}
+{"audit":"WORKER","threadId":0,"event":"destroy","id":2429,"hrtimeNs":"3507203057381463"}
