@@ -1,0 +1,374 @@
+{
+  "qualification": "spec/performance/graph-s5b-attachment-r2-2026-11-04",
+  "reuseOnly": true,
+  "unchangedProofFiles": {
+    "crates/xyg-engine/src/graph_interaction_state.rs": "b62c418039ab4dbc729f92c7fb58660e63d3f125df32319230120befa4de0be7",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "930b28721b9b0197eb2b0ae99b46304f26a1911ebe93fff97f61fce2c16fcff4",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "9668631162baddfe02c8d9d4ac4f0cc2b527e9b35639db076816bddb1b6a14c6",
+    "js/src/42_glhost.ts": "87235678e180769af8b84925ea9c2face266cd47ffdd941e7770949181b04fda",
+    "js/src/63_graph_controller.ts": "a39ddf7abd7bf259e8bc5aa2659f6e104fb46caaaf7d92ba014f801424c93b63",
+    "js/src/63_graph_session_wire.ts": "3400e1842e11212f703668606ab4660c774656b7b6585eeee6e0f4d3c1af5a17",
+    "js/test/graph-session-controller-wire.test.mjs": "8c913b9afdb84a62554f2b8f38005c2002ebd4de1eb2d0fc5e2f80e83aac9ab2",
+    "js/test/package-wasm-contract.test.mjs": "cc78dea47c77516e603b67e43455d5d8d9a6c5d84c3a7940b885e964c7f362dc",
+    "js/test/package-wasm-manifest.test.mjs": "d0f1e149065579d0323f91b548933d7b7d7e9d3b0c194cc50c738635c0301c9e",
+    "packages/xy-node/test/graph-session-wire.test.mjs": "36bd6e7d428fe47248606a3120828d467431041992398506a4d5a990e555f5fa",
+    "scripts/graph_session_controller_wasm_smoke.mjs": "afe5c697f12e783c17f286b0ae1b3f5143f719d62887afd68f277d228a0487f6",
+    "scripts/graph_session_gpu_paint_smoke.mjs": "b4e121dedbccf24dadc942a101bcfccada340655e9b5dd7c03877020bd20d7f8",
+    "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+    "spec/api/browser-wasm.md": "e6adb136a1ee02d0c9ed0a3baf44e0631716f05b919cb59dc1ca9cb0489adeb4",
+    "spec/design-dossier.md": "3accdcb69375204fdefd235e45abc28af8df58b5a7d89cb8f96a5c5143c5a03b",
+    "spec/design/browser-wasm.md": "463ff902886b0301d55ec05728a51fc7d3d1ff0ebd961224fce78a112f5f0df3",
+    "spec/design/ownership-audit.md": "9236535012fc6cd9613217fbbfc1bac6b914ded6c46b6cadb2a20ba35d88d570",
+    "spec/performance/graph-s5b-attachment-r2-2026-11-04/capture-artifacts.mjs": "78ce3cb634108afac702f85f33dc250b1cc8049cf7a76bbe66338724bcb857c2",
+    "spec/performance/graph-s5b-attachment-r2-2026-11-04/capture-proof.py": "ebb3e98830d643b356e213e1243a3d2e90d4abbe46efe53451899bcfa76612c2",
+    "spec/performance/graph-s5b-attachment-r2-2026-11-04/run.py": "77eb59363caaf8cca274d2b132361c144933304c932e839e48460a7f1bd0084e",
+    "spec/releases/api-inventory.md": "3196f63beeef0cb73257eb9159bda62cffd44c7edc60c254b8f8a4c57135c099",
+    "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77",
+    "tests/browser/graph_session_controller_page.mjs": "fd34e1b2a9c2c67fb6799254078deaa579b9da2d1eb11d62d3dafd4580d22ce5",
+    "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24",
+    "tests/test_shared_glhost.py": "c720d2f1a4ef3088ec178b68cc63d3e2f7fa9b6795132e948a39fcb4cec4e31f"
+  },
+  "metadataExceptions": [
+    "spec/design/graph-interaction.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "all28OriginalLogsAndExitsPreserved": {
+    "api-inventory-final.command.json": {
+      "exit": 0,
+      "recordSha256": "f8558305b49a5063caf364c92169b7afce0071f2525c880a982c9f8162f8c740",
+      "logSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "argv": [
+        "python3",
+        "scripts/check_release_inventory.py"
+      ]
+    },
+    "api-inventory.command.json": {
+      "exit": 0,
+      "recordSha256": "c59c77aa3a1daec82cc837d7fa9805fbc36fba661fd27bf88f0a638c108c0ecf",
+      "logSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "argv": [
+        "python3",
+        "scripts/check_release_inventory.py"
+      ]
+    },
+    "artifacts.command.json": {
+      "exit": 0,
+      "recordSha256": "bc94eb8a1c88c3a3d929a425994f4a5ff0480235b99612c97e257e38d9e8cf90",
+      "logSha256": "65367961a0ee066f89a89b1b7fb4916cc7932ac7b82c2773646ba7e413eb0307",
+      "argv": [
+        "node",
+        "spec/performance/graph-s5b-attachment-r2-2026-11-04/capture-artifacts.mjs",
+        "passed"
+      ]
+    },
+    "canonical-graph.command.json": {
+      "exit": 0,
+      "recordSha256": "558d34aa4504ef87395f4b437f504248ca25303f98868ff049912b5f8af832ed",
+      "logSha256": "9233a021928befb4728b0776f74c70396707a53343ccef0fee64e8dbfcc41b2e",
+      "argv": [
+        "node",
+        "scripts/graphforge_wasm_smoke.mjs"
+      ]
+    },
+    "client-build.command.json": {
+      "exit": 0,
+      "recordSha256": "4e32a0f5931d38a5b9a9390fef3f16661d6642f0338efeeeace46473df15f26a",
+      "logSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "argv": [
+        "node",
+        "js/build.mjs"
+      ]
+    },
+    "contracts-corrected.command.json": {
+      "exit": 0,
+      "recordSha256": "ccea98f35ac4453ba3eff2b799b7e370c8a939dee531d7fcb2527507128277a8",
+      "logSha256": "c91ed94b4cb7cd47c536ac4c0c24e3fa3b1c2743c3299d6b1e722db1e6da58c5",
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_shared_glhost.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_wasm_assets.py",
+        "tests/test_wasm_inline_artifact_contract.py",
+        "tests/test_graph_session_abi.py",
+        "-q"
+      ]
+    },
+    "contracts.command.json": {
+      "exit": 1,
+      "recordSha256": "f7d837081d749eb6d4687d52aeef58f9957f3f4e7695e8c236f7ee700e6e4a33",
+      "logSha256": "122966d918cb62b41eeb8c092d6fde7a1871f9c06224075f65b34b7e6c46fcb5",
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_shared_glhost.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_wasm_assets.py",
+        "tests/test_wasm_inline_artifact_contract.py",
+        "tests/test_graph_session_abi.py",
+        "-q"
+      ]
+    },
+    "controller-final.command.json": {
+      "exit": 0,
+      "recordSha256": "bb7a703607c5a0ff90c76efeb6513bd4e42827d0c385b010e823176f586bfb6c",
+      "logSha256": "0e66a18822264118a8029aed3c04ff049f51a4f22be2f050dd1df18372786e6f",
+      "argv": [
+        "node",
+        "scripts/graph_session_controller_wasm_smoke.mjs"
+      ]
+    },
+    "controller.command.json": {
+      "exit": 0,
+      "recordSha256": "ba5a8c37eef0161e728ebd94e977514b9522a254ff8239ca589da9005ad24261",
+      "logSha256": "0e66a18822264118a8029aed3c04ff049f51a4f22be2f050dd1df18372786e6f",
+      "argv": [
+        "node",
+        "scripts/graph_session_controller_wasm_smoke.mjs"
+      ]
+    },
+    "environment.command.json": {
+      "exit": 0,
+      "recordSha256": "8020a7253b591b9914eb67e5512e56bbad87226423cddbb94c65f9cdfc073f14",
+      "logSha256": "fef9e266515ecdeb0c8912af12cbf6cb05a20a73ea19b4bcbfcc94e9e16dcb92",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "-c",
+        "import importlib.metadata as m,json,platform,sys,subprocess; print(json.dumps({\"python\":sys.version,\"platform\":platform.platform(),\"rustc\":subprocess.check_output([\"rustc\",\"--version\"],text=True).strip(),\"cargo\":subprocess.check_output([\"cargo\",\"--version\"],text=True).strip(),\"node\":subprocess.check_output([\"node\",\"--version\"],text=True).strip(),\"packages\":{p:m.version(p) for p in [\"xyg\",\"pyarrow\",\"pytest\",\"ruff\"]}},indent=2))"
+      ]
+    },
+    "final-hooks-commit.command.json": {
+      "exit": 0,
+      "recordSha256": "bc715f8688752287fd56e80192c1414af954f285a9bcdda8acb193b460473004",
+      "logSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ]
+    },
+    "final-hooks.command.json": {
+      "exit": 0,
+      "recordSha256": "254d25c708bdaf6186f469e6c7aeb449e97273d23581946f6735ccf35eac9bca",
+      "logSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ]
+    },
+    "final-ruff-check.command.json": {
+      "exit": 0,
+      "recordSha256": "38ce4217a07b6e9cc1759fde8922ff3e174425ec7c853f09e3d9fb408986b6c1",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ]
+    },
+    "final-ruff-format-check.command.json": {
+      "exit": 0,
+      "recordSha256": "92dccca14ccfe74928e64e203f2fb265c29be786c15727b277da8c2dfc2c920f",
+      "logSha256": "c29370df2e164a8e05e214fca1ce983a0ad929f24aba9444fd512113b8dd056d",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ]
+    },
+    "foundation.command.json": {
+      "exit": 0,
+      "recordSha256": "162958a3d01bb3491ff404c83f820c81a18439b6269ed45671505692be43784b",
+      "logSha256": "3e01a8c33a45ef69da7c5c9a042a45cfed90721a3fe083073cfcd150bdd41ce3",
+      "argv": [
+        "env",
+        "-u",
+        "XYG_WASM_FOUNDATION_ONLY",
+        "XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_WASM_FOUNDATION_REPORT=/home/ubuntu/.t3/worktrees/xyg/t3-913c4718/spec/performance/graph-s5b-attachment-r2-2026-11-04/foundation.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ]
+    },
+    "geo-controller.command.json": {
+      "exit": 0,
+      "recordSha256": "cd078bcb14781c1860e8ecc4754ae7f157570341dd27107552b6063e1adc4fd8",
+      "logSha256": "1c08017e94adeb6a9cb2ad092ded4ae782dfa2fae3606474f1c5c05ff50c253a",
+      "argv": [
+        "node",
+        "scripts/geo_controller_wasm_smoke.mjs"
+      ]
+    },
+    "native-release.command.json": {
+      "exit": 0,
+      "recordSha256": "8cd1d3aa382065a4ab685d844ebf4c48bc6deb21c42ab6c979e22b561704154e",
+      "logSha256": "248a769357bf3f6d9efdd5d0204044ae46465e4297ec6043a657d447946f2584",
+      "argv": [
+        "cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline"
+      ]
+    },
+    "paired-assets.command.json": {
+      "exit": 0,
+      "recordSha256": "af6d33afbb1aaf1a44eda88ce6edfbf56ea6ca1b7f888053108ff9e2d70a0015",
+      "logSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "argv": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ]
+    },
+    "rust-clear-state.command.json": {
+      "exit": 0,
+      "recordSha256": "e2743a64dfa1196d93ba21a1066fd2807066499ce7359649608cac1dec2af1b0",
+      "logSha256": "5090074869307e442f76d7d8b13006d2304c8e932480ee4afec78b86b3f9aed0",
+      "argv": [
+        "/home/ubuntu/.cargo/bin/cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "clear_applicability",
+        "--",
+        "--nocapture"
+      ]
+    },
+    "rust-clear-wire.command.json": {
+      "exit": 0,
+      "recordSha256": "13850d870903519d4f8c2d2176aee32d30ad9ebef01952a206ebc39d816efac2",
+      "logSha256": "142c771cb9f1d565500fccf6637698e8f419fe44b597aec27c5a559832c9aaf1",
+      "argv": [
+        "/home/ubuntu/.cargo/bin/cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "clear_fact",
+        "--",
+        "--nocapture"
+      ]
+    },
+    "rust-fmt.command.json": {
+      "exit": 1,
+      "recordSha256": "55d481b5651470a7853c9b2736a67dae29ec91a5463c26fe4e90089f7fda351b",
+      "logSha256": "7086e8367d144a401b81abc690755308791eb26e71775a1a85d7000d8108924d",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ]
+    },
+    "rust-interaction-nearby.command.json": {
+      "exit": 0,
+      "recordSha256": "eda321148013408870152f4f6c88ac831117f6fc9fa1cac9e062a48006276ac5",
+      "logSha256": "9dbd2226c413bda3d4c0ad804b816ae75e48d793c7819f0edfae1bd1cb1baaaa",
+      "argv": [
+        "/home/ubuntu/.cargo/bin/cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "graphforge::interaction",
+        "--",
+        "--nocapture"
+      ]
+    },
+    "rust-workspace.command.json": {
+      "exit": 0,
+      "recordSha256": "61ec732ad2c17c21d558f4f5624be7437d83ee18b526d6fedaa71ff348c1eb3a",
+      "logSha256": "269eeaed926f6eb25ae19894e8e246b9eca4b02322ad1de4d0487c19ff57143c",
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--locked",
+        "--offline"
+      ]
+    },
+    "sampler-raw.command.json": {
+      "exit": 0,
+      "recordSha256": "9f7c713ac4b6eedb3ecd2f932dc3ed86557d2cc50c4da550318501be386be357",
+      "logSha256": "c6ddbc16b746f5ac8d56e95c7cfa65f5837089885898c84a4e88ff951dcec86f",
+      "argv": [
+        "node",
+        "scripts/graph_session_gpu_paint_smoke.mjs"
+      ]
+    },
+    "shipping-package.command.json": {
+      "exit": 0,
+      "recordSha256": "cf532a61ebe64069f34f33cb81b46cb90bcfa456af59f2529292512174cb5096",
+      "logSha256": "2ea08f260914cccba2dcdf32f71973cc80981f84f3390a37b68b93f24f5e541c",
+      "argv": [
+        "node",
+        "js/package-wasm.mjs"
+      ]
+    },
+    "shipping-tests.command.json": {
+      "exit": 0,
+      "recordSha256": "640b7598b765c6983f0ee55b1520da356507f039b1864e26b5464b3cc87bdd00",
+      "logSha256": "eb9a05e58246326725d49a8f02121a98862ff3682bdb11c30e19e89bde2b6953",
+      "argv": [
+        "env",
+        "-u",
+        "XYG_SESSION_WASM",
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "js/test/package-wasm-contract.test.mjs",
+        "js/test/package-wasm-manifest.test.mjs"
+      ]
+    },
+    "wasm-release.command.json": {
+      "exit": 0,
+      "recordSha256": "26093a223c60214ad2ca3d5e36bcc2ba872a46d46edb8a5cd6b5ca45b53c3160",
+      "logSha256": "85937fc9077b625e40c610dbdddd0669d931ffb33bb12e7d7055c7f169404f9b",
+      "argv": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--locked",
+        "--offline"
+      ]
+    },
+    "wire-gpu-tests.command.json": {
+      "exit": 0,
+      "recordSha256": "0dfcb96dbe46103fee7f3077e372ce5a4fa0729e357f2cc01f7decf76d024a87",
+      "logSha256": "98e9f4f85e31984343e65585df14e4520956db6209879064f048c82ec599d966",
+      "argv": [
+        "node",
+        "--test",
+        "js/test/graph-session-controller-wire.test.mjs",
+        "js/test/graph-session-gpu.test.mjs"
+      ]
+    }
+  },
+  "historicalFailuresNotRequalified": [
+    "contracts.command.json",
+    "rust-fmt.command.json"
+  ]
+}

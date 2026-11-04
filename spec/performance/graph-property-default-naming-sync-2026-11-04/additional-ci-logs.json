@@ -1,0 +1,16 @@
+{
+  "126318615894": {
+    "source": "/tmp/xyg-1090-job-126318615894.log",
+    "archive": "ci-job-126318615894.log.gz",
+    "raw_bytes": 96310,
+    "raw_sha256": "2711ce0419af47c63da129980fe97a2967d97538d9df79567785740ce852e872",
+    "gzip_sha256": "54cf2acec7ae5bf6f69276ece90b45af67a978e226d917712b3321fff92c3aca"
+  },
+  "126322626934": {
+    "source": "/tmp/xyg-1090-job-126322626934.log",
+    "archive": "ci-job-126322626934.log.gz",
+    "raw_bytes": 27470,
+    "raw_sha256": "dd3e0ecfce0898c2389893fb62862f2fec7c45cbd228f5610938efece175575e",
+    "gzip_sha256": "46b8f292a3f8a8ca2ab6ad31a5464031839e671e35bb65dac5e494f0e0d618b2"
+  }
+}

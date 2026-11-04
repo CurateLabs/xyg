@@ -1,0 +1,297 @@
+{
+  "scope": "Fresh naming and metadata validation, source/artifact preservation and full hooks; not new CI or production/browser qualification",
+  "check_count": 12,
+  "all_passed": true,
+  "checks": {
+    "naming-tests": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "naming-tests.stdout.log.gz",
+          "raw_bytes": 181,
+          "raw_sha256": "dc896b812ccd75d45dc28b376e7ee62c28686ddd858db9d6dda98ae42ca035b7",
+          "gzip_sha256": "2e6851c807dd7e947b38d2187fd8cee06d1d63a574db909ba0748cff332fd527"
+        },
+        "stderr": {
+          "file": "naming-tests.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "naming-whole-repository": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_stale_names.py"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "naming-whole-repository.stdout.log.gz",
+          "raw_bytes": 19,
+          "raw_sha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840",
+          "gzip_sha256": "c37334890ddf4df9c85150168328b2d0cc5bac95e9815dd234d2f9e53e0eba6f"
+        },
+        "stderr": {
+          "file": "naming-whole-repository.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "metadata-tests": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_gen_wasm_abi.py"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "metadata-tests.stdout.log.gz",
+          "raw_bytes": 99,
+          "raw_sha256": "c03424380fcae8f3897ee07003bee171901ddfb1b610adc14369702b3e1906b3",
+          "gzip_sha256": "65d5c7fa137ac4caceb7da42376d9bcb0c9eecdb99d87c59cacdf84b28e9aac4"
+        },
+        "stderr": {
+          "file": "metadata-tests.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "ownership": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "ownership.stdout.log.gz",
+          "raw_bytes": 60,
+          "raw_sha256": "3d5421ea458d1838a1beaec5fa5fc0ad4cef8b9dfa52ab4cf8bc77d3cc678495",
+          "gzip_sha256": "f51cf5160af67b86f0d5c67c78666ef45daaa3ec10f45162ad5ed4a1065728fc"
+        },
+        "stderr": {
+          "file": "ownership.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "native-declarations": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "native-declarations.stdout.log.gz",
+          "raw_bytes": 42,
+          "raw_sha256": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed",
+          "gzip_sha256": "722256a596708c93fc6dcec031d0e724934fb2be31fca1f1cedaf1a028c939a8"
+        },
+        "stderr": {
+          "file": "native-declarations.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "wasm-declarations": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "wasm-declarations.stdout.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        },
+        "stderr": {
+          "file": "wasm-declarations.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "typecheck": {
+      "argv": [
+        "uv",
+        "run",
+        "ty",
+        "check",
+        "python"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "typecheck.stdout.log.gz",
+          "raw_bytes": 19,
+          "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "gzip_sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+        },
+        "stderr": {
+          "file": "typecheck.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "inventory-check": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "inventory-check.stdout.log.gz",
+          "raw_bytes": 97,
+          "raw_sha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+          "gzip_sha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+        },
+        "stderr": {
+          "file": "inventory-check.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "preservation": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-property-default-naming-sync-2026-11-04/verify-preservation.py"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "preservation.stdout.log.gz",
+          "raw_bytes": 111,
+          "raw_sha256": "65f155602a4dfb63f2655ec094e629f21078addedb472a4b66c5995224e6b186",
+          "gzip_sha256": "7da06cbc1794cc926abde4580e130055c910a06cb8ea7f3bd62178932f2b0386"
+        },
+        "stderr": {
+          "file": "preservation.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "full-hooks": {
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "full-hooks.stdout.log.gz",
+          "raw_bytes": 240,
+          "raw_sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+          "gzip_sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+        },
+        "stderr": {
+          "file": "full-hooks.stderr.log.gz",
+          "raw_bytes": 86,
+          "raw_sha256": "6ae09c34b28d877fa63e685817be0e41168f79986a26a803673f833d0f464b52",
+          "gzip_sha256": "848bdd27c0c26fd8af4ffc48beb36a0b8f72e090377831d3a2ffe3f7e76fe22c"
+        }
+      }
+    },
+    "ruff-check": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "ruff-check.stdout.log.gz",
+          "raw_bytes": 19,
+          "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "gzip_sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+        },
+        "stderr": {
+          "file": "ruff-check.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    },
+    "ruff-format": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "logs": {
+        "stdout": {
+          "file": "ruff-format.stdout.log.gz",
+          "raw_bytes": 28,
+          "raw_sha256": "1268214dbcc72ff4c4f4c5ad180f5c30bf93d1a7c7681ddd28aee97c975c23cd",
+          "gzip_sha256": "3aa47e9f48b1bd3e06d60b445403352f2e6596d6a1d96a30540177c70ff9bd84"
+        },
+        "stderr": {
+          "file": "ruff-format.stderr.log.gz",
+          "raw_bytes": 0,
+          "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+        }
+      }
+    }
+  },
+  "final_staged_receipt_audit_record": "naming-integrated-final.json"
+}

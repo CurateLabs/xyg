@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -173,6 +174,102 @@ def test_flags_root_src_lib_as_abi_location(tmp_path: Path) -> None:
     (tmp_path / "bad.md").write_text("Bump ABI_VERSION in src/lib.rs\n", encoding="utf-8")
     errors = check_stale_names.check_stale_names(tmp_path)
     assert any("src/lib.rs ABI" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "helper",
+    [
+        "examples/osm/osmium-rs/src/lib.rs",
+        "/home/runner/_work/xyg/xyg/examples/osm/osmium-rs/src/lib.rs",
+        str(ROOT / "examples/osm/osmium-rs/src/lib.rs"),
+    ],
+)
+def test_allows_exact_osm_helper_manifest_entry(tmp_path: Path, helper: str) -> None:
+    (tmp_path / "manifest.json").write_text(json.dumps({helper: {"bytes": 1}}))
+    assert check_stale_names.check_stale_names(tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    ("prefix", "suffix"),
+    [
+        ("", ""),
+        ("fooexamples/osm/osmium-rs/", ""),
+        ("foo/examples/osm/osmium-rs/", ""),
+        ("../examples/osm/osmium-rs/", ""),
+        ("/tmp/fooexamples/osm/osmium-rs/", ""),
+        ("examples/osm/osmium-rs-copy/", ""),
+        ("examples/osm/osmium_rs/", ""),
+        ("examples/other/osmium-rs/", ""),
+        ("examples/osm/osmium-rs/nested/", ""),
+        ("unrelated/", ""),
+        ("crates/unrelated/", ""),
+        ("examples/osm/osmium-rs/", ".backup"),
+        ("examples/osm/osmium-rs/", "_copy"),
+        ("examples/osm/osmium-rs/", "-copy"),
+        ("examples/osm/osmium-rs/", "/extra"),
+        ("examples/osm/osmium-rs/", "\\extra"),
+        ("examples/osm/osmium-rs/", "2"),
+    ],
+)
+def test_rejects_unrelated_or_lookalike_manifest_entrypoints(
+    tmp_path: Path, prefix: str, suffix: str
+) -> None:
+    entry = prefix + "src/" + "lib.rs" + suffix
+    (tmp_path / "manifest.json").write_text(json.dumps({entry: {"bytes": 1}}))
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1
+    assert "src/lib.rs ABI" in errors[0]
+
+
+@pytest.mark.parametrize("retired", ["libxy_core.so", "XY_NATIVE_LIB", "XY_CHROMIUM"])
+def test_osm_helper_does_not_exempt_retired_identity_in_same_manifest(
+    tmp_path: Path, retired: str
+) -> None:
+    (tmp_path / "manifest.json").write_text(
+        json.dumps({"examples/osm/osmium-rs/src/lib.rs": {}, "legacy": retired})
+    )
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1
+    assert retired.removesuffix(".so") in errors[0]
+
+
+def test_osm_helper_does_not_exempt_retired_root_entrypoint_in_same_manifest(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "manifest.json").write_text(
+        json.dumps({"examples/osm/osmium-rs/src/lib.rs": {}, "abi": "src/" + "lib.rs"})
+    )
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1
+    assert "src/lib.rs ABI" in errors[0]
+
+
+@pytest.mark.parametrize("punctuation", list("+@~%=#:?[](){}!$^&*,;"))
+@pytest.mark.parametrize("position", ["prefix", "suffix", "suffix-with-text"])
+def test_rejects_osm_helper_punctuation_lookalikes(
+    tmp_path: Path, punctuation: str, position: str
+) -> None:
+    helper = "examples/osm/osmium-rs/" + "src/" + "lib.rs"
+    if position == "prefix":
+        entry = "foo" + punctuation + helper
+    else:
+        entry = helper + punctuation + ("backup" if position == "suffix-with-text" else "")
+    (tmp_path / "manifest.json").write_text(json.dumps({entry: {}}))
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1
+    assert "src/lib.rs ABI" in errors[0]
+
+
+@pytest.mark.parametrize("wrapper", ["{}", '"{}"', "'{}'", "`{}`", " {} ", "\t{}\t"])
+@pytest.mark.parametrize("absolute", [False, True])
+def test_allows_osm_helper_complete_documented_tokens(
+    tmp_path: Path, wrapper: str, absolute: bool
+) -> None:
+    helper = "examples/osm/osmium-rs/src/lib.rs"
+    if absolute:
+        helper = str(ROOT / helper)
+    (tmp_path / "note.md").write_text(wrapper.format(helper) + "\n")
+    assert check_stale_names.check_stale_names(tmp_path) == []
 
 
 def test_structurally_flags_current_product_build_release_and_workflow_identity(

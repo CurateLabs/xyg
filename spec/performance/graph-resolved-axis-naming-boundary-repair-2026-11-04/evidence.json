@@ -1,0 +1,209 @@
+{
+  "base": "47d4d6514671b12c8f263a3d640416af1983621c",
+  "acceptedMain": "3c66580731dde0b10a1f18465c0d0df9e73f8862",
+  "scope": "Explicit complete-token boundaries for the auxiliary helper allowance; no other target or runtime change",
+  "sourceBinaryFullIndexDiff": {
+    "bytes": 3939,
+    "sha256": "d3b8328ae10ff053a557a05aa65fb1799f404ec62c544653207eb24f3fb0c19d"
+  },
+  "wholePrNonreceiptBinaryFullIndexDiff": {
+    "bytes": 104981,
+    "sha256": "d912ee6df09e55ad833875212986cd0be2a7f3a6fe62c06525f3d546eb938a4c"
+  },
+  "sources": {
+    "scripts/check_stale_names.py": {
+      "bytes": 14036,
+      "sha256": "b6f21eb1e9645390c9bc736962cfa68902698a3371fd53476de12273072ac5bc"
+    },
+    "tests/test_stale_names.py": {
+      "bytes": 13284,
+      "sha256": "d9360d1c104789b6dd27bff16515f82c99fd86c4be14e976a3ae61fcd4831ecd"
+    },
+    "spec/design/xyg-naming.md": {
+      "bytes": 19162,
+      "sha256": "6891e68a5e35f246b1b10ce8c6deeed4d364ddb4dafb01084ee4a72d39e6d970"
+    }
+  },
+  "receiptTools": {
+    "capture.py": {
+      "bytes": 3825,
+      "sha256": "220c8e2775f6fc03908a1526a0f341cfa26afe06760bbaf0c85dc2efceb508b8"
+    },
+    "preservation-proof.py": {
+      "bytes": 4692,
+      "sha256": "a6520ec8bb5aa0ca9b85911facbcc1ce834baef8b79db2bd57afca43f52fa18f"
+    },
+    "preserve-review.py": {
+      "bytes": 1277,
+      "sha256": "d1d8f3c051d45c367500527f55f610f2544432272b88c1e8eba83fd25b867ec6"
+    },
+    "run.py": {
+      "bytes": 1693,
+      "sha256": "2cbdbca73695ad36a2d4363143441d462b7eab358a0a40821281130953dd2266"
+    }
+  },
+  "preservation": {
+    "path": "preservation.json",
+    "bytes": 3698,
+    "sha256": "ce408de4cdd3422210532e1d208323bc1c454b89d3420a2f8fb8b228ee5120dd"
+  },
+  "rejectedReview": {
+    "reviewer": "s5a_final_review",
+    "decision": "REQUEST_CHANGES",
+    "priority": "P2",
+    "candidate": "47d4d6514671b12c8f263a3d640416af1983621c",
+    "reviewedSourceDiffSha256": "7598b93ec17f399a2b7dab33bdc291e95c5c99507630256e6d5482631be502e7",
+    "provenance": "Exact user-forwarded review/repair request; terminal newline added by heredoc",
+    "source": "target/task-tmp/naming-boundary-review.txt",
+    "log": "review-request.txt.gz",
+    "rawBytes": 2087,
+    "rawSha256": "6eb2d5c76e071154e3e612e1d4938648f27d0e0d1c142f487c6dc009034ade72",
+    "gzipSha256": "f9913b551b4fb50b6bdbb165be174f680be7da90f17ca63220bbd7afe0e6ae3f",
+    "newIndependentReviewStillRequired": true
+  },
+  "commands": {
+    "focused-tests": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "6228a062184064428484f49fe703a9b9f9a35d4566a67653d7592a5e71a107b4"
+    },
+    "format-owned": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "scripts/check_stale_names.py",
+        "tests/test_stale_names.py",
+        "spec/performance/graph-resolved-axis-naming-boundary-repair-2026-11-04"
+      ],
+      "exitCode": 0,
+      "recordSha256": "41a321da8de5ee2a3ebfdd27f5fe88c881bc80ab4e63ad2d3aa4b957564fb1e8"
+    },
+    "guards-after": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py",
+        "-k",
+        "punctuation_lookalikes or complete_documented_tokens"
+      ],
+      "exitCode": 0,
+      "recordSha256": "7a5818b4e58a4fb4faa6bf72946f11d5fa4d37407aefe373a5dbb5be2765894d"
+    },
+    "guards-before": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py",
+        "-k",
+        "punctuation_lookalikes or complete_documented_tokens"
+      ],
+      "exitCode": 1,
+      "recordSha256": "819ac1bea5d2d7783f2fdef774dd13f384efc2111b9ddafc314bca2d9c8a2070"
+    },
+    "hooks": {
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "recordSha256": "6c3be3e2570fc79b403fe4fa564fcd1ef801338821a8e5761f81c3cce8ab5e9b"
+    },
+    "inventory-check": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "d9e1935d78134dfcad14f64a8e50a17e8e65a438b2469eae09c191306dc4cfdb"
+    },
+    "lint-owned": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "scripts/check_stale_names.py",
+        "tests/test_stale_names.py",
+        "spec/performance/graph-resolved-axis-naming-boundary-repair-2026-11-04"
+      ],
+      "exitCode": 0,
+      "recordSha256": "7b8b5cb3800a257abb4b38d5c35de3440c627b06adf88d5072e199981fe8a611"
+    },
+    "ownership": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "40fb542e0b08507e80856c279ce6c8fa5b08c723ad9f902e8f57ae680c2520dd"
+    },
+    "preservation-check": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-naming-boundary-repair-2026-11-04/preservation-proof.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "5c003b86654908791640fba026cde30f0dc9f10709dfe43261c754d0f805a9b8"
+    },
+    "review-preservation": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-naming-boundary-repair-2026-11-04/preserve-review.py",
+        "target/task-tmp/naming-boundary-review.txt"
+      ],
+      "exitCode": 0,
+      "recordSha256": "ee0049c39710e349b51da46257e49e6920e0f3e33664c7fbb967b29fc0701cfb"
+    },
+    "ruff-check": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "recordSha256": "0fd310183dc63283651659890cbc5a7a8b3de1b8134397267b0838b870316c8b"
+    },
+    "ruff-format": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "recordSha256": "7926af637e212848c979a34044359db1a213a23a5ff52bf1b654c2876ed8393f"
+    }
+  },
+  "runtimeQualificationReused": true,
+  "ciRetryPerformed": false,
+  "independentReview": "New final review is parent-owned and required before push; not claimed here"
+}

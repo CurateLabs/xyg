@@ -1,0 +1,96 @@
+{
+  "reuse": true,
+  "freshBuild": false,
+  "freshBrowserRuntimeQualification": false,
+  "artifactCommit": null,
+  "qualificationReceipt": {
+    "path": "spec/performance/graph-resolved-axis-live-css-2026-11-03/evidence-final.json",
+    "sha256": "e3c933b0ed21c3fb85e0e9e1b7e784fa79b0901e61a3c7029baa943cdd006a64"
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6091560,
+      "sha256": "6df9cb7ed06048d08d59ec8c068da0e0be9b5a3eb6b10d1b86f08527a8fd2485",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 763072,
+      "sha256": "3b194aebda9a2d8f30e0503f01310d944efb72edcca4701777a3c211803ddf70",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 763103,
+      "sha256": "bdce4a092184e0feb745ea4ebfc57b3929b5ca795d5ec968f9a678e233efeea8",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1881508,
+      "sha256": "717440524b63cf87e0127161c128c4f81efdca87e5112f9b05a42e820b456fde",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2527869,
+      "sha256": "ba3df878bcaf2a637c3193d9c80c746852f7c12e71f4bcd1bfc938bfe0f1d9f9",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "193ca4c1890636511482f61cfc7e221b1ca3adb4155d65ca24fdb0e57ed60a30",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 763072,
+      "sha256": "3b194aebda9a2d8f30e0503f01310d944efb72edcca4701777a3c211803ddf70",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 763103,
+      "sha256": "bdce4a092184e0feb745ea4ebfc57b3929b5ca795d5ec968f9a678e233efeea8",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 53710,
+      "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1881508,
+      "sha256": "717440524b63cf87e0127161c128c4f81efdca87e5112f9b05a42e820b456fde",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2527869,
+      "sha256": "ba3df878bcaf2a637c3193d9c80c746852f7c12e71f4bcd1bfc938bfe0f1d9f9",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "193ca4c1890636511482f61cfc7e221b1ca3adb4155d65ca24fdb0e57ed60a30",
+      "qualification": "reused qualified78/8a artifact; no build or fresh runtime/browser qualification"
+    }
+  },
+  "module": {
+    "source": "production-dist",
+    "diagnosticModule": false,
+    "artifactCommit": null,
+    "node": "v22.23.4",
+    "bytes": 1881508,
+    "gzip6Bytes": 768134,
+    "sha256": "717440524b63cf87e0127161c128c4f81efdca87e5112f9b05a42e820b456fde",
+    "gzip6Sha256": "101e1394aff270699602a3945723971243c7bbe11e284372683b9203aa0012ae",
+    "rawLimit": 1882112,
+    "gzip6Limit": 769024,
+    "rawHeadroom": 604,
+    "gzip6Headroom": 890,
+    "wasmAbi": 35,
+    "sceneVersion": 34,
+    "painterVersion": 17,
+    "functionExports": 65,
+    "nativeAbi": 398
+  }
+}
