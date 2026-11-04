@@ -26,7 +26,7 @@ fn query_receipt_exact_target_miss_leave_retry_and_strict_frames() {
         let c = Container::decode(&reply, wire::RESULT_MAGIC).unwrap();
         assert_eq!(c.get("pick.header.u32", 0).unwrap().as_u32("pick").unwrap(), [1, op, 0, rev, 1, 1, 0, 0]);
         assert_eq!(c.get("pick.query.u64", 0).unwrap().as_u64("pick").unwrap(), [7, seq, 0, 1, 0]);
-        assert_eq!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap(), [reference.clone()]);
+        assert_eq!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap().as_slice(), std::slice::from_ref(&reference));
         assert_eq!(header_of(&reply)[0], rev);
     }
     let before = s.reply().to_vec();
@@ -56,6 +56,6 @@ fn query_receipt_exact_target_miss_leave_retry_and_strict_frames() {
         assert!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap().is_empty());
         assert_eq!(c.get("outcome.u32", 0).unwrap().as_u32("outcome").unwrap()[1], changed);
         assert!(s.session().hover.nodes.is_empty());
-        assert_eq!(s.session().selection().unwrap(), [reference.clone()]);
+        assert_eq!(s.session().selection().unwrap().as_slice(), std::slice::from_ref(&reference));
     }
 }

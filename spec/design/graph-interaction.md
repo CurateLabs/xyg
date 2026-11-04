@@ -288,6 +288,14 @@ The reviewed Node exact-span Buffer decoder repair is inherited from eb9ea4c7;
 no Rust production or mapper behavior changes in this migration. Scoped proof
 and explicit size policy do not constitute #36/M4/#108 or freeze acceptance.
 
+The existing CI `GraphForge native/WASM equivalence` step automatically runs
+`packages/xy-node/test/graph-session-wire.test.mjs` together with
+`js/test/graph-picked-golden-migration.test.mjs`, after native/client build and
+single-producer WASM asset verification. The workflow gate locks active commands
+and ordering; these are required automated compatibility checks, not manual-only
+receipt scripts. [CI contract and normal reproduction](../process/production-readiness.md#picked-target-receipt-compatibility-in-the-existing-test-job-36)
+retain exact full-byte comparisons without a new CI job or acceptance claim.
+
 ### 2.2 Operations (`GraphInteractionEvent`)
 ```
 0 Hover{x,y} 1 SelectAt{x,y,mode} 2 Brush{bounds,mode,policy} 3 Lasso{pts,mode,policy} 4 Clear

@@ -84,6 +84,29 @@ and `branches/main/protection`): ruleset `main merge queue` active on `refs/head
 to the checked-in file; branch protection requires only `Release surfaces` (strict), no
 approving reviews.
 
+### Picked-target receipt compatibility in the existing Test job (#36)
+
+The `GraphForge native/WASM equivalence` step runs after `Build native core`,
+`Build JS client`, and verification of downloaded single-producer WASM assets.
+It includes the normal automated command:
+
+```bash
+export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs
+```
+
+The current actual-browser golden and retained session replies compare complete
+native/WASM bytes. Migration validates unchanged old raw sections and only the
+five versioned picked-target additions. `make check-ci` requires the active
+command list and prerequisite order; removing either test, commenting/echoing or
+masking the command, skipping the step or making it advisory fails the existing
+workflow gate and its regressions. This adds no job/status/framework or second
+WASM producer. Merge-group triggers, concurrency, Release surfaces and artifact
+upload fail-closed behavior remain unchanged. The
+[R9 CI/review repair receipt](../performance/graph-picked-target-r9-2026-11-04/README.md)
+retains the failed Clippy run and review disposition. A local repair pass is not
+remote CI, broad #36/M4/#108 acceptance or an API freeze.
+
 ### Hard and advisory boundary (#1008)
 
 `Release surfaces` is the one required status. Its inventory lives in
