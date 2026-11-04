@@ -1,0 +1,160 @@
+TAP version 13
+# Subtest: Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 1 - Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 12.387749
+  type: 'test'
+  ...
+# Subtest: Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 2 - Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 4.047273
+  type: 'test'
+  ...
+# Subtest: Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+ok 3 - Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.450789
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 4 - ArrayBuffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 6.376848
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 5 - ArrayBuffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.309186
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 6 - ArrayBuffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.189666
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 7 - unaligned Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.847793
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 8 - unaligned Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.202909
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+ok 9 - unaligned Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 1.462582
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 10 - unaligned DataView: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 1.183284
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 11 - unaligned DataView: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.36262
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: generic f64 framing preserves nonfinite values for downstream policy
+ok 12 - unaligned DataView: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.18425
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 13 - pooled Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 4.120199
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 14 - pooled Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.308056
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 15 - pooled Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.138799
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 16 - odd backing Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 4.491441
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 17 - odd backing Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.221011
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 18 - odd backing Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.148244
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 19 - aligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.936472
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 20 - aligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.265731
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 21 - aligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.159305
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 22 - unaligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.940368
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 23 - unaligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.217708
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 24 - unaligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.165032
+  type: 'test'
+  ...
+# Subtest: Buffer and Uint8Array reject the same malformed section bytes
+ok 25 - Buffer and Uint8Array reject the same malformed section bytes
+  ---
+  duration_ms: 4.510565
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 177.097582

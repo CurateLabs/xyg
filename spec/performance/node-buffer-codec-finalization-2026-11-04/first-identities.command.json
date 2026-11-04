@@ -1,0 +1,32 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/node-buffer-codec-finalization-2026-11-04/verify-finalization.py",
+    "--prior",
+    "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+    "--incoming",
+    "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5"
+  ],
+  "captureScriptSha256": "3436a8d49d0ee3895f5a0589ee6b7a381f8730d94cee58d7cd4287fa2beb1c04",
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-bd15da75",
+  "started": "2026-11-04T06:04:27.834776+00:00",
+  "finished": "2026-11-04T06:04:28.113094+00:00",
+  "elapsedSeconds": 0.27832078794017434,
+  "exitCode": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-bd15da75/.venv/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "XYG_NODE_NATIVE_ORIGIN_RECORD": null,
+    "PYTHONPATH": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null
+  },
+  "outputSha256": {
+    "stdout": "017f35565829857fff2ff310ded526083b965b8813828c1aa40a5fd5adf68610",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

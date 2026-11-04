@@ -1,0 +1,131 @@
+{
+  "baseCommit": "c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-bd15da75",
+  "branch": "t3/node-buffer-codec-fix",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.12.15",
+  "uv": "uv 0.12.22 (x86_64-unknown-linux-gnu)",
+  "nodeExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+  "node": {
+    "node": "22.23.4",
+    "acorn": "8.16.0",
+    "ada": "2.9.2",
+    "amaro": "1.1.8",
+    "ares": "1.34.9",
+    "brotli": "1.1.0",
+    "cjs_module_lexer": "2.2.0",
+    "cldr": "48.0",
+    "icu": "78.3",
+    "llhttp": "9.4.3",
+    "modules": "127",
+    "napi": "10",
+    "nbytes": "0.1.3",
+    "ncrypto": "0.0.1",
+    "nghttp2": "1.69.0",
+    "openssl": "3.5.9",
+    "simdjson": "4.5.0",
+    "simdutf": "6.4.2",
+    "sqlite": "3.53.4",
+    "tz": "2026e",
+    "undici": "6.29.1",
+    "unicode": "17.0",
+    "uv": "1.51.0",
+    "uvwasi": "0.0.23",
+    "v8": "12.4.254.21-node.57",
+    "zlib": "1.3.1-e00f703",
+    "zstd": "1.5.7"
+  },
+  "native": {
+    "copiedFrom": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+    "usedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-bd15da75/target/release/libxyg_core.so",
+    "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+    "rebuilt": false
+  },
+  "wasm": {
+    "usedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273",
+    "bytes": 1922723,
+    "manifest": {
+      "schema_version": 1,
+      "artifact": "xyg-wasm.wasm",
+      "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273",
+      "bytes": 1922723,
+      "abi_version": 35,
+      "scene_version": 34,
+      "painter_version": 17
+    },
+    "rebuilt": false,
+    "acceptance": "scoped regression replay only"
+  },
+  "baseCodecSha256": "57e2250967df1322e0a5d449774a073f4687e01d45ef563e17b736d42e998a6a",
+  "sourceSha256": {
+    "packages/xy-node/src/graphforge-container.js": "0506d4e907b553742c042514c69efd824cc95cffb10417e077a3d84ef4f92aec",
+    "js/src/49_wasm_graphforge.ts": "665845feaee64ea8cf5bd56586c9baf2298ed45ad7e4bdf76e1075c5d57d8e06",
+    "packages/xy-node/test/graphforge-container.test.mjs": "df4d6f1e7ef72b981d88147f498dea33f9e73791cfd3eece23529898824c56d3",
+    "packages/xy-node/test/graphforge.test.mjs": "565478b8a52cb0bb144c60a55f1de0626238d2e2faa980ff90fa2b960fecd520",
+    "spec/design/graphforge-compositions.md": "e746e9bbd6c6f3b40b3c63c7f507f8706f6bf6ea33dee4876ba0b58277aa7ad6",
+    "spec/releases/0.6.0-api-inventory.json": "1358e27edb6c351453c0282736efc625a3687e658d8631b14145a4c0f0cf9f4d"
+  },
+  "browserTwinUnchanged": true,
+  "allPreexistingPerformanceReceiptsUnchanged": true,
+  "inventoryContractsAndGapsUnchanged": true,
+  "reproBeforeExitCode": 1,
+  "reproAfterExitCode": 0,
+  "originalCodecRegressionSummary": {
+    "tests": 25,
+    "pass": 12,
+    "fail": 13,
+    "exitCode": 1
+  },
+  "tests": [
+    {
+      "command": "node --test packages/xy-node/test/graphforge-container.test.mjs",
+      "tests": 25,
+      "pass": 25,
+      "skipped": 0,
+      "exitCode": 0,
+      "log": "codec-after.tap"
+    },
+    {
+      "command": "node --test packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-layout.test.mjs packages/xy-node/test/composition.test.mjs",
+      "tests": 82,
+      "pass": 82,
+      "skipped": 0,
+      "exitCode": 0,
+      "log": "compositions-layout.tap",
+      "includes": "25 codec tests"
+    },
+    {
+      "command": "XYG_SESSION_WASM=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm node --test packages/xy-node/test/graph-session-wire.test.mjs",
+      "tests": 7,
+      "pass": 7,
+      "skipped": 0,
+      "exitCode": 0,
+      "log": "session-wire.tap"
+    }
+  ],
+  "limitations": [
+    "M4 and #108 remain unaccepted",
+    "No larger-rung or competitor performance claims",
+    "No full Python or repository-wide Node/browser suite",
+    "Big-endian execution unavailable; unchanged DataView branch",
+    "Independent final review and integration remain parent-owned"
+  ],
+  "mandatoryChecks": [
+    {
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exitCode": 0,
+      "log": "pre-commit.log"
+    },
+    {
+      "command": "uv run ruff check .",
+      "exitCode": 0,
+      "log": "ruff-check.log"
+    },
+    {
+      "command": "uv run ruff format --check .",
+      "exitCode": 0,
+      "log": "ruff-format.log"
+    }
+  ]
+}

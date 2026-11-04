@@ -1,0 +1,11 @@
+Auto-merging spec/design/dual-host-parity-matrix.md
+CONFLICT (content): Merge conflict in spec/design/dual-host-parity-matrix.md
+Auto-merging spec/design/graph-mark.md
+CONFLICT (content): Merge conflict in spec/design/graph-mark.md
+Auto-merging spec/design/graphforge-node-scheduling.md
+CONFLICT (content): Merge conflict in spec/design/graphforge-node-scheduling.md
+Auto-merging spec/design/host-parity.md
+CONFLICT (content): Merge conflict in spec/design/host-parity.md
+Auto-merging spec/releases/0.6.0-api-inventory.json
+CONFLICT (content): Merge conflict in spec/releases/0.6.0-api-inventory.json
+Automatic merge failed; fix conflicts and then commit the result.

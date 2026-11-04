@@ -389,6 +389,9 @@ matching old bytes does not prove reuse or a pre-run rebuild history. The new
 capture preserves the ring/chord rung, seed and CoSE policy and records visible pixels
 and GPU node-hit readiness under automatic ACKs. Only initial/final frames
 were presented, so their single interval does not establish sustained cadence.
+The captures predate the Node Buffer numeric-copy repair and do not execute the
+integrated Node package tree; producer/artifact identity reuse is scoped in the
+[Node contract](graphforge-node-scheduling.md#evidence-and-remaining-boundary).
 Trusted UUID/pan checks on the settled frame and deliberately held initial
 inspection are separate from that interval. **Remaining for #35:**
 render-based first-paint/interactivity measurements on the large-data ladder,

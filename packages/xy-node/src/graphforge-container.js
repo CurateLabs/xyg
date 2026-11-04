@@ -35,7 +35,8 @@ function packLittleEndian(width, values, write) {
 
 function unpackLittleEndian(payload, width, Array_, read) {
   const count = payload.length / width;
-  if (HOST_LITTLE_ENDIAN) return new Array_(payload.slice().buffer);
+  // Buffer.slice() aliases its backing allocation; copy only the payload span.
+  if (HOST_LITTLE_ENDIAN) return new Array_(Uint8Array.from(payload).buffer);
   const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
   const out = new Array_(count);
   for (let i = 0; i < count; i += 1) out[i] = read(view, i * width);

@@ -1,0 +1,30 @@
+{
+  "prior": "6e240f4bd3189640779fd684e97072923cbfb9c8",
+  "acceptedMain": "3ebf70c3aa5a351aeec3843da14ba2aa197b469e",
+  "reviewedTip": "7c581024f968519c074e990b4eb6a34ffe2fbd96",
+  "acceptedMainAndReviewedTipTree": "9087e452eea598c7c38976f8442b4a53c74de59d",
+  "acceptedMainParents": [
+    "2fbbe5f038032841bcb095a9e101421e25771496"
+  ],
+  "reviewedTipParents": [
+    "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
+    "2fbbe5f038032841bcb095a9e101421e25771496"
+  ],
+  "priorParents": [
+    "a7ae010fdf5f38fca2f9b8bba8ef4070139e2b39",
+    "7c581024f968519c074e990b4eb6a34ffe2fbd96"
+  ],
+  "userReportedMainLanding": {
+    "pullRequest": 1093,
+    "mergedAt": "2026-11-04T06:50:51Z"
+  },
+  "userReportedPriorReview": {
+    "reviewer": "m4_defaults_audit",
+    "status": "APPROVE",
+    "pushed": true
+  },
+  "newCandidateNeedsIndependentReviewAndCI": true,
+  "oldCICannotQualifyNewCandidate": true,
+  "externalCallsMade": false,
+  "rustChildImported": false
+}

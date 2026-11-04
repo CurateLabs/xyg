@@ -1,0 +1,31 @@
+{
+  "reviewedParent": "7c581024f968519c074e990b4eb6a34ffe2fbd96",
+  "reviewAndPush": "User reports independent FINAL APPROVE by m4_notebook_plan, push, and fresh hooks/Ruff pass",
+  "localParents": [
+    "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
+    "2fbbe5f038032841bcb095a9e101421e25771496"
+  ],
+  "againstAcceptedMain": "2fbbe5f038032841bcb095a9e101421e25771496",
+  "wholePatchSha256": "9864951e562c9cc49ca352890b1f3e800463afc7b1c818f443e4c37d99c041a8",
+  "nonreceiptPatchSha256": "ba64cecab1a09fccc629839e110e4261cd51854603a278eb61a627b3c6a43358",
+  "command": [
+    "git",
+    "-c",
+    "core.quotePath=true",
+    "diff",
+    "--binary",
+    "--full-index",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--no-color",
+    "2fbbe5f038032841bcb095a9e101421e25771496",
+    "7c581024f968519c074e990b4eb6a34ffe2fbd96",
+    "--"
+  ],
+  "nonreceiptSuffix": [
+    ".",
+    ":(exclude)spec/performance/**"
+  ],
+  "remoteCallsMade": false,
+  "oldBufferCIQualifiesNewSync": false
+}

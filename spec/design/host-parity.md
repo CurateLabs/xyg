@@ -1969,7 +1969,11 @@ client must not grow a parallel “JS layout/LOD” product path.
   and GPU node-hit readiness, with trusted
   UUID/pan inspection separated from unheld presentation. Intermediate steps
   coalesced away; one initial-to-final interval is not sustained progress
-  cadence. Remaining for #35 are the rendered size ladder and unheld initial
+  cadence. These captures predate the Node Buffer numeric-copy repair; the
+  integrated Node package tree differs. Only individually verified producer
+  sources and artifact bytes are reused, as scoped in the
+  [Node contract](graphforge-node-scheduling.md#evidence-and-remaining-boundary).
+  Remaining for #35 are the rendered size ladder and unheld initial
   trusted interaction, public browser progressive attachment/scheduling, and
   Python widget/notebook progressive integration (#1015). Retained opcode 15
   alone does not attach a public scheduler. The historical receipt is committed

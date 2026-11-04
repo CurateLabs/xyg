@@ -1,0 +1,6 @@
+Downloading virtualenv (5.4MiB)
+ Downloaded virtualenv
+Installed 11 packages in 39ms
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed

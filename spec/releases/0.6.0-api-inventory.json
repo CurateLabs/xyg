@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
+  "baseCommit":"6e240f4bd3189640779fd684e97072923cbfb9c8",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1306,7 +1306,7 @@
   "packages/xy-node/src/geoscale.js":"7463bce2281f66afd11e311fa8ff8aee3c2146916dfbce9988a7669cb107761a",
   "packages/xy-node/src/geoviewport.js":"0275dff5da2d68c720a0301c50b32e3a38abd08a9d6a7a9bb41db3984127e958",
   "packages/xy-node/src/graph.js":"35ef2297291395d26f8ecb1505baf750f2fcafb2897e0251e4bd15bda2eeb4b1",
-  "packages/xy-node/src/graphforge-container.js":"57e2250967df1322e0a5d449774a073f4687e01d45ef563e17b736d42e998a6a",
+  "packages/xy-node/src/graphforge-container.js":"0506d4e907b553742c042514c69efd824cc95cffb10417e077a3d84ef4f92aec",
   "packages/xy-node/src/graphforge.js":"039786ca30b6ce37ae0d6682894222e9ba9cba1daedff8f1d231a105a8c5c1d1",
   "packages/xy-node/src/graphforge_layout.js":"252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
   "packages/xy-node/src/graphforge_layout_worker.js":"faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
@@ -1386,7 +1386,7 @@
   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
   "spec/design/browser-wasm.md":"a0d0ecba333188d681d9ff2a129aef1b186b36de959aaec1ac56127851de056c",
   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
-  "spec/design/host-parity.md":"4abe5c841067fa36520a60de2f766fadc88b2d3a52487d0467c3b04525b8f000",
+  "spec/design/host-parity.md":"b47a61eed34956fcf5073d0c1f4a2ed685f13594be3d62f20413ed5a3c64dd2a",
   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",
   "spec/process/production-readiness.md":"19a304efde415a7cf6d4dc60f8f82381058a591088b94939c2650077376ce4f7",
   "spec/wasm/abi.json":"cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"

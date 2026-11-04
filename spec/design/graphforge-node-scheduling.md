@@ -199,7 +199,7 @@ actual final spec, counts, identities and position digests. Repair evidence
 makes no milestone, S5, scale, release qualification or #108 acceptance claim.
 
 The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
-contains the current runnable helpers and fresh browser captures. The original
+contains the current runnable helpers and archived browser captures. The original
 1k receipt and parent-sync receipt remain immutable historical records; their
 runners are superseded. Their conventional-path hashes do not retroactively
 attest the native file actually selected by the loader. The current helper
@@ -225,12 +225,36 @@ view to the next payload's ranges. No production behavior or limits changed.
 
 The [accepted-main sync receipt](../performance/graph-node-first-paint-1k-accepted-main-sync-2026-11-04/README.md)
 records the normal merge of accepted main `2fbbe5f0` into reviewed repair
-`562a2adf`. Production sources, runnable proof helpers, raw browser captures and
-runtime artifact bytes are unchanged; this sync reuses the recorded observations
-and makes no fresh browser, worker-loading or native-build claim. Parent-reported
-review approval and resolution of both proof-runner findings cover `562a2adf`;
-the sync candidate requires independent final review. The conflicted remote
-head had only skipped reviewer checks, not passing production CI.
+`562a2adf`. Within that parent sync, production sources, runnable proof helpers,
+raw browser captures and runtime artifact bytes were unchanged. It reused the
+recorded observations without a fresh browser, worker-loading or native-build
+claim. The parent now reports independent final approval and push of exact
+`7c581024`; earlier approval and resolution of both proof-runner findings covered
+`562a2adf`. Their immutable receipts retain the status observed when written.
+
+Those captures predate the Node Buffer numeric-copy repair in
+`graphforge-container.js` ([codec contract](graphforge-compositions.md#51-container)).
+The integrated `packages/xy-node` tree is therefore not source-identical to the
+capture tree. Reuse is limited to the individually checked producer, scheduler,
+Worker and painter sources and native/client artifact bytes recorded in the
+[Buffer finalization receipt](../performance/node-buffer-codec-finalization-2026-11-04/README.md).
+The native composition producer returns ordinary `Uint8Array` document bytes;
+the Buffer subclass defect is covered separately by the pure codec regressions.
+The captures are retained evidence at their recorded state, not new timings or
+an execution of the Buffer-fixed tree. Native byte identity still does not
+establish the historical artifact's origin or rebuild history.
+
+The combined Buffer sync was committed as `6e240f4b`; the parent reports its
+independent final approval and push. The later
+[Buffer accepted-main sync receipt](../performance/node-buffer-codec-accepted-main-sync-2026-11-04/README.md)
+records the normal merge of actual main `3ebf70c3`, whose tree exactly equals
+reviewed `7c581024`. It preserves the Buffer implementation and all earlier
+proof bytes, source qualifications and artifact identities without a new
+browser run or native/client build. Historical receipts retain their original
+review and remote-status text. This new accepted-main sync candidate requires
+its own completed independent final review and actual main-based CI before
+queueing or integration; earlier `eb9ea4c` CI, prior-head approval and skipped
+checks on a conflicted head do not qualify it.
 
 This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
 unheld initial trusted response, public browser progressive scheduling and
