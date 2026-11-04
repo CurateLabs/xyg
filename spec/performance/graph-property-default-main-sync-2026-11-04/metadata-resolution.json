@@ -1,0 +1,18 @@
+{
+  "conflict": "Only inventory provenance and browser-spec source hash; retained approved ABI399 property contracts and regenerated with unchanged inspector",
+  "inventory_before_base": "7e99ec5da586572d411996599cf37f25dc5566c7",
+  "inventory_after_base": "cc60fd8ca93a4afca3f7d634cba55e0086a7c06f",
+  "browser_spec_before_sha256": "a726e62a1640be5d1fd821495db3edc39b1f500631e08420e29aea60597ab75f",
+  "browser_spec_after_sha256": "27c5ac3cc73449bdb4197de72d2f400d8740c0629d12c185b574fdbe7dc6efc0",
+  "all_other_snapshot_fields_exact_cc60": true,
+  "explicit_gaps": 685,
+  "acceptance": "preparation-only-not-a-freeze",
+  "corrected_naming_checker_tests_spec_exact_cc60": true,
+  "ownership_metadata_and_classifications_exact_cc60": true,
+  "property_helper": {
+    "bytes": 20079,
+    "sha256": "7b91a3c01770205f4738ca9b64f00802245b4a196e86981c6c98a8e60b695c6f",
+    "entire_file_exact_cc60": true
+  },
+  "nonreceipt_merge_increment_vs_cc60_sha256": "e29ccb975571b6229100c71831ae138189484edd7f625060ca21cd2531de8b2f"
+}

@@ -873,8 +873,11 @@ native SVG exports and actual browser screenshots. Authored box-effect
 fallback promises browser/CSS appearance, with no invented native export
 parity. Native raster strokes still have round caps while canonical SVG and
 browser SVG/HTML spines have flat ends; arbitrary endpoint pixel equality is
-not asserted. Native property-graph initial home-view, caption and theme
-failures remain separately owned by #935. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
+not asserted. The #1089 consumer receipts retain the historical native
+property-graph initial home-view, caption and theme failures. The subsequent
+[property-default qualification](../performance/graph-property-default-package-2026-11-03/README.md)
+records all six unmasked image pairs passing for the current property source;
+broader #935 intent/digest/safe-pair scope remains open. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
 records the fresh all-pixel default-property comparisons; the [R4 eligibility
 repair receipt](../performance/graph-resolved-axis-eligibility-repair-2026-11-03/README.md)
 records pointer/motion-path/reflection reproductions and compatibility repair.
@@ -882,6 +885,14 @@ The [live CSS repair receipt](../performance/graph-resolved-axis-live-css-2026-1
 records actual pointer/focus/active input, unrelated normal/important host SVG
 rules, and a controlled centered-HTML diagnosis with the Rust-final plot.
 These preserve the unchanged historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
+
+The resolved Scene plot/axis and live CSS repairs merged as #1089 at
+`a0636c27ec48c50eb1eafa2c99122d165d266c28` on 2026-11-04 at 02:22:11Z.
+The accepted main tree is byte-exact to reviewed `46c2573c`; the
+[property main-sync receipt](../performance/graph-property-default-main-sync-2026-11-04/README.md)
+records that identity and preservation of the subsequent ABI399 property
+presentation source. The bounded experimental S5b keyboard/GPU/companion
+attachment is implemented above; broader S5b runtime/visual acceptance remains open.
 
 The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is

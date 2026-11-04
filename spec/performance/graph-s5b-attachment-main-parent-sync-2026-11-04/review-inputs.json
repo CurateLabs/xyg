@@ -1,0 +1,24 @@
+{
+  "approvedController": {
+    "commit": "11e2aa4defd76c6d5f6aeaa40ecf4af806c33d38",
+    "review": "Parent reports completed independent approval of full R2 at 8445 and sync11e2, all21 CI green and Greptile5 with no threads on actual11e2",
+    "wholeVs7e99": "781f100568eb5786d062d43adc61d78ff8a937dc9c1adc3fed50622be4dfb1f1",
+    "nonreceiptVs7e99": "75b59ad6fad6710dfe3b95ba76040e7b178c17b5b224fc0800abeeb67aa01c6d",
+    "independentReplay": "Parent previously replayed all17 actual packaged strict-CSP journeys without output-file environment; retained as exact R2 reuse"
+  },
+  "parent": {
+    "commit": "68ee59f1475068d6782790a410b7da7878e0ff39",
+    "review": "Parent reports NEW independent m4_defaults_audit APPROVED with no findings",
+    "wholeVsAcceptedMain": "3dd2547c20d7c9331382c5c1aae47db0d84ea06271f34a03b815092fb5cfcbc4",
+    "nonreceiptVsAcceptedMain": "9f6142099a2b2a4f0e3d410d154ed84fe3a84605a7b7bd0169970cd30f9eb649"
+  },
+  "actual1089Landing": {
+    "commit": "a0636c27ec48c50eb1eafa2c99122d165d266c28",
+    "time": "2026-11-04T02:22:11Z",
+    "timeAuthority": "User parent report; no remote query performed",
+    "tree": "af749a61ebe0e82ec190e2dfc8ca8b859143724e",
+    "treeExactToReviewed46": true
+  },
+  "notImported": "Pointer candidate b61031c3cf95da3ddb42948dda915cdddc70f2b1 is separate and excluded",
+  "newSyncReview": "New independent parent review required before any integration, push or PR action; no1090 main landing claimed"
+}
