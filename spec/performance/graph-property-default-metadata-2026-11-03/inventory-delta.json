@@ -1,0 +1,145 @@
+{
+  "before": {
+    "commit": "81c9f7f170f448e7b8b98e2bd1cd613ee56f38f1",
+    "inventory_parent": "8a5922af4b33bfd67f2aefe71f613847d6fdcb08",
+    "c_abi": 398,
+    "native_symbol_count": 537,
+    "contract_sha256": "1fea156bb822101ca6812ff0c3a83672e06601c564e85f47f6fb48585d0c1e11",
+    "explicit_gap_count": 685
+  },
+  "after": {
+    "c_abi": 399,
+    "native_symbol_count": 538,
+    "contract_sha256": "fb37fd6cd4367109e0217ac3f1c918805958ee1f01d9ee7e6bed31a1eb58d2ec",
+    "explicit_gap_count": 685
+  },
+  "changed_contract_sections": [
+    "cAbi",
+    "definitions"
+  ],
+  "c_abi": {
+    "abiVersion": {
+      "before": 398,
+      "after": 399
+    },
+    "manifestContractSha256": {
+      "before": "8c226c84fb70b7f1286887ed224fead9f4f16a06145b0a659bb0e7b30fa14c12",
+      "after": "ea325d9befda0642785b481d9c6b6ff7028de5926e22574bd32566b84d3f78a2"
+    },
+    "signatureSha256": {
+      "before": "11aaa11bd88b7c974284d88fd96295a938f0b17d811ce820132f0b22aeef7ffa",
+      "after": "7f47f1219fe2c0df0402f0bdd7646ad07543c99c5b396c20ec97752359982bab"
+    }
+  },
+  "added_native_symbols": [
+    "xyg_graph_semantic_chrome_rgba8"
+  ],
+  "removed_native_symbols": [],
+  "changed_definitions": {
+    "packages/xy-node/src/_abi_generated.js#ABI_VERSION": {
+      "before": {
+        "declarations": [
+          {
+            "kind": "VariableDeclaration",
+            "literalDefault": "398"
+          }
+        ],
+        "signatures": [],
+        "source": "packages/xy-node/src/_abi_generated.js",
+        "type": "398"
+      },
+      "after": {
+        "declarations": [
+          {
+            "kind": "VariableDeclaration",
+            "literalDefault": "399"
+          }
+        ],
+        "signatures": [],
+        "source": "packages/xy-node/src/_abi_generated.js",
+        "type": "399"
+      }
+    },
+    "packages/xy-node/src/native-path.js#assertAbiVersion": {
+      "before": {
+        "declarations": [
+          {
+            "defaultTypes": [
+              null,
+              "398"
+            ],
+            "kind": "FunctionDeclaration",
+            "literalDefaultBindings": {
+              "packages/xy-node/src/_abi_generated.js#ABI_VERSION": "398"
+            },
+            "modifiers": [
+              "export"
+            ],
+            "parameters": [
+              "got",
+              "expected = ABI_VERSION"
+            ]
+          }
+        ],
+        "signatures": [
+          {
+            "parameters": [
+              {
+                "name": "got",
+                "type": "any"
+              },
+              {
+                "name": "expected",
+                "type": "number"
+              }
+            ],
+            "returns": "void"
+          }
+        ],
+        "source": "packages/xy-node/src/native-path.js"
+      },
+      "after": {
+        "declarations": [
+          {
+            "defaultTypes": [
+              null,
+              "399"
+            ],
+            "kind": "FunctionDeclaration",
+            "literalDefaultBindings": {
+              "packages/xy-node/src/_abi_generated.js#ABI_VERSION": "399"
+            },
+            "modifiers": [
+              "export"
+            ],
+            "parameters": [
+              "got",
+              "expected = ABI_VERSION"
+            ]
+          }
+        ],
+        "signatures": [
+          {
+            "parameters": [
+              {
+                "name": "got",
+                "type": "any"
+              },
+              {
+                "name": "expected",
+                "type": "number"
+              }
+            ],
+            "returns": "void"
+          }
+        ],
+        "source": "packages/xy-node/src/native-path.js"
+      }
+    }
+  },
+  "added_gaps": [],
+  "removed_gaps": [],
+  "acceptance": "preparation-only-not-a-freeze",
+  "review": "Implementer reviewed generated native ABI399 private semantic chrome accessor signature and compiler-resolved defaults before official snapshot regeneration; no stability classification added. Parent independent final review remains required.",
+  "added_native_signature": "size_t xyg_graph_semantic_chrome_rgba8(uint8_t theme, uint8_t * out, size_t out_cap)"
+}

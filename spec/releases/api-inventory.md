@@ -87,3 +87,12 @@ After all APIs/ABI manifests settle, regenerate from the final candidate source,
 review classifications and outstanding gaps, and retain it with that candidate's
 exact package hashes and behavioral acceptance. Do not turn an older inventory,
 retained Linux cohort, or successful declaration test into a final freeze claim.
+
+The ABI 399 property-default preparation update records the private
+`xyg_graph_semantic_chrome_rgba8` accessor (537 → 538 native symbols), its
+generated ABI digests, and the compiler-resolved Node `ABI_VERSION` and
+`assertAbiVersion` default changing from 398 to 399. The actual regenerated
+inventory retains **685 explicit review gaps**; no classification was added or
+changed. The [metadata repair receipt](../performance/graph-property-default-metadata-2026-11-03/README.md)
+preserves both preceding repository-gate failures and the exact semantic delta.
+This preparation snapshot remains unaccepted as a baseline freeze.
