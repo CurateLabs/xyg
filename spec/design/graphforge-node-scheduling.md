@@ -198,7 +198,18 @@ immutable: its phrase “render payloads ... are retained” was broader than it
 actual final spec, counts, identities and position digests. Repair evidence
 makes no milestone, S5, scale, release qualification or #108 acceptance claim.
 
-The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
+The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
+contains the current runnable helpers and fresh browser captures. The original
+1k receipt and parent-sync receipt remain immutable historical records; their
+runners are superseded. Their conventional-path hashes do not retroactively
+attest the native file actually selected by the loader. The current helper
+observes existing `nativeLibraryPath` / ABI exports in the fixture and inherited
+bridge/force Workers; the runner independently hashes and ABI-binds that exact
+selected path. Origin defaults to unknown, separately from known-parent byte
+identity. Held inspection drains each genuine update ACK with a bounded deadline
+and matching job/revision/step; camera reset is checked on the first replacement,
+which may be an update. Scripted ACK cases test this protocol only and are not
+native callbacks or presentation-cadence evidence. The real capture still
 uses the historical ring/chord topology, seed 7, default CoSE options and
 10-tick chunks through the existing live controller. Its explicit 401-tick cap
 matches that rung; the live default cap remains 300. Automatic ACKs follow

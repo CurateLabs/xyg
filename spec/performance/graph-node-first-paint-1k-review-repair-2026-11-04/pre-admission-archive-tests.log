@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: checkpoint arrival cannot substitute for painted geometry or matching frame identity
+ok 1 - checkpoint arrival cannot substitute for painted geometry or matching frame identity
+  ---
+  duration_ms: 6.060605
+  type: 'test'
+  ...
+# Subtest: held consumer and acceptance before paint cannot qualify unheld cadence
+ok 2 - held consumer and acceptance before paint cannot qualify unheld cadence
+  ---
+  duration_ms: 1.216392
+  type: 'test'
+  ...
+# Subtest: trusted pointer must identify the exact probed render row and tooltip UUID
+ok 3 - trusted pointer must identify the exact probed render row and tooltip UUID
+  ---
+  duration_ms: 0.852994
+  type: 'test'
+  ...
+# Subtest: actual default browser flow ACKs every matching painted checkpoint without a deliberate hold
+ok 4 - actual default browser flow ACKs every matching painted checkpoint without a deliberate hold
+  ---
+  duration_ms: 1.469635
+  type: 'test'
+  ...
+# Subtest: retained geometry and full f64 snapshots bind each actual frame to native payload identities
+ok 5 - retained geometry and full f64 snapshots bind each actual frame to native payload identities
+  ---
+  duration_ms: 3.830454
+  type: 'test'
+  ...
+# Subtest: held invalid ACK cannot advance presentation; trusted initial pick and camera reset are separate facts
+ok 6 - held invalid ACK cannot advance presentation; trusted initial pick and camera reset are separate facts
+  ---
+  duration_ms: 0.370902
+  type: 'test'
+  ...
+# Subtest: actual synthetic custom click after a real pointer cannot inherit its trust
+ok 7 - actual synthetic custom click after a real pointer cannot inherit its trust
+  ---
+  duration_ms: 0.847641
+  type: 'test'
+  ...
+# Subtest: observed worker resources balance; cancellation/disposal are terminal in the separate native job
+ok 8 - observed worker resources balance; cancellation/disposal are terminal in the separate native job
+  ---
+  duration_ms: 0.172505
+  type: 'test'
+  ...
+# Subtest: fresh real unheld frames retain geometry/source hashes with distinct timing bases
+ok 9 - fresh real unheld frames retain geometry/source hashes with distinct timing bases
+  ---
+  duration_ms: 5.748852
+  type: 'test'
+  ...
+# Subtest: fresh held inspection ACKs every actual replacement and checks first replacement, irrespective of phase
+ok 10 - fresh held inspection ACKs every actual replacement and checks first replacement, irrespective of phase
+  ---
+  duration_ms: 1.127074
+  type: 'test'
+  ...
+# Subtest: fresh real fixture, bridge and force Workers directly attest the independently checked selected file
+ok 11 - fresh real fixture, bridge and force Workers directly attest the independently checked selected file
+  ---
+  duration_ms: 0.24521
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 82.540387

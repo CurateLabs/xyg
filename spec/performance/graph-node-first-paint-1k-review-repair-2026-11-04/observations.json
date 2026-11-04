@@ -1,0 +1,356 @@
+{
+  "meaning": "Latest real 1k capture observations only; no comparison/optimization/performance acceptance.",
+  "unheld": {
+    "sourceBase": "c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+    "timings": {
+      "firstCheckpointHostMs": 360.866076,
+      "firstPaintedBrowserMs": 884.5999999046326,
+      "firstGpuPickReadyBrowserMs": 958.6999998092651,
+      "unheldPaintIntervalsMs": [
+        524.4000000953674
+      ]
+    },
+    "nodeColdStartupMs": 193.96460599999995,
+    "browserColdStartupMs": 116.394315,
+    "contextAndNavigationMs": 655.930103,
+    "identityVerificationParentMs": 61.742084999999975,
+    "firstFrameObservedFromParentStartMs": 2015.161988,
+    "frames": [
+      {
+        "jobId": "7afee094-cc84-49f8-8fd2-0834ca3d92d9:1",
+        "revision": 1,
+        "step": 1,
+        "phase": "initial",
+        "receivedMs": 369.5,
+        "paintedMs": 884.5999999046326,
+        "gpuPickReadyMs": 958.6999998092651,
+        "coloredPixels": 187859,
+        "frame": [
+          644,
+          428
+        ],
+        "bufferBytes": 333004,
+        "gpuHit": {
+          "trace": 1,
+          "index": 999
+        },
+        "previousView": null,
+        "view": {
+          "ranges": {
+            "x": [
+              -1043.838698765767,
+              1229.3450024524175
+            ],
+            "y": [
+              -1028.8923215917698,
+              1028.8956912210833
+            ]
+          },
+          "x0": -1043.838698765767,
+          "x1": 1229.3450024524175,
+          "y0": -1028.8923215917698,
+          "y1": 1028.8956912210833
+        },
+        "renderer": "shared",
+        "ackStartedMs": 965.4000000953674,
+        "ackCompletedMs": 969
+      },
+      {
+        "jobId": "7afee094-cc84-49f8-8fd2-0834ca3d92d9:1",
+        "revision": 1,
+        "step": 401,
+        "phase": "complete",
+        "receivedMs": 1036,
+        "paintedMs": 1409,
+        "gpuPickReadyMs": 1475.7999997138977,
+        "coloredPixels": 166035,
+        "frame": [
+          644,
+          428
+        ],
+        "bufferBytes": 333004,
+        "gpuHit": {
+          "trace": 1,
+          "index": 0
+        },
+        "previousView": {
+          "ranges": {
+            "x": [
+              -1043.838698765767,
+              1229.3450024524175
+            ],
+            "y": [
+              -1028.8923215917698,
+              1028.8956912210833
+            ]
+          },
+          "x0": -1043.838698765767,
+          "x1": 1229.3450024524175,
+          "y0": -1028.8923215917698,
+          "y1": 1028.8956912210833
+        },
+        "view": {
+          "ranges": {
+            "x": [
+              -74.49280291796379,
+              74.19082901840825
+            ],
+            "y": [
+              -73.75908419706839,
+              76.3105287738813
+            ]
+          },
+          "x0": -74.49280291796379,
+          "x1": 74.19082901840825,
+          "y0": -73.75908419706839,
+          "y1": 76.3105287738813
+        },
+        "renderer": "shared",
+        "ackStartedMs": 1484.0999999046326,
+        "ackCompletedMs": 1486.0999999046326
+      }
+    ],
+    "native": {
+      "selectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+      "resolvedSelectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+      "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+      "bytes": 6108424,
+      "abi": 399,
+      "matchesKnownParentArtifact": true,
+      "origin": {
+        "declaredKind": "unknown",
+        "meaning": "No origin declaration; byte identity alone proves neither reuse nor rebuild history."
+      }
+    },
+    "clientSha256": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "cpu": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz",
+    "browser": "156.0.8078.4",
+    "clocks": "Host checkpoint ms: Node performance.now minus server /start. Browser received/paint/GPU/ACK ms: page performance.now minus beginGraph. Parent startup/interaction observations use runner performance.now; no cross-clock subtraction. Painted time is an observation upper bound after two rAFs and pixel readback, not scanout timing."
+  },
+  "held": {
+    "sourceBase": "c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+    "frames": [
+      {
+        "jobId": "775b5348-aeb0-4a94-b6db-fab7b30ca6ca:1",
+        "revision": 1,
+        "step": 1,
+        "phase": "initial",
+        "receivedMs": 374.2999997138977,
+        "paintedMs": 886.5,
+        "gpuPickReadyMs": 960.0999999046326,
+        "coloredPixels": 187859,
+        "frame": [
+          644,
+          428
+        ],
+        "bufferBytes": 333004,
+        "gpuHit": {
+          "trace": 1,
+          "index": 999
+        },
+        "previousView": null,
+        "view": {
+          "ranges": {
+            "x": [
+              -1043.838698765767,
+              1229.3450024524175
+            ],
+            "y": [
+              -1028.8923215917698,
+              1028.8956912210833
+            ]
+          },
+          "x0": -1043.838698765767,
+          "x1": 1229.3450024524175,
+          "y0": -1028.8923215917698,
+          "y1": 1028.8956912210833
+        },
+        "renderer": "shared",
+        "ackStartedMs": 966.7999997138977,
+        "ackCompletedMs": 2277.7999997138977
+      },
+      {
+        "jobId": "775b5348-aeb0-4a94-b6db-fab7b30ca6ca:1",
+        "revision": 1,
+        "step": 401,
+        "phase": "complete",
+        "receivedMs": 2348.7999997138977,
+        "paintedMs": 2724.199999809265,
+        "gpuPickReadyMs": 2832.7999997138977,
+        "coloredPixels": 166035,
+        "frame": [
+          644,
+          428
+        ],
+        "bufferBytes": 333004,
+        "gpuHit": {
+          "trace": 1,
+          "index": 0
+        },
+        "previousView": {
+          "ranges": {
+            "x": [
+              -1167.381291223277,
+              1105.8024099949075
+            ],
+            "y": [
+              -932.734003236029,
+              1125.0540095768242
+            ]
+          },
+          "x0": -1167.381291223277,
+          "x1": 1105.8024099949075,
+          "y0": -932.734003236029,
+          "y1": 1125.0540095768242
+        },
+        "view": {
+          "ranges": {
+            "x": [
+              -74.49280291796379,
+              74.19082901840825
+            ],
+            "y": [
+              -73.75908419706839,
+              76.3105287738813
+            ]
+          },
+          "x0": -74.49280291796379,
+          "x1": 74.19082901840825,
+          "y0": -73.75908419706839,
+          "y1": 76.3105287738813
+        },
+        "renderer": "shared",
+        "ackStartedMs": 2846.5999999046326,
+        "ackCompletedMs": 2962.199999809265
+      }
+    ],
+    "firstReplacement": {
+      "jobId": "775b5348-aeb0-4a94-b6db-fab7b30ca6ca:1",
+      "revision": 1,
+      "step": 401,
+      "phase": "complete",
+      "receivedMs": 2348.7999997138977,
+      "paintedMs": 2724.199999809265,
+      "gpuPickReadyMs": 2832.7999997138977,
+      "coloredPixels": 166035,
+      "frame": [
+        644,
+        428
+      ],
+      "bufferBytes": 333004,
+      "gpuHit": {
+        "trace": 1,
+        "index": 0
+      },
+      "previousView": {
+        "ranges": {
+          "x": [
+            -1167.381291223277,
+            1105.8024099949075
+          ],
+          "y": [
+            -932.734003236029,
+            1125.0540095768242
+          ]
+        },
+        "x0": -1167.381291223277,
+        "x1": 1105.8024099949075,
+        "y0": -932.734003236029,
+        "y1": 1125.0540095768242
+      },
+      "view": {
+        "ranges": {
+          "x": [
+            -74.49280291796379,
+            74.19082901840825
+          ],
+          "y": [
+            -73.75908419706839,
+            76.3105287738813
+          ]
+        },
+        "x0": -74.49280291796379,
+        "x1": 74.19082901840825,
+        "y0": -73.75908419706839,
+        "y1": 76.3105287738813
+      },
+      "renderer": "shared",
+      "ackStartedMs": 2846.5999999046326
+    },
+    "native": {
+      "selectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+      "resolvedSelectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+      "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+      "bytes": 6108424,
+      "abi": 399,
+      "matchesKnownParentArtifact": true,
+      "origin": {
+        "declaredKind": "unknown",
+        "meaning": "No origin declaration; byte identity alone proves neither reuse nor rebuild history."
+      }
+    },
+    "jobAttestations": [
+      {
+        "audit": "NATIVE",
+        "threadId": 0,
+        "role": "fixture-main",
+        "jobId": null,
+        "native": {
+          "selectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+          "resolvedSelectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+          "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+          "bytes": 6108424,
+          "abi": 399,
+          "matchesKnownParentArtifact": true,
+          "origin": {
+            "declaredKind": "unknown",
+            "meaning": "No origin declaration; byte identity alone proves neither reuse nor rebuild history."
+          }
+        }
+      },
+      {
+        "audit": "NATIVE",
+        "threadId": 1,
+        "role": "bridge-worker",
+        "jobId": "775b5348-aeb0-4a94-b6db-fab7b30ca6ca:1",
+        "native": {
+          "selectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+          "resolvedSelectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+          "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+          "bytes": 6108424,
+          "abi": 399,
+          "matchesKnownParentArtifact": true,
+          "origin": {
+            "declaredKind": "unknown",
+            "meaning": "No origin declaration; byte identity alone proves neither reuse nor rebuild history."
+          }
+        }
+      },
+      {
+        "audit": "NATIVE",
+        "threadId": 2,
+        "role": "force-worker",
+        "jobId": "775b5348-aeb0-4a94-b6db-fab7b30ca6ca:1",
+        "native": {
+          "selectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+          "resolvedSelectedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/target/release/libxyg_core.so",
+          "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+          "bytes": 6108424,
+          "abi": 399,
+          "matchesKnownParentArtifact": true,
+          "origin": {
+            "declaredKind": "unknown",
+            "meaning": "No origin declaration; byte identity alone proves neither reuse nor rebuild history."
+          }
+        }
+      }
+    ],
+    "meaning": "Deliberately held ACK inspection and mutation; NONE of these frame or pointer/pan intervals qualifies normal presentation cadence or unheld initial interaction."
+  },
+  "limitations": [
+    "partial 1k evidence only",
+    "actual UPDATE frames only if present in these records; scripted ACK sequences never substitute",
+    "no sustained cadence or unheld initial trusted response claim",
+    "larger ladder/public browser/notebook acceptance and literal async compose wording remain open"
+  ]
+}

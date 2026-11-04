@@ -1960,8 +1960,13 @@ client must not grow a parallel “JS layout/LOD” product path.
   `composeGraphForge` remains explicit metadata/static/batch composition
   ([Node contract](graphforge-node-scheduling.md)). The issue's literal async
   `composeGraphForge` wording still needs an explicit acceptance clarification.
-  The bounded 1k [render receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
-  records actual initial/final paint and GPU node-hit readiness, with trusted
+  The bounded 1k [render receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
+  supersedes the frozen historical runners, directly observes the selected
+  native path/hash/ABI in fixture and bridge/force Workers, and separates byte
+  identity from unknown/declared origin. Earlier conventional-path hashes do
+  not retroactively attest selection. Held update ACKs are drained and reset
+  is checked on the first replacement. It records actual initial/final paint
+  and GPU node-hit readiness, with trusted
   UUID/pan inspection separated from unheld presentation. Intermediate steps
   coalesced away; one initial-to-final interval is not sustained progress
   cadence. Remaining for #35 are the rendered size ladder and unheld initial
