@@ -1456,3 +1456,11 @@ S6; this bounded attachment does not remove that migration debt. Exact hover/
 picked-ref wire projection and broader S5b/S6/S7 remain open. See the
 [contract](graph-interaction.md#bounded-explicit-s5b-attachment) and
 [append-only proof](../performance/graph-s5b-attachment-2026-11-04/README.md).
+
+
+The retained graph R2 repair keeps Clear applicability in the shared Rust owner:
+`GraphInteractionState::can_clear` is reused by Clear and the XYGR serializer's
+post-operation state snapshot. TypeScript validates this required fact and owns
+synchronous keyboard default cancellation after local command admission. It does
+not infer applicability from selection counts, projected refs, styles or DOM.
+GLHost resets textures/samplers through unit 2 for shared-client isolation.

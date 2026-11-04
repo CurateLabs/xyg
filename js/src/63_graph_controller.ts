@@ -132,24 +132,27 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     const bytes = encodeGraphSessionRequest({ ...input, instanceId, opSeq: sequence++, revision: output?.revision ?? 0 });
     return lane.execute(input.operation === 21 ? "render" : "interact", bytes).then(bytes => install(bytes, candidateCamera, input.operation === 17 || input.operation === 21 ? candidatePage : 0));
   }
-  function run(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render", candidateCamera = camera, candidatePage = page, event?: KeyboardEvent): Promise<XygWasmGraphSnapshot> {
-    if (disposed) return Promise.reject(new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed"));
-    if (terminal) return Promise.reject(new XygWasmError("XYG_WASM_DISPOSED", "Graph Worker lifetime ended; mutation outcome may be unknown"));
-    if (busy) return Promise.reject(new XygWasmError("XYG_WASM_GRAPH_BUSY", "One graph UI action is already outstanding"));
-    if (needsRefresh && input.operation !== 21) return Promise.reject(new XygWasmError("GF_INTERACTION_STALE", "Refresh the graph publication before further input", -1));
+  // Framing and lane admission happen synchronously. No event is retained by
+  // asynchronous work, and no observer runs between choosing a Rust fact and
+  // accepting its command locally. Applicability is not a Rust reservation.
+  function admit(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render", candidateCamera = camera, candidatePage = page): Promise<XygWasmGraphSnapshot> {
+    if (disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed");
+    if (terminal) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph Worker lifetime ended; mutation outcome may be unknown");
+    if (busy) throw new XygWasmError("XYG_WASM_GRAPH_BUSY", "One graph UI action is already outstanding");
+    if (needsRefresh && input.operation !== 21) throw new XygWasmError("GF_INTERACTION_STALE", "Refresh the graph publication before further input", -1);
+    const pending = request(input, candidateCamera, candidatePage);
     setBusy(true);
-    const result = Promise.resolve().then(() => request(input, candidateCamera, candidatePage)).then(value => {
-      if (!disposed) {
-        // Escape is suppressed only after Rust confirms a clear changed state.
-        if (input.operation === 4 && value.outcome.stateChanged) event?.preventDefault();
-        dispatch(kind, value);
-      }
+    return pending.then(value => {
+      if (!disposed) dispatch(kind, value);
       return value;
     }).catch(error => { report(error); throw error; }).finally(() => setBusy(false));
-    return result;
   }
-  function submit(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render", event?: KeyboardEvent) {
-    void run(input, kind, camera, page, event).catch(() => {});
+  function run(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render", candidateCamera = camera, candidatePage = page): Promise<XygWasmGraphSnapshot> {
+    try { return admit(input, kind, candidateCamera, candidatePage); }
+    catch (error) { return Promise.reject(error); }
+  }
+  function submit(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render") {
+    void run(input, kind).catch(() => {});
   }
   const keyDown = (event: KeyboardEvent) => {
     if (disposed || terminal || busy || needsRefresh || !output || event.defaultPrevented || event.repeat || event.altKey || event.shiftKey) return;
@@ -157,7 +160,14 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       event.preventDefault(); submit({ operation: 5, direction: ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1 }, "focus");
     } else if (event.key === "Enter") {
       event.preventDefault(); submit({ operation: 7, mode: event.ctrlKey || event.metaKey ? 2 : 0 }, "select");
-    } else if (event.key === "Escape" && !event.ctrlKey && !event.metaKey) submit({ operation: 4 }, "select", event);
+    } else if (event.key === "Escape" && !event.ctrlKey && !event.metaKey) {
+      const applicable = output.clearAction.applicable;
+      try {
+        const accepted = admit({ operation: 4 }, "select");
+        if (applicable) event.preventDefault();
+        void accepted.catch(() => {});
+      } catch (error) { report(error); }
+    }
   };
   const previousPage = () => { if (!disposed && !busy && !needsRefresh && page > 0) void run({ operation: 17, page: page - 1, pageSize: 50 }, "render", camera, page - 1).catch(() => {}); };
   const nextPage = () => { if (!disposed && !busy && !needsRefresh && output && (page + 1) * 50 < output.companion.total) void run({ operation: 17, page: page + 1, pageSize: 50 }, "render", camera, page + 1).catch(() => {}); };

@@ -1,0 +1,17 @@
+{
+  "packagePassed": true,
+  "optimized": {
+    "bytes": 1922723,
+    "gzip6": 783181,
+    "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273",
+    "gzip6Sha256": "5ed44e4d8802ddcdfb48dbe0aded7206d8228e9f9970a868b2bb8aaec35e5d4a",
+    "limits": {
+      "raw": 1923072,
+      "gzip6": 783360
+    },
+    "headroom": {
+      "raw": 349,
+      "gzip6": 179
+    }
+  }
+}

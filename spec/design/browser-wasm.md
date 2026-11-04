@@ -1710,3 +1710,13 @@ projection was folded into one out-of-line function and the paint buffer is a fi
 array to keep the addition at that size; the browser consumes the same Rust vertices
 rather than a second arrow renderer. The painter contract is unchanged (XYPB v16,
 WASM ABI 34): arrow runs are ordinary line and triangle traces.
+
+
+R2 retained graph publications require the independent `clear.action.u32` v1
+`[1, applicable]` fact from Rust's actual owner state. The browser uses it only
+after synchronous local admission to cancel an applicable Escape default; a
+later Rust refusal remains possible and is reported without replay or state
+replacement. Missing/malformed facts fail closed, including old same-ABI modules.
+The shared GLHost resets sampler and texture state on units 0–2 so the graph
+reference texture cannot inherit a neighbor's LINEAR sampler. See the
+[R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md).

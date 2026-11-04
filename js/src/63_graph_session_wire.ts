@@ -171,6 +171,7 @@ export interface GraphSessionResult extends GraphSessionHeader {
   selection: { refs: GraphSessionRef[]; indices: BigUint64Array; layerOffsets: BigUint64Array; layers: Uint32Array; rows: BigUint64Array; resultIds: Array<string | null> };
   changed: GraphSessionRef[]; focus: GraphSessionRef[]; focusRing: Uint32Array;
   focusAction: { refs: GraphSessionRef[]; disclosureEligible: boolean; collapsed: boolean; pinEligible: boolean; pinned: boolean; moveCapability: boolean };
+  clearAction: { applicable: boolean };
   outcome: { stateChanged: boolean; selected: number; disclosurePresent: boolean };
   disclosure: { refs: GraphSessionRef[]; collapsed: boolean[] };
   companion: { rows: string[][]; refs: GraphSessionRef[]; total: number };
@@ -253,6 +254,8 @@ export function decodeGraphSessionResult(input: Uint8Array | ArrayBuffer): Graph
     if (facts[0] !== 1 || facts.subarray(1, 6).some((v) => v > 1) || facts[6] || facts[7] || actionRefs.length > 1) fail("focus action");
     if ((!actionRefs.length || actionRefs[0]?.kind === 3) && facts.subarray(1).some((v) => v !== 0)) fail("focus action without singular target");
     if (actionRefs.some((ref) => ref.kind === 1)) fail("focus action edge");
+    const clear = u32("clear.action.u32", 2);
+    if (clear[0] !== 1 || clear[1]! > 1 || [...r.sections.values()].some(s => s.name === "clear.action.u32" && s.index !== 0)) fail("clear action");
     const outcome = u32("outcome.u32", 4);
     if (outcome[0] !== 1 || outcome[1]! > 1 || outcome[3]! > 1) fail("outcome");
     const disclosureRefs = refs("disclosure.ref.bytes"), collapsed = get("disclosure.collapsed.u8", DT.u8, outcome[3]).bytes;
@@ -267,6 +270,7 @@ export function decodeGraphSessionResult(input: Uint8Array | ArrayBuffer): Graph
       ...r.header, sections: r.sections,
       selection: { refs: selectedRefs, indices, layerOffsets, layers, rows, resultIds }, changed, focus, focusRing,
       focusAction: { refs: actionRefs, disclosureEligible: !!facts[1], collapsed: !!facts[2], pinEligible: !!facts[3], pinned: !!facts[4], moveCapability: !!facts[5] },
+      clearAction: { applicable: !!clear[1] },
       outcome: { stateChanged: !!outcome[1], selected: outcome[2]!, disclosurePresent: !!outcome[3] },
       disclosure: { refs: disclosureRefs, collapsed: Array.from(collapsed, Boolean) },
       companion: { rows: companionRows, refs: candidates, total }, summary: r.text("summary.text.utf8"),

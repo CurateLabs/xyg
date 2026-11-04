@@ -405,7 +405,7 @@ Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_gra
 S4 native surface (`xyg-core`; assign the next ABI version and regenerate
 the manifest when signatures change; native ABI 399 has 538 functions; WASM ABI 35 has 65 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
 Request `XYGI`: `header.u64`[instance_id, group_id, op_seq]; `header.u32`[render_revision, operation, mode, policy, plane, action, commit, steps, space]; `camera.f64`; `coordinates.f64`; `refs.bytes` (kind-tagged refs; transported derived refs carry the exact result id, §2.1; byte layout fixed with the ABI); `uuids.uuid`; `remote.bytes`; `companion.u32`[page, size≤200]; `load.*` (§1.2).
-Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`, `relayout.steps.u64`; complete `selection.*` (§2.1.1); `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`; S5a `gpu.*`, `outcome.u32`, `disclosure.ref.bytes`/`disclosure.collapsed.u8`, and `focus.action.ref.bytes`/`focus.action.u32` ([exact v1 layouts below](#s5a-rust-gpu-publication-and-controller-result-foundation)). Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
+Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`, `relayout.steps.u64`; complete `selection.*` (§2.1.1); `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`; S5a `gpu.*`, `outcome.u32`, independently versioned `clear.action.u32` below, `disclosure.ref.bytes`/`disclosure.collapsed.u8`, and `focus.action.ref.bytes`/`focus.action.u32` ([exact v1 layouts below](#s5a-rust-gpu-publication-and-controller-result-foundation)). Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
 Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND, _REVISION_EXHAUSTED`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
 
 ## 4. Events (all hosts)
@@ -419,7 +419,7 @@ Surface `role="application"`, `tabindex=0`; companion `<table>` follows in DOM o
 | `]` `[`, PageDown/Up | FocusRing ±1 (Nodes → OutEdges → InEdges → Neighbors) |
 | Enter | SelectFocused Replace (normal) / MoveNode commit=1 (move mode); Ctrl/Meta+Enter Toggle |
 | Space | ToggleDisclosure on compound, else SelectFocused Toggle |
-| Escape | move mode: cancel (commit=2) and exit; else Clear, `preventDefault` only when something was cleared |
+| Escape | move mode: cancel (commit=2) and exit; else Clear; browser default cancellation uses the accepted Rust applicability fact and synchronous local admission below |
 | Home/End | FocusRef first/last visible node |
 | `p` | Pin toggle on focused node |
 | `m` | Toggle **move mode** on a focused direct node (not aggregates); exits on blur or focus change with cancel |
@@ -1108,11 +1108,19 @@ table and polite ARIA live region containing **Rust's summary**. ArrowRight/Down
 submit FocusStep +1 and ArrowLeft/Up submit −1; Enter submits
 SelectFocused Replace, Ctrl/Meta+Enter Toggle, and Escape Clear. Tab/Shift+Tab
 remain ordinary browser navigation. Only one UI action is outstanding; busy,
-unsupported, repeated or stale-blocked keys are not swallowed. Escape calls
-`preventDefault` only after Rust reports `state_changed`; because that reply is
-asynchronous, this does not retroactively cancel a browser default action that
-already occurred. An empty Escape remains unsuppressed. Other accepted keys
-are suppressed synchronously. Observer exceptions do not undo accepted state.
+unsupported, repeated or stale-blocked keys are not swallowed. Escape synchronously
+frames and locally admits Clear before returning from keydown. If the latest
+accepted Rust `clear.action.u32` fact says it applies, that accepted command calls
+`preventDefault` synchronously. No counts, styles or DOM state infer applicability,
+no observer runs between choosing the fact and local admission, and no KeyboardEvent
+is retained by asynchronous work. Busy/stale/terminal/disposed state cannot consume
+an old fact. An empty or focus-only Escape leaves the native browser default intact.
+Applicability is **not a reservation for future Rust success**: a later definitive
+Rust refusal is reported and preserves the preceding state, while the browser
+default already cancelled at local admission stays cancelled. This explicit timing
+contract replaces the asynchronous preventDefault defect recorded in the immutable
+first attachment receipt. Other accepted keys are suppressed synchronously.
+Observer exceptions do not undo accepted state.
 
 Previous/Next use Rust Companion operation 17 with page size 50. Row Select
 submits SelectRefs with that row's **aligned Rust candidate ref**, never a
@@ -1144,3 +1152,32 @@ records actual commands, logs, packaged assets, journeys and limitations. This
 slice changes no Rust/C/WASM signatures, ABI 399/WASM 35/Scene 34/painter 17,
 GPU-v1/XYGI/XYGR contract, arena, package gate, compiler/profile/optimizer,
 dependency or export guard. It establishes no competitor or performance win.
+
+
+### R2: Rust Clear applicability and shared sampler isolation
+
+Every successful publication includes `clear.action.u32`, index 0, U32/count 2:
+`[version=1, applicable=0|1]`. OPEN acknowledgments and Poll omit it. This section
+has its own version; `outcome.u32`, reserved focus words and GPU-v1 remain unchanged.
+The fact comes from the same post-operation `GraphInteractionState` snapshot used
+for selection and focus-action projection, including same-revision publications
+and byte-identical retries. `GraphInteractionState::can_clear` is the shared exact
+predicate used by `clear`: selection nonempty OR any of the three highlight sets
+nonempty. Focus, pins and transient hover do not count; hidden or foreign retained
+identities do count. No per-view visible/ref projection substitutes for that owner.
+
+The browser requires the fact's exact name/index/type/count/version/boolean shape
+before atomically installing a complete semantic/GPU result. Missing or malformed
+facts keep the last accepted picture but invalidate command applicability until
+successful explicit refresh. Older same-ABI modules lacking this named fact fail
+closed; no ABI signature/version, outcome layout or reserved word is repurposed.
+Native and WASM publish the same section through the shared serializer.
+
+The shared GLHost pass boundary resets textures **and samplers** on units 0–2.
+The graph adapter's integer reference texture uses unit 2; inherited LINEAR
+samplers can silently corrupt its draws without producing a GL error. Exact
+pixel equality with a dirty neighbor, cleanup and context restoration are required.
+The [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md)
+records the independent review findings, repairs and fresh production gates.
+The original receipt and its historical failures remain immutable. Broader
+S5b/S6/S7, #36/M4/#108 and release acceptance remain open.

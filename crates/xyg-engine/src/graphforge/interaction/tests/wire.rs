@@ -31,6 +31,119 @@ fn header_of(bytes: &[u8]) -> Vec<u32> {
         .unwrap()
 }
 
+fn clear_applicable(bytes: &[u8]) -> bool {
+    let c = Container::decode(bytes, wire::RESULT_MAGIC).unwrap();
+    let fact = c.get("clear.action.u32", 0).unwrap();
+    let words = fact.as_u32("clear.action.u32").unwrap();
+    assert_eq!(words.len(), 2);
+    assert_eq!(words[0], 1);
+    assert!(words[1] <= 1);
+    words[1] == 1
+}
+
+#[test]
+fn clear_applicability_publication_retry_refusal_and_transient_exclusions() {
+    let mut s = opened();
+    assert!(Container::decode(s.reply(), wire::RESULT_MAGIC).unwrap()
+        .get("clear.action.u32", 0).is_none(), "OPEN is only an ack");
+    let rendered = s.execute(&request(2, 0, wire::RENDER, |b| {
+        b.f64s("camera.f64", 0, &[1., 20., 1., 20., 200., 100., 1.]);
+    }), 0, None).unwrap().to_vec();
+    let rev = header_of(&rendered)[0];
+    assert!(!clear_applicable(&rendered));
+    // Transient hover and focus may change emphasis at the same revision, but
+    // neither participates in Clear's shared-state predicate.
+    for (seq, op) in [(3, 0), (4, 6)] {
+        let bytes = s.execute(&request(seq, rev, op, |b| {
+            if op == 0 { b.f64s("coordinates.f64", 0, &[20., 20.]); }
+            else { b.bytes("refs.bytes", 0, &wire::encode_refs(&[ElementRef::Node(id(1))]).unwrap()); }
+        }), 0, None).unwrap();
+        assert!(!clear_applicable(bytes));
+        assert_eq!(header_of(bytes)[0], rev);
+    }
+    let select = request(5, rev, 11, |b| b.bytes("refs.bytes", 0,
+        &wire::encode_refs(&[ElementRef::Node(id(1))]).unwrap()));
+    let selected = s.execute(&select, 0, None).unwrap().to_vec();
+    assert!(clear_applicable(&selected));
+    assert_eq!(header_of(&selected)[0], rev);
+    assert_eq!(s.execute(&select, usize::MAX, None).unwrap(), selected);
+    let clear = request(6, rev, 4, |_| {});
+    let budget = s.max_bytes;
+    s.max_bytes = s.retained_budget();
+    assert_eq!(s.execute(&clear, 0, None), Err(InteractionStatus::Budget));
+    assert_eq!(s.reply(), selected);
+    assert_eq!(s.session().selection().unwrap(), [ElementRef::Node(id(1))]);
+    s.max_bytes = budget;
+    let cleared = s.execute(&clear, 0, None).unwrap().to_vec();
+    assert!(!clear_applicable(&cleared));
+    assert_eq!(header_of(&cleared)[0], rev);
+    assert_eq!(s.execute(&clear, usize::MAX, None).unwrap(), cleared);
+    let repeated = s.execute(&request(7, rev, 4, |_| {}), 0, None).unwrap();
+    assert!(!clear_applicable(repeated));
+    let c = Container::decode(repeated, wire::RESULT_MAGIC).unwrap();
+    assert_eq!(c.get("outcome.u32", 0).unwrap().as_u32("outcome.u32").unwrap()[1], 0);
+    let poll = request(8, rev, wire::POLL, |_| {});
+    let required = s.poll(&poll, 0, 0).unwrap();
+    s.poll(&poll, required, 0).unwrap();
+    assert!(Container::decode(s.reply(), wire::RESULT_MAGIC).unwrap()
+        .get("clear.action.u32", 0).is_none(), "Poll is not a publication");
+}
+
+#[test]
+fn clear_fact_covers_foreign_derived_refs_omitted_from_selection_projection() {
+    let host = temporal(&[id(1), id(2), id(3)]);
+    let foreign = ElementSet {
+        derived: [DerivedKey {
+            result_id: Some("another composition".into()), layer: 4, path: 3, order: 2,
+        }].into(), ..Default::default()
+    };
+    host.graph.lock().unwrap().as_mut().unwrap().interaction_state_mut()
+        .select(SelectMode::Replace, &foreign).unwrap();
+    let mut s = opened();
+    let bind = request(2, 0, 18, |b| b.u64s("temporal.u64", 0, &[1]));
+    let bound = s.execute(&bind, 0, Some((host.clone(), HANDLE))).unwrap().to_vec();
+    assert!(clear_applicable(&bound));
+    let c = Container::decode(&bound, wire::RESULT_MAGIC).unwrap();
+    assert!(wire::decode_refs(c.get("selection.refs.bytes", 0).unwrap().payload).unwrap().is_empty());
+    assert_eq!(c.get("outcome.u32", 0).unwrap().as_u32("outcome.u32").unwrap()[2], 1);
+    let cleared = s.execute(&request(3, header_of(&bound)[0], 4, |_| {}), 0, None).unwrap();
+    assert!(!clear_applicable(cleared));
+    assert!(!host.graph.lock().unwrap().as_ref().unwrap().interaction_state().can_clear());
+}
+
+#[test]
+fn clear_fact_covers_hidden_selection_and_each_highlight_but_excludes_pins() {
+    let doc = handmade_with(COMPOSITION_VERSION, &[id(1), id(2), id(3)], &[], &[],
+        Some((&[0, 0, 0], &[0, 1, 1])));
+    let opening = request(1, 0, wire::OPEN, |b| {
+        b.bytes("document.bytes", 0, &doc);
+        b.f64s("load.x.f64", 0, &[0., 30., 60.]);
+        b.f64s("load.y.f64", 0, &[0.; 3]);
+        b.u8s("load.collapsed.u8", 0, &[1, 0, 0]);
+        b.u8s("load.pinned.u8", 0, &[1, 0, 0]);
+    });
+    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
+    let rendered = s.execute(&request(2, 0, wire::RENDER, |_| {}), 0, None).unwrap().to_vec();
+    let rev = header_of(&rendered)[0];
+    assert_eq!(s.session().published().unwrap().node_x.len(), 1, "children are hidden");
+    assert!(!clear_applicable(&rendered), "pins alone do not apply");
+    for plane in 0..4 {
+        let mut b = Builder::new(wire::REQUEST_MAGIC);
+        let seq = 3 + 2 * u64::from(plane);
+        b.u64s("header.u64", 0, &[7, 9, seq]);
+        b.u32s("header.u32", 0, &[rev, if plane == 3 { 11 } else { 12 }, 0, 0, if plane == 3 { 0 } else { plane }, 0, 0, 0, 0]);
+        b.bytes("refs.bytes", 0, &wire::encode_refs(&[ElementRef::Node(id(2))]).unwrap());
+        let reply = s.execute(&b.finish(), 0, None).unwrap();
+        assert!(clear_applicable(reply), "hidden identity plane {plane}");
+        assert_eq!(header_of(reply)[0], rev);
+        let clear = s.execute(&request(seq + 1, rev, 4, |_| {}), 0, None).unwrap();
+        assert!(!clear_applicable(clear));
+        assert_eq!(Container::decode(clear, wire::RESULT_MAGIC).unwrap()
+            .get("outcome.u32", 0).unwrap().as_u32("outcome.u32").unwrap()[1], 1);
+        assert_eq!(s.session().pinned().unwrap(), [id(1)]);
+    }
+}
+
 #[test]
 fn exact_refs_roundtrip_and_malformed_pools_reserved_kinds() {
     let refs = vec![

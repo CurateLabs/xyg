@@ -109,3 +109,12 @@ acceptance. The [helper API](../api/browser-wasm.md#experimental-retained-graph-
 and [attachment receipt](../performance/graph-s5b-attachment-2026-11-04/README.md)
 retain that scope. Broader S5b/S6/S7, #36/M4 and #108 remain open; this inventory
 is still preparation, not an accepted API freeze or publication decision.
+
+The S5b R2 preparation refresh records the required Rust Clear-applicability
+fact and accepted snapshot's `clearAction.applicable`, plus the synchronous
+keyboard admission/default timing and three-unit shared sampler isolation.
+No existing classification or ABI signature changes. The actual inventory still
+has 685 review gaps; transitive semantic types and runtime/module compatibility
+continue to require the owning source and real browser proof. This is not a
+stable/freezable baseline waiver. The [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md)
+retains the old-same-ABI fail-closed proof and explicit refusal timing contract.

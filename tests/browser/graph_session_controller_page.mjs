@@ -19,6 +19,7 @@ Worker.prototype.postMessage = function(message, transfer) {
     if (message.request instanceof ArrayBuffer) {
       const h = view(section(message.request, "header.u64")), words = view(section(message.request, "header.u32"));
       if (state.inject === "stale") { words.setUint32(0, words.getUint32(0, true) + 1, true); state.inject = null; }
+      if (state.inject === "refuse-clear" && words.getUint32(4, true) === 4) { h.setBigUint64(0, h.getBigUint64(0, true) + 1n, true); state.inject = null; }
       if (state.inject === "wrong-instance") { h.setBigUint64(0, h.getBigUint64(0, true) + 1n, true); state.inject = null; }
       state.commands.push({ type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime, instanceId: h.getBigUint64(0, true), opSeq: h.getBigUint64(16, true), revision: words.getUint32(0, true), operation: words.getUint32(4, true), bytes: new Uint8Array(message.request).slice() });
     } else state.commands.push({ type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime });
@@ -32,13 +33,22 @@ HTMLCanvasElement.prototype.getContext = function(kind, ...args) {
   return gl;
 };
 const bytes = async (name) => new Uint8Array(await (await fetch(`/tests/fixtures/graphforge/results/${name}.arrow`)).arrayBuffer());
-const makeWorker = () => {
-  const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: "/packages/xy-client/dist/xyg-wasm.wasm" });
+const makeWorker = (wasm = "/packages/xy-client/dist/xyg-wasm.wasm") => {
+  const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm });
   const actual = worker.worker, deliver = actual.onmessage;
   actual.onmessage = event => {
     const value = event.data.value;
     if (value?.bytes instanceof ArrayBuffer && value.bytes.byteLength) {
       if (state.inject === "malformed-gpu") { view(section(value.bytes, "gpu.node.coord.bytes")).setFloat32(0, NaN, true); state.inject = null; }
+      if (state.inject === "malformed-clear") { view(section(value.bytes, "clear.action.u32")).setUint32(4, 2, true); state.inject = null; }
+      if (state.inject === "missing-clear") {
+        const a = new Uint8Array(value.bytes), v = view(a), start = 32 + 40 * v.getUint32(8, true), decoder = new TextDecoder();
+        for (let i = 0; i < v.getUint32(8, true); i++) {
+          const at = 32 + i * 40, offset = start + v.getUint32(at, true), length = v.getUint32(at + 4, true);
+          if (decoder.decode(a.subarray(offset, offset + length)) === "clear.action.u32") a.set(new TextEncoder().encode("clear.absent.u32"), offset);
+        }
+        state.inject = null;
+      }
       if (state.inject === "wrong-lifetime") { value.lifetime++; state.inject = null; }
       state.replies.push({ requestId: event.data.requestId, bytes: new Uint8Array(value.bytes).slice(), lifetime: value.lifetime, sequence: value.sequence });
       if (state.hold) { state.held.push(() => deliver(event)); return; }
@@ -86,3 +96,17 @@ state.boot = (async () => {
   return true;
 })().catch(error => { state.stage = "failed"; state.failure = { message: error.message, stack: error.stack, code: error.code }; throw error; });
 state.attach = attachWasmGraphSession; state.compose = composeWasmGraphForge;
+
+state.createDialog = async () => {
+  const dialog = document.createElement("dialog"), el = document.createElement("div");
+  dialog.id = "r2-dialog"; dialog.append(el); document.body.append(dialog);
+  const worker = makeWorker(); await worker.ready;
+  const handle = state.attach({ el, worker, instanceId: 72n, document: state.document, load: state.load, camera: state.camera }); await handle.ready;
+  const surface = el.querySelector('[role="application"]');
+  const result = state.dialog = { dialog, el, worker, handle, surface, keys: [], cancels: [], errors: [] };
+  dialog.addEventListener("keydown", event => { if (event.key === "Escape") result.keys.push({ trusted: event.isTrusted, prevented: event.defaultPrevented }); });
+  dialog.addEventListener("cancel", event => result.cancels.push({ trusted: event.isTrusted }));
+  el.addEventListener("xy:graph-error", event => result.errors.push(event.detail));
+  el.addEventListener("xy:graph-stale", event => result.errors.push(event.detail));
+  dialog.showModal(); surface.focus();
+};

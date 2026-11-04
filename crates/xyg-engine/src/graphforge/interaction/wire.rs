@@ -1374,6 +1374,7 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome, document: &
     b.u32s("node.flags.u32", 0, &render.source_node_flags);
     b.u32s("edge.flags.u32", 0, &render.source_edge_flags);
     let state = s.read_state(Clone::clone)?;
+    b.u32s("clear.action.u32", 0, &[1, u32::from(state.can_clear())]);
     selection_projection(&mut b, s, &state, document)?;
     let focus = s.focus()?.into_iter().collect::<Vec<_>>();
     b.bytes("focus.bytes", 0, &encode_refs(&transport(s, &focus)?)?);

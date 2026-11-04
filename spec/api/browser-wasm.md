@@ -62,7 +62,7 @@ The handle exposes only `ready: Promise<snapshot>`,
 cleanup; a second simultaneous attachment or competing Worker lane is refused.
 Calls while one UI action is outstanding refuse with `XYG_WASM_GRAPH_BUSY`.
 Snapshot is null before first installation and after disposal. It includes the accepted camera/revision, exact selection/provenance,
-changed refs, focus/action facts, authoritative outcome count, disclosure facts,
+changed refs, focus/action facts, Rust `clearAction.applicable`, authoritative outcome count, disclosure facts,
 Rust summary and paged companion. u64 indices/rows/path/order use `bigint`;
 absent and explicitly empty result IDs remain distinct. Selection projections
 need not equal `outcome.selected`, the global Rust count.
@@ -70,9 +70,14 @@ need not equal `outcome.selected`, the global Rust count.
 Tab enters the application surface. Arrows step Rust focus (Right/Down +1,
 Left/Up −1); Enter replaces selection with focus, Ctrl/Meta+Enter toggles,
 and Escape clears. Tab/Shift+Tab leave normally. Busy/unaccepted keys remain
-unsuppressed. Escape calls `preventDefault` only after Rust confirms a state
-change; the asynchronous reply cannot retroactively cancel an already executed
-browser default action. Empty Escape propagates. A visible static focus ring
+unsuppressed. Escape frames and locally admits Clear synchronously, then cancels
+the browser default before keydown returns when the latest accepted Rust
+`clearAction.applicable` fact is true. Empty/focus-only Escape propagates. Busy,
+stale, terminal or disposed state cannot consume an old fact. This fact is
+applicability, not a reservation: a later Rust refusal reports an error and
+preserves state although the browser default has already been cancelled. Missing
+or malformed applicability facts retain the picture but block input until refresh;
+older same-ABI modules without the fact fail closed. A visible static focus ring
 and polite Rust-summary live region accompany a following table. Previous/Next
 page 50 Rust companion rows; each Select button uses its aligned Rust ref.
 Labels and summary are rendered as text.

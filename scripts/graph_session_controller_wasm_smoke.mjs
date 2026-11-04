@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 // Unmasked production Worker/WASM graph session keyboard/paint/ownership journey.
 import assert from "node:assert/strict";
+import { gunzipSync } from "node:zlib";
 import { createServer } from "node:http";
 import { readFile, writeFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const allowed = p => p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
+const allowed = p => p === "/old-same-abi.wasm" || p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
 const csp = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; object-src 'none'; base-uri 'none'";
 const requests = [], violations = [], errors = [];
 const server = createServer(async (req, res) => {
   const p = new URL(req.url, "http://localhost").pathname; requests.push(p); res.setHeader("Content-Security-Policy", csp);
   if (p === "/") { res.setHeader("Content-Type", "text/html"); res.end('<!doctype html><meta charset="utf-8"><script type="module" src="/tests/browser/graph_session_controller_page.mjs"></script>'); return; }
+  if (p === "/old-same-abi.wasm") {
+    res.setHeader("Content-Type", "application/wasm");
+    res.end(gunzipSync(await readFile(resolve(root, "spec/performance/graph-s5b-attachment-2026-11-04/shipping-module.wasm.gz")))); return;
+  }
   if (!allowed(p)) { res.statusCode = 404; res.end(); return; }
   try { const data = await readFile(resolve(root, `.${p}`)); res.setHeader("Content-Type", ({ ".mjs": "text/javascript", ".js": "text/javascript", ".wasm": "application/wasm" })[extname(p)] ?? "application/octet-stream"); res.end(data); } catch { res.statusCode = 404; res.end(); }
 });
@@ -112,6 +117,18 @@ try {
     const previous = h.snapshot(); s.inject = "wrong-lifetime"; let code; try { await h.refreshRender(); } catch (e) { code = e.code; } await h.dispose(); await worker.dispose();
     await s.handle.refreshRender(); return { ok: code === "XYG_WASM_MESSAGE_ERROR" && previous.outcome.selected === 0 && s.snapshot().outcome.selected === 0, code };
   }));
+  await run("dirty-shared-sampler-unit2-preserves-exact-shipped-graph-pixels", () => check(async () => {
+    const s = window.__graphSession, host = globalThis[Symbol.for("reflex-dev.xy.shared-webgl-host.v1")].get(document), gl = host.gl;
+    await s.handle.refreshRender(); const before = s.pixel(s.el);
+    const sampler = gl.createSampler(); gl.samplerParameteri(sampler, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.samplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.bindSampler(2, sampler); await s.handle.refreshRender(); const dirty = s.pixel(s.el);
+    const cleanup = [];
+    for (let i = 0; i < 3; i++) { gl.activeTexture(gl.TEXTURE0 + i); cleanup.push(gl.getParameter(gl.SAMPLER_BINDING) === null && gl.getParameter(gl.TEXTURE_BINDING_2D) === null); }
+    gl.activeTexture(gl.TEXTURE0); gl.deleteSampler(sampler);
+    await s.handle.refreshRender(); const clean = s.pixel(s.el);
+    const difference = actual => actual.reduce((count, value, i) => count + Number(value !== before[i]), 0);
+    return { ok: difference(dirty) === 0 && difference(clean) === 0 && cleanup.every(Boolean) && gl.getError() === gl.NO_ERROR, changedChannels: { dirty: difference(dirty), clean: difference(clean) }, cleanup };
+  }));
   await run("context-loss-restore-exact-last-picture-and-legacy-path-unreachable", () => check(async () => {
     const s = window.__graphSession, gl = s.gl.findLast(gl => !gl.isContextLost()), ext = gl.getExtension("WEBGL_lose_context"), before = s.pixel(s.el); ext.loseContext();
     await new Promise(r => setTimeout(r, 30)); ext.restoreContext(); await new Promise(r => setTimeout(r, 150));
@@ -132,6 +149,97 @@ try {
     el.querySelector("tbody button").click(); await s.waitIdle(el); const selected = h.snapshot();
     await h.dispose(); await worker.dispose();
     return { ok: first.companion.rows.length === 50 && first.companion.total === 51 && second.companion.rows.length === 1 && rows === 1 && previousRows === 50 && focus && s.json(selected.selection.refs[0]) === s.json(aligned) && textSafe, focus, textSafe, selectedRefs: selected.selection.refs, total: first.companion.total, pageLengths: [first.companion.rows.length, second.companion.rows.length], escaped: first.companion.rows[0], aligned };
+  }));
+  await run("trusted-dialog-Escape-Rust-applicability-admission-and-refusal", async () => {
+    const results = [];
+    await page.evaluate(() => {
+      const dialog = document.createElement("dialog"), button = document.createElement("button"); button.textContent = "Control"; dialog.append(button); document.body.append(dialog);
+      window.__graphSession.dialogControl = { dialog, cancels: [] }; dialog.addEventListener("cancel", e => window.__graphSession.dialogControl.cancels.push(e.isTrusted)); dialog.showModal(); button.focus();
+    });
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !window.__graphSession.dialogControl.dialog.open);
+    assert.deepEqual(await page.evaluate(() => window.__graphSession.dialogControl.cancels), [true]);
+    results.push({ case: "native-control-closes", ok: true });
+    await page.evaluate(() => window.__graphSession.createDialog());
+    const reopen = () => page.evaluate(() => { const d = window.__graphSession.dialog; if (!d.dialog.open) d.dialog.showModal(); d.surface.focus(); });
+    const idle = () => page.evaluate(() => window.__graphSession.waitIdle(window.__graphSession.dialog.el));
+    const escape = async (staysOpen, label) => {
+      await page.keyboard.press("Escape"); await page.waitForTimeout(40);
+      const result = await page.evaluate(() => {
+        const d = window.__graphSession.dialog;
+        return { open: d.dialog.open, key: d.keys.at(-1), cancels: d.cancels.length, applicable: d.handle.snapshot()?.clearAction.applicable };
+      });
+      assert.equal(result.open, staysOpen, `${label}: ${JSON.stringify(result)}`);
+      assert.equal(result.key.trusted, true); assert.equal(result.key.prevented, staysOpen);
+      results.push({ case: label, ...result });
+    };
+    await escape(false, "empty-native-default"); await idle();
+    await reopen(); await page.keyboard.press("ArrowRight"); await idle();
+    assert.equal(await page.evaluate(() => window.__graphSession.dialog.handle.snapshot().clearAction.applicable), false);
+    await escape(false, "focus-only-native-default"); await idle();
+    await reopen(); await page.keyboard.press("Enter"); await idle();
+    assert.equal(await page.evaluate(() => window.__graphSession.dialog.handle.snapshot().clearAction.applicable), true);
+    await escape(true, "selected-synchronously-cancels"); await idle();
+    assert.equal(await page.evaluate(() => window.__graphSession.dialog.handle.snapshot().outcome.selected), 0);
+    await escape(false, "cleared-native-default"); await idle();
+    await reopen(); await page.keyboard.press("Enter"); await idle();
+    await page.evaluate(() => { const s = window.__graphSession; s.hold = true; s.dialog.pending = s.dialog.handle.refreshRender(); });
+    await page.waitForFunction(() => window.__graphSession.held.length > 0);
+    const busyCount = await page.evaluate(() => window.__graphSession.commands.length);
+    await escape(false, "busy-ignores-old-true-fact");
+    assert.equal(await page.evaluate(() => window.__graphSession.commands.length), busyCount);
+    await page.evaluate(async () => { const s = window.__graphSession; s.release(); await s.dialog.pending; });
+    await reopen(); await page.evaluate(() => { window.__graphSession.inject = "stale"; }); await page.keyboard.press("ArrowRight"); await idle();
+    const staleCount = await page.evaluate(() => window.__graphSession.commands.length);
+    await escape(false, "stale-ignores-old-true-fact");
+    assert.equal(await page.evaluate(() => window.__graphSession.commands.length), staleCount);
+    await page.evaluate(() => window.__graphSession.dialog.handle.refreshRender());
+    for (const inject of ["malformed-clear", "missing-clear"]) {
+      await reopen();
+      const refused = await page.evaluate(async inject => {
+        const s = window.__graphSession, d = s.dialog, before = s.json(d.handle.snapshot()), pixels = s.pixel(d.el); s.inject = inject;
+        let code; try { await d.handle.refreshRender(); } catch(e) { code = e.code; }
+        return code === "GF_INTERACTION_INVALID" && before === s.json(d.handle.snapshot()) && JSON.stringify(pixels) === JSON.stringify(s.pixel(d.el));
+      }, inject);
+      assert.equal(refused, true, inject);
+      const count = await page.evaluate(() => window.__graphSession.commands.length);
+      await escape(false, `${inject}-ignores-old-true-fact`);
+      assert.equal(await page.evaluate(() => window.__graphSession.commands.length), count);
+      await page.evaluate(() => window.__graphSession.dialog.handle.refreshRender());
+    }
+    await reopen(); await page.evaluate(() => { window.__graphSession.inject = "refuse-clear"; });
+    await escape(true, "locally-accepted-then-Rust-refused-default-already-cancelled"); await idle();
+    assert.equal(await page.evaluate(() => {
+      const d = window.__graphSession.dialog; return d.handle.snapshot().clearAction.applicable && d.handle.snapshot().outcome.selected > 0 && d.errors.at(-1)?.code === "GF_INTERACTION_INVALID";
+    }), true);
+    // Terminal state must not consume the preceding true applicability fact.
+    await page.evaluate(async () => { const s = window.__graphSession; s.inject = "wrong-lifetime"; try { await s.dialog.handle.refreshRender(); } catch {} });
+    await escape(false, "terminal-ignores-old-true-fact");
+    await page.evaluate(async () => { const d = window.__graphSession.dialog; await d.handle.dispose(); await d.worker.dispose(); d.dialog.remove(); });
+    await page.evaluate(() => window.__graphSession.createDialog());
+    await page.keyboard.press("ArrowRight"); await idle(); await page.keyboard.press("Enter"); await idle();
+    assert.equal(await page.evaluate(() => window.__graphSession.dialog.handle.snapshot().clearAction.applicable), true);
+    // Ending the borrowed Worker's lifetime makes lane admission fail while
+    // the controller still displays its preceding true fact. It must not cancel.
+    await page.evaluate(() => window.__graphSession.dialog.worker.dispose());
+    await escape(false, "failed-local-lane-admission-does-not-cancel");
+    assert.equal(await page.evaluate(() => window.__graphSession.dialog.errors.at(-1)?.code), "XYG_WASM_DISPOSED");
+    await page.evaluate(async () => {
+      const d = window.__graphSession.dialog; await d.handle.dispose();
+      // Deliver a trusted native key to the old surface after cleanup. No
+      // controller listener/fact may survive even if an owner reuses its DOM.
+      d.dialog.append(d.surface); d.surface.tabIndex = 0; d.dialog.showModal(); d.surface.focus();
+    });
+    await escape(false, "disposed-surface-has-no-old-fact-listener");
+    await page.evaluate(() => { const s = window.__graphSession; s.dialog.dialog.remove(); s.dialogControl.dialog.remove(); });
+    return { ok: true, results };
+  });
+  await run("old-same-ABI-module-missing-clear-fact-fails-closed", () => check(async () => {
+    const s = window.__graphSession, worker = s.makeWorker("/old-same-abi.wasm"); await worker.ready; const el = s.container();
+    const handle = s.attach({ el, worker, instanceId: 80n, document: s.document, load: s.load, camera: s.camera });
+    let code; try { await handle.ready; } catch(e) { code = e.code; } await handle.dispose();
+    const composed = await s.compose(worker, s.input).result; await worker.dispose();
+    return { ok: code === "GF_INTERACTION_INVALID" && handle.snapshot() === null && el.children.length === 0 && composed.nodeUuid.length > 0, code };
   }));
   await run("ambiguous-lost-reply-watchdog-is-terminal-no-replay-or-lateevents", async () => {
     await page.clock.install();

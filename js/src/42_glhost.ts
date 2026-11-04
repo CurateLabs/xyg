@@ -90,10 +90,11 @@ function sharedHostRegistry(): WeakMap<Document, GLHost> {
 
 const HOSTS = sharedHostRegistry();
 
-// The production renderer currently binds texture units 0 and 1.  Keeping the
-// boundary explicit makes adding a third unit a reviewed state-contract change
-// instead of letting one virtual client silently leak a binding into another.
-const XY_TEXTURE_UNITS = 2;
+// Ordinary chart paint uses units 0/1; retained graph GPU-v1 also binds its
+// Rust piece-to-edge index texture on unit 2. Reset textures and samplers on all
+// three before every client pass so a neighboring sampler cannot override the
+// integer texture's NEAREST filtering.
+const XY_TEXTURE_UNITS = 3;
 const XY_UNIFORM_BUFFER_BINDINGS = 4;
 const RECOVERY_INITIAL_DELAY_MS = 250;
 const RECOVERY_MAX_DELAY_MS = 4000;

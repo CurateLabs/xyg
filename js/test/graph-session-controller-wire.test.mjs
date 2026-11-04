@@ -28,6 +28,7 @@ const fixture = () => [
   field("changed.refs.bytes", "bytes", refs([derived])),
   field("focus.bytes", "bytes", refs([derived])), field("focus.ring.u32", "u32", [0, 1, 1, 0]),
   field("focus.action.ref.bytes", "bytes", refs([])), field("focus.action.u32", "u32", [1, 0, 0, 0, 0, 0, 0, 0]),
+  field("clear.action.u32", "u32", [1, 1]),
   field("outcome.u32", "u32", [1, 1, 7, 0]),
   field("disclosure.ref.bytes", "bytes", refs([])), field("disclosure.collapsed.u8", "u8", []),
   field("candidates.bytes", "bytes", refs([canonical, derived])),
@@ -64,6 +65,9 @@ test("complete semantic decode preserves selection provenance and exact refs wit
   assert.deepEqual([...result.selection.indices], [0n, 1n]);
   assert.deepEqual([...result.selection.layerOffsets], [0n, 2n, 3n]);
   assert.deepEqual(result.selection.resultIds, [null, "", derived.resultId]);
+  assert.equal(result.clearAction.applicable, true);
+  const falseFact = fixture(); falseFact.find(s => s.name === "clear.action.u32").values = [1, 0];
+  assert.equal(wire.decodeGraphSessionResult(encodeContainer("XYGR", falseFact)).clearAction.applicable, false, "decoder never infers applicability from counts");
   assert.equal(result.outcome.selected, 7);
   assert.equal(result.selection.refs.length, 2);
   assert.deepEqual(result.companion.rows[0], ["Node", "id\tpart", "label\nline\\tail", "2 relationships", "selected"]);
@@ -106,6 +110,10 @@ test("malformed semantic planes fail before an accepted picture can be replaced"
   replace("selection.result_ids.texts", ["not absent", "", derived.resultId]);
   replace("focus.ring.u32", [0, 2]);
   replace("focus.action.u32", [1, 0, 0, 1, 0, 0, 0, 0]);
+  for (const values of [[1], [1, 0, 0], [2, 1], [1, 2]]) replace("clear.action.u32", values);
+  replace("clear.action.u32", [1n, 1n], "u64");
+  invalid(original.filter((s) => s.name !== "clear.action.u32"));
+  invalid([...original, field("clear.action.u32", "u32", [1, 1], 1)]);
   replace("outcome.u32", [1, 2, 7, 0]);
   replace("candidates.total.u32", [1]);
   replace("companion.text.utf8", "Node\tonly two cells");
@@ -163,6 +171,7 @@ test("actual default-arena WASM composition/session bytes decode through focus/s
     run(19, { document, load: { x: Array.from({ length: n }, (_, i) => i * 30), y: Array(n).fill(0) } });
     let result = run(21, { camera: [1, -1, 10, 100, 640, 480, 1] });
     assert.equal(result.selection.refs.length, 0);
+    assert.equal(result.clearAction.applicable, false);
     assert.ok(result.companion.total > 2);
     assert.deepEqual(result.selection.resultIds, [null, "", derived.resultId]);
     const sameRevision = result.revision;
@@ -170,12 +179,14 @@ test("actual default-arena WASM composition/session bytes decode through focus/s
     const geometry = gpuGeometry(result);
     result = run(5, { direction: 1 });
     assert.equal(result.focus.length, 1);
+    assert.equal(result.clearAction.applicable, false, "focus alone is not clearable");
     assert.equal(result.revision, sameRevision, "focus republishes style at the same render revision");
     assert.deepEqual(gpuGeometry(result), geometry);
     const nodeState = result.sections.get("gpu.node.state.u8#0").bytes;
     assert.ok(Array.from({ length: nodeState.length / 4 }, (_, i) => nodeState[i * 4 + 1] & 1).some(Boolean));
     result = run(7);
     assert.ok(result.outcome.selected > 0);
+    assert.equal(result.clearAction.applicable, true);
     assert.equal(result.selection.indices.length, result.selection.refs.length);
     result = run(7, { mode: 2 });
     assert.equal(result.outcome.selected, 0);
@@ -188,6 +199,7 @@ test("actual default-arena WASM composition/session bytes decode through focus/s
     result = run(4);
     assert.equal(result.outcome.selected, 0);
     assert.equal(result.outcome.stateChanged, true);
+    assert.equal(result.clearAction.applicable, false);
     result = run(4);
     assert.equal(result.outcome.stateChanged, false, "empty Escape outcome propagates");
     const wrong = wire.encodeGraphSessionRequest({ instanceId: instanceId + 1n, opSeq: sequence + 1n, revision, operation: 4 });
