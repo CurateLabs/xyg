@@ -1,0 +1,29 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_release_inventory.py",
+    "tests/test_verify_ownership.py",
+    "tests/test_gen_wasm_abi.py"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb",
+  "started": "2026-11-04T04:55:49.386882+00:00",
+  "finished": "2026-11-04T04:56:07.227246+00:00",
+  "elapsedSeconds": 17.840362191200256,
+  "exitCode": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/.venv/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "PYTHONPATH": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null
+  },
+  "outputSha256": {
+    "stdout": "a386619cc529fcbe06758443f95ab8430c63a96c69227042d3db06fcde5aadd5",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

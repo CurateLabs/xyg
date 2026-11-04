@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "requiredCommandExits": {
+    "merge": 0,
+    "capability-write": 0,
+    "inventory-write": 0,
+    "preservation-final": 0,
+    "naming-tests": 0,
+    "metadata-tests": 0,
+    "proof-tests": 0,
+    "inventory-check": 0,
+    "capability-check": 0,
+    "ownership": 0,
+    "native-declarations": 0,
+    "wasm-declarations": 0,
+    "naming-whole-repository": 0,
+    "hooks": 0,
+    "ruff-check": 0,
+    "ruff-format": 0,
+    "naming-final-whole-repository": 0
+  },
+  "namingTests": 149,
+  "metadataTests": 61,
+  "unchangedProofTests": 8,
+  "apiReviewGaps": 685,
+  "classificationContractAcceptanceChanged": false,
+  "nativeBuildOrBrowserMeasurementRerun": false,
+  "failedHelperAttempts": {
+    "preservation": {
+      "exitCode": 1,
+      "cause": "Sync helper string/byte parsing bug; exact initial helper source archived."
+    },
+    "preservation-corrected": {
+      "exitCode": 1,
+      "cause": "Sync helper omitted intentionally retained proof specification edits when comparing incoming parent; corrected comparison requires exact 7195 bytes for these paths."
+    }
+  },
+  "initialSchemaAssumption": "metadata-verifier-initial-assumption.txt records the incorrect baseCommit-field assumption; actual official field sourceProvenance verified without relaxing contract/acceptance checks.",
+  "auditorFailures": [],
+  "namingWaiverAddedOrBroadened": false,
+  "parentExternalReview": "Required before PR; not supplied or self-approved by this candidate."
+}

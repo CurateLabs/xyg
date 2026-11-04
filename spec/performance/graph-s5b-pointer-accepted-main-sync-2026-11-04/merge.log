@@ -1,0 +1,22 @@
+Auto-merging js/src/63_graph_controller.ts
+CONFLICT (add/add): Merge conflict in js/src/63_graph_controller.ts
+Auto-merging js/src/63_graph_session_wire.ts
+CONFLICT (add/add): Merge conflict in js/src/63_graph_session_wire.ts
+Auto-merging js/test/graph-session-controller-wire.test.mjs
+CONFLICT (add/add): Merge conflict in js/test/graph-session-controller-wire.test.mjs
+Auto-merging packages/xy-node/test/graph-session-wire.test.mjs
+Auto-merging scripts/graph_session_controller_wasm_smoke.mjs
+CONFLICT (add/add): Merge conflict in scripts/graph_session_controller_wasm_smoke.mjs
+Auto-merging spec/api/browser-wasm.md
+CONFLICT (content): Merge conflict in spec/api/browser-wasm.md
+Auto-merging spec/design/browser-wasm.md
+CONFLICT (content): Merge conflict in spec/design/browser-wasm.md
+Auto-merging spec/design/graph-interaction.md
+CONFLICT (content): Merge conflict in spec/design/graph-interaction.md
+Auto-merging spec/releases/0.6.0-api-inventory.json
+CONFLICT (content): Merge conflict in spec/releases/0.6.0-api-inventory.json
+Auto-merging spec/releases/api-inventory.md
+CONFLICT (content): Merge conflict in spec/releases/api-inventory.md
+Auto-merging tests/browser/graph_session_controller_page.mjs
+CONFLICT (add/add): Merge conflict in tests/browser/graph_session_controller_page.mjs
+Automatic merge failed; fix conflicts and then commit the result.

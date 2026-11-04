@@ -1,0 +1,25 @@
+{
+  "candidateBefore": "7195d070843d507757213e7816862072eed9f39b",
+  "intendedPrBase": "2568ac711d912625d54d083e38b29d51b415ad5c",
+  "acceptedMain": "d6fcacfd482d425a731c5b1ebd492e32dc8a15b4",
+  "acceptedMainTree": "4cde4a0ea4f24125d5c2bdafc2c1bde72cd263eb",
+  "reviewedControllerTree": "4cde4a0ea4f24125d5c2bdafc2c1bde72cd263eb",
+  "mergeBase": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0",
+  "parents": {
+    "7195d070843d507757213e7816862072eed9f39b": "7195d070843d507757213e7816862072eed9f39b cc1966ce6f05d0fdea04584ce192b42cd682dcd2 207ebdbdaa2ec8b0360c571683eb0fa6165e02c0",
+    "2568ac711d912625d54d083e38b29d51b415ad5c": "2568ac711d912625d54d083e38b29d51b415ad5c 3d52fdaf32b9981c9cc2db2fcb267eb63a79a279 207ebdbdaa2ec8b0360c571683eb0fa6165e02c0 d6fcacfd482d425a731c5b1ebd492e32dc8a15b4",
+    "d6fcacfd482d425a731c5b1ebd492e32dc8a15b4": "d6fcacfd482d425a731c5b1ebd492e32dc8a15b4 4cde4a0ea4f24125d5c2bdafc2c1bde72cd263eb 7c751db1ba216005fe0f3eaf81922d44b4d01157"
+  },
+  "runtimeArtifactSha256": {
+    "target/release/libxyg_core.so": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+    "packages/xy-client/dist/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "packages/xy-client/dist/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "packages/xy-client/dist/wasm-inline-worker.js": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+    "packages/xy-client/dist/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "python/xyg/static/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "python/xyg/static/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "python/xyg/static/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+  },
+  "nativeStatus": "Reused existing exact parent bytes; no build or browser invocation in this metadata sync.",
+  "previousProof": "spec/performance/graph-node-first-paint-1k-2026-11-04/"
+}

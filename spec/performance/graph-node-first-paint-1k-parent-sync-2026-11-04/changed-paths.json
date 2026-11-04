@@ -1,0 +1,1308 @@
+{
+  "intendedPrBase": {
+    "base": "2568ac711d912625d54d083e38b29d51b415ad5c",
+    "paths": [
+      {
+        "status": "M",
+        "path": "spec/design/dual-host-parity-matrix.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-mark.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graphforge-node-scheduling.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/host-parity.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/HANDOFF.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/client-build.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/fixture.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/focused-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/gates.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/identities.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/inspection-v2.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/inspection.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/inspection.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/fixture.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/inspection.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/protocol.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/protocol.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/run.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/worker-audit.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/npm-host.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/npm-root.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/pre-commit.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/protocol.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/protocol.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/held-final-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/held-final-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/receipt-files.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/ruff-check.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/ruff-format.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/run-v2.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/run.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/run.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/uv-sync.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/verify-receipt.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/worker-audit.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/before-sync.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/changed-paths.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/checks.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/complete-parent-file-identities.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-verifier-initial-assumption.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/receipt-files.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/review-diff-contract.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/run.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-initial.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-parent-comparison.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stdout"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ],
+    "nonReceiptPaths": [
+      {
+        "status": "M",
+        "path": "spec/design/dual-host-parity-matrix.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-mark.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graphforge-node-scheduling.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/host-parity.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ]
+  },
+  "originalProof": {
+    "base": "7195d070843d507757213e7816862072eed9f39b",
+    "paths": [
+      {
+        "status": "M",
+        "path": "spec/design/browser-wasm.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-interaction.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/before-sync.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/changed-paths.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/checks.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/complete-parent-file-identities.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-verifier-initial-assumption.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/receipt-files.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/review-diff-contract.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/run.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-initial.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-parent-comparison.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/before-sync.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/conflict-stages.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/conflicts.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/history-union-sha256.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/js__src__63_graph_controller.ts.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/js__src__63_graph_session_wire.ts.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/js__test__graph-session-controller-wire.test.mjs.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/pre-status-resolution.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/proof-inputs.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/resolved-status-inventory.patch"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/run.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/scripts__graph_session_controller_wasm_smoke.mjs.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__api__browser-wasm.md.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__design__browser-wasm.md.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__design__graph-interaction.md.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__releases__0.6.0-api-inventory.json.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__releases__api-inventory.md.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/tests__browser__graph_session_controller_page.mjs.conflicted.txt.gz"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/verify_sync.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.stdout"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ],
+    "nonReceiptPaths": [
+      {
+        "status": "M",
+        "path": "spec/design/browser-wasm.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-interaction.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ]
+  }
+}

@@ -919,9 +919,15 @@ The subsequent property-default presentation merged as #1090 at
 Its accepted main tree is byte-exact to reviewed property head `68ee59f1`;
 the [controller main-sync receipt](../performance/graph-s5b-attachment-main-sync-2026-11-04/README.md)
 records that identity while preserving the separately reviewed R2 controller
-source. The bounded primary-click/keyboard/GPU/companion attachment is implemented
-on this branch; final native-input repair review, #1091 main acceptance and
-broader S5b/S6/S7 acceptance remain open.
+source. That base explicit keyboard/GPU/companion attachment merged through
+main's queue as #1091 at `d6fcacfd482d425a731c5b1ebd492e32dc8a15b4` on
+2026-11-04 at 04:35:11Z. Its entire accepted tree is byte-exact to reviewed
+controller head `c3013b30`; the [pointer accepted-main sync receipt](../performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/README.md)
+records the normal squash-history merge while preserving the separately
+reviewed native-input pointer source and qualified runtime evidence. The bounded
+primary-click/keyboard/GPU/companion attachment is implemented and independently
+reviewed on this branch; #1092 main acceptance, final accepted-main sync review
+and broader S5b/S6/S7 acceptance remain open.
 
 The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is
