@@ -1,0 +1,23 @@
+{
+  "first_parent": "c318a0cb2a25bd18d21dc925eb234340b06ddbbb",
+  "accepted_main": "40c0cc5af2fead54684197c0ef90affbbff53519",
+  "accepted_main_tree": "e4567bd0a9dc53798add2f63e10cea4d1d7a2984",
+  "exact_reviewed_Buffer_tree": "74195403ccd18c760e3d20a18f024daab95d711a",
+  "full_tree_equality_verified": true,
+  "parent_reported_MAIN_landing": "PR1094 merged 2026-11-04T07:59:51Z",
+  "parent_reported_R9_final_review": {
+    "reviewer": "s5a_final_review",
+    "commit": "c318a0cb2a25bd18d21dc925eb234340b06ddbbb",
+    "result": "FINAL APPROVE, no unresolved finding",
+    "scope": "c318 only; not the future R10 merge"
+  },
+  "parent_reported_remote_status": "Parent pushed c318, resolved Greptile P2 and PR1095 auto-retargeted MAIN with conflict; c318 remote CI may be running, no remote green claimed",
+  "before_nonspec_files": 2569,
+  "before_history_files": 11130,
+  "prior_R1_R9_files": 658,
+  "production_inputs_exact": 285,
+  "qualified_artifacts_exact": 15,
+  "new_final_combined_tip_review": "Required; parent owned",
+  "freeze": "UNACCEPTED",
+  "preparation_gaps": 685
+}
