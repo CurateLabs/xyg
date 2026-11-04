@@ -25,7 +25,7 @@ pub(super) struct Link {
 // Semantic transport order: node UUID, edge UUID, then exact
 // (result-id None before Some, layer, path, order). Local table slots and
 // aggregates are never transport identities.
-fn compare(a: &ElementRef, b: &ElementRef) -> Ordering {
+pub(super) fn compare(a: &ElementRef, b: &ElementRef) -> Ordering {
     let kind = |r: &ElementRef| match r {
         ElementRef::Node(_) => 0,
         ElementRef::Edge(_) => 1,

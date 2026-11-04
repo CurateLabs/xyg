@@ -1,0 +1,12 @@
+{
+  "name": "shipping-package",
+  "command": [
+    "node",
+    "js/package-wasm.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 46.027,
+  "rawSha256": "48e19fae80a2819d227dd4e6f05cad019b005393b976546d59f79166d0ac5ebe",
+  "log": "shipping-package.txt.gz",
+  "gzipSha256": "a1b0f715dbe089eb268d582ac1a9e06c16a7a881c72b74c7c695b4e39af8356b"
+}

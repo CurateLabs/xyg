@@ -312,7 +312,7 @@ impl GraphSession {
             self.reserve_revision()?;
         }
         let vis = self.visible(world.visibility)?;
-        self.ensure_positions(&vis)?;
+        self.ensure_positions(&vis, world.state)?;
         let revision = if advance {
             self.render_revision + 1
         } else {

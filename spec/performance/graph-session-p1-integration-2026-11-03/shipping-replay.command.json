@@ -1,0 +1,18 @@
+{
+  "name": "shipping-replay",
+  "command": [
+    "env",
+    "-u",
+    "XYG_SESSION_WASM",
+    "node",
+    "--test",
+    "packages/xy-node/test/graph-session-wire.test.mjs",
+    "js/test/package-wasm-contract.test.mjs",
+    "js/test/package-wasm-manifest.test.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 2.455,
+  "rawSha256": "ab810770e05ee21603b37e6f437af37725075013121a1d90e08ceb1ff0b55bd6",
+  "log": "shipping-replay.txt.gz",
+  "gzipSha256": "4ae5a7cfe539f51b408542f50375918a387da2dc1312b354b4ac829bfeed3b21"
+}

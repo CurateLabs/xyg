@@ -1,0 +1,18 @@
+{
+  "name": "wasm-build",
+  "command": [
+    "cargo",
+    "build",
+    "--offline",
+    "-p",
+    "xyg-wasm",
+    "--release",
+    "--target",
+    "wasm32-unknown-unknown"
+  ],
+  "exitCode": 0,
+  "seconds": 130.314,
+  "rawSha256": "5b076fd69d8df82b0e8e6ae142c0786ed99ebd522d003bd2d754cd8bab585e29",
+  "log": "wasm-build.txt.gz",
+  "gzipSha256": "1642e68f2cc5834a32acf3fe2c33d34257cc38ac17d613a89ccfe2bda1790653"
+}

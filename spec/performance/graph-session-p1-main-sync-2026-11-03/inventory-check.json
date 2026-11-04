@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "python",
+    "scripts/check_release_inventory.py"
+  ],
+  "exitCode": 0,
+  "seconds": 3.755,
+  "environment": {
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1",
+    "UV_OFFLINE": "1",
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+  "gzipSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2",
+  "log": "inventory-check.log.gz"
+}

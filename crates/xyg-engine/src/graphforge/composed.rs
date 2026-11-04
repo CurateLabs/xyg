@@ -13,6 +13,14 @@ pub struct ComposedDocument<'a> {
     layers: usize,
 }
 
+/// Borrowed per-composition provenance, indexed by the original layer.
+#[derive(Clone, Copy, Default)]
+pub(crate) struct ProjectionLayer<'a> {
+    pub node_rows: Option<&'a [u8]>,
+    pub edge_rows: Option<&'a [u8]>,
+    pub result_id: Option<&'a str>,
+}
+
 fn invalid(message: impl Into<String>) -> GfError {
     GfError::new("GF_INTERACTION_INVALID", message)
 }
@@ -126,6 +134,49 @@ impl<'a> ComposedDocument<'a> {
                     .map_err(retype)
             })
             .transpose()
+    }
+
+    /// Borrow optional result rows without expanding a source-sized plane.
+    /// Missing/inapplicable planes have no mapping; present planes are strict.
+    pub(crate) fn rows(&self, layer: u32, node: bool, count: usize) -> GfResult<Option<&'a [u8]>> {
+        let name = if node { "layer.node_rows" } else { "layer.edge_rows" };
+        self.container.get(name, layer).map(|s| {
+            if s.dtype != super::container::Dtype::U64 || s.count != count {
+                return Err(invalid("result row plane type/count mismatch"));
+            }
+            Ok(s.payload)
+        }).transpose()
+    }
+
+    /// Section visits, per-layer output descriptors, and both sparse row passes.
+    pub(crate) fn projection_work(&self, selected: usize) -> Option<usize> {
+        self.layers.checked_mul(selected.checked_mul(2)?.checked_add(1)?)?
+            .checked_add(self.container.sections.len())
+    }
+
+    /// Read rows and exact IDs together in one bounded section pass. Missing
+    /// planes/IDs remain absent; present empty IDs retain their validity.
+    pub(crate) fn projection_layers(&self, nodes: usize, edges: usize) -> GfResult<Vec<ProjectionLayer<'a>>> {
+        let mut layers = vec![ProjectionLayer::default(); self.layers];
+        for (name, layer, section) in &self.container.sections {
+            if !matches!(*name, "layer.node_rows" | "layer.edge_rows" | "layer.result_id") {
+                continue;
+            }
+            let entry = layers.get_mut(*layer as usize)
+                .ok_or_else(|| invalid("result projection layer is out of range"))?;
+            if *name == "layer.result_id" {
+                entry.result_id = Some(section.as_utf8(name).map_err(retype)?);
+                continue;
+            }
+            let node = *name == "layer.node_rows";
+            let count = if node { nodes } else { edges };
+            if section.dtype != super::container::Dtype::U64 || section.count != count {
+                return Err(invalid("result row plane type/count mismatch"));
+            }
+            if node { entry.node_rows = Some(section.payload); }
+            else { entry.edge_rows = Some(section.payload); }
+        }
+        Ok(layers)
     }
 
     /// Result row of every composed edge in `layer` (`u64::MAX` absent).

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 use super::render::{Resolved, Visible};
 use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome};
-use crate::graph::{CoseOptions, ForceState, COSE_NO_PARENT, LAYOUT_COSE};
+use crate::graph::{ForceState, COSE_NO_PARENT, LAYOUT_COSE};
 use crate::graph_interaction_state::{ElementSet, HighlightPlane, SelectMode};
 use crate::graph_style::{
     compound_collapse_transition, COMPOUND_ACTION_COLLAPSE, COMPOUND_ACTION_EXPAND,
@@ -66,6 +66,8 @@ pub struct NodePosition {
 pub struct RelayoutReport {
     pub alpha: f64,
     pub done: bool,
+    /// Ticks on this retained force state (not host callback count).
+    pub completed_steps: u64,
 }
 
 /// Result of a disclosure change (`graph.disclosure`).
@@ -91,6 +93,14 @@ pub(super) struct Relayout {
     force: ForceState,
     active: Vec<usize>,
     pins: Vec<u8>,
+    completed_steps: u64,
+}
+
+impl Relayout {
+    pub(super) fn report(&self) -> RelayoutReport {
+        RelayoutReport { alpha: self.force.alpha, done: self.active.is_empty() || self.force.alpha < RELAYOUT_SETTLED_ALPHA,
+            completed_steps: self.completed_steps }
+    }
 }
 
 /// The visible subgraph the force layout runs on, in compact indices, with
@@ -145,53 +155,66 @@ impl GraphSession {
     /// load authored no positions: CoSE over the *visible* subgraph and its
     /// surviving hierarchy. A node invisible at that moment is parked at the
     /// visible layout's centroid until a relayout moves it.
-    pub(super) fn ensure_positions(&mut self, vis: &Visible) -> Result<(), InteractionStatus> {
-        if self.positions.is_some() {
+    pub(super) fn ensure_positions(&mut self, vis: &Visible, state: &crate::graph_interaction_state::GraphInteractionState) -> Result<(), InteractionStatus> {
+        if self.positions.is_some() { return Ok(()); }
+        if !self.progressive {
+            self.positions = Some(self.initial_positions(vis)?);
             return Ok(());
         }
-        self.positions = Some(self.initial_positions(vis)?);
+        let (problem, mut force) = self.seed_layout(vis, 1)?;
+        let positions = self.source_positions(&problem, &force);
+        let mut pins = vec![0; self.identity.node_count()];
+        for id in state.pinned_nodes() {
+            if let Some(i) = self.identity.node_index(id) { pins[i] = 1; }
+        }
+        // As with legacy ingress, pins without authored positions are accepted:
+        // seed first, then anchor the seeded coordinates for continuation.
+        for (k, &node) in problem.active.iter().enumerate() {
+            force.pinned[k] = pins[node] == 1;
+        }
+        self.positions = Some(positions);
+        let completed_steps = u64::from(!force.x.is_empty());
+        self.relayout = Some(Relayout { force, active: problem.active, pins, completed_steps });
         Ok(())
     }
 
     /// Keep freshly seeded positions local until an operation is admitted.
-    fn initial_positions(
-        &mut self,
-        vis: &Visible,
-    ) -> Result<(Vec<f64>, Vec<f64>), InteractionStatus> {
-        let n = self.identity.node_count();
+    fn initial_positions(&mut self, vis: &Visible) -> Result<(Vec<f64>, Vec<f64>), InteractionStatus> {
+        let steps = if self.progressive { 1 } else { INITIAL_LAYOUT_STEPS };
+        let (problem, layout) = self.seed_layout(vis, steps)?;
+        Ok(self.source_positions(&problem, &layout))
+    }
+
+    fn seed_layout(&mut self, vis: &Visible, steps: u32) -> Result<(Problem, ForceState), InteractionStatus> {
+        if self.progressive {
+            let live = vis.node.iter().filter(|&&v| v == 1).count()
+                + vis.edge.iter().filter(|&&v| v == 1).count();
+            if u64::from(steps) * live as u64 > MAX_GRAPH_INTERACTION_WORK {
+                return Err(InteractionStatus::Budget);
+            }
+        }
         let problem = self.layout_problem(vis);
         let m = problem.active.len();
         let mut layout = ForceState::new_configured(
-            m as u64,
-            &problem.sources,
-            &problem.targets,
-            None,
-            None,
-            self.seed,
-            LAYOUT_COSE,
-            CoseOptions::default(),
-            &[],
-            &problem.parents,
-        )
-        .ok_or(InteractionStatus::Invalid)?;
-        layout.tick(INITIAL_LAYOUT_STEPS);
-        self.work += u64::from(INITIAL_LAYOUT_STEPS) * (m + problem.sources.len()) as u64;
+            m as u64, &problem.sources, &problem.targets, None, None, self.seed,
+            LAYOUT_COSE, self.cose, &[], &problem.parents,
+        ).ok_or(InteractionStatus::Invalid)?;
+        layout.tick(steps);
+        self.work += u64::from(steps) * (m + problem.sources.len()) as u64;
         if !layout.alpha.is_finite() || layout.x.iter().chain(&layout.y).any(|v| !v.is_finite()) {
             return Err(InteractionStatus::Invalid);
         }
+        Ok((problem, layout))
+    }
+
+    fn source_positions(&self, problem: &Problem, layout: &ForceState) -> (Vec<f64>, Vec<f64>) {
+        let n = self.identity.node_count();
         let centroid = |plane: &[f64]| {
-            if plane.is_empty() {
-                0.0
-            } else {
-                plane.iter().sum::<f64>() / plane.len() as f64
-            }
+            if plane.is_empty() { 0.0 } else { plane.iter().sum::<f64>() / plane.len() as f64 }
         };
         let (mut x, mut y) = (vec![centroid(&layout.x); n], vec![centroid(&layout.y); n]);
-        for (k, &node) in problem.active.iter().enumerate() {
-            x[node] = layout.x[k];
-            y[node] = layout.y[k];
-        }
-        Ok((x, y))
+        for (k, &node) in problem.active.iter().enumerate() { x[node] = layout.x[k]; y[node] = layout.y[k]; }
+        (x, y)
     }
 
     /// The node a structural operation names. Groups and edges are not nodes.
@@ -236,7 +259,7 @@ impl GraphSession {
             if changed {
                 session.reserve_revision()?;
                 let vis = session.visible(world.visibility)?;
-                session.ensure_positions(&vis)?;
+                session.ensure_positions(&vis, world.state)?;
                 world.state.set_pin(id, on);
                 session.positions_changed();
             }
@@ -362,7 +385,7 @@ impl GraphSession {
             let live_edges = vis.edge.iter().filter(|&&v| v == 1).count();
             let force_steps = u64::from(steps)
                 + if session.positions.is_none() {
-                    u64::from(INITIAL_LAYOUT_STEPS)
+                    u64::from(if session.progressive { 1 } else { INITIAL_LAYOUT_STEPS })
                 } else {
                     0
                 };
@@ -370,7 +393,7 @@ impl GraphSession {
                 return Err(InteractionStatus::Budget);
             }
             session.reserve_revision()?;
-            session.ensure_positions(&vis)?;
+            session.ensure_positions(&vis, world.state)?;
             let n = session.identity.node_count();
             let mut pins = vec![0u8; n];
             for id in world.state.pinned_nodes() {
@@ -401,7 +424,7 @@ impl GraphSession {
                     Some(&pick(y)),
                     session.seed,
                     LAYOUT_COSE,
-                    CoseOptions::default(),
+                    session.cose,
                     &mask,
                     &problem.parents,
                 )
@@ -410,32 +433,37 @@ impl GraphSession {
                     force,
                     active: problem.active.clone(),
                     pins,
+                    completed_steps: 0,
                 });
             }
             let retained = session
                 .relayout
                 .as_mut()
                 .ok_or(InteractionStatus::Invalid)?;
-            retained.force.tick(steps);
+            let completed_steps = retained.completed_steps.checked_add(u64::from(steps)).ok_or(InteractionStatus::Invalid)?;
+            let mut completed = 0;
+            while completed < steps && !retained.force.x.is_empty() && retained.force.alpha >= RELAYOUT_SETTLED_ALPHA {
+                retained.force.tick(1);
+                completed += 1;
+            }
+            // A settled/native-empty state executes no further ticks.
+            retained.completed_steps = completed_steps - u64::from(steps - completed);
             session.work += u64::from(steps) * (active + live_edges) as u64;
             let force = &retained.force;
             if !force.alpha.is_finite() || force.x.iter().chain(&force.y).any(|v| !v.is_finite()) {
                 session.relayout = None;
                 return Err(InteractionStatus::Invalid);
             }
-            let alpha = force.alpha;
             if let Some((px, py)) = session.positions.as_mut() {
                 for (k, &node) in retained.active.iter().enumerate() {
                     px[node] = force.x[k];
                     py[node] = force.y[k];
                 }
             }
+            let report = retained.report();
             session.bump();
             let mut outcome = session.outcome(world, true);
-            outcome.relayout = Some(RelayoutReport {
-                alpha,
-                done: alpha < RELAYOUT_SETTLED_ALPHA,
-            });
+            outcome.relayout = Some(report);
             Ok(outcome)
         })
     }

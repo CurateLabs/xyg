@@ -59,6 +59,9 @@ load.collapsed.u8              optional, per source node
 load.pinned.u8                 optional, per source node; seeds the UUID-keyed pin set
 load.budgets.u64 [node_budget, edge_budget]   default 200_000 / 500_000 (_graph.py layout_render)
 load.seed.u64
+load.progressive.u8 [0|1]     optional; absent/0 legacy 300-tick seed, 1 retained one-tick seed
+load.cose.f64 [ideal, repulsion, gravity, cooling, overlap_padding, component_spacing] optional
+load.cose.bounds.f64 [x0,y0,x1,y1] optional
 ```
 **The hierarchy is not a load input.** It is composed from the base node table's
 `parent_uuid` column ([graphforge-compositions.md](graphforge-compositions.md) §4.1)
@@ -127,6 +130,60 @@ the sender's generation; derived refs from another generation count as unmatched
 UUID refs still apply. `SelectUuids{uuids}`: a UUID naming both a node and an
 edge selects **both**; `SelectRefs` disambiguates by kind.
 
+
+### 2.1.1 Complete selection/result-row publication (bounded P1)
+Every successful publication reply (Render, Update, or interaction; not Open's
+acknowledgment or Poll's event) adds these index-0 sections. The snapshot is
+independent of `changed.refs.bytes`, coordination group, and outbound delivery.
+It is the complete **resolvable per-composition** projection of the shared owner:
+`GraphIdentity::refs_of` omits foreign derived keys whose full exact identity
+(result ID, layer, path, order) does not resolve in this composition. It does not
+change the owner's selection or drop valid local identities because they are hidden, collapsed or offscreen.
+Two sessions with identical canonical UUID planes may bind one owner while
+having overlay IDs A/B: B publishes its resolvable subset after A selects an
+A-only derived edge, including on bind/rebind and exact retries. This is not a
+remap error. `outcome.u32[2]` (`outcome.selected`) remains the full adopted-owner
+selection count, so it may exceed the number of `selection.refs` in a reply.
+
+| Section | Exact meaning |
+|---|---|
+| `selection.refs.bytes` | Existing refs encoding; complete resolvable selected canonical transport identities, ≤10,000, sorted by `coordination::compare`; no aggregates or local result slots |
+| `selection.indices.u64` | N source node/edge indices aligned with refs (kind comes from each ref) |
+| `selection.layer_offsets.u64` | CSR N+1 offsets, first 0, last M |
+| `selection.layers.u32` | M original layer indices, ascending within each selected element |
+| `selection.rows.u64` | M exact original result rows from that element's node/edge row plane; omit `u64::MAX` |
+| `selection.result_ids.texts` | TextList L original layer IDs; absent ID has an empty placeholder |
+| `selection.result_ids.valid.u8` | L validity flags; 0 absent, 1 present (including empty string) |
+
+IDs preserve arbitrary UTF-8, Unicode, spaces and long strings exactly. Missing
+inapplicable row planes mean no mapping; present planes must be u64 with the
+source node/edge count. An empty per-composition snapshot has valid empty refs, empty indices,
+empty layer/row arrays and offsets `[0]`; layer ID tables remain complete.
+Projection uses `GraphInteractionState.selection`, `GraphIdentity.refs_of`,
+`to_transport`, `resolve`, and the existing coordination comparator. UPDATE
+projects the candidate's **new document**, inside the bounded transaction.
+Projection/remap/resource failures preserve sequence, state, publication,
+outbound event and retry bytes. Short caller buffers retain the same complete
+reply under the existing capacity retry contract.
+
+Row access borrows optional planes without source-sized row vectors. Publication
+visits selected elements × original layers, counts actual non-sentinel mappings
+before allocating output tables, and admits
+`document_sections + layers × (2 × resolvable_selected + 1)` work units against
+the existing interaction ceiling. Borrowed result IDs and optional node/edge
+row planes are gathered together in one section pass; IDs are not looked up
+once per layer with a linear container search. Present IDs must be UTF-8 of the
+correct dtype, including present-empty strings. Out-of-range projection layer
+indices fail safely; duplicate sections remain container errors. The remaining
+units cover two row probes per selected/layer cell and per-layer output tables.
+This bounds the P1 projection pass; the generic container decoder and existing
+identity reader are unchanged. Before candidate cloning, admission additionally reserves 4,096 bytes,
+256 bytes per possible selected source element (capped at 10,000), 256 per layer,
+and 128 per possible selected entry in each present row plane. The existing
+text envelope covers exact-ID copies; new reservations include CSR/table scratch,
+builder/final buffers and the existing 3× reply-cache charge. This conservative
+envelope can refuse sparse multi-layer documents; it never raises session caps.
+No source-wide element×layer output scratch is allocated.
 
 ### 2.2 Operations (`GraphInteractionEvent`)
 ```
@@ -236,7 +293,62 @@ The S4 `poll_event` forwards this snapshot → host link channel kind `graph_sel
 `ToggleDisclosure{ref,action}` on a compound runs `compound_collapse_transition` then `compound_collapse` and `session_render` in one call. **Tier decision (recorded in graph-mark.md §7.1.5 and the §28 ledger):** explicit compound disclosure is a direct-tier feature bounded at `MAX_COMPOUND_TRANSITION_NODES = 1_024` source nodes (`graph_style.rs:30, 1664-1675`). Above it the op returns `GF_INTERACTION_COMPOUND_TOO_LARGE`, no state or revision change, and the companion shows "grouping is camera-driven for this graph"; large graphs get render-tier aggregates (camera-driven LOD), which are selectable (members), focusable, hover "group of k", and reject `action` with `GF_INTERACTION_INVALID`. Hidden members keep UUID-keyed state; `CompoundCollapse.flags` propagates to the representative. Proof: 1,024-node fixture toggles; 1,025 → status, revision unchanged.
 
 ### 2.6 Positions and relayout
-The session owns `positions: (Vec<f64>, Vec<f64>)`, `pinned: Vec<u8>`, `parents`, and `relayout: Option<ForceState>`. `RelayoutStep{steps ≤ 64}` lazily builds `ForceState::new_configured(LAYOUT_COSE, …, init = current positions, pinned, parents)` (`graph.rs:670-703`, the only engine honoring pins + parents) and steps it; `force_steps × (visible_nodes + visible_edges) > MAX_GRAPH_INTERACTION_WORK` → `GF_INTERACTION_BUDGET` before layout allocation or position mutation. `force_steps` includes the 300 initial seed steps whenever positions are absent, plus the requested steps. **Relayout always uses CoSE seeded from current positions regardless of the composition's original layout**, because `xyg_graph_layout` has neither pins nor parents (`lib.rs:15480-15492`) and the issue requires pins honored; simplest and keeps Pin/MoveNode valid for every layout. Pinned nodes stay bit-exact (`graph-mark.md:275-277`). Any MoveNode commit, Pin change, or `load` update drops `relayout` (rebuilt on next step). Result `relayout.alpha.f64`, `relayout.done.u8`. Scheduling/animation remains #35 (`python/xyg/graph_layout.py`). Persistence: result `positions.changed` (ref, x, y, pinned); `session_update(load.x/y/pinned)` restores without relayout.
+The session owns source f64 positions, UUID pins, document parents, and an
+optional retained configured CoSE `ForceState`. `RelayoutStep{steps ≤64}` lazily
+constructs that state at current positions with the authoritative pins and
+surviving visible hierarchy. CoSE is used regardless of the composition's
+original layout because it honors pins and parents. Pinned coordinates remain
+bit-exact. `steps × (visible_nodes + visible_edges)` is admitted against
+`MAX_GRAPH_INTERACTION_WORK` before allocation or position mutation, including
+initial seed work when positions are absent.
+
+Absent/zero `load.progressive.u8` preserves the existing 300-tick lazy seed and
+subsequent fresh relayout behavior. With `load.progressive.u8 = [1]`, an initial
+publication without authored positions builds **one** configured CoSE state on
+the visible source graph/hierarchy, executes one native tick, installs source
+positions, and retains that same state. Opcode 15 continues its velocities,
+alpha/cooling, RNG and hierarchy without reconstruction. Pins without positions
+retain legacy ingress acceptance: seed first, then anchor those initial positions
+by setting the existing force state's pin mask for continuation. Complete authored
+`load.x/y` paint directly; their first RelayoutStep constructs CoSE at those
+coordinates with UUID pins. A Preview or Commit before the first Render uses
+the same configured one-tick seed when progressive, or the legacy 300-tick seed
+when absent/zero, then applies the move delta. Seeded positions remain local
+until validation succeeds; a failed wire candidate does not install positions,
+pins, a move origin or a retry/sequence update. The successful move invalidates
+continuation as usual, so the next step constructs at the moved coordinates.
+Invisible sources use the existing centroid parking.
+`load.cose.f64` has exactly six finite values in the order in §1.2;
+`load.cose.bounds.f64` has exactly four values. Each optional plane independently
+uses existing `CoseOptions` defaults when absent; existing `CoseOptions::is_valid`
+is authoritative (including cooling, positive ideal length, nonnegative strengths
+and ordered finite bounds). Parents remain document-only. Strict request
+allowlists admit these fields only on Open/Update, at index 0 and correct dtypes;
+progressive must have exactly one byte, 0 or 1.
+
+Each retained state counts actual completed native ticks. `relayout.steps.u64[1]`
+is additive beside `relayout.alpha.f64[1]` and `relayout.done.u8[1]` on step
+replies and progressive publications with retained state, including the first
+paint. Empty retained native states report `done=1` with alpha unchanged and
+zero completed ticks, including initially empty/all-hidden owners and a new
+empty state built after visibility invalidation. Empty and settled states count
+no further ticks even if a host requests more. Counts restart when a new force state is
+built. Selection, hover, focus, camera and style republication preserve
+continuation. Existing invalidation remains: pin changes, position changes
+(including move preview/commit/cancel), binding, temporal-frame visibility changes
+and full load replacement discard it. Replacement can opt in again and then
+seeds a fresh first checkpoint. Stale, unbound, malformed or resource-refused wire
+transactions preserve checkpoint, sequence, publication and retry bytes.
+
+Result geometry, GPU publication and pick index all use that same source
+checkpoint through the existing render pipeline. Scheduling/animation remains
+host-owned (#35); this seam creates no worker, callback, opcode, C/WASM export,
+protocol-version or host API. Rust source compatibility: `SessionLoad` adds
+`progressive: bool` and `cose: CoseOptions`; `RelayoutReport` adds
+`completed_steps: u64`. Downstream exhaustive struct literals must be updated
+(`SessionLoad { ..Default::default() }` remains compatible). ABI398/WASM35,
+Scene34 and painter17 are unchanged. Persistence remains
+`positions.changed` plus `session_update(load.x/y/pinned)` without forced layout.
 
 ### 2.7 Visual semantics
 `resolve_visual_state` precedence (`graph_style.rs:1497-1514`) is untouched; the new bits never compete there. Rust emits an **independent `emphasis` u8 plane** per render node and render edge: bit0 FOCUSED, bit1 PATH, bit2 COMMUNITY, bit3 EXTERNAL, bits 4–7 zero. Projection: `collapsed_node_flags`' `PROPAGATED` (`graph_style.rs:1882-1890`) gains the four bits so hidden members project to their representative; across LOD aggregates the plane is the OR over `member_of` members (edges: OR over CSR members). `emphasis = (flags >> 7) & 0xF`. Painter contract: one extra u8 attribute on the existing node/edge instances, drawn in an emphasis pass after base elements: community halo (tinted, under), path stroke (accent, nodes and edges), external dashed outline, focus ring (theme focus color, 2 px × dpr, top). All set bits draw; no precedence. Reduced motion: static ring.
@@ -290,7 +402,7 @@ Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_gra
 S4 native surface (`xyg-core`; assign the next ABI version and regenerate
 the manifest when signatures change; native ABI 398 has 537 functions; WASM ABI 35 has 65 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
 Request `XYGI`: `header.u64`[instance_id, group_id, op_seq]; `header.u32`[render_revision, operation, mode, policy, plane, action, commit, steps, space]; `camera.f64`; `coordinates.f64`; `refs.bytes` (kind-tagged refs; transported derived refs carry the exact result id, §2.1; byte layout fixed with the ABI); `uuids.uuid`; `remote.bytes`; `companion.u32`[page, size≤200]; `load.*` (§1.2).
-Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`; `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`; S5a `gpu.*`, `outcome.u32`, `disclosure.ref.bytes`/`disclosure.collapsed.u8`, and `focus.action.ref.bytes`/`focus.action.u32` ([exact v1 layouts below](#s5a-rust-gpu-publication-and-controller-result-foundation)). Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
+Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`, `relayout.steps.u64`; complete `selection.*` (§2.1.1); `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`; S5a `gpu.*`, `outcome.u32`, `disclosure.ref.bytes`/`disclosure.collapsed.u8`, and `focus.action.ref.bytes`/`focus.action.u32` ([exact v1 layouts below](#s5a-rust-gpu-publication-and-controller-result-foundation)). Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
 Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND, _REVISION_EXHAUSTED`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
 
 ## 4. Events (all hosts)
@@ -338,7 +450,7 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 | S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | implemented and merged through #1082; historical real package/assets/parity and full strict-CSP proof under 1,513/626-KiB limits |
 | S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; merged as #1083 at a970d586 (native ABI398/WASM35) |
 | S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result foundation merged as #1085 at 6ffc1ad1 after independent review, current CI and the main merge queue; explicit 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; S5b controller/runtime/visual acceptance remains planned |
-| S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | private [Python native byte transport](graph-session-python-transport.md) integrated locally with serialized lifecycle and callback-safe input conversion; public widget/channel/Node/VS Code attachment remains planned |
+| S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | private [Python native byte transport](graph-session-python-transport.md) merged as #1087 at f156569f after independent review, current CI and the main merge queue; serialized lifecycle and callback-safe input conversion are implemented; public widget/channel/Node/VS Code attachment remains planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
 
 ### S1 notes

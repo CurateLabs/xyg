@@ -1,0 +1,13 @@
+{
+  "name": "environment",
+  "command": [
+    "python3",
+    "-c",
+    "import json,os,subprocess;from pathlib import Path;print(json.dumps({\"node\":subprocess.check_output([\"node\",\"--version\"],text=True).strip(),\"rustc\":subprocess.check_output([\"rustc\",\"--version\"],text=True).strip(),\"cargo\":subprocess.check_output([\"cargo\",\"--version\"],text=True).strip(),\"binaryen\":json.loads(Path(\"node_modules/binaryen/package.json\").read_text())[\"version\"],\"cargoConfig\":Path(\".cargo/config.toml\").read_text(),\"RUSTFLAGS\":os.environ.get(\"RUSTFLAGS\"),\"CARGO_ENCODED_RUSTFLAGS\":os.environ.get(\"CARGO_ENCODED_RUSTFLAGS\"),\"CARGO_TARGET_DIR\":os.environ.get(\"CARGO_TARGET_DIR\")},indent=2))"
+  ],
+  "exitCode": 0,
+  "seconds": 0.095,
+  "rawSha256": "4b0e7a7ff7c988ec4a0b8a84ef02f2440c50bd6308fbdc5c8ba8c521e3c1dadb",
+  "log": "environment.txt.gz",
+  "gzipSha256": "3de447059c5b3ded252f78b4d982890da763df3c028322b7c18dd0bf6a8aaa7b"
+}

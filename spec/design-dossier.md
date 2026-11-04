@@ -2802,7 +2802,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   [S4 package decision receipt](performance/graph-s4-package-budget-2026-10-31/README.md)
   owns real shipping assets and full strict-CSP validation; old failures remain
   immutable. This establishes no speed, S5–S7, #36, M4 or release acceptance.
-- **Current S5a WASM packaging limits:** 1,829 KiB raw / 747 KiB gzip6
+- **Historical S5a WASM packaging limits:** 1,829 KiB raw / 747 KiB gzip6
   (1,872,896 / 764,928 bytes). Rust GPU columns and authoritative operation/focus
   facts add 12,287 / 5,050 bytes over accepted S4. The integrated 1,872,541 /
   764,063-byte module fails the previous gates by 11,933 / 4,255 bytes.
@@ -2817,6 +2817,20 @@ requiring a Rust toolchain — an instant adoption cliff.
   retains these limits: its fresh production artifact is 1,872,568 raw /
   764,079 gzip6 bytes, leaving 328 / 849 bytes. It reports the adopted temporal
   selection count without changing ownership, ABI, runtime budgets or guards.
+- **Current P1 WASM packaging limits:** 1,838 KiB raw / 751 KiB gzip6
+  (1,882,112 / 769,024 bytes). Complete resolvable selection/provenance snapshots
+  and opt-in retained progressive CoSE add 8,940 / 4,055 bytes over the e91 S5a
+  artifact. The combined 1,881,508 / 768,134-byte module fails the previous gates
+  by 8,612 / 3,206 bytes. After completed independent source and package
+  assessment, the parent adopts the smallest next-KiB functionality limits,
+  leaving 604 / 890 bytes. No size experiment, compiler/profile/optimizer,
+  dependency, export, guard or runtime-arena change; no automatic allowance.
+  The [P1 integration receipt](performance/graph-session-p1-integration-2026-11-03/README.md)
+  preserves the failed old-gate run and separates diagnostic validation from
+  fresh production/paired-asset/full strict-CSP qualification. Final integrated
+  review remains required. Runtime bounds remain 16/384 MiB; the massive-graph
+  admission ladder, public host/controller/notebook work and M4/#108 acceptance
+  remain outstanding. This package decision establishes no performance win.
 - **S4 session ABI growth originally failed the S3 limits.** Native ABI 397 /
   WASM ABI 35 expose the shared graph-session codec/transaction and disposable
   temporal owners, with admitted speculative work and complete retry replies.

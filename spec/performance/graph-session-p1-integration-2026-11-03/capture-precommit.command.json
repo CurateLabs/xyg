@@ -1,0 +1,12 @@
+{
+  "name": "capture-precommit",
+  "command": [
+    "python3",
+    "spec/performance/graph-session-p1-integration-2026-11-03/capture.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.329,
+  "rawSha256": "2fefb2ce0001d3406551a1aa1773eb24501ef5be34bda02bfa57432b0e3407a1",
+  "log": "capture-precommit.txt.gz",
+  "gzipSha256": "f0c5e31e5ae2dbe9efb3c0bbc24be1f3453aee0b3ada394f8253dbfd2887981f"
+}

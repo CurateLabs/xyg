@@ -1,0 +1,20 @@
+{
+  "name": "adapters",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "-p",
+    "xyg-core",
+    "-p",
+    "xyg-wasm",
+    "--lib",
+    "--",
+    "--test-threads=1"
+  ],
+  "exitCode": 0,
+  "seconds": 24.711,
+  "rawSha256": "69c985774f0743e0297e871086e5bbd2804fe08a93f3fade248ff7da18da07dd",
+  "log": "adapters.txt.gz",
+  "gzipSha256": "7b941474601bc4f5bf0f8e0a491eb977253a09509615055519a26563d57dabc6"
+}

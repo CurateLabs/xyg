@@ -1,0 +1,4 @@
+    Checking xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-engine)
+    Checking xyg-wasm v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-wasm)
+    Checking xyg-core v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 22.34s

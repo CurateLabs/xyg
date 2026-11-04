@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "node",
+    "spec/performance/graph-session-p1-2026-11-03/boundary-replay.mjs"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "5cbef0afe860f35739047486cca3c84afc03f006",
+  "exitCode": 0,
+  "seconds": 0.713,
+  "log": "boundary-replay-release-candidate.log",
+  "logSha256": "f0b5e9c7b2dd6168f89bb589980cafbcd9a3ce521706b959f24f0189eb3ca41a",
+  "environment": {
+    "PATH": "/tmp/xyg-m4-combined-validation-20261031/node-toolchain/node_modules/node-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/target/task-tmp/p1/release/libxyg_core.so",
+    "XYG_SESSION_WASM": "target/task-tmp/p1-diagnostic.wasm"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "diagnostic-measure",
+  "command": [
+    "node",
+    "spec/performance/graph-session-p1-integration-2026-11-03/diagnostic.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 45.163,
+  "rawSha256": "6b51296d58cb93491d9ee7ec98b81a5c1ecb1fc0e9108382523c12c2334d69a1",
+  "log": "diagnostic-measure.txt.gz",
+  "gzipSha256": "7cbcf44f19fec98b47e76ccbb4f00ce60fde34208cbb17f24fd1ec87f2156b8e"
+}

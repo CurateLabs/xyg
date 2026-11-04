@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "node",
+    "spec/performance/graph-session-p1-2026-11-03/diagnostic.mjs"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "5cbef0afe860f35739047486cca3c84afc03f006",
+  "exitCode": 0,
+  "seconds": 46.767,
+  "log": "diagnostic-release-candidate.log",
+  "logSha256": "477c78d99c2d9c67dd8d11679f865f11737333c0236196758a2121b41325b33e",
+  "environment": {
+    "PATH": "/tmp/xyg-m4-combined-validation-20261031/node-toolchain/node_modules/node-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  }
+}

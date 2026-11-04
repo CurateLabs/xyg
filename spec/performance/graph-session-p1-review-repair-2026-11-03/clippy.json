@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "cargo",
+    "clippy",
+    "--offline",
+    "--workspace",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b",
+  "base": "ec3b738eda52c8d55c27989bdcf8d6017d320bed",
+  "exitCode": 0,
+  "seconds": 22.433,
+  "log": "clippy.log",
+  "logSha256": "2533c4dbd2f4a11b136fe74e123e2f5a7b9491e1b72f90a93539f6e30428c519",
+  "environment": {
+    "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "CARGO_TARGET_DIR": "target/task-tmp/p1"
+  }
+}

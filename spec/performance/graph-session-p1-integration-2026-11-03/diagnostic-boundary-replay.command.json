@@ -1,0 +1,14 @@
+{
+  "name": "diagnostic-boundary-replay",
+  "command": [
+    "env",
+    "XYG_SESSION_WASM=target/task-tmp/p1-combined-diagnostic.wasm",
+    "node",
+    "spec/performance/graph-session-p1-2026-11-03/boundary-replay.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 0.237,
+  "rawSha256": "fe74685fea6f4b09be69e5f25e5788edca8dbb62a4ee8dab72e83b2870a99964",
+  "log": "diagnostic-boundary-replay.txt.gz",
+  "gzipSha256": "6d9e3ad33e501d9e13da3e01139e54ebdf5a050f82fcacf43df91cae4a290bf8"
+}

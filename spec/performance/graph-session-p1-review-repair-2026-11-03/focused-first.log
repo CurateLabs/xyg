@@ -1,0 +1,76 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-engine)
+error[E0277]: can't compare `[u8; 16]` with `{integer}`
+    --> crates/xyg-engine/src/graphforge/interaction/tests/wire/p1.rs:1041:73
+     |
+1041 |             assert!(s.session().pinned().unwrap().iter().all(|&pin| pin == 0));
+     |                                                                         ^^ no implementation for `[u8; 16] == {integer}`
+     |
+     = help: the trait `PartialEq<{integer}>` is not implemented for `[u8; 16]`
+     = help: the following other types implement trait `PartialEq<Rhs>`:
+               `&[T]` implements `PartialEq<Vec<U, A>>`
+               `&[T]` implements `PartialEq<[U; N]>`
+               `&[u8; N]` implements `PartialEq<ByteStr>`
+               `&[u8; N]` implements `PartialEq<ByteString>`
+               `&[u8]` implements `PartialEq<ByteStr>`
+               `&[u8]` implements `PartialEq<ByteString>`
+               `&mut [T]` implements `PartialEq<Vec<U, A>>`
+               `&mut [T]` implements `PartialEq<[U; N]>`
+             and 11 others
+help: convert the array to a `&[u8]` slice instead
+     |
+1041 |             assert!(s.session().pinned().unwrap().iter().all(|&pin| pin == &0[..]));
+     |                                                                            + ++++
+
+error[E0277]: can't compare `[u8; 16]` with `{integer}`
+    --> crates/xyg-engine/src/graphforge/interaction/tests/wire/p1.rs:1055:73
+     |
+1055 |             assert!(s.session().pinned().unwrap().iter().all(|&pin| pin == 0));
+     |                                                                         ^^ no implementation for `[u8; 16] == {integer}`
+     |
+     = help: the trait `PartialEq<{integer}>` is not implemented for `[u8; 16]`
+     = help: the following other types implement trait `PartialEq<Rhs>`:
+               `&[T]` implements `PartialEq<Vec<U, A>>`
+               `&[T]` implements `PartialEq<[U; N]>`
+               `&[u8; N]` implements `PartialEq<ByteStr>`
+               `&[u8; N]` implements `PartialEq<ByteString>`
+               `&[u8]` implements `PartialEq<ByteStr>`
+               `&[u8]` implements `PartialEq<ByteString>`
+               `&mut [T]` implements `PartialEq<Vec<U, A>>`
+               `&mut [T]` implements `PartialEq<[U; N]>`
+             and 11 others
+help: convert the array to a `&[u8]` slice instead
+     |
+1055 |             assert!(s.session().pinned().unwrap().iter().all(|&pin| pin == &0[..]));
+     |                                                                            + ++++
+
+error[E0277]: can't compare `[u8; 16]` with `u8`
+    --> crates/xyg-engine/src/graphforge/interaction/tests/wire/p1.rs:1079:13
+     |
+1079 |             assert_eq!(s.session().pinned().unwrap()[1], commit as u8);
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no implementation for `[u8; 16] == u8`
+     |
+     = help: the trait `PartialEq<u8>` is not implemented for `[u8; 16]`
+     = help: the following other types implement trait `PartialEq<Rhs>`:
+               `&[T]` implements `PartialEq<Vec<U, A>>`
+               `&[T]` implements `PartialEq<[U; N]>`
+               `&[u8; N]` implements `PartialEq<ByteStr>`
+               `&[u8; N]` implements `PartialEq<ByteString>`
+               `&[u8]` implements `PartialEq<ByteStr>`
+               `&[u8]` implements `PartialEq<ByteString>`
+               `&mut [T]` implements `PartialEq<Vec<U, A>>`
+               `&mut [T]` implements `PartialEq<[U; N]>`
+             and 11 others
+
+error[E0502]: cannot borrow `a` as immutable because it is also borrowed as mutable
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/p1.rs:795:21
+    |
+793 |     let a_render = execute_retry(
+    |                    ------------- mutable borrow later used by call
+794 |         &mut a,
+    |         ------ mutable borrow occurs here
+795 |         &request(4, a.session().render_revision(), wire::RENDER, |_| {}),
+    |                     ^ immutable borrow occurs here
+
+Some errors have detailed explanations: E0277, E0502.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `xyg-engine` (lib test) due to 4 previous errors

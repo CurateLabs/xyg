@@ -1,0 +1,4 @@
+packaged optimized xyg-wasm artifact at /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm
+copied optimized xyg-wasm artifact to /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python/xyg/static/xyg-wasm.wasm
+packaged deterministic inline WASM artifact at /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm-inline.js
+wrote WASM version/hash manifest at /home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.manifest.json

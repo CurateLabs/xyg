@@ -203,7 +203,7 @@ impl<H: ResultHash> GraphIdentity<H> {
         let mut edge_index = uuid_map(edge_count);
         let mut edge_derived = vec![None; edge_count];
         let mut derived_index = HashMap::new();
-        let mut layer_rows: HashMap<u32, Vec<u64>> = HashMap::new();
+        let mut layer_rows: HashMap<u32, &[u8]> = HashMap::new();
         for edge in 0..edge_count {
             if derived[edge] == 0 {
                 let id = edge_uuid[edge];
@@ -220,15 +220,15 @@ impl<H: ResultHash> GraphIdentity<H> {
             // overlay: their layer's result row is the unique discriminator.
             let order = if edge_path[edge] == NONE_U64 {
                 let rows = match layer_rows.entry(layer) {
-                    std::collections::hash_map::Entry::Occupied(rows) => rows.into_mut(),
-                    std::collections::hash_map::Entry::Vacant(slot) => {
-                        slot.insert(doc.edge_rows(layer)?)
-                    }
+                    std::collections::hash_map::Entry::Occupied(rows) => *rows.get(),
+                    std::collections::hash_map::Entry::Vacant(slot) => *slot.insert(
+                        doc.rows(layer, false, edge_count)?
+                            .ok_or_else(|| invalid("a derived edge has no result rows"))?
+                    ),
                 };
-                rows.get(edge)
-                    .copied()
-                    .filter(|&row| row != NONE_U64)
-                    .ok_or_else(|| invalid("a derived edge has no result row"))?
+                let row = u64::from_le_bytes(rows[edge * 8..edge * 8 + 8].try_into().unwrap());
+                if row == NONE_U64 { return Err(invalid("a derived edge has no result row")); }
+                row
             } else {
                 u64::try_from(edge_order[edge])
                     .map_err(|_| invalid("an overlay edge has no step order"))?

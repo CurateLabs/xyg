@@ -1,0 +1,14 @@
+{
+  "name": "full-foundation",
+  "command": [
+    "env",
+    "XYG_WASM_FOUNDATION_REPORT=spec/performance/graph-session-p1-integration-2026-11-03/foundation.json",
+    "node",
+    "scripts/wasm_foundation_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 13.066,
+  "rawSha256": "f8101c946ea2a6af364c5946fc382f1227932ddce93e1c628d60c4eda2431e06",
+  "log": "full-foundation.txt.gz",
+  "gzipSha256": "7e3fb32d16fa33620bde50222cda8e97a95ff0248ca077323812335d3b2d2242"
+}

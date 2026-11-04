@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.035,
+  "rawSha256": "a3fde8e762b606d3e4b302781c35b18885c240715340ec55df66adf83f13fae5",
+  "gzipSha256": "74f4aca8a781c07198d36975fbc2c555ca6ad3ce98ad7b6eda99a5441d4554f2",
+  "log": "ruff-format.log.gz"
+}

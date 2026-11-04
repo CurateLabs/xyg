@@ -1,0 +1,22 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-47e5e75b/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 24.19s
+     Running unittests src/lib.rs (target/task-tmp/p1/debug/deps/xyg_engine-7ae6b16ad685de05)
+
+running 14 tests
+test graphforge::interaction::tests::wire::p1::persisted_parallel_and_loop_selection_keep_distinct_exact_source_rows ... ok
+test graphforge::interaction::tests::wire::p1::empty_progressive_publications_and_steps_settle_without_invented_ticks ... ok
+test graphforge::interaction::tests::wire::p1::all_hidden_progressive_owner_and_visibility_to_empty_settle_on_step ... ok
+test graphforge::interaction::tests::wire::p1::completed_steps_stops_at_native_convergence_not_requested_chunks ... ok
+test graphforge::interaction::tests::wire::p1::progressive_bound_visibility_pins_and_disposal_invalidate_without_consuming_retry ... ok
+test graphforge::interaction::tests::wire::p1::foreign_derived_owner_selection_projects_locally_on_render_bind_and_rebind ... ok
+test graphforge::interaction::tests::wire::p1::projection_descriptor_ids_keep_strict_type_utf8_layer_and_duplicate_validation ... ok
+test graphforge::interaction::tests::wire::p1::progressive_load_strictness_and_legacy_zero_keeps_300_seed ... ok
+test graphforge::interaction::tests::wire::p1::projection_update_uses_replacement_rows_and_malformed_planes_rollback ... ok
+test graphforge::interaction::tests::wire::p1::complete_projection_modes_noop_clear_unlinked_and_exact_rows ... ok
+test graphforge::interaction::tests::wire::p1::progressive_pin_move_cancel_and_update_invalidate_checkpoint ... ok
+test graphforge::interaction::tests::wire::p1::pre_render_moves_use_one_progressive_tick_or_legacy_300_and_keep_rollback ... ok
+test graphforge::interaction::tests::wire::p1::progressive_first_paint_and_chunks_share_configured_force_checkpoint_with_pins_and_parents ... ok
+test graphforge::interaction::tests::wire::p1::many_interleaved_layer_ids_project_with_one_charged_descriptor_pass ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 1806 filtered out; finished in 2.52s
+

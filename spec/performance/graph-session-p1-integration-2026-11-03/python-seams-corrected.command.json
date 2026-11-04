@@ -1,0 +1,19 @@
+{
+  "name": "python-seams-corrected",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_graph_session_abi.py",
+    "tests/test_graph_session_python_transport.py",
+    "tests/test_graphforge.py",
+    "tests/test_gen_wasm_abi.py",
+    "tests/test_verify_ownership.py"
+  ],
+  "exitCode": 0,
+  "seconds": 4.326,
+  "rawSha256": "5387ea7c2eca578d06790f60ee7a0c3c2e7f7a4ffc78e9dcafaa42b53b8b25cc",
+  "log": "python-seams-corrected.txt.gz",
+  "gzipSha256": "8da3de5f51e60e24e64659626619778dbcee93e214c955f4301597400e4e078b"
+}
