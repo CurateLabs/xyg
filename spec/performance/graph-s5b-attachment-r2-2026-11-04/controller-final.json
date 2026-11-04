@@ -1,0 +1,1036 @@
+{
+  "schema": "xyg.graph-s5b-attachment/v1",
+  "cases": [
+    {
+      "name": "default16MiB-compose-attach-GPU-lastgood-signed-camera",
+      "result": {
+        "ok": true,
+        "revision": 1,
+        "nodes": 4,
+        "pixels": 1578
+      }
+    },
+    {
+      "name": "real-Tab-in-arrows-visible-focus-same-revision-unchangedgeometry",
+      "result": {
+        "ok": true,
+        "revision": 1,
+        "focus": [
+          {
+            "kind": 0,
+            "uuid": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5"
+          }
+        ],
+        "summary": "Node ada, 5 relationships, not selected, 1 of 4"
+      }
+    },
+    {
+      "name": "Enter-replace-CtrlMetaToggle-Escape-authoritative-empty-propagates",
+      "result": {
+        "ok": true,
+        "selected": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5"
+            }
+          ],
+          "indices": {
+            "0": "0"
+          },
+          "layerOffsets": {
+            "0": "0",
+            "1": "1"
+          },
+          "layers": {
+            "0": 0
+          },
+          "rows": {
+            "0": "0"
+          },
+          "resultIds": [
+            "rank-exact",
+            "pair-exact"
+          ]
+        },
+        "globalCount": 1,
+        "focusAction": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "01a0f3fd-23dd-76d3-87e7-d765a3665ef5"
+            }
+          ],
+          "disclosureEligible": false,
+          "collapsed": false,
+          "pinEligible": true,
+          "pinned": false,
+          "moveCapability": true
+        }
+      }
+    },
+    {
+      "name": "observer-exception-isolated-and-reduced-motion-static-focus",
+      "result": {
+        "ok": true,
+        "observed": true
+      }
+    },
+    {
+      "name": "Tab-forward-back-out-no-trap",
+      "result": {
+        "ok": true
+      }
+    },
+    {
+      "name": "duplicate-attach-and-competing-product-lanes-refuse-before-mutation",
+      "result": {
+        "ok": true,
+        "rejected": [
+          true,
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "wrong-instance-Rust-refusal-and-malformedGPU-retain-lastgood-stale-requires-refresh",
+      "result": {
+        "ok": true,
+        "refusals": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "one-outstanding-action-busy-unaccepted-keys-and-queued-double-disposal-no-lateevents",
+      "result": {
+        "ok": true,
+        "events": 0
+      }
+    },
+    {
+      "name": "constructor-render-failure-closes-session-and-borrowedWorker-survives",
+      "result": {
+        "ok": true,
+        "code": "GF_INTERACTION_INVALID"
+      }
+    },
+    {
+      "name": "twoWorkers-independent-lifetimes-and-wrong-envelope-terminal",
+      "result": {
+        "ok": true,
+        "code": "XYG_WASM_MESSAGE_ERROR"
+      }
+    },
+    {
+      "name": "dirty-shared-sampler-unit2-preserves-exact-shipped-graph-pixels",
+      "result": {
+        "ok": true,
+        "changedChannels": {
+          "dirty": 0,
+          "clean": 0
+        },
+        "cleanup": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "context-loss-restore-exact-last-picture-and-legacy-path-unreachable",
+      "result": {
+        "ok": true,
+        "legacyCalls": []
+      }
+    },
+    {
+      "name": "Rust-paged-companion51-aligned-rowSelect-textContent-focus-preservation",
+      "result": {
+        "ok": true,
+        "focus": true,
+        "textSafe": true,
+        "selectedRefs": [
+          {
+            "kind": 0,
+            "uuid": "00000000-0000-0000-0000-000000000033"
+          }
+        ],
+        "total": 51,
+        "pageLengths": [
+          50,
+          1
+        ],
+        "escaped": [
+          "Node",
+          "00000000000000000000000000000001",
+          "tab\tnewline\nslash\\<img>雪",
+          "0 relationships",
+          "not selected"
+        ],
+        "aligned": {
+          "kind": 0,
+          "uuid": "00000000-0000-0000-0000-000000000033"
+        }
+      }
+    },
+    {
+      "name": "trusted-dialog-Escape-Rust-applicability-admission-and-refusal",
+      "result": {
+        "ok": true,
+        "results": [
+          {
+            "case": "native-control-closes",
+            "ok": true
+          },
+          {
+            "case": "empty-native-default",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 1,
+            "applicable": false
+          },
+          {
+            "case": "focus-only-native-default",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 2,
+            "applicable": false
+          },
+          {
+            "case": "selected-synchronously-cancels",
+            "open": true,
+            "key": {
+              "trusted": true,
+              "prevented": true
+            },
+            "cancels": 2,
+            "applicable": false
+          },
+          {
+            "case": "cleared-native-default",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 3,
+            "applicable": false
+          },
+          {
+            "case": "busy-ignores-old-true-fact",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 4,
+            "applicable": true
+          },
+          {
+            "case": "stale-ignores-old-true-fact",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 5,
+            "applicable": true
+          },
+          {
+            "case": "malformed-clear-ignores-old-true-fact",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 6,
+            "applicable": true
+          },
+          {
+            "case": "missing-clear-ignores-old-true-fact",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 7,
+            "applicable": true
+          },
+          {
+            "case": "locally-accepted-then-Rust-refused-default-already-cancelled",
+            "open": true,
+            "key": {
+              "trusted": true,
+              "prevented": true
+            },
+            "cancels": 7,
+            "applicable": true
+          },
+          {
+            "case": "terminal-ignores-old-true-fact",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 8,
+            "applicable": true
+          },
+          {
+            "case": "failed-local-lane-admission-does-not-cancel",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 1,
+            "applicable": true
+          },
+          {
+            "case": "disposed-surface-has-no-old-fact-listener",
+            "open": false,
+            "key": {
+              "trusted": true,
+              "prevented": false
+            },
+            "cancels": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "old-same-ABI-module-missing-clear-fact-fails-closed",
+      "result": {
+        "ok": true,
+        "code": "GF_INTERACTION_INVALID"
+      }
+    },
+    {
+      "name": "ambiguous-lost-reply-watchdog-is-terminal-no-replay-or-lateevents",
+      "result": {
+        "ok": true,
+        "code": "XYG_WASM_GRAPH_REPLY_LOST",
+        "events": 0
+      }
+    },
+    {
+      "name": "close-drains-before-ownedWorker-disposal-and-final-no-lateevents",
+      "result": {
+        "ok": true,
+        "commands": [
+          {
+            "type": "graph.session.open",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 5,
+            "sequence": 4,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "3",
+            "revision": 1,
+            "operation": 5
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 6,
+            "sequence": 5,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "4",
+            "revision": 1,
+            "operation": 7
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 7,
+            "sequence": 6,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "5",
+            "revision": 1,
+            "operation": 7
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 8,
+            "sequence": 7,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "6",
+            "revision": 1,
+            "operation": 7
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 9,
+            "sequence": 8,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "7",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 10,
+            "sequence": 9,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "8",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 11,
+            "sequence": 10,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "9",
+            "revision": 1,
+            "operation": 5
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 12,
+            "sequence": 11,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "10",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 13,
+            "sequence": 12,
+            "lifetime": 1,
+            "instanceId": "9007199254740994",
+            "opSeq": "11",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 14,
+            "sequence": 13,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "12",
+            "revision": 1,
+            "operation": 7
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 15,
+            "sequence": 14,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "13",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 16,
+            "sequence": 15,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "14",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 17,
+            "sequence": 16,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "15",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 18,
+            "sequence": 17,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "16",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 19,
+            "sequence": 18,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "17",
+            "revision": 2,
+            "operation": 5
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 20,
+            "sequence": 19,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "18",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 2,
+            "sequence": 1,
+            "lifetime": 2,
+            "instanceId": "1",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 2,
+            "instanceId": "1",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 2,
+            "instanceId": "1",
+            "opSeq": "3",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.close",
+            "requestId": 5,
+            "sequence": 4,
+            "lifetime": 2
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 2,
+            "sequence": 1,
+            "lifetime": 3,
+            "instanceId": "2",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 3,
+            "instanceId": "2",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.close",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 3
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 2,
+            "sequence": 1,
+            "lifetime": 4,
+            "instanceId": "9007199254740993",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 4,
+            "instanceId": "9007199254740993",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 4,
+            "instanceId": "9007199254740993",
+            "opSeq": "3",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 21,
+            "sequence": 20,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "19",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 22,
+            "sequence": 21,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "20",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 23,
+            "sequence": 22,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "21",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 24,
+            "sequence": 23,
+            "lifetime": 1,
+            "instanceId": "9007199254740993",
+            "opSeq": "22",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 5,
+            "instanceId": "51",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 5,
+            "instanceId": "51",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 5,
+            "sequence": 4,
+            "lifetime": 5,
+            "instanceId": "51",
+            "opSeq": "3",
+            "revision": 1,
+            "operation": 17
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 6,
+            "sequence": 5,
+            "lifetime": 5,
+            "instanceId": "51",
+            "opSeq": "4",
+            "revision": 1,
+            "operation": 17
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 7,
+            "sequence": 6,
+            "lifetime": 5,
+            "instanceId": "51",
+            "opSeq": "5",
+            "revision": 1,
+            "operation": 17
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 8,
+            "sequence": 7,
+            "lifetime": 5,
+            "instanceId": "51",
+            "opSeq": "6",
+            "revision": 1,
+            "operation": 11
+          },
+          {
+            "type": "graph.session.close",
+            "requestId": 9,
+            "sequence": 8,
+            "lifetime": 5
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 2,
+            "sequence": 1,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "3",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 5,
+            "sequence": 4,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "4",
+            "revision": 1,
+            "operation": 5
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 6,
+            "sequence": 5,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "5",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 7,
+            "sequence": 6,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "6",
+            "revision": 1,
+            "operation": 7
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 8,
+            "sequence": 7,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "7",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 9,
+            "sequence": 8,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "8",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 10,
+            "sequence": 9,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "9",
+            "revision": 1,
+            "operation": 7
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 11,
+            "sequence": 10,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "10",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 12,
+            "sequence": 11,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "11",
+            "revision": 2,
+            "operation": 5
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 13,
+            "sequence": 12,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "12",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 14,
+            "sequence": 13,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "13",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 15,
+            "sequence": 14,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "14",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 16,
+            "sequence": 15,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "15",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 17,
+            "sequence": 16,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "16",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 18,
+            "sequence": 17,
+            "lifetime": 6,
+            "instanceId": "73",
+            "opSeq": "17",
+            "revision": 1,
+            "operation": 4
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 19,
+            "sequence": 18,
+            "lifetime": 6,
+            "instanceId": "72",
+            "opSeq": "18",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 2,
+            "sequence": 1,
+            "lifetime": 7,
+            "instanceId": "72",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 7,
+            "instanceId": "72",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 7,
+            "instanceId": "72",
+            "opSeq": "3",
+            "revision": 1,
+            "operation": 5
+          },
+          {
+            "type": "graph.session.interact",
+            "requestId": 5,
+            "sequence": 4,
+            "lifetime": 7,
+            "instanceId": "72",
+            "opSeq": "4",
+            "revision": 1,
+            "operation": 7
+          },
+          {
+            "type": "graph.session.close",
+            "requestId": 6,
+            "sequence": 5,
+            "lifetime": 7
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 2,
+            "sequence": 1,
+            "lifetime": 8,
+            "instanceId": "80",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 8,
+            "instanceId": "80",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.close",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 8
+          },
+          {
+            "type": "graph.session.open",
+            "requestId": 2,
+            "sequence": 1,
+            "lifetime": 9,
+            "instanceId": "62",
+            "opSeq": "1",
+            "revision": 0,
+            "operation": 19
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 3,
+            "sequence": 2,
+            "lifetime": 9,
+            "instanceId": "62",
+            "opSeq": "2",
+            "revision": 0,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.render",
+            "requestId": 4,
+            "sequence": 3,
+            "lifetime": 9,
+            "instanceId": "62",
+            "opSeq": "3",
+            "revision": 1,
+            "operation": 21
+          },
+          {
+            "type": "graph.session.close",
+            "requestId": 25,
+            "sequence": 24,
+            "lifetime": 1
+          }
+        ],
+        "legacyCalls": []
+      }
+    }
+  ],
+  "status": "passed",
+  "requests": [
+    "/",
+    "/tests/browser/graph_session_controller_page.mjs",
+    "/packages/xy-client/dist/index.js",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/tests/fixtures/graphforge/results/base-cyclic-nodes.arrow",
+    "/tests/fixtures/graphforge/results/base-cyclic-edges.arrow",
+    "/tests/fixtures/graphforge/results/pagerank.arrow",
+    "/tests/fixtures/graphforge/results/node_similarity.arrow",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/tests/fixtures/graphforge/session_companion_nodes.arrow",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/old-same-abi.wasm",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm"
+  ],
+  "cspViolations": [],
+  "pageErrors": []
+}

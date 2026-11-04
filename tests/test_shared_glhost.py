@@ -1033,13 +1033,13 @@ def test_shared_glhost_texture_unit_reset_contract() -> None:
     """`_resetPass` unbinds exactly ``XY_TEXTURE_UNITS`` texture units.
 
     The host constant is a reviewed state contract: a renderer change that
-    starts activating a third unit must bump it in the same commit, or one
-    chart's binding leaks into the next client's pass. Computed
-    ``TEXTURE0 + n`` forms would evade this grep — use literals in client
-    modules (the host's own reset loop is the one sanctioned computed use).
+    activates another unit must bump it in the same commit, or one chart's
+    binding leaks into the next client's pass. Literal activations and the
+    graph adapter's bounded texture-helper arguments are both inventoried;
+    samplers must reset alongside texture bindings.
     """
     host = (ROOT / "js/src/42_glhost.ts").read_text(encoding="utf-8")
-    assert "const XY_TEXTURE_UNITS = 2;" in host, "shared-host texture-unit constant missing"
+    assert "const XY_TEXTURE_UNITS = 3;" in host, "shared-host texture-unit constant missing"
     used: set[int] = set()
     for path in sorted((ROOT / "js/src").glob("*.ts")):
         if path.name == "42_glhost.ts":
@@ -1049,9 +1049,18 @@ def test_shared_glhost_texture_unit_reset_contract() -> None:
             path.read_text(encoding="utf-8"),
         ):
             used.add(int(match.group(1)))
-    assert used == {0, 1}, (
+    graph = (ROOT / "js/src/63_graph_gpu.ts").read_text(encoding="utf-8")
+    graph_units = {
+        int(match.group(1))
+        for match in re.finditer(r'texture\(bytes\("[^"]+"\),\s*(\d+),\s*(?:true|false)\)', graph)
+    }
+    assert graph_units == {0, 1, 2}, "graph style/state/reference unit contract changed"
+    used.update(graph_units)
+    assert "for (let unit = 0; unit < 3; unit++)" in graph
+    assert "gl.bindSampler(unit, null);" in host, "texture reset must also isolate samplers"
+    assert used == {0, 1, 2}, (
         f"renderer modules activate texture units {sorted(used)} but the shared "
-        "GLHost resets XY_TEXTURE_UNITS = 2 between clients; change both together"
+        "GLHost resets XY_TEXTURE_UNITS = 3 between clients; change both together"
     )
 
 

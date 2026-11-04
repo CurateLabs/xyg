@@ -393,3 +393,6 @@ export type { XygGeoScaleBridge, XygGeoScaleQuery, XygGeoQueryBudget, XygGeoTime
 export type { XygGeoInteractionEvent } from "./61_geo_catalog";
 
 export type { GeoOverviewFrozenBinary, OverviewBinaryFreezeOptions } from './74_geo_overview_snapshot';
+
+export { attachWasmGraphSession } from "./63_graph_controller";
+export type { XygWasmGraphSession, XygWasmGraphSessionOptions, XygWasmGraphSnapshot, XygWasmGraphCamera, XygWasmGraphLoad } from "./63_graph_controller";

@@ -1,0 +1,23 @@
+....F................................................................... [ 92%]
+......                                                                   [100%]
+=================================== FAILURES ===================================
+________________ test_shared_glhost_texture_unit_reset_contract ________________
+
+    def test_shared_glhost_texture_unit_reset_contract() -> None:
+        """`_resetPass` unbinds exactly ``XY_TEXTURE_UNITS`` texture units.
+    
+        The host constant is a reviewed state contract: a renderer change that
+        starts activating a third unit must bump it in the same commit, or one
+        chart's binding leaks into the next client's pass. Computed
+        ``TEXTURE0 + n`` forms would evade this grep — use literals in client
+        modules (the host's own reset loop is the one sanctioned computed use).
+        """
+        host = (ROOT / "js/src/42_glhost.ts").read_text(encoding="utf-8")
+>       assert "const XY_TEXTURE_UNITS = 2;" in host, "shared-host texture-unit constant missing"
+E       AssertionError: shared-host texture-unit constant missing
+E       assert 'const XY_TEXTURE_UNITS = 2;' in 'import { ATTR_SLOTS } from "./40_gl";\n\n/** A caller-owned context. Its owner alone schedules paint and owns the can...turn null;\n    }\n    host = created;\n    HOSTS.set(doc, host);\n  }\n  host._register(client);\n  return host;\n}\n'
+
+tests/test_shared_glhost.py:1042: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shared_glhost.py::test_shared_glhost_texture_unit_reset_contract
+1 failed, 77 passed in 46.15s

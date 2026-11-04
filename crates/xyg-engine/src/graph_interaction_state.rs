@@ -241,10 +241,16 @@ impl GraphInteractionState {
         }
     }
 
+    /// Whether Clear applies, including identities hidden or foreign to a view.
+    /// Focus, pins and the session's transient hover do not make Clear apply.
+    pub fn can_clear(&self) -> bool {
+        !self.selection.is_empty() || self.highlights.iter().any(|set| !set.is_empty())
+    }
+
     /// Empty the selection and every highlight plane; focus and pins stay.
-    /// Returns whether anything was cleared (hosts propagate Escape only then).
+    /// Returns whether anything was cleared.
     pub fn clear(&mut self) -> bool {
-        let had = !self.selection.is_empty() || self.highlights.iter().any(|set| !set.is_empty());
+        let had = self.can_clear();
         self.selection = ElementSet::default();
         self.highlights = Default::default();
         had
@@ -343,5 +349,52 @@ mod tests {
         assert!(state.clear());
         assert!(!state.clear(), "second clear has nothing to clear");
         assert_eq!(state.focused_entity(), Some(GraphEntity::Node(id(1))));
+    }
+
+    #[test]
+    fn clear_applicability_matches_mutation_for_every_state_plane() {
+        // These identities need not resolve in any currently displayed view:
+        // applicability belongs to retained state, including hidden/foreign refs.
+        let identities = [
+            nodes(99..100),
+            ElementSet { edges: [id(99)].into(), ..Default::default() },
+            ElementSet {
+                derived: [DerivedKey {
+                    result_id: Some("foreign hidden result".into()),
+                    layer: 17,
+                    path: u64::MAX,
+                    order: 1 << 60,
+                }].into(),
+                ..Default::default()
+            },
+        ];
+        for refs in identities {
+            for plane in 0..5 {
+                let mut state = GraphInteractionState::default();
+                state.set_focus(Some(Focus::Entity(GraphEntity::Node(id(1)))));
+                state.set_pin(id(2), true);
+                assert!(!state.can_clear(), "focus and pins are excluded");
+                if plane == 0 || plane == 4 {
+                    state.select(SelectMode::Replace, &refs).unwrap();
+                }
+                for (index, highlight) in [HighlightPlane::Path, HighlightPlane::Community, HighlightPlane::External]
+                    .into_iter().enumerate()
+                {
+                    if plane == index + 1 || plane == 4 {
+                        state.highlight(highlight, SelectMode::Replace, &refs).unwrap();
+                    }
+                }
+                let applicable = state.can_clear();
+                assert!(applicable, "plane {plane}");
+                assert_eq!(state.clear(), applicable);
+                assert!(!state.can_clear());
+                assert!(!state.clear(), "repeated Clear does nothing");
+                assert_eq!(state.focused_entity(), Some(GraphEntity::Node(id(1))));
+                assert_eq!(state.pinned_nodes(), &[id(2)].into());
+            }
+        }
+        let mut empty = GraphInteractionState::default();
+        assert!(!empty.can_clear());
+        assert!(!empty.clear());
     }
 }

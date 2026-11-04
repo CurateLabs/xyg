@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **S1–S4 merged; bounded S5a Rust GPU/result foundation integrated locally with reviewed package-functionality limits and passing production/paired-asset/full-foundation proof; final integrated source/policy/evidence review approved; CI remains pending. S5b controller/accessibility and S6/S7 acceptance remain outstanding** (see [Implementation status](#implementation-status)).
+Status: **S1–S4 and the bounded S5a Rust GPU/result foundation are merged; property-default presentation merged as #1090 at 7c751db1 on 2026-11-04. One experimental explicit S5b keyboard/GPU/companion attachment is implemented and independently reviewed on this branch; #1091 main acceptance and broader S5b and S6/S7 acceptance remain outstanding** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -79,9 +79,12 @@ Rust `graphforge/interaction.rs` owns the session: identity resolution, state op
 render publication, pick, disclosure, positions/relayout, stamps, companion text.
 `xyg-core` holds sessions in a handle table beside the document store;
 `xyg-wasm` holds one session per instance beside `instance.output`. The browser
-`js/src/63_graph_controller.ts` (new): pointer/keyboard capture, DOM focus, ARIA,
-companion DOM, `xy:graph-*` dispatch; it forwards the two Rust planes to paint;
-the hover policy in `58_graph.ts` is deleted. Python `_graphforge.py`/`channel.py`
+`js/src/63_graph_controller.ts` owns the bounded explicit keyboard attachment,
+DOM focus, ARIA, companion DOM and `xy:graph-*` dispatch described below.
+`63_graph_session_wire.ts` frames bytes and validates semantic replies;
+`63_graph_gpu.ts` validates and uploads Rust GPU-v1 buffers through `GLHost`.
+Pointer capture and deletion of the hover policy in `58_graph.ts` remain later
+S5b/S6 work; that legacy path is not reachable from this explicit attachment. Python `_graphforge.py`/`channel.py`
 and Node `graphforge.js` wrap the same bytes; no policy outside Rust.
 
 
@@ -402,7 +405,7 @@ Container codec unchanged; add `DT.u32` to the **browser encoder** (`49_wasm_gra
 S4 native surface (`xyg-core`; assign the next ABI version and regenerate
 the manifest when signatures change; native ABI 399 has 538 functions; WASM ABI 35 has 65 functions): `xyg_graphforge_session_create(doc, load, instance_id, group_id, out_handle)`, `_update`, `_render`, `_interact`, `_bind_temporal`, `_poll_event`, `xyg_graphforge_coordinate_deliver`, `_destroy`; `GRAPHFORGE_MAX_SESSIONS=256`; `out_cap` short → `GF_INTERACTION_CAPACITY` + required length. WASM: `_session_open/_update/_render/_interact/_close`, one per instance, output in `instance.output` under `max_arena_bytes`.
 Request `XYGI`: `header.u64`[instance_id, group_id, op_seq]; `header.u32`[render_revision, operation, mode, policy, plane, action, commit, steps, space]; `camera.f64`; `coordinates.f64`; `refs.bytes` (kind-tagged refs; transported derived refs carry the exact result id, §2.1; byte layout fixed with the ABI); `uuids.uuid`; `remote.bytes`; `companion.u32`[page, size≤200]; `load.*` (§1.2).
-Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`, `relayout.steps.u64`; complete `selection.*` (§2.1.1); `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`; S5a `gpu.*`, `outcome.u32`, `disclosure.ref.bytes`/`disclosure.collapsed.u8`, and `focus.action.ref.bytes`/`focus.action.u32` ([exact v1 layouts below](#s5a-rust-gpu-publication-and-controller-result-foundation)). Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
+Result `XYGR`: `status.u32`; `header.u32`[render_revision, pick.degraded, unmatched, dropped]; `render.*` (§2.3, whenever geometry or style/emphasis planes changed); `node.flags.u32`/`edge.flags.u32` (source-indexed state); `focus.bytes`, `focus.ring.u32`; `changed.refs.bytes`; `candidates.bytes`; `positions.changed.bytes`; `relayout.alpha.f64`, `relayout.done.u8`, `relayout.steps.u64`; complete `selection.*` (§2.1.1); `companion.text.utf8` + `companion.total.u32`; `summary.text.utf8`; `outbound.bytes`; S5a `gpu.*`, `outcome.u32`, independently versioned `clear.action.u32` below, `disclosure.ref.bytes`/`disclosure.collapsed.u8`, and `focus.action.ref.bytes`/`focus.action.u32` ([exact v1 layouts below](#s5a-rust-gpu-publication-and-controller-result-foundation)). Companion text: rows `\n`-separated, cells `\t`-separated, cell escaping `\\`→`\\\\`, `\t`→`\\t`, `\n`→`\\n`; DOM sets `textContent` only.
 Statuses: `GF_INTERACTION_STALE, _UNLINKED, _INVALID, _BUDGET, _CAPACITY, _SELF_ECHO, _STALE_REMOTE, _SELECTION_TOO_LARGE, _COMPOUND_TOO_LARGE, _UNBOUND, _REVISION_EXHAUSTED`. Static export path (`request.selected`, `compose.rs:640`) unchanged.
 
 ## 4. Events (all hosts)
@@ -416,7 +419,7 @@ Surface `role="application"`, `tabindex=0`; companion `<table>` follows in DOM o
 | `]` `[`, PageDown/Up | FocusRing ±1 (Nodes → OutEdges → InEdges → Neighbors) |
 | Enter | SelectFocused Replace (normal) / MoveNode commit=1 (move mode); Ctrl/Meta+Enter Toggle |
 | Space | ToggleDisclosure on compound, else SelectFocused Toggle |
-| Escape | move mode: cancel (commit=2) and exit; else Clear, `preventDefault` only when something was cleared |
+| Escape | move mode: cancel (commit=2) and exit; else Clear; browser default cancellation uses the accepted Rust applicability fact and synchronous local admission below |
 | Home/End | FocusRef first/last visible node |
 | `p` | Pin toggle on focused node |
 | `m` | Toggle **move mode** on a focused direct node (not aggregates); exits on blur or focus change with cancel |
@@ -449,7 +452,7 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
 | S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | implemented and merged through #1082; historical real package/assets/parity and full strict-CSP proof under 1,513/626-KiB limits |
 | S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; merged as #1083 at a970d586 (native ABI398/WASM35) |
-| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result foundation merged as #1085 at 6ffc1ad1 after independent review, current CI and the main merge queue; explicit 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; complete-selection publication and retained progressive-layout P1 follow-up merged as #1088 at 3c665807 on 2026-11-04, with the reviewed 1,838/751-KiB package gates; S5b controller/runtime/visual acceptance remains planned |
+| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result foundation merged as #1085 at 6ffc1ad1 after independent review, current CI and the main merge queue; explicit historical 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; complete-selection publication and retained progressive-layout P1 follow-up merged as #1088 at 3c665807 on 2026-11-04, with the reviewed 1,838/751-KiB package gates; property-default native/WASM presentation merged as #1090 at 7c751db1 on 2026-11-04, with the reviewed 1,878/765-KiB gates; experimental explicit S5b keyboard/GPU/companion attachment implemented below, broader S5b runtime/visual acceptance remains open |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | private [Python native byte transport](graph-session-python-transport.md) merged as #1087 at f156569f after independent review, current CI and the main merge queue; serialized lifecycle and callback-safe input conversion are implemented; public widget/channel/Node/VS Code attachment remains planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
 
@@ -758,8 +761,9 @@ vertex buffers or a new GPU wire. They allow host-independent inspection and
 replay of the same geometry used by the pick index. S5a below performs generic GPU
 encoding in Rust using the existing §29 offset-f32/u8 lowering. Hosts must not
 upload these f64 arrays directly, narrow them in TypeScript, or recompute
-semantic/router policy. S5b controller/shader/DOM/ARIA and emphasis rendering
-remain outstanding.
+semantic/router policy. This foundation deferred S5b controller/shader/DOM/ARIA
+and emphasis rendering; the bounded explicit attachment below implements only
+the keyboard/GPU/companion subset.
 
 ### S5a Rust GPU publication and controller-result foundation
 
@@ -837,7 +841,7 @@ version-1 GPU sections, exact names/indices/dtypes/counts, checked stride
 multiplication, finite f32 columns and style floats, finite positive transforms,
 valid style/state/shaft flags and zero reserved fields, in-range edge/piece/node
 references, strictly increasing head-piece references, and matching published
-node/edge counts. Unknown extra GPU sections also fail. S5b must perform the
+node/edge counts. Unknown extra GPU sections also fail. The bounded S5b attachment performs the
 same validation before constructing/uploading host views; it must not substitute
 f64 uploads or a host geometry/reference algorithm.
 
@@ -917,8 +921,9 @@ next-KiB limits for the integrated 1,872,541 / 764,063-byte module. They retain
 355 / 865 bytes of headroom. The historical failed-gate and diagnostic records
 above remain unchanged. No runtime-arena, ABI/export, compiler/profile/optimizer,
 dependency or validation change is part of this package decision; graph scale
-and S5b/S6/S7 delivery remain unaccepted. The GPU validator currently has
-inspection/test callers; S5b must validate before host upload.
+and S5b/S6/S7 delivery remain unaccepted. At that S5a decision the GPU validator
+had inspection/test callers; the bounded S5b attachment below now validates
+complete host views before upload.
 
 ### S4 review repair: admission and owner transitions
 
@@ -1033,3 +1038,146 @@ The CI-repaired production module is 1,860,254 raw / 759,013 gzip6 bytes, with
 354 / 795 bytes headroom under the unchanged 1,817/742-KiB gates. Native ABI is
 398; WASM/Scene/painter remain 35/34/17. This replaces no historical artifact
 record and claims no runtime speed or standalone residency improvement.
+
+
+### Bounded explicit S5b attachment
+
+`attachWasmGraphSession` is an **experimental**, opt-in retained browser path,
+exported only through `js/src/60_entries.ts`. It takes an element, an available
+packaged Worker, a nonzero exact-u64 `bigint` instance ID, **complete XYGF bytes**
+(for example `composeWasmGraphForge(...).result.bytes`), optional existing load
+inputs (§1.2), and an explicit seven-f64 camera in Rust session order:
+`[scale_x, scale_y, offset_x, offset_y, viewport_width, viewport_height, dpr]`.
+Both camera scales may have either sign but must be nonzero; Rust validates
+finite values and positive viewport dimensions/DPR. This path performs no
+browser autorange or layout policy. `renderWasmGraphForge` retains its existing
+canonicalScene API; the attached path never calls `prepareScene`, canonicalScene,
+`layoutWasmCose`, or legacy graph-mark compilation alongside the session.
+
+The returned handle exposes `ready`, `refreshRender(camera?)`, `snapshot()` and
+asynchronous idempotent `dispose()`. `ready` opens initially **Owned, unlinked**
+state and installs its first Render; snapshot is null before that installation and after disposal.
+A snapshot contains camera/revision, exact selection refs and provenance,
+changed refs, focus/focus-action facts, operation outcome, disclosure facts,
+companion rows and aligned refs, and the Rust summary. u64 source indices, rows,
+paths and orders retain `bigint` precision; absent result IDs remain distinct
+from explicitly empty UTF-8 IDs. `outcome.selected` is the global authoritative
+count; the projected selection need not have that many rows. CPU paint/geometry
+planes are not eagerly materialized by the raw named-section reader.
+
+One controller may claim each Worker. Claiming requires a drained ordinary
+Worker; a duplicate claim fails without replacing the first session. Both the
+proxy and Worker reject unrelated compile/job/temporal/geographic acquisition
+before it can stage bytes or mutate the retained instance. In particular, the
+underlying geographic acquisition's owner-revocation behavior cannot silently
+revoke an attached controller. The Worker is **borrowed**: await attachment
+`dispose()` to drain accepted work and CLOSE before disposing a caller-owned
+Worker separately. No `workerOwnership` option or raw arbitrary-interaction API
+is introduced.
+
+A single serialized, non-cancellable lane preserves exact immutable request
+bytes until resolution. Attachment lifetime, Worker request ID, Rust session
+instance ID, exact-u64 `op_seq`, render revision and outer Worker sequence have
+distinct roles. The complete XYGR header does **not** echo instance ID or
+`op_seq`; correspondence is established by the issued request and lifetime,
+never invented from a reply field. Exact retries use identical bytes/sequence;
+changed requests receive a new operation sequence. A failed export preserves its
+`GF_INTERACTION_*` vocabulary and never reads a preceding successful output as
+an error reply. Worker failure or an ambiguous lost reply terminates that Worker
+lifetime; cancellation is never inferred for a possibly applied mutation.
+
+Each complete reply is validated before installation of camera, revision,
+selection, companion and GPU publication. All 33 GPU-v1 sections pass the
+name/index/type/length/finite/transform/style/state/reserved/reference checks
+above, including rejection of unknown `gpu.*` extras, before upload. The
+existing GL lifecycle and marker/segment/triangle/rectangle conventions consume
+raw f32/u8 coordinates, 60-byte styles and Rust piece→edge, head→piece and
+frame→node indices directly. There is no TypeScript per-piece style expansion,
+clipping, arrow generation, routing or membership construction. GPU positions
+already are CSS screen coordinates: reconstruct offset/scale, then apply only
+viewport/DPR presentation; applying the data camera again is incorrect. Paint
+order is frame → shaft → head → node. Emphasis bit 0 supplies a visible static
+focus ring, including reduced-motion presentation. Every successful publication
+repaints, including focus/selection style changes at the same render revision.
+Refusal or malformed publication retains the preceding accepted picture and
+semantic snapshot. A stale result emits `xy:graph-stale`; `refreshRender()` must
+succeed before further input, with no selection replay onto a different picture.
+
+The surface has `role="application"` and `tabindex="0"`, followed by a companion
+table and polite ARIA live region containing **Rust's summary**. ArrowRight/Down
+submit FocusStep +1 and ArrowLeft/Up submit −1; Enter submits
+SelectFocused Replace, Ctrl/Meta+Enter Toggle, and Escape Clear. Tab/Shift+Tab
+remain ordinary browser navigation. Only one UI action is outstanding; busy,
+unsupported, repeated or stale-blocked keys are not swallowed. Escape synchronously
+frames and locally admits Clear before returning from keydown. If the latest
+accepted Rust `clear.action.u32` fact says it applies, that accepted command calls
+`preventDefault` synchronously. No counts, styles or DOM state infer applicability,
+no observer runs between choosing the fact and local admission, and no KeyboardEvent
+is retained by asynchronous work. Busy/stale/terminal/disposed state cannot consume
+an old fact. An empty or focus-only Escape leaves the native browser default intact.
+Applicability is **not a reservation for future Rust success**: a later definitive
+Rust refusal is reported and preserves the preceding state, while the browser
+default already cancelled at local admission stays cancelled. This explicit timing
+contract replaces the asynchronous preventDefault defect recorded in the immutable
+first attachment receipt. Other accepted keys are suppressed synchronously.
+Observer exceptions do not undo accepted state.
+
+Previous/Next use Rust Companion operation 17 with page size 50. Row Select
+submits SelectRefs with that row's **aligned Rust candidate ref**, never a
+label/UUID parsed from displayed text. Transport row/cell separators are split
+before escaped cell text is decoded, and all content uses `textContent`.
+Rebuilding rows preserves focused controls where possible. TypeScript performs
+no source-row iteration, identity resolution, selection or neighborhood policy.
+
+Disposal immediately suppresses late DOM/events and listeners, restores owned
+surface attributes, releases painter/DOM resources, drains accepted commands,
+then CLOSEs and releases the Worker claim. Initialization failure also closes an
+opened session. Double cleanup and WebGL context restoration retain the same
+lifetime rules; disposal remains available while an action is busy.
+
+This vertical intentionally exposes no temporal binding, coordination/linking,
+structural update, force scheduler, pointer/hover/brush/lasso, disclosure,
+move/pin/relayout, or legacy click aliases. Broader S5b, S6 legacy attachment and
+removal, S7 visual/scale/responsiveness, #36, M4 and #108 acceptance remain open.
+`58_graph.ts` CSR handling remains for ordinary `spec.graph`, whose host wire
+intentionally omits the host-only identity planes (`_graph_wire.py`); globally
+deleting it before S6 would regress that path. The explicit attachment must
+never enter it or generic CPU hit-test/selection-mask paths. A later Rust wire
+projection is still needed for exact hover/picked refs: Hover retains private
+node/edge lists but current XYGR exposes no exact hovered/picked reference.
+Flags, selection and nearest geometry cannot substitute for that missing fact.
+
+The append-only [S5b attachment receipt](../performance/graph-s5b-attachment-2026-11-04/README.md)
+records actual commands, logs, packaged assets, journeys and limitations. This
+slice changes no Rust/C/WASM signatures, ABI 399/WASM 35/Scene 34/painter 17,
+GPU-v1/XYGI/XYGR contract, arena, package gate, compiler/profile/optimizer,
+dependency or export guard. It establishes no competitor or performance win.
+
+
+### R2: Rust Clear applicability and shared sampler isolation
+
+Every successful publication includes `clear.action.u32`, index 0, U32/count 2:
+`[version=1, applicable=0|1]`. OPEN acknowledgments and Poll omit it. This section
+has its own version; `outcome.u32`, reserved focus words and GPU-v1 remain unchanged.
+The fact comes from the same post-operation `GraphInteractionState` snapshot used
+for selection and focus-action projection, including same-revision publications
+and byte-identical retries. `GraphInteractionState::can_clear` is the shared exact
+predicate used by `clear`: selection nonempty OR any of the three highlight sets
+nonempty. Focus, pins and transient hover do not count; hidden or foreign retained
+identities do count. No per-view visible/ref projection substitutes for that owner.
+
+The browser requires the fact's exact name/index/type/count/version/boolean shape
+before atomically installing a complete semantic/GPU result. Missing or malformed
+facts keep the last accepted picture but invalidate command applicability until
+successful explicit refresh. Older same-ABI modules lacking this named fact fail
+closed; no ABI signature/version, outcome layout or reserved word is repurposed.
+Native and WASM publish the same section through the shared serializer.
+
+The shared GLHost pass boundary resets textures **and samplers** on units 0–2.
+The graph adapter's integer reference texture uses unit 2; inherited LINEAR
+samplers can silently corrupt its draws without producing a GL error. Exact
+pixel equality with a dirty neighbor, cleanup and context restoration are required.
+The [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md)
+records the independent review findings, repairs and fresh production gates.
+The original receipt and its historical failures remain immutable. Broader
+S5b/S6/S7, #36/M4/#108 and release acceptance remain open.

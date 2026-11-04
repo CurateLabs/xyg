@@ -1,0 +1,14 @@
+PASS default16MiB-compose-attach-GPU-lastgood-signed-camera
+PASS real-Tab-in-arrows-visible-focus-same-revision-unchangedgeometry
+PASS Enter-replace-CtrlMetaToggle-Escape-authoritative-empty-propagates
+PASS observer-exception-isolated-and-reduced-motion-static-focus
+PASS Tab-forward-back-out-no-trap
+PASS duplicate-attach-and-competing-product-lanes-refuse-before-mutation
+PASS wrong-instance-Rust-refusal-and-malformedGPU-retain-lastgood-stale-requires-refresh
+PASS one-outstanding-action-busy-unaccepted-keys-and-queued-double-disposal-no-lateevents
+PASS constructor-render-failure-closes-session-and-borrowedWorker-survives
+PASS twoWorkers-independent-lifetimes-and-wrong-envelope-terminal
+PASS context-loss-restore-exact-last-picture-and-legacy-path-unreachable
+PASS Rust-paged-companion51-aligned-rowSelect-textContent-focus-preservation
+PASS close-drains-before-ownedWorker-disposal-and-final-no-lateevents
+graph session strict-CSP shipping journey: 13 cases passed, zero skips

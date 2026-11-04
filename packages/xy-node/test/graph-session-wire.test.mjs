@@ -39,7 +39,7 @@ function equalBytes(actual, expected, label) {
 function assertGpuPublication(bytes, operation) {
   const sections = decodeContainer(bytes, "XYGR");
   if (operation === 19 || operation === 22) {
-    assert.ok(![...sections.keys()].some((key) => /^(gpu\.|focus\.action\.|outcome\.|disclosure\.)/.test(key)), "control acknowledgements carry no invented publication/outcome");
+    assert.ok(![...sections.keys()].some((key) => /^(gpu\.|focus\.action\.|clear\.action\.|outcome\.|disclosure\.)/.test(key)), "control acknowledgements carry no invented publication/outcome");
     return;
   }
   const get = (name, dtype, index = 0) => {
@@ -48,6 +48,10 @@ function assertGpuPublication(bytes, operation) {
     assert.equal(section.dtype, DTYPE[dtype], `${name} dtype`);
     return section.value;
   };
+  const clear = get("clear.action.u32", "u32");
+  assert.equal(clear.length, 2);
+  assert.equal(clear[0], 1);
+  assert.ok(clear[1] === 0 || clear[1] === 1, "Rust clear applicability is a versioned boolean fact");
   const header = get("gpu.header.u32", "u32");
   assert.equal(header.length, 8);
   const [version, flags, n, m, pieces, heads, frames, reserved] = header;

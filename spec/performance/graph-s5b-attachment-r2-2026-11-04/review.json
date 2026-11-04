@@ -1,0 +1,32 @@
+{
+  "reviewer": "/root/s5a_final_review",
+  "verdict": "REQUEST_CHANGES",
+  "reviewedCommit": "b0de6a55814f7c799d551c40fbd5c82227707cd3",
+  "reviewedWholeDiffSha256": "191d4d14d8235b04015b4966fe40d9c28afe5976d3bdc0af543d03197a6e4a18",
+  "reviewedSourceDiffSha256": "0e826735ef757cfd23763b35afe24277cc30a2a0a4e2f6959ef85a3dbc3ebb9b",
+  "blockers": [
+    {
+      "priority": "P1",
+      "finding": "Escape preventDefault happened after asynchronous Rust reply; synthetic test missed native browser default",
+      "repair": "Shared Rust can_clear predicate and required post-operation clear.action.u32 v1; synchronous frame/local admission before cancellation from accepted fact; trusted native dialog proof required",
+      "disposition": "Repaired; required Rust publication fact and synchronous local admission verified by controller-final trusted native-dialog cases, shared Rust/full-workspace and native/WASM shipping replay"
+    },
+    {
+      "priority": "P1",
+      "finding": "Shared GLHost reset only units0/1 while graph integer reference sampler uses unit2; LINEAR sampler silently corrupted pixels",
+      "repair": "Shared texture/sampler reset includes unit2; exact dirty-neighbor pixel and cleanup/restoration proof required",
+      "disposition": "Repaired; shared three-unit texture/sampler reset verified by actual shipped exact-pixel dirty-neighbor and complementary exact restoration/cleanup/lifecycle cases"
+    }
+  ],
+  "parentTimingContract": "Applicability fact plus synchronous local acceptance cancels native Escape default. This is not a reservation for future Rust success: later refusal reports error/preserves state after browser default already cancelled. Empty/focus-only and busy/stale/terminal/disposed must not consume old fact.",
+  "newIndependentFinalReviewRequired": true,
+  "optionalRustFmt": {
+    "exit": 1,
+    "scope": "cargo fmt --all -- --check",
+    "disposition": "No sweeping unrelated formatting; whole-repository check reports thousands of existing style differences as well as compact focused test additions. Mandatory hooks/Ruff are separate required gates.",
+    "firstFailure": "crates/xyg-core/src/graphforge_session_ffi.rs",
+    "firstFailureByteExactToBase": true,
+    "firstFailureSha256": "067e86421a9bea9166fd3799b1c65c7463be0508f68515299f75fea336c3a108"
+  },
+  "candidateStatus": "Both P1 repairs qualified locally; parent independent final review remains required"
+}

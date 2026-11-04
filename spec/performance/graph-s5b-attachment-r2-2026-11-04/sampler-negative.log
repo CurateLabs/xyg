@@ -1,0 +1,22 @@
+browser: Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
+{"center":[40,80,200,255],"edge":[200,80,40,255],"head":[40,80,200,255],"frame":[40,80,200,255],"changes":38660,"errors":[true,true],"restored":true,"restoredPixel":[40,80,200,255],"dirtyDifference":4820,"cleanDifference":0,"dirtyBindings":{"samplers":[true,true,false],"textures":[true,true,true],"active":true,"error":0},"restoredDifference":0,"restoredDirtyDifference":4816,"restoredBindings":{"samplers":[true,true,false],"textures":[true,true,true],"active":true,"error":0},"removed":true,"hostReleased":true,"contextReleased":true}
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: dirtyDifference exact pixels
+
+4820 !== 0
+
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-913c4718/scripts/graph_session_gpu_paint_smoke.mjs:65:111 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 4820,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.4
+
+EXIT_STATUS=1

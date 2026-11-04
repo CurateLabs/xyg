@@ -1,0 +1,19 @@
+{
+  "approvedController": {
+    "commit": "8445c238c7115c5f20e8d3541cf9b81023c47ee5",
+    "reviewer": "Parent /root/s5a_final_review",
+    "disposition": "APPROVED; parent supplied, no blockers",
+    "wholeVs7e99": "cfb873e08dab9e2d5fee82d7bf402729f6140139675ce11662f7571e0e426868",
+    "nonreceiptVs7e99": "f257b30564957c482616850fca4a47839d0e1821cb65c1b5519398334e243df8",
+    "r2NonreceiptVsB0": "9e961d19c2ebba9003b63ef5267241eb40048cfdb70a6630e147e57d92b7143a",
+    "parentIndependentlyReran": "All 17 actual packaged strict-CSP journeys without output-file environment; trusted Escape/refusal/old-fact guards/old-module fail-closed/dirty sampler/context restore passed"
+  },
+  "parent": {
+    "commit": "cc60fd8ca93a4afca3f7d634cba55e0086a7c06f",
+    "reviewer": "Parent /root/m4_defaults_audit",
+    "disposition": "APPROVED; parent supplied, no blockers",
+    "wholeVs46": "1e5f1b1d5a06f62a06e43248804a2f652fad80ce940251c745bb9062133d72a2",
+    "nonreceiptVs46": "420dd8a56359fd83f47a864995571c1fc583c39ba2dfb1c017a2437dbdea216d"
+  },
+  "syncFinalReview": "Pending new independent parent review of this final material merge; no PR/push authorization exercised"
+}

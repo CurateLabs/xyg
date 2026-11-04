@@ -1,0 +1,2 @@
+browser: Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
+{"center":[40,80,200,255],"edge":[40,80,200,255],"head":[40,80,200,255],"frame":[40,80,200,255],"changes":38660,"errors":[true,true],"restored":true,"restoredPixel":[40,80,200,255],"removed":true}

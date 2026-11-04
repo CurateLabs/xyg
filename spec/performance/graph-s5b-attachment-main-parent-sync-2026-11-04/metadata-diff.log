@@ -1,0 +1,55 @@
+diff --git a/spec/design/browser-wasm.md b/spec/design/browser-wasm.md
+index 37e7e875a1898c436d219d3d8cb7e6bed204da5d..b9157b5800a77afbddcfa54942e1492ea1fd2cd3 100644
+--- a/spec/design/browser-wasm.md
++++ b/spec/design/browser-wasm.md
+@@ -873,8 +873,11 @@ native SVG exports and actual browser screenshots. Authored box-effect
+ fallback promises browser/CSS appearance, with no invented native export
+ parity. Native raster strokes still have round caps while canonical SVG and
+ browser SVG/HTML spines have flat ends; arbitrary endpoint pixel equality is
+-not asserted. Native property-graph initial home-view, caption and theme
+-failures remain separately owned by #935. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
++not asserted. The #1089 consumer receipts retain the historical native
++property-graph initial home-view, caption and theme failures. The subsequent
++[property-default qualification](../performance/graph-property-default-package-2026-11-03/README.md)
++records all six unmasked image pairs passing for the current property source;
++broader #935 intent/digest/safe-pair scope remains open. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
+ records the fresh all-pixel default-property comparisons; the [R4 eligibility
+ repair receipt](../performance/graph-resolved-axis-eligibility-repair-2026-11-03/README.md)
+ records pointer/motion-path/reflection reproductions and compatibility repair.
+@@ -883,6 +886,14 @@ records actual pointer/focus/active input, unrelated normal/important host SVG
+ rules, and a controlled centered-HTML diagnosis with the Rust-final plot.
+ These preserve the unchanged historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
+ 
++The resolved Scene plot/axis and live CSS repairs merged as #1089 at
++`a0636c27ec48c50eb1eafa2c99122d165d266c28` on 2026-11-04 at 02:22:11Z.
++The accepted main tree is byte-exact to reviewed `46c2573c`; the
++[property main-sync receipt](../performance/graph-property-default-main-sync-2026-11-04/README.md)
++records that identity and preservation of the subsequent ABI399 property
++presentation source. The bounded experimental S5b keyboard/GPU/companion
++attachment is implemented above; broader S5b runtime/visual acceptance remains open.
++
+ The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
+ one painter version, so an older XYPB fails closed (`Rust painter contract version is
+ incompatible`) and the Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
+diff --git a/spec/releases/0.6.0-api-inventory.json b/spec/releases/0.6.0-api-inventory.json
+index 2ad2c786a3548b77aa04c32e4684db0b2384f357..34eab3c7628bb9a4921be37a57d4a04579dd1afc 100644
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@ -1195,7 +1195,7 @@
+  "releaseLine":"0.6.0",
+  "schema":"xyg.release-api-inventory/v1",
+  "sourceProvenance":{
+-  "baseCommit":"8445c238c7115c5f20e8d3541cf9b81023c47ee5",
++  "baseCommit":"11e2aa4defd76c6d5f6aeaa40ecf4af806c33d38",
+   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+  },
+  "sourceSha256":{
+@@ -1384,7 +1384,7 @@
+   "spec/api/api-examples.md":"f6bc43d28cf9ba88855561ff41bd62eb2f3a823c71ca2c87c5356e1b2a2fa094",
+   "spec/api/browser-wasm.md":"e6adb136a1ee02d0c9ed0a3baf44e0631716f05b919cb59dc1ca9cb0489adeb4",
+   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
+-  "spec/design/browser-wasm.md":"463ff902886b0301d55ec05728a51fc7d3d1ff0ebd961224fce78a112f5f0df3",
++  "spec/design/browser-wasm.md":"d0c8503a38e8d87e8a0e90f7495096e337c011defe030d9fdbecf3b467bfc31c",
+   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
+   "spec/design/host-parity.md":"27cdebe933898fddd4eba7a35176bce3cce757f376ee2ed71b9db7ac8abe2d91",
+   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",

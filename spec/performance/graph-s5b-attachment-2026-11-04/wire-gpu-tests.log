@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: browser encoder retains exact bigint identities, negative camera scale and existing load framing
+ok 1 - browser encoder retains exact bigint identities, negative camera scale and existing load framing
+  ---
+  duration_ms: 3.417129
+  type: 'test'
+  ...
+# Subtest: complete semantic decode preserves selection provenance and exact refs without equating projection with global selection
+ok 2 - complete semantic decode preserves selection provenance and exact refs without equating projection with global selection
+  ---
+  duration_ms: 2.34217
+  type: 'test'
+  ...
+# Subtest: refs distinguish absent IDs from empty IDs and reject malformed reserved, UTF8, pool and unused fields
+ok 3 - refs distinguish absent IDs from empty IDs and reject malformed reserved, UTF8, pool and unused fields
+  ---
+  duration_ms: 0.569896
+  type: 'test'
+  ...
+# Subtest: malformed semantic planes fail before an accepted picture can be replaced
+ok 4 - malformed semantic planes fail before an accepted picture can be replaced
+  ---
+  duration_ms: 3.392361
+  type: 'test'
+  ...
+# Subtest: actual default-arena WASM composition/session bytes decode through focus/select/toggle/clear and companion pages
+ok 5 - actual default-arena WASM composition/session bytes decode through focus/select/toggle/clear and companion pages
+  ---
+  duration_ms: 40.823426
+  type: 'test'
+  ...
+# Subtest: GPU-v1 retains original raw style, coordinate, state and reference buffers
+ok 6 - GPU-v1 retains original raw style, coordinate, state and reference buffers
+  ---
+  duration_ms: 2.076776
+  type: 'test'
+  ...
+# Subtest: empty publication retains all zero-length planes and checked counts refuse overflow
+ok 7 - empty publication retains all zero-length planes and checked counts refuse overflow
+  ---
+  duration_ms: 1.008988
+  type: 'test'
+  ...
+# Subtest: every one of the 33 planes is required with exact index, dtype and length
+ok 8 - every one of the 33 planes is required with exact index, dtype and length
+  ---
+  duration_ms: 16.227425
+  type: 'test'
+  ...
+# Subtest: header, published counts and each coordinate/attribute float fail closed
+ok 9 - header, published counts and each coordinate/attribute float fail closed
+  ---
+  duration_ms: 20.29099
+  type: 'test'
+  ...
+# Subtest: style fields, reserved bytes and independent simultaneous state bits validate
+ok 10 - style fields, reserved bytes and independent simultaneous state bits validate
+  ---
+  duration_ms: 3.971389
+  type: 'test'
+  ...
+# Subtest: piece/edge and frame/node references use their own bounded index spaces
+ok 11 - piece/edge and frame/node references use their own bounded index spaces
+  ---
+  duration_ms: 0.616193
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 375.164218

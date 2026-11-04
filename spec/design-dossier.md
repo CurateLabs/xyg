@@ -1129,6 +1129,11 @@ an in-flight plan requests one fresh snapshot afterward. TypeScript only reports
 measurements and applies the returned retain bits. It never duplicates Rust's
 priority ordering, and stale snapshots remain non-mutating.
 
+Pass isolation resets texture bindings and sampler bindings on units 0–2,
+including the retained graph painter's integer reference texture on unit 2.
+A sampler left by a neighboring client must not silently alter an integer
+texture's completeness or graph pixels; the same reset applies after restoration.
+
 A loss of the shared context is host-wide. The `GLHost` restores or replaces its
 detached context, fullscreen quad, and empty shader cache, then directs every client to
 rebuild its programs and per-chart render and pick resources from CPU-backed scene
