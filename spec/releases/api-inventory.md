@@ -118,3 +118,34 @@ has 685 review gaps; transitive semantic types and runtime/module compatibility
 continue to require the owning source and real browser proof. This is not a
 stable/freezable baseline waiver. The [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md)
 retains the old-same-ABI fail-closed proof and explicit refusal timing contract.
+
+The bounded primary-click preparation adds no public declaration or alias.
+Existing experimental attachment snapshots/events now follow Rust SelectAt
+with Replace/Shift Add/Ctrl-or-Meta Toggle and the documented CSS coordinate
+admission boundaries. The refreshed inventory still has 685 explicit gaps and
+remains unaccepted as a freeze; broader hover/gesture/public-host and S5b/S6/S7
+acceptance are outstanding. [Pointer proof and limits](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
+retain this distinction.
+
+The narrow pointer motion-path repair refresh changes no declaration or
+classification. Active CSS motion paths on the canvas or traversed/shadow
+ancestors now reject pointer admission even when the transform matrix and
+individual rotate are none. Ordinary no-path defaults remain eligible. The
+[motion-path receipt](../performance/graph-s5b-pointer-motion-path-repair-2026-11-04/README.md)
+records the source/artifact provenance and real regressions; the actual685 gaps
+and unaccepted freeze/broader scope remain unchanged.
+
+The narrow slotted-ancestor repair refresh adds no declaration or classification.
+Pointer eligibility follows available assigned slots before light-DOM parents
+and shadow-host fallback, applying existing guards to nested display wrappers.
+Plain/scaled slots remain eligible. [Slot proof and disposition](../performance/graph-s5b-pointer-slotted-ancestor-repair-2026-11-04/README.md)
+retain the actual failure/repair and source/artifact provenance; the685 explicit
+gaps, preparation-only freeze and broader acceptance limits remain unchanged.
+
+The native pointer-input repair preserves every API declaration/classification
+and the685 preparation gaps. Trusted native event offsets at browser precision,
+strict effective currentCSSZoom1 and conservative inspectable-ancestry guards
+replace rectangle-derived coordinate mapping; closed roots do not certify
+transform absence. This is a body/behavior provenance refresh, not an accepted
+freeze or broader S5b/M4/#36/#108 acceptance. See the
+[native input receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md).

@@ -1,0 +1,56 @@
+{
+  "qualifiedNativeRepair": "b574038e9b00a1e85a4355e63770ec05c8cd5642",
+  "incomingControllerParent": "c3013b30bf97ce63b1f381a71d4ca1be38e75427",
+  "acceptedPropertyMainAncestor": "7c751db1ba216005fe0f3eaf81922d44b4d01157",
+  "controller1091MainAccepted": false,
+  "changedNonreceiptPaths": [
+    "spec/design/browser-wasm.md",
+    "spec/design/graph-interaction.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "protectedNonreceiptFilesExact": 2796,
+  "qualifiedProductionInputsExact": 301,
+  "qualifiedActualArtifactsExact": 15,
+  "coreAndModuleFreshRebuildClaim": false,
+  "runtimeProof": {
+    "source": "graph-s5b-pointer-native-input-repair-2026-11-04",
+    "browserJourneys": 69,
+    "nativeWasmReplay": "fresh19 requests/17 SelectAt; full XYGR/native event oracle",
+    "wireShippingTests": 26,
+    "focusedContracts": 88,
+    "fullUnfilteredFoundation": "passed",
+    "reuse": "Exact qualified production/artifact identity, no fresh post-sync browser/build claim"
+  },
+  "historicalFileCountsByParent": {
+    "b574038e9b00a1e85a4355e63770ec05c8cd5642": 9682,
+    "c3013b30bf97ce63b1f381a71d4ca1be38e75427": 9174
+  },
+  "historicalUnionCount": 9727,
+  "historicalUnionSha256": "ab1182abcca178262eaedf05aecf87aa06a99de08612a898051fb8ee67cbe5bc",
+  "inventoryChangedKeys": [
+    "sourceProvenance",
+    "sourceSha256"
+  ],
+  "gaps": 685,
+  "resolvedMetadataDiffSha256": "e6c31fe3bb68183c09fe6c3704d05fcc0cb06951c71145e4e5aa2797ddf6b9bd",
+  "optimizedModule": {
+    "bytes": 1922723,
+    "gzip6": 783181,
+    "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273",
+    "gzip6Sha256": "5ed44e4d8802ddcdfb48dbe0aded7206d8228e9f9970a868b2bb8aaec35e5d4a",
+    "limits": {
+      "raw": 1923072,
+      "gzip6": 783360
+    },
+    "headroom": {
+      "raw": 349,
+      "gzip6": 179
+    }
+  },
+  "versions": {
+    "native": 399,
+    "wasm": 35,
+    "scene": 34,
+    "painter": 17
+  }
+}

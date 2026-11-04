@@ -149,6 +149,17 @@ source is `crates/xyg-core/src/lib.rs`. The exact auxiliary OSM entrypoint in
 and retired identities elsewhere on the same line or in the same file still
 fail. No historical manifest needs an annotation, escaped key or digest edit.
 
+Browser JSON evidence under `spec/performance/` records literal DOM test tags,
+which are fixture element names, not product branding. The naming audit permits
+only the particular current-product-brand match occurrence inside an exact
+case-sensitive, double-quoted JSON `"tag"` field whose complete value is
+`"XY-SLOT-FIXTURE"` or `"XY-INNER-SLOT-FIXTURE"`. <!-- xyg-stale-name: allow - documented literal DOM evidence values -->
+JSON whitespace/indentation may vary. No other key, extension/location, changed
+value, case folding, prefix/suffix or punctuation lookalike is exempt. Other
+brand occurrences and every other retired-identity needle on the same line
+or file remain audited. This preserves immutable browser receipt bytes,
+including historical failures, without a line/file/history exemption.
+
 Safety properties: the ABI version bump plus the symbol-prefix change make old
 and new libraries mutually unloadable by the wrong wrapper (an old wrapper
 finds no `xy_abi_version` in a new library and fails before binding anything;

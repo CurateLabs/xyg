@@ -697,3 +697,45 @@ test("real native/WASM resolved routes, heads, frames and aggregate singleton se
     }
   } finally {pair.close();}
 });
+
+// Requests below originate from trusted Playwright mouse deliveries in the
+// packaged strict-CSP journey. Replaying bytes is a separate host-parity proof.
+test("captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes", async (t) => {
+  const { gunzipSync } = await import("node:zlib");
+  const capture = process.env.XYG_GRAPH_POINTER_CAPTURE || path.join(ROOT, "spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/captured-requests.json.gz");
+  const stored = fs.readFileSync(capture);
+  const records = JSON.parse((capture.endsWith(".gz") ? gunzipSync(stored) : stored).toString());
+  assert.ok(records.length > 10);
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {}), x = instance.exports;
+  const wasm = x.xyg_wasm_instance_new(16 * 1024 * 1024), handle = new BigUint64Array(1);
+  let opened = false;
+  try {
+    for (const [i, record] of records.entries()) {
+      const bytes = new Uint8Array(Buffer.from(record.request, "base64")), expected = Buffer.from(record.reply, "base64");
+      const parts = decodeContainer(bytes, "XYGI"), h = parts.get("header.u64#0").value, words = parts.get("header.u32#0").value;
+      const operation = words[1]; assert.equal(operation, record.operation); assert.ok([19,21,1].includes(operation));
+      if (operation === 19) {
+        assert.equal(i, 0);
+        const document = parts.get("document.bytes#0").value;
+        assert.equal(native.xyGraphforgeSessionCreate(ptr(document), BigInt(document.length), ptr(bytes), BigInt(bytes.length), h[0], h[1], native.pointer(handle, "uint64_t *")), 0);
+        opened = true;
+      } else {
+        if (operation === 1) {
+          const coordinates=Array.from(parts.get("coordinates.f64#0").value);
+          assert.equal(coordinates.length,2); assert.ok(words[2]<=2);
+          assert.equal(record.nativeEvent.trusted,true);assert.equal(record.nativeEvent.canvas,true);assert.equal(record.nativeEvent.zoom,1);
+          assert.deepEqual(coordinates,record.nativeEvent.nativeCoordinates,"fresh capture must use synchronous native-event coordinate oracle");
+        }
+        const nativeBytes = nativeComplete(operation === 21 ? native.xyGraphforgeSessionRender : native.xyGraphforgeSessionInteract, handle[0], bytes);
+        equalBytes(nativeBytes, expected, `captured request ${i} native/full browser XYGR`);
+        assertGpuPublication(nativeBytes, operation);
+      }
+      const reply = wasmCall(x, wasm, operation === 19 ? "xyg_wasm_graphforge_session_open" : operation === 21 ? "xyg_wasm_graphforge_session_render" : "xyg_wasm_graphforge_session_interact", bytes);
+      assert.equal(reply.status,0); equalBytes(reply.output,expected,`captured request ${i} full WASM/browser XYGR`);
+    }
+    t.diagnostic(JSON.stringify({capture,requests:records.length,selectAt:records.filter(r=>r.operation===1).length,bytesCompared:"complete XYGR including GPU, selection, provenance and focus"}));
+  } finally {
+    if(opened) { assert.equal(native.xyGraphforgeSessionDestroy(handle[0]),0); assert.equal(x.xyg_wasm_graphforge_session_close(wasm),0); }
+    assert.equal(x.xyg_wasm_instance_dispose(wasm),0);
+  }
+});

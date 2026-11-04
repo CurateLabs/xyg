@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/spec/performance/graph-s5b-pointer-parent-sync-2026-11-04/verify-preservation.py", line 105, in <module>
+    assert len(records) == count, (directory, len(records))
+           ^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('graph-s5b-attachment-r2-2026-11-04', 29)

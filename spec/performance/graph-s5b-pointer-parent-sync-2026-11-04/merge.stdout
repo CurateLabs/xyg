@@ -1,0 +1,4 @@
+Auto-merging spec/design/browser-wasm.md
+Auto-merging spec/releases/0.6.0-api-inventory.json
+CONFLICT (content): Merge conflict in spec/releases/0.6.0-api-inventory.json
+Automatic merge failed; fix conflicts and then commit the result.

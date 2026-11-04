@@ -1,0 +1,168 @@
+TAP version 13
+# Subtest: browser encoder retains exact bigint identities, negative camera scale and existing load framing
+ok 1 - browser encoder retains exact bigint identities, negative camera scale and existing load framing
+  ---
+  duration_ms: 3.460328
+  type: 'test'
+  ...
+# Subtest: SelectAt frames only two raw finite f64 CSS coordinates and existing selection modes
+ok 2 - SelectAt frames only two raw finite f64 CSS coordinates and existing selection modes
+  ---
+  duration_ms: 1.562972
+  type: 'test'
+  ...
+# Subtest: complete semantic decode preserves selection provenance and exact refs without equating projection with global selection
+ok 3 - complete semantic decode preserves selection provenance and exact refs without equating projection with global selection
+  ---
+  duration_ms: 2.599
+  type: 'test'
+  ...
+# Subtest: refs distinguish absent IDs from empty IDs and reject malformed reserved, UTF8, pool and unused fields
+ok 4 - refs distinguish absent IDs from empty IDs and reject malformed reserved, UTF8, pool and unused fields
+  ---
+  duration_ms: 0.509065
+  type: 'test'
+  ...
+# Subtest: malformed semantic planes fail before an accepted picture can be replaced
+ok 5 - malformed semantic planes fail before an accepted picture can be replaced
+  ---
+  duration_ms: 8.001487
+  type: 'test'
+  ...
+# Subtest: actual default-arena WASM composition/session bytes decode through focus/select/toggle/clear and companion pages
+ok 6 - actual default-arena WASM composition/session bytes decode through focus/select/toggle/clear and companion pages
+  ---
+  duration_ms: 74.626048
+  type: 'test'
+  ...
+# Subtest: GPU-v1 retains original raw style, coordinate, state and reference buffers
+ok 7 - GPU-v1 retains original raw style, coordinate, state and reference buffers
+  ---
+  duration_ms: 2.178317
+  type: 'test'
+  ...
+# Subtest: empty publication retains all zero-length planes and checked counts refuse overflow
+ok 8 - empty publication retains all zero-length planes and checked counts refuse overflow
+  ---
+  duration_ms: 1.091404
+  type: 'test'
+  ...
+# Subtest: every one of the 33 planes is required with exact index, dtype and length
+ok 9 - every one of the 33 planes is required with exact index, dtype and length
+  ---
+  duration_ms: 17.05167
+  type: 'test'
+  ...
+# Subtest: header, published counts and each coordinate/attribute float fail closed
+ok 10 - header, published counts and each coordinate/attribute float fail closed
+  ---
+  duration_ms: 17.683175
+  type: 'test'
+  ...
+# Subtest: style fields, reserved bytes and independent simultaneous state bits validate
+ok 11 - style fields, reserved bytes and independent simultaneous state bits validate
+  ---
+  duration_ms: 3.940102
+  type: 'test'
+  ...
+# Subtest: piece/edge and frame/node references use their own bounded index spaces
+ok 12 - piece/edge and frame/node references use their own bounded index spaces
+  ---
+  duration_ms: 0.67383
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong ABI before publication
+ok 13 - packaging rejects wrong ABI before publication
+  ---
+  duration_ms: 513.45632
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong Scene before publication
+ok 14 - packaging rejects wrong Scene before publication
+  ---
+  duration_ms: 407.600796
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong u64 signature before publication
+ok 15 - packaging rejects wrong u64 signature before publication
+  ---
+  duration_ms: 388.709359
+  type: 'test'
+  ...
+# Subtest: packaging rejects start function before publication
+ok 16 - packaging rejects start function before publication
+  ---
+  duration_ms: 395.086485
+  type: 'test'
+  ...
+# Subtest: packaging is deterministic and emits matching version/hash manifests
+ok 17 - packaging is deterministic and emits matching version/hash manifests
+  ---
+  duration_ms: 916.116805
+  type: 'test'
+  ...
+# Subtest: withheld producer inputs fail early naming the producer command
+ok 18 - withheld producer inputs fail early naming the producer command
+  ---
+  duration_ms: 441.558096
+  type: 'test'
+  ...
+# Subtest: a forbidden-API classic worker is rejected before the first write
+ok 19 - a forbidden-API classic worker is rejected before the first write
+  ---
+  duration_ms: 363.618307
+  type: 'test'
+  ...
+# Subtest: standalone temporal owners keep frame and replacement staging at the default arena
+ok 20 - standalone temporal owners keep frame and replacement staging at the default arena
+  ---
+  duration_ms: 90.549
+  type: 'test'
+  ...
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 21 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 192.810367
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/packages/xy-client/dist/xyg-wasm.wasm","bytes":1922723,"sha256":"6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/target/release/libxyg_core.so","nativeSha256":"3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6","diagnosticModule":false}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 22 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 910.636201
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 23 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 36.67369
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 24 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 177.783212
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 25 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 24.930015
+  type: 'test'
+  ...
+# Subtest: captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+ok 26 - captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+  ---
+  duration_ms: 25.591899
+  type: 'test'
+  ...
+# {"capture":"/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/captured-requests.json","requests":19,"selectAt":17,"bytesCompared":"complete XYGR including GPU, selection, provenance and focus"}
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2252.02196

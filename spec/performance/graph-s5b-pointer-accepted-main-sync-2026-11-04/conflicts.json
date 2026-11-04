@@ -1,0 +1,52 @@
+{
+  "js/src/63_graph_controller.ts": {
+    "archive": "js__src__63_graph_controller.ts.conflicted.txt.gz",
+    "rawSha256": "974ca8e215bb296a4eb3539e93d62aee8c4e9164bbefa2f0378b394a6e0aa45f",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "js/src/63_graph_session_wire.ts": {
+    "archive": "js__src__63_graph_session_wire.ts.conflicted.txt.gz",
+    "rawSha256": "934d2da3814575147df1af86344feb41bc6527f2126885442e268901c9cbf708",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "js/test/graph-session-controller-wire.test.mjs": {
+    "archive": "js__test__graph-session-controller-wire.test.mjs.conflicted.txt.gz",
+    "rawSha256": "dc1f3db96c490cf862d231562e81a2e6be2e582ad59e64cd4b824c5bc89bc203",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "scripts/graph_session_controller_wasm_smoke.mjs": {
+    "archive": "scripts__graph_session_controller_wasm_smoke.mjs.conflicted.txt.gz",
+    "rawSha256": "463e03b069575ddaf145e97e84da5eb9b04357223766ed280f245458e40318ea",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "spec/api/browser-wasm.md": {
+    "archive": "spec__api__browser-wasm.md.conflicted.txt.gz",
+    "rawSha256": "138278e41f07323fb6fafce423d25a19f8ae2285ec50f1f85e0c16510a37a8de",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "spec/design/browser-wasm.md": {
+    "archive": "spec__design__browser-wasm.md.conflicted.txt.gz",
+    "rawSha256": "137531175139434718dc4e3fd13239305098b0799abb94ee093a94d4f6b87b22",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "spec/design/graph-interaction.md": {
+    "archive": "spec__design__graph-interaction.md.conflicted.txt.gz",
+    "rawSha256": "dd422b2e9e53f17ce2584fc285a6d34fa333b1a1ffd2b213a4930c36c2cf69b0",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "spec/releases/0.6.0-api-inventory.json": {
+    "archive": "spec__releases__0.6.0-api-inventory.json.conflicted.txt.gz",
+    "rawSha256": "db3e2aa54dd889f79a4dba340b748055041e322ac2641b3fbad72ab0195c7daa",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "spec/releases/api-inventory.md": {
+    "archive": "spec__releases__api-inventory.md.conflicted.txt.gz",
+    "rawSha256": "8d42b908c642ee81adb659a871af618153a65aa764615ec686c728fa22cd2a89",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  },
+  "tests/browser/graph_session_controller_page.mjs": {
+    "archive": "tests__browser__graph_session_controller_page.mjs.conflicted.txt.gz",
+    "rawSha256": "c9da5dfb33ece7cc669c9d40cddd962538c8b158980411ef0628885c28a27b12",
+    "resolvedFrom": "207ebdbdaa2ec8b0360c571683eb0fa6165e02c0"
+  }
+}

@@ -1,7 +1,8 @@
 // Actual shipped ESM/Worker/WASM under strict CSP. All hooks below are test-only
 // transport fault injection/observations; production graph policy stays Rust.
 import { attachWasmGraphSession, composeWasmGraphForge, createXygWasmWorker, renderWasmGraphForge } from "/packages/xy-client/dist/index.js";
-const state = window.__graphSession = { stage: "boot", commands: [], replies: [], gl: [], errors: [], inject: null, hold: false, held: [], events: [], legacyCalls: [] };
+import { encodeContainer, decodeContainer, DTYPE } from "/packages/xy-node/src/graphforge-container.js";
+const state = window.__graphSession = { stage: "boot", products: [], commands: [], replies: [], gl: [], errors: [], inject: null, hold: false, held: [], events: [], legacyCalls: [] };
 state.json = value => JSON.stringify(value, (_, v) => typeof v === "bigint" ? v.toString() : v);
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 function section(bytes, name, index = 0) {
@@ -15,7 +16,18 @@ function section(bytes, name, index = 0) {
 const view = (a) => new DataView(a.buffer, a.byteOffset, a.byteLength);
 const post = Worker.prototype.postMessage;
 Worker.prototype.postMessage = function(message, transfer) {
+  state.products.push(message.type);
   if (message.type?.startsWith("graph.session.")) {
+    if (state.inject === "seed-highlight" && message.request) {
+      const parts = decodeContainer(message.request, "XYGI"), words = parts.get("header.u32#0").value;
+      if (words[1] === 1) {
+        words[1] = 12; words[4] = 2;
+        parts.delete("coordinates.f64#0");
+        const refs = new Uint8Array(64); new DataView(refs.buffer).setUint32(0, 1, true); refs.set(state.pointer.nodes.subarray(16,32),16);
+        message.request = encodeContainer("XYGI", [...parts.values()].map(s => ({...s, values:s.value})).concat([{name:"refs.bytes",dtype:DTYPE.bytes,values:refs}])).buffer;
+        state.inject = null;
+      }
+    }
     if (message.request instanceof ArrayBuffer) {
       const h = view(section(message.request, "header.u64")), words = view(section(message.request, "header.u32"));
       if (state.inject === "stale") { words.setUint32(0, words.getUint32(0, true) + 1, true); state.inject = null; }
@@ -23,6 +35,12 @@ Worker.prototype.postMessage = function(message, transfer) {
       if (state.inject === "wrong-instance") { h.setBigUint64(0, h.getBigUint64(0, true) + 1n, true); state.inject = null; }
       state.commands.push({ type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime, instanceId: h.getBigUint64(0, true), opSeq: h.getBigUint64(16, true), revision: words.getUint32(0, true), operation: words.getUint32(4, true), bytes: new Uint8Array(message.request).slice() });
     } else state.commands.push({ type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime });
+  }
+  if (["budget-reply","cap-reply"].includes(state.inject) && message.type === "graph.session.interact") {
+    const code=state.inject==='cap-reply'?'GF_INTERACTION_SELECTION_TOO_LARGE':'GF_INTERACTION_BUDGET', status=state.inject==='cap-reply'?-8:-4;
+    state.inject = null;
+    queueMicrotask(() => this.onmessage({data:{requestId:message.requestId,ok:false,error:{code,message:"test-only pre-execution typed refusal seam",status}}}));
+    return;
   }
   return post.call(this, message, transfer);
 };
@@ -109,4 +127,174 @@ state.createDialog = async () => {
   el.addEventListener("xy:graph-error", event => result.errors.push(event.detail));
   el.addEventListener("xy:graph-stale", event => result.errors.push(event.detail));
   dialog.showModal(); surface.focus();
+};
+
+// Pointer fixtures/oracles are test-only. Coordinates come from Rust CPU paint
+// sections; neither these readers nor membership interpretation ship to users.
+state.values = (bytes, name, index=0) => {
+  const a = section(bytes,name,index), v = view(a);
+  return Array.from({length:a.length/8},(_,i)=>v.getFloat64(i*8,true));
+};
+state.publication = (p=state.pointer) => state.replies.filter(r => {
+  const c=state.commands.find(c=>c.requestId===r.requestId && c.sequence===r.sequence && c.lifetime===r.lifetime);
+  return c?.instanceId===p.id && c.operation!==19;
+}).at(-1).bytes;
+state.pointerFixture = async (kind="routes", id=36n) => {
+  const f=(name,dtype,values,index=0)=>({name,dtype:DTYPE[dtype],values,index});
+  const noEdges=["cap","pressure"].includes(kind), count=kind==="pressure"?10001:kind==="cap"?51:5, nodes=new Uint8Array(count*16);
+  for(let i=0;i<count;i++) new DataView(nodes.buffer).setUint32(i*16,i+1,true);
+  const edges=new Uint8Array(5*16); for(let i=0;i<4;i++) edges.fill(11+i,i*16,(i+1)*16);
+  const sections=[f("status","u32",[0]),f("kind","utf8","graph"),f("composition.version","u32",[2]),f("node.uuid","uuid",nodes),
+    f("edge.uuid","uuid",noEdges?new Uint8Array():edges),f("edge.derived","u8",noEdges?[]:[0,0,0,0,1]),
+    f("edge.layer","u32",noEdges?[]:[0xffffffff,0xffffffff,0xffffffff,0xffffffff,0]),f("edge.order","i64",noEdges?[]:[-1n,-1n,-1n,-1n,9007199254740993n]),
+    f("edge.path","u64",noEdges?[]:[-1n,-1n,-1n,-1n,9007199254740995n].map(x=>BigInt.asUintN(64,x))),
+    f("edge.source","u64",noEdges?[]:[1n,1n,1n,4n,2n]),f("edge.target","u64",noEdges?[]:[2n,2n,1n,3n,3n]),f("graph.directed","u8",[1])];
+  if(!noEdges) sections.push(f("node.parent","u32",[0,0,0,0,0]),f("node.parent.valid","u8",[0,1,1,0,0]),f("layer.schema","utf8","test"),f("layer.result_id","utf8","exact:雪\t"),f("layer.node_rows","u64",[10n,9007199254740997n,30n,40n,50n]),f("layer.edge_rows","u64",[70n,71n,72n,73n,9007199254740999n]));
+  const worker=makeWorker(); await worker.ready;
+  const el=container(); el.dataset.pointerFixture=String(id);
+  const load=noEdges?{x:Array(count).fill(100),y:Array(count).fill(100),budgets:[1n,100n]}:
+    {x:kind==="aggregate"?[100,100.1,100.2,500,500.1]:[50,170,350,500,-200],y:kind==="aggregate"?[1,1,1,2.5,2.5]:[0.5,1.5,1.5,2.5,2.5],...(kind==="aggregate"?{budgets:[2n,100n]}:{})};
+  const camera=[1,noEdges?1:100,0,0,640,320,2], document=encodeContainer("XYGF",sections);
+  const handle=state.attach({el,worker,instanceId:id,document,load,camera}); try { await handle.ready; } catch(error) { await handle.dispose(); await worker.dispose(); el.remove(); throw error; }
+  const p=state.pointer={el,worker,handle,id,nodes,edges,document,load,camera,events:[],trusted:[],errors:[]};
+  el.addEventListener("xy:graph-select",e=>p.events.push(e.detail));
+  for(const kind of ["error","stale"]) el.addEventListener(`xy:graph-${kind}`,e=>p.errors.push(e.detail));
+  el.querySelector("canvas").addEventListener("click",e=>{
+    // TEST ONLY: read native offsets during dispatch, independently of the
+    // controller. clientWidth/Height use the padding box (not CSS width/rect).
+    const c=e.currentTarget,style=getComputedStyle(c),padding=[parseFloat(style.paddingLeft),parseFloat(style.paddingTop)],
+      extent=[c.clientWidth-padding[0]-parseFloat(style.paddingRight),c.clientHeight-padding[1]-parseFloat(style.paddingBottom)],
+      offsets=[e.offsetX,e.offsetY],view=p.handle.snapshot()?.camera??p.camera;
+    const record={trusted:e.isTrusted,canvas:e.target===c,button:e.button,detail:e.detail,clientX:e.clientX,clientY:e.clientY,offsets,padding,extent,zoom:c.currentCSSZoom,
+      nativeCoordinates:offsets.map((v,i)=>(v-padding[i])*view[i+4]/extent[i])};
+    p.trusted.push(record);
+    const command=state.commands.at(-1);
+    if(command?.instanceId===p.id&&command.operation===1) command.nativeEvent=record;
+  });
+  return true;
+};
+state.pointerPoint = (kind,index=0) => {
+  const p=state.pointer, bytes=state.publication(p), get=name=>state.values(bytes,name);
+  if(kind==="node") return get("paint.node.center.f64").slice(index*2,index*2+2);
+  if(kind==="blank") return [620,300];
+  if(kind==="piece"||kind==="head"||kind==="gap") {
+    const parts=decodeContainer(bytes,"XYGR"), ids=parts.get("paint.piece.index.u64#0").value, geo=get("paint.piece.geometry.f64");
+    const offsets=parts.get('render.edge_member_offsets.u64#0').value, members=parts.get('render.edge_members.u64#0').value;
+    const renderIndex=Array.from({length:offsets.length-1},(_,i)=>i).find(i=>Array.from(members.slice(Number(offsets[i]),Number(offsets[i+1]))).includes(BigInt(index)));
+    const i=Array.from({length:ids.length/2},(_,i)=>i).filter(i=>ids[i*2]===BigInt(renderIndex)&&(kind!=="head"||(ids[i*2+1]&2n))).sort((a,b)=>Math.hypot(geo[b*14+2]-geo[b*14],geo[b*14+3]-geo[b*14+1])-Math.hypot(geo[a*14+2]-geo[a*14],geo[a*14+3]-geo[a*14+1]))[0];
+    assert(i!==undefined,"Rust piece not found"); const g=geo.slice(i*14,i*14+14);
+    if(kind==="head") return [(g[8]+g[10]+g[12])/3,(g[9]+g[11]+g[13])/3];
+    if(kind==="gap") { const center=get("paint.node.center.f64").slice(2,4); return [(center[0]+g[0])/2,(center[1]+g[1])/2]; }
+    if(index===0||index===1) {
+      const dx=g[2]-g[0],dy=g[3]-g[1],len=Math.hypot(dx,dy),side=index===0?-1:1;
+      return [(g[0]+g[2])/2-dy/len*g[4]*0.7*side,(g[1]+g[3])/2+dx/len*g[4]*0.7*side];
+    }
+    return [(g[0]+g[2])/2,(g[1]+g[3])/2];
+  }
+  const f=get("paint.frame.geometry.f64").slice(0,5);
+  if(kind==="frame") return [f[0],(f[1]+f[3])/2];
+  if(kind==="interior") return [(f[0]+f[2])/2,f[1]+12];
+  throw new Error("unknown oracle point");
+};
+state.pointerClient = ([x,y]) => {
+  const c=state.pointer.el.querySelector("canvas"), r=c.getBoundingClientRect(), s=getComputedStyle(c);
+  const left=parseFloat(s.borderLeftWidth)+parseFloat(s.paddingLeft), top=parseFloat(s.borderTopWidth)+parseFloat(s.paddingTop);
+  const horizontal=left+parseFloat(s.borderRightWidth)+parseFloat(s.paddingRight), vertical=top+parseFloat(s.borderBottomWidth)+parseFloat(s.paddingBottom);
+  const bw=parseFloat(s.width)+(s.boxSizing==="border-box"?0:horizontal), bh=parseFloat(s.height)+(s.boxSizing==="border-box"?0:vertical);
+  return [r.left+(left+x/state.pointer.handle.snapshot().camera[4]*(bw-horizontal))*r.width/bw,r.top+(top+y/state.pointer.handle.snapshot().camera[5]*(bh-vertical))*r.height/bh];
+};
+
+state.pointerSnapshot = () => {
+  const snapshot=state.pointer.handle.snapshot();
+  if(!snapshot) return null;
+  for(const key of ['indices','layerOffsets','layers','rows']) snapshot.selection[key]=Array.from(snapshot.selection[key]);
+  snapshot.focusRing=Array.from(snapshot.focusRing);
+  return snapshot;
+};
+
+state.geometryStamp = bytes => state.json([...decodeContainer(bytes,'XYGR').values()].filter(s=>/^(paint\..*(center|geometry|index)|gpu\..*(coord|attr)|render\..*members)/.test(s.name)).map(s=>[s.name,s.index,[...s.value]]));
+
+// A DOM-only visual-coordinate oracle for unsupported motion paths. A transparent
+// sibling probe follows the same CSS motion as the canvas, or inherits the
+// ancestor motion. Its point is measured by the browser, never by product code.
+state.motionPoint = async target => {
+  const p=state.pointer, canvas=p.el.querySelector('canvas'), surface=canvas.parentElement;
+  p.el.style.cssText='position:relative;width:640px;height:320px';
+  surface.style.cssText='position:relative;width:640px;height:320px';
+  canvas.style.display='block'; p.el.lastElementChild.style.visibility='hidden';
+  const motion='offset-path:path("M 450 150 L 700 150");offset-distance:0px;offset-rotate:30deg;offset-anchor:0px 0px';
+  const element=target==='canvas'?canvas:p.el; element.style.cssText+=';'+motion;
+  const probe=document.createElement('div');
+  probe.style.cssText='position:absolute;left:0;top:0;width:640px;height:320px;pointer-events:none;'+(target==='canvas'?motion:'');
+  const marker=document.createElement('span'),css=state.pointerPoint('node',1);
+  marker.style.cssText=`position:absolute;left:${css[0]}px;top:${css[1]}px;width:0;height:0;pointer-events:none`;
+  probe.append(marker);surface.append(probe);
+  const link=document.createElement('a');link.href=`#motion-path-${target}`;link.style.display='block';surface.before(link);link.append(surface);
+  const rect=marker.getBoundingClientRect(), style=getComputedStyle(element), client=[rect.x,rect.y];
+  p.motionDelivery=null;
+  p.el.addEventListener('click',event=>{p.motionDelivery={trusted:event.isTrusted,target:event.target.tagName,canvas:event.target===canvas,clientX:event.clientX,clientY:event.clientY,defaultPrevented:event.defaultPrevented};});
+  return {css,client,predicate:{transform:style.transform,rotate:style.rotate,offsetPath:style.offsetPath,offsetDistance:style.offsetDistance,offsetRotate:style.offsetRotate,offsetAnchor:style.offsetAnchor},hit:document.elementFromPoint(...client)?.tagName};
+};
+state.canvasDigest = async () => {
+  const c=state.pointer.el.querySelector('canvas'),data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+  return [...new Uint8Array(await crypto.subtle.digest('SHA-256',data))].map(b=>b.toString(16).padStart(2,'0')).join('');
+};
+
+// Test-only composed-tree fixtures: the chart remains light DOM, assigned to a
+// slot whose shadow wrapper controls its actual display. A zero-size marker
+// inherits that display and supplies a browser-measured visual coordinate.
+state.slotPoint = (kind,nested=false) => {
+  const p=state.pointer, canvas=p.el.querySelector('canvas'), surface=canvas.parentElement;
+  p.el.style.cssText='position:relative;width:640px;height:320px';
+  surface.style.cssText='position:relative;width:640px;height:320px';
+  canvas.style.display='block';p.el.lastElementChild.style.visibility='hidden';
+  const outer=document.createElement('xy-slot-fixture');
+  outer.style.cssText='display:block;position:fixed;left:200px;top:50px;width:640px;height:320px;z-index:10000';
+  const makeShadow=host=>{
+    const root=host.attachShadow({mode:'open'}), wrapper=document.createElement('div'),slot=document.createElement('slot');
+    wrapper.style.cssText='position:relative;width:640px;height:320px;transform-origin:0 0';slot.name='chart';wrapper.append(slot);root.append(wrapper);
+    return {root,wrapper,slot};
+  };
+  const outerTree=makeShadow(outer);p.el.before(outer);p.slotHost=outer;
+  let owner=outer;
+  if(nested){const inner=document.createElement('xy-inner-slot-fixture');inner.style.cssText='display:block;width:640px;height:320px';inner.slot='chart';outer.append(inner);makeShadow(inner);owner=inner;}
+  p.el.slot='chart';owner.append(p.el);
+  if(kind==='rotate') outerTree.wrapper.style.transform='rotate(30deg)';
+  if(kind==='motion') outerTree.wrapper.style.cssText+=';offset-path:path("M 450 150 L 700 150");offset-distance:0px;offset-rotate:30deg;offset-anchor:0px 0px';
+  if(kind==='scale') outerTree.wrapper.style.transform='scale(0.8,0.75)';
+  const probe=document.createElement('span'),css=state.pointerPoint('node',1);
+  probe.style.cssText=`position:absolute;left:${css[0]}px;top:${css[1]}px;width:0;height:0;pointer-events:none`;surface.append(probe);
+  const link=document.createElement('a');link.href=`#slot-${nested?'nested-':''}${kind}`;link.style.display='block';surface.before(link);link.append(surface);
+  p.slotDelivery=null;p.el.addEventListener('click',event=>{p.slotDelivery={trusted:event.isTrusted,target:event.target.tagName,canvas:event.target===canvas,clientX:event.clientX,clientY:event.clientY,defaultPrevented:event.defaultPrevented};});
+  const describe=element=>{const s=getComputedStyle(element);return {tag:element.tagName,transform:s.transform,rotate:s.rotate,scale:s.scale,translate:s.translate,perspective:s.perspective,offsetPath:s.offsetPath,assignedSlot:element.assignedSlot?.tagName??null};};
+  const walk=composed=>{const chain=[];for(let element=canvas;element;){chain.push(describe(element));const root=element.getRootNode();element=(composed?element.assignedSlot:null)??element.parentElement??(root instanceof ShadowRoot?root.host:null);}return chain;};
+  const r=probe.getBoundingClientRect(),client=[r.x,r.y];
+  return {kind,nested,css,client,hit:document.elementFromPoint(...client)?.tagName,legacyWalk:walk(false),composedWalk:walk(true),wrapper:describe(outerTree.wrapper)};
+};
+
+// TEST ONLY: native DIV/BODY hosts with closed roots deliberately conceal the
+// assigned slots from the controller's public ancestry walk. The marker is a
+// browser display oracle; Rust geometry only chooses the intended graph point.
+state.closedPoint = ({kind,tag='div',named=true,nested=false}) => {
+  const p=state.pointer,c=p.el.querySelector('canvas'),surface=c.parentElement;
+  p.el.style.cssText='position:relative;width:640px;height:320px';
+  surface.style.cssText='position:relative;width:640px;height:320px';c.style.display='block';p.el.lastElementChild.style.visibility='hidden';
+  const host=document.createElement(tag);host.style.cssText='display:block;margin:0;position:fixed;left:200px;top:50px;width:640px;height:320px;z-index:10000';
+  const make=host=>{const root=host.attachShadow({mode:'closed'}),wrapper=document.createElement('div'),slot=document.createElement('slot');
+    wrapper.style.cssText='position:relative;width:640px;height:320px;transform-origin:0 0';if(named)slot.name='chart';wrapper.append(slot);root.append(wrapper);return wrapper;};
+  const wrapper=make(host);p.el.before(host);p.closedHost=host;let owner=host,innerWrapper;
+  if(nested){const inner=document.createElement(tag==='div'?'body':'div');inner.style.cssText='display:block;margin:0;width:640px;height:320px';if(named)inner.slot='chart';host.append(inner);innerWrapper=make(inner);owner=inner;}
+  p.el.slot=named?'chart':'';owner.append(p.el);
+  if(kind==='rotate')wrapper.style.transform='rotate(30deg)';
+  if(kind==='motion')wrapper.style.cssText+=';offset-path:path("M 450 150 L 700 150");offset-distance:0px;offset-rotate:30deg;offset-anchor:0px 0px';
+  if(kind==='zoom14')wrapper.style.zoom='1.4';
+  if(kind==='zoom125')wrapper.style.zoom='1.25';
+  if(kind==='net2'){wrapper.style.zoom='2';innerWrapper.style.zoom='0.5';}
+  if(kind==='net14'){wrapper.style.zoom='1.4';innerWrapper.style.zoom=String(1/1.4);}
+  const css=state.pointerPoint('node',1),probe=document.createElement('span');probe.style.cssText=`position:absolute;left:${css[0]}px;top:${css[1]}px;width:0;height:0;pointer-events:none`;surface.append(probe);
+  const link=document.createElement('a');link.href=`#closed-${tag}-${named?'named':'default'}-${kind}-${nested?'nested-':''}DPR${devicePixelRatio}`;link.style.display='block';surface.before(link);link.append(surface);
+  p.closedDelivery=null;p.el.addEventListener('click',e=>{p.closedDelivery={trusted:e.isTrusted,canvas:e.target===c,target:e.target.tagName,clientX:e.clientX,clientY:e.clientY,defaultPrevented:e.defaultPrevented};});
+  const chain=[];for(let el=c;el;){const st=getComputedStyle(el);chain.push({tag:el.tagName,transform:st.transform,rotate:st.rotate,offsetPath:st.offsetPath,slot:el.assignedSlot?.tagName??null});const root=el.getRootNode();el=el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}
+  const rect=probe.getBoundingClientRect(),client=[rect.x,rect.y],st=getComputedStyle(wrapper);
+  return {kind,tag,named,nested,fragment:new URL(link.href).hash,css,client,hit:document.elementFromPoint(...client)?.tagName,chain,zoom:c.currentCSSZoom,canvasStyleZoom:getComputedStyle(c).zoom,dpr:devicePixelRatio,wrapper:{transform:st.transform,rotate:st.rotate,offsetPath:st.offsetPath,zoom:st.zoom}};
 };

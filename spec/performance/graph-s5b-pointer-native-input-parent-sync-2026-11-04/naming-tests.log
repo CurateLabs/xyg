@@ -1,0 +1,16 @@
+F....................................................................... [ 61%]
+.............................................                            [100%]
+=================================== FAILURES ===================================
+_________________ test_repository_has_no_stale_native_identity _________________
+
+    def test_repository_has_no_stale_native_identity() -> None:
+>       assert check_stale_names.check_stale_names() == []
+E       assert ['spec/perfor...XTURE",', ...] == []
+E         
+E         Left contains 80 more items, first extra item: 'spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/before-complete.json:8349: stale current product XY brand: "tag": "XY-SLOT-FIXTURE",'
+E         Use -v to get more diff
+
+tests/test_stale_names.py:29: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_stale_names.py::test_repository_has_no_stale_native_identity
+1 failed, 116 passed in 75.58s (0:01:15)

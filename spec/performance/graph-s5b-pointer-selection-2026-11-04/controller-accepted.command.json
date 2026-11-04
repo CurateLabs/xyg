@@ -1,0 +1,34 @@
+{
+  "argv": [
+    "node",
+    "scripts/graph_session_controller_wasm_smoke.mjs"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3",
+  "started": "2026-11-04T02:15:27.652147+00:00",
+  "finished": "2026-11-04T02:15:41.229303+00:00",
+  "elapsed_seconds": 13.577156,
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "CHROMIUM": null,
+    "XYG_GRAPH_POINTER_BASELINE": null,
+    "XYG_GRAPH_POINTER_CAPTURE": "spec/performance/graph-s5b-pointer-selection-2026-11-04/captured-accepted-requests.json",
+    "XYG_GRAPH_POINTER_SCREENSHOT": "spec/performance/graph-s5b-pointer-selection-2026-11-04/pointer-accepted.png",
+    "XYG_GRAPH_SESSION_REPORT": "spec/performance/graph-s5b-pointer-selection-2026-11-04/controller-accepted.json",
+    "XYG_GRAPH_SESSION_SCREENSHOT": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_SESSION_WASM": null,
+    "XYG_BROWSER_DIST": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "2d350fbd69b3fa5bee164b5b1dcc8ce2bc15551a8eb01efeddfb64939581e498",
+  "stdout_sha256": "2d350fbd69b3fa5bee164b5b1dcc8ce2bc15551a8eb01efeddfb64939581e498",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

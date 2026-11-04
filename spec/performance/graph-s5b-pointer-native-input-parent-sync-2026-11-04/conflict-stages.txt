@@ -1,0 +1,6 @@
+100644 3c375f6718e5378db485db3402001250435dbe0a 1	spec/design/graph-interaction.md
+100644 40b059a3fe136a9a7aa8675890b23e618607238d 2	spec/design/graph-interaction.md
+100644 ed3e219ae3a9f807045b4761214419c542af9207 3	spec/design/graph-interaction.md
+100644 34eab3c7628bb9a4921be37a57d4a04579dd1afc 1	spec/releases/0.6.0-api-inventory.json
+100644 fff2e486982f5b24ea40dae68a88714608e63a99 2	spec/releases/0.6.0-api-inventory.json
+100644 b60572efdb2a3cd950affaceaa6c03e8ccfb8cee 3	spec/releases/0.6.0-api-inventory.json

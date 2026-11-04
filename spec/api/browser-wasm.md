@@ -82,6 +82,38 @@ and polite Rust-summary live region accompany a following table. Previous/Next
 page 50 Rust companion rows; each Select button uses its aligned Rust ref.
 Labels and summary are rendered as text.
 
+A primary single click on the canvas replaces selection; Shift adds, Ctrl/Meta
+toggles, and Ctrl/Meta wins when combined with Shift. Alt and nonprimary clicks
+pass through. Only live, idle, accepted nonstale publications admit clicks;
+busy/stale clicks are discarded without replay. Rust SelectAt owns the exact
+pick and aggregate membership. Blank Replace empties selection while preserving
+highlights; blank Add/Toggle do nothing. DOM focus may move to the application
+surface; Rust logical focus does not change.
+
+Only trusted native clicks targeting the owned canvas are eligible. Finite
+`offsetX`/`offsetY` are read during dispatch at the padding edge; subtract canvas
+padding (not border), reject outside content, then scale to the accepted CSS
+viewport. Native reported coordinates are authoritative at browser precision;
+there is no subpixel promise, rectangle inversion, DPR/data-camera transform
+or guessed zoom division. The public effective `canvas.currentCSSZoom` must
+be finite and **strictly1**, without tolerance. Missing/invalid/nonunit values
+refuse commands and preserve the native default; computed canvas zoom is
+insufficient. Net-unit nested zoom remains eligible when the reported product
+is exactly1.
+
+Inspectable ancestry still follows available `assignedSlot` before
+`parentElement`, then `ShadowRoot.host`. Visited rotations/shears/perspective/
+reflections/3D matrices, individual transform properties and active motion
+paths are conservatively refused, as are non-fill object-fit, canvas scrolling
+and degenerate boxes. Default motion properties without a path pass. Closed
+slots hide assignments: the walk does **not** certify absence of hidden
+transforms. Hidden rotations/motion may be eligible using native local offsets
+and the same strict effective-zoom guard. Plain/scaled slots remain usable.
+See the [input contract and fresh proof](../design/graph-interaction.md#bounded-explicit-s5b-attachment)
+and [native input receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md).
+There is no hover/picked-target event/API; `xy:graph-select` still carries the
+complete accepted Rust selection snapshot.
+
 Bubbling `xy:graph-render`, `xy:graph-focus` and `xy:graph-select` carry accepted
 snapshots. `xy:graph-stale` requires `refreshRender()` before more input;
 `xy:graph-error` carries a code/message. Refusals preserve the preceding accepted
@@ -90,7 +122,7 @@ DOM/events, and drains the non-cancellable lane before CLOSE. A lost/ambiguous
 Worker reply is terminal rather than proof that mutation was cancelled.
 
 This path does not call the canonicalScene route; `renderWasmGraphForge` keeps
-its existing API. There is no raw arbitrary-interaction API, pointer/hover,
+its existing API. There is no raw arbitrary-interaction API, hover/pan,
 brush/lasso, disclosure, move/pin/relayout, structural update, temporal binding,
 linking, force scheduler, or legacy click alias. Broader S5b/S6/S7 and
 #36/M4/#108 acceptance remain open. Exact hover/picked refs still need a later

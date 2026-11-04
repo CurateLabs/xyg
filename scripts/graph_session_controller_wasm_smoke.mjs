@@ -8,7 +8,7 @@ import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const allowed = p => p === "/old-same-abi.wasm" || p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
+const allowed = p => p === "/old-same-abi.wasm" || p === "/packages/xy-node/src/graphforge-container.js" || p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
 const csp = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; object-src 'none'; base-uri 'none'";
 const requests = [], violations = [], errors = [];
 const server = createServer(async (req, res) => {
@@ -23,14 +23,27 @@ const server = createServer(async (req, res) => {
 });
 await new Promise(r => server.listen(0, "127.0.0.1", r));
 const browser = await chromium.launch({ executablePath: process.env.XYG_CHROMIUM || process.env.CHROMIUM, args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
-const evidence = { schema: "xyg.graph-s5b-attachment/v1", cases: [] };
+const evidence = { schema: "xyg.graph-s5b-pointer-selection/v1", node: process.version, browser: browser.version(), cases: [] };
 try {
-  const page = await browser.newPage({ reducedMotion: "reduce" }); page.on("console", m => { if (/Content Security Policy|Refused to/.test(m.text())) violations.push(m.text()); }); page.on("pageerror", e => errors.push(e.message));
+  const page = await browser.newPage({ reducedMotion: "reduce", viewport: { width: 2800, height: 1500 } }); page.on("console", m => { if (/Content Security Policy|Refused to/.test(m.text())) violations.push(m.text()); }); page.on("pageerror", e => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.waitForFunction(() => ["ready", "failed"].includes(window.__graphSession?.stage), null, { timeout: 60_000 });
   assert.equal(await page.evaluate(() => window.__graphSession.stage), "ready", JSON.stringify(await page.evaluate(() => window.__graphSession.failure)));
   const run = async (name, fn) => { const result = await fn(); evidence.cases.push({ name, result }); console.log(`PASS ${name}`); return result; };
   const check = async fn => { const result = await page.evaluate(fn); assert.equal(result.ok, true, JSON.stringify(result, (_, v) => typeof v === "bigint" ? v.toString() : v)); return result; };
+  if (process.env.XYG_GRAPH_POINTER_BASELINE) {
+    await run("before-primary-click-has-no-controller-command", async () => {
+      const point = await page.evaluate(() => {
+        const s = window.__graphSession, bytes = s.section(s.replies.at(-1).bytes, "paint.node.center.f64"), v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        const r = s.el.querySelector("canvas").getBoundingClientRect();
+        return { x: r.left + v.getFloat64(0, true), y: r.top + v.getFloat64(8, true), commands: s.commands.length };
+      });
+      await page.mouse.click(point.x, point.y);
+      const after = await page.evaluate(() => ({ commands: window.__graphSession.commands.length, selected: window.__graphSession.snapshot().outcome.selected }));
+      assert.equal(after.commands, point.commands); assert.equal(after.selected, 0);
+      return { ok: true, point, after, delivery: "Playwright mouse.click" };
+    });
+  }
   await run("default16MiB-compose-attach-GPU-lastgood-signed-camera", () => check(() => {
     const s = window.__graphSession, pixel = s.pixel(s.el), image = pixel.some((v, i) => i % 4 === 3 && v > 0), before = s.handle.snapshot();
     s.initialPixels = pixel; s.initial = before;
@@ -234,6 +247,290 @@ try {
     await page.evaluate(() => { const s = window.__graphSession; s.dialog.dialog.remove(); s.dialogControl.dialog.remove(); });
     return { ok: true, results };
   });
+  if (!process.env.XYG_GRAPH_POINTER_BASELINE) {
+    const pointerSnapshot = () => page.evaluate(() => window.__graphSession.pointerSnapshot());
+    const pointerIdle = () => page.evaluate(() => { const s=window.__graphSession; return s.waitIdle(s.pointer.el); });
+    const click = async (kind, index=0, modifiers=[]) => {
+      await page.locator('[data-pointer-fixture] canvas').scrollIntoViewIfNeeded();
+      const point = await page.evaluate(([kind,index]) => { const s=window.__graphSession; const css=s.pointerPoint(kind,index); return {css,client:s.pointerClient(css),count:s.commands.length,products:s.products.length}; }, [kind,index]);
+      for(const key of modifiers) await page.keyboard.down(key);
+      try { await page.mouse.click(...point.client.map(Math.round)); } finally { for(const key of modifiers.reverse()) await page.keyboard.up(key); }
+      await pointerIdle();
+      const raw = await page.evaluate(() => { const s=window.__graphSession,c=s.commands.at(-1); return {count:s.commands.length,products:s.products.slice(-1),operation:c.operation,revision:c.revision,coordinates:s.values(c.bytes,'coordinates.f64'),event:s.pointer.trusted.at(-1),words:[...new Uint32Array(s.section(c.bytes,'header.u32').slice().buffer)]}; });
+      assert.equal(raw.count,point.count+1); assert.equal(raw.operation,1);
+      assert.deepEqual(await page.evaluate(start=>window.__graphSession.products.slice(start),point.products),["graph.session.interact"]);
+      assert.equal(raw.event.trusted,true);assert.equal(raw.event.canvas,true);
+      if(process.env.XYG_GRAPH_NATIVE_BASELINE) {
+      const delivered=await page.evaluate(event=>{const s=window.__graphSession,c=s.pointer.el.querySelector('canvas'),r=c.getBoundingClientRect(),style=getComputedStyle(c);const l=parseFloat(style.borderLeftWidth)+parseFloat(style.paddingLeft),t=parseFloat(style.borderTopWidth)+parseFloat(style.paddingTop),h=l+parseFloat(style.borderRightWidth)+parseFloat(style.paddingRight),v=t+parseFloat(style.borderBottomWidth)+parseFloat(style.paddingBottom),bw=parseFloat(style.width)+(style.boxSizing==='border-box'?0:h),bh=parseFloat(style.height)+(style.boxSizing==='border-box'?0:v),camera=s.pointer.handle.snapshot().camera;return [((event.clientX-r.left)*bw/r.width-l)*camera[4]/(bw-h),((event.clientY-r.top)*bh/r.height-t)*camera[5]/(bh-v)];},raw.event);
+      raw.coordinates.forEach((v,i)=>assert.ok(Math.abs(v-delivered[i])<1e-8,`${v} != delivered ${delivered[i]}`));
+      }else{
+        assert.equal(raw.event.zoom,1);
+        assert.deepEqual(raw.coordinates,raw.event.nativeCoordinates,'raw f64 must equal the synchronous native offset oracle');
+      }
+      return {point,raw,snapshot:await pointerSnapshot()};
+    };
+    await run("primary-mouse-exact-node-replace-shiftAdd-CtrlMetaToggle-and-rawf64", async () => {
+      await page.evaluate(() => window.__graphSession.pointerFixture());
+      const results=[];
+      for(const [kind,index,mods,count] of [["node",1,[],1],["node",2,["Shift"],2],["node",1,["Control"],1],["node",1,["Meta"],2],["node",1,["Shift","Control"],1],["node",1,["Shift","Meta"],2]]) {
+        const r=await click(kind,index,mods); assert.equal(r.snapshot.outcome.selected,count); results.push(r);
+      }
+      const p=await page.evaluate(()=>{const s=window.__graphSession,p=s.pointer;return {trusted:p.trusted,events:p.events,commands:s.commands.filter(c=>c.instanceId===p.id).map(c=>c.type),legacyCalls:s.legacyCalls};});
+      assert.ok(p.trusted.every(e=>e.trusted&&e.button===0)); assert.equal(p.events.length,6); assert.deepEqual(p.legacyCalls,[]);
+      assert.deepEqual(results[0].snapshot.selection.refs,[{kind:0,uuid:'02000000-0000-0000-0000-000000000000'}]);
+      assert.deepEqual(Array.from(results[0].snapshot.selection.rows),[9007199254740997n]);
+      return {ok:true,delivery:"Playwright mouse.click",results,...p};
+    });
+    await run("Rust-exact-persisted-parallel-selfloop-derived-head-and-compound-frame", async () => {
+      const results=[];
+      for(const [kind,index,expected] of [["piece",0,11],["piece",1,12],["piece",2,13],["head",4,null],["frame",0,1],["gap",0,2]]) {
+        await page.evaluate(()=>{const p=window.__graphSession.pointer;p.el.style.transformOrigin='0 0';p.el.style.transform='scale(4)';});
+        const r=await click(kind,index); const refs=r.snapshot.selection.refs;
+        console.log('pointer oracle',kind,index,JSON.stringify({point:r.point,raw:r.raw,refs},(_,v)=>typeof v==='bigint'?String(v):v));
+        assert.equal(refs.length,1);
+        if(expected===null) {
+          assert.deepEqual(refs[0],{kind:2,resultId:'exact:雪\t',layer:0,path:9007199254740995n,order:9007199254740993n});
+          assert.deepEqual(Array.from(r.snapshot.selection.rows),[9007199254740999n]);
+        } else {
+          const node=kind==='frame'||kind==='gap', hex=node?`${expected.toString(16).padStart(2,'0')}000000000000000000000000000000`:expected.toString(16).padStart(2,'0').repeat(16);
+          assert.deepEqual(refs[0],{kind:node?0:1,uuid:hex.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/,'$1-$2-$3-$4-$5')});
+        }
+        results.push(r);
+      }
+      await page.evaluate(()=>window.__graphSession.pointer.el.removeAttribute('style'));
+      const interior=await click('interior'); assert.equal(interior.snapshot.outcome.selected,0);
+      return {ok:true,results,interior};
+    });
+    await run("blank-Replace-empty-AddToggle-noops-samerevision-focus-and-geometry", async () => {
+      const before=await page.evaluate(()=>{const s=window.__graphSession;return {snapshot:s.pointerSnapshot(),bytes:[...s.publication()]};});
+      await click('node',1);
+      const add=await click('blank',0,['Shift']), toggle=await click('blank',0,['Control']), replace=await click('blank');
+      assert.equal(add.snapshot.outcome.selected,1);assert.equal(toggle.snapshot.outcome.selected,1);assert.equal(add.snapshot.outcome.stateChanged,false);assert.equal(toggle.snapshot.outcome.stateChanged,false);assert.equal(replace.snapshot.outcome.selected,0);
+      const unchanged=await page.evaluate(before=>{const s=window.__graphSession,after=s.publication();const names=['paint.node.center.f64','paint.piece.geometry.f64','paint.frame.geometry.f64','render.node_members.u64','render.edge_members.u64'];return names.every(name=>s.json([...s.section(new Uint8Array(before),name)])===s.json([...s.section(after,name)]));},before.bytes);
+      assert.equal(unchanged,true);assert.equal(replace.snapshot.revision,before.snapshot.revision);assert.deepEqual(replace.snapshot.focus,before.snapshot.focus);
+      if(process.env.XYG_GRAPH_POINTER_CAPTURE) {
+        const capture=await page.evaluate(()=>{const s=window.__graphSession;return s.commands.filter(c=>c.instanceId===36n).map(c=>({operation:c.operation,nativeEvent:c.nativeEvent,request:[...c.bytes],reply:[...s.replies.find(r=>r.requestId===c.requestId&&r.sequence===c.sequence&&r.lifetime===c.lifetime).bytes]}));});
+        await writeFile(process.env.XYG_GRAPH_POINTER_CAPTURE,JSON.stringify(capture.map(c=>({operation:c.operation,nativeEvent:c.nativeEvent,request:Buffer.from(c.request).toString('base64'),reply:Buffer.from(c.reply).toString('base64')})),null,2)+'\n');
+      }
+      return {ok:true,add,toggle,replace,unchanged};
+    });
+    await run("signedcamera-DPR2-CSSscale-offset-border-padding-borderbox-scroll", async () => {
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;await p.handle.refreshRender([-1,100,600,0,640,320,2]);p.el.style.cssText='margin-left:43px; margin-top:31px; width:1000px; transform-origin:0 0; transform:scale(0.8,0.75)';const c=p.el.querySelector('canvas');c.style.cssText+=';border:7px solid black;padding:11px 13px;box-sizing:border-box';});
+      const r=await click('node',1);
+      if(process.env.XYG_GRAPH_POINTER_SCREENSHOT) await page.locator('[data-pointer-fixture] canvas').screenshot({path:process.env.XYG_GRAPH_POINTER_SCREENSHOT});
+      assert.deepEqual(r.snapshot.selection.refs,[{kind:0,uuid:'02000000-0000-0000-0000-000000000000'}]);assert.equal(r.snapshot.camera[6],2);
+      const initial=await page.evaluate(()=>{const s=window.__graphSession;return s.commands.length;});
+      // A real click in padding must not become a graph command.
+      const pad=await page.locator('[data-pointer-fixture] canvas').boundingBox();await page.mouse.click(pad.x+8,pad.y+8);
+      assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),initial);
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;p.el.removeAttribute('style');p.el.querySelector('canvas').removeAttribute('style');await p.handle.refreshRender(p.camera);});
+      return {ok:true,result:r,paddingCommands:0};
+    });
+    await run("unsupported-transform-alt-secondary-and-busy-clicks-pass-without-replay", async () => {
+      const initial=await page.evaluate(()=>window.__graphSession.commands.length), results=[];
+      for(const transform of ['rotate(5deg)','skewX(8deg)','perspective(500px) rotateY(5deg)','scale(-1,1)']) {
+        await page.evaluate(t=>window.__graphSession.pointer.el.style.transform=t,transform);
+        const box=await page.locator('[data-pointer-fixture] canvas').boundingBox();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);results.push(transform);
+      }
+      await page.evaluate(()=>window.__graphSession.pointer.el.style.transform='none');
+      const point=await page.evaluate(()=>{const s=window.__graphSession;return s.pointerClient(s.pointerPoint('node',1));});
+      await page.keyboard.down('Alt');await page.mouse.click(...point);await page.keyboard.up('Alt');await page.mouse.click(...point,{button:'right'});await page.mouse.click(...point,{button:'middle'});
+      assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),initial);
+      await page.evaluate(()=>{const s=window.__graphSession;s.hold=true;s.pointer.pending=s.pointer.handle.refreshRender();});await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      const busy=await page.evaluate(()=>window.__graphSession.commands.length);await page.mouse.click(...point);
+      assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),busy);
+      await page.evaluate(async()=>{const s=window.__graphSession;s.release();await s.pointer.pending;});await pointerIdle();assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),busy);
+      return {ok:true,results,busyDiscarded:true};
+    });
+    await run("held-primarySelectAt-busy-Escape-discard-focus-stable-and-samerevision-repaint", async () => {
+      await click('blank');
+      await page.evaluate(()=>window.__graphSession.pointer.el.querySelector('[role="application"]').focus());
+      await page.keyboard.press('ArrowRight');await pointerIdle();
+      const before=await pointerSnapshot();assert.equal(before.focus.length,1);
+      const point=await page.evaluate(()=>{const s=window.__graphSession,p=s.pointer;p.beforePixels=s.json(s.pixel(p.el));p.beforeGeometry=s.geometryStamp(s.publication());p.beforeEvents=p.events.length;s.hold=true;return s.pointerClient(s.pointerPoint('node',1));});
+      await page.mouse.click(...point);await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      const count=await page.evaluate(()=>window.__graphSession.commands.length);
+      await page.keyboard.press('Escape');await page.mouse.click(...point);
+      assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),count);assert.deepEqual(await pointerSnapshot(),before);
+      assert.equal(await page.evaluate(()=>{const s=window.__graphSession;return s.json(s.pixel(s.pointer.el))===s.pointer.beforePixels;}),true);
+      await page.evaluate(()=>window.__graphSession.release());await pointerIdle();const after=await pointerSnapshot();
+      assert.equal(after.revision,before.revision);assert.deepEqual(after.focus,before.focus);
+      const proof=await page.evaluate(()=>{const s=window.__graphSession,p=s.pointer;return {geometryUnchanged:p.beforeGeometry===s.geometryStamp(s.publication()),repainted:p.beforePixels!==s.json(s.pixel(p.el)),events:p.events.length-p.beforeEvents};});
+      assert.deepEqual(proof,{geometryUnchanged:true,repainted:true,events:1});return {ok:true,before,after,...proof,busyClearCommands:0,busyClickReplay:0};
+    });
+    await run("pointer-Rust-refusal-stale-malformed-atomic-and-explicit-refresh", async () => {
+      const results=[];
+      for(const inject of ['wrong-instance','budget-reply','stale','malformed-gpu','malformed-clear']) {
+        const before=await pointerSnapshot(); await page.evaluate(i=>window.__graphSession.inject=i,inject);
+        const r=await click('node',2); assert.deepEqual(r.snapshot,before);
+        if(['stale','malformed-gpu','malformed-clear'].includes(inject)) {
+          const count=await page.evaluate(()=>window.__graphSession.commands.length), point=await page.evaluate(()=>{const s=window.__graphSession;return s.pointerClient(s.pointerPoint('node',1));});await page.mouse.click(...point);assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),count);
+        }
+        await page.evaluate(()=>window.__graphSession.pointer.handle.refreshRender());results.push({inject,retained:true});
+      }
+      return {ok:true,results,budget:"test-only definitive error reply seam; Rust cap covered separately"};
+    });
+    await run("blank-Replace-preserves-Rust-highlight-planes-and-pointer-observer-errors", async () => {
+      await click('blank');
+      await page.evaluate(()=>{window.__graphSession.inject='seed-highlight';});
+      // This test-only transport edit seeds a real Rust External highlight; it
+      // is not part of the bounded controller vocabulary or the mouse capture.
+      const point=await page.evaluate(()=>{const s=window.__graphSession;return s.pointerClient(s.pointerPoint('node',1));});await page.mouse.click(...point);await pointerIdle();
+      const highlighted=await page.evaluate(()=>{const s=window.__graphSession;return [...s.section(s.publication(),'node.flags.u32')];});
+      await click('node',2);const blank=await click('blank');assert.equal(blank.snapshot.clearAction.applicable,true);assert.equal(blank.snapshot.outcome.selected,0);
+      const after=await page.evaluate(()=>{const s=window.__graphSession;return [...s.section(s.publication(),'node.flags.u32')];});assert.deepEqual(after,highlighted);
+      await page.evaluate(()=>{const s=window.__graphSession;s.pointer.observed=false;s.pointer.onError=e=>{if(e.message.includes('pointer observer failure')){s.pointer.observed=true;e.preventDefault();}};s.pointer.listener=()=>{throw Error('pointer observer failure');};window.addEventListener('error',s.pointer.onError);s.pointer.el.addEventListener('xy:graph-select',s.pointer.listener);});
+      await click('node',1);const observed=await page.evaluate(()=>{const s=window.__graphSession,p=s.pointer;p.el.removeEventListener('xy:graph-select',p.listener);window.removeEventListener('error',p.onError);return p.observed;});assert.equal(observed,true);
+      await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();});
+      return {ok:true,highlighted,after,observed};
+    });
+    await run("default16MiB-10001-source-fixture-Rust-budget-refusal", async () => {
+      const code=await page.evaluate(async()=>{try {await window.__graphSession.pointerFixture('pressure',40n);return 'unexpected-success';}catch(e){return e.code;}});
+      assert.equal(code,'GF_INTERACTION_BUDGET');
+      return {ok:true,code,sources:10001,arena:16777216,limitation:'Refused at initialization; no claim of a real 10001-member click at this arena. Typed selection-cap reply is tested at the pre-execution seam on51 sources.'};
+    });
+    await run("aggregate-exact-Rust-membership-and-typed-cap-refusal-default-arena", async () => {
+      const results=[];
+      for(const [kind,id] of [['aggregate',37n],['cap',38n]]) {
+        console.log('aggregate fixture',kind);
+        await page.evaluate(([kind,id])=>window.__graphSession.pointerFixture(kind,BigInt(id)),[kind,String(id)]);
+        const expected=await page.evaluate(()=>{const s=window.__graphSession,p=s.pointer,bytes=s.publication(),parts=s.section(bytes,'render.node_member_offsets.u64'),offsets=new BigUint64Array(parts.slice().buffer),members=new BigUint64Array(s.section(bytes,'render.node_members.u64').slice().buffer);const ids=[...members.slice(Number(offsets[0]),Number(offsets[1]))].sort((a,b)=>Number(a-b));return ids.map(i=>({kind:0,uuid:[...p.nodes.slice(Number(i)*16,Number(i)*16+16)].map(b=>b.toString(16).padStart(2,'0')).join('').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/,'$1-$2-$3-$4-$5')}));});
+        const before=await pointerSnapshot();
+        if(kind==='cap') await page.evaluate(()=>window.__graphSession.inject='cap-reply');
+        const result=await click('node',0);
+        if(kind==='cap') {assert.deepEqual(result.snapshot,before);} else {assert.ok(result.snapshot.outcome.selected>1);assert.deepEqual(result.snapshot.selection.refs,expected);}
+        const errors=await page.evaluate(()=>window.__graphSession.pointer.errors);
+        if(kind==='cap') assert.equal(errors.at(-1)?.code,'GF_INTERACTION_SELECTION_TOO_LARGE');
+        results.push({kind,result,errors,expectedMemberCount:expected.length,...(kind==='aggregate'?{expected}: {})});
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();});
+      }
+      return {ok:true,results};
+    });
+    await run("pointer-dispose-during-reply-removes-listener-and-twoWorkers-isolate", async () => {
+      await page.evaluate(()=>window.__graphSession.pointerFixture('routes',39n));
+      const main=await page.evaluate(()=>window.__graphSession.snapshot());
+      await page.locator('[data-pointer-fixture] canvas').scrollIntoViewIfNeeded();const point=await page.evaluate(()=>{const s=window.__graphSession;return s.pointerClient(s.pointerPoint('node',1));});
+      await page.evaluate(()=>window.__graphSession.hold=true);await page.mouse.click(...point);await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      await page.evaluate(()=>{const s=window.__graphSession,p=s.pointer;p.oldCanvas=p.el.querySelector('canvas');p.disposal=p.handle.dispose();p.el.append(p.oldCanvas);});
+      const count=await page.evaluate(()=>window.__graphSession.commands.length);const box=await page.locator('[data-pointer-fixture] canvas').boundingBox();await page.mouse.click(box.x+20,box.y+20);assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),count);
+      const result=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;s.release();await p.disposal;await p.worker.dispose();p.el.remove();return {snapshot:p.handle.snapshot(),events:p.events.length};});assert.equal(result.snapshot,null);assert.equal(result.events,0);assert.deepEqual(await page.evaluate(()=>window.__graphSession.snapshot()),main);
+      return {ok:true,result};
+    });
+    await run("terminal-pointer-input-passes-without-command-and-mainWorker-survives", async () => {
+      await page.evaluate(()=>window.__graphSession.pointerFixture('routes',41n));
+      await page.locator('[data-pointer-fixture] canvas').scrollIntoViewIfNeeded();
+      const code=await page.evaluate(async()=>{const s=window.__graphSession;s.inject='wrong-lifetime';try{await s.pointer.handle.refreshRender();return 'unexpected-success';}catch(e){return e.code;}});assert.equal(code,'XYG_WASM_MESSAGE_ERROR');
+      const before=await page.evaluate(()=>window.__graphSession.commands.length),point=await page.evaluate(()=>{const s=window.__graphSession;return s.pointerClient(s.pointerPoint('node',1));});await page.mouse.click(...point);assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),before);
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();await s.handle.refreshRender();});return {ok:true,code,terminalCommands:0};
+    });
+    for (const target of ['canvas','ancestor']) {
+      const baseline=!!process.env.XYG_GRAPH_MOTION_BASELINE;
+      await run(`${baseline?'before-mis-pick':'reject'}-active-motion-path-on-${target}-trusted-canvas-click`, async () => {
+        await page.evaluate(id=>window.__graphSession.pointerFixture('routes',BigInt(id)),target==='canvas'?'50':'51');
+        await click('node',2); // Keep an accepted nonempty selection to detect a wrong blank pick.
+        await page.locator('[data-pointer-fixture] canvas').scrollIntoViewIfNeeded();
+        const point=await page.evaluate(target=>window.__graphSession.motionPoint(target),target);
+        assert.equal(point.predicate.transform,'none');assert.equal(point.predicate.rotate,'none');assert.notEqual(point.predicate.offsetPath,'none');assert.equal(point.predicate.offsetRotate,'30deg');
+        assert.equal(point.hit,'CANVAS','the actual visibly transformed graph point must hit canvas');
+        const before=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash};});
+        await page.mouse.click(...point.client);await pointerIdle();
+        const after=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer,c=s.commands.at(-1);return {commands:s.commands.length,products:s.products.slice(-1),events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash,delivery:p.motionDelivery,lastOperation:c.operation,lastCoordinates:c.operation===1?s.values(c.bytes,'coordinates.f64'):null};});
+        const result={ok:true,target,point,delivery:after.delivery,before:{commands:before.commands,events:before.events,snapshot:before.snapshot,pixels:before.pixels,hash:before.hash},after:{commands:after.commands,events:after.events,snapshot:after.snapshot,pixels:after.pixels,lastOperation:after.lastOperation,lastCoordinates:after.lastCoordinates,hash:after.hash},geometryUnchanged:before.geometry===after.geometry};
+        console.log('motion-path raw proof',JSON.stringify(result,(_,v)=>typeof v==='bigint'?String(v):v));
+        assert.equal(after.delivery.trusted,true);assert.equal(after.delivery.target,'CANVAS');assert.equal(after.delivery.canvas,true);
+        if(baseline) {
+          assert.equal(after.commands,before.commands+1);assert.equal(after.lastOperation,1);assert.equal(after.delivery.defaultPrevented,true);
+          assert.equal(after.snapshot.outcome.selected,0);assert.notDeepEqual(after.snapshot,before.snapshot);assert.equal(after.hash,before.hash);
+        } else {
+          assert.equal(after.commands,before.commands);assert.equal(after.events,before.events);assert.equal(after.delivery.defaultPrevented,false);
+          assert.deepEqual(after.snapshot,before.snapshot);assert.equal(after.pixels,before.pixels);assert.equal(after.geometry,before.geometry);assert.equal(after.hash,`#motion-path-${target}`);
+          assert.equal(await page.evaluate(start=>window.__graphSession.products.length===start,before.products),true);
+        }
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();});
+        return result;
+      });
+    }
+
+    for (const [kind,nested] of [['rotate',false],['motion',false],['plain',false],['scale',false],['rotate',true],['scale',true]]) {
+      const unsupported=kind==='rotate'||kind==='motion',baseline=!!process.env.XYG_GRAPH_SLOT_BASELINE;
+      await run(`${unsupported&&baseline?'before-mis-pick':unsupported?'reject':'accept'}-${nested?'nested-':''}slotted-${kind}-trusted-canvas`, async () => {
+        await page.evaluate(id=>window.__graphSession.pointerFixture('routes',BigInt(id)),String(60+['rotate','motion','plain','scale'].indexOf(kind)+(nested?10:0)));
+        await click('node',2);
+        const point=await page.evaluate(([kind,nested])=>window.__graphSession.slotPoint(kind,nested),[kind,nested]);
+        assert.equal(point.hit,'CANVAS');assert.equal(point.composedWalk.filter(e=>e.tag==='SLOT').length,nested?2:1);
+        assert.ok(point.legacyWalk.every(e=>e.transform==='none'&&e.rotate==='none'&&e.offsetPath==='none'));
+        const before=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash};});
+        let positive=null;
+        if(unsupported){await page.mouse.click(...point.client);await pointerIdle();}else{positive=await click('node',1);}
+        const after=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer,c=s.commands.at(-1);return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash,delivery:p.slotDelivery,lastOperation:c.operation,lastCoordinates:c.operation===1?s.values(c.bytes,'coordinates.f64'):null};});
+        const result={ok:true,point,delivery:after.delivery,before:{commands:before.commands,snapshot:before.snapshot,pixels:before.pixels,hash:before.hash},after:{commands:after.commands,snapshot:after.snapshot,pixels:after.pixels,hash:after.hash,lastOperation:after.lastOperation,lastCoordinates:after.lastCoordinates},geometryUnchanged:before.geometry===after.geometry,positive};
+        console.log('slot raw proof',JSON.stringify(result,(_,v)=>typeof v==='bigint'?String(v):v));
+        assert.equal(after.delivery.trusted,true);assert.equal(after.delivery.target,'CANVAS');assert.equal(after.delivery.canvas,true);
+        if(unsupported&&!baseline){
+          assert.equal(after.commands,before.commands);assert.equal(after.products,before.products);assert.equal(after.events,before.events);assert.equal(after.delivery.defaultPrevented,false);
+          assert.deepEqual(after.snapshot,before.snapshot);assert.equal(after.pixels,before.pixels);assert.equal(after.geometry,before.geometry);assert.equal(after.hash,`#slot-${nested?'nested-':''}${kind}`);
+        }else{
+          assert.equal(after.commands,before.commands+1);assert.equal(after.lastOperation,1);assert.equal(after.delivery.defaultPrevented,true);assert.equal(after.hash,before.hash);
+          if(unsupported){assert.notDeepEqual(after.snapshot,before.snapshot);assert.equal(after.snapshot.outcome.selected,0);}else{assert.deepEqual(after.snapshot.selection.refs,[{kind:0,uuid:'02000000-0000-0000-0000-000000000000'}]);assert.equal(after.snapshot.outcome.selected,1);assert.equal(after.geometry,before.geometry);assert.deepEqual(after.snapshot.focus,before.snapshot.focus);}
+        }
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.slotHost.remove();});return result;
+      });
+    }
+
+    const nativeBaseline=process.env.XYG_GRAPH_NATIVE_BASELINE;
+    const cdp=await page.context().newCDPSession(page);
+    const closedCases=nativeBaseline?[[1,'rotate','div',true,false]]:
+      [1,2].flatMap(dpr=>[
+        ...['div','body'].flatMap(tag=>[true,false].flatMap(named=>['rotate','motion'].map(kind=>[dpr,kind,tag,named,false]))),
+        [dpr,'zoom14','div',true,false],[dpr,'zoom125','body',false,false],
+        [dpr,'net2','div',false,true],[dpr,'net14','body',true,true],
+        [dpr,'rotate','div',true,true],[dpr,'motion','body',false,true]
+      ]);
+    for(const [dpr,kind,tag,named,nested] of closedCases){
+      await run(`native-closed-${tag}-${named?'named':'default'}-${kind}-${nested?'nested-':''}DPR${dpr}`,async()=>{
+        await cdp.send('Emulation.setDeviceMetricsOverride',{width:2800,height:1500,deviceScaleFactor:dpr,mobile:false});
+        await page.evaluate(()=>window.__graphSession.pointerFixture('routes',90n));await click('node',2);
+        const point=await page.evaluate(options=>window.__graphSession.closedPoint(options),{kind,tag,named,nested});
+        assert.equal(point.hit,'CANVAS');assert.equal(point.dpr,dpr);assert.equal(point.canvasStyleZoom,'1');
+        assert.ok(point.chain.every(e=>e.transform==='none'&&e.rotate==='none'&&e.offsetPath==='none'&&e.slot===null));
+        const before=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer;return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash};});
+        await page.mouse.click(...point.client);await pointerIdle();
+        const after=await page.evaluate(async()=>{const s=window.__graphSession,p=s.pointer,c=s.commands.at(-1);return {commands:s.commands.length,products:s.products.length,events:p.events.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),geometry:s.geometryStamp(s.publication()),hash:location.hash,delivery:p.closedDelivery,event:p.trusted.at(-1),coordinates:c.operation===1?s.values(c.bytes,'coordinates.f64'):null};});
+        const result={ok:true,point,before,after};console.log('closed-native raw proof',JSON.stringify(result,(_,v)=>typeof v==='bigint'?String(v):v));
+        assert.equal(after.delivery.trusted,true);assert.equal(after.delivery.canvas,true);assert.equal(after.delivery.target,'CANVAS');
+        const refuse=kind.startsWith('zoom');
+        if(nativeBaseline==='1'){
+          assert.equal(after.commands,before.commands+1);assert.equal(after.delivery.defaultPrevented,true);assert.equal(after.snapshot.outcome.selected,0);
+          assert.notDeepEqual(after.coordinates,after.event.nativeCoordinates);
+        }else if(refuse){
+          assert.notEqual(point.zoom,1);assert.equal(after.commands,before.commands);assert.equal(after.products,before.products);assert.equal(after.events,before.events);
+          assert.deepEqual(after.snapshot,before.snapshot);assert.equal(after.pixels,before.pixels);assert.equal(after.delivery.defaultPrevented,false);assert.equal(after.hash,point.fragment);assert.notEqual(before.hash,point.fragment);
+        }else{
+          assert.equal(point.zoom,1);assert.equal(after.commands,before.commands+1);assert.equal(after.products,before.products+1);assert.equal(after.events,before.events+1);
+          assert.equal(after.delivery.defaultPrevented,true);assert.equal(after.hash,before.hash);
+          assert.deepEqual(after.coordinates,after.event.nativeCoordinates);assert.deepEqual(after.snapshot.selection.refs,[{kind:0,uuid:'02000000-0000-0000-0000-000000000000'}]);
+        }
+        assert.equal(after.geometry,before.geometry);assert.deepEqual(after.snapshot.focus,before.snapshot.focus);assert.equal(after.snapshot.revision,before.snapshot.revision);
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.closedHost.remove();});return result;
+      });
+    }
+    await cdp.send('Emulation.clearDeviceMetricsOverride');await cdp.detach();
+    if(!nativeBaseline) for(const capability of ['missing','nan','infinite','nonunit']){
+      await run(`effective-zoom-${capability}-test-only-capability-seam-refuses-trusted-click`,async()=>{
+        await page.evaluate(()=>window.__graphSession.pointerFixture('routes',91n));await click('node',2);
+        const point=await page.evaluate(capability=>{const s=window.__graphSession,c=s.pointer.el.querySelector('canvas'),surface=c.parentElement,link=document.createElement('a');link.href=`#capability-refusal-${capability}`;surface.before(link);link.append(surface);
+          Object.defineProperty(c,'currentCSSZoom',{configurable:true,value:({missing:undefined,nan:NaN,infinite:Infinity,nonunit:1+Number.EPSILON})[capability]});
+          s.pointer.capabilityDelivery=null;c.addEventListener('click',e=>s.pointer.capabilityDelivery={trusted:e.isTrusted,canvas:e.target===c,defaultPrevented:e.defaultPrevented});return s.pointerClient(s.pointerPoint('node',1));},capability);
+        const before=await page.evaluate(async()=>{const s=window.__graphSession;return {commands:s.commands.length,products:s.products.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),events:s.pointer.events.length,geometry:s.geometryStamp(s.publication())};});
+        await page.mouse.click(...point);await pointerIdle();
+        const after=await page.evaluate(async()=>{const s=window.__graphSession;return {commands:s.commands.length,products:s.products.length,snapshot:s.pointerSnapshot(),pixels:await s.canvasDigest(),events:s.pointer.events.length,geometry:s.geometryStamp(s.publication())};});
+        const delivery=await page.evaluate(()=>window.__graphSession.pointer.capabilityDelivery);
+        assert.deepEqual(after,before);assert.deepEqual(delivery,{trusted:true,canvas:true,defaultPrevented:false});assert.equal(await page.evaluate(()=>location.hash),`#capability-refusal-${capability}`);
+        await page.evaluate(async()=>{const p=window.__graphSession.pointer;await p.handle.dispose();await p.worker.dispose();p.el.remove();});return {ok:true,capability,seam:'test-only own-property effective-zoom override',before,after,delivery};
+      });
+    }
+
+  }
   await run("old-same-ABI-module-missing-clear-fact-fails-closed", () => check(async () => {
     const s = window.__graphSession, worker = s.makeWorker("/old-same-abi.wasm"); await worker.ready; const el = s.container();
     const handle = s.attach({ el, worker, instanceId: 80n, document: s.document, load: s.load, camera: s.camera });

@@ -56,6 +56,17 @@ test("browser encoder retains exact bigint identities, negative camera scale and
   assert.throws(() => wire.encodeGraphSessionRequest({ instanceId: 1n, opSeq: 1n, revision: 0, operation: 17, page: 0xffffffff, pageSize: 200 }));
 });
 
+test("SelectAt frames only two raw finite f64 CSS coordinates and existing selection modes", () => {
+  const base = { instanceId: 1n, opSeq: 2n, revision: 17, operation: 1 };
+  for (const mode of [0, 1, 2]) {
+    const encoded = wire.encodeGraphSessionRequest({ ...base, mode, coordinates: [-12.125, 900.5] });
+    assert.deepEqual(encoded, encodeContainer("XYGI", [field("header.u64", "u64", [1n, 0n, 2n]), field("header.u32", "u32", [17, 1, mode, 0, 0, 0, 0, 0, 0]), field("coordinates.f64", "f64", [-12.125, 900.5])]));
+  }
+  for (const coordinates of [undefined, "12", {0:1,1:2,length:2}, new Float64Array([1,2]), [], [1], [1, 2, 3], [NaN, 1], [Infinity, 1], [1, "2"]]) assert.throws(() => wire.encodeGraphSessionRequest({ ...base, coordinates }));
+  for (const operation of [19, 21, 4, 5, 7, 11, 17]) assert.throws(() => wire.encodeGraphSessionRequest({ ...base, operation, coordinates: [1, 2], direction: operation === 5 ? 1 : undefined }));
+  for (const extra of [{ mode: 3 }, { refs: [] }, { camera: [1,1,0,0,10,10,1] }, { direction: 1 }, { page: 1 }, { load: {} }, { document: new Uint8Array() }]) assert.throws(() => wire.encodeGraphSessionRequest({ ...base, coordinates: [1, 2], ...extra }));
+});
+
 test("complete semantic decode preserves selection provenance and exact refs without equating projection with global selection", () => {
   const result = wire.decodeGraphSessionResult(encodeContainer("XYGR", fixture()));
   assert.deepEqual(result.selection.refs, [canonical, derived]);

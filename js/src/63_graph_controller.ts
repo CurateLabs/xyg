@@ -1,5 +1,5 @@
 /** Experimental explicit retained WASM graph attachment (#36 bounded S5b).
- * Rust owns every graph decision; this module owns keyboard/DOM/lifetime only.
+ * Rust owns every graph decision; this module owns pointer/keyboard/DOM/lifetime only.
  * See spec/design/graph-interaction.md “Bounded explicit S5b attachment”. */
 import { claimGraphWorker, XygWasmError, type XygWasmWorker } from "./47_wasm";
 import { createGraphGpuPainter, decodeGraphGpu } from "./63_graph_gpu";
@@ -34,7 +34,7 @@ export interface XygWasmGraphSession {
 }
 
 /** Attach one initially Owned, unlinked session to one packaged Worker.
- * @experimental S5b subset; no temporal/link/update/pointer/force API. */
+ * @experimental S5b subset; no temporal/link/update/hover/gesture/force API. */
 export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): XygWasmGraphSession {
   if (!options || !(options.el instanceof HTMLElement)) throw new TypeError("A graph container is required");
   // Frame immutable ingress synchronously before asynchronous application work.
@@ -169,8 +169,62 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       } catch (error) { report(error); }
     }
   };
+  // Native dispatch-local coordinates are authoritative at browser precision.
+  // Rust alone picks. Public ancestry guards are conservative, not proof that
+  // closed shadow roots contain no transforms.
+  function clickCoordinates(event: MouseEvent): readonly [number, number] | null {
+    const canvas = painter.canvas, win = doc.defaultView;
+    if (!event.isTrusted || event.target !== canvas || !win || !canvas.isConnected || canvas.scrollLeft || canvas.scrollTop) return null;
+    const zoom = (canvas as HTMLCanvasElement & { readonly currentCSSZoom?: number }).currentCSSZoom;
+    const offsetX = event.offsetX, offsetY = event.offsetY;
+    if (!Number.isFinite(zoom) || zoom !== 1 || !Number.isFinite(offsetX) || !Number.isFinite(offsetY)) return null;
+    for (let element: Element | null = canvas; element;) {
+      const style = win.getComputedStyle(element);
+      // Motion-path distance/rotation/anchor are separate from transform's
+      // matrix. Reject every active path, including on shadow ancestors.
+      if (style.offsetPath !== "none") return null;
+      if (style.perspective !== "none" || style.rotate !== "none" || style.scale !== "none" || style.translate !== "none") return null;
+      if (style.transform !== "none") {
+        const matrix = new DOMMatrixReadOnly(style.transform);
+        if (!matrix.is2D || matrix.b !== 0 || matrix.c !== 0 || matrix.a <= 0 || matrix.d <= 0) return null;
+      }
+      const root = element.getRootNode();
+      // Slots supply displayed ancestors before the light-DOM parent does.
+      element = element.assignedSlot ?? element.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
+    }
+    const style = win.getComputedStyle(canvas);
+    if (style.objectFit !== "fill") return null;
+    const left = parseFloat(style.paddingLeft);
+    const top = parseFloat(style.paddingTop);
+    const horizontal = parseFloat(style.borderLeftWidth) + left + parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
+    const vertical = parseFloat(style.borderTopWidth) + top + parseFloat(style.borderBottomWidth) + parseFloat(style.paddingBottom);
+    const width = parseFloat(style.width), height = parseFloat(style.height);
+    const borderWidth = width + (style.boxSizing === "border-box" ? 0 : horizontal);
+    const borderHeight = height + (style.boxSizing === "border-box" ? 0 : vertical);
+    const contentWidth = borderWidth - horizontal, contentHeight = borderHeight - vertical;
+    if (![left, top, borderWidth, borderHeight, contentWidth, contentHeight].every(Number.isFinite) ||
+        contentWidth <= 0 || contentHeight <= 0) return null;
+    // offsetX/Y originate at the padding edge, excluding the border already.
+    // Never infer zoom or invert a transformed bounding rectangle here.
+    const x = offsetX - left, y = offsetY - top;
+    if (x < 0 || y < 0 || x >= contentWidth || y >= contentHeight) return null;
+    return [x * camera[4] / contentWidth, y * camera[5] / contentHeight];
+  }
+  const primaryClick = (event: MouseEvent) => {
+    if (disposed || terminal || busy || needsRefresh || !output || event.defaultPrevented || event.altKey ||
+        event.button !== 0 || event.buttons !== 0 || event.detail !== 1) return;
+    const coordinates = clickCoordinates(event);
+    if (!coordinates) return;
+    const mode = event.ctrlKey || event.metaKey ? 2 : event.shiftKey ? 1 : 0;
+    try {
+      const accepted = admit({ operation: 1, coordinates, mode }, "select");
+      event.preventDefault(); surface.focus({ preventScroll: true });
+      void accepted.catch(() => {});
+    } catch (error) { report(error); }
+  };
   const previousPage = () => { if (!disposed && !busy && !needsRefresh && page > 0) void run({ operation: 17, page: page - 1, pageSize: 50 }, "render", camera, page - 1).catch(() => {}); };
   const nextPage = () => { if (!disposed && !busy && !needsRefresh && output && (page + 1) * 50 < output.companion.total) void run({ operation: 17, page: page + 1, pageSize: 50 }, "render", camera, page + 1).catch(() => {}); };
+  painter.canvas.addEventListener("click", primaryClick);
   surface.addEventListener("keydown", keyDown); previous.addEventListener("click", previousPage); next.addEventListener("click", nextPage);
   setBusy(true);
   const ready = (async () => {
@@ -182,6 +236,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function dispose(): Promise<void> {
     if (disposal) return disposal;
     disposed = true;
+    painter.canvas.removeEventListener("click", primaryClick);
     surface.removeEventListener("keydown", keyDown); previous.removeEventListener("click", previousPage); next.removeEventListener("click", nextPage);
     for (const [name, value] of surfaceAttributes) { if (value === null) surface.removeAttribute(name); else surface.setAttribute(name, value); }
     // Suppress DOM/events immediately, drain commands before CLOSE and release.

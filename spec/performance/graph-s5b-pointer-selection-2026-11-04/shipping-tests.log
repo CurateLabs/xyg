@@ -1,0 +1,81 @@
+TAP version 13
+# Subtest: packaging rejects wrong ABI before publication
+ok 1 - packaging rejects wrong ABI before publication
+  ---
+  duration_ms: 498.557366
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong Scene before publication
+ok 2 - packaging rejects wrong Scene before publication
+  ---
+  duration_ms: 345.002908
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong u64 signature before publication
+ok 3 - packaging rejects wrong u64 signature before publication
+  ---
+  duration_ms: 388.04439
+  type: 'test'
+  ...
+# Subtest: packaging rejects start function before publication
+ok 4 - packaging rejects start function before publication
+  ---
+  duration_ms: 357.203015
+  type: 'test'
+  ...
+# Subtest: packaging is deterministic and emits matching version/hash manifests
+ok 5 - packaging is deterministic and emits matching version/hash manifests
+  ---
+  duration_ms: 811.959446
+  type: 'test'
+  ...
+# Subtest: withheld producer inputs fail early naming the producer command
+ok 6 - withheld producer inputs fail early naming the producer command
+  ---
+  duration_ms: 456.232667
+  type: 'test'
+  ...
+# Subtest: a forbidden-API classic worker is rejected before the first write
+ok 7 - a forbidden-API classic worker is rejected before the first write
+  ---
+  duration_ms: 349.016193
+  type: 'test'
+  ...
+# file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/packages/xy-node/src/native-path.js:200
+#   throw new XygNativeError(
+#         ^
+# XygNativeError: Unable to find XYG native library (libxyg_core). Expected optional dependency @curatelabs/xyg-node-linux-x64 with its bundled library, or set XYG_NATIVE_LIB to one explicit development build. Lookup never searches repository, working-directory, or system library paths and never falls back to Python. Checked 0 candidate path(s); see the error's `searched` property.
+#     at resolveNativeLibrary (file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/packages/xy-node/src/native-path.js:200:9)
+#     at resolvePackageNativeLibrary (file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/packages/xy-node/src/native.js:21:10)
+#     at file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/packages/xy-node/src/native.js:24:21
+#     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+#     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+#     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+#   code: 'XYG_NATIVE_LIBRARY_MISSING',
+#   platform: 'linux',
+#   arch: 'x64',
+#   packageName: '@curatelabs/xyg-node-linux-x64',
+#   searched: []
+# }
+# Node.js v22.23.4
+# Subtest: packages/xy-node/test/graph-session-wire.test.mjs
+not ok 3 - packages/xy-node/test/graph-session-wire.test.mjs
+  ---
+  duration_ms: 108.542826
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/packages/xy-node/test/graph-session-wire.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2054.476093

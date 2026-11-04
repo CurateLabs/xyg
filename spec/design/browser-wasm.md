@@ -199,12 +199,32 @@ Render recovery before more input. The path never calls canonicalScene,
 `prepareScene`, `layoutWasmCose` or legacy graph-mark compilation. Existing
 `renderWasmGraphForge` canonicalScene behavior remains unchanged.
 
-The controller owns keyboard capture, focus, ARIA, text-only Rust companion
+The controller owns primary-click/keyboard capture, DOM focus, ARIA, text-only Rust companion
 pages and event dispatch. Rust owns focus order, selection, identities,
-provenance, summary and aligned row refs. Pointer/hover/link/temporal/update/
+provenance, summary and aligned row refs. Hover/gestures/link/temporal/update/
 force scheduling and the rest of S5b/S6/S7 remain open. The legacy CSR path is
 retained for ordinary `spec.graph` until S6 supplies its attachment/identity
 migration; the explicit attachment never reaches it or generic CPU selection.
+Primary clicks use existing SelectAt1 with raw two-f64 CSS content-box
+coordinates: Replace, Shift Add, Ctrl/Meta Toggle (Toggle wins with Shift).
+Trusted native clicks must target the owned canvas. Finite dispatch-time
+`offsetX`/`offsetY` originate at the padding edge: subtract padding, not border,
+reject outside content, and scale only to accepted viewport dimensions.
+Native reported coordinates are authoritative at browser precision, with no
+subpixel promise or bounding-rectangle inversion. Public effective
+`canvas.currentCSSZoom` must be finite and strictly1, without tolerance;
+missing/invalid/nonunit values refuse without commands/cancellation. No DPR,
+data-camera or guessed zoom division is applied. Borders/padding/offsets,
+ordinary CSS matrix scales and net-unit nested zoom remain supported.
+Available `assignedSlot` precedes DOM parent then shadow host. Unsupported
+transforms and active motion paths on **inspectable visited** elements remain
+conservatively refused. Closed slots hide assignments, so this walk does not
+certify absence of hidden transforms; hidden rotations/motion may be eligible
+using browser-local offsets with the effective-zoom guard. See the
+[native input repair receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md)
+for fresh mouse/full-byte parity evidence and precision/capability limits.
+Input is synchronously admitted only while live/idle/nonstale, without replay.
+Blank Replace preserves highlights; SelectAt preserves Rust logical focus.
 Exact hover/picked ref publication remains a Rust wire gap. No ABI, arena,
 package gate, compiler/profile/optimizer/dependency or guard changes accompany
 this TypeScript/Worker vertical. It implies no performance or release acceptance.
@@ -891,7 +911,7 @@ The resolved Scene plot/axis and live CSS repairs merged as #1089 at
 The accepted main tree is byte-exact to reviewed `46c2573c`; the
 [property main-sync receipt](../performance/graph-property-default-main-sync-2026-11-04/README.md)
 records that identity and preservation of the subsequent ABI399 property
-presentation source. The bounded experimental S5b keyboard/GPU/companion
+presentation source. The bounded experimental S5b primary-click/keyboard/GPU/companion
 attachment is implemented above; broader S5b runtime/visual acceptance remains open.
 
 The subsequent property-default presentation merged as #1090 at
@@ -899,8 +919,15 @@ The subsequent property-default presentation merged as #1090 at
 Its accepted main tree is byte-exact to reviewed property head `68ee59f1`;
 the [controller main-sync receipt](../performance/graph-s5b-attachment-main-sync-2026-11-04/README.md)
 records that identity while preserving the separately reviewed R2 controller
-source. The bounded keyboard/GPU/companion attachment is implemented on this
-branch; #1091 main acceptance and broader S5b/S6/S7 acceptance remain open.
+source. That base explicit keyboard/GPU/companion attachment merged through
+main's queue as #1091 at `d6fcacfd482d425a731c5b1ebd492e32dc8a15b4` on
+2026-11-04 at 04:35:11Z. Its entire accepted tree is byte-exact to reviewed
+controller head `c3013b30`; the [pointer accepted-main sync receipt](../performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/README.md)
+records the normal squash-history merge while preserving the separately
+reviewed native-input pointer source and qualified runtime evidence. The bounded
+primary-click/keyboard/GPU/companion attachment is implemented and independently
+reviewed on this branch; #1092 main acceptance, final accepted-main sync review
+and broader S5b/S6/S7 acceptance remain open.
 
 The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is
