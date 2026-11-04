@@ -1,0 +1,45 @@
+{
+  "argv": [
+    "git",
+    "merge",
+    "--no-ff",
+    "--no-commit",
+    "a0636c27ec48c50eb1eafa2c99122d165d266c28"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab",
+  "started": "2026-11-04T02:25:20.301926+00:00",
+  "finished": "2026-11-04T02:25:20.444568+00:00",
+  "elapsed_seconds": 0.142642,
+  "exit": 1,
+  "environment": {
+    "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_SESSION_WASM": null,
+    "XYG_BROWSER_DIST": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null,
+    "XYG_SKIP_CARGO": null,
+    "XYG_SKIP_NODE": null,
+    "UV_OFFLINE": null
+  },
+  "logs": {
+    "stdout": {
+      "file": "merge-main.stdout.log.gz",
+      "raw_bytes": 343,
+      "raw_sha256": "46cfab54b06d35fe8224211dd073a1541e74a403c85d44d5b061cb50b0911058",
+      "gzip_sha256": "86a9e6d01df1e28afc0a63a787f2908999f45fdb152ae9f99b6c94aa3e39bb8d"
+    },
+    "stderr": {
+      "file": "merge-main.stderr.log.gz",
+      "raw_bytes": 0,
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    }
+  }
+}

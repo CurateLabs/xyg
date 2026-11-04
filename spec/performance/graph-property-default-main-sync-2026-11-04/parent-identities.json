@@ -1,0 +1,13 @@
+{
+  "merge_first_parent": "cc60fd8ca93a4afca3f7d634cba55e0086a7c06f",
+  "accepted_main": "a0636c27ec48c50eb1eafa2c99122d165d266c28",
+  "accepted_main_tree": "af749a61ebe0e82ec190e2dfc8ca8b859143724e",
+  "accepted_tree_exact_reviewed_1089_head": "46c2573c285075eeb03d651966b511c866bd2ffb",
+  "actual_1089_merge_time_reported_by_parent": "2026-11-04T02:22:11Z",
+  "actual_merge_time_is_not_inferred_from_git_commit_timestamp": true,
+  "reviewer_reported_by_parent": "m4_defaults_audit APPROVED final cc60 sync",
+  "reviewed_property_whole_pr_vs_46_sha256": "1e5f1b1d5a06f62a06e43248804a2f652fad80ce940251c745bb9062133d72a2",
+  "reviewed_property_nonreceipt_pr_vs_46_sha256": "420dd8a56359fd83f47a864995571c1fc583c39ba2dfb1c017a2437dbdea216d",
+  "prior_ci_scope_reported_by_parent": "20 applicable checks green on cc60 old feature base; fresh main-target CI not run or claimed here",
+  "current_integrated_review": "New independent parent sync review required before integration, push, dedicated PR update or fresh main CI"
+}

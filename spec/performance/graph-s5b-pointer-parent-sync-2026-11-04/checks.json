@@ -1,0 +1,310 @@
+{
+  "normalMergeParents": [
+    "b61031c3cf95da3ddb42948dda915cdddc70f2b1",
+    "5a5da8d936112467db8e1c676c131fc67edea0c8"
+  ],
+  "diffs": {
+    "sync": {
+      "base": "b61031c3cf95da3ddb42948dda915cdddc70f2b1",
+      "nonReceiptBinaryFullIndexSha256": "14dfda9190b8d1313dc528a93381a94759e4bb3a758393e293e79b43b6ace2a9",
+      "bytes": 4161
+    },
+    "pointerStack": {
+      "base": "5a5da8d936112467db8e1c676c131fc67edea0c8",
+      "nonReceiptBinaryFullIndexSha256": "0f0794ab5ca8d8d3b4d688c9eed4a83d05dde587446a7d27b630550575be9780",
+      "bytes": 79284
+    }
+  },
+  "metadataPaths": {
+    "spec/design/browser-wasm.md": "585445734d9acadd1d45374e364ba5bebeffbef97c9cccee2cb2aafd867ad633",
+    "spec/releases/0.6.0-api-inventory.json": "c4b48cfce37bcf4756a22d04eae26b582a62279f5bcadf5f3868d7c6e4070820"
+  },
+  "protectedNonReceiptCount": 2797,
+  "historicalUnionCount": 9397,
+  "productionInputCount": 301,
+  "actualQualifiedArtifacts": 15,
+  "freshNamingTests": 117,
+  "freshMetadataTests": 61,
+  "ownershipProductionFiles": 508,
+  "nativeSymbols": 538,
+  "abi": 399,
+  "inventoryGaps": 685,
+  "commands": {
+    "capability-matrix.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_capability_matrix.py",
+        "--check"
+      ],
+      "exit": 0,
+      "recordSha256": "50ef3102c8fa60b4f4282ec4ddee37cb3cd9ecf4a42b2e36838c8dba42896d03",
+      "logSha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    "hooks.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "recordSha256": "4ef99adaa71d425f4b5d2ee19fb20e944b7aa66e77b553fb35e721650938ea15",
+      "logSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "inventory-check.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exit": 0,
+      "recordSha256": "c7793987c7273e999220c93cdad19757fa15c5d7a8910603e91b4a01a85227b5",
+      "logSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+    },
+    "inventory-write.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "exit": 0,
+      "recordSha256": "8c99311a8ec002b2267a0f5bfcc0ac4a46a8884d9ed4ebbc9e8eba83a6f95d8e",
+      "logSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+    },
+    "merge.command.json": {
+      "argv": [
+        "git",
+        "merge",
+        "--no-commit",
+        "5a5da8d936112467db8e1c676c131fc67edea0c8"
+      ],
+      "exit": 1,
+      "recordSha256": "2db3d2bd812122b5fd4cb07b778583065a84379d1d219049d7a2918fe0b8522e",
+      "logSha256": "1962d0116612d229e7b12cef1a51387208ef9f728c25971751f67f20819f99cd"
+    },
+    "metadata-tests.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_gen_wasm_abi.py"
+      ],
+      "exit": 0,
+      "recordSha256": "802896956aaa9fc6a479dedaa6e2856c0480cf7dfb3a53bc1c877bad25ddc5e7",
+      "logSha256": "5b41c5a5cf0c43a719f08136a34b119072063235e2a4ca90c2e2fee7aeb35745"
+    },
+    "naming-tests.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py"
+      ],
+      "exit": 0,
+      "recordSha256": "972ad1baae830b66fd373b716664c49adea27a1dede21b656848997e7c6a9ea3",
+      "logSha256": "5ea38a6b4f09ad45f4b5a8cf04f6b67c9e4919a41d3b4434beee299325fee0f6"
+    },
+    "naming-whole-repository.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_stale_names.py"
+      ],
+      "exit": 0,
+      "recordSha256": "2ff7fc29a07a255ae306d7b45e5a43903c249406d3c3adab80c77a88ada4555b",
+      "logSha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840"
+    },
+    "native-declarations.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0,
+      "recordSha256": "11986394d311f147160d0c171fbd7a4b277a39c2bc51706c2079c7e0276dbcbe",
+      "logSha256": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed"
+    },
+    "ownership.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exit": 0,
+      "recordSha256": "1c8ca912464cf796c272a175d6e6d8bdf54a9e81074dd86d6d8b05d679e90281",
+      "logSha256": "f17a53990b48cff699969540e260eb763ace8561612b390ec05097f5035a185b"
+    },
+    "preservation-final.command.json": {
+      "argv": [
+        "python3",
+        "spec/performance/graph-s5b-pointer-parent-sync-2026-11-04/verify-preservation.py"
+      ],
+      "exit": 0,
+      "recordSha256": "b4a76a5afd35b5208041510d62d9e12786aa66565caf50d5f578bd3b9fd1e71f",
+      "logSha256": "be3ae7b8b010066034712d0ab7e557c4a35661f4e6b11b69d6751bae8bdb0fd1"
+    },
+    "preservation-precommit.command.json": {
+      "argv": [
+        "python3",
+        "spec/performance/graph-s5b-pointer-parent-sync-2026-11-04/verify-preservation.py"
+      ],
+      "exit": 0,
+      "recordSha256": "7f19938241fbc25e6df505c45f4e2d7a08f2e013978e92d70854ac50d5268c37",
+      "logSha256": "be3ae7b8b010066034712d0ab7e557c4a35661f4e6b11b69d6751bae8bdb0fd1"
+    },
+    "preservation.command.json": {
+      "argv": [
+        "python3",
+        "spec/performance/graph-s5b-pointer-parent-sync-2026-11-04/verify-preservation.py"
+      ],
+      "exit": 1,
+      "recordSha256": "a4d9b8013ed248401e0f7bd40718774f73617b21316d46ca3df793fd3d8c18cf",
+      "logSha256": "6e8fab10309458407f65b2b9874fd974856708242ded0ce0c5ead977a956a3c5"
+    },
+    "ruff-check.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "recordSha256": "0e6cf7cd795e0529daca9d8f5ab8b88f9bf340eeecf622c61adee65a954b1ea2",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff-format.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "recordSha256": "f8b2dec45e45afc6ca4d01168c6e6a662cee9793037258312a81f9e9b659d532",
+      "logSha256": "bb18255616f12425825e01507757686ab9c4e872f5b5a206edd4e532950d168f"
+    },
+    "typecheck.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "ty",
+        "check",
+        "python"
+      ],
+      "exit": 0,
+      "recordSha256": "935bfdb147c3881cd849c3c94d158902a376447913fe870a897d8295758c02c3",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "wasm-declarations.command.json": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "exit": 0,
+      "recordSha256": "5e9c49b4cad890cfc6485c417a8f36e499262b56af4b3acce1f192e3550adb40",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "receiptFiles": {
+    "README.md": "612edf068c67d6074033b069da9c833793d4f9a6946ed8cce819c7626da2bd0d",
+    "capability-matrix.command.json": "50ef3102c8fa60b4f4282ec4ddee37cb3cd9ecf4a42b2e36838c8dba42896d03",
+    "capability-matrix.log": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392",
+    "capability-matrix.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "capability-matrix.stdout": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392",
+    "hooks.command.json": "4ef99adaa71d425f4b5d2ee19fb20e944b7aa66e77b553fb35e721650938ea15",
+    "hooks.log": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+    "hooks.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "hooks.stdout": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+    "inventory-check.command.json": "c7793987c7273e999220c93cdad19757fa15c5d7a8910603e91b4a01a85227b5",
+    "inventory-check.log": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+    "inventory-check.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory-check.stdout": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+    "inventory-write.command.json": "8c99311a8ec002b2267a0f5bfcc0ac4a46a8884d9ed4ebbc9e8eba83a6f95d8e",
+    "inventory-write.log": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+    "inventory-write.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory-write.stdout": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+    "merge-inputs.json": "036c0045d9b8561df252db85b4c23b6d69dec221dfe6f57015efad2c34313484",
+    "merge.command.json": "2db3d2bd812122b5fd4cb07b778583065a84379d1d219049d7a2918fe0b8522e",
+    "merge.log": "1962d0116612d229e7b12cef1a51387208ef9f728c25971751f67f20819f99cd",
+    "merge.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "merge.stdout": "1962d0116612d229e7b12cef1a51387208ef9f728c25971751f67f20819f99cd",
+    "metadata-tests.command.json": "802896956aaa9fc6a479dedaa6e2856c0480cf7dfb3a53bc1c877bad25ddc5e7",
+    "metadata-tests.log": "5b41c5a5cf0c43a719f08136a34b119072063235e2a4ca90c2e2fee7aeb35745",
+    "metadata-tests.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "metadata-tests.stdout": "5b41c5a5cf0c43a719f08136a34b119072063235e2a4ca90c2e2fee7aeb35745",
+    "naming-tests.command.json": "972ad1baae830b66fd373b716664c49adea27a1dede21b656848997e7c6a9ea3",
+    "naming-tests.log": "5ea38a6b4f09ad45f4b5a8cf04f6b67c9e4919a41d3b4434beee299325fee0f6",
+    "naming-tests.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "naming-tests.stdout": "5ea38a6b4f09ad45f4b5a8cf04f6b67c9e4919a41d3b4434beee299325fee0f6",
+    "naming-whole-repository.command.json": "2ff7fc29a07a255ae306d7b45e5a43903c249406d3c3adab80c77a88ada4555b",
+    "naming-whole-repository.log": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840",
+    "naming-whole-repository.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "naming-whole-repository.stdout": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840",
+    "native-declarations.command.json": "11986394d311f147160d0c171fbd7a4b277a39c2bc51706c2079c7e0276dbcbe",
+    "native-declarations.log": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed",
+    "native-declarations.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "native-declarations.stdout": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed",
+    "ownership.command.json": "1c8ca912464cf796c272a175d6e6d8bdf54a9e81074dd86d6d8b05d679e90281",
+    "ownership.log": "f17a53990b48cff699969540e260eb763ace8561612b390ec05097f5035a185b",
+    "ownership.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ownership.stdout": "f17a53990b48cff699969540e260eb763ace8561612b390ec05097f5035a185b",
+    "preservation-final.command.json": "b4a76a5afd35b5208041510d62d9e12786aa66565caf50d5f578bd3b9fd1e71f",
+    "preservation-final.log": "be3ae7b8b010066034712d0ab7e557c4a35661f4e6b11b69d6751bae8bdb0fd1",
+    "preservation-final.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "preservation-final.stdout": "be3ae7b8b010066034712d0ab7e557c4a35661f4e6b11b69d6751bae8bdb0fd1",
+    "preservation-precommit.command.json": "7f19938241fbc25e6df505c45f4e2d7a08f2e013978e92d70854ac50d5268c37",
+    "preservation-precommit.log": "be3ae7b8b010066034712d0ab7e557c4a35661f4e6b11b69d6751bae8bdb0fd1",
+    "preservation-precommit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "preservation-precommit.stdout": "be3ae7b8b010066034712d0ab7e557c4a35661f4e6b11b69d6751bae8bdb0fd1",
+    "preservation.command.json": "a4d9b8013ed248401e0f7bd40718774f73617b21316d46ca3df793fd3d8c18cf",
+    "preservation.json": "97f1bc2c62ad7a501dca973a533faa153af89f4cd4f4567fa7542929e68bdd10",
+    "preservation.log": "6e8fab10309458407f65b2b9874fd974856708242ded0ce0c5ead977a956a3c5",
+    "preservation.stderr": "6e8fab10309458407f65b2b9874fd974856708242ded0ce0c5ead977a956a3c5",
+    "preservation.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reused-qualification.json": "605433555e54ef74edc10246577e3f81f0994dfc688fed03b7310089271b90da",
+    "ruff-check.command.json": "0e6cf7cd795e0529daca9d8f5ab8b88f9bf340eeecf622c61adee65a954b1ea2",
+    "ruff-check.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "ruff-check.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ruff-check.stdout": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "ruff-format.command.json": "f8b2dec45e45afc6ca4d01168c6e6a662cee9793037258312a81f9e9b659d532",
+    "ruff-format.log": "bb18255616f12425825e01507757686ab9c4e872f5b5a206edd4e532950d168f",
+    "ruff-format.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ruff-format.stdout": "bb18255616f12425825e01507757686ab9c4e872f5b5a206edd4e532950d168f",
+    "run.py": "8c2f80871c7d1d6f5bd8ffa6363126d8e2e555e7048df370db1690bf82627e61",
+    "source-artifact-preservation.json": "c8f6020f72e6bdc461fcd6741f390e950c51ffaa930d9ee80a14e5bd5cef8312",
+    "typecheck.command.json": "935bfdb147c3881cd849c3c94d158902a376447913fe870a897d8295758c02c3",
+    "typecheck.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "typecheck.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typecheck.stdout": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "verify-preservation.py": "1875b79616863a3e3ed9863be6f76f4d24e9b147eb1eb3bc597a41d09863aee4",
+    "wasm-declarations.command.json": "5e9c49b4cad890cfc6485c417a8f36e499262b56af4b3acce1f192e3550adb40",
+    "wasm-declarations.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wasm-declarations.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wasm-declarations.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtimeEvidence": "Exact b610 source/artifact reuse:31 browser journeys, full unfiltered foundation,26 wire/shipping tests,88 contracts. No fresh build/runtime claim.",
+  "review": "New independent parent sync review required before integration or pointer stack PR/push; no remote action performed.",
+  "wholeDiffHashes": "Reported after commit to avoid self-reference"
+}
