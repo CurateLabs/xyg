@@ -1,0 +1,20 @@
+{
+  "approvedController": {
+    "commit": "5a5da8d936112467db8e1c676c131fc67edea0c8",
+    "review": "Parent reports NEW completed independent s5a_final_review APPROVED no blockers",
+    "wholeVsReviewedProperty68": "5f00c379a79c1964ac730176b0e175504080030d62d81bd9c9a30a072910d976",
+    "nonreceiptVsReviewedProperty68": "2a6229b59f989793e0a64864ae753a394f6e894715c803ceb2d55e4a953b7dba",
+    "historicalCI": "Parent reports all20 applicable feature-base CI green on actual5a5; not current-main CI",
+    "R2Basis": "Approved8445 and17 independently replayed actual packaged strict-CSP journeys; exact production/source reuse"
+  },
+  "actual1090Landing": {
+    "commit": "7c751db1ba216005fe0f3eaf81922d44b4d01157",
+    "reviewedHead": "68ee59f1475068d6782790a410b7da7878e0ff39",
+    "time": "2026-11-04T03:26:23Z",
+    "timeAuthority": "User parent report; no remote query performed",
+    "tree": "4019a027e92dd96a919932b9ec151af2588107f4",
+    "treeExactToReviewed68": true
+  },
+  "notImported": "PointerPR1092 source, slot repair and proofs excluded; its closed-root finding is separate",
+  "newSyncReview": "New independent parent final sync review required before prepush hooks/push1091/dedicated MAIN body/fresh MAIN CI/queue; no1091 landing claimed"
+}

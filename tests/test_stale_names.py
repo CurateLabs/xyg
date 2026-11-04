@@ -341,3 +341,119 @@ def test_ci_core_checkout_is_outside_product_audits_without_exempting_product_fi
     assert len(errors) == 1
     assert errors[0].startswith("crates/xyg-engine/Cargo.toml:2:")
     assert "src/lib.rs ABI" in errors[0]
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "XY-SLOT-FIXTURE",  # xyg-stale-name: allow - exact recorded DOM test tag
+        "XY-INNER-SLOT-FIXTURE",  # xyg-stale-name: allow - exact recorded DOM test tag
+    ],
+)
+@pytest.mark.parametrize("spacing", ["", " ", "\t"])
+@pytest.mark.parametrize("indent", ["", "  "])
+def test_exact_browser_evidence_dom_tag_only(
+    tmp_path: Path, tag: str, spacing: str, indent: str
+) -> None:
+    path = tmp_path / "spec/performance/slot-proof/browser.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(indent + '"tag"' + spacing + ":" + spacing + json.dumps(tag) + ",\n")
+    assert check_stale_names.check_stale_names(tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    "location",
+    [
+        "browser.json",
+        "spec/browser.json",
+        "spec/performance-not/browser.json",
+        "spec/performance/proof/browser.md",
+        "spec/performance/proof/browser.JSON",
+    ],
+)
+def test_dom_tag_allowance_requires_exact_evidence_location(tmp_path: Path, location: str) -> None:
+    line = '"tag": "XY-SLOT-FIXTURE"'  # xyg-stale-name: allow - negative fixture
+    assert not check_stale_names._allowed_graph_evidence_slot_tag(location, line, line.index("X"))
+    path = tmp_path / location
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(line)
+    if path.suffix in check_stale_names.SCAN_SUFFIXES:
+        assert any(
+            "current product XY brand" in e for e in check_stale_names.check_stale_names(tmp_path)
+        )
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        '"other": "XY-SLOT-FIXTURE"',  # xyg-stale-name: allow - negative fixture
+        '"Tag": "XY-SLOT-FIXTURE"',  # xyg-stale-name: allow - negative fixture
+        "'tag': 'XY-SLOT-FIXTURE'",  # xyg-stale-name: allow - negative fixture
+        '"tag": "XY-SLOT-FIXTURE-extra"',  # xyg-stale-name: allow - negative fixture
+        '"tag": "PREFIX-XY-SLOT-FIXTURE"',  # xyg-stale-name: allow - negative fixture
+        '"tag": "XY-SLOT-FIXTURE!"',  # xyg-stale-name: allow - negative fixture
+        '"tag": "XY-SLOT-FIXTURE."',  # xyg-stale-name: allow - negative fixture
+        '"tag": "XY-INNER-SLOT-FIXTURES"',  # xyg-stale-name: allow - negative fixture
+        '"tag": "XY-SLOT_FIXTURE"',  # xyg-stale-name: allow - negative fixture
+        '"tag": "XY\u2013SLOT-FIXTURE"',  # xyg-stale-name: allow - Unicode lookalike negative
+    ],
+)
+def test_similar_tag_values_or_keys_still_fail(tmp_path: Path, line: str) -> None:
+    path = tmp_path / "spec/performance/slot-proof/browser.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(line)
+    assert any(
+        "current product XY brand" in e for e in check_stale_names.check_stale_names(tmp_path)
+    )
+
+
+@pytest.mark.parametrize("value", ["xy-slot-fixture", "Xy-SLOT-FIXTURE", "prefixXY-SLOT-FIXTURE"])
+def test_dom_tag_predicate_does_not_fold_case_or_accept_word_prefix(value: str) -> None:
+    # These may not contain a standalone uppercase retired-brand needle. Verify
+    # predicate refusal directly without inventing a new naming restriction.
+    line = json.dumps({"tag": value})
+    start = line.index(value)
+    assert not check_stale_names._allowed_graph_evidence_slot_tag(
+        "spec/performance/proof/browser.json", line, start
+    )
+
+
+def test_dom_tag_occurrence_does_not_hide_same_line_or_file_names(tmp_path: Path) -> None:
+    path = tmp_path / "spec/performance/slot-proof/browser.json"
+    path.parent.mkdir(parents=True)
+    tag = "X" + "Y-SLOT-FIXTURE"
+    inner = "X" + "Y-INNER-SLOT-FIXTURE"
+    retired_abi = "xy_" + "abi_version"
+    retired_path = "src/" + "lib.rs"
+    path.write_text(
+        json.dumps(
+            {
+                "tag": tag,
+                "brand": "XY",  # xyg-stale-name: allow - negative product name
+                "core": "libxy_core",
+                "env": "XY_NATIVE_LIB",
+                "abi": retired_abi,
+                "path": retired_path,
+            }
+        )
+        + "\n"
+        + json.dumps({"brand": "XY", "tag": inner})  # xyg-stale-name: allow - adjacent negative
+        + "\n"
+        + '"brand": "XY", "env": "XY_CHROMIUM"\n'  # xyg-stale-name: allow - same file negative
+    )
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert sum("current product XY brand" in e for e in errors) == 3
+    assert sum("libxy_core" in e.split(": stale ")[1].split(":")[0] for e in errors) == 1
+    assert any("stale XY_NATIVE_LIB:" in e for e in errors)
+    assert any("stale XY_CHROMIUM:" in e for e in errors)
+    assert any("stale xy_abi_version:" in e for e in errors)  # xyg-stale-name: allow - negative ABI
+    assert any("stale src/lib.rs ABI:" in e for e in errors)
+
+
+def test_escaped_tag_text_is_not_a_json_tag_field(tmp_path: Path) -> None:
+    path = tmp_path / "spec/performance/slot-proof/browser.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"message": '"tag": "' + "X" + 'Y-SLOT-FIXTURE"'}))
+    assert any(
+        "current product XY brand" in e for e in check_stale_names.check_stale_names(tmp_path)
+    )

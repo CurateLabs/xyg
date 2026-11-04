@@ -1,0 +1,243 @@
+diff --git a/scripts/check_stale_names.py b/scripts/check_stale_names.py
+index 436d5c039ffae5096b812efac65a1dc21bb3349e..de755f27c415ce9e2a0a2ffccf3f90de6602071c 100644
+--- a/scripts/check_stale_names.py
++++ b/scripts/check_stale_names.py
+@@ -282,6 +282,18 @@ def _allowed_provenance_xy(line: str) -> bool:
+     )
+ 
+ 
++_GRAPH_EVIDENCE_SLOT_TAG = re.compile(
++    r'(?<!\\)"tag"[ \t]*:[ \t]*"(?P<value>XY-(?:INNER-)?SLOT-FIXTURE)"'
++)
++
++
++def _allowed_graph_evidence_slot_tag(rel: str, line: str, start: int) -> bool:
++    """Exempt only the XY occurrence in an exact recorded browser DOM tag."""
++    if not rel.startswith("spec/performance/") or not rel.endswith(".json"):
++        return False
++    return any(match.start("value") == start for match in _GRAPH_EVIDENCE_SLOT_TAG.finditer(line))
++
++
+ _HISTORICAL_IDENTITY_ALLOWLIST = {
+     ("spec/process/perf-audit-2026-07-22.md", "libxy_core"),
+     ("spec/process/security-audit-2026-07-06.md", "XY_REQUIRE_CARGO"),
+@@ -361,7 +373,9 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
+                     if (rel, label) in _HISTORICAL_IDENTITY_ALLOWLIST:
+                         continue
+                     if label == "current product XY brand" and (
+-                        _allowed_provenance_xy(line) or "f64 XY" in line
++                        _allowed_provenance_xy(line)
++                        or "f64 XY" in line
++                        or _allowed_graph_evidence_slot_tag(rel, line, match.start())
+                     ):
+                         continue
+                     errors.append(f"{rel}:{lineno}: stale {label}: {line.strip()}")
+diff --git a/spec/design/browser-wasm.md b/spec/design/browser-wasm.md
+index f90313d514610350d5ca8db20ea947fcab7d2e09..669b72c42b7cdd12d8e354ae91dffcb70aedef84 100644
+--- a/spec/design/browser-wasm.md
++++ b/spec/design/browser-wasm.md
+@@ -914,6 +914,15 @@ records that identity and preservation of the subsequent ABI399 property
+ presentation source. The bounded experimental S5b primary-click/keyboard/GPU/companion
+ attachment is implemented above; broader S5b runtime/visual acceptance remains open.
+ 
++The subsequent property-default presentation merged as #1090 at
++`7c751db1ba216005fe0f3eaf81922d44b4d01157` on 2026-11-04 at 03:26:23Z.
++Its accepted main tree is byte-exact to reviewed property head `68ee59f1`;
++the [controller main-sync receipt](../performance/graph-s5b-attachment-main-sync-2026-11-04/README.md)
++records that identity while preserving the separately reviewed R2 controller
++source. The bounded primary-click/keyboard/GPU/companion attachment is implemented
++on this branch; final native-input repair review, #1091 main acceptance and
++broader S5b/S6/S7 acceptance remain open.
++
+ The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
+ one painter version, so an older XYPB fails closed (`Rust painter contract version is
+ incompatible`) and the Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.
+diff --git a/spec/design/graph-interaction.md b/spec/design/graph-interaction.md
+index 40b059a3fe136a9a7aa8675890b23e618607238d..2f45e31d4d6fdd94cefdcadd8f545ef0f5852c1c 100644
+--- a/spec/design/graph-interaction.md
++++ b/spec/design/graph-interaction.md
+@@ -1,6 +1,6 @@
+ # Graph interaction, coordinated selection, and accessibility (#36)
+ 
+-Status: **S1–S4 merged; bounded S5a Rust GPU/result foundation integrated locally with reviewed package-functionality limits and passing production/paired-asset/full-foundation proof; final integrated source/policy/evidence review approved; CI remains pending. One experimental explicit S5b primary-click/keyboard/GPU/companion attachment is implemented; broader S5b and S6/S7 acceptance remain outstanding** (see [Implementation status](#implementation-status)).
++Status: **S1–S4 and the bounded S5a Rust GPU/result foundation are merged; property-default presentation merged as #1090 at 7c751db1 on 2026-11-04. One experimental explicit S5b primary-click/keyboard/GPU/companion attachment is implemented on this branch; final native-input repair review, #1091 main acceptance and broader S5b and S6/S7 acceptance remain outstanding** (see [Implementation status](#implementation-status)).
+ Scope: interaction, selection, focus, and accessibility over composed GraphForge
+ graphs, plus the position hooks (pin, drag, relayout step, persistence).
+ Non-goals: editing; layout *scheduling* (#35). Related:
+@@ -452,7 +452,7 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
+ | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
+ | S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | implemented and merged through #1082; historical real package/assets/parity and full strict-CSP proof under 1,513/626-KiB limits |
+ | S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; merged as #1083 at a970d586 (native ABI398/WASM35) |
+-| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result foundation merged as #1085 at 6ffc1ad1 after independent review, current CI and the main merge queue; explicit historical 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; complete-selection publication and retained progressive-layout P1 follow-up merged as #1088 at 3c665807 on 2026-11-04, with the reviewed 1,838/751-KiB package gates; experimental explicit S5b primary-click/keyboard/GPU/companion attachment implemented below, broader S5b runtime/visual acceptance remains open |
++| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result foundation merged as #1085 at 6ffc1ad1 after independent review, current CI and the main merge queue; explicit historical 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; complete-selection publication and retained progressive-layout P1 follow-up merged as #1088 at 3c665807 on 2026-11-04, with the reviewed 1,838/751-KiB package gates; property-default native/WASM presentation merged as #1090 at 7c751db1 on 2026-11-04, with the reviewed 1,878/765-KiB gates; experimental explicit S5b primary-click/keyboard/GPU/companion attachment implemented below, broader S5b runtime/visual acceptance remains open |
+ | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | private [Python native byte transport](graph-session-python-transport.md) merged as #1087 at f156569f after independent review, current CI and the main merge queue; serialized lifecycle and callback-safe input conversion are implemented; public widget/channel/Node/VS Code attachment remains planned |
+ | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
+ 
+diff --git a/spec/design/xyg-naming.md b/spec/design/xyg-naming.md
+index e69944788c14fd754701addb776f6fe0c099fccf..7a76c8b1b9114c951c1b3c169327257b7aea2c51 100644
+--- a/spec/design/xyg-naming.md
++++ b/spec/design/xyg-naming.md
+@@ -149,6 +149,17 @@ source is `crates/xyg-core/src/lib.rs`. The exact auxiliary OSM entrypoint in
+ and retired identities elsewhere on the same line or in the same file still
+ fail. No historical manifest needs an annotation, escaped key or digest edit.
+ 
++Browser JSON evidence under `spec/performance/` records literal DOM test tags,
++which are fixture element names, not product branding. The naming audit permits
++only the particular current-product-brand match occurrence inside an exact
++case-sensitive, double-quoted JSON `"tag"` field whose complete value is
++`"XY-SLOT-FIXTURE"` or `"XY-INNER-SLOT-FIXTURE"`. <!-- xyg-stale-name: allow - documented literal DOM evidence values -->
++JSON whitespace/indentation may vary. No other key, extension/location, changed
++value, case folding, prefix/suffix or punctuation lookalike is exempt. Other
++brand occurrences and every other retired-identity needle on the same line
++or file remain audited. This preserves immutable browser receipt bytes,
++including historical failures, without a line/file/history exemption.
++
+ Safety properties: the ABI version bump plus the symbol-prefix change make old
+ and new libraries mutually unloadable by the wrong wrapper (an old wrapper
+ finds no `xy_abi_version` in a new library and fails before binding anything;
+diff --git a/spec/releases/0.6.0-api-inventory.json b/spec/releases/0.6.0-api-inventory.json
+index fff2e486982f5b24ea40dae68a88714608e63a99..c393ff1fe0e02928c6cf11bcd11ec7b57530eb34 100644
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@ -1195,7 +1195,7 @@
+  "releaseLine":"0.6.0",
+  "schema":"xyg.release-api-inventory/v1",
+  "sourceProvenance":{
+-  "baseCommit":"04476ac36d6b9dce84810b07629aae68ad2f6f56",
++  "baseCommit":"b574038e9b00a1e85a4355e63770ec05c8cd5642",
+   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+  },
+  "sourceSha256":{
+@@ -1384,7 +1384,7 @@
+   "spec/api/api-examples.md":"f6bc43d28cf9ba88855561ff41bd62eb2f3a823c71ca2c87c5356e1b2a2fa094",
+   "spec/api/browser-wasm.md":"7ab775b061bb98d0f0c6f430c935318a651b0f4f1cb3976229d49157ef3a1f0a",
+   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
+-  "spec/design/browser-wasm.md":"eb322bf99d8db9f8453af4ea6f21ddeab275b9195745c8ce1cf5e27e6358013f",
++  "spec/design/browser-wasm.md":"9edeac4fe2236a62610743f29a7597b86577412ad66f02ba1f5b4c3e87c9875f",
+   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
+   "spec/design/host-parity.md":"27cdebe933898fddd4eba7a35176bce3cce757f376ee2ed71b9db7ac8abe2d91",
+   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",
+diff --git a/tests/test_stale_names.py b/tests/test_stale_names.py
+index 98008cc76bffb7f2ac3cdd5fae4ced1ae98223ce..5a4add5d9220527d2211efb3635e31a14a030f14 100644
+--- a/tests/test_stale_names.py
++++ b/tests/test_stale_names.py
+@@ -341,3 +341,119 @@ def test_ci_core_checkout_is_outside_product_audits_without_exempting_product_fi
+     assert len(errors) == 1
+     assert errors[0].startswith("crates/xyg-engine/Cargo.toml:2:")
+     assert "src/lib.rs ABI" in errors[0]
++
++
++@pytest.mark.parametrize(
++    "tag",
++    [
++        "XY-SLOT-FIXTURE",  # xyg-stale-name: allow - exact recorded DOM test tag
++        "XY-INNER-SLOT-FIXTURE",  # xyg-stale-name: allow - exact recorded DOM test tag
++    ],
++)
++@pytest.mark.parametrize("spacing", ["", " ", "\t"])
++@pytest.mark.parametrize("indent", ["", "  "])
++def test_exact_browser_evidence_dom_tag_only(
++    tmp_path: Path, tag: str, spacing: str, indent: str
++) -> None:
++    path = tmp_path / "spec/performance/slot-proof/browser.json"
++    path.parent.mkdir(parents=True)
++    path.write_text(indent + '"tag"' + spacing + ":" + spacing + json.dumps(tag) + ",\n")
++    assert check_stale_names.check_stale_names(tmp_path) == []
++
++
++@pytest.mark.parametrize(
++    "location",
++    [
++        "browser.json",
++        "spec/browser.json",
++        "spec/performance-not/browser.json",
++        "spec/performance/proof/browser.md",
++        "spec/performance/proof/browser.JSON",
++    ],
++)
++def test_dom_tag_allowance_requires_exact_evidence_location(tmp_path: Path, location: str) -> None:
++    line = '"tag": "XY-SLOT-FIXTURE"'  # xyg-stale-name: allow - negative fixture
++    assert not check_stale_names._allowed_graph_evidence_slot_tag(location, line, line.index("X"))
++    path = tmp_path / location
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(line)
++    if path.suffix in check_stale_names.SCAN_SUFFIXES:
++        assert any(
++            "current product XY brand" in e for e in check_stale_names.check_stale_names(tmp_path)
++        )
++
++
++@pytest.mark.parametrize(
++    "line",
++    [
++        '"other": "XY-SLOT-FIXTURE"',  # xyg-stale-name: allow - negative fixture
++        '"Tag": "XY-SLOT-FIXTURE"',  # xyg-stale-name: allow - negative fixture
++        "'tag': 'XY-SLOT-FIXTURE'",  # xyg-stale-name: allow - negative fixture
++        '"tag": "XY-SLOT-FIXTURE-extra"',  # xyg-stale-name: allow - negative fixture
++        '"tag": "PREFIX-XY-SLOT-FIXTURE"',  # xyg-stale-name: allow - negative fixture
++        '"tag": "XY-SLOT-FIXTURE!"',  # xyg-stale-name: allow - negative fixture
++        '"tag": "XY-SLOT-FIXTURE."',  # xyg-stale-name: allow - negative fixture
++        '"tag": "XY-INNER-SLOT-FIXTURES"',  # xyg-stale-name: allow - negative fixture
++        '"tag": "XY-SLOT_FIXTURE"',  # xyg-stale-name: allow - negative fixture
++        '"tag": "XY\u2013SLOT-FIXTURE"',  # xyg-stale-name: allow - Unicode lookalike negative
++    ],
++)
++def test_similar_tag_values_or_keys_still_fail(tmp_path: Path, line: str) -> None:
++    path = tmp_path / "spec/performance/slot-proof/browser.json"
++    path.parent.mkdir(parents=True)
++    path.write_text(line)
++    assert any(
++        "current product XY brand" in e for e in check_stale_names.check_stale_names(tmp_path)
++    )
++
++
++@pytest.mark.parametrize("value", ["xy-slot-fixture", "Xy-SLOT-FIXTURE", "prefixXY-SLOT-FIXTURE"])
++def test_dom_tag_predicate_does_not_fold_case_or_accept_word_prefix(value: str) -> None:
++    # These may not contain a standalone uppercase retired-brand needle. Verify
++    # predicate refusal directly without inventing a new naming restriction.
++    line = json.dumps({"tag": value})
++    start = line.index(value)
++    assert not check_stale_names._allowed_graph_evidence_slot_tag(
++        "spec/performance/proof/browser.json", line, start
++    )
++
++
++def test_dom_tag_occurrence_does_not_hide_same_line_or_file_names(tmp_path: Path) -> None:
++    path = tmp_path / "spec/performance/slot-proof/browser.json"
++    path.parent.mkdir(parents=True)
++    tag = "X" + "Y-SLOT-FIXTURE"
++    inner = "X" + "Y-INNER-SLOT-FIXTURE"
++    retired_abi = "xy_" + "abi_version"
++    retired_path = "src/" + "lib.rs"
++    path.write_text(
++        json.dumps(
++            {
++                "tag": tag,
++                "brand": "XY",  # xyg-stale-name: allow - negative product name
++                "core": "libxy_core",
++                "env": "XY_NATIVE_LIB",
++                "abi": retired_abi,
++                "path": retired_path,
++            }
++        )
++        + "\n"
++        + json.dumps({"brand": "XY", "tag": inner})  # xyg-stale-name: allow - adjacent negative
++        + "\n"
++        + '"brand": "XY", "env": "XY_CHROMIUM"\n'  # xyg-stale-name: allow - same file negative
++    )
++    errors = check_stale_names.check_stale_names(tmp_path)
++    assert sum("current product XY brand" in e for e in errors) == 3
++    assert sum("libxy_core" in e.split(": stale ")[1].split(":")[0] for e in errors) == 1
++    assert any("stale XY_NATIVE_LIB:" in e for e in errors)
++    assert any("stale XY_CHROMIUM:" in e for e in errors)
++    assert any("stale xy_abi_version:" in e for e in errors)  # xyg-stale-name: allow - negative ABI
++    assert any("stale src/lib.rs ABI:" in e for e in errors)
++
++
++def test_escaped_tag_text_is_not_a_json_tag_field(tmp_path: Path) -> None:
++    path = tmp_path / "spec/performance/slot-proof/browser.json"
++    path.parent.mkdir(parents=True)
++    path.write_text(json.dumps({"message": '"tag": "' + "X" + 'Y-SLOT-FIXTURE"'}))
++    assert any(
++        "current product XY brand" in e for e in check_stale_names.check_stale_names(tmp_path)
++    )

@@ -282,6 +282,18 @@ def _allowed_provenance_xy(line: str) -> bool:
     )
 
 
+_GRAPH_EVIDENCE_SLOT_TAG = re.compile(
+    r'(?<!\\)"tag"[ \t]*:[ \t]*"(?P<value>XY-(?:INNER-)?SLOT-FIXTURE)"'
+)
+
+
+def _allowed_graph_evidence_slot_tag(rel: str, line: str, start: int) -> bool:
+    """Exempt only the XY occurrence in an exact recorded browser DOM tag."""
+    if not rel.startswith("spec/performance/") or not rel.endswith(".json"):
+        return False
+    return any(match.start("value") == start for match in _GRAPH_EVIDENCE_SLOT_TAG.finditer(line))
+
+
 _HISTORICAL_IDENTITY_ALLOWLIST = {
     ("spec/process/perf-audit-2026-07-22.md", "libxy_core"),
     ("spec/process/security-audit-2026-07-06.md", "XY_REQUIRE_CARGO"),
@@ -361,7 +373,9 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
                     if (rel, label) in _HISTORICAL_IDENTITY_ALLOWLIST:
                         continue
                     if label == "current product XY brand" and (
-                        _allowed_provenance_xy(line) or "f64 XY" in line
+                        _allowed_provenance_xy(line)
+                        or "f64 XY" in line
+                        or _allowed_graph_evidence_slot_tag(rel, line, match.start())
                     ):
                         continue
                     errors.append(f"{rel}:{lineno}: stale {label}: {line.strip()}")

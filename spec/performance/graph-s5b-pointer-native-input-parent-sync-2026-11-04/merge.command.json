@@ -1,0 +1,40 @@
+{
+  "argv": [
+    "git",
+    "merge",
+    "--no-commit",
+    "--no-ff",
+    "c3013b30bf97ce63b1f381a71d4ca1be38e75427"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3",
+  "started": "2026-11-04T03:52:14.575974+00:00",
+  "finished": "2026-11-04T03:52:14.756955+00:00",
+  "elapsed_seconds": 0.180981,
+  "exit": 1,
+  "environment": {
+    "PATH": "/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_GRAPH_NATIVE_BASELINE": null,
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_SLOT_BASELINE": null,
+    "XYG_GRAPH_MOTION_BASELINE": null,
+    "XYG_GRAPH_POINTER_BASELINE": null,
+    "XYG_GRAPH_POINTER_CAPTURE": null,
+    "XYG_GRAPH_POINTER_SCREENSHOT": null,
+    "XYG_GRAPH_SESSION_REPORT": null,
+    "XYG_GRAPH_SESSION_SCREENSHOT": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_SESSION_WASM": null,
+    "XYG_BROWSER_DIST": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "794bd8a23a0197a86288f4498a0c7115fd457eedcf4d4e3cd722bee281c6f9f9",
+  "stdout_sha256": "794bd8a23a0197a86288f4498a0c7115fd457eedcf4d4e3cd722bee281c6f9f9",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

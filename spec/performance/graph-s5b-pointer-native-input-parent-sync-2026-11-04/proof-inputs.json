@@ -1,0 +1,163 @@
+{
+  "parents": [
+    "b574038e9b00a1e85a4355e63770ec05c8cd5642",
+    "c3013b30bf97ce63b1f381a71d4ca1be38e75427"
+  ],
+  "fullPrBase": "c3013b30bf97ce63b1f381a71d4ca1be38e75427",
+  "nonreceiptBinaryFullIndexSha256": "b51fa58a79fbc3531394dd2e8a3d1aea7cbe8b4602ab255dc2e3208366543051",
+  "nonreceiptBytes": 111495,
+  "sourceFiles": {
+    "js/src/63_graph_controller.ts": "a5406fdbf2dbb6117ec0f64f7578970897a7622ede117f54a98ea08f9187da9d",
+    "js/src/63_graph_session_wire.ts": "dbaef3a34adc4127dadc729875d103728d870ed808945d17fc63f907637bc005",
+    "js/test/graph-session-controller-wire.test.mjs": "06e6297ece8e209a437b8427cc3290f78320d8111c579012ba079c509584bc2d",
+    "packages/xy-node/test/graph-session-wire.test.mjs": "188e30c5995d5e903f14b30d4b066773686e3d4cc340d52abb7786b5f94c223a",
+    "scripts/check_stale_names.py": "c98c6f38b608bb03793fff230d1edccd15b3062d11f523261306afce91aae3e9",
+    "scripts/gen_capability_matrix.py": "fef7da25fe2a272acde777a3b9fb91f5efdf6ea0ed550ce00600aa812ae57fdf",
+    "scripts/graph_session_controller_wasm_smoke.mjs": "b5263aa578248a8f82b599651bfdf882848145b1ace7ff82170341579790b62b",
+    "spec/api/browser-wasm.md": "7ab775b061bb98d0f0c6f430c935318a651b0f4f1cb3976229d49157ef3a1f0a",
+    "spec/api/capability-matrix.md": "2a50c66d553ded5e294cddc33536901efe62d3210bfb14667833573e107a3e0c",
+    "spec/design/browser-wasm.md": "9edeac4fe2236a62610743f29a7597b86577412ad66f02ba1f5b4c3e87c9875f",
+    "spec/design/graph-interaction.md": "29a64acb93d8bed03d391e8a7e8ec6b6719da16e21f89c3d273c1192cf903cf5",
+    "spec/design/xyg-naming.md": "7e7c6e2b77b10112498f5906fdf29b719d2d60be62aac41fcf74e03d55cc8737",
+    "spec/releases/0.6.0-api-inventory.json": "c8f2a3614695fbf58cc5a3ea821de816c906fd0f438d62b8157bbc9532c30b20",
+    "spec/releases/api-inventory.md": "4909eaa337f359d17588746175e95ebdd849c9ca5b59acce7332285730fab230",
+    "tests/browser/graph_session_controller_page.mjs": "ecfa30b870ca05d27f99ef534c67f0aa9f1f608ad0040845d323e3bc089f2c81",
+    "tests/test_stale_names.py": "89192229bf7bc3c0dbb3707f7b86d87eb465db149d4f25e698a33043d9cfa0ae"
+  },
+  "commands": {
+    "capability-check.command.json": {
+      "exit": 0,
+      "recordSha256": "68daa305d5da4424f3e037edf68165c702cfcaf422ae208c21496a1aecc1a570",
+      "logSha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    "hooks.command.json": {
+      "exit": 0,
+      "recordSha256": "7a89ac22498a4504aa72f268e6a2e69de31340414ca13a354d7e29d7a249cad7",
+      "logSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "inventory-check-final.command.json": {
+      "exit": 0,
+      "recordSha256": "50b2155f742afdafe43d7914926e4a5af05440c6d23280601ccb7f07c2366aeb",
+      "logSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+    },
+    "inventory-check.command.json": {
+      "exit": 0,
+      "recordSha256": "8847467e51ea8589784cc67cf2fd34511b2e955be82a08ea6de5b42eaaeda761",
+      "logSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+    },
+    "inventory-write-final.command.json": {
+      "exit": 0,
+      "recordSha256": "c014df793df28141b69cf3bf65277a1d0be81582cd85a3b3dc5f7db34a89b0a8",
+      "logSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+    },
+    "inventory-write.command.json": {
+      "exit": 0,
+      "recordSha256": "3e2928fcc95978f1b6caf4d9dc1818371df91528843db814b4b1d82246675986",
+      "logSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+    },
+    "merge.command.json": {
+      "exit": 1,
+      "recordSha256": "d3a7fe4163aca1b405e8de30c8ddc9cda79ee696ce5e41a575f83a7748bb08a5",
+      "logSha256": "794bd8a23a0197a86288f4498a0c7115fd457eedcf4d4e3cd722bee281c6f9f9"
+    },
+    "metadata-tests.command.json": {
+      "exit": 0,
+      "recordSha256": "41cb17e27a5baa44b63e1b5bf57b5a8eaedf4cfea8a23528f9430d4c59ae7446",
+      "logSha256": "2657a751531f55868d7e5c26c5c027940ee28c22f6b6588aeb4c998626781d2b"
+    },
+    "naming-focused-final.command.json": {
+      "exit": 0,
+      "recordSha256": "df58531918ad77ee322b341c7bc5ddffeafb5f0f8de3760d07904138b8d29453",
+      "logSha256": "498e9b7f2496d2dc9ca0e60313c91afc34025e6d9f231389f3b6107d0c228fb1"
+    },
+    "naming-focused.command.json": {
+      "exit": 0,
+      "recordSha256": "aa9a9ef1e26949e4f613a0305be2855a9c453575fa83943ae03ad2fcc438693b",
+      "logSha256": "498e9b7f2496d2dc9ca0e60313c91afc34025e6d9f231389f3b6107d0c228fb1"
+    },
+    "naming-tests-final.command.json": {
+      "exit": 0,
+      "recordSha256": "661ab5b9fd352972307df25740ee05c4e68407400207e32251543365a4a27f98",
+      "logSha256": "8613f5fc383b54d98be6533867f1372711501343e934f20cb003bb6c632056d5"
+    },
+    "naming-tests.command.json": {
+      "exit": 1,
+      "recordSha256": "b2686e4a149ae4e6511548d60a6362577e915a905940f6e48b02e14cc58d41e2",
+      "logSha256": "6ca3b01fc8be7dae0a10505c00f9b982dbf4c59c876ccc3d43404f79b6f6bdd8"
+    },
+    "naming-whole-repository-final.command.json": {
+      "exit": 0,
+      "recordSha256": "c11f8deb8dbf1f7929925dc1f4d813a6bc47bce0a5251f4b7ec29f70efc04d42",
+      "logSha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840"
+    },
+    "naming-whole-repository.command.json": {
+      "exit": 1,
+      "recordSha256": "d967840d390925dd7b126ea10c051e19348c2f9b8c24b3726bab61c48e2f5a68",
+      "logSha256": "eaa38e381df0ac2d3e445f6f000e7873962c983bf87ac53cb23ff2b74b015879"
+    },
+    "native-declarations.command.json": {
+      "exit": 0,
+      "recordSha256": "595e4214821ead6bba646682c86c2662596cd6b450d5420137871bf9fce101f9",
+      "logSha256": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed"
+    },
+    "ownership.command.json": {
+      "exit": 0,
+      "recordSha256": "b0ac322a748f8e13a36d221a90147e1333059dd9cdcd4aa0b508c8576fcdd699",
+      "logSha256": "f17a53990b48cff699969540e260eb763ace8561612b390ec05097f5035a185b"
+    },
+    "preservation-final.command.json": {
+      "exit": 0,
+      "recordSha256": "21dbb953d3e744692460280de0143d6b33072e9397c6d8ef7714b92dbbe85ce0",
+      "logSha256": "c64350e2f25282b52becca375c2ccb56364c046e3a48d4d6acb47d37b1d48247"
+    },
+    "preservation.command.json": {
+      "exit": 0,
+      "recordSha256": "b565a59e20eabef175f068f1a8fd1ae201f67ef3fd32ea9b5575d27beaccc941",
+      "logSha256": "73a3d4b8f7665b08b76041af4d98d810a2f0c891a7a490a6b5505688976dcf29"
+    },
+    "ruff-check.command.json": {
+      "exit": 0,
+      "recordSha256": "a78df9c4109b5d133de7ce677d95b49fca210e96e292045b299d3a5c4a46347d",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff-format.command.json": {
+      "exit": 0,
+      "recordSha256": "b288753cd58b969088ad6dbcad56b65537484c9b06ab908d1974b2525bbd00da",
+      "logSha256": "6f5f517b95e0c9450d36e9ff088f23f5c4754888ed4ed4bbdbedbd95ccf566a6"
+    },
+    "typecheck.command.json": {
+      "exit": 0,
+      "recordSha256": "154a9e2be79f07b83c95ff800a1c99f17d10900b35ef801e7358cc1db2fe1615",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "wasm-declarations.command.json": {
+      "exit": 0,
+      "recordSha256": "a4116c06de1146969eca69e99af9b5c81348c42de11c5811585d0e9f3d4ca90f",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "runtimeProofReuse": "69 browser journeys/19 fresh native-coordinate capture requests/26 wire+shipping/88 contracts/full unfiltered foundation reused ONLY by exact301 producer inputs and15 actual artifact identity",
+  "freshAudit": {
+    "namingTests": 149,
+    "originalNamingTestsRetained": 117,
+    "newPreciseTagPolicyCases": 32,
+    "metadataTests": 61,
+    "classifiedProductionFiles": 508,
+    "abiSymbols": 538,
+    "apiPreparationGaps": 685
+  },
+  "parentReviewRequired": [
+    "native input mapper/spec/fresh browser evidence",
+    "authorized precise per-match fixture naming policy and tests",
+    "normal c301 metadata conflict resolutions"
+  ],
+  "actionsNotPerformed": [
+    "root integration",
+    "push",
+    "PR mutation",
+    "review thread reply/resolution",
+    "queue",
+    "issue closure",
+    "publication"
+  ]
+}

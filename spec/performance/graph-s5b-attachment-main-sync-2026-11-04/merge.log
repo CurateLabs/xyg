@@ -1,0 +1,11 @@
+Auto-merging spec/design-dossier.md
+Auto-merging spec/design/browser-wasm.md
+CONFLICT (content): Merge conflict in spec/design/browser-wasm.md
+Auto-merging spec/design/graph-interaction.md
+Auto-merging spec/design/ownership-audit.json
+Auto-merging spec/design/ownership-audit.md
+Auto-merging spec/releases/0.6.0-api-inventory.json
+CONFLICT (content): Merge conflict in spec/releases/0.6.0-api-inventory.json
+Auto-merging spec/releases/api-inventory.md
+CONFLICT (content): Merge conflict in spec/releases/api-inventory.md
+Automatic merge failed; fix conflicts and then commit the result.

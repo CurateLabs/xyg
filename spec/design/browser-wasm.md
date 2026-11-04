@@ -914,6 +914,15 @@ records that identity and preservation of the subsequent ABI399 property
 presentation source. The bounded experimental S5b primary-click/keyboard/GPU/companion
 attachment is implemented above; broader S5b runtime/visual acceptance remains open.
 
+The subsequent property-default presentation merged as #1090 at
+`7c751db1ba216005fe0f3eaf81922d44b4d01157` on 2026-11-04 at 03:26:23Z.
+Its accepted main tree is byte-exact to reviewed property head `68ee59f1`;
+the [controller main-sync receipt](../performance/graph-s5b-attachment-main-sync-2026-11-04/README.md)
+records that identity while preserving the separately reviewed R2 controller
+source. The bounded primary-click/keyboard/GPU/companion attachment is implemented
+on this branch; final native-input repair review, #1091 main acceptance and
+broader S5b/S6/S7 acceptance remain open.
+
 The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is
 incompatible`) and the Rust constant `BROWSER_PAINTER_VERSION` and `XYG_WASM_PAINTER_VERSION` move together.

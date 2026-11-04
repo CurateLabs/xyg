@@ -1,0 +1,24 @@
+{
+  "base": "5a5da8d936112467db8e1c676c131fc67edea0c8",
+  "argv": [
+    "git",
+    "diff",
+    "--binary",
+    "--full-index",
+    "5a5da8d936112467db8e1c676c131fc67edea0c8",
+    "--",
+    "spec/design/browser-wasm.md",
+    "spec/design/graph-interaction.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "bytes": 7301,
+  "sha256": "c4e6aa9932720d7cd8d69b34092b9fe40d4f126aef3bcce31323b5039e4fbbb3",
+  "compressedPath": "/home/ubuntu/.t3/worktrees/xyg/t3-913c4718/spec/performance/graph-s5b-attachment-main-sync-2026-11-04/metadata.diff.gz",
+  "compressedSha256": "93f4432e9a6a945947555b6a890d58ac2071eabdbbe3d824ca98787e99185692",
+  "compressedBytes": 3029,
+  "nonreceiptPaths": [
+    "spec/design/browser-wasm.md",
+    "spec/design/graph-interaction.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ]
+}
