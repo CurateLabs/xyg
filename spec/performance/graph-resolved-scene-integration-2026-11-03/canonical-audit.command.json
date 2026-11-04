@@ -1,0 +1,14 @@
+{
+  "name": "canonical-audit",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/canonical-proof.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.85,
+  "rawSha256": "b6632fa9ad17f83d05d1c41e695056e48d65937d758eb67a17b87e12e95a171a",
+  "log": "canonical-audit.txt.gz",
+  "gzipSha256": "3a83d0e51429edcb8c02ddf7eab6b481d86141de6cf563832734aaed94e535b8"
+}

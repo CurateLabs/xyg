@@ -1,0 +1,44 @@
+{
+  "parent": "5840b479",
+  "dependency": "bce5339b8d07edf2dae213aca2c6d1f4b9eec70c",
+  "implementation_base": "b705c96cbd21f023c0d744c7ae9699686e07998d",
+  "branch": "t3/resolved-svg-legend-style",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+  "source_diff_argv": [
+    "git",
+    "diff",
+    "--binary",
+    "--full-index",
+    "b705c96cbd21f023c0d744c7ae9699686e07998d",
+    "--",
+    "js/src/20_theme.ts",
+    "js/src/50_chartview.ts",
+    "tests/browser/graph_property_default_export.mjs"
+  ],
+  "source_diff_sha256": "cec37b834b6599fde4c425551247a7f357d649c321ad43c59f0c6734bf45b0fb",
+  "source_diff_excludes_receipt": true,
+  "files": {
+    "js/src/20_theme.ts": "380214323ad8899681979c436080989a344210f663db96ad7e7f252403650f65",
+    "js/src/50_chartview.ts": "3d3a02166156600222abc589b4dbe77b91e8817b7e190ef89fb25ab20687a549",
+    "tests/browser/graph_property_default_export.mjs": "a9cc95b2bc1958abfa5e7f8b4b20a67706d0742f088b6c219eb8d33f801ffef8",
+    "spec/design-dossier.md": "547c978669dc3f8e9d8a307477f58d70aa233582bd48028bdae7a89cfd253c7a",
+    "spec/design/graph-mark.md": "543732c9ba829e64a05f2d2ed847e9249eef1d2fc3ec1b0ea00dd6fb997e7cdc",
+    "spec/design/graphforge-compositions.md": "3d4db8da04ceb40ca3bb5c9b6326f49a13fcacfca4c85ddbfe0289a1a56af94b",
+    "tests/test_graphforge.py": "11bae3c48d41ac0e2e9b6c6b0c16a7d378c5e3abcb6b08ebc3171e083d1bfa80",
+    "tests/fixtures/graphforge/property_default_export.json": "07f0fb3cc214858cf1465006c3bb839885331a3a5a84cec0c58e7ee5da09efd5",
+    "tests/fixtures/graphforge/results/manifest.json": "9f50ce9df24ac263e4de61299f593cec38c3b3f4eb995bc2ec1d058e3af5676b",
+    "tests/fixtures/graphforge/results/base-property-nodes.arrow": "625ad3c2dc13420279300339ed294d7b20b08f379b1ed5c45392168d6e3b01dc",
+    "tests/fixtures/graphforge/results/base-property-edges.arrow": "408a4c1a88ceab3f98af1b8a50fa9c1dd40c8dd9d5db1cf28c0d40b9efbac73f",
+    "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+    "tests/browser/wasm_foundation_page.mjs": "85d68e1ca2d7d8cbcddc96ae4c6842fd17b5564b8226c926794370119bb30f24",
+    "js/build.mjs": "47e2f4de2f3a7d9c90c09ab0c3676533b288f2a575921089e2586d9b9f22aea6",
+    "js/package-wasm.mjs": "faebc6d4d8c09d6346321b397a04d890ec354aadbb1e209232f6635e19e8873a",
+    "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+  },
+  "before_files": {
+    "js/src/20_theme.ts": "0502d7dedf2486922f479bea8e0005633fe62b61579e0fc90a6d66096cb440bc",
+    "js/src/50_chartview.ts": "1800e59a2fb21951b27506294603f6643cb84ca069a506ea7e1996e95c1f7ed7",
+    "tests/browser/graph_property_default_export.mjs": "ff4a7904e3ec94e8c5ee11f9d5690efba7cdeca0da13821af69d6ef4401bff30"
+  },
+  "browser_probe_source_identical_between_captures": true
+}

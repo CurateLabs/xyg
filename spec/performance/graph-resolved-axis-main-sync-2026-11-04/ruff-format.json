@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "--check",
+    "."
+  ],
+  "exitCode": 0,
+  "seconds": 0.042,
+  "environment": {
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1",
+    "UV_OFFLINE": "1",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "rawSha256": "ddc8f2e2ad55738a4fae6a1060399c6d8978d58d4189d16bc02771c9fe1450a4",
+  "gzipSha256": "975767121dd3c253938f646c17d427d0992677924d0a3f81ba838acf1a7a1f50",
+  "log": "ruff-format.log.gz"
+}

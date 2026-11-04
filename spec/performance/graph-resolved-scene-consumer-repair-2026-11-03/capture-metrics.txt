@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/spec/performance/graph-resolved-scene-consumer-repair-2026-11-03/capture-metrics.py", line 29, in <module>
+    assert float(spine["line"]["attributes"][attr]) == float(native["attributes"][attr])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

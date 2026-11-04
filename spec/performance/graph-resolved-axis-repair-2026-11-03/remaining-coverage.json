@@ -1,0 +1,1102 @@
+{
+  "light.dpr1": {
+    "purpose": "diagnostic only; no pixel omitted and no acceptance waiver",
+    "mean_max_channel_diff": 2.216078869047619,
+    "fraction_over_96": 0.010747767857142857,
+    "pixels_over_96": 2889,
+    "axis_boxes": [
+      {
+        "x": 51.5,
+        "y": 24,
+        "width": 1,
+        "height": 352
+      },
+      {
+        "x": 52,
+        "y": 375.5,
+        "width": 572,
+        "height": 1
+      }
+    ],
+    "device_pixel_ratio": 1,
+    "samples": [
+      {
+        "pixel": [
+          300,
+          373
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          374
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          375
+        ],
+        "native": [
+          139,
+          145,
+          153
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          140,
+          146,
+          154
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          376
+        ],
+        "native": [
+          143,
+          148,
+          155
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical_svg_browser": [
+          143,
+          148,
+          155
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          377
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          378
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          49,
+          200
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          50,
+          200
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          51,
+          200
+        ],
+        "native": [
+          143,
+          148,
+          155
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          143,
+          148,
+          155
+        ]
+      },
+      {
+        "pixel": [
+          52,
+          200
+        ],
+        "native": [
+          139,
+          145,
+          153
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical_svg_browser": [
+          140,
+          146,
+          154
+        ]
+      },
+      {
+        "pixel": [
+          53,
+          200
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          54,
+          200
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      }
+    ]
+  },
+  "light.dpr2": {
+    "purpose": "diagnostic only; no pixel omitted and no acceptance waiver",
+    "mean_max_channel_diff": 2.2139453125,
+    "fraction_over_96": 0.007358630952380952,
+    "pixels_over_96": 7912,
+    "axis_boxes": [
+      {
+        "x": 51.5,
+        "y": 24,
+        "width": 1,
+        "height": 352
+      },
+      {
+        "x": 52,
+        "y": 375.5,
+        "width": 572,
+        "height": 1
+      }
+    ],
+    "device_pixel_ratio": 2,
+    "samples": [
+      {
+        "pixel": [
+          600,
+          749
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          750
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          751
+        ],
+        "native": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          752
+        ],
+        "native": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical_svg_browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          753
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          754
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          101,
+          400
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          102,
+          400
+        ],
+        "native": [
+          255,
+          255,
+          255
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "pixel": [
+          103,
+          400
+        ],
+        "native": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          255,
+          255,
+          255
+        ],
+        "canonical_svg_browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          104,
+          400
+        ],
+        "native": [
+          31,
+          41,
+          55
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical_svg_browser": [
+          31,
+          41,
+          55
+        ]
+      },
+      {
+        "pixel": [
+          105,
+          400
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          31,
+          41,
+          55
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      },
+      {
+        "pixel": [
+          106,
+          400
+        ],
+        "native": [
+          248,
+          250,
+          252
+        ],
+        "wasm": [
+          248,
+          250,
+          252
+        ],
+        "canonical_svg_browser": [
+          248,
+          250,
+          252
+        ]
+      }
+    ]
+  },
+  "dark.dpr1": {
+    "purpose": "diagnostic only; no pixel omitted and no acceptance waiver",
+    "mean_max_channel_diff": 2.2179017857142855,
+    "fraction_over_96": 0.010755208333333334,
+    "pixels_over_96": 2891,
+    "axis_boxes": [
+      {
+        "x": 51.5,
+        "y": 24,
+        "width": 1,
+        "height": 352
+      },
+      {
+        "x": 52,
+        "y": 375.5,
+        "width": 572,
+        "height": 1
+      }
+    ],
+    "device_pixel_ratio": 1,
+    "samples": [
+      {
+        "pixel": [
+          300,
+          373
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          374
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          375
+        ],
+        "native": [
+          123,
+          128,
+          137
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          123,
+          128,
+          137
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          376
+        ],
+        "native": [
+          116,
+          119,
+          127
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical_svg_browser": [
+          116,
+          119,
+          127
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          377
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          300,
+          378
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          49,
+          200
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          50,
+          200
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          51,
+          200
+        ],
+        "native": [
+          116,
+          119,
+          127
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          116,
+          119,
+          127
+        ]
+      },
+      {
+        "pixel": [
+          52,
+          200
+        ],
+        "native": [
+          123,
+          128,
+          137
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical_svg_browser": [
+          123,
+          128,
+          137
+        ]
+      },
+      {
+        "pixel": [
+          53,
+          200
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          54,
+          200
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      }
+    ]
+  },
+  "dark.dpr2": {
+    "purpose": "diagnostic only; no pixel omitted and no acceptance waiver",
+    "mean_max_channel_diff": 2.2101804315476192,
+    "fraction_over_96": 0.007189360119047619,
+    "pixels_over_96": 7730,
+    "axis_boxes": [
+      {
+        "x": 51.5,
+        "y": 24,
+        "width": 1,
+        "height": 352
+      },
+      {
+        "x": 52,
+        "y": 375.5,
+        "width": 572,
+        "height": 1
+      }
+    ],
+    "device_pixel_ratio": 2,
+    "samples": [
+      {
+        "pixel": [
+          600,
+          749
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          750
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          751
+        ],
+        "native": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          752
+        ],
+        "native": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical_svg_browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          753
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          600,
+          754
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          101,
+          400
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          102,
+          400
+        ],
+        "native": [
+          3,
+          7,
+          18
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          3,
+          7,
+          18
+        ]
+      },
+      {
+        "pixel": [
+          103,
+          400
+        ],
+        "native": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          3,
+          7,
+          18
+        ],
+        "canonical_svg_browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          104,
+          400
+        ],
+        "native": [
+          229,
+          231,
+          235
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical_svg_browser": [
+          229,
+          231,
+          235
+        ]
+      },
+      {
+        "pixel": [
+          105,
+          400
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          229,
+          231,
+          235
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      },
+      {
+        "pixel": [
+          106,
+          400
+        ],
+        "native": [
+          17,
+          24,
+          39
+        ],
+        "wasm": [
+          17,
+          24,
+          39
+        ],
+        "canonical_svg_browser": [
+          17,
+          24,
+          39
+        ]
+      }
+    ]
+  }
+}

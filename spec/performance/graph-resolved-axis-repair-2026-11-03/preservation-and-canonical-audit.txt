@@ -1,0 +1,2 @@
+Diagnosis, ordinary geometry/images, Rust plots/paint, exports, identities, routes, captions and helper immutability verified. Full-image failure retained.
+Canonical authored plot comparison FAIL: 108 pre-existing mismatches; normal exit 1.

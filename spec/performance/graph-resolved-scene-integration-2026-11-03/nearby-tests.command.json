@@ -1,0 +1,19 @@
+{
+  "name": "nearby-tests",
+  "command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests/test_static_client_security.py",
+    "tests/test_dual_axis_live_client.py",
+    "tests/test_live_dual_axis_cross_host.py",
+    "tests/test_static_dual_axis_cross_host.py",
+    "tests/test_scene_chrome_pack_abi.py"
+  ],
+  "exitCode": 0,
+  "seconds": 5.998,
+  "rawSha256": "7aec8eef182e98fe31d7a8dc96e59a62326e45fcf36cfde43e70bd44636d3425",
+  "log": "nearby-tests.txt.gz",
+  "gzipSha256": "5446d1610b90476a470eaeb3aea0ae5494c689ef4e56b25444546063e1394f3a"
+}

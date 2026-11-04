@@ -1,0 +1,297 @@
+[
+  {
+    "name": "producer",
+    "argv": [
+      "uv",
+      "run",
+      "pytest",
+      "tests/test_graphforge.py",
+      "-k",
+      "property_default_exports",
+      "-q"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_GRAPH_PROPERTY_EVIDENCE": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/spec/performance/graph-axis-stroke-diagnosis-2026-11-03/baseline"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.7641701698303223,
+    "log": "producer.txt"
+  },
+  {
+    "name": "unchanged-full-gate",
+    "argv": [
+      "node",
+      "tests/browser/graph_property_default_export.mjs",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/baseline"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 5.194176197052002,
+    "log": "unchanged-full-gate.txt"
+  },
+  {
+    "name": "diagnostic-browser",
+    "argv": [
+      "node",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/probe.mjs",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/captures",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/baseline"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 0.6772229671478271,
+    "log": "diagnostic-browser.txt"
+  },
+  {
+    "name": "diagnostic-browser-retry",
+    "argv": [
+      "node",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/probe.mjs",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/captures",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/baseline"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 4.048598527908325,
+    "log": "diagnostic-browser-retry.txt"
+  },
+  {
+    "name": "pixel-analysis",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 0.32717323303222656,
+    "log": "pixel-analysis.txt"
+  },
+  {
+    "name": "diagnostic-browser-physical-size",
+    "argv": [
+      "node",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/probe.mjs",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/captures-physical-size",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/baseline"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/packages/xyg-node-linux-x64/libxyg_core.so"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 4.069361209869385,
+    "log": "diagnostic-browser-physical-size.txt"
+  },
+  {
+    "name": "pixel-analysis-physical-size",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03",
+      "captures-physical-size"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.46793675422668457,
+    "log": "pixel-analysis-physical-size.txt"
+  },
+  {
+    "name": "raster-records",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 0.13615846633911133,
+    "log": "raster-records.txt"
+  },
+  {
+    "name": "raster-records-round-cap",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.15373969078063965,
+    "log": "raster-records-round-cap.txt"
+  },
+  {
+    "name": "probe-syntax",
+    "argv": [
+      "node",
+      "--check",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/probe.mjs"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.02537059783935547,
+    "log": "probe-syntax.txt"
+  },
+  {
+    "name": "diagnostic-ruff",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.07174468040466309,
+    "log": "diagnostic-ruff.txt"
+  },
+  {
+    "name": "diagnostic-format",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 1,
+    "elapsed_seconds": 0.05895400047302246,
+    "log": "diagnostic-format.txt"
+  },
+  {
+    "name": "diagnostic-format-apply",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.0758671760559082,
+    "log": "diagnostic-format-apply.txt"
+  },
+  {
+    "name": "diagnostic-format-final",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.022872447967529297,
+    "log": "diagnostic-format-final.txt"
+  },
+  {
+    "name": "diagnostic-ruff-final",
+    "argv": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py",
+      "spec/performance/graph-axis-stroke-diagnosis-2026-11-03/raster.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.07084846496582031,
+    "log": "diagnostic-ruff-final.txt"
+  },
+  {
+    "name": "diagnostic-integrity",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "/tmp/axis_finalize.py"
+    ],
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+    "environment": {
+      "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.15916776657104492,
+    "log": "diagnostic-integrity.txt"
+  }
+]

@@ -1,0 +1,1 @@
+Packaged WASM assets verified (bytes, sha256, ABI/scene/painter versions, inline copy).

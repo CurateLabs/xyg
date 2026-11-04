@@ -1,0 +1,14 @@
+{
+  "name": "canonical-matrix",
+  "command": [
+    "node",
+    "tests/browser/resolved_axis_spines.mjs",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/inputs",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/matrix"
+  ],
+  "exitCode": 0,
+  "seconds": 54.627,
+  "rawSha256": "17d187c08e29299e7712d8cb7d2137374dde65ab572b3f11e11855183af5ca7b",
+  "log": "canonical-matrix.txt.gz",
+  "gzipSha256": "7f08800f1841a2cc1874ee9258d813ce0c33692ebb3a843331f8a29aa732f25f"
+}

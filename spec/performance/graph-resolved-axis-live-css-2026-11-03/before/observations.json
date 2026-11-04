@@ -1,0 +1,2356 @@
+{
+  "browser": "156.0.8078.4",
+  "asset": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/task-tmp/before-index.js",
+    "sha256": "b2c2066b1d6ed2687a1a248c3f7e8eb1541d4bf6a39ae56a75a99968b5a13f6b"
+  },
+  "cases": [
+    {
+      "name": "idle",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "hover-enter",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(255, 0, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "hover-leave",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "focus-within",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "focus-leave",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "active-down",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": true
+      },
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "active-up",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-normal",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "none",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-geometry-normal",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "none",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-geometry-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "public-class-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(180, 30, 60)",
+        "height": "12px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 12
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "public-inline-important",
+      "dpr": 1,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(4, 5, 6)",
+        "height": "10px",
+        "clipPath": "inset(100%)",
+        "priority": "important",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 10
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "idle",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "hover-enter",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(255, 0, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "hover-leave",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "focus-within",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "focus-leave",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "active-down",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": true
+      },
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "active-up",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-normal",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "none",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-geometry-normal",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "none",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-geometry-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "public-class-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(180, 30, 60)",
+        "height": "12px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 12
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "public-inline-important",
+      "dpr": 1.25,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(4, 5, 6)",
+        "height": "10px",
+        "clipPath": "inset(100%)",
+        "priority": "important",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 10
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "idle",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "hover-enter",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(255, 0, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "hover-leave",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "focus-within",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": true,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "focus-leave",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "active-down",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": true
+      },
+      "public": {
+        "background": "rgb(0, 0, 255)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "active-up",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": true,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(0, 128, 0)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(10, 20, 30)",
+          "strokeWidth": "8px",
+          "transform": "none",
+          "strokeDasharray": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        },
+        "wrapper": {
+          "display": "block",
+          "width": "320px",
+          "height": "240px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-normal",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "none",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-geometry-normal",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-hidden-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "none",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "host-paint-width-geometry-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(10, 20, 30)",
+        "height": "8px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "public-class-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": true,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(180, 30, 60)",
+        "height": "12px",
+        "clipPath": "inset(100%)",
+        "priority": "",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 12
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    },
+    {
+      "name": "public-inline-important",
+      "dpr": 2,
+      "plot": {
+        "x": 46,
+        "y": 6,
+        "w": 260.625,
+        "h": 198
+      },
+      "samePublicSlot": true,
+      "pseudo": {
+        "hover": false,
+        "focus-within": false,
+        "active": false
+      },
+      "public": {
+        "background": "rgb(4, 5, 6)",
+        "height": "10px",
+        "clipPath": "inset(100%)",
+        "priority": "important",
+        "rect": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 10
+        }
+      },
+      "paint": "svg",
+      "svg": {
+        "attrs": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke": "rgb(10, 20, 30)",
+          "stroke-width": "8",
+          "stroke-linecap": "butt"
+        },
+        "computed": {
+          "stroke": "rgb(255, 0, 255)",
+          "strokeWidth": "70px",
+          "transform": "none",
+          "strokeDasharray": "1px, 4px",
+          "opacity": "0.2",
+          "visibility": "hidden"
+        },
+        "wrapper": {
+          "display": "none",
+          "width": "5px",
+          "height": "9px",
+          "transform": "none",
+          "opacity": "1",
+          "visibility": "visible"
+        }
+      },
+      "manualCalls": []
+    }
+  ],
+  "failures": [
+    {
+      "name": "hover-enter dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(255, 0, 0)'\n       ^\n"
+    },
+    {
+      "name": "focus-within dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 128, 0)'\n       ^\n"
+    },
+    {
+      "name": "active-down dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 0, 255)'\n       ^\n"
+    },
+    {
+      "name": "active-up dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 128, 0)'\n       ^\n"
+    },
+    {
+      "name": "host-hidden-normal dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'none'\n- 'rgb(10, 20, 30)'\n"
+    },
+    {
+      "name": "host-paint-width-geometry-normal dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(10, 20, 30)'\n       ^\n"
+    },
+    {
+      "name": "host-hidden-important dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'none'\n- 'rgb(10, 20, 30)'\n"
+    },
+    {
+      "name": "host-paint-width-geometry-important dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(10, 20, 30)'\n       ^\n"
+    },
+    {
+      "name": "public-class-important dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(180, 30, 60)'\n       ^\n"
+    },
+    {
+      "name": "public-inline-important dpr1",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(4, 5, 6)'\n       ^\n"
+    },
+    {
+      "name": "hover-enter dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(255, 0, 0)'\n       ^\n"
+    },
+    {
+      "name": "focus-within dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 128, 0)'\n       ^\n"
+    },
+    {
+      "name": "active-down dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 0, 255)'\n       ^\n"
+    },
+    {
+      "name": "active-up dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 128, 0)'\n       ^\n"
+    },
+    {
+      "name": "host-hidden-normal dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'none'\n- 'rgb(10, 20, 30)'\n"
+    },
+    {
+      "name": "host-paint-width-geometry-normal dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(10, 20, 30)'\n       ^\n"
+    },
+    {
+      "name": "host-hidden-important dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'none'\n- 'rgb(10, 20, 30)'\n"
+    },
+    {
+      "name": "host-paint-width-geometry-important dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(10, 20, 30)'\n       ^\n"
+    },
+    {
+      "name": "public-class-important dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(180, 30, 60)'\n       ^\n"
+    },
+    {
+      "name": "public-inline-important dpr1.25",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(4, 5, 6)'\n       ^\n"
+    },
+    {
+      "name": "hover-enter dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(255, 0, 0)'\n       ^\n"
+    },
+    {
+      "name": "focus-within dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 128, 0)'\n       ^\n"
+    },
+    {
+      "name": "active-down dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 0, 255)'\n       ^\n"
+    },
+    {
+      "name": "active-up dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(10, 20, 30)'\n- 'rgb(0, 128, 0)'\n       ^\n"
+    },
+    {
+      "name": "host-hidden-normal dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'none'\n- 'rgb(10, 20, 30)'\n"
+    },
+    {
+      "name": "host-paint-width-geometry-normal dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(10, 20, 30)'\n       ^\n"
+    },
+    {
+      "name": "host-hidden-important dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'none'\n- 'rgb(10, 20, 30)'\n"
+    },
+    {
+      "name": "host-paint-width-geometry-important dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(10, 20, 30)'\n       ^\n"
+    },
+    {
+      "name": "public-class-important dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(180, 30, 60)'\n       ^\n"
+    },
+    {
+      "name": "public-inline-important dpr2",
+      "message": "private paint must follow public slot\n+ actual - expected\n\n+ 'rgb(255, 0, 255)'\n- 'rgb(4, 5, 6)'\n       ^\n"
+    }
+  ],
+  "masks": [],
+  "manualRefreshAfterSetup": false
+}

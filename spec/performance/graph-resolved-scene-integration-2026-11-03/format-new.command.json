@@ -1,0 +1,15 @@
+{
+  "name": "format-new",
+  "command": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03"
+  ],
+  "exitCode": 0,
+  "seconds": 0.045,
+  "rawSha256": "be228cc22ccf7a5e14a1482327c7e542160d0dd5947a71e13b821729bde1746f",
+  "log": "format-new.txt.gz",
+  "gzipSha256": "f65ffa6b3f264fe0601083343105fbccbfb21a8fa3b0aa867f42b3f67830e45d"
+}

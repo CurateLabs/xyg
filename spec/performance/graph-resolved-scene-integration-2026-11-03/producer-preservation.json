@@ -1,0 +1,16 @@
+{
+  "html": {
+    "light": {
+      "freshStandaloneEmbedded": true,
+      "closingTagEscapes": 3
+    },
+    "dark": {
+      "freshStandaloneEmbedded": true,
+      "closingTagEscapes": 3
+    }
+  },
+  "standaloneSha256": "e99bdb51d15847de49a5262297af53f59172f3940d0d2fd8507e3c6da75cbe9d",
+  "unchangedMatrixInputFiles": 149,
+  "slotPrecisionFreshProducerExact": true,
+  "nativeLib": "6df9cb7ed06048d08d59ec8c068da0e0be9b5a3eb6b10d1b86f08527a8fd2485"
+}

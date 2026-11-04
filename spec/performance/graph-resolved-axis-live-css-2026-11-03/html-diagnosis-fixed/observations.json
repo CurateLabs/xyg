@@ -1,0 +1,74 @@
+[
+  {
+    "dpr": 1,
+    "plot": {
+      "x": 46,
+      "y": 6,
+      "w": 260.625,
+      "h": 198
+    },
+    "rows": [
+      {
+        "axis": "y",
+        "nativeWidth": 0.3,
+        "computedWidth": "0.296875px",
+        "computedHeight": "198px"
+      },
+      {
+        "axis": "x",
+        "nativeWidth": 0.3,
+        "computedWidth": "260.625px",
+        "computedHeight": "0.296875px"
+      }
+    ],
+    "svgAndHtmlImagesIdentical": false
+  },
+  {
+    "dpr": 1.25,
+    "plot": {
+      "x": 46,
+      "y": 6,
+      "w": 260.625,
+      "h": 198
+    },
+    "rows": [
+      {
+        "axis": "y",
+        "nativeWidth": 0.3,
+        "computedWidth": "0.296875px",
+        "computedHeight": "198px"
+      },
+      {
+        "axis": "x",
+        "nativeWidth": 0.3,
+        "computedWidth": "260.625px",
+        "computedHeight": "0.296875px"
+      }
+    ],
+    "svgAndHtmlImagesIdentical": false
+  },
+  {
+    "dpr": 2,
+    "plot": {
+      "x": 46,
+      "y": 6,
+      "w": 260.625,
+      "h": 198
+    },
+    "rows": [
+      {
+        "axis": "y",
+        "nativeWidth": 0.3,
+        "computedWidth": "0.296875px",
+        "computedHeight": "198px"
+      },
+      {
+        "axis": "x",
+        "nativeWidth": 0.3,
+        "computedWidth": "260.625px",
+        "computedHeight": "0.296875px"
+      }
+    ],
+    "svgAndHtmlImagesIdentical": false
+  }
+]

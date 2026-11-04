@@ -1,0 +1,2275 @@
+{
+  "status": "FAIL",
+  "geometry_tolerance_css_pixels": 0.01,
+  "failed_cases": [
+    {
+      "case": "w0-bottom-left-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-bottom-left-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-bottom-left-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-top-right-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-top-right-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-top-right-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-top-right-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-top-right-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-top-right-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-bottom-left-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-bottom-left-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-bottom-left-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-top-right-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-top-right-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-top-right-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-top-right-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-top-right-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-top-right-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-bottom-left-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-bottom-left-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-bottom-left-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-top-right-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-top-right-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-top-right-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-bottom-left-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-bottom-left-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-bottom-left-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-top-right-opaque.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-top-right-alpha.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-top-right-transparent.dpr1.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-bottom-left-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-bottom-left-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-bottom-left-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-top-right-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-top-right-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-top-right-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-top-right-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-top-right-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-top-right-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-bottom-left-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-bottom-left-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-bottom-left-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-top-right-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-top-right-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-top-right-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-top-right-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-top-right-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-top-right-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-bottom-left-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-bottom-left-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-bottom-left-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-top-right-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-top-right-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-top-right-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-bottom-left-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-bottom-left-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-bottom-left-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-top-right-opaque.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-top-right-alpha.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-top-right-transparent.dpr1.25.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-bottom-left-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-bottom-left-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-bottom-left-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0-top-right-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-top-right-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0-top-right-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-bottom-left-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w0.5-top-right-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-top-right-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w0.5-top-right-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-bottom-left-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-bottom-left-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-bottom-left-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1-top-right-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-top-right-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1-top-right-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-bottom-left-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w1.5-top-right-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-top-right-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w1.5-top-right-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-bottom-left-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-bottom-left-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-bottom-left-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w2-top-right-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-top-right-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w2-top-right-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-bottom-left-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-bottom-left-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-bottom-left-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 239.75,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 6,
+        "w": 197.75,
+        "h": 198
+      }
+    },
+    {
+      "case": "w3-top-right-opaque.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-top-right-alpha.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    },
+    {
+      "case": "w3-top-right-transparent.dpr2.resolved",
+      "native_svg_plot": {
+        "x": 46.0,
+        "y": 6.0,
+        "w": 260.62,
+        "h": 198.0
+      },
+      "f006_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      },
+      "repaired_browser_plot": {
+        "x": 46,
+        "y": 32,
+        "w": 218.625,
+        "h": 172
+      }
+    }
+  ],
+  "scope": "independent native SVG plot comparison; pre-existing failures retained, no layout repair or waiver"
+}

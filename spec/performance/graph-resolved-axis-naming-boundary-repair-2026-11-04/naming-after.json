@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "python3",
+    "scripts/check_stale_names.py"
+  ],
+  "exitCode": 0,
+  "seconds": 56.382,
+  "environment": {
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1",
+    "UV_OFFLINE": "1",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "rawSha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840",
+  "gzipSha256": "c37334890ddf4df9c85150168328b2d0cc5bac95e9815dd234d2f9e53e0eba6f",
+  "log": "naming-after.log.gz"
+}

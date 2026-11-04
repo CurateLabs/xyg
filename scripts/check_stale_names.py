@@ -248,6 +248,15 @@ def _should_scan(path: Path) -> bool:
 
 def _allowed_src_lib_rs(line: str, start: int) -> bool:
     prefix = line[:start]
+    # One auxiliary crate, not the retired root ABI location. Match the whole
+    # repository path (optionally under an absolute checkout prefix), never a
+    # relative lookalike prefix, filename suffix or child path. Only quotes,
+    # backticks, spaces/tabs and line boundaries delimit the complete token.
+    # Other identity matches on this line still receive the ordinary checks.
+    if re.search(
+        r"""(?:^|[ \t"'`])(?:/(?:[\w.-]+/)*)?examples/osm/osmium-rs/$""", prefix
+    ) and re.match(r"""(?:$|[ \t"'`])""", line[start + len("src/lib.rs") :]):
+        return True
     return (
         prefix.endswith("crates/xyg-core/")
         or prefix.endswith("crates/xyg-engine/")

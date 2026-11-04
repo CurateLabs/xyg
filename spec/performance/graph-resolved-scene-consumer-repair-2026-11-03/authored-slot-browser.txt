@@ -1,0 +1,18 @@
+{
+  "cases": 108,
+  "switches": 6,
+  "failures": [
+    {
+      "key": "transform.dpr1.after",
+      "message": "transform.dpr1.after\n\n'svg' !== 'html'\n"
+    },
+    {
+      "key": "transform.dpr1.25.after",
+      "message": "transform.dpr1.25.after\n\n'svg' !== 'html'\n"
+    },
+    {
+      "key": "transform.dpr2.after",
+      "message": "transform.dpr2.after\n\n'svg' !== 'html'\n"
+    }
+  ]
+}

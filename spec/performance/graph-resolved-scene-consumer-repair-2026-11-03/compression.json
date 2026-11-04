@@ -1,0 +1,98 @@
+{
+  "property-final/dark.native.html": {
+    "uncompressed_bytes": 769875,
+    "uncompressed_sha256": "0fc0db9232baa7e70f053fb463c1588625ff805d6aea52f97726f5849812e545",
+    "lossless_gzip": "property-final/dark.native.html.gz",
+    "gzip_sha256": "1c3d6b75417fc87d7294aedce654914f0e1cd7a2b1a58de690843dd77dced140"
+  },
+  "property-final/light.native.html": {
+    "uncompressed_bytes": 769876,
+    "uncompressed_sha256": "8a92ce71d0dc840dcd8a29d4d6a7a5a8849c076a6658c1d8e2bbd86e7428aa91",
+    "lossless_gzip": "property-final/light.native.html.gz",
+    "gzip_sha256": "b0be30d03d488fdb90f3b8042bce929df45f2448ec65322ea1b37c8b97d7ff22"
+  },
+  "property/dark.native.html": {
+    "uncompressed_bytes": 769524,
+    "uncompressed_sha256": "f721db18689330b30f08683403c16dc31f968aec1d0c46fcf342806871ebf869",
+    "lossless_gzip": "property/dark.native.html.gz",
+    "gzip_sha256": "d65bd449853d34a1c2cc8ab1a18528268cc6ff01e6819617b647f929dcc6467b"
+  },
+  "property/light.native.html": {
+    "uncompressed_bytes": 769525,
+    "uncompressed_sha256": "1e8f2832be875032566cac29caac22a47e7743697f0c7234f908067b75830c8b",
+    "lossless_gzip": "property/light.native.html.gz",
+    "gzip_sha256": "f34f9ba2c4d921e1908a0cb5bf111c913ef9dc24faf0233fef01a93b3fb0a432"
+  },
+  "property-literal/dark.native.html": {
+    "uncompressed_bytes": 770306,
+    "uncompressed_sha256": "cf4e76f5ce35b578b8fa2e189c6505f386a79564b70cc653da662ea989b8717d",
+    "lossless_gzip": "property-literal/dark.native.html.gz",
+    "gzip_sha256": "fef19971023f3631a843f907b7ce5031ba80afdda3c560a437ae0b3b164e849b"
+  },
+  "property-literal/light.native.html": {
+    "uncompressed_bytes": 770307,
+    "uncompressed_sha256": "7cb42247e9d410e0acba1589b975938998cdb40b7ca2cb31f9e01e41a361a0ad",
+    "lossless_gzip": "property-literal/light.native.html.gz",
+    "gzip_sha256": "128de52d051b9874d29c7d9092f8ff0acec3b7b920f2d9dc3c71162b22d54034"
+  },
+  "property-active/dark.native.html": {
+    "uncompressed_bytes": 769854,
+    "uncompressed_sha256": "36e1ba2714f8cb883918effe4217895c536319943bba1b9bebc0df1df9723618",
+    "lossless_gzip": "property-active/dark.native.html.gz",
+    "gzip_sha256": "a1ea1c7d5438c067d2a72030381828aab8565b1e2951ee487516b7a778ae19db"
+  },
+  "property-active/light.native.html": {
+    "uncompressed_bytes": 769855,
+    "uncompressed_sha256": "e7dda81d275d43e22235bf0cc36de5042a29e1d12f023ca1125c8ee346de7251",
+    "lossless_gzip": "property-active/light.native.html.gz",
+    "gzip_sha256": "07bdd7a9ea3a140ca768bdabb4f3a433aade44d2ff02edf008f93a1e892b78d6"
+  },
+  "layout-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "layout-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  },
+  "active-stroke-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "active-stroke-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  },
+  "svg-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "svg-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  },
+  "baseline-client-build.txt": {
+    "uncompressed_bytes": 5538,
+    "uncompressed_sha256": "26649fb2c39801799076f8b02c4d03ce00debab7742290e3ee28e76b7c7daa8b",
+    "lossless_gzip": "baseline-client-build.txt.gz",
+    "gzip_sha256": "7b90a798b48a1edc613bec9392655dcb6afc89d761725763f50be4d51a91d741"
+  },
+  "literal-geometry-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "literal-geometry-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  },
+  "adapter-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "adapter-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  },
+  "final-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "final-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  },
+  "source-final-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "source-final-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  }
+}

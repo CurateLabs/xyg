@@ -1,0 +1,15 @@
+{
+  "purpose": "Lossless generated HTML retention; original files left on disk for probes",
+  "files": {
+    "property/dark.native.html": {
+      "gzip": "property/dark.native.html.gz",
+      "rawSha256": "d4bdec83aa65a6180f36aa555a63f256f88d42242ade4b6ef9c42874404388cb",
+      "gzipSha256": "bb5bf3d631f79b22d4f87796242f333be0ebe5e98f46917fd704a73a2bc1c357"
+    },
+    "property/light.native.html": {
+      "gzip": "property/light.native.html.gz",
+      "rawSha256": "760a2d93ca78791e8619cce838e4edc5f9a87e2d3794d7e913b321c40fe3f35a",
+      "gzipSha256": "e49d2196438b08b0ebafc255681cdca9b2e165f774bb628db8929baae64e3472"
+    }
+  }
+}

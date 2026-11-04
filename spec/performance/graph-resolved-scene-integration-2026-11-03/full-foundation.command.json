@@ -1,0 +1,14 @@
+{
+  "name": "full-foundation",
+  "command": [
+    "env",
+    "XYG_WASM_FOUNDATION_REPORT=spec/performance/graph-resolved-scene-integration-2026-11-03/foundation.json",
+    "node",
+    "scripts/wasm_foundation_smoke.mjs"
+  ],
+  "exitCode": 0,
+  "seconds": 12.566,
+  "rawSha256": "ced99e98edb5aaea5705bab6a2676d530b946b38c7052d62d1387bfd7060eb27",
+  "log": "full-foundation.txt.gz",
+  "gzipSha256": "d49eab558d5fc6b085ce51f2ea449229255cc5cfff5801bc86ac59e320de70e9"
+}

@@ -1,0 +1,52 @@
+{
+  "base": "f006d413c25177e65f60cbcb21a8f0e9ead5138b",
+  "branch": "t3/resolved-svg-legend-style",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21",
+  "source_diff_argv": [
+    "git",
+    "diff",
+    "--cached",
+    "--binary",
+    "--full-index",
+    "f006d413c25177e65f60cbcb21a8f0e9ead5138b",
+    "--",
+    "js/src/50_chartview.ts",
+    "spec/design/browser-wasm.md",
+    "tests/browser/resolved_axis_spines.py",
+    "tests/browser/resolved_axis_spines.mjs"
+  ],
+  "source_diff_sha256": "6dab5edc16dd473a194053c4554594d37cd5c358cfa69967362ddda34e0ad3cf",
+  "source_diff_excludes_receipts": true,
+  "source_files": {
+    "js/src/50_chartview.ts": "4e3e410ae8a14c2c3c27f714a8fce2fb01338f3166fd2068fbe4b481be4731a6",
+    "spec/design/browser-wasm.md": "e80f0f0edf5b8806935736ba8e3d911238a0b0ea35569147d891d26726067f4b",
+    "tests/browser/resolved_axis_spines.py": "360230b455ebd29659f8aafd6b71d43cd0c1a367e72dc1bf6e95e7b6c51d101a",
+    "tests/browser/resolved_axis_spines.mjs": "1887d30feb77d694c701aef1c33fcfa9dbd1f5c9a4774da9475cdba19215d865"
+  },
+  "reuse": {
+    "native_wasm_rebuilt": false,
+    "reason": "unchanged producer sources and exact f006 artifacts",
+    "files": {
+      "target/release/libxyg_core.so": {
+        "bytes": 6075160,
+        "sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15",
+        "f006_sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15"
+      },
+      "packages/xyg-node-linux-x64/libxyg_core.so": {
+        "bytes": 6075160,
+        "sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15",
+        "f006_sha256": "708d2b3195e41e785e83de113cca8a5dec5ac9a45d5cb2061131e382d4fbfb15"
+      },
+      "packages/xy-client/dist/xyg-wasm.wasm": {
+        "bytes": 1872541,
+        "sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50",
+        "f006_sha256": "355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50"
+      },
+      "packages/xy-client/dist/wasm-worker.js": {
+        "bytes": 53710,
+        "sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1",
+        "f006_sha256": "3f11b1e05775d17ad917e829a43dd7f337844a4b9451ffc45007ffe631d5d2c1"
+      }
+    }
+  }
+}

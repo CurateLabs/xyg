@@ -1,0 +1,15 @@
+{
+  "name": "slots",
+  "command": [
+    "node",
+    "tests/browser/resolved_axis_slots.mjs",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03",
+    "target/task-tmp/resolved-spine-188f-baseline/packages/xy-client/dist",
+    "slots"
+  ],
+  "exitCode": 0,
+  "seconds": 21.083,
+  "rawSha256": "a7d76e7204d0e61ad084a32da72f3b5c7dae9a740457231f1ce7bf40650852e4",
+  "log": "slots.txt.gz",
+  "gzipSha256": "b2962b2e42ea884e10564680e4831e8bfc24d97adf621195326f2d3ee22a110f"
+}

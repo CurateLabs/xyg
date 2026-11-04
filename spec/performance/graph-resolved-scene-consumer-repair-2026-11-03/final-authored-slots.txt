@@ -1,0 +1,5 @@
+{
+  "cases": 126,
+  "switches": 6,
+  "failures": []
+}

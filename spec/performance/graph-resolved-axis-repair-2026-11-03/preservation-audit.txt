@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/spec/performance/graph-resolved-axis-repair-2026-11-03/verify.py", line 61, in <module>
+    assert abs(actual - native) <= 0.01
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

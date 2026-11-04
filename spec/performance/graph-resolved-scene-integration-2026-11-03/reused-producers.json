@@ -1,0 +1,11 @@
+{
+  "parent": "6997e767a01b97381f3334392c06d0c48ed17ae6",
+  "child": "a95f7e91d9f69787dc9aab98114dd968918e402f",
+  "nativeWasmProducerSourcesUnchanged": true,
+  "childBrowserProductSourcesExact": true,
+  "artifactsBeforeBrowserBuild": {
+    "target/release/libxyg_core.so": "6df9cb7ed06048d08d59ec8c068da0e0be9b5a3eb6b10d1b86f08527a8fd2485",
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": "33555e310d8a95d448103d00173e4d09aaaef09b5e6f1c43c3d459ebbb077c79",
+    "packages/xy-client/dist/xyg-wasm.wasm": "717440524b63cf87e0127161c128c4f81efdca87e5112f9b05a42e820b456fde"
+  }
+}

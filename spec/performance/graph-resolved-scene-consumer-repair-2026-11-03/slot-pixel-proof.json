@@ -1,0 +1,1298 @@
+{
+  "solid.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "alpha.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      91,
+      18,
+      39
+    ],
+    "after": [
+      91,
+      18,
+      39
+    ]
+  },
+  "border.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "gradient.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      0,
+      75
+    ],
+    "after": [
+      180,
+      0,
+      75
+    ]
+  },
+  "radius.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "shadow.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "outline.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "padding.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "filter.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "transform.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "translate.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "clip.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "overflow.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "pseudo.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "inline.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      4,
+      5,
+      6
+    ],
+    "after": [
+      4,
+      5,
+      6
+    ]
+  },
+  "important.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "inline-border.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      4,
+      5,
+      6
+    ],
+    "after": [
+      4,
+      5,
+      6
+    ]
+  },
+  "inline-gradient.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      171,
+      0,
+      83
+    ],
+    "after": [
+      171,
+      0,
+      83
+    ]
+  },
+  "ancestor-transform.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "visibility.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      3,
+      7,
+      18
+    ],
+    "after": [
+      3,
+      7,
+      18
+    ]
+  },
+  "mask.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      102,
+      20,
+      42
+    ],
+    "after": [
+      102,
+      20,
+      42
+    ]
+  },
+  "important-clip.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "transition.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "animation.dpr1.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      40,
+      22
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "solid.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "alpha.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      91,
+      18,
+      39
+    ],
+    "after": [
+      91,
+      18,
+      39
+    ]
+  },
+  "border.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "gradient.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      181,
+      0,
+      75
+    ],
+    "after": [
+      181,
+      0,
+      75
+    ]
+  },
+  "radius.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "shadow.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "outline.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "padding.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "filter.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "transform.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      91,
+      18,
+      39
+    ],
+    "after": [
+      91,
+      18,
+      39
+    ]
+  },
+  "translate.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      91,
+      18,
+      39
+    ],
+    "after": [
+      91,
+      18,
+      39
+    ]
+  },
+  "clip.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "overflow.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "pseudo.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "inline.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      4,
+      5,
+      6
+    ],
+    "after": [
+      4,
+      5,
+      6
+    ]
+  },
+  "important.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "inline-border.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      4,
+      5,
+      6
+    ],
+    "after": [
+      4,
+      5,
+      6
+    ]
+  },
+  "inline-gradient.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      172,
+      0,
+      83
+    ],
+    "after": [
+      172,
+      0,
+      83
+    ]
+  },
+  "ancestor-transform.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      91,
+      18,
+      39
+    ],
+    "after": [
+      91,
+      18,
+      39
+    ]
+  },
+  "visibility.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      3,
+      7,
+      18
+    ],
+    "after": [
+      3,
+      7,
+      18
+    ]
+  },
+  "mask.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      113,
+      22,
+      44
+    ],
+    "after": [
+      113,
+      22,
+      44
+    ]
+  },
+  "important-clip.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "transition.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "animation.dpr1.25.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      50,
+      27
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "solid.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "alpha.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      91,
+      18,
+      39
+    ],
+    "after": [
+      91,
+      18,
+      39
+    ]
+  },
+  "border.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "gradient.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      0,
+      74
+    ],
+    "after": [
+      180,
+      0,
+      74
+    ]
+  },
+  "radius.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "shadow.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "outline.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "padding.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "filter.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "transform.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "translate.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "clip.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "overflow.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "pseudo.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "inline.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      4,
+      5,
+      6
+    ],
+    "after": [
+      4,
+      5,
+      6
+    ]
+  },
+  "important.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "inline-border.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      4,
+      5,
+      6
+    ],
+    "after": [
+      4,
+      5,
+      6
+    ]
+  },
+  "inline-gradient.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      172,
+      0,
+      82
+    ],
+    "after": [
+      172,
+      0,
+      82
+    ]
+  },
+  "ancestor-transform.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "visibility.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      3,
+      7,
+      18
+    ],
+    "after": [
+      3,
+      7,
+      18
+    ]
+  },
+  "mask.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      108,
+      21,
+      43
+    ],
+    "after": [
+      108,
+      21,
+      43
+    ]
+  },
+  "important-clip.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "transition.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  },
+  "animation.dpr2.after": {
+    "pixels_different": 0,
+    "max_channel_diff": 0,
+    "pixel": [
+      80,
+      44
+    ],
+    "before": [
+      180,
+      30,
+      60
+    ],
+    "after": [
+      180,
+      30,
+      60
+    ]
+  }
+}

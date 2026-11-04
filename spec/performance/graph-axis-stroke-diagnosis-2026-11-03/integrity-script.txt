@@ -1,0 +1,16 @@
+import gzip,hashlib,json,subprocess
+from pathlib import Path
+out=Path('spec/performance/graph-axis-stroke-diagnosis-2026-11-03');root=Path.cwd();sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+# Preserve generated native HTML losslessly without retaining loose bundles.
+for p in sorted((out/'baseline').glob('*.native.html')):
+ data=p.read_bytes();p.with_name(p.name+'.gz').write_bytes(gzip.compress(data,mtime=0));p.unlink()
+sources=['js/src/50_chartview.ts','js/src/20_theme.ts','js/src/48_wasm_scene.ts','crates/xyg-engine/src/scene.rs','crates/xyg-engine/src/raster.rs','tests/browser/graph_property_default_export.mjs','tests/test_graphforge.py','spec/design-dossier.md','spec/design/scene-ir.md']
+assets=['packages/xy-client/dist/index.js','packages/xy-client/dist/wasm-worker.js','packages/xy-client/dist/xyg-wasm.wasm','target/release/libxyg_core.so']
+head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip();assert head=='f006d413c25177e65f60cbcb21a8f0e9ead5138b'
+changed=subprocess.check_output(['git','diff','--name-only',head],text=True).splitlines();assert changed==[]
+assert subprocess.check_output(['git','diff','--cached','--name-only'],text=True)==''
+assert sha(Path(assets[2]))=='355a31bc7f949070251e73dbeebdd7f466d55e9a242a14f7c85bf29fdec59c50'
+gate=json.loads((out/'baseline/browser.json').read_text());assert len(gate['failures'])==4
+print('HEAD remains f006; no tracked or staged changes; full gate retains four failures; exact S5a module retained.')
+manifest={'scope':'DIAGNOSTIC ONLY; uncommitted; parent decision required before repair/commit','head':head,'branch':subprocess.check_output(['git','branch','--show-current'],text=True).strip(),'worktree':str(root),'tracked_changes':changed,'staged_changes':[],'interventions':[],'unchanged_full_gate_failure_labels':[f['label'] for f in gate['failures']],'source_hashes':{p:sha(Path(p)) for p in sources},'generated_artifacts':{p:{'bytes':Path(p).stat().st_size,'sha256':sha(Path(p))} for p in assets},'diagnostic_files':{str(p.relative_to(out)):{'bytes':p.stat().st_size,'sha256':sha(p)} for p in sorted(out.rglob('*')) if p.is_file() and p.name not in ['manifest.json','commands.json','diagnostic-integrity.txt']}}
+(out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

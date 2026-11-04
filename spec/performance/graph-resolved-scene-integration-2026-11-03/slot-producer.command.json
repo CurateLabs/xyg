@@ -1,0 +1,14 @@
+{
+  "name": "slot-producer",
+  "command": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-resolved-scene-integration-2026-11-03/produce-slot-scene.py"
+  ],
+  "exitCode": 0,
+  "seconds": 0.191,
+  "rawSha256": "14d32ca3a34811876021543063c498c96291bec66341925b7cc9975989ab6ea5",
+  "log": "slot-producer.txt.gz",
+  "gzipSha256": "5b80ae8326ad49040864c36f89f158d1a75e0588e32b717e4ee5fac437a709b2"
+}

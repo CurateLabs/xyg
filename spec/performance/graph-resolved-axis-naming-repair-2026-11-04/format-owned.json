@@ -1,0 +1,23 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "ruff",
+    "format",
+    "scripts/check_stale_names.py",
+    "tests/test_stale_names.py",
+    "spec/performance/graph-resolved-axis-naming-repair-2026-11-04"
+  ],
+  "exitCode": 0,
+  "seconds": 0.191,
+  "environment": {
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1",
+    "UV_OFFLINE": "1",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "rawSha256": "e5817cad76bb3e2b57b1839dccbcecdf6d8881cc948f67ed964194162c6b0758",
+  "gzipSha256": "eadcdcf1fa27a3b99d6f1d7730e2575860fb141c0ee167063a7c459105c183f9",
+  "log": "format-owned.log.gz"
+}

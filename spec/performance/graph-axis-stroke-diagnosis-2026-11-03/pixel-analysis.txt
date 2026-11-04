@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-42669f21/spec/performance/graph-axis-stroke-diagnosis-2026-11-03/analyze.py", line 59, in <module>
+    assert all(a.shape == (420 * dpr, 640 * dpr, 3) for a in images.values())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

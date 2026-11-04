@@ -1,0 +1,12 @@
+{
+  "name": "html-diagnosis",
+  "command": [
+    "node",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03/html-diagnosis.mjs"
+  ],
+  "exitCode": 1,
+  "seconds": 1.658,
+  "rawSha256": "a288444e6cf738baca3f4cdf5d27092d9d78a679d634b278ea4b508a59e0aa3a",
+  "log": "html-diagnosis.txt.gz",
+  "gzipSha256": "de77c9272672de8239adf9e782a3a73b8a243384460dec04db053a61025c5060"
+}

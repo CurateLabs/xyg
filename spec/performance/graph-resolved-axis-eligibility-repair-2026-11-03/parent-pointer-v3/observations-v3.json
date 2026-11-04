@@ -1,0 +1,99 @@
+[
+  {
+    "lane": "before",
+    "box": {
+      "x": 17,
+      "y": 19,
+      "width": 80,
+      "height": 8,
+      "top": 19,
+      "right": 97,
+      "bottom": 27,
+      "left": 17
+    },
+    "hitTag": "DIV",
+    "hitClass": "pointer-probe",
+    "hitHTML": "<div data-xy-axis=\"x\" data-xy-axis-side=\"bottom\" data-xy-slot=\"axis_line\" class=\"pointer-probe\" style=\"position: absolute; left: 17px; top: 19px; pointer-events: auto; --xy-axis-rule-width: 260.625px; --xy-axis-rule-height: 1px; --xy-axis-rule-paint:",
+    "stack": [
+      {
+        "tag": "DIV",
+        "slot": "axis_line",
+        "cls": "pointer-probe"
+      },
+      {
+        "tag": "DIV",
+        "slot": "axis_band",
+        "cls": ""
+      },
+      {
+        "tag": "DIV",
+        "slot": "root",
+        "cls": "xy"
+      },
+      {
+        "tag": "DIV",
+        "cls": ""
+      },
+      {
+        "tag": "BODY",
+        "cls": ""
+      },
+      {
+        "tag": "HTML",
+        "cls": ""
+      }
+    ],
+    "paint": "html",
+    "clip": "none",
+    "pointerEvents": "auto",
+    "hitPublicSlot": true,
+    "clicks": 1,
+    "hover": true
+  },
+  {
+    "lane": "after",
+    "box": {
+      "x": 17,
+      "y": 19,
+      "width": 80,
+      "height": 8,
+      "top": 19,
+      "right": 97,
+      "bottom": 27,
+      "left": 17
+    },
+    "hitTag": "DIV",
+    "hitClass": "",
+    "hitHTML": "<div data-xy-axis-band=\"y\" data-xy-slot=\"axis_band\" style=\"position: absolute; z-index: 2; touch-action: none; --xy-axis-band-cursor: ns-resize; top: 6px; height: 198px; left: 22px; width: 30px;\"></div>",
+    "stack": [
+      {
+        "tag": "DIV",
+        "slot": "axis_band",
+        "cls": ""
+      },
+      {
+        "tag": "DIV",
+        "slot": "root",
+        "cls": "xy"
+      },
+      {
+        "tag": "DIV",
+        "cls": ""
+      },
+      {
+        "tag": "BODY",
+        "cls": ""
+      },
+      {
+        "tag": "HTML",
+        "cls": ""
+      }
+    ],
+    "paint": "svg",
+    "clip": "inset(100%)",
+    "pointerEvents": "auto",
+    "hitPublicSlot": false,
+    "clicks": 0,
+    "hover": false
+  }
+]

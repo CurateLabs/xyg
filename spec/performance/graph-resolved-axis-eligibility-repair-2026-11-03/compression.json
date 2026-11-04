@@ -1,0 +1,20 @@
+{
+  "property/dark.native.html": {
+    "uncompressed_bytes": 770433,
+    "uncompressed_sha256": "d4bdec83aa65a6180f36aa555a63f256f88d42242ade4b6ef9c42874404388cb",
+    "lossless_gzip": "property/dark.native.html.gz",
+    "gzip_sha256": "bb5bf3d631f79b22d4f87796242f333be0ebe5e98f46917fd704a73a2bc1c357"
+  },
+  "property/light.native.html": {
+    "uncompressed_bytes": 770434,
+    "uncompressed_sha256": "760a2d93ca78791e8619cce838e4edc5f9a87e2d3794d7e913b321c40fe3f35a",
+    "lossless_gzip": "property/light.native.html.gz",
+    "gzip_sha256": "e49d2196438b08b0ebafc255681cdca9b2e165f774bb628db8929baae64e3472"
+  },
+  "repaired-client-build.txt": {
+    "uncompressed_bytes": 5448,
+    "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "lossless_gzip": "repaired-client-build.txt.gz",
+    "gzip_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  }
+}

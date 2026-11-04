@@ -1,0 +1,95 @@
+{
+  "purpose": "Compatibility decision evidence only; prototype is not product proof",
+  "cases": [
+    {
+      "name": "solid",
+      "css": "width:80px;height:8px;background:rgb(180,30,60)",
+      "source": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "background": "rgb(180, 30, 60)",
+        "backgroundImage": "none",
+        "borderWidth": "0px",
+        "borderColor": "rgb(0, 0, 0)",
+        "css": null,
+        "className": "axis"
+      },
+      "prototype": {
+        "attributes": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke-width": "8",
+          "stroke": "rgb(180, 30, 60)",
+          "stroke-linecap": "butt"
+        },
+        "computedBackground": "rgba(0, 0, 0, 0)"
+      }
+    },
+    {
+      "name": "border",
+      "css": "width:80px;height:8px;background:rgb(180,30,60);border:2px solid rgb(0,0,255)",
+      "source": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 84,
+          "height": 12
+        },
+        "background": "rgb(180, 30, 60)",
+        "backgroundImage": "none",
+        "borderWidth": "2px",
+        "borderColor": "rgb(0, 0, 255)",
+        "css": null,
+        "className": "axis"
+      },
+      "prototype": {
+        "attributes": {
+          "x1": "17",
+          "y1": "25",
+          "x2": "101",
+          "y2": "25",
+          "stroke-width": "12",
+          "stroke": "rgb(180, 30, 60)",
+          "stroke-linecap": "butt"
+        },
+        "computedBackground": "rgba(0, 0, 0, 0)"
+      }
+    },
+    {
+      "name": "gradient",
+      "css": "width:80px;height:8px;background:linear-gradient(90deg,rgb(255,0,0),rgb(0,0,255))",
+      "source": {
+        "box": {
+          "x": 17,
+          "y": 19,
+          "width": 80,
+          "height": 8
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "backgroundImage": "linear-gradient(90deg, rgb(255, 0, 0), rgb(0, 0, 255))",
+        "borderWidth": "0px",
+        "borderColor": "rgb(0, 0, 0)",
+        "css": null,
+        "className": "axis"
+      },
+      "prototype": {
+        "attributes": {
+          "x1": "17",
+          "y1": "23",
+          "x2": "97",
+          "y2": "23",
+          "stroke-width": "8",
+          "stroke": "rgba(0, 0, 0, 0)",
+          "stroke-linecap": "butt"
+        },
+        "computedBackground": "rgba(0, 0, 0, 0)"
+      }
+    }
+  ]
+}

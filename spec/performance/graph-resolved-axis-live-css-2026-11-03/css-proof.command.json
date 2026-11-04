@@ -1,0 +1,15 @@
+{
+  "name": "css-proof",
+  "command": [
+    "node",
+    "tests/browser/resolved_axis_live_css.mjs",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03",
+    "proof-after",
+    "packages/xy-client/dist/index.js"
+  ],
+  "exitCode": 0,
+  "seconds": 9.807,
+  "rawSha256": "fd924edf7918142d202a5a68c8e69da68309ee9408a439066bc885901ccdd461",
+  "log": "css-proof.txt.gz",
+  "gzipSha256": "d54686d6538e2fa76f145caeff30ae51d41285379225739b5c939b92585f8efa"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "live-css",
+  "command": [
+    "node",
+    "tests/browser/resolved_axis_live_css.mjs",
+    "spec/performance/graph-resolved-axis-live-css-2026-11-03",
+    "after",
+    "packages/xy-client/dist/index.js"
+  ],
+  "exitCode": 0,
+  "seconds": 7.926,
+  "rawSha256": "07286744c64ece3df9d20c46a8e5a47190a7a48de6596ff90faa86e681d54c69",
+  "log": "live-css.txt.gz",
+  "gzipSha256": "02e63d395f368346d8a479ea8b8dce6466e0432debd4371bfaa98d0ba0672f12"
+}

@@ -1,0 +1,60 @@
+"""Retain exact local commands, exits, timings and deterministic gzip raw logs."""
+
+import gzip
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+receipt = Path(__file__).resolve().parent
+root = receipt.parents[2]
+logs = Path(os.environ.get("XYG_RECEIPT_LOG_DIR", str(receipt)))
+logs.mkdir(parents=True, exist_ok=True)
+name, *command = sys.argv[1:]
+if any((logs / f"{name}{suffix}").exists() for suffix in (".txt.gz", ".command.json")):
+    raise SystemExit("Refusing to overwrite an existing receipt command; use a fresh name.")
+env = os.environ.copy()
+env["PATH"] = (
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/"
+    "node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:" + env["PATH"]
+)
+env["TMPDIR"] = str(root / "target/task-tmp")
+env["XYG_NATIVE_LIB"] = str(root / "target/release/libxyg_core.so")
+env["XYG_CHROMIUM"] = "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+env["UV_OFFLINE"] = "1"
+env["XYG_SKIP_CARGO"] = "1"
+env["XYG_SKIP_NODE"] = "1"
+start = time.monotonic()
+result = subprocess.run(command, cwd=root, env=env, capture_output=True)
+raw = result.stdout + result.stderr
+(logs / f"{name}.txt").write_bytes(raw)
+packed = gzip.compress(raw, mtime=0)
+(logs / f"{name}.txt.gz").write_bytes(packed)
+record = {
+    "name": name,
+    "command": command,
+    "environment": {
+        k: env[k]
+        for k in (
+            "PATH",
+            "TMPDIR",
+            "XYG_NATIVE_LIB",
+            "XYG_CHROMIUM",
+            "UV_OFFLINE",
+            "XYG_SKIP_CARGO",
+            "XYG_SKIP_NODE",
+        )
+    },
+    "exitCode": result.returncode,
+    "seconds": round(time.monotonic() - start, 3),
+    "rawSha256": hashlib.sha256(raw).hexdigest(),
+    "log": f"{name}.txt.gz",
+    "gzipSha256": hashlib.sha256(packed).hexdigest(),
+}
+(logs / f"{name}.command.json").write_text(json.dumps(record, indent=2) + "\n")
+print(json.dumps(record))
+print(raw.decode(errors="replace")[-6000:])
+sys.exit(result.returncode)

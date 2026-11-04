@@ -108,7 +108,48 @@ try {
           }
         }
       });
+      // Observe actual CSS boxes and SVG coordinates without changing paint.
+      const legend = el.querySelector('svg[data-xy-slot="legend"]');
+      const box = (node) => {
+        const r = node.getBoundingClientRect(), root = el.getBoundingClientRect();
+        return { x: r.x - root.x, y: r.y - root.y, width: r.width, height: r.height };
+      };
+      const style = (node) => {
+        const s = getComputedStyle(node);
+        return { padding: s.padding, background: s.backgroundColor, radius: s.borderRadius };
+      };
+      const frame = legend.firstElementChild;
+      const bbox = legend.getBBox();
+      const matrix = legend.getScreenCTM(), rootBox = el.getBoundingClientRect();
+      const legendDom = {
+        computed: style(legend), box: box(legend), bbox: { x:bbox.x, y:bbox.y, width:bbox.width, height:bbox.height },
+        screenMatrix: { a:matrix.a, b:matrix.b, c:matrix.c, d:matrix.d, e:matrix.e-rootBox.x, f:matrix.f-rootBox.y },
+        resolved: view.spec.legend.resolved,
+        frame: { attributes: Object.fromEntries([...frame.attributes].map((a) => [a.name, a.value])), box: box(frame) },
+        swatches: [...legend.querySelectorAll('g > :first-child')].map((node) => ({ tag: node.tagName, attributes: Object.fromEntries([...node.attributes].map((a) => [a.name, a.value])), box: box(node) })),
+        labels: [...legend.querySelectorAll('text')].map((node) => ({ text:node.textContent, x:node.getAttribute('x'), y:node.getAttribute('y'), box:box(node), screenAnchor: (() => { const p = new DOMPoint(Number(node.getAttribute('x')), Number(node.getAttribute('y'))).matrixTransform(node.getScreenCTM()); return { x:p.x-rootBox.x, y:p.y-rootBox.y }; })() })),
+      };
+      // Exercise both actual constructors and the public slot cascade. Remove
+      // these temporary legends before the unmasked chart screenshot.
+      const holder = document.createElement('div'); view.root.appendChild(holder);
+      const savedDom = view.spec.dom;
+      const row = [{ name:'ordinary', swatch:'#123456', style:{} }];
+      view._legendBox(holder, row, {});
+      const ordinary = style(holder.lastElementChild);
+      const authoredCss = document.createElement('style');
+      authoredCss.textContent = '.legend-probe { padding:3px 6px; background:rgb(1, 2, 3); border-radius:7px }';
+      holder.appendChild(authoredCss);
+      view.spec.dom = { class_names:{ legend:'legend-probe' } };
+      view._legendBox(holder, view.spec.legend.items, view.spec.legend);
+      const classOverride = { ...style(holder.lastElementChild), className:holder.lastElementChild.getAttribute('class') };
+      view.spec.dom = { class_names:{ legend:'legend-probe' }, styles:{ legend:{ padding:'9px 10px', background:'rgb(4, 5, 6)', border_radius:'11px' } } };
+      view._legendBox(holder, view.spec.legend.items, view.spec.legend);
+      const inlineOverride = style(holder.lastElementChild);
+      view._legendBox(holder, row, {});
+      const ordinaryOverride = style(holder.lastElementChild);
+      view.spec.dom = savedDom; holder.remove();
       return {
+        legendDom, slotCascade: { ordinary, classOverride, inlineOverride, ordinaryOverride },
         document: Array.from(first.bytes), repeat: Array.from(second.bytes),
         painted: [...painted],
         points,
@@ -138,6 +179,11 @@ try {
       }
     });
     check(`${theme}: complete label legend`, () => assert.deepEqual(probe.legend, fixture.legend));
+    check(`${theme}: legend slot cascade`, () => {
+      assert.deepEqual(probe.slotCascade.ordinary, { padding:'4px 8px', background:'rgba(128, 128, 128, 0.08)', radius:'4px' });
+      assert.deepEqual(probe.slotCascade.classOverride, { padding:'3px 6px', background:'rgb(1, 2, 3)', radius:'7px', className:'legend-probe' });
+      for (const key of ['inlineOverride', 'ordinaryOverride']) assert.deepEqual(probe.slotCascade[key], { padding:'9px 10px', background:'rgb(4, 5, 6)', radius:'11px' });
+    });
     await page.locator("#chart").screenshot({ path: path.join(output, `${theme}.wasm.browser.png`) });
     await page.goto(`${origin}/native`);
     await page.waitForFunction(() => window.__fcProbeView != null);
@@ -191,6 +237,23 @@ for theme in ('light', 'dark'):
     texts_match = {e['id']: e['text'] for e in labels} == {key: e.text for key,e in expected.items()}
     error = max(label_errors, default=float('inf'))
     result[theme]['wasm_label_geometry'] = dict(max_css_pixel_error=error, texts_match=texts_match, passed=texts_match and error<=0.01)
+    legend = next(e for e in svg.iter() if e.get('data-xy-chrome')=='legend')
+    dom = observations[theme]['wasm']['legendDom']
+    frame = legend[0]
+    bounds = [float(frame.get(k)) for k in ('x','y','width','height')]
+    local_error = max(abs(a-b) for a,b in zip(bounds, dom['resolved']['bounds']))
+    screen_error = max(abs(float(frame.get(k))-dom['frame']['box'][k]) for k in ('x','y','width','height'))
+    labels = [e for e in legend if e.tag.endswith('}text')]
+    anchor_error = max(abs(float(e.get(k))-a['screenAnchor'][k]) for e,a in zip(labels,dom['labels']) for k in ('x','y'))
+    swatches = [e for e in list(legend)[1:] if not e.tag.endswith('}text')]
+    swatch_errors = []
+    for e,a in zip(swatches,dom['swatches']):
+        assert e.tag.split('}')[-1] == a['tag']
+        for k,v in e.attrib.items():
+            if k in ('cx','cy','r','x','y','width','height','x1','y1','x2','y2','stroke-width'):
+                swatch_errors.append(abs(float(v)-float(a['attributes'][k])))
+    swatch_error = max(swatch_errors,default=0)
+    result[theme]['wasm_legend_geometry'] = dict(local_frame_error=local_error, screen_frame_error=screen_error, screen_text_anchor_error=anchor_error, swatch_attribute_error=swatch_error, canonical_frame=dict(frame.attrib), actual_frame=dom['frame'], passed=len(labels)==len(dom['labels']) and len(swatches)==len(dom['swatches']) and max(local_error,screen_error,anchor_error,swatch_error)<=0.01)
     group = next(e for e in svg.iter() if e.get('clip-path'))
     centers = []
     for e in group:
