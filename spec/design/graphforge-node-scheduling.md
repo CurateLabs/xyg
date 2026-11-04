@@ -174,8 +174,10 @@ browser startup, host checkpoint delivery, actual painted frames/pixels, pointer
 pick/UUID response and pan response. A consumer ACK deliberately holds each
 frame for inspection, so its final frame interval is not tick cadence. Later
 positions replace a whole `ChartView`, following the existing vanilla consumer;
-viewport continuity and retained updates remain S5. No WASM runtime is used by
-this proof, and no diagnostic WASM artifact is promoted to shipping status.
+this consumer does not preserve viewport continuity or use retained updates.
+The separate explicit S5b attachment is not this live replacement route. No WASM
+runtime is used by this proof, and no diagnostic WASM artifact is promoted to
+shipping status.
 
 The existing 1k/10k/100k/1M receipts measure scheduler checkpoints, not render
 first paint. This four-node functional journey neither replaces that ladder nor
@@ -195,6 +197,28 @@ full source coordinates or intermediate payloads. The original receipt is
 immutable: its phrase “render payloads ... are retained” was broader than its
 actual final spec, counts, identities and position digests. Repair evidence
 makes no milestone, S5, scale, release qualification or #108 acceptance claim.
+
+The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
+uses the historical ring/chord topology, seed 7, default CoSE options and
+10-tick chunks through the existing live controller. Its explicit 401-tick cap
+matches that rung; the live default cap remains 300. Automatic ACKs follow
+normal shared-painter frames and evidence probes, with no deliberate hold.
+Only steps 1 and 401 were presented: intermediate checkpoints coalesced while
+the initial frame was rendering/probed. The one recorded frame interval is
+not evidence of sustained update cadence. Host checkpoint arrival, visible
+Canvas2D pixel observation, GPU node-hit readiness and cold startup use distinct
+recorded clocks. A trusted final-frame UUID click/pan is outside cadence;
+initial trusted click/pan and viewport-reset inspection deliberately hold the
+HTTP ACK in a separate run. The latter confirms replacement resets the panned
+view to the next payload's ranges. No production behavior or limits changed.
+
+This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
+unheld initial trusted response, public browser progressive scheduling and
+Python notebook/widget delivery/cancellation remain acceptance work. The
+adopted explicit synchronous `composeGraphForge` contract also needs an
+explicit resolution of the issue's literal async-compose wording before
+closure. Retained `load.progressive` / opcode 15 mechanisms below do not
+supply those public host schedulers.
 
 ## Bounded retained-session P1 seam (2026-11-03)
 
