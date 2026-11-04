@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify_preservation.py", line 107, in <module>
+    main()
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify_preservation.py", line 75, in main
+    assert snapshots, (str(raw), path, digest)
+           ^^^^^^^^^
+AssertionError: ('/home/ubuntu/.t3/worktrees/xyg/t3-00534fdb/spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/result.json', 'AGENTS.md', '178dc19e5e29c30b1119b9b4d11a792ef912f8e6b69af7b47e4961f02c51b40c')

@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: checkpoint arrival cannot substitute for painted geometry or matching frame identity
+ok 1 - checkpoint arrival cannot substitute for painted geometry or matching frame identity
+  ---
+  duration_ms: 23.127196
+  type: 'test'
+  ...
+# Subtest: held consumer and acceptance before paint cannot qualify unheld cadence
+ok 2 - held consumer and acceptance before paint cannot qualify unheld cadence
+  ---
+  duration_ms: 5.823831
+  type: 'test'
+  ...
+# Subtest: trusted pointer must identify the exact probed render row and tooltip UUID
+ok 3 - trusted pointer must identify the exact probed render row and tooltip UUID
+  ---
+  duration_ms: 1.385288
+  type: 'test'
+  ...
+# Subtest: actual default browser flow ACKs every matching painted checkpoint without a deliberate hold
+ok 4 - actual default browser flow ACKs every matching painted checkpoint without a deliberate hold
+  ---
+  duration_ms: 6.619856
+  type: 'test'
+  ...
+# Subtest: retained geometry and full f64 snapshots bind each actual frame to native payload identities
+ok 5 - retained geometry and full f64 snapshots bind each actual frame to native payload identities
+  ---
+  duration_ms: 14.253824
+  type: 'test'
+  ...
+# Subtest: held invalid ACK cannot advance presentation; trusted initial pick and camera reset are separate facts
+ok 6 - held invalid ACK cannot advance presentation; trusted initial pick and camera reset are separate facts
+  ---
+  duration_ms: 3.712498
+  type: 'test'
+  ...
+# Subtest: actual synthetic custom click after a real pointer cannot inherit its trust
+ok 7 - actual synthetic custom click after a real pointer cannot inherit its trust
+  ---
+  duration_ms: 1.507901
+  type: 'test'
+  ...
+# Subtest: observed worker resources balance; cancellation/disposal are terminal in the separate native job
+ok 8 - observed worker resources balance; cancellation/disposal are terminal in the separate native job
+  ---
+  duration_ms: 0.309996
+  type: 'test'
+  ...
+# Subtest: scripted initial -> update -> update -> complete drains genuine ACKs and inspects FIRST replacement
+ok 9 - scripted initial -> update -> update -> complete drains genuine ACKs and inspects FIRST replacement
+  ---
+  duration_ms: 11.526288
+  type: 'test'
+  ...
+# Subtest: historical wait-for-complete path stalls on the same valid ACK-gated UPDATE
+ok 10 - historical wait-for-complete path stalls on the same valid ACK-gated UPDATE
+  ---
+  duration_ms: 22.752189
+  type: 'test'
+  ...
+# Subtest: drain rejects stale jobs, revisions, nonadvancing steps, phases and out-of-budget waits
+ok 11 - drain rejects stale jobs, revisions, nonadvancing steps, phases and out-of-budget waits
+  ---
+  duration_ms: 25.09692
+  type: 'test'
+  ...
+# Subtest: actual interception queue validates exact job/step without consuming a wrong ACK
+ok 12 - actual interception queue validates exact job/step without consuming a wrong ACK
+  ---
+  duration_ms: 104.17769
+  type: 'test'
+  ...
+# Subtest: actual override-selected fixture file differs from conventional target; default origin is unknown
+ok 13 - actual override-selected fixture file differs from conventional target; default origin is unknown
+  ---
+  duration_ms: 727.37244
+  type: 'test'
+  ...
+# Subtest: actual exact-platform package wins over a different override without changing production resolver
+ok 14 - actual exact-platform package wins over a different override without changing production resolver
+  ---
+  duration_ms: 296.007553
+  type: 'test'
+  ...
+# Subtest: declared reuse of known parent fails closed when actual selected identity differs
+ok 15 - declared reuse of known parent fails closed when actual selected identity differs
+  ---
+  duration_ms: 225.099722
+  type: 'test'
+  ...
+# Subtest: matching known-parent bytes never silently infer reuse or pre-run rebuild history
+ok 16 - matching known-parent bytes never silently infer reuse or pre-run rebuild history
+  ---
+  duration_ms: 82.144424
+  type: 'test'
+  ...
+# Subtest: explicit reuse/copy/rebuild declarations remain declarations; rebuilt requires an inspectable record
+ok 17 - explicit reuse/copy/rebuild declarations remain declarations; rebuilt requires an inspectable record
+  ---
+  duration_ms: 383.941712
+  type: 'test'
+  ...
+# Subtest: checkpoint arrival cannot substitute for painted geometry or matching frame identity
+ok 18 - checkpoint arrival cannot substitute for painted geometry or matching frame identity
+  ---
+  duration_ms: 29.595546
+  type: 'test'
+  ...
+# Subtest: held consumer and acceptance before paint cannot qualify unheld cadence
+ok 19 - held consumer and acceptance before paint cannot qualify unheld cadence
+  ---
+  duration_ms: 4.858099
+  type: 'test'
+  ...
+# Subtest: trusted pointer must identify the exact probed render row and tooltip UUID
+ok 20 - trusted pointer must identify the exact probed render row and tooltip UUID
+  ---
+  duration_ms: 4.680004
+  type: 'test'
+  ...
+# Subtest: fresh real unheld frames retain geometry/source hashes with distinct timing bases
+ok 21 - fresh real unheld frames retain geometry/source hashes with distinct timing bases
+  ---
+  duration_ms: 14.242339
+  type: 'test'
+  ...
+# Subtest: fresh held inspection ACKs every actual replacement and checks first replacement, irrespective of phase
+ok 22 - fresh held inspection ACKs every actual replacement and checks first replacement, irrespective of phase
+  ---
+  duration_ms: 4.862413
+  type: 'test'
+  ...
+# Subtest: fresh real fixture, bridge and force Workers directly attest the independently checked selected file
+ok 23 - fresh real fixture, bridge and force Workers directly attest the independently checked selected file
+  ---
+  duration_ms: 0.57596
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2080.140613

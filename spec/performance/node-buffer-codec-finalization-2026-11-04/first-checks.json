@@ -1,0 +1,25 @@
+{
+  "commandExits": {
+    "first-inventory-write.command": 0,
+    "first-capability.command": 0,
+    "first-identities.command": 0,
+    "first-hooks.command": 0,
+    "first-codec.command": 0,
+    "first-ruff-format.command": 0,
+    "first-metadata.command": 0,
+    "first-ruff-check.command": 0,
+    "first-inventory-check.command": 0,
+    "first-naming.command": 0
+  },
+  "tests": {
+    "codec": 25,
+    "metadata": 61,
+    "naming": 149
+  },
+  "intermediate20FilesExact": true,
+  "beforeCommitParents": [
+    "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+    "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5"
+  ],
+  "noProofRerun": true
+}

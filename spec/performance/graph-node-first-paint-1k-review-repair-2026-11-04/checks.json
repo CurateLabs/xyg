@@ -1,0 +1,38 @@
+{
+  "requiredCommandExits": {
+    "focused-tests": 0,
+    "naming-tests": 0,
+    "metadata-tests": 0,
+    "inventory-check": 0,
+    "capability-check": 0,
+    "ownership": 0,
+    "native-declarations": 0,
+    "wasm-declarations": 0,
+    "naming-whole-repository": 0,
+    "preservation-resources": 0,
+    "hooks": 0,
+    "naming-final-whole-repository": 0,
+    "ruff-check": 0,
+    "ruff-format": 0
+  },
+  "focusedTests": {
+    "current": 15,
+    "originalUnchanged": 8,
+    "total": 23
+  },
+  "namingTests": 149,
+  "metadataTests": 61,
+  "inventoryGaps": 685,
+  "contractClassificationAcceptanceChanged": false,
+  "historicalFilesPreserved": 156,
+  "productionChanges": false,
+  "namingWaiverAddedOrBroadened": false,
+  "actualAuditorFailures": [],
+  "preparatoryFailuresRetained": [
+    "failed-attempts/native-platform-existing-package.log",
+    "preservation.command.json",
+    "preservation-final.command.json"
+  ],
+  "finalReview": "Required from parent; neither accepted P2 thread is resolved and old c3d2 review does not approve this repair.",
+  "status": "passed"
+}

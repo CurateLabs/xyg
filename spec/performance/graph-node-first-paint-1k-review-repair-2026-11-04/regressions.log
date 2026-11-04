@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: scripted initial -> update -> update -> complete drains genuine ACKs and inspects FIRST replacement
+ok 1 - scripted initial -> update -> update -> complete drains genuine ACKs and inspects FIRST replacement
+  ---
+  duration_ms: 3.49056
+  type: 'test'
+  ...
+# Subtest: historical wait-for-complete path stalls on the same valid ACK-gated UPDATE
+ok 2 - historical wait-for-complete path stalls on the same valid ACK-gated UPDATE
+  ---
+  duration_ms: 20.577395
+  type: 'test'
+  ...
+# Subtest: drain rejects stale jobs, revisions, nonadvancing steps, phases and out-of-budget waits
+ok 3 - drain rejects stale jobs, revisions, nonadvancing steps, phases and out-of-budget waits
+  ---
+  duration_ms: 10.453805
+  type: 'test'
+  ...
+# Subtest: actual interception queue validates exact job/step without consuming a wrong ACK
+ok 4 - actual interception queue validates exact job/step without consuming a wrong ACK
+  ---
+  duration_ms: 101.432758
+  type: 'test'
+  ...
+# Subtest: actual override-selected fixture file differs from conventional target; default origin is unknown
+ok 5 - actual override-selected fixture file differs from conventional target; default origin is unknown
+  ---
+  duration_ms: 353.974919
+  type: 'test'
+  ...
+# Subtest: actual exact-platform package wins over a different override without changing production resolver
+ok 6 - actual exact-platform package wins over a different override without changing production resolver
+  ---
+  duration_ms: 173.005673
+  type: 'test'
+  ...
+# Subtest: declared reuse of known parent fails closed when actual selected identity differs
+ok 7 - declared reuse of known parent fails closed when actual selected identity differs
+  ---
+  duration_ms: 90.940358
+  type: 'test'
+  ...
+# Subtest: matching known-parent bytes never silently infer reuse or pre-run rebuild history
+ok 8 - matching known-parent bytes never silently infer reuse or pre-run rebuild history
+  ---
+  duration_ms: 46.068721
+  type: 'test'
+  ...
+# Subtest: explicit reuse/copy/rebuild declarations remain declarations; rebuilt requires an inspectable record
+ok 9 - explicit reuse/copy/rebuild declarations remain declarations; rebuilt requires an inspectable record
+  ---
+  duration_ms: 203.0721
+  type: 'test'
+  ...
+# Subtest: checkpoint arrival cannot substitute for painted geometry or matching frame identity
+ok 10 - checkpoint arrival cannot substitute for painted geometry or matching frame identity
+  ---
+  duration_ms: 7.56086
+  type: 'test'
+  ...
+# Subtest: held consumer and acceptance before paint cannot qualify unheld cadence
+ok 11 - held consumer and acceptance before paint cannot qualify unheld cadence
+  ---
+  duration_ms: 1.001388
+  type: 'test'
+  ...
+# Subtest: trusted pointer must identify the exact probed render row and tooltip UUID
+ok 12 - trusted pointer must identify the exact probed render row and tooltip UUID
+  ---
+  duration_ms: 0.820826
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 988.957644

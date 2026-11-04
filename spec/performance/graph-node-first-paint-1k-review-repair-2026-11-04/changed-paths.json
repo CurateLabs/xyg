@@ -1,0 +1,2360 @@
+{
+  "intendedPrBase": {
+    "base": "2568ac711d912625d54d083e38b29d51b415ad5c",
+    "paths": [
+      {
+        "status": "M",
+        "path": "spec/design/dual-host-parity-matrix.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-mark.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graphforge-node-scheduling.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/host-parity.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/HANDOFF.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/client-build.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/fixture.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/focused-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/gates.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/identities.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/inspection-v2.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/inspection.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/inspection.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/fixture.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/inspection.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/protocol.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/protocol.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/run.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/worker-audit.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/npm-host.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/npm-root.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/pre-commit.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/protocol.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/protocol.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/held-final-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/held-final-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/receipt-files.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/ruff-check.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/ruff-format.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/run-v2.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/run.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/run.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/uv-sync.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/verify-receipt.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-2026-11-04/worker-audit.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/before-sync.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/changed-paths.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/checks.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/complete-parent-file-identities.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-verifier-initial-assumption.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/receipt-files.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/review-diff-contract.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/run.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-initial.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-parent-comparison.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/HANDOFF.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/PR-BODY.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/before-repair.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-write.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capture.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/changed-paths.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/checks.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/native-platform-existing-package-cases.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/native-platform-existing-package-source.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/native-platform-existing-package.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/preservation-audit-record-type.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/preservation-root-file-lookup.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/fixture.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/focused-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/focused-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/focused-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/held-admitted.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/held.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/hooks.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/hooks.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/hooks.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inspection.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-write.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/metadata-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/metadata-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/metadata-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-final-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-final-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-final-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-cases-admitted.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-cases-pre-admission.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-cases.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/observations.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ownership.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ownership.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ownership.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/pre-admission-archive-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/pre-admission-held.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/pre-admission-unheld.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-corrected.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-corrected.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-corrected.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-final.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-final.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-final.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-resources.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-resources.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-resources.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/protocol.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/protocol.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/provisional-held.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/provisional-unheld.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/held-final.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/held-first-replacement-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/held-final.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/held-first-replacement-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/held-final.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/held-first-replacement-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/receipt-files.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/regressions-final.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/regressions.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/review-diff-contract.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-format.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-format.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-format.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/run.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/ack-drain.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/ack-drain.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/fixture.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/inspection.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/native-provenance.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/native-provenance.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/protocol.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/protocol.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/run.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/verify-repair.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/worker-audit.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/ack-drain.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/ack-drain.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/fixture.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/inspection.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/native-provenance.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/native-provenance.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/protocol.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/protocol.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/run.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/verify-repair.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/worker-audit.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/unheld-admitted.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/unheld.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify-repair.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify_preservation.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/wasm-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/wasm-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/wasm-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/worker-audit.mjs"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ],
+    "nonReceiptPaths": [
+      {
+        "status": "M",
+        "path": "spec/design/dual-host-parity-matrix.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-mark.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graphforge-node-scheduling.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/host-parity.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ]
+  },
+  "incrementalReviewBase": {
+    "base": "c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+    "paths": [
+      {
+        "status": "M",
+        "path": "spec/design/dual-host-parity-matrix.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-mark.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graphforge-node-scheduling.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/host-parity.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/HANDOFF.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/PR-BODY.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/before-repair.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capability-write.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/capture.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/changed-paths.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/checks.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/native-platform-existing-package-cases.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/native-platform-existing-package-source.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/native-platform-existing-package.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/preservation-audit-record-type.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/failed-attempts/preservation-root-file-lookup.py.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/fixture.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/focused-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/focused-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/focused-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/held-admitted.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/held.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/hooks.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/hooks.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/hooks.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inspection.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inventory-write.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/metadata-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/metadata-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/metadata-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-final-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-final-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-final-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-tests.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-tests.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-tests.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-whole-repository.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-whole-repository.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/naming-whole-repository.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-cases-admitted.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-cases-pre-admission.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-cases.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/observations.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ownership.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ownership.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ownership.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/pre-admission-archive-tests.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/pre-admission-held.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/pre-admission-unheld.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-corrected.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-corrected.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-corrected.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-final.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-final.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-final.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-resources.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-resources.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation-resources.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/preservation.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/protocol.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/protocol.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/provisional-held.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/provisional-unheld.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/held-final.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/held-first-replacement-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/held-final.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/held-first-replacement-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/pre-admission-unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/held-final.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/held-first-replacement-reset.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/held-initial-panned.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-held/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/provisional-unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/final-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/final-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/fixture.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/initial-canvas.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/panned-page.png"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/positions-uuid.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/result.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-1-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-buffer.bin"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-spec.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-x.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/raw/unheld/step-401-y.f64"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/receipt-files.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/regressions-final.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/regressions.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/review-diff-contract.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-check.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-check.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-check.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-format.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-format.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ruff-format.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/run.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/ack-drain.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/ack-drain.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/fixture.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/inspection.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/native-provenance.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/native-provenance.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/protocol.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/protocol.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/run.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/verify-repair.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/pre-admission/worker-audit.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/ack-drain.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/ack-drain.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/fixture.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/inspection.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/native-provenance.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/native-provenance.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/protocol.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/protocol.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/run.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/verify-repair.test.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/source-snapshots/provisional/worker-audit.mjs.txt"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/unheld-admitted.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/unheld.log"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify-repair.test.mjs"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify_preservation.py"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/wasm-declarations.command.json"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/wasm-declarations.stderr"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/wasm-declarations.stdout"
+      },
+      {
+        "status": "A",
+        "path": "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/worker-audit.mjs"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ],
+    "nonReceiptPaths": [
+      {
+        "status": "M",
+        "path": "spec/design/dual-host-parity-matrix.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graph-mark.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/graphforge-node-scheduling.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/design/host-parity.md"
+      },
+      {
+        "status": "M",
+        "path": "spec/releases/0.6.0-api-inventory.json"
+      }
+    ]
+  }
+}
