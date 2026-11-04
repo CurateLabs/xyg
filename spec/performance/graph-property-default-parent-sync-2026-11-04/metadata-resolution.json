@@ -1,0 +1,25 @@
+{
+  "conflict": "Only inventory sourceProvenance.baseCommit; retained full ABI399 property contract and regenerated with unchanged inspector",
+  "inventory_before_base": "d9141fbb5d80a52046dff005d16768b2e751f668",
+  "inventory_after_base": "7e99ec5da586572d411996599cf37f25dc5566c7",
+  "all_other_snapshot_fields_exact_7e99": true,
+  "explicit_review_gaps": 685,
+  "acceptance": "preparation-only-not-a-freeze",
+  "ownership_metadata_and_classifications_exact_7e99": true,
+  "property_presentation_specs_exact_7e99": true,
+  "property_helper": {
+    "bytes": 20079,
+    "sha256": "7b91a3c01770205f4738ca9b64f00802245b4a196e86981c6c98a8e60b695c6f",
+    "complete_bytes_exact_7e99": true
+  },
+  "accepted_main": "3c66580731dde0b10a1f18465c0d0df9e73f8862",
+  "accepted_main_tree": "b9f1a546159ca949b62bb644f90e3139b58ba9fb",
+  "accepted_main_tree_exact_reviewed_60cee": true,
+  "parent_parents": [
+    "8a5922af4b33bfd67f2aefe71f613847d6fdcb08",
+    "3c66580731dde0b10a1f18465c0d0df9e73f8862"
+  ],
+  "merge_metadata_nonreceipt_diff_vs_7e99_sha256": "a65ec42c852730b937dbb69adcc46801a98e932f96ccb8ba4b1557c6b1a91393",
+  "parent_reported_property_review": "m4_defaults_audit APPROVED 7e99; Greptile 5/5 no findings; prior PR rollup complete with applicable successes and normal conditional/disabled skips",
+  "current_candidate_review": "New independent parent review required; no actual #1089 or #1090 main acceptance claimed"
+}

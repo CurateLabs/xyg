@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "python",
+    "spec/performance/graph-resolved-axis-main-sync-2026-11-04/preserve.py"
+  ],
+  "exitCode": 0,
+  "seconds": 1.289,
+  "environment": {
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1",
+    "UV_OFFLINE": "1",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "rawSha256": "09bcd42de171285e61d9d0576565941cd940ffb97db1af582a12445896cba2cb",
+  "gzipSha256": "3e425ec01822983461a2d272a3d5fa2b5d7ca6c9169f977e8132639d4b746952",
+  "log": "source-proof.log.gz"
+}

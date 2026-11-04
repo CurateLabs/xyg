@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "git",
+    "merge",
+    "--no-commit",
+    "3c66580731dde0b10a1f18465c0d0df9e73f8862"
+  ],
+  "exitCode": 1,
+  "seconds": 0.501,
+  "environment": {
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1",
+    "UV_OFFLINE": "1",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2676cc7b/target/release/libxyg_core.so",
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "rawSha256": "1962d0116612d229e7b12cef1a51387208ef9f728c25971751f67f20819f99cd",
+  "gzipSha256": "e3fa18af9e41659d15c4860f86aba10972ba517ed7c4ce0f96021ba06d4fd8ca",
+  "log": "merge-main.log.gz"
+}
