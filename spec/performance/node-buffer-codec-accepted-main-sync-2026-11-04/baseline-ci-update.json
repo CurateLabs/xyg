@@ -1,0 +1,21 @@
+{
+  "source": "Parent report; no GitHub calls in this child",
+  "baselineHead": "6e240f4bd3189640779fd684e97072923cbfb9c8",
+  "allApplicableCI": "completed SUCCESS",
+  "completionTime": "2026-11-04T06:52:01Z",
+  "includes": [
+    "Rust/Python/JS",
+    "foundation",
+    "Python floor",
+    "Linux/ARM/Windows wheels",
+    "required Release surfaces"
+  ],
+  "remoteState": "CONFLICTING actual main 3ebf70c3",
+  "automaticReviewer": "CodeRabbit SKIPPED/disabled; no actionable finding reported",
+  "newAcceptedMainCandidateRequires": [
+    "independent final review",
+    "parent push with fresh checks",
+    "new main-based CI"
+  ],
+  "rustChildImported": false
+}

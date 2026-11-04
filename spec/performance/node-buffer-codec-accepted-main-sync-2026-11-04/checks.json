@@ -1,0 +1,48 @@
+{
+  "normalParents": [
+    "6e240f4bd3189640779fd684e97072923cbfb9c8",
+    "3ebf70c3aa5a351aeec3843da14ba2aa197b469e"
+  ],
+  "commandExits": {
+    "hooks.command.json": 0,
+    "ruff-format.command.json": 0,
+    "capability-check.command.json": 0,
+    "metadata-tests.command.json": 0,
+    "ruff-check.command.json": 0,
+    "merge-attempt.command.json": 1,
+    "inventory-write.command.json": 0,
+    "preservation.command.json": 0,
+    "whole-worktree-naming.command.json": 0,
+    "inventory-check.command.json": 0,
+    "codec-tests.command.json": 0,
+    "naming-tests.command.json": 0
+  },
+  "all11ValidationCommandsPass": true,
+  "mergeFailureDisposition": "Expected documentation/inventory conflicts; original diff retained, prior reviewed qualifications restored and current status updated, inventory officially regenerated",
+  "tests": {
+    "codec": 25,
+    "metadata": 61,
+    "naming": 149
+  },
+  "wholeWorktreeNaming": "pass",
+  "requiredHooksAndRuff": "pass",
+  "protectedPerformanceFilesExact": 10429,
+  "captureSourceMapsExact": 6,
+  "runtimeArtifactFilesExact": 8,
+  "allProductBuildTestBytesExactAtApprovedBuffer": true,
+  "existingChangedPaths": [
+    "spec/design/graphforge-node-scheduling.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "inventoryChangedFields": [
+    "sourceProvenance"
+  ],
+  "inventorySourceHashChanges": [],
+  "gaps": 685,
+  "contractsClassificationsFreezeAcceptanceUnchanged": true,
+  "proofRerun": false,
+  "rustChildImported": false,
+  "newIndependentFinalReviewRequiredBeforeParentPush": true,
+  "newMainBasedCIRequiredBeforeQueue": true,
+  "noExternalMutations": true
+}
