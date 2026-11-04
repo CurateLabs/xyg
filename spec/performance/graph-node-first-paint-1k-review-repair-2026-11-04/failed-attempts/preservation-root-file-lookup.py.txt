@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Verify immutable histories, current capture source identities and metadata-only drift."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+OUT = Path(__file__).resolve().parent
+BASE = "c3d2e4aa19bcfbf9940775819f03c71cc0934472"
+INVENTORY = "spec/releases/0.6.0-api-inventory.json"
+DOCS = {
+    "spec/design/host-parity.md",
+    "spec/design/dual-host-parity-matrix.md",
+    "spec/design/graph-mark.md",
+    "spec/design/graphforge-node-scheduling.md",
+}
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main() -> None:
+    before = json.loads((OUT / "before-repair.json").read_text())
+    for path, digest in before["immutableFiles"].items():
+        assert sha(ROOT / path) == digest, path
+    changed = subprocess.check_output(
+        ["git", "diff", "--name-only", BASE], cwd=ROOT, text=True
+    ).splitlines()
+    prefix = str(OUT.relative_to(ROOT)) + "/"
+    assert all(path in DOCS | {INVENTORY} or path.startswith(prefix) for path in changed)
+    for path, tree in before["productionTrees"].items():
+        assert not subprocess.check_output(["git", "diff", BASE, "--", path], cwd=ROOT)
+        assert (
+            subprocess.check_output(
+                ["git", "rev-parse", f"{BASE}:{path}"], cwd=ROOT, text=True
+            ).strip()
+            == tree
+        )
+    prior = json.loads(subprocess.check_output(["git", "show", f"{BASE}:{INVENTORY}"], cwd=ROOT))
+    actual = json.loads((ROOT / INVENTORY).read_text())
+    changes = [key for key in actual if actual[key] != prior[key]]
+    assert set(changes) <= {"sourceProvenance", "sourceSha256"}
+    assert set(actual) == set(prior)
+    assert len(actual["gaps"]) == 685
+    for key in set(actual) - {"sourceProvenance", "sourceSha256"}:
+        assert actual[key] == prior[key], key
+    artifact_paths = json.loads(
+        (
+            ROOT
+            / "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/before-sync.json"
+        ).read_text()
+    )["runtimeArtifactSha256"]
+    for path, digest in artifact_paths.items():
+        assert sha(ROOT / path) == digest, path
+    resolutions = {}
+    for raw in sorted((OUT / "raw").glob("*/result.json")):
+        report = json.loads(raw.read_text())
+        assert report["status"] == "passed", str(raw)
+        identities = {}
+        for path, digest in report["sourceHashes"].items():
+            candidate = ROOT / path if "/" in path else OUT / path
+            if candidate.is_file() and sha(candidate) == digest:
+                resolved = candidate
+            else:
+                snapshots = [
+                    p
+                    for p in (OUT / "source-snapshots").rglob(Path(path).name + ".txt")
+                    if sha(p) == digest
+                ]
+                assert snapshots, (str(raw), path, digest)
+                resolved = snapshots[0]
+            identities[path] = {"sha256": digest, "resolvedSource": str(resolved.relative_to(ROOT))}
+        resolutions[str(raw.relative_to(OUT))] = identities
+    result = {
+        "base": BASE,
+        "immutableFileCount": len(before["immutableFiles"]),
+        "immutableFilesSha256": before["immutableFiles"],
+        "allPreexistingHistoryUnchanged": True,
+        "productionTrees": before["productionTrees"],
+        "productionChanged": False,
+        "metadataChangedFields": changes,
+        "metadataSourceHashChanges": [
+            path
+            for path, digest in actual["sourceSha256"].items()
+            if prior["sourceSha256"].get(path) != digest
+        ],
+        "gaps": 685,
+        "contractsClassificationsAcceptanceUnchanged": True,
+        "runtimeArtifactSha256": artifact_paths,
+        "artifactMeaning": "Current file-byte identity; historical runtime-path/origin claims are not retroactively attested.",
+        "captureSourceResolutions": resolutions,
+    }
+    (OUT / "preservation.json").write_text(json.dumps(result, indent=2) + "\n")
+    print(
+        f"PASS: {len(before['immutableFiles'])} immutable files, unchanged production, "
+        f"{len(artifact_paths)} existing runtime file hashes, all capture source versions resolved; "
+        "only inventory provenance fields changed and all 685 gaps/contracts/classifications remain unchanged."
+    )
+
+
+if __name__ == "__main__":
+    main()

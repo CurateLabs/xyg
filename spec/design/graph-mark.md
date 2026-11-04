@@ -381,10 +381,17 @@ Every live graph layout retains a complete f64 source snapshot, including
 circle/grid at Aggregate; Rust-derived render membership has separate indexing.
 Its bounded four-node native/painter receipt proves initial and changed later
 paint, UUID picks and pan through full view replacement. The additional
-[1k rendered receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
-preserves the ring/chord rung, seed and CoSE policy and records visible pixels
+[1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
+supersedes the frozen historical 1k runners with update-ACK draining, first-
+replacement camera inspection and directly observed selected native path/hash/ABI
+in fixture and bridge/force Workers. Origin is unknown unless explicitly declared;
+matching old bytes does not prove reuse or a pre-run rebuild history. The new
+capture preserves the ring/chord rung, seed and CoSE policy and records visible pixels
 and GPU node-hit readiness under automatic ACKs. Only initial/final frames
 were presented, so their single interval does not establish sustained cadence.
+The captures predate the Node Buffer numeric-copy repair and do not execute the
+integrated Node package tree; producer/artifact identity reuse is scoped in the
+[Node contract](graphforge-node-scheduling.md#evidence-and-remaining-boundary).
 Trusted UUID/pan checks on the settled frame and deliberately held initial
 inspection are separate from that interval. **Remaining for #35:**
 render-based first-paint/interactivity measurements on the large-data ladder,

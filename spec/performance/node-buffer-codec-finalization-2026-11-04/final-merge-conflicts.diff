@@ -1,0 +1,49 @@
+diff --cc spec/design/graphforge-node-scheduling.md
+index 44350955,d8925217..00000000
+--- a/spec/design/graphforge-node-scheduling.md
++++ b/spec/design/graphforge-node-scheduling.md
+@@@ -223,17 -223,14 +223,28 @@@ initial trusted click/pan and viewport-
+  HTTP ACK in a separate run. The latter confirms replacement resets the panned
+  view to the next payload's ranges. No production behavior or limits changed.
+  
+++<<<<<<< HEAD
+ +Those captures predate the Node Buffer numeric-copy repair in
+ +`graphforge-container.js` ([codec contract](graphforge-compositions.md#51-container)).
+ +The integrated `packages/xy-node` tree is therefore not source-identical to the
+ +capture tree. Reuse is limited to the individually checked producer, scheduler,
+ +Worker and painter sources and native/client artifact bytes recorded in the
+ +[Buffer parent-sync receipt](../performance/node-buffer-codec-parent-sync-2026-11-04/README.md).
+ +The native composition producer returns ordinary `Uint8Array` document bytes;
+ +the Buffer subclass defect is covered separately by the pure codec regressions.
+ +The captures are retained evidence at their recorded state, not new timings or
+ +an execution of the Buffer-fixed tree. Native byte identity still does not
+ +establish the historical artifact's origin or rebuild history.
+++=======
++ The [accepted-main sync receipt](../performance/graph-node-first-paint-1k-accepted-main-sync-2026-11-04/README.md)
++ records the normal merge of accepted main `2fbbe5f0` into reviewed repair
++ `562a2adf`. Production sources, runnable proof helpers, raw browser captures and
++ runtime artifact bytes are unchanged; this sync reuses the recorded observations
++ and makes no fresh browser, worker-loading or native-build claim. Parent-reported
++ review approval and resolution of both proof-runner findings cover `562a2adf`;
++ the sync candidate requires independent final review. The conflicted remote
++ head had only skipped reviewer checks, not passing production CI.
+++>>>>>>> 7c581024f968519c074e990b4eb6a34ffe2fbd96
+  
+  This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
+  unheld initial trusted response, public browser progressive scheduling and
+diff --cc spec/releases/0.6.0-api-inventory.json
+index 1b2155da,b0a56dfc..00000000
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@@ -1195,7 -1195,7 +1195,11 @@@
+   "releaseLine":"0.6.0",
+   "schema":"xyg.release-api-inventory/v1",
+   "sourceProvenance":{
+++<<<<<<< HEAD
+ +  "baseCommit":"eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+++=======
++   "baseCommit":"562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
+++>>>>>>> 7c581024f968519c074e990b4eb6a34ffe2fbd96
+    "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+   },
+   "sourceSha256":{

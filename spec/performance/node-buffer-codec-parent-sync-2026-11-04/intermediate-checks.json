@@ -1,0 +1,67 @@
+{
+  "state": "Uncommitted reviewed-562a merge; waiting for independently reviewed parent accepted-main sync",
+  "commitCreated": false,
+  "commands": [
+    {
+      "command": "node --test packages/xy-node/test/graphforge-container.test.mjs",
+      "exitCode": 0,
+      "tests": 25,
+      "log": "codec-tests.tap"
+    },
+    {
+      "command": "uv run pytest -q tests/test_release_inventory.py tests/test_verify_ownership.py tests/test_gen_wasm_abi.py",
+      "exitCode": 0,
+      "tests": 61,
+      "log": "metadata-tests.log"
+    },
+    {
+      "command": "uv run pytest -q tests/test_stale_names.py",
+      "exitCode": 0,
+      "tests": 149,
+      "log": "naming-tests.log"
+    },
+    {
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exitCode": 0,
+      "log": "inventory-write.log"
+    },
+    {
+      "command": "uv run python scripts/check_release_inventory.py",
+      "exitCode": 0,
+      "log": "inventory-check.log"
+    },
+    {
+      "command": "uv run python scripts/gen_capability_matrix.py --check",
+      "exitCode": 0,
+      "log": "capability-check.log"
+    },
+    {
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exitCode": 0,
+      "log": "hooks.log"
+    },
+    {
+      "command": "uv run ruff check .",
+      "exitCode": 0,
+      "log": "ruff-check.log"
+    },
+    {
+      "command": "uv run ruff format --check .",
+      "exitCode": 0,
+      "log": "ruff-format.log"
+    },
+    {
+      "command": "uv run python spec/performance/node-buffer-codec-parent-sync-2026-11-04/verify-identities.py",
+      "exitCode": 0,
+      "log": "identity-checks.json"
+    },
+    {
+      "command": "git diff --cached --check",
+      "exitCode": 2,
+      "log": "staged-whitespace.log",
+      "disposition": "Two whitespace lines in incoming immutable raw failure log preserved exactly"
+    }
+  ],
+  "proofRerun": false,
+  "finalReview": "Parent-owned; final candidate not yet formed"
+}

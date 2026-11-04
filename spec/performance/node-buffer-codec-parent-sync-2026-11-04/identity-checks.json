@@ -1,0 +1,97 @@
+{
+  "bufferBase": "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+  "reviewedIncoming": "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
+  "mergeHead": "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
+  "status": "uncommitted; waiting for reviewed accepted-main parent candidate",
+  "allInheritedPerformanceFiles": 10283,
+  "allInheritedPerformanceGitBlobManifestSha256": "d16dda76e58b4bfcf973e6b96db1151922f7a5a8a1ed641b724c845518580d8e",
+  "allInheritedHistoryIndexAndWorktreeExact": true,
+  "protectedHistories": {
+    "spec/performance/graph-node-first-paint-1k-2026-11-04/": {
+      "files": 86,
+      "gitBlobManifestSha256": "70e46366d5c9088d58144e86da2eb07a71d72f27cd979c1f2b9fa83e389f2e46"
+    },
+    "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/": {
+      "files": 70,
+      "gitBlobManifestSha256": "fe4f6754c1c80931bdbc231f3a929336042adda8175c9b65782a24cc3105c7e6"
+    },
+    "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/": {
+      "files": 205,
+      "gitBlobManifestSha256": "05630de34e2b64c63a0f3fe61df81836fceb1caea2ec71719a1fa71d96a41321"
+    },
+    "spec/performance/node-buffer-codec-2026-11-04/": {
+      "files": 13,
+      "gitBlobManifestSha256": "76c16eb1f2447b951176c98404ad502dcdaa185955db18d5add00e756b40ef8e"
+    }
+  },
+  "bufferFilesExactAtBase": {
+    "packages/xy-node/src/graphforge-container.js": "0506d4e907b553742c042514c69efd824cc95cffb10417e077a3d84ef4f92aec",
+    "packages/xy-node/test/graphforge-container.test.mjs": "df4d6f1e7ef72b981d88147f498dea33f9e73791cfd3eece23529898824c56d3",
+    "packages/xy-node/test/graphforge.test.mjs": "565478b8a52cb0bb144c60a55f1de0626238d2e2faa980ff90fa2b960fecd520"
+  },
+  "nodePackageTreeSourceIdenticalToCaptures": false,
+  "changedProductFilesVsReviewedIncoming": [
+    "packages/xy-node/src/graphforge-container.js",
+    "packages/xy-node/test/graphforge-container.test.mjs",
+    "packages/xy-node/test/graphforge.test.mjs"
+  ],
+  "recordedProducerSourceSha256Matches": {
+    "unheld": {
+      "AGENTS.md": "178dc19e5e29c30b1119b9b4d11a792ef912f8e6b69af7b47e4961f02c51b40c",
+      "package-lock.json": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+      "packages/xy-node/package-lock.json": "03e342a714044626343305c4dc6879904c71cdf48c800e4f47d97f918045e376",
+      "examples/vanilla-ts/graphforge-live.mjs": "0ad000f4d377b2ea02b36128067c25f529557f49c36b390ba7ee15f9d8acda89",
+      "scripts/bench_cose_progressive_node.mjs": "e5d694c3128ac3c69d115b7722f8dd95759b62e60e697b871f425b4311a9710d",
+      "scripts/bench_cose_progressive.py": "a545499c8a3e075879a55a21cb80aedf6dca6f0021bb504bb16c9aaed2c26e16",
+      "packages/xy-node/src/graphforge.js": "039786ca30b6ce37ae0d6682894222e9ba9cba1daedff8f1d231a105a8c5c1d1",
+      "packages/xy-node/src/graphforge_layout.js": "252f3bef6da12b0b4a39e522ac8576dc8f1775d519527502e985c48c3065f8a6",
+      "packages/xy-node/src/graphforge_layout_worker.js": "faa018773592243ff391a429f8bae8c30a1520969708e8d4e7e8c99f2de77085",
+      "packages/xy-node/src/force_scheduler.js": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+      "packages/xy-node/src/abi.js": "dd463c55fdaa1e04a291fdbf784a6e43cb415c524024c3f4830ba1dec78e42a3",
+      "packages/xy-node/src/graph.js": "35ef2297291395d26f8ecb1505baf750f2fcafb2897e0251e4bd15bda2eeb4b1",
+      "packages/xy-node/src/native.js": "ae102470bdca88c3c9634b11692ebed5eb95c5f08d5af3779225f703c7300953",
+      "packages/xy-node/src/native-path.js": "0f117ab853f641e10ab2f713a4f232e3411de3c59f73780c83924137f21be4f1",
+      "packages/xy-node/src/_abi_generated.js": "b412346a72c658b6a7a66453f7ee83c7e808edfd9120057f55dcff60c297498a",
+      "spec/performance/cose-progressive-ladder-2026-10-20/results.json": "775cbd9ef30b42b2b411bb0f70274ac98a6809c6708d06121f100a6c628fae63",
+      "spec/performance/graph-node-scheduling-35-review-repair-2026-10-31/run.mjs": "c240a9204b0fc4d055f821c85c338310498e5ebe580471682ae3c832a07a081e",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/run.mjs": "ec1e76b83be286f91b8030eae9d47ffc3e176104a3bb492d07262987b71acaff",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inspection.mjs": "8ed7344e32d6e695ad57be049259cfa0b58db88dd400ffd8b4ca9e5f928705d5",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/fixture.mjs": "60e267f4077996da3be364edefff4f625092538f7eb855018b830ac8c46d708f",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/protocol.mjs": "14bc500b3c69ff52a9cc04b1b2bc8351bbf76cc26bbe0bc35f0c523cc51cde0c",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/worker-audit.mjs": "2ce75ce9256f638db646de6d9ed9239442fe1ca3d6ff03a1ebbe7c9c626ab021",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/protocol.test.mjs": "fb0348df93a46d099a601cd2c91aa5a030c3acc3a91cf86f7eedbc54c769e91d",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.mjs": "b95b6755354909aae53d9ffb3da51d647f8a90e8acddd464c319f1b5a6f2fee8",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.mjs": "5a9512a3e090817b193d077d7caf1c0e69ad6172384ae027a3b8fa0fe7bccff9",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.test.mjs": "83559dfb223912e6f082575aa8514181b8de09026edf2c4e8fc9fa1d85ee3600",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.test.mjs": "455da62aaaa680417b79d35043b6b33e3c63bab3a0c8481869a67f715050e50d",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify-repair.test.mjs": "ffeeb75f5414e0642a6e1ed2d96d5591232beaab706d4d1e04df1fb93e38f9af"
+    },
+    "held": {
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/inspection.mjs": "8ed7344e32d6e695ad57be049259cfa0b58db88dd400ffd8b4ca9e5f928705d5",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/fixture.mjs": "60e267f4077996da3be364edefff4f625092538f7eb855018b830ac8c46d708f",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/protocol.mjs": "14bc500b3c69ff52a9cc04b1b2bc8351bbf76cc26bbe0bc35f0c523cc51cde0c",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/worker-audit.mjs": "2ce75ce9256f638db646de6d9ed9239442fe1ca3d6ff03a1ebbe7c9c626ab021",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.mjs": "b95b6755354909aae53d9ffb3da51d647f8a90e8acddd464c319f1b5a6f2fee8",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.mjs": "5a9512a3e090817b193d077d7caf1c0e69ad6172384ae027a3b8fa0fe7bccff9",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/ack-drain.test.mjs": "83559dfb223912e6f082575aa8514181b8de09026edf2c4e8fc9fa1d85ee3600",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/native-provenance.test.mjs": "455da62aaaa680417b79d35043b6b33e3c63bab3a0c8481869a67f715050e50d",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/verify-repair.test.mjs": "ffeeb75f5414e0642a6e1ed2d96d5591232beaab706d4d1e04df1fb93e38f9af",
+      "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04/run.mjs": "ec1e76b83be286f91b8030eae9d47ffc3e176104a3bb492d07262987b71acaff"
+    }
+  },
+  "runtimeArtifactsMatchRecordedBytes": {
+    "target/release/libxyg_core.so": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+    "packages/xy-client/dist/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "packages/xy-client/dist/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "packages/xy-client/dist/wasm-inline-worker.js": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+    "packages/xy-client/dist/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "python/xyg/static/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "python/xyg/static/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "python/xyg/static/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+  },
+  "artifactOriginClaim": "Byte identity only; no retroactive rebuild or origin claim",
+  "proofRerun": false,
+  "proofReuseScope": "Archived captures at their recorded state, not execution or timing of the combined package tree",
+  "codecProducerBoundary": "composeGraphForgeRequest returns new Uint8Array document bytes (graphforge.js); Buffer subclass regression tested independently",
+  "inventoryContractsGapsAcceptanceUnchanged": true
+}

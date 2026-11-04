@@ -1,0 +1,89 @@
+{
+  "bufferImplementation": "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+  "prior": "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+  "incoming": "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5",
+  "candidate": null,
+  "normalParentsVerified": [
+    "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+    "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5"
+  ],
+  "acceptedMainTreeEqualsReviewedPointer": true,
+  "allInheritedPerformanceFilesExact": 10283,
+  "allInheritedPerformanceManifestSha256": "79c06b17a32246bf53594c86f3059e19e066eeb96738c5d835702771752d9279",
+  "protectedHistories": {
+    "graph-node-first-paint-1k-2026-11-04": {
+      "files": 86,
+      "gitBlobManifestSha256": "4755180a69fe78ac871b49b1be86370521ee5a035a3631a0a706ae948b201d07"
+    },
+    "graph-node-first-paint-1k-parent-sync-2026-11-04": {
+      "files": 70,
+      "gitBlobManifestSha256": "7b1e5ae10a0ec3b4b7b3728c2095682811c65270fa5dd1d8b3fffe32b77fafe5"
+    },
+    "graph-node-first-paint-1k-review-repair-2026-11-04": {
+      "files": 205,
+      "gitBlobManifestSha256": "3534513afa98bc863c8556bdf8820e686f82bb66dba3195c3904bdde03165150"
+    },
+    "graph-node-first-paint-1k-accepted-main-sync-2026-11-04": {
+      "files": 0,
+      "gitBlobManifestSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "node-buffer-codec-2026-11-04": {
+      "files": 13,
+      "gitBlobManifestSha256": "b5c3f4a127d1a52229edf58e39e02801efe54837df11cd43022f7afb25e93cf3"
+    },
+    "node-buffer-codec-parent-sync-2026-11-04": {
+      "files": 0,
+      "gitBlobManifestSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    }
+  },
+  "intermediateFilesSha256": {
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/README.md": "cbb04c28187614ebe6a4a94ea81126e10aa8fccccaf0e55fb358b9feae89e2e6",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/capability-check.log": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/codec-tests.tap": "acf8bdc0e27ba0416c34f628a42e6b813901f7f2dd0bc6f3a5a20d10728a60ad",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/failed-attempts/identity-v1.py.txt": "8622972c7eaf18202c29ca005ec8acce3701c3aa2db7b28c9f30175b2609e029",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/failed-attempts/identity-v1.stderr": "6a5a09d3c8c68b3007e4a8dbfb546f6d45ffc6a6afdaf70e87780c73d1e18dc1",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/failed-attempts/identity-v1.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/hooks.log": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/identity-checks.json": "f6b95fcd86cf1d798e56552dea20aad08895126b69264e8761e176ed8962b50c",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/identity-checks.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/intermediate-checks.json": "7bcdbbd0f4b6593943e82506059cfb0a09f87db152023e282854f4c9bc79b315",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/inventory-check.log": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/inventory-write.log": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/merge.log": "9623ba54e1375e7a2eb6adef5503036512a58b19791b007ca1343ef53ea8c786",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/metadata-tests.log": "c5980b88f5c2044d4dc7836a5be6828cb87e2b0b0c754d6997dfce2e3f1c53be",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/naming-tests.log": "f9e45524930ecf8b3841beb2639fc7fa8b609c30efcac7d8bc3eddedda192240",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/naming-worktree.log": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/ruff-check.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/ruff-format.log": "520a397d865aa3da2e8cfca5f599e161b8709354bba1c50c768c1ed02daf84d5",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/staged-whitespace.log": "e37dbef2cde39ed635e30b7a48f01733c433e763986509dadf4bdf1cf6c7c15f",
+    "spec/performance/node-buffer-codec-parent-sync-2026-11-04/verify-identities.py": "5b69a74cabaa19cfbf7e5a4be306852f19c3eca77541ae815918f555c9a1d75f"
+  },
+  "bufferFilesSha256": {
+    "packages/xy-node/src/graphforge-container.js": "0506d4e907b553742c042514c69efd824cc95cffb10417e077a3d84ef4f92aec",
+    "packages/xy-node/test/graphforge-container.test.mjs": "df4d6f1e7ef72b981d88147f498dea33f9e73791cfd3eece23529898824c56d3",
+    "packages/xy-node/test/graphforge.test.mjs": "565478b8a52cb0bb144c60a55f1de0626238d2e2faa980ff90fa2b960fecd520"
+  },
+  "productBuildTestTreesExactAtBufferTip": true,
+  "productDifferencesFromIncoming": [
+    "packages/xy-node/src/graphforge-container.js",
+    "packages/xy-node/test/graphforge-container.test.mjs",
+    "packages/xy-node/test/graphforge.test.mjs"
+  ],
+  "captureSourceMapsVerified": 6,
+  "runtimeArtifactSha256": {
+    "target/release/libxyg_core.so": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+    "packages/xy-client/dist/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "packages/xy-client/dist/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "packages/xy-client/dist/wasm-inline-worker.js": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+    "packages/xy-client/dist/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "python/xyg/static/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "python/xyg/static/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "python/xyg/static/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+  },
+  "nodePackageTreeSourceIdenticalToCaptures": false,
+  "proofRerun": false,
+  "artifactScope": "Exact file bytes now; no new producer loading, rebuild, origin or mapped-memory attestation",
+  "inventoryContractsClassificationGapsAcceptanceUnchanged": true,
+  "gaps": 685,
+  "reviewAndCI": "Parent reports incoming approval; combined candidate requires independent final review and new CI"
+}

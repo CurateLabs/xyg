@@ -1,0 +1,157 @@
+"""Read-only identity audit for the uncommitted reviewed-parent merge."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+BUFFER = "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c"
+REVIEWED = "562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5"
+REPAIR = "spec/performance/graph-node-first-paint-1k-review-repair-2026-11-04"
+
+
+def git(*args: str) -> bytes:
+    return subprocess.check_output(["git", *args], cwd=ROOT)
+
+
+def digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def tree(commit: str, *paths: str) -> dict[str, str]:
+    result = {}
+    for item in git("ls-tree", "-r", "-z", commit, "--", *paths).split(b"\0"):
+        if item:
+            metadata, path = item.split(b"\t", 1)
+            result[path.decode()] = metadata.decode().split()[2]
+    return result
+
+
+def manifest_digest(entries: dict[str, str]) -> str:
+    return digest(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode())
+
+
+def main() -> None:
+    before = tree(BUFFER, "spec/performance")
+    incoming = tree(REVIEWED, "spec/performance")
+    common = before.keys() & incoming.keys()
+    assert all(before[path] == incoming[path] for path in common)
+    protected = before | incoming
+    staged = {}
+    for item in git("ls-files", "--stage", "-z", "--", "spec/performance").split(b"\0"):
+        if item:
+            metadata, path = item.split(b"\t", 1)
+            mode, object_id, stage = metadata.decode().split()
+            assert stage == "0", path
+            staged[path.decode()] = object_id
+    assert all(staged.get(path) == value for path, value in protected.items())
+    assert (
+        git(
+            "diff",
+            "--",
+            "spec/performance",
+            ":(exclude)spec/performance/node-buffer-codec-parent-sync-2026-11-04/**",
+        )
+        == b""
+    )
+    histories = {}
+    for prefix in (
+        "spec/performance/graph-node-first-paint-1k-2026-11-04/",
+        "spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/",
+        REPAIR + "/",
+        "spec/performance/node-buffer-codec-2026-11-04/",
+    ):
+        entries = {path: value for path, value in protected.items() if path.startswith(prefix)}
+        histories[prefix] = {
+            "files": len(entries),
+            "gitBlobManifestSha256": manifest_digest(entries),
+        }
+
+    sources = {}
+    for run in ("unheld", "held"):
+        data = json.loads((ROOT / REPAIR / "raw" / run / "result.json").read_text())
+        checked = {}
+        for path, expected in data["sourceHashes"].items():
+            source = ROOT / path
+            if not source.is_file():
+                source = ROOT / REPAIR / path
+            actual = digest(source.read_bytes())
+            assert actual == expected, path
+            checked[source.relative_to(ROOT).as_posix()] = actual
+        sources[run] = checked
+
+    preservation = json.loads((ROOT / REPAIR / "preservation.json").read_text())
+    artifacts = {}
+    for path, expected in preservation["runtimeArtifactSha256"].items():
+        actual = digest((ROOT / path).read_bytes())
+        assert actual == expected, path
+        artifacts[path] = actual
+
+    buffer_files = [
+        "packages/xy-node/src/graphforge-container.js",
+        "packages/xy-node/test/graphforge-container.test.mjs",
+        "packages/xy-node/test/graphforge.test.mjs",
+    ]
+    for path in buffer_files:
+        assert (ROOT / path).read_bytes() == git("show", f"{BUFFER}:{path}"), path
+    allowed = set(buffer_files)
+    changed = (
+        git(
+            "diff",
+            REVIEWED,
+            "--name-only",
+            "--",
+            "packages",
+            "crates",
+            "js",
+            "python",
+            "scripts",
+            "tests",
+            ".github",
+        )
+        .decode()
+        .splitlines()
+    )
+    assert set(changed) == allowed, changed
+    inventories = [
+        json.loads(git("show", f"{commit}:spec/releases/0.6.0-api-inventory.json"))
+        for commit in (BUFFER, REVIEWED)
+    ]
+    current = json.loads((ROOT / "spec/releases/0.6.0-api-inventory.json").read_text())
+    for previous in inventories:
+        for key in ("contracts", "contractSha256", "gaps", "acceptance"):
+            assert previous[key] == current[key], key
+    print(
+        json.dumps(
+            {
+                "bufferBase": BUFFER,
+                "reviewedIncoming": REVIEWED,
+                "mergeHead": git("rev-parse", "MERGE_HEAD").decode().strip(),
+                "status": "uncommitted; waiting for reviewed accepted-main parent candidate",
+                "allInheritedPerformanceFiles": len(protected),
+                "allInheritedPerformanceGitBlobManifestSha256": manifest_digest(protected),
+                "allInheritedHistoryIndexAndWorktreeExact": True,
+                "protectedHistories": histories,
+                "bufferFilesExactAtBase": {
+                    path: digest((ROOT / path).read_bytes()) for path in buffer_files
+                },
+                "nodePackageTreeSourceIdenticalToCaptures": False,
+                "changedProductFilesVsReviewedIncoming": changed,
+                "recordedProducerSourceSha256Matches": sources,
+                "runtimeArtifactsMatchRecordedBytes": artifacts,
+                "artifactOriginClaim": "Byte identity only; no retroactive rebuild or origin claim",
+                "proofRerun": False,
+                "proofReuseScope": "Archived captures at their recorded state, not execution or timing of the combined package tree",
+                "codecProducerBoundary": "composeGraphForgeRequest returns new Uint8Array document bytes (graphforge.js); Buffer subclass regression tested independently",
+                "inventoryContractsGapsAcceptanceUnchanged": True,
+            },
+            indent=2,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()

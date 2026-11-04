@@ -1,0 +1,6 @@
+Command: git merge --no-commit --no-ff 2fbbe5f038032841bcb095a9e101421e25771496
+Exit: 1
+Tool output retained verbatim:
+Auto-merging spec/releases/0.6.0-api-inventory.json
+CONFLICT (content): Merge conflict in spec/releases/0.6.0-api-inventory.json
+Automatic merge failed; fix conflicts and then commit the result.

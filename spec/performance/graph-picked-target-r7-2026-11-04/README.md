@@ -13,7 +13,7 @@ Parent-reported completed independent `s5a_final_review` returned
 `01f1072985b891d75015290999381f66d901d049`, with one P2 blocker at
 `scripts/check_release_inventory.py:468`. Before R7, any Rust path containing a
 `tests` directory was omitted even if declared unconditionally as production.
-The full reproduction creates `src/lib.rs` with `pub mod tests; pub mod live;`,
+The reproduction creates the temporary crate’s root Rust module with `pub mod tests; pub mod live;`,
 then identical environment lookups in `src/tests/mod.rs` and `src/live.rs`.
 Only the live.rs lookup appeared. `reproduce-p2.py` and `p2-before.*` preserve
 that actual failing assertion and complete output. `p2-after.*` proves both

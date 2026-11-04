@@ -198,7 +198,18 @@ immutable: its phrase “render payloads ... are retained” was broader than it
 actual final spec, counts, identities and position digests. Repair evidence
 makes no milestone, S5, scale, release qualification or #108 acceptance claim.
 
-The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
+The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
+contains the current runnable helpers and archived browser captures. The original
+1k receipt and parent-sync receipt remain immutable historical records; their
+runners are superseded. Their conventional-path hashes do not retroactively
+attest the native file actually selected by the loader. The current helper
+observes existing `nativeLibraryPath` / ABI exports in the fixture and inherited
+bridge/force Workers; the runner independently hashes and ABI-binds that exact
+selected path. Origin defaults to unknown, separately from known-parent byte
+identity. Held inspection drains each genuine update ACK with a bounded deadline
+and matching job/revision/step; camera reset is checked on the first replacement,
+which may be an update. Scripted ACK cases test this protocol only and are not
+native callbacks or presentation-cadence evidence. The real capture still
 uses the historical ring/chord topology, seed 7, default CoSE options and
 10-tick chunks through the existing live controller. Its explicit 401-tick cap
 matches that rung; the live default cap remains 300. Automatic ACKs follow
@@ -211,6 +222,30 @@ recorded clocks. A trusted final-frame UUID click/pan is outside cadence;
 initial trusted click/pan and viewport-reset inspection deliberately hold the
 HTTP ACK in a separate run. The latter confirms replacement resets the panned
 view to the next payload's ranges. No production behavior or limits changed.
+
+The [accepted-main sync receipt](../performance/graph-node-first-paint-1k-accepted-main-sync-2026-11-04/README.md)
+records the normal merge of accepted main `2fbbe5f0` into reviewed repair
+`562a2adf`. Within that parent sync, production sources, runnable proof helpers,
+raw browser captures and runtime artifact bytes were unchanged. It reused the
+recorded observations without a fresh browser, worker-loading or native-build
+claim. The parent now reports independent final approval and push of exact
+`7c581024`; earlier approval and resolution of both proof-runner findings covered
+`562a2adf`. Their immutable receipts retain the status observed when written.
+
+Those captures predate the Node Buffer numeric-copy repair in
+`graphforge-container.js` ([codec contract](graphforge-compositions.md#51-container)).
+The integrated `packages/xy-node` tree is therefore not source-identical to the
+capture tree. Reuse is limited to the individually checked producer, scheduler,
+Worker and painter sources and native/client artifact bytes recorded in the
+[Buffer finalization receipt](../performance/node-buffer-codec-finalization-2026-11-04/README.md).
+The native composition producer returns ordinary `Uint8Array` document bytes;
+the Buffer subclass defect is covered separately by the pure codec regressions.
+The captures are retained evidence at their recorded state, not new timings or
+an execution of the Buffer-fixed tree. Native byte identity still does not
+establish the historical artifact's origin or rebuild history. The combined
+Buffer sync candidate requires its own completed independent final review and
+actual sync CI before integration. Earlier `eb9ea4c` CI and skipped checks on a
+conflicted head do not qualify the new candidate.
 
 This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
 unheld initial trusted response, public browser progressive scheduling and
