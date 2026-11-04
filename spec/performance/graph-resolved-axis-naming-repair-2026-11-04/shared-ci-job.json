@@ -1,0 +1,20 @@
+{
+  "pullRequest": 1090,
+  "runId": 41751542330,
+  "jobId": 126318615791,
+  "jobName": "Test",
+  "jobState": "completed failure",
+  "head": "9b05f31778f623a030ed96551d52ba5ae7a2196d",
+  "ciMergeBase": "909dfe303b4f18f4b6332d9a4c13d68b7d2c3e74",
+  "firstLogTimestamp": "2026-11-04T01:07:52.7388789Z",
+  "lastLogTimestamp": "2026-11-04T01:12:38.2742905Z",
+  "namingFailureTimestamp": "2026-11-04T01:12:36.3945294Z",
+  "sameHistoricalManifestLine": 5679,
+  "source": "/tmp/xyg-1090-job-126318615791.log",
+  "log": "ci-job-126318615791.log.gz",
+  "rawBytes": 550476,
+  "rawSha256": "ab274e668160ec8d9a0a0da024893fb09bf6c5c5f6c55620251e91b4064b2988",
+  "gzipSha256": "3b112fbe160d2ac655ed6b3cb0b05a71f99b878066c52c4bcbb663df36296a76",
+  "interpretation": "Same exact qualified OSM helper-path false positive; no separate product root cause or duplicate fix. Parent owns integration after new independent review.",
+  "rerunPerformed": false
+}

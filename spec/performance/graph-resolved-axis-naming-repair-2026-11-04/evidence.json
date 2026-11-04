@@ -1,0 +1,333 @@
+{
+  "base": "909dfe303b4f18f4b6332d9a4c13d68b7d2c3e74",
+  "acceptedMain": "3c66580731dde0b10a1f18465c0d0df9e73f8862",
+  "scope": "One exact auxiliary helper-path allowance, focused guards and naming contract; no runtime change",
+  "sourceBinaryFullIndexDiff": {
+    "bytes": 6016,
+    "sha256": "7598b93ec17f399a2b7dab33bdc291e95c5c99507630256e6d5482631be502e7"
+  },
+  "wholePrNonreceiptBinaryFullIndexDiff": {
+    "bytes": 103354,
+    "sha256": "d23385293bf0481ab99f8b1217c1cbb7dcae1a9fc8a980f0b6bb649ad1255ff3"
+  },
+  "sources": {
+    "scripts/check_stale_names.py": {
+      "bytes": 13947,
+      "sha256": "842629b605f2d8bd9910d27b78136b4fd81422aed72e8d409ff56b3043693c77"
+    },
+    "tests/test_stale_names.py": {
+      "bytes": 12096,
+      "sha256": "d0fd721b6bb1c295a054c21e2a04365a00eeec714b60c563c0c54e899c72f03f"
+    },
+    "spec/design/xyg-naming.md": {
+      "bytes": 18846,
+      "sha256": "7af93cbd54195091aa56ef136ca149a7e90e26b7b23035beb9b600118dc72cb9"
+    }
+  },
+  "receiptTools": {
+    "capture.py": {
+      "bytes": 4029,
+      "sha256": "59c5201d46a679c8f7dfe28bfbdc1d5b702b05271e54992646e6231c42ede9e6"
+    },
+    "preservation-proof.py": {
+      "bytes": 4639,
+      "sha256": "20d0e980a603bd4219224c5a062aa9558c1969ce2c0704131f5ab5f656bf11ec"
+    },
+    "preserve-additional-ci.py": {
+      "bytes": 2704,
+      "sha256": "f0942171fd9b41752463339415187793d3d50275d99e3c5fd863efb8bea042b0"
+    },
+    "preserve-ci.py": {
+      "bytes": 2121,
+      "sha256": "4f8d4c48fe46c075b4186cffe6c0d798403dcb9a57ee01d5fd183c846822cb13"
+    },
+    "preserve-shared-ci.py": {
+      "bytes": 1667,
+      "sha256": "c6fdb38150b6e2e37b02d4cd2d700dd767c9e312372db922630a92fdd14c72d1"
+    },
+    "run.py": {
+      "bytes": 1693,
+      "sha256": "2cbdbca73695ad36a2d4363143441d462b7eab358a0a40821281130953dd2266"
+    }
+  },
+  "preservation": {
+    "path": "preservation.json",
+    "bytes": 3647,
+    "sha256": "bf4b80c8d4a94754aeeff5f15578df03ea384cfb6b2c404661990d6e04964b4c"
+  },
+  "jobs": [
+    {
+      "runId": 41750490193,
+      "jobId": 126314754073,
+      "jobName": "Test (Rust + Python + JS)",
+      "jobState": "completed failure",
+      "workflowStateAtReport": "still running; no whole-run completion claim",
+      "head": "909dfe303b4f18f4b6332d9a4c13d68b7d2c3e74",
+      "ciMergeCommit": "a8cc8aa28dca6d43fdb1bc828f586fd1f5f7dfc9",
+      "parentDownloadCommand": [
+        "gh",
+        "api",
+        "repos/CurateLabs/xyg/actions/jobs/126314754073/logs"
+      ],
+      "downloadedLogPath": "/tmp/xyg-1089-job-126314754073.log",
+      "firstLogTimestamp": "\ufeff2026-11-04T00:58:07.8384358Z",
+      "lastLogTimestamp": "2026-11-04T01:02:39.4152246Z",
+      "namingFailureTimestamp": "2026-11-04T01:02:37.3113226Z",
+      "failedManifest": "spec/performance/graph-resolved-axis-main-sync-2026-11-04/source-preservation.json",
+      "failedManifestLine": 5679,
+      "legitimateSourceEntry": "examples/osm/osmium-rs/src/lib.rs",
+      "downstreamMissingUploads": [
+        "target/host-delegation-report.json",
+        "consumer-apps-smoke.json"
+      ],
+      "interpretation": "Definitive naming false positive; later producers skipped after this gate. Missing uploads are downstream, not separate runtime regressions or a flake claim.",
+      "log": "ci-job-126314754073.log.gz",
+      "rawBytes": 550466,
+      "rawSha256": "2be862533194a38ac95b3a683752b6c451a5910ef062ee936effd89b0bc9ab6a",
+      "gzipSha256": "988134f993f64b49818412f72b57e2a0c534563efb4a5c063104ba61ebf034f9",
+      "rerunPerformed": false
+    },
+    {
+      "runId": 41750490193,
+      "jobId": 126314754097,
+      "jobName": "Python 3.11 floor",
+      "jobState": "completed failure",
+      "head": "909dfe303b4f18f4b6332d9a4c13d68b7d2c3e74",
+      "parentDownloadCommand": [
+        "gh",
+        "api",
+        "repos/CurateLabs/xyg/actions/jobs/126314754097/logs"
+      ],
+      "downloadedLogPath": "/tmp/xyg-1089-job-126314754097.log",
+      "firstLogTimestamp": "2026-11-04T00:58:08.9693597Z",
+      "lastLogTimestamp": "2026-11-04T01:08:10.4425097Z",
+      "log": "ci-job-126314754097.log.gz",
+      "rawBytes": 96312,
+      "rawSha256": "0ba406b06bc9bb1262c743c40bc4dd54fc20ff43878abb85676d0d321ecfe3c2",
+      "gzipSha256": "4191f6e42f8c9c85f25c9a6d0c571afb0260783e231dfdf74eb40a3841cbdae3",
+      "rerunPerformed": false,
+      "summary": "1 failed, 7699 passed, 358 skipped, 113 xfailed, 4 xpassed, 43 warnings",
+      "soleFailure": "test_repository_has_no_stale_native_identity",
+      "failureTimestamp": "2026-11-04T01:08:09.3919845Z",
+      "interpretation": "Same exact qualified OSM helper-path false positive; no zero-skip claim."
+    },
+    {
+      "runId": 41750490193,
+      "jobId": 126318810230,
+      "jobName": "Release surfaces",
+      "jobState": "completed failure",
+      "head": "909dfe303b4f18f4b6332d9a4c13d68b7d2c3e74",
+      "parentDownloadCommand": [
+        "gh",
+        "api",
+        "repos/CurateLabs/xyg/actions/jobs/126318810230/logs"
+      ],
+      "downloadedLogPath": "/tmp/xyg-1089-job-126318810230.log",
+      "firstLogTimestamp": "2026-11-04T01:08:21.8026236Z",
+      "lastLogTimestamp": "2026-11-04T01:08:30.9328293Z",
+      "log": "ci-job-126318810230.log.gz",
+      "rawBytes": 27475,
+      "rawSha256": "7f7b554db3be8a896c64f950f6509ab22a8cfe3e619ae532818e3af3f5988a72",
+      "gzipSha256": "422f3cb3ff866e44d1866d844a8e82d23dc267f4e98d7b03965d2829f78df34a",
+      "rerunPerformed": false,
+      "aggregatedResults": {
+        "test": "failure",
+        "python_floor": "failure",
+        "wheels": "skipped"
+      },
+      "interpretation": "Aggregates already-failed test and floor jobs and skipped wheels; no separate product root cause."
+    },
+    {
+      "pullRequest": 1090,
+      "runId": 41751542330,
+      "jobId": 126318615791,
+      "jobName": "Test",
+      "jobState": "completed failure",
+      "head": "9b05f31778f623a030ed96551d52ba5ae7a2196d",
+      "ciMergeBase": "909dfe303b4f18f4b6332d9a4c13d68b7d2c3e74",
+      "firstLogTimestamp": "2026-11-04T01:07:52.7388789Z",
+      "lastLogTimestamp": "2026-11-04T01:12:38.2742905Z",
+      "namingFailureTimestamp": "2026-11-04T01:12:36.3945294Z",
+      "sameHistoricalManifestLine": 5679,
+      "source": "/tmp/xyg-1090-job-126318615791.log",
+      "log": "ci-job-126318615791.log.gz",
+      "rawBytes": 550476,
+      "rawSha256": "ab274e668160ec8d9a0a0da024893fb09bf6c5c5f6c55620251e91b4064b2988",
+      "gzipSha256": "3b112fbe160d2ac655ed6b3cb0b05a71f99b878066c52c4bcbb663df36296a76",
+      "interpretation": "Same exact qualified OSM helper-path false positive; no separate product root cause or duplicate fix. Parent owns integration after new independent review.",
+      "rerunPerformed": false
+    }
+  ],
+  "commands": {
+    "additional-ci-log-preservation": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-naming-repair-2026-11-04/preserve-additional-ci.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "ad58786b54123f137d81e2c86cb39c793e7aaba9ddea803b83f967f3a9cfa520"
+    },
+    "ci-log-preservation": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-naming-repair-2026-11-04/preserve-ci.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "8f7b5de07e9e769ad793360bbe67a0cb31514bc06326bb4e0de65869391aefc3"
+    },
+    "focused-tests": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "9a8f999cd9a6fe6f1842a6d39ca838d87ac5b8e7dfd3dc8b44d2127e3ed20362"
+    },
+    "format-owned": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "scripts/check_stale_names.py",
+        "tests/test_stale_names.py",
+        "spec/performance/graph-resolved-axis-naming-repair-2026-11-04"
+      ],
+      "exitCode": 0,
+      "recordSha256": "c1c47aa040f6531c8ed673eb0de968776405d0a3ac55b617bd59e773bdc5df1f"
+    },
+    "hooks": {
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "recordSha256": "5d9528bac23da9c4c00adc3821ca7e5e1a8a5fe347f34a796c6259216f1ee6b7"
+    },
+    "inventory-check": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "10b990a0da10784a84e28e9f1f1cb64ea0e01f901f5f50de51b7c0e28b5516e7"
+    },
+    "lint-owned": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "scripts/check_stale_names.py",
+        "tests/test_stale_names.py",
+        "spec/performance/graph-resolved-axis-naming-repair-2026-11-04"
+      ],
+      "exitCode": 0,
+      "recordSha256": "219456da7e04fd7c2e9d5add7c0d1846335b4814057f831852e4f7a95f7dd227"
+    },
+    "naming-before": {
+      "argv": [
+        "python3",
+        "scripts/check_stale_names.py"
+      ],
+      "exitCode": 1,
+      "recordSha256": "69411efa1b94542bee3dd6b34a7363805b61fab16ff4aaed120d8df1e41bd10b"
+    },
+    "ownership": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "7a7d006d9e1a11467817f33946890dbfbfc15fc19598ac0410ab3be8cbf39a28"
+    },
+    "preservation-check": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-naming-repair-2026-11-04/preservation-proof.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "a000321c81c281f06297cb090c228dcbdd453ec2e5cd3b59003f5654e74dfc47"
+    },
+    "regressions-after": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py",
+        "-k",
+        "osm_helper or lookalike_manifest"
+      ],
+      "exitCode": 0,
+      "recordSha256": "4b2e00875b072d90d9d689009e9f8dda48fa3ee4ac25f246df774b8bdb436398"
+    },
+    "regressions-before": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py",
+        "-k",
+        "osm_helper or lookalike_manifest"
+      ],
+      "exitCode": 1,
+      "recordSha256": "a6cbc529aad3ff2b27be4bba0325b68c4d7b052bf0ba561bf2627c6ffc9b3620"
+    },
+    "ruff-check": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "recordSha256": "37e936fa0516f571c45561c5cbf3ad3dc184e0764d82a0d67a0456b8abe6c4df"
+    },
+    "ruff-format": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "recordSha256": "26444bb07da0fa0cc7e358154197a729b6c04b25acde12ea420c61bdf212c454"
+    },
+    "shared-ci-log-preservation": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/graph-resolved-axis-naming-repair-2026-11-04/preserve-shared-ci.py"
+      ],
+      "exitCode": 0,
+      "recordSha256": "8b13ac09424a60023e1a390df4b8a922b2274669c0192cf31efabe3b4d44e052"
+    }
+  },
+  "runtimeQualificationReused": true,
+  "ciRetryPerformed": false,
+  "independentReview": "New final review is parent-owned and required before push; not claimed here"
+}

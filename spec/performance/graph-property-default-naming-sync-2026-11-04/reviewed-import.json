@@ -1,0 +1,29 @@
+{
+  "exact_imported_files": {
+    "scripts/check_stale_names.py": {
+      "bytes": 14036,
+      "sha256": "b6f21eb1e9645390c9bc736962cfa68902698a3371fd53476de12273072ac5bc",
+      "git_blob": "436d5c039ffae5096b812efac65a1dc21bb3349e"
+    },
+    "spec/design/xyg-naming.md": {
+      "bytes": 19162,
+      "sha256": "6891e68a5e35f246b1b10ce8c6deeed4d364ddb4dafb01084ee4a72d39e6d970",
+      "git_blob": "e69944788c14fd754701addb776f6fe0c099fccf"
+    },
+    "tests/test_stale_names.py": {
+      "bytes": 13284,
+      "sha256": "d9360d1c104789b6dd27bff16515f82c99fd86c4be14e976a3ae61fcd4831ecd",
+      "git_blob": "98008cc76bffb7f2ac3cdd5fae4ced1ae98223ce"
+    }
+  },
+  "entire_inventory_byte_exact_9b05": true,
+  "explicit_gaps": 685,
+  "acceptance": "preparation-only-not-a-freeze",
+  "property_helper": {
+    "bytes": 20079,
+    "sha256": "7b91a3c01770205f4738ca9b64f00802245b4a196e86981c6c98a8e60b695c6f",
+    "entire_file_exact_9b05": true
+  },
+  "other_metadata_changes": [],
+  "nonreceipt_merge_increment_vs_9b05_sha256": "a6326a0950d0693d853022c6834fe6631ea12967ef8272977544cf4fce92fc8e"
+}
