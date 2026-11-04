@@ -199,12 +199,20 @@ Render recovery before more input. The path never calls canonicalScene,
 `prepareScene`, `layoutWasmCose` or legacy graph-mark compilation. Existing
 `renderWasmGraphForge` canonicalScene behavior remains unchanged.
 
-The controller owns keyboard capture, focus, ARIA, text-only Rust companion
+The controller owns primary-click/keyboard capture, DOM focus, ARIA, text-only Rust companion
 pages and event dispatch. Rust owns focus order, selection, identities,
-provenance, summary and aligned row refs. Pointer/hover/link/temporal/update/
+provenance, summary and aligned row refs. Hover/gestures/link/temporal/update/
 force scheduling and the rest of S5b/S6/S7 remain open. The legacy CSR path is
 retained for ordinary `spec.graph` until S6 supplies its attachment/identity
 migration; the explicit attachment never reaches it or generic CPU selection.
+Primary clicks use existing SelectAt1 with raw two-f64 CSS content-box
+coordinates: Replace, Shift Add, Ctrl/Meta Toggle (Toggle wins with Shift).
+Positive axis-aligned CSS matrix scales, border/padding/offset/ancestor-scroll
+mapping are supported; unsupported transforms and out-of-content clicks submit
+no command. Input is synchronously admitted only while live/idle/nonstale, with
+no busy/stale replay. Blank Replace preserves highlights and SelectAt preserves
+Rust logical focus. The [pointer receipt](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
+records exact real mouse and complete native/WASM byte proof and limits.
 Exact hover/picked ref publication remains a Rust wire gap. No ABI, arena,
 package gate, compiler/profile/optimizer/dependency or guard changes accompany
 this TypeScript/Worker vertical. It implies no performance or release acceptance.

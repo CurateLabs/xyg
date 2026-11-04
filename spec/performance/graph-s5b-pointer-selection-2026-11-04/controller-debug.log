@@ -1,0 +1,41 @@
+PASS default16MiB-compose-attach-GPU-lastgood-signed-camera
+PASS real-Tab-in-arrows-visible-focus-same-revision-unchangedgeometry
+PASS Enter-replace-CtrlMetaToggle-Escape-authoritative-empty-propagates
+PASS observer-exception-isolated-and-reduced-motion-static-focus
+PASS Tab-forward-back-out-no-trap
+PASS duplicate-attach-and-competing-product-lanes-refuse-before-mutation
+PASS wrong-instance-Rust-refusal-and-malformedGPU-retain-lastgood-stale-requires-refresh
+PASS one-outstanding-action-busy-unaccepted-keys-and-queued-double-disposal-no-lateevents
+PASS constructor-render-failure-closes-session-and-borrowedWorker-survives
+PASS twoWorkers-independent-lifetimes-and-wrong-envelope-terminal
+PASS dirty-shared-sampler-unit2-preserves-exact-shipped-graph-pixels
+PASS context-loss-restore-exact-last-picture-and-legacy-path-unreachable
+PASS Rust-paged-companion51-aligned-rowSelect-textContent-focus-preservation
+PASS trusted-dialog-Escape-Rust-applicability-admission-and-refusal
+PASS primary-mouse-exact-node-replace-shiftAdd-CtrlMetaToggle-and-rawf64
+pointer oracle piece 0 {"point":{"css":[256.00000000000006,149.12875],"client":[1032.0000000000002,816.515],"count":70,"oracle":{"g":[176.74988148044096,149.96,335.2501185195591,149.96,1.1875,0,0,6.749881480440972,343.2501185195591,149.96,335.2501185195591,153.96,335.2501185195591,145.96],"index":0,"i":0,"all":[176.74988148044096,149.96,335.2501185195591,149.96,1.1875,0,0,6.749881480440972,343.2501185195591,149.96,335.2501185195591,153.96,335.2501185195591,145.96,176.74988148044096,150.04,335.2501185195591,150.04,1.1875,0,0,6.749881480440972,343.2501185195591,150.04,335.2501185195591,154.04,335.2501185195591,146.04,355.6163394867804,153.7442263245203,487.7272581585168,241.8181721056779,1.1875,0,0,6.75,494.3836605132195,246.2557736754797,485.50845737361584,245.14637328302925,489.94605894341765,238.48997092832647],"ids":["0","3","1","3","3","3"]}},"raw":{"count":71,"operation":1,"revision":1,"coordinates":[256,149.25],"event":{"trusted":true,"button":0,"detail":1,"clientX":1032,"clientY":817},"words":[1,1,0,0,0,0,0,0,0]},"refs":[{"kind":1,"uuid":"0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"}]}
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+    kind: 1,
++   uuid: '0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c'
+-   uuid: '0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b'
+  }
+
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:287:23
+    at async run (file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:32:52)
+    at async file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:277:5 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 1, uuid: '0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c' },
+  expected: { kind: 1, uuid: '0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b' },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.4

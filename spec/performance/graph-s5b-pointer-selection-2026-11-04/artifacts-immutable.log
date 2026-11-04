@@ -1,0 +1,97 @@
+{
+  "verifiedApprovedBuildInputs": 301,
+  "changedInputs": [
+    "js/src/63_graph_controller.ts",
+    "js/src/63_graph_session_wire.ts"
+  ],
+  "unchangedInputCount": 299,
+  "artifacts": {
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2120259,
+      "sha256": "3f53a4747010f6cfc9e7f308c73d35a81d68cd2f6ffecaafb1860aa3cf9053b0"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6108424,
+      "sha256": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 794982,
+      "sha256": "21aa0a3b0f20a7b34f0ebd250c97b02992b7d8d8e526d20076465e3d681c710a"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 795011,
+      "sha256": "30fd01d9717a67eaba3bb38c31d16b346ebfe28f2652dd3490414a681955a1cd"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1922723,
+      "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2582821,
+      "sha256": "ef2471595d9fa061b6f7ebb821baa93e199a3839b5d0825192c79c210a63f535"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "2a7df6701bbd0fcd1f5313c433bb4306fd30cc674ee8c78090929f408b1571e0"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 794982,
+      "sha256": "21aa0a3b0f20a7b34f0ebd250c97b02992b7d8d8e526d20076465e3d681c710a"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 795011,
+      "sha256": "30fd01d9717a67eaba3bb38c31d16b346ebfe28f2652dd3490414a681955a1cd"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1922723,
+      "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2582821,
+      "sha256": "ef2471595d9fa061b6f7ebb821baa93e199a3839b5d0825192c79c210a63f535"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "2a7df6701bbd0fcd1f5313c433bb4306fd30cc674ee8c78090929f408b1571e0"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 19000,
+      "sha256": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95"
+    }
+  },
+  "changedPairedAssets": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js"
+  ],
+  "optimized": {
+    "bytes": 1922723,
+    "gzip6": 783181,
+    "sha256": "6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273",
+    "gzip6Sha256": "5ed44e4d8802ddcdfb48dbe0aded7206d8228e9f9970a868b2bb8aaec35e5d4a",
+    "limits": {
+      "raw": 1923072,
+      "gzip6": 783360
+    },
+    "headroom": {
+      "raw": 349,
+      "gzip6": 179
+    }
+  },
+  "versions": {
+    "native": 399,
+    "wasm": 35,
+    "scene": 34,
+    "painter": 17
+  },
+  "provenance": "Approved R2 native/raw-WASM reused by verified byte identity; client and normal shipping packager rebuilt locally. No fresh Rust compilation claimed."
+}

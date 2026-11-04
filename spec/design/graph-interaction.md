@@ -1,6 +1,6 @@
 # Graph interaction, coordinated selection, and accessibility (#36)
 
-Status: **S1–S4 merged; bounded S5a Rust GPU/result foundation integrated locally with reviewed package-functionality limits and passing production/paired-asset/full-foundation proof; final integrated source/policy/evidence review approved; CI remains pending. One experimental explicit S5b keyboard/GPU/companion attachment is implemented; broader S5b and S6/S7 acceptance remain outstanding** (see [Implementation status](#implementation-status)).
+Status: **S1–S4 merged; bounded S5a Rust GPU/result foundation integrated locally with reviewed package-functionality limits and passing production/paired-asset/full-foundation proof; final integrated source/policy/evidence review approved; CI remains pending. One experimental explicit S5b primary-click/keyboard/GPU/companion attachment is implemented; broader S5b and S6/S7 acceptance remain outstanding** (see [Implementation status](#implementation-status)).
 Scope: interaction, selection, focus, and accessibility over composed GraphForge
 graphs, plus the position hooks (pin, drag, relayout step, persistence).
 Non-goals: editing; layout *scheduling* (#35). Related:
@@ -79,7 +79,7 @@ Rust `graphforge/interaction.rs` owns the session: identity resolution, state op
 render publication, pick, disclosure, positions/relayout, stamps, companion text.
 `xyg-core` holds sessions in a handle table beside the document store;
 `xyg-wasm` holds one session per instance beside `instance.output`. The browser
-`js/src/63_graph_controller.ts` owns the bounded explicit keyboard attachment,
+`js/src/63_graph_controller.ts` owns the bounded explicit primary-click/keyboard attachment,
 DOM focus, ARIA, companion DOM and `xy:graph-*` dispatch described below.
 `63_graph_session_wire.ts` frames bytes and validates semantic replies;
 `63_graph_gpu.ts` validates and uploads Rust GPU-v1 buffers through `GLHost`.
@@ -452,7 +452,7 @@ Move mode: arrows move by 8 CSS px, Shift 32 px (`space=1`, Rust converts via ca
 | S2 | Render publication (§2.3 minus the pick index, §2.9): `RenderOutput`, emphasis plane, aggregate refs, hover, highlight, disclosure, pin/move/relayout, FocusStep/FocusRing, F4 bound visibility, revisions | implemented (see S2 notes) |
 | S3 | Pick index, admission and degraded mode (§2.3); `CoordinationGate` + `ApplyRemote` (§2.4); `session_update` (§1.2) | implemented and merged through #1082; historical real package/assets/parity and full strict-CSP proof under 1,513/626-KiB limits |
 | S4 | Native + WASM session ABI, browser `DT.u32`, manifest. **Depends on** S3's `CoordinationGate` / `ApplyRemote` / `session_update` (deferred out of S2) and **must deliver the render style/emphasis planes whenever they changed, not only when `render_revision` changed** (style-only operations republish at the same revision) | repaired source independently approved; separate parent functionality decision sets 1,817/742-KiB package gates; real shipping proof and final policy-diff review recorded separately below; merged as #1083 at a970d586 (native ABI398/WASM35) |
-| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result foundation merged as #1085 at 6ffc1ad1 after independent review, current CI and the main merge queue; explicit historical 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; complete-selection publication and retained progressive-layout P1 follow-up merged as #1088 at 3c665807 on 2026-11-04, with the reviewed 1,838/751-KiB package gates; experimental explicit S5b keyboard/GPU/companion attachment implemented below, broader S5b runtime/visual acceptance remains open |
+| S5 | Browser controller, accessibility, emphasis pass and painter attributes; delete the `58_graph.ts` hover policy | bounded S5a Rust GPU/result foundation merged as #1085 at 6ffc1ad1 after independent review, current CI and the main merge queue; explicit historical 1,829/747-KiB functionality decision and production/paired-asset/full-foundation proof below; complete-selection publication and retained progressive-layout P1 follow-up merged as #1088 at 3c665807 on 2026-11-04, with the reviewed 1,838/751-KiB package gates; experimental explicit S5b primary-click/keyboard/GPU/companion attachment implemented below, broader S5b runtime/visual acceptance remains open |
 | S6 | Python/Node `GraphSession`, channel kind, VS Code protocol | private [Python native byte transport](graph-session-python-transport.md) merged as #1087 at f156569f after independent review, current CI and the main merge queue; serialized lifecycle and callback-safe input conversion are implemented; public widget/channel/Node/VS Code attachment remains planned |
 | S7 | Evidence: bench, parity fixtures, Playwright, cross-session result-id proof | planned |
 
@@ -1122,6 +1122,50 @@ contract replaces the asynchronous preventDefault defect recorded in the immutab
 first attachment receipt. Other accepted keys are suppressed synchronously.
 Observer exceptions do not undo accepted state.
 
+Primary single clicks on the painter canvas submit existing **SelectAt (1)**:
+Replace without modifiers, Add with Shift, Toggle with Ctrl or Meta (Toggle
+wins when combined with Shift). Alt, nonprimary buttons, repeated clicks within
+a multi-click sequence, and already-cancelled clicks pass without a command.
+Only a live, idle, nonterminal attachment with a nonstale accepted publication
+admits input. Coordinates and modifiers are captured synchronously and framed
+with the accepted revision through the same exclusive lane; busy/stale clicks
+are discarded, never queued or replayed. Admission moves DOM application focus
+but does not submit a Rust focus operation. Rust alone picks the accepted
+publication, expands aggregate membership and atomically applies the mode.
+Blank Replace replaces selection with empty; blank Add/Toggle are noops. None
+of these become Clear: highlight planes survive blank Replace.
+
+Coordinates map the actual displayed canvas **content box** (excluding border
+and padding), using its bounding rectangle and computed box dimensions, into
+the accepted camera's viewport width/height. Positive axis-aligned CSS matrix
+scales/translations, offsets, borders, padding, border-box sizing and ancestor
+scrolling are supported. No DPR multiplication or data-camera transform is
+applied: Rust's paint/pick geometry already uses CSS screen coordinates.
+Rotation, shear, perspective, reflected/3D matrices, individual CSS
+rotate/scale/translate properties, non-fill object-fit, canvas-local scrolling,
+disconnected/degenerate boxes, and points outside the content box pass without
+commands. These are presentation-admission boundaries, not TypeScript hit policy.
+
+The internal encoder admits `coordinates?: readonly [number, number]` only for
+operation1, requires exactly two finite numbers, and emits only existing
+`coordinates.f64` F64/count2. Modes0/1/2 extend to operation1; old framing guards
+remain. There is no public pointer method, picked-target interface, hover event,
+or new alias. The existing `xy:graph-select` snapshot carries complete exact
+UUID/derived/result-row provenance from Rust, independent of changed refs or
+visual flags. SelectAt leaves logical focus and geometry/layout unchanged and
+republishes selection style at the same revision. Complete semantic/GPU
+validation still precedes all installation; refusal retains the last good state,
+and only successful explicit refresh re-enables stale input. Immediate disposal
+removes the canvas listener and suppresses late painting/events.
+
+The append-only [pointer-selection receipt](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
+records actual mouse delivery, exact geometry ownership, negative admission,
+byte replay, paired shipping assets and bounded fixture counts. It claims no
+scale/competitor win, broader S5b/S6/S7 completion, or release acceptance. Exact
+hover remains a separate versioned query-scoped PickTarget/membership-receipt
+problem: private `hover_at` source lists and keyboard edge-focus stand-ins do
+not supply an exact aggregate-render-edge picked target.
+
 Previous/Next use Rust Companion operation 17 with page size 50. Row Select
 submits SelectRefs with that row's **aligned Rust candidate ref**, never a
 label/UUID parsed from displayed text. Transport row/cell separators are split
@@ -1136,7 +1180,7 @@ opened session. Double cleanup and WebGL context restoration retain the same
 lifetime rules; disposal remains available while an action is busy.
 
 This vertical intentionally exposes no temporal binding, coordination/linking,
-structural update, force scheduler, pointer/hover/brush/lasso, disclosure,
+structural update, force scheduler, hover/pan/brush/lasso, disclosure,
 move/pin/relayout, or legacy click aliases. Broader S5b, S6 legacy attachment and
 removal, S7 visual/scale/responsiveness, #36, M4 and #108 acceptance remain open.
 `58_graph.ts` CSR handling remains for ordinary `spec.graph`, whose host wire

@@ -118,3 +118,11 @@ has 685 review gaps; transitive semantic types and runtime/module compatibility
 continue to require the owning source and real browser proof. This is not a
 stable/freezable baseline waiver. The [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md)
 retains the old-same-ABI fail-closed proof and explicit refusal timing contract.
+
+The bounded primary-click preparation adds no public declaration or alias.
+Existing experimental attachment snapshots/events now follow Rust SelectAt
+with Replace/Shift Add/Ctrl-or-Meta Toggle and the documented CSS coordinate
+admission boundaries. The refreshed inventory still has 685 explicit gaps and
+remains unaccepted as a freeze; broader hover/gesture/public-host and S5b/S6/S7
+acceptance are outstanding. [Pointer proof and limits](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
+retain this distinction.

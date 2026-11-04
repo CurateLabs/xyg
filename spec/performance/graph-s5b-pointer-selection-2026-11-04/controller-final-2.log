@@ -1,0 +1,38 @@
+PASS default16MiB-compose-attach-GPU-lastgood-signed-camera
+PASS real-Tab-in-arrows-visible-focus-same-revision-unchangedgeometry
+PASS Enter-replace-CtrlMetaToggle-Escape-authoritative-empty-propagates
+PASS observer-exception-isolated-and-reduced-motion-static-focus
+PASS Tab-forward-back-out-no-trap
+PASS duplicate-attach-and-competing-product-lanes-refuse-before-mutation
+PASS wrong-instance-Rust-refusal-and-malformedGPU-retain-lastgood-stale-requires-refresh
+PASS one-outstanding-action-busy-unaccepted-keys-and-queued-double-disposal-no-lateevents
+PASS constructor-render-failure-closes-session-and-borrowedWorker-survives
+PASS twoWorkers-independent-lifetimes-and-wrong-envelope-terminal
+PASS dirty-shared-sampler-unit2-preserves-exact-shipped-graph-pixels
+PASS context-loss-restore-exact-last-picture-and-legacy-path-unreachable
+PASS Rust-paged-companion51-aligned-rowSelect-textContent-focus-preservation
+PASS trusted-dialog-Escape-Rust-applicability-admission-and-refusal
+PASS primary-mouse-exact-node-replace-shiftAdd-CtrlMetaToggle-and-rawf64
+pointer oracle piece 0 {"point":{"css":[256,145.16875],"client":[1032,800.675],"count":70},"raw":{"count":71,"operation":1,"revision":1,"coordinates":[256,145.25],"event":{"trusted":true,"button":0,"detail":1,"clientX":1032,"clientY":801},"words":[1,1,0,0,0,0,0,0,0]},"refs":[{"kind":1,"uuid":"0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"}]}
+pointer oracle piece 1 {"point":{"css":[256,154.83125],"client":[1032,839.325],"count":71},"raw":{"count":72,"operation":1,"revision":1,"coordinates":[256,154.75],"event":{"trusted":true,"button":0,"detail":1,"clientX":1032,"clientY":839},"words":[1,1,0,0,0,0,0,0,0]},"refs":[{"kind":1,"uuid":"0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"}]}
+pointer oracle piece 2 {"point":{"css":[169.85387557879125,170.87491731553865],"client":[687.415502315165,903.4996692621546],"count":72},"raw":{"count":73,"operation":1,"revision":1,"coordinates":[169.75,170.75],"event":{"trusted":true,"button":0,"detail":1,"clientX":687,"clientY":903},"words":[1,1,0,0,0,0,0,0,0]},"refs":[{"kind":1,"uuid":"0d0d0d0d-0d0d-0d0d-0d0d-0d0d0d0d0d0d"}]}
+pointer oracle head 4 {"point":{"css":[489.9460589434177,243.29737262894514],"client":[1967.7842357736706,1193.1894905157806],"count":73},"raw":{"count":74,"operation":1,"revision":1,"coordinates":[490,243.25],"event":{"trusted":true,"button":0,"detail":1,"clientX":1968,"clientY":1193},"words":[1,1,0,0,0,0,0,0,0]},"refs":[{"kind":2,"resultId":"exact:雪\t","layer":0,"path":"9007199254740995","order":"9007199254740993"}]}
+pointer oracle frame 0 {"point":{"css":[37.25,100],"client":[157,620],"count":74},"raw":{"count":75,"operation":1,"revision":1,"coordinates":[37.25,100],"event":{"trusted":true,"button":0,"detail":1,"clientX":157,"clientY":620},"words":[1,1,0,0,0,0,0,0,0]},"refs":[{"kind":0,"uuid":"01000000-0000-0000-0000-000000000000"}]}
+pointer oracle gap 0 {"point":{"css":[172.71857039636643,148],"client":[698.8742815854657,812],"count":75},"raw":{"count":76,"operation":1,"revision":1,"coordinates":[172.75,148],"event":{"trusted":true,"button":0,"detail":1,"clientX":699,"clientY":812},"words":[1,1,0,0,0,0,0,0,0]},"refs":[{"kind":0,"uuid":"02000000-0000-0000-0000-000000000000"}]}
+PASS Rust-exact-persisted-parallel-selfloop-derived-head-and-compound-frame
+PASS blank-Replace-empty-AddToggle-noops-samerevision-focus-and-geometry
+PASS signedcamera-DPR2-CSSscale-offset-border-padding-borderbox-scroll
+PASS unsupported-transform-alt-secondary-and-busy-clicks-pass-without-replay
+PASS held-primarySelectAt-busy-Escape-discard-focus-stable-and-samerevision-repaint
+PASS pointer-Rust-refusal-stale-malformed-atomic-and-explicit-refresh
+PASS blank-Replace-preserves-Rust-highlight-planes-and-pointer-observer-errors
+PASS default16MiB-10001-source-fixture-Rust-budget-refusal
+aggregate fixture aggregate
+aggregate fixture cap
+PASS aggregate-exact-Rust-membership-and-typed-cap-refusal-default-arena
+PASS pointer-dispose-during-reply-removes-listener-and-twoWorkers-isolate
+PASS terminal-pointer-input-passes-without-command-and-mainWorker-survives
+PASS old-same-ABI-module-missing-clear-fact-fails-closed
+PASS ambiguous-lost-reply-watchdog-is-terminal-no-replay-or-lateevents
+PASS close-drains-before-ownedWorker-disposal-and-final-no-lateevents
+graph session strict-CSP shipping journey: 29 cases passed, zero skips

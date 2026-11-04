@@ -24,8 +24,9 @@ export interface GraphSessionLoad {
 }
 export interface GraphSessionRequest {
   instanceId: bigint; opSeq: bigint; revision: number;
-  operation: 19 | 21 | 4 | 5 | 7 | 11 | 17;
+  operation: 19 | 21 | 1 | 4 | 5 | 7 | 11 | 17;
   document?: Uint8Array | ArrayBuffer; load?: GraphSessionLoad; camera?: GraphSessionCamera;
+  coordinates?: readonly [number, number];
   direction?: 1 | -1; mode?: 0 | 1 | 2; refs?: readonly GraphSessionRef[];
   page?: number; pageSize?: number;
 }
@@ -111,7 +112,7 @@ export function decodeGraphSessionRefs(bytes: Uint8Array): GraphSessionRef[] {
 /** A bounded internal operation vocabulary. It is not a public arbitrary-command API. */
 export function encodeGraphSessionRequest(input: GraphSessionRequest): Uint8Array {
   exactU64(input.instanceId, "instanceId", true); exactU64(input.opSeq, "opSeq", true); exactU32(input.revision, "revision");
-  if (![19, 21, 4, 5, 7, 11, 17].includes(input.operation)) throw new TypeError("unsupported graph controller operation");
+  if (![19, 21, 1, 4, 5, 7, 11, 17].includes(input.operation)) throw new TypeError("unsupported graph controller operation");
   const words = [input.revision, input.operation, 0, 0, 0, 0, 0, 0, 0];
   const sections: Array<{ name: string; dtype: number; values: any }> = [];
   const add = (name: string, dtype: number, values: any) => sections.push({ name, dtype, values });
@@ -120,9 +121,15 @@ export function encodeGraphSessionRequest(input: GraphSessionRequest): Uint8Arra
     words[5] = input.direction === 1 ? 1 : MAX_U32;
   } else if (input.direction !== undefined) throw new TypeError("direction is only valid for focus step");
   if (input.mode !== undefined) {
-    if (![7, 11].includes(input.operation) || ![0, 1, 2].includes(input.mode)) throw new TypeError("invalid selection mode");
+    if (![1, 7, 11].includes(input.operation) || ![0, 1, 2].includes(input.mode)) throw new TypeError("invalid selection mode");
     words[2] = input.mode;
   }
+  if (input.operation === 1) {
+    if (!Array.isArray(input.coordinates)) throw new TypeError("select at requires two finite CSS coordinates");
+    const coordinates = numbers(input.coordinates, "coordinates", 2);
+    if (!coordinates.every(Number.isFinite)) throw new TypeError("select at requires two finite CSS coordinates");
+    add("coordinates.f64", DT.f64, coordinates);
+  } else if (input.coordinates !== undefined) throw new TypeError("coordinates are only valid for select at");
   if (input.operation === 11) {
     if (!input.refs || input.refs.length > 10_000) throw new TypeError("select refs requires a bounded ref list");
     add("refs.bytes", DT.bytes, encodeGraphSessionRefs(input.refs));

@@ -1,0 +1,96 @@
+TAP version 13
+# Subtest: packaging rejects wrong ABI before publication
+ok 1 - packaging rejects wrong ABI before publication
+  ---
+  duration_ms: 544.961769
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong Scene before publication
+ok 2 - packaging rejects wrong Scene before publication
+  ---
+  duration_ms: 376.277896
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong u64 signature before publication
+ok 3 - packaging rejects wrong u64 signature before publication
+  ---
+  duration_ms: 329.384745
+  type: 'test'
+  ...
+# Subtest: packaging rejects start function before publication
+ok 4 - packaging rejects start function before publication
+  ---
+  duration_ms: 349.003605
+  type: 'test'
+  ...
+# Subtest: packaging is deterministic and emits matching version/hash manifests
+ok 5 - packaging is deterministic and emits matching version/hash manifests
+  ---
+  duration_ms: 918.799899
+  type: 'test'
+  ...
+# Subtest: withheld producer inputs fail early naming the producer command
+ok 6 - withheld producer inputs fail early naming the producer command
+  ---
+  duration_ms: 395.098009
+  type: 'test'
+  ...
+# Subtest: a forbidden-API classic worker is rejected before the first write
+ok 7 - a forbidden-API classic worker is rejected before the first write
+  ---
+  duration_ms: 338.079068
+  type: 'test'
+  ...
+# Subtest: standalone temporal owners keep frame and replacement staging at the default arena
+ok 8 - standalone temporal owners keep frame and replacement staging at the default arena
+  ---
+  duration_ms: 57.118371
+  type: 'test'
+  ...
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 9 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 115.00669
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/packages/xy-client/dist/xyg-wasm.wasm","bytes":1922723,"sha256":"6ebbdb7f7e6859ad9a08bd2c0237c62aaa6147df8c683b080959b42e7d2fb273","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/target/release/libxyg_core.so","nativeSha256":"3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6","diagnosticModule":false}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 10 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 841.264972
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 11 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 30.068476
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 12 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 101.041347
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 13 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 22.905582
+  type: 'test'
+  ...
+# Subtest: captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+ok 14 - captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+  ---
+  duration_ms: 25.533469
+  type: 'test'
+  ...
+# {"capture":"/home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/spec/performance/graph-s5b-pointer-selection-2026-11-04/captured-requests.json.gz","requests":19,"selectAt":17,"bytesCompared":"complete XYGR including GPU, selection, provenance and focus"}
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2106.472027

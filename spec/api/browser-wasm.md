@@ -82,6 +82,24 @@ and polite Rust-summary live region accompany a following table. Previous/Next
 page 50 Rust companion rows; each Select button uses its aligned Rust ref.
 Labels and summary are rendered as text.
 
+A primary single click on the canvas replaces selection; Shift adds, Ctrl/Meta
+toggles, and Ctrl/Meta wins when combined with Shift. Alt and nonprimary clicks
+pass through. Only live, idle, accepted nonstale publications admit clicks;
+busy/stale clicks are discarded without replay. Rust SelectAt owns the exact
+pick and aggregate membership. Blank Replace empties selection while preserving
+highlights; blank Add/Toggle do nothing. DOM focus may move to the application
+surface; Rust logical focus does not change.
+
+Clicks map the displayed canvas content box into the accepted CSS viewport,
+excluding borders/padding and supporting positive axis-aligned CSS matrix
+scaling, offsets and ancestor scrolling. No DPR or data-camera transform is
+applied. Rotation/shear/perspective/reflections/3D matrices, individual CSS
+transform properties, non-fill object-fit, canvas-local scrolling and clicks
+outside the content box are unsupported and submit no command. There is no
+hover or picked-target event/API; `xy:graph-select` retains the complete accepted
+Rust selection snapshot. See the [bounded pointer receipt](../performance/graph-s5b-pointer-selection-2026-11-04/README.md)
+for the actual mouse and native/WASM byte proofs.
+
 Bubbling `xy:graph-render`, `xy:graph-focus` and `xy:graph-select` carry accepted
 snapshots. `xy:graph-stale` requires `refreshRender()` before more input;
 `xy:graph-error` carries a code/message. Refusals preserve the preceding accepted
@@ -90,7 +108,7 @@ DOM/events, and drains the non-cancellable lane before CLOSE. A lost/ambiguous
 Worker reply is terminal rather than proof that mutation was cancelled.
 
 This path does not call the canonicalScene route; `renderWasmGraphForge` keeps
-its existing API. There is no raw arbitrary-interaction API, pointer/hover,
+its existing API. There is no raw arbitrary-interaction API, hover/pan,
 brush/lasso, disclosure, move/pin/relayout, structural update, temporal binding,
 linking, force scheduler, or legacy click alias. Broader S5b/S6/S7 and
 #36/M4/#108 acceptance remain open. Exact hover/picked refs still need a later

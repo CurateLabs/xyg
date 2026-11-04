@@ -1,0 +1,35 @@
+PASS default16MiB-compose-attach-GPU-lastgood-signed-camera
+PASS real-Tab-in-arrows-visible-focus-same-revision-unchangedgeometry
+PASS Enter-replace-CtrlMetaToggle-Escape-authoritative-empty-propagates
+PASS observer-exception-isolated-and-reduced-motion-static-focus
+PASS Tab-forward-back-out-no-trap
+PASS duplicate-attach-and-competing-product-lanes-refuse-before-mutation
+PASS wrong-instance-Rust-refusal-and-malformedGPU-retain-lastgood-stale-requires-refresh
+PASS one-outstanding-action-busy-unaccepted-keys-and-queued-double-disposal-no-lateevents
+PASS constructor-render-failure-closes-session-and-borrowedWorker-survives
+PASS twoWorkers-independent-lifetimes-and-wrong-envelope-terminal
+PASS dirty-shared-sampler-unit2-preserves-exact-shipped-graph-pixels
+PASS context-loss-restore-exact-last-picture-and-legacy-path-unreachable
+PASS Rust-paged-companion51-aligned-rowSelect-textContent-focus-preservation
+PASS trusted-dialog-Escape-Rust-applicability-admission-and-refusal
+PASS primary-mouse-exact-node-replace-shiftAdd-CtrlMetaToggle-and-rawf64
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: 149 != 149.96
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:261:45
+    at Array.forEach (<anonymous>)
+    at click (file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:261:23)
+    at async file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:279:17
+    at async run (file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:32:52)
+    at async file:///home/ubuntu/.t3/worktrees/xyg/t3-5009d7d3/scripts/graph_session_controller_wasm_smoke.mjs:276:5 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v22.23.4
