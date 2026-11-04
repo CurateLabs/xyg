@@ -1,0 +1,69 @@
+{
+  "reviews": {
+    "defaults": {
+      "reviewer": "m4_defaults_audit",
+      "disposition": "APPROVED; no blocking source defects, as reported by parent",
+      "commit": "2ed544dcb85698f21d0f5db297320490ce26c8ee",
+      "whole_diff_sha256": "c1b80e0baf630b813137d639e9c323aa0c927ce2f8b95fe5150d2da3d945073b",
+      "parent_reported_audit_scope": {
+        "receipt_files": 170,
+        "build_inputs": 699,
+        "artifacts": 11,
+        "unmasked_image_pairs": 6,
+        "preservation_verified": true
+      },
+      "nonblocking_disposition": {
+        "prose_99_case_count": "corrected to 101 in current spec; new erratum preserves historical receipt",
+        "generic_label_candidates_before_property_clear": "minor unmeasured extra work; left unchanged as instructed",
+        "halos": "no reachable defect for property epistemic zero; no unsolicited change",
+        "selected_widths": "propagate; unchanged"
+      }
+    },
+    "css": {
+      "reviewer": "s5a_final_review",
+      "disposition": "APPROVED, as reported by parent",
+      "commit": "78b4b69f76b955ab19bd365f0492711cc3c06c1f",
+      "whole_diff_sha256": "bbc98d31fde137452231604b95dbade3445212f5bb0402b5281150078a565a0d",
+      "nonreceipt_sha256": "22c3959e7b5ae164f2c6b4fc154aacc89925de7bd31c1a6cbf67938c74d4e24e"
+    }
+  },
+  "normal_merge_commit": "86249d6b36e4e0b44fe33844199669be7631809c",
+  "rust_python_node_exact_reviewed_defaults": true,
+  "browser_typescript_exact_reviewed_css": true,
+  "parent_explicit_functionality_decision": {
+    "raw_limit": 1923072,
+    "gzip6_limit": 783360,
+    "raw_kib": 1878,
+    "gzip6_kib": 765,
+    "reviewed_candidate": [
+      1922561,
+      783148
+    ],
+    "candidate_headroom": [
+      511,
+      212
+    ],
+    "growth_over_p1": [
+      41053,
+      15014
+    ],
+    "retain": "zero-layer property existing shared native home/label behavior",
+    "component_attribution": "unmeasured; generic cartesian ticks already WASM-reachable",
+    "no_automatic_future_allowance": true,
+    "compiler_profile_toolchain_optimizer_dependencies_exports_guards_runtime_unchanged": true
+  },
+  "old_gate_failure": {
+    "raw_limit": 1882112,
+    "gzip6_limit": 769024,
+    "candidate": [
+      1922561,
+      783148
+    ],
+    "over": [
+      40449,
+      14124
+    ],
+    "status": "IMMUTABLE HISTORICAL FAIL; rejected-candidate functional proof was not shipping qualification"
+  },
+  "new_independent_final_integrated_review": "Required from parent before PR/push/integration"
+}

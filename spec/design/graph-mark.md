@@ -1152,6 +1152,11 @@ boundary edges retain their canonical source identity.
   extent against the Rust plot rectangle, and a Chromium probe checks the
   live chart's nodes and painted labels. The visual goldens pin the domain
   in both hosts.
+  Zero-result-layer GraphForge canonical property Scenes also use this
+  home-view and hidden-axis presentation, together with §7.1's label plan
+  and caption priorities (parent decision 2026-11-03; graphforge-compositions
+  §4.4a). This convergence does not change generic semantic Scenes, layered
+  canonical compositions, or the public graph's authored-option exclusions.
 - Visual regression (#34): `tests/test_graph_visual_goldens.py` commits PNG
   goldens for the ordinary, dense, compound, selected, and dark-theme states
   (`tests/fixtures/graph_visual/`, inputs in
@@ -1185,6 +1190,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_compound_collapse` | ABI 373 compound disclosure for composed graphs: visibility, representatives, propagated flags, edge keep/remap (#34) |
 | `xyg_graph_compound_frames` | ABI 373 visible group frames: transitive bounds, Scene paint, member-clearing pad (#34) |
 | `xyg_graph_home_domain` | ABI 377 composed graph home view: node-center autorange padded so markers, halos, frames, and home-view labels fit the hidden-axis graph plot (§8, #910) |
+| `xyg_graph_semantic_chrome_rgba8` | ABI 399 shared semantic chrome palette: chart background, plot background, foreground, grid (four RGBA8 rows); private host adapter accessor, no Scene or layout |
 | `xyg_graph_composed_scene` | ABI 376 (`out_reason`: 1 invalid, 2 legend footprint) rebuilds a composed graph chart's plain static Scene from its resolved per-item planes (frames, layered/dashed edges, heads, halos, nodes, labels, explicit legend; §8) (#34) |
 | `xyg_graph_label_plan` | ABI 371 budgeted, truncated, collision-free zoom-threshold label plan for composed graphs (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |

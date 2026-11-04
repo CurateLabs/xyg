@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "pytest",
+    "tests/test_verify_wasm_assets.py",
+    "tests/test_xyg_package_identity.py",
+    "tests/test_stage_node_packages.py",
+    "tests/test_stage_browser_package.py",
+    "-q"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab",
+  "started": "2026-11-03T23:16:43.022007+00:00",
+  "finished": "2026-11-03T23:16:48.276051+00:00",
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_PROPERTY_EVIDENCE": null,
+    "CARGO_TARGET_DIR": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "66b1c4728d3a147d25139bd2f8bb134ea927b80ac1ff858e2d406dbae9a6a969"
+}

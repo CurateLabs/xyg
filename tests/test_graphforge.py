@@ -339,9 +339,11 @@ def test_property_default_exports_repeat_exactly_without_changing_positions(
     svg = ET.fromstring(outputs["svg"])
     slots = lambda slot: [e for e in svg.iter() if e.get("data-xy-slot") == slot]  # noqa: E731
     captions = slots("graph_label")
-    assert [int(e.get("data-xy-stable-id")) for e in captions] == list(range(2**32, 2**32 + 5))
-    # The documented culler may truncate a caption, but cannot replace its identity.
-    for element, full in zip(captions, fixture["captions"], strict=True):
+    # The existing public graph plan reveals only these two captions at home.
+    # All five source captions retain their identities in the document above.
+    visible = [0, 4]
+    assert [int(e.get("data-xy-stable-id")) for e in captions] == [2**32 + i for i in visible]
+    for element, full in zip(captions, [fixture["captions"][i] for i in visible], strict=True):
         assert element.text == full or (
             element.text.endswith("…") and full.startswith(element.text[:-1])
         )
@@ -479,3 +481,46 @@ def test_published_core_rc5_catalog_composes_and_path_costs_keep_only_endpoint_i
                 assert c.nodes.uuid[c.edges.target[i]] == str(uuid.UUID(bytes=row["target_uuid"]))
                 assert c.layers[0]["edge_values"][i] == row["cost"]
                 assert row["cost"] == (1.0 if algorithm == "bfs_depth" else 4.25)
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_property_chrome_uses_rust_palette_before_authored_styles(theme: str) -> None:
+    composition = xyg.compose_graphforge(base=_base("property"))
+    chrome = _native.graph_semantic_chrome(theme)
+    default = xyg.graphforge_chart(composition, theme=theme).figure()
+    assert default.style == chrome
+    authored = {"background": "#123456", "--chart-text": "#abcdef", "--chart-bg": "#fedcba"}
+    styled = xyg.graphforge_chart(
+        composition, theme=theme, style=authored, padding=25, title="Authored title"
+    ).figure()
+    assert styled.style == {**chrome, **authored}
+    assert styled.padding == [25.0, 25.0, 25.0, 25.0]
+    assert styled.title == "Authored title"
+    assert styled.legend_options["title"] == composition.legend["title"]
+    assert [item["name"] for item in styled.legend_options["items"]] == [
+        row["text"] for row in composition.legend["rows"]
+    ]
+    # Layered host presentation is outside this property-only repair.
+    layered = _compose("louvain")
+    layered_default = xyg.graphforge_chart(layered, theme=theme).figure()
+    assert layered_default.style == {}
+    assert xyg.graphforge_chart(layered, theme=theme, style=authored).figure().style == authored
+
+
+def test_semantic_chrome_accessor_validates_theme_capacity_and_pointer() -> None:
+    import ctypes
+
+    copy = _native._lib.xyg_graph_semantic_chrome_rgba8
+    sentinel = ctypes.c_size_t(-1).value
+    out = (ctypes.c_uint8 * 20)(*([0xA5] * 20))
+    pointer = ctypes.cast(out, ctypes.c_void_p)
+    assert copy(0, None, 0) == 16
+    assert copy(2, pointer, 20) == sentinel
+    assert copy(1, None, 16) == sentinel
+    assert copy(1, pointer, 15) == 16
+    assert list(out) == [0xA5] * 20
+    assert copy(1, pointer, 20) == 16
+    assert bytes(out[:4]) == bytes([3, 7, 18, 255])
+    assert list(out[16:]) == [0xA5] * 4
+    with pytest.raises(ValueError, match="theme"):
+        _native.graph_semantic_chrome("sepia")

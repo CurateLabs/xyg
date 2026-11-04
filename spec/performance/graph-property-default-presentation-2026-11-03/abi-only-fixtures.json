@@ -1,0 +1,62 @@
+[
+  {
+    "file": "tests/fixtures/payload_attach_cross_host.json",
+    "before": "9c7a02348c2820279071ea15dda11973e45a0dc5b3c7b48e0127367a9335616c",
+    "after": "a86524b7bb5ed4a5fffd6f480913bbafffee6df332e31bfdf4a4e83bb3b1c075",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/series_palette_cross_host.json",
+    "before": "b1d76a4bde599aeec7ffc497b67958d62880969ddd62a0757ce0ce34b0a4e549",
+    "after": "1dec112503086d0c1c0dd0fccc20d819f44b47ec17cbe8c0596e4fc12bc846ba",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/force_emit_cross_host.json",
+    "before": "a30fb8e3351bb9c2c5a8240c4e54c828ddad6bf443fc4a1fa7984cdeab3e24d3",
+    "after": "e4297e0b01131a786e7621626909d43720235a96cfcf332fbc8c76a474872efc",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/animation_emit_cross_host.json",
+    "before": "6622f9d5dbeafc4358d74d0448aaa4786f378062e91b4bb39dc48e6a44a35646",
+    "after": "1e7755be5c68dbb36303108a85fae3fecdaf6b66307f9fd81c105f952a1894c9",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/payload_cross_host.json",
+    "before": "a4c0fe52b68c7d0cfed68b3bfc89fc3820669790a34b4d2e82d0995bc961c400",
+    "after": "610d9412c6eb4ae81f5e590b7fb6bd5ddfab10398b57dd617e5f7c653335612d",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/density_emit_cross_host.json",
+    "before": "09efa3b65013f79d90b7a51f386ceec20f26a93e8c423b4ab5970d909305b1cd",
+    "after": "9fa1a2d106c0a371b17a7646c7160d2f97e63d49cac15ff218dfbad9e0b5f783",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/default_styled_emit_cross_host.json",
+    "before": "22518847d00a042bb27f3d1e17421e3090643305d02bf3b545b00c38b1d07753",
+    "after": "2c8622bffcabe796c494d1b0e22bd2127b61547c9b4ffacb2fdf079feb21b651",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/payload_chrome_cross_host.json",
+    "before": "769f5a17f8f27337f287f458a22201cdb0e22ea8bdfa9f44bd88fde84f8a888a",
+    "after": "c5f340ff42c774eaf964a9e2e8fb0568f40baa44a6e21c3c33159006016ca7b2",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/tooltip_len_emit_cross_host.json",
+    "before": "95f1e509f00b2ca466fdc8b191dd0cb2a17d525d9de8c7d90d1af515927c4a77",
+    "after": "ff5012b67f7e89bc021b9a4753696a14354172abf12d65573c68e3cfa3f314bd",
+    "other_fields_exact": true
+  },
+  {
+    "file": "tests/fixtures/geo_cross_host.json",
+    "before": "e35cb5d978ab5a2d34901a7d590582667789305ed02f8711b0ac8ad048086ca9",
+    "after": "841fa912b6cf881b41f9a41f26dbeaf0bbffd4b83321cc972f7fb7b73aad2993",
+    "other_fields_exact": true
+  }
+]

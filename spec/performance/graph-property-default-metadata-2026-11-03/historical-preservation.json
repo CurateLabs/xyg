@@ -1,0 +1,12 @@
+{
+  "81c9f7f170f448e7b8b98e2bd1cd613ee56f38f1": {
+    "historical_file_count": 8501,
+    "git_blob_manifest_sha256": "8a56c0a588c6a24d2eef20a8859a9285ccb8933d4dd061c2fa2e28b15d4b00b9",
+    "every_file_byte_exact": true
+  },
+  "8a5922af4b33bfd67f2aefe71f613847d6fdcb08": {
+    "historical_file_count": 8276,
+    "git_blob_manifest_sha256": "5275048e8a487c76592c0d2b069ba9e2922a634619adaaf0fcc847fad46c29e4",
+    "every_file_byte_exact": true
+  }
+}

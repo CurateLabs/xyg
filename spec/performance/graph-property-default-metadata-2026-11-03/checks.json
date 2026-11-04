@@ -1,0 +1,107 @@
+{
+  "scope": "Nine named metadata/pre-commit checks; not complete repository/release acceptance",
+  "check_count": 9,
+  "all_passed": true,
+  "checks": {
+    "inventory-write": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "exit": 0,
+      "log_sha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+    },
+    "inventory-check": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exit": 0,
+      "log_sha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+    },
+    "ownership": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exit": 0,
+      "log_sha256": "3d5421ea458d1838a1beaec5fa5fc0ad4cef8b9dfa52ab4cf8bc77d3cc678495"
+    },
+    "native-declarations": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0,
+      "log_sha256": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed"
+    },
+    "wasm-declarations": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "exit": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "typecheck": {
+      "argv": [
+        "uv",
+        "run",
+        "ty",
+        "check",
+        "python"
+      ],
+      "exit": 0,
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "final-hooks": {
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "log_sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "final-ruff-check": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "final-ruff-format": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "log_sha256": "ddc8f2e2ad55738a4fae6a1060399c6d8978d58d4189d16bc02771c9fe1450a4"
+    }
+  }
+}

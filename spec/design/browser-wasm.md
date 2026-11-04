@@ -402,7 +402,7 @@ The [binding repair receipt](../performance/graph-s5a-bind-outcome-repair-2026-1
 retains failing-before and passing-after count tests plus actual package proof;
 the earlier source/artifact receipts remain historical and unchanged.
 
-**Current P1 packaging gates are 1,838 KiB raw / 751 KiB gzip6**
+**Historical P1 packaging gates were 1,838 KiB raw / 751 KiB gzip6**
 (1,882,112 / 769,024 bytes). The combined repaired P1 source measures
 1,881,508 raw / 768,134 gzip6 bytes, optimized SHA-256
 `717440524b63cf87e0127161c128c4f81efdca87e5112f9b05a42e820b456fde`.
@@ -424,6 +424,29 @@ requires those fresh production checks and final integrated-diff review.
 Runtime arenas remain 16 MiB default / 384 MiB maximum; conservative graph
 admission still prevents the required massive-graph ladder. This establishes no
 scale, speed, public host/controller/notebook, issue, M4 or #108 acceptance.
+
+**Current property-default functionality gates (parent decision 2026-11-03):
+1,878 KiB raw / 765 KiB gzip6 (1,923,072 / 783,360 bytes).** After completed
+independent source review (`m4_defaults_audit`, approved `2ed544dc`) and package
+assessment, the parent explicitly retains zero-layer property presentation
+through the existing shared native home-domain and label authorities. The
+reviewed production candidate measures 1,922,561 raw / 783,148 gzip6 bytes,
+SHA-256 `e8011f779e70f58416a751f0067f279d1b9aa9515004c246e2f44c95af192651`,
+leaving 511 / 212 bytes under the smallest whole-KiB gates. Growth over accepted
+P1 is 41,053 raw / 15,014 gzip6 bytes. The shared home/label policy is newly
+reachable on this WASM path; exact component attribution is unmeasured, and
+generic cartesian ticks were already reachable. The prior 1,838/751-KiB
+producer failure and rejected-candidate functional proof stay immutable
+historical failures; they are not retroactively shipping passes.
+The [new package receipt](../performance/graph-property-default-package-2026-11-03/README.md)
+records the explicit decision and fresh combined CSS/property production
+qualification, including normal shipping packaging, paired manifests/inline
+assets, full unfiltered strict-CSP foundation, and unmasked property images.
+Native ABI 399, WASM ABI 35, Scene 34 and painter 17 stay unchanged. No
+compiler/profile/toolchain/optimizer/dependency/export/validation or 16/384-MiB
+runtime-arena change, automatic future allowance, performance win, or broad
+issue/milestone/publication acceptance accompanies this decision. Future
+growth beyond either gate fails until separately decided and reviewed.
 
 The raw gate previously moved from 1,504 to 1,507 KiB for XYPB v17 (#1036): the painter
 writer now runs the Rust tick-label strategy layout, including per-side rotations.
@@ -491,7 +514,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging now enforces 1,838 KiB raw / 751 KiB gzip limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only, S4 session-functionality, S5a GPU/result-functionality and P1 selection/progressive-functionality decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+packaging now enforces 1,878 KiB raw / 765 KiB gzip6 limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only, S4 session-functionality, S5a GPU/result-functionality, P1 selection/progressive-functionality and property-default shared-presentation decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -809,8 +832,11 @@ native SVG exports and actual browser screenshots. Authored box-effect
 fallback promises browser/CSS appearance, with no invented native export
 parity. Native raster strokes still have round caps while canonical SVG and
 browser SVG/HTML spines have flat ends; arbitrary endpoint pixel equality is
-not asserted. Native property-graph initial home-view, caption and theme
-failures remain separately owned by #935. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
+not asserted. The #1089 consumer receipts retain the historical native
+property-graph initial home-view, caption and theme failures. The subsequent
+[property-default qualification](../performance/graph-property-default-package-2026-11-03/README.md)
+records all six unmasked image pairs passing for the current property source;
+broader #935 intent/digest/safe-pair scope remains open. The [consumer repair receipt](../performance/graph-resolved-scene-consumer-repair-2026-11-03/README.md)
 records the fresh all-pixel default-property comparisons; the [R4 eligibility
 repair receipt](../performance/graph-resolved-axis-eligibility-repair-2026-11-03/README.md)
 records pointer/motion-path/reflection reproductions and compatibility repair.
@@ -818,6 +844,13 @@ The [live CSS repair receipt](../performance/graph-resolved-axis-live-css-2026-1
 records actual pointer/focus/active input, unrelated normal/important host SVG
 rules, and a controlled centered-HTML diagnosis with the Rust-final plot.
 These preserve the unchanged historical failures, including the [earlier projection receipt](../performance/graph-resolved-axis-repair-2026-11-03/README.md).
+
+The resolved Scene plot/axis and live CSS repairs merged as #1089 at
+`a0636c27ec48c50eb1eafa2c99122d165d266c28` on 2026-11-04 at 02:22:11Z.
+The accepted main tree is byte-exact to reviewed `46c2573c`; the
+[property main-sync receipt](../performance/graph-property-default-main-sync-2026-11-04/README.md)
+records that identity and preservation of the subsequent ABI399 property
+presentation source. S5b controller acceptance remains planned.
 
 The authored collision header at bytes 76-79 is zeroed in the painter. The client accepts exactly
 one painter version, so an older XYPB fails closed (`Rust painter contract version is

@@ -15,9 +15,9 @@ use super::request::Render;
 use super::{GfError, GfResult};
 use crate::graph::layout_force_portable;
 use crate::graph_style::{
-    encode_semantic_graph_scene_with_legend, SemanticGraphSceneInput, SemanticLegendOverride,
-    SemanticLegendRow, MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
-    THEME_DARK,
+    encode_property_graph_scene, encode_semantic_graph_scene_with_legend, SemanticGraphSceneInput,
+    SemanticLegendOverride, SemanticLegendRow, MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES,
+    SEMANTIC_GRAPH_SCENE_VERSION, THEME_DARK,
 };
 use crate::scene::SceneError;
 
@@ -99,15 +99,8 @@ pub fn render_graph(document: &[u8], render: &Render<'_>) -> GfResult<RenderedSc
     let (node_metric, edge_metric) = (f64s("node.metric")?, f64s("edge.metric")?);
     let (node_flags, edge_flags) = (u32s("node.flags")?, u32s("edge.flags")?);
     let node_labels = texts("node.label")?;
-    // No result layer: the property-graph default view (spec §4.4a). A still
-    // picture cannot zoom-gate relationship types, and edge labels would
-    // outrank node captions in the Scene's label planner, so types stay on
-    // hover/selection (`edge.type`) and in `edge.label` for the interactive mark.
-    let edge_labels = if doc.indices("layer.schema").is_empty() {
-        vec![""; e]
-    } else {
-        texts("edge.label")?
-    };
+    let property = doc.indices("layer.schema").is_empty();
+    let edge_labels = texts("edge.label")?;
     let legend_text = texts("legend.text")?;
     let legend_shape = u8s("legend.shape")?;
     let palette = u8s(if render.theme == THEME_DARK {
@@ -152,7 +145,18 @@ pub fn render_graph(document: &[u8], render: &Render<'_>) -> GfResult<RenderedSc
         edge_flags: &edge_flags,
         edge_labels: &edge_labels,
     };
-    let scene = encode_semantic_graph_scene_with_legend(input, SemanticLegendOverride { title, rows: &rows })
+    let legend = SemanticLegendOverride { title, rows: &rows };
+    let encoded = if property {
+        encode_property_graph_scene(
+            input,
+            legend,
+            &f64s("node.label_priority")?,
+            &f64s("edge.label_priority")?,
+        )
+    } else {
+        encode_semantic_graph_scene_with_legend(input, legend)
+    };
+    let scene = encoded
         .map_err(|error| match error {
             SceneError::Limit | SceneError::PainterTraceLimit => GfError::new(
                 "GF_COMPOSE_SCENE_TOO_LARGE",

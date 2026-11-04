@@ -1,0 +1,21 @@
+{
+  "provenance": "production release target, unchanged shipping optimizer; rejected candidate, not a packaged asset set",
+  "rawInput": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab/target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+    "bytes": 2120065,
+    "sha256": "5ddb66a4244de26784b7eeae7a5e695b112967891181c7a02da57336d444434c"
+  },
+  "optimized": {
+    "bytes": 1922561,
+    "sha256": "e8011f779e70f58416a751f0067f279d1b9aa9515004c246e2f44c95af192651"
+  },
+  "gzip6": {
+    "bytes": 783148,
+    "sha256": "d447f4e3f63a0b189f962d53cba34336224df6cb84e4cd5be7fa430f7366120a"
+  },
+  "budget": {
+    "raw": 1882112,
+    "gzip6": 769024
+  },
+  "passed": false
+}

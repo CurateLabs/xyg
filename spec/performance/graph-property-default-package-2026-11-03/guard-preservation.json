@@ -1,0 +1,7 @@
+{
+  "baseline": "2ed544dcb85698f21d0f5db297320490ce26c8ee:js/package-wasm.mjs",
+  "baseline_sha256": "e63c93e40e9b8f6845e1e7568af3ca4ecad1dbb8da305fc1b84f8792906c510d",
+  "current_sha256": "819d62808c254a6cd07ddfa56481e87f6276cb610bfc301295f37a2de0140658",
+  "only_changes": "two approved size constants and explicit decision comments",
+  "all_validation_flow_exact": true
+}

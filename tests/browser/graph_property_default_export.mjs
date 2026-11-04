@@ -25,7 +25,7 @@ const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const json = (value) => JSON.stringify(value, (_, v) => typeof v === "bigint" ? v.toString() : v, 2);
 const failures = [];
 const results = { contract: fixture.contract, themes: {}, failures };
-assert.equal(xyAbiVersion(), 398);
+assert.equal(xyAbiVersion(), 399);
 results.native = { abi: xyAbiVersion(), path: nativeLibraryPath, sha256: sha(fs.readFileSync(nativeLibraryPath)) };
 results.config = { width: fixture.width, height: fixture.height, themes: fixture.themes, deviceScaleFactor: 1, layoutOverrides: null, masks: [], pixelLimits: { meanMaxChannelDiffExclusive: 3.5, fractionOver96Exclusive: 0.01 }, geometryToleranceCssPixels: 0.01 };
 const check = (label, fn) => { try { fn(); } catch (error) { failures.push({ label, message: error.message }); } };

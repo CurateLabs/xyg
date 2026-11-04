@@ -1,0 +1,28 @@
+{
+  "argv": [
+    "git",
+    "merge",
+    "--no-ff",
+    "--no-commit",
+    "78b4b69f76b955ab19bd365f0492711cc3c06c1f"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab",
+  "started": "2026-11-03T23:36:32.570451+00:00",
+  "finished": "2026-11-03T23:36:32.810741+00:00",
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_PROPERTY_EVIDENCE": null,
+    "CARGO_TARGET_DIR": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_BROWSER_DIST": null,
+    "XY_REQUIRE_BROWSER": null
+  },
+  "log_sha256": "96bb6a194a796153cbd0c640642866371219451832063763d544b942a8d97c4e"
+}

@@ -104,7 +104,7 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1838 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1878 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
@@ -153,7 +153,16 @@ const WASM_SIZE_BUDGET_BYTES = 1838 * 1024;
 // 768,134. Independent assessment supports the smallest next-KiB limits:
 // 1,838 / 751, headroom 604 / 890. No size experiment, compiler/profile/optimizer,
 // dependency/export/guard or runtime-arena change; no automatic future allowance.
-const WASM_GZIP_BUDGET_BYTES = 751 * 1024;
+// Property-default explicit functionality decision (2026-11-03), after the
+// m4_defaults_audit source approval and independent package assessment:
+// retain the existing shared native home/label policy on the WASM property path.
+// The reviewed 1,922,561 raw / 783,148 gzip6 module adds 41,053 / 15,014 over P1.
+// Adopt the smallest whole-KiB gates, 1,878 / 765, leaving 511 / 212 bytes.
+// Exact component costs are unmeasured. The old-gate failure remains historical.
+// See graph-property-default-package-2026-11-03/README.md for fresh shipping proof.
+// No compiler/profile/toolchain/optimizer/dependency/export/validation/runtime
+// change, performance claim, or automatic allowance for future growth.
+const WASM_GZIP_BUDGET_BYTES = 765 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
 if (bytes.length > WASM_SIZE_BUDGET_BYTES) {

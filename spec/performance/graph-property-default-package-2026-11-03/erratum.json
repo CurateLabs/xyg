@@ -1,0 +1,17 @@
+{
+  "historical_commit": "2ed544dcb85698f21d0f5db297320490ce26c8ee",
+  "historical_receipt_unchanged": true,
+  "incorrect_prose_case_count": 99,
+  "correct_case_count": 101,
+  "raw_comparison_already_records": 101,
+  "all_requests_match": true,
+  "only_changed_document_section": [
+    {
+      "case": "property graph + render",
+      "sections": [
+        "scene.canonical:0"
+      ]
+    }
+  ],
+  "correction": "Current normative graphforge-compositions.md now says 101; prior committed README and all historical receipts are preserved byte-for-byte."
+}

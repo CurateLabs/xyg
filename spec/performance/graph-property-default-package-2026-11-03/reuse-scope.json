@@ -1,0 +1,29 @@
+{
+  "reason": "All Rust, Python and Node product sources are byte-exact approved 2ed; browser TypeScript is byte-exact approved 78. Only package constants/comments and current normative documentation are newly edited.",
+  "reused_defaults_checks": {
+    "receipt": "spec/performance/graph-property-default-presentation-2026-11-03",
+    "rust_graph_tests": 320,
+    "rust_autorange_tests": 13,
+    "scoped_python_tests": 181,
+    "abi_fixture_python_tests": 348,
+    "abi_fixture_node_tests": 148,
+    "node_graph_graphforge_crosshost_tests": 88,
+    "review": "m4_defaults_audit source APPROVED; no blocking defects"
+  },
+  "reused_css_checks": {
+    "commit": "78b4b69f76b955ab19bd365f0492711cc3c06c1f",
+    "review": "s5a_final_review APPROVED, as reported by parent",
+    "scope": "Exact reviewed browser source and nearby canonical-axis/CSS tests and historical evidence; fresh combined client/module qualification is still required"
+  },
+  "fresh_required": [
+    "Actual native and WASM release recompilation",
+    "Client build and normal shipping packager",
+    "Paired asset/manifests/inline validation",
+    "13 actual shipping replay/package tests with zero skips",
+    "Full unfiltered strict-CSP foundation",
+    "Fresh default property helper and all six unmasked image pairs",
+    "101-case preservation and Python/Node crosshost",
+    "Native ABI and package/config-focused validation",
+    "Full hooks and Ruff before final commit"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "pytest",
+    "tests/test_graph_home_view.py",
+    "tests/test_graph_label_plan.py",
+    "tests/test_graph_static_export.py",
+    "tests/test_graph_visual_goldens.py",
+    "tests/test_graphforge.py",
+    "tests/test_graphforge_scene.py",
+    "tests/test_abi_parity.py",
+    "-q"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab",
+  "started": "2026-11-03T23:09:26.457904+00:00",
+  "finished": "2026-11-03T23:09:59.674468+00:00",
+  "exit": 1,
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "XYG_GRAPH_PROPERTY_EVIDENCE": null,
+    "CARGO_TARGET_DIR": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "a6932e141d98ac35f1f5ac3e8e4afc26fe7f5fa98f0a7818ae30b09e8ba7c163"
+}

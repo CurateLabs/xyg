@@ -322,6 +322,20 @@ generic `Class n` rows.
 
 ### 4.4a Property-graph default view (no result layer)
 
+**Parent policy decision (2026-11-03, #934/#935).** Zero-result-layer
+property GraphForge canonical Scenes converge on the existing public graph
+presentation (graph-mark.md §7.1 and §8): unauthored axes are hidden, the
+shared `graph_home_domain` owns the home view, and `graph_label_plan` owns
+caption priorities and visibility. Existing public/native graph defaults
+are authoritative; fixed visible canonical axes and a five-caption culler
+must not be imposed on ordinary graph charts. Source caption identities
+remain in the document even when the shared plan hides them at home.
+Generic semantic Scenes and layered canonical compositions retain their
+existing presentation. Authored axes, domains, log scales, padding, titles,
+legends, and styles keep their public graph behavior. Property-only Python
+and Node chart adapters mechanically apply the shared Rust semantic chrome
+palette before authored style values; layered host theme behavior is unchanged.
+
 A request with a base graph and **no result layer** composes the base
 property graph with XYG's default view; no analytical layer or configuration
 is needed. The base is the graph layer, whether it arrives as Cypher entity
@@ -362,15 +376,16 @@ through the native graph mark, whose Rust level-of-detail tiers apply
 unchanged and are recorded by that mark (§28): Direct, Edge sample (edges over
 budget), and Cluster/aggregate (nodes over `node_budget`), with caption
 acceptance by label priority (`xyg_graph_label_accept`; graph-mark.md §6, §7.1).
-Inside the direct tier the Scene's label planner is the caption culler: node
-captions are placed in stable-ID order, truncated to the label bound, and
-dropped when they collide or leave the plot; the default view puts no
-relationship-type labels in the static Scene, because a still picture cannot
-zoom-gate them and edge labels would outrank node captions in that order.
+Inside the direct tier the property Scene uses the public graph label plan:
+node captions (priority 0) rank before relationship types (priority −1),
+with the same budget, truncation, collision thresholds and home-view clipping.
+Only labels visible at the home scale paint in a static Scene; every source
+caption and relationship type remains in the document.
 **Known gap:** the direct-browser WASM view paints that fixed-range Scene
 (`renderWasmScene`: `drag_action: "none"`, one fixed view range, labels baked
-into the Scene), so relationship types appear there on selection only (the
-`xy:graphforge-select` detail carries `type`), not at zoom; zoom-gated types are delivered by the native graph mark
+into the Scene), so relationship types above the home-scale label threshold
+appear there on selection only (the `xy:graphforge-select` detail carries
+`type`), not at zoom; zoom-gated types are delivered by the native graph mark
 (`edge.label`). Zoom-gating on the WASM path needs the interactive
 render/pick pipeline of #36 and is tracked on #934.
 Static PNG/SVG export of the default view follows the Scene, and its parity
@@ -396,6 +411,24 @@ differs, and the native chart's dark request retains a white background. The
 normal smoke invocation returns failure and retains the unmasked screenshots,
 configuration and metrics. These observations do not waive #935 or complete
 #934, #36 S5–S7, M4, or #108; production repair is separate from this proof.
+
+The subsequent bounded [property presentation repair receipt](../performance/graph-property-default-presentation-2026-11-03/README.md)
+records convergence on the existing public graph presentation. Its unchanged
+full-image helper passes all three comparisons in both themes (geometry
+within 0.005 CSS px), with exact Python/Node documents and exports, unchanged
+f64 source positions and identities, and repeated export bytes. The fixture
+now paints the two home-visible captions from the public plan, retaining all
+five source captions. All 101 cross-host requests and every document section
+except the property-render `scene.canonical` remain byte-identical to the
+parent. That historical shipping producer rejected the actual production
+module at 1,922,561 raw / 783,148 gzip6 bytes against the then-current
+1,882,112 / 769,024 limits; its rejected-byte functional proof remains
+historical. The [new package decision and erratum receipt](../performance/graph-property-default-package-2026-11-03/README.md)
+corrects the old prose count (99 → 101, as already recorded in the raw
+comparison), preserves the old receipt unchanged, and records the separately
+approved 1,878/765-KiB functionality gates and fresh combined CSS/property
+shipping qualification. None of this closes #935 intent/digest/safe-pair,
+#934, #36 S5b/S6/S7, M4 or #108, or authorizes publication.
 
 ### 4.5 Derived edges
 
@@ -560,7 +593,7 @@ are compared byte for byte.
 
 ## 6. Hosts
 
-### 6.1 Native C ABI (current ABI 395)
+### 6.1 Native C ABI (current ABI 399)
 
 | Symbol | Role |
 |---|---|
@@ -568,6 +601,7 @@ are compared byte for byte.
 | `xyg_graphforge_document_len` / `_copy` / `_destroy` | read and release the document (−7 stale handle, −8 undersized buffer) |
 | `xyg_graphforge_composition_version` | `XYGF` semantics version |
 | `xyg_graphforge_ledger_tsv` | the ledger as TSV (schema, version, disposition, composition, intents, fields, algorithms) |
+| `xyg_graph_semantic_chrome_rgba8(theme, out, cap)` | ABI 399 private host adapter seam: 16 bytes, chart/plot/foreground/grid RGBA8 from the existing semantic palette; zero capacity queries size, short capacity writes nothing, invalid theme/null nonempty output returns `SIZE_MAX`. No Scene construction or layout |
 
 ### 6.2 Node (`@curatelabs/xyg-node/graphforge`)
 

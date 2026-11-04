@@ -764,6 +764,7 @@ Forbidden:
 | `crates/xyg-engine/src/geom.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph_style.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graph_style/property.rs` | Rust safe engine | `rust-engine` | `keep-rust`; shared home/label and canonical property presentation remain parity-affecting Rust policy | — |
 | `crates/xyg-engine/src/graph_scale.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph_scene.rs` | Rust safe engine | `rust-engine` | `keep-rust`; composed graph static rebuild appends the base Scene's expanded authored annotation records and labels via `SceneDocument::with_graph_annotations` (#922) | — |
 | `crates/xyg-engine/src/hexbin.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

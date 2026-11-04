@@ -593,3 +593,21 @@ test("published Core rc.5 catalog composes, including endpoint-only path costs",
     }
   }
 });
+
+test("property-only Rust chrome precedes authored styles and preserves layered chrome", () => {
+  const composition = composeGraphForge({ base: base("property") });
+  const authored = { background: "#123456", "--chart-text": "#abcdef", "--chart-bg": "#fedcba" };
+  for (const theme of ["light", "dark"]) {
+    const fig = graphforgeChart(composition, { theme });
+    assert.equal(fig.style.background, theme === "dark" ? "#030712ff" : "#ffffffff");
+    assert.equal(fig.style["--chart-bg"], theme === "dark" ? "#111827ff" : "#f8fafcff");
+    const styled = graphforgeChart(composition, { theme, style: authored, title: "Authored title", xAxis: { domain: [-2, 3], type: "symlog" }, legend: { loc: "lower left" } });
+    assert.deepEqual(styled.style, { ...fig.style, ...authored });
+    assert.deepEqual(styled.axis_options.x.domain, [-2, 3]);
+    assert.equal(styled.axis_options.x.type, "symlog");
+    assert.equal(styled.title, "Authored title");
+    assert.equal(styled.legend.loc, "lower left");
+    assert.deepEqual(styled.legend.items.map((item) => item.name), composition.legend.rows.map((row) => row.text));
+    assert.deepEqual(graphforgeChart(compose("louvain"), { theme }).style, {});
+  }
+});

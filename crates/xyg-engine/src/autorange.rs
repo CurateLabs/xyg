@@ -66,6 +66,15 @@ pub const ZB_SKIP: u8 = 0xFF;
 
 const DEFAULT_MARGIN: f64 = 0.03;
 
+/// Ordinary numeric linear autorange, shared by graph canonical presentation.
+pub(crate) fn default_linear_domain(lo: f64, hi: f64) -> (f64, f64) {
+    if lo == hi {
+        return auto_domain(Some((lo, hi)));
+    }
+    let pad = (hi - lo) * DEFAULT_MARGIN;
+    (lo - pad, hi + pad)
+}
+
 /// Why an autorange envelope was rejected. Discriminants are the C-ABI error
 /// codes (returned negated by `xyg_figure_autorange`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -480,6 +489,8 @@ pub fn figure_autorange(bytes: &[u8]) -> Result<(f64, f64), AutorangeError> {
         let out_lo = (10.0_f64.powf(transformed_lo - pad)).max(0.0_f64.next_up());
         let out_hi = 10.0_f64.powf(transformed_hi + pad);
         (out_lo, out_hi)
+    } else if !margin_present {
+        default_linear_domain(lo, hi)
     } else {
         let pad = (hi - lo) * configured_margin;
         (lo - pad, hi + pad)

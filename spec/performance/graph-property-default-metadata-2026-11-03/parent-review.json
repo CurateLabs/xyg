@@ -1,0 +1,8 @@
+{
+  "reviewer_reported_by_parent": "s5a_final_review",
+  "reviewed_commit": "8a5922af4b33bfd67f2aefe71f613847d6fdcb08",
+  "disposition_reported_by_parent": "APPROVED",
+  "verified_whole_increment_vs_78_sha256": "1b8142d54f6b1178a0f15c26dc74e864c7d65969d59ecdcafb1cef9e330b4613",
+  "verified_nonreceipt_increment_vs_78_sha256": "0941542d96987bdb97372d77f9be72c56ba446b637943cb646f2943f4679a0c7",
+  "current_integrated_review": "Pending new independent parent review; implementer does not approve final integrated diff."
+}

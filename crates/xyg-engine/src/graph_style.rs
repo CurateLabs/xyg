@@ -1,5 +1,8 @@
 //! Rust-owned graph label acceptance, visual-state precedence, and compound bounds (#34).
 
+mod property;
+use property::property_graph_presentation;
+
 use crate::edge_route::{
     clip_edge_piece, edge_route_segments, NodeShape, STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE,
 };
@@ -115,6 +118,31 @@ const DARK_PALETTE: [[u8; 4]; 8] = [
     [240, 120, 69, 255],
     [240, 228, 66, 255],
 ];
+
+/// Chart background, plot background, foreground and grid, straight RGBA8.
+/// Extracted from the canonical semantic Scene; no layout or Scene allocation.
+pub fn semantic_chrome_palette(theme: u8) -> Option<[[u8; 4]; 4]> {
+    palette(theme)?;
+    Some(semantic_chrome_colors(theme))
+}
+
+fn semantic_chrome_colors(theme: u8) -> [[u8; 4]; 4] {
+    if theme == THEME_LIGHT {
+        [
+            [255, 255, 255, 255],
+            [248, 250, 252, 255],
+            [31, 41, 55, 255],
+            [31, 41, 55, 38],
+        ]
+    } else {
+        [
+            [3, 7, 18, 255],
+            [17, 24, 39, 255],
+            [229, 231, 235, 255],
+            [229, 231, 235, 42],
+        ]
+    }
+}
 
 /// The v1 semantic palette for a theme (code-indexed; code 0 is neutral).
 pub fn semantic_palette(theme: u8) -> Option<&'static [[u8; 4]; 8]> {
@@ -829,7 +857,7 @@ pub fn semantic_legend_label(field: u8, value: u8) -> String {
 pub fn encode_semantic_graph_scene(
     input: SemanticGraphSceneInput<'_>,
 ) -> Result<Vec<u8>, SceneError> {
-    encode_semantic_graph_scene_internal(input, None, None)
+    encode_semantic_graph_scene_internal(input, None, None, None)
 }
 
 /// One caller-labelled legend row for [`encode_semantic_graph_scene_with_legend`].
@@ -855,7 +883,23 @@ pub fn encode_semantic_graph_scene_with_legend(
     input: SemanticGraphSceneInput<'_>,
     legend: SemanticLegendOverride<'_>,
 ) -> Result<Vec<u8>, SceneError> {
-    encode_semantic_graph_scene_internal(input, None, Some(legend))
+    encode_semantic_graph_scene_internal(input, None, Some(legend), None)
+}
+
+/// Property-only GraphForge presentation uses the existing public graph defaults
+/// (graph-mark §7.1/§8, graphforge-compositions §4.4a).
+pub fn encode_property_graph_scene(
+    input: SemanticGraphSceneInput<'_>,
+    legend: SemanticLegendOverride<'_>,
+    node_priorities: &[f64],
+    edge_priorities: &[f64],
+) -> Result<Vec<u8>, SceneError> {
+    encode_semantic_graph_scene_internal(
+        input,
+        None,
+        Some(legend),
+        Some((node_priorities, edge_priorities)),
+    )
 }
 
 /// Resolve strict compound/collapse planes into the same canonical Scene used
@@ -867,6 +911,7 @@ pub fn encode_compound_graph_scene(
         input.graph,
         Some((input.parents, input.parent_validity, input.collapsed)),
         None,
+        None,
     )
 }
 
@@ -874,6 +919,7 @@ fn encode_semantic_graph_scene_internal(
     input: SemanticGraphSceneInput<'_>,
     compound: Option<(&[u64], &[u8], &[u8])>,
     legend_override: Option<SemanticLegendOverride<'_>>,
+    property_priorities: Option<(&[f64], &[f64])>,
 ) -> Result<Vec<u8>, SceneError> {
     if input.version != SEMANTIC_GRAPH_SCENE_VERSION
         || !input.width.is_finite()
@@ -1037,37 +1083,6 @@ fn encode_semantic_graph_scene_internal(
             visible_y.push(input.y[index]);
         }
     }
-    let x_domain = padded_domain(&visible_x).ok_or(SceneError::NonFinite)?;
-    let y_domain = padded_domain(&visible_y).ok_or(SceneError::NonFinite)?;
-    let layout = PlotLayout::new(input.width, input.height, 52.0, 16.0, 24.0, 44.0)?;
-    let x_scale = AxisScale::new(
-        ScaleKind::Linear,
-        x_domain.0,
-        x_domain.1,
-        layout.left,
-        layout.right,
-        1.0,
-        false,
-    )?;
-    let y_scale = AxisScale::new(
-        ScaleKind::Linear,
-        y_domain.0,
-        y_domain.1,
-        layout.bottom,
-        layout.top,
-        1.0,
-        false,
-    )?;
-    let to_px = |x: f64, y: f64| {
-        (
-            layout.left
-                + (x - x_domain.0) / (x_domain.1 - x_domain.0) * (layout.right - layout.left),
-            layout.bottom
-                - (y - y_domain.0) / (y_domain.1 - y_domain.0) * (layout.bottom - layout.top),
-        )
-    };
-    let mut columns = SemanticSceneColumns::default();
-
     let route_capacity = e
         .checked_mul(STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE)
         .ok_or(SceneError::Limit)?;
@@ -1113,6 +1128,52 @@ fn encode_semantic_graph_scene_internal(
             route_y1[route],
         ));
     }
+
+    let property = property_priorities
+        .map(|priorities| property_graph_presentation(&input, &nodes, &edges, &routes, priorities))
+        .transpose()?;
+    let x_domain = property
+        .as_ref()
+        .map(|p| (p.domain[0], p.domain[1]))
+        .or_else(|| padded_domain(&visible_x))
+        .ok_or(SceneError::NonFinite)?;
+    let y_domain = property
+        .as_ref()
+        .map(|p| (p.domain[2], p.domain[3]))
+        .or_else(|| padded_domain(&visible_y))
+        .ok_or(SceneError::NonFinite)?;
+    let layout = if let Some(p) = &property {
+        p.layout
+    } else {
+        PlotLayout::new(input.width, input.height, 52.0, 16.0, 24.0, 44.0)?
+    };
+    let x_scale = AxisScale::new(
+        ScaleKind::Linear,
+        x_domain.0,
+        x_domain.1,
+        layout.left,
+        layout.right,
+        1.0,
+        false,
+    )?;
+    let y_scale = AxisScale::new(
+        ScaleKind::Linear,
+        y_domain.0,
+        y_domain.1,
+        layout.bottom,
+        layout.top,
+        1.0,
+        false,
+    )?;
+    let to_px = |x: f64, y: f64| {
+        (
+            layout.left
+                + (x - x_domain.0) / (x_domain.1 - x_domain.0) * (layout.right - layout.left),
+            layout.bottom
+                - (y - y_domain.0) / (y_domain.1 - y_domain.0) * (layout.bottom - layout.top),
+        )
+    };
+    let mut columns = SemanticSceneColumns::default();
 
     #[derive(Clone)]
     struct Candidate {
@@ -1174,6 +1235,29 @@ fn encode_semantic_graph_scene_internal(
             });
         }
     }
+    if let Some(property) = &property {
+        candidates.clear();
+        let scale = ((layout.right - layout.left) / (x_domain.1 - x_domain.0))
+            .min((layout.bottom - layout.top) / (y_domain.1 - y_domain.0));
+        for (i, plan) in property.plan.iter().enumerate() {
+            if plan.keep == 0 || plan.threshold > scale {
+                continue;
+            }
+            let (ax, ay) = to_px(property.x[i], property.y[i]);
+            candidates.push(Candidate {
+                state: 0,
+                stable_id: if i < n {
+                    (1 << 32) + i as u64
+                } else {
+                    (i - n) as u64 + 1
+                },
+                x: ax + plan.offset_x,
+                y: ay + plan.offset_y,
+                rgba: foreground,
+                text: property.texts[i].clone(),
+            });
+        }
+    }
     candidates.sort_by_key(|candidate| (std::cmp::Reverse(candidate.state), candidate.stable_id));
     let mut occupied: Vec<(f64, f64, f64, f64)> = Vec::new();
     let mut labels = Vec::new();
@@ -1192,9 +1276,13 @@ fn encode_semantic_graph_scene_internal(
             || bounds.1 < layout.top
             || bounds.2 > layout.right
             || bounds.3 > layout.bottom
-            || occupied.iter().any(|other| {
-                bounds.0 < other.2 && bounds.2 > other.0 && bounds.1 < other.3 && bounds.3 > other.1
-            })
+            || (property.is_none()
+                && occupied.iter().any(|other| {
+                    bounds.0 < other.2
+                        && bounds.2 > other.0
+                        && bounds.1 < other.3
+                        && bounds.3 > other.1
+                }))
         {
             continue;
         }
@@ -1489,21 +1577,7 @@ fn encode_semantic_graph_scene_internal(
         entries: legend_entries,
     });
     let mut chrome = SceneChromeStyle::default();
-    let (chart_bg, plot_bg, foreground, grid) = if input.theme == THEME_LIGHT {
-        (
-            [255, 255, 255, 255],
-            [248, 250, 252, 255],
-            [31, 41, 55, 255],
-            [31, 41, 55, 38],
-        )
-    } else {
-        (
-            [3, 7, 18, 255],
-            [17, 24, 39, 255],
-            [229, 231, 235, 255],
-            [229, 231, 235, 42],
-        )
-    };
+    let [chart_bg, plot_bg, foreground, grid] = semantic_chrome_colors(input.theme);
     chrome.chart_background_rgba = chart_bg;
     chrome.plot_background_rgba = plot_bg;
     chrome.label_rgba = foreground;
@@ -1513,6 +1587,16 @@ fn encode_semantic_graph_scene_internal(
         axis.minor_tick_rgba = foreground;
         axis.label_rgba = foreground;
         axis.grid_rgba = grid;
+    }
+    if property.is_some() {
+        for axis in [&mut chrome.x_axis, &mut chrome.y_axis] {
+            axis.axis_width = 0.0;
+            axis.axis_rgba = [0; 4];
+            axis.tick_length = 0.0;
+            axis.tick_width = 0.0;
+            axis.grid_rgba = [0; 4];
+            axis.label_rgba = [0; 4];
+        }
     }
     SceneBatch::new_with_decorations_and_labels(
         layout,

@@ -1,0 +1,19 @@
+{
+  "cases": 101,
+  "native_abis": [
+    398,
+    399
+  ],
+  "changed": [
+    {
+      "case": "property graph + render",
+      "sections": [
+        "scene.canonical:0"
+      ]
+    }
+  ],
+  "all_other_sections_exact": true,
+  "historical_receipts_unchanged": true,
+  "browser_sources_unchanged": true,
+  "fixture_change": "Only the property-render XYGF digest changes in cross_host.json; request/positions/identities/caption fields remain exact."
+}

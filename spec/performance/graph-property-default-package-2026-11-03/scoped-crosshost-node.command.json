@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/graphforge-cross-host.test.mjs"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab",
+  "started": "2026-11-03T23:42:02.185415+00:00",
+  "finished": "2026-11-03T23:42:03.087415+00:00",
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-d8e82dab/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_PROPERTY_EVIDENCE": null,
+    "CARGO_TARGET_DIR": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_BROWSER_DIST": null,
+    "XY_REQUIRE_BROWSER": null
+  },
+  "log_sha256": "761b04bcde0dbed9308aab2ecc8df7a91b5dbe3f1f2bb5e68cb210a34a2dcbc7"
+}
