@@ -1,0 +1,83 @@
+{
+  "prior": "6e240f4bd3189640779fd684e97072923cbfb9c8",
+  "acceptedMain": "3ebf70c3aa5a351aeec3843da14ba2aa197b469e",
+  "candidate": null,
+  "normalParents": [
+    "6e240f4bd3189640779fd684e97072923cbfb9c8",
+    "3ebf70c3aa5a351aeec3843da14ba2aa197b469e"
+  ],
+  "reviewedTip": "7c581024f968519c074e990b4eb6a34ffe2fbd96",
+  "mainEqualsReviewedTree": "9087e452eea598c7c38976f8442b4a53c74de59d",
+  "lineage": {
+    "6e240f4bd3189640779fd684e97072923cbfb9c8": "6e240f4bd3189640779fd684e97072923cbfb9c8 897791aa12275bb34d30faedb6e2988814c0f872 a7ae010fdf5f38fca2f9b8bba8ef4070139e2b39 7c581024f968519c074e990b4eb6a34ffe2fbd96",
+    "3ebf70c3aa5a351aeec3843da14ba2aa197b469e": "3ebf70c3aa5a351aeec3843da14ba2aa197b469e 9087e452eea598c7c38976f8442b4a53c74de59d 2fbbe5f038032841bcb095a9e101421e25771496",
+    "7c581024f968519c074e990b4eb6a34ffe2fbd96": "7c581024f968519c074e990b4eb6a34ffe2fbd96 9087e452eea598c7c38976f8442b4a53c74de59d 562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5 2fbbe5f038032841bcb095a9e101421e25771496",
+    "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c": "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c 8b42509666124212fe1c42d40c7e3890487ed85b c3d2e4aa19bcfbf9940775819f03c71cc0934472",
+    "a7ae010fdf5f38fca2f9b8bba8ef4070139e2b39": "a7ae010fdf5f38fca2f9b8bba8ef4070139e2b39 5d980ac7d9b65ac929b4dd217ca65c01a88fc95e eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c 562a2adfa97a6a3b5629d9ba5f98da564ba1e2b5"
+  },
+  "protectedPerformanceFilesExact": 10429,
+  "protectedPerformanceGitBlobManifestSha256": "d05b585f5ee04b1f4a645fb3039b4cd5bf9e221147594e1cf3a9e8983af003f7",
+  "protectedHistories": {
+    "graph-node-first-paint-1k-2026-11-04": {
+      "files": 86,
+      "gitBlobManifestSha256": "4755180a69fe78ac871b49b1be86370521ee5a035a3631a0a706ae948b201d07"
+    },
+    "graph-node-first-paint-1k-parent-sync-2026-11-04": {
+      "files": 70,
+      "gitBlobManifestSha256": "7b1e5ae10a0ec3b4b7b3728c2095682811c65270fa5dd1d8b3fffe32b77fafe5"
+    },
+    "graph-node-first-paint-1k-review-repair-2026-11-04": {
+      "files": 205,
+      "gitBlobManifestSha256": "3534513afa98bc863c8556bdf8820e686f82bb66dba3195c3904bdde03165150"
+    },
+    "graph-node-first-paint-1k-accepted-main-sync-2026-11-04": {
+      "files": 51,
+      "gitBlobManifestSha256": "a00778852592c359fc23b48ee0bfa9357e8ab13c91b41d33fa46d4538f0266a1"
+    },
+    "node-buffer-codec-2026-11-04": {
+      "files": 13,
+      "gitBlobManifestSha256": "b5c3f4a127d1a52229edf58e39e02801efe54837df11cd43022f7afb25e93cf3"
+    },
+    "node-buffer-codec-parent-sync-2026-11-04": {
+      "files": 20,
+      "gitBlobManifestSha256": "d00293c0027afa7c9c69a0b1d55f3b2c1e3cbf8c159fcfa9e531bcaf39189c98"
+    },
+    "node-buffer-codec-finalization-2026-11-04": {
+      "files": 75,
+      "gitBlobManifestSha256": "17ef9c4830430b1adde23e53caf4c8e97f12c4cf44ef6f9fb34b15437205bb3d"
+    }
+  },
+  "allTrackedBytesOutsideSpecEqualApprovedBuffer": true,
+  "bufferFilesSha256": {
+    "packages/xy-node/src/graphforge-container.js": "0506d4e907b553742c042514c69efd824cc95cffb10417e077a3d84ef4f92aec",
+    "packages/xy-node/test/graphforge-container.test.mjs": "df4d6f1e7ef72b981d88147f498dea33f9e73791cfd3eece23529898824c56d3",
+    "packages/xy-node/test/graphforge.test.mjs": "565478b8a52cb0bb144c60a55f1de0626238d2e2faa980ff90fa2b960fecd520"
+  },
+  "captureSourceMapsExact": 6,
+  "runtimeArtifactSha256": {
+    "target/release/libxyg_core.so": "3a9b78c81a078e13a78779add5a0e8ad5949d0483a828f483c060840e1e495c6",
+    "packages/xy-client/dist/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "packages/xy-client/dist/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "packages/xy-client/dist/wasm-inline-worker.js": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+    "packages/xy-client/dist/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "python/xyg/static/index.js": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+    "python/xyg/static/standalone.js": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+    "python/xyg/static/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+  },
+  "intermediate20FilesSha256Exact": true,
+  "inventoryChangedFields": [
+    "sourceProvenance"
+  ],
+  "inventorySourceHashChanges": [],
+  "inventoryContractsClassificationGapsAcceptanceUnchanged": true,
+  "gaps": 685,
+  "existingChangedPaths": [
+    "spec/design/graphforge-node-scheduling.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "proofRerun": false,
+  "wholeNodePackageIdenticalToHistoricalCapture": false,
+  "artifactClaim": "Exact file bytes only; no new runtime loading, native origin, build or mapped-memory attestation",
+  "rustChildImported": false,
+  "finalReviewAndNewCIRequiredBeforePushOrQueue": true
+}
