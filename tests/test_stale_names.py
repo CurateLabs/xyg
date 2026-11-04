@@ -244,6 +244,34 @@ def test_osm_helper_does_not_exempt_retired_root_entrypoint_in_same_manifest(
     assert "src/lib.rs ABI" in errors[0]
 
 
+@pytest.mark.parametrize("punctuation", list("+@~%=#:?[](){}!$^&*,;"))
+@pytest.mark.parametrize("position", ["prefix", "suffix", "suffix-with-text"])
+def test_rejects_osm_helper_punctuation_lookalikes(
+    tmp_path: Path, punctuation: str, position: str
+) -> None:
+    helper = "examples/osm/osmium-rs/" + "src/" + "lib.rs"
+    if position == "prefix":
+        entry = "foo" + punctuation + helper
+    else:
+        entry = helper + punctuation + ("backup" if position == "suffix-with-text" else "")
+    (tmp_path / "manifest.json").write_text(json.dumps({entry: {}}))
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1
+    assert "src/lib.rs ABI" in errors[0]
+
+
+@pytest.mark.parametrize("wrapper", ["{}", '"{}"', "'{}'", "`{}`", " {} ", "\t{}\t"])
+@pytest.mark.parametrize("absolute", [False, True])
+def test_allows_osm_helper_complete_documented_tokens(
+    tmp_path: Path, wrapper: str, absolute: bool
+) -> None:
+    helper = "examples/osm/osmium-rs/src/lib.rs"
+    if absolute:
+        helper = str(ROOT / helper)
+    (tmp_path / "note.md").write_text(wrapper.format(helper) + "\n")
+    assert check_stale_names.check_stale_names(tmp_path) == []
+
+
 def test_structurally_flags_current_product_build_release_and_workflow_identity(
     tmp_path: Path,
 ) -> None:

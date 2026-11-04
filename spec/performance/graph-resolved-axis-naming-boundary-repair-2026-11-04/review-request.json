@@ -1,0 +1,14 @@
+{
+  "reviewer": "s5a_final_review",
+  "decision": "REQUEST_CHANGES",
+  "priority": "P2",
+  "candidate": "47d4d6514671b12c8f263a3d640416af1983621c",
+  "reviewedSourceDiffSha256": "7598b93ec17f399a2b7dab33bdc291e95c5c99507630256e6d5482631be502e7",
+  "provenance": "Exact user-forwarded review/repair request; terminal newline added by heredoc",
+  "source": "target/task-tmp/naming-boundary-review.txt",
+  "log": "review-request.txt.gz",
+  "rawBytes": 2087,
+  "rawSha256": "6eb2d5c76e071154e3e612e1d4938648f27d0e0d1c142f487c6dc009034ade72",
+  "gzipSha256": "f9913b551b4fb50b6bdbb165be174f680be7da90f17ca63220bbd7afe0e6ae3f",
+  "newIndependentReviewStillRequired": true
+}

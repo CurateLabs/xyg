@@ -250,11 +250,12 @@ def _allowed_src_lib_rs(line: str, start: int) -> bool:
     prefix = line[:start]
     # One auxiliary crate, not the retired root ABI location. Match the whole
     # repository path (optionally under an absolute checkout prefix), never a
-    # relative lookalike prefix, filename suffix or child path. Other identity
-    # matches on this same line still pass through the ordinary checks.
+    # relative lookalike prefix, filename suffix or child path. Only quotes,
+    # backticks, spaces/tabs and line boundaries delimit the complete token.
+    # Other identity matches on this line still receive the ordinary checks.
     if re.search(
-        r"(?<![\w./\\-])(?:/(?:[\w.-]+/)*)?examples/osm/osmium-rs/$", prefix
-    ) and not re.match(r"[\w./\\-]", line[start + len("src/lib.rs") :]):
+        r"""(?:^|[ \t"'`])(?:/(?:[\w.-]+/)*)?examples/osm/osmium-rs/$""", prefix
+    ) and re.match(r"""(?:$|[ \t"'`])""", line[start + len("src/lib.rs") :]):
         return True
     return (
         prefix.endswith("crates/xyg-core/")

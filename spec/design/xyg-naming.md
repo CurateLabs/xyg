@@ -104,6 +104,10 @@ preparation. It is not the core C ABI location or a deferred product rename.
 The gate permits this exact path in source manifests and documentation,
 including an absolute checkout prefix. Relative lookalike prefixes, other
 qualified crate paths and filename/child-path suffixes receive no new allowance.
+The complete helper token must be delimited by line boundaries, spaces/tabs,
+string quotes or Markdown backticks. Other punctuation, including `+`, `@`, `~`,
+`%`, `=`, `#`, `:`, `?` and brackets, does not delimit an allowed path. This is
+a literal text-token rule; it adds no glob, URI or path normalization policy.
 
 ## 3. Migration order (no mixed intermediate artifact)
 
