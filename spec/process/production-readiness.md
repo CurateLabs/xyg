@@ -961,3 +961,10 @@ label is rejected by the shared canonical parser and is no longer sent by the
 workflow. Tagged runs still derive versions from the tag. Existing tag,
 repository, environment, dry-run and dual registry-opt-in guards continue to
 prevent branch fixture uploads; no guard is relaxed to admit fixture versions.
+
+The installed Streamlit/vanilla-TypeScript consumer smoke uses the unreserved
+canonical fixture version `0.0.0-rc.1063` for its local npm cohort. The same
+strict staging parser validates this caller as the workflow branch fixtures;
+old `-test.N` labels remain rejected. This identity never reserves or qualifies
+a release. The smoke may consume its existing exact wheel via `--wheel` rather
+than rebuilding source separately for each consumer.

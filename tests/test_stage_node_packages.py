@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import re
@@ -225,18 +226,9 @@ def test_direct_staging_rejects_nonrelease_semver(tmp_path: Path, version: str) 
         stage(dist=tmp_path / "absent", output=tmp_path, version=version)
 
 
-@pytest.mark.parametrize("run_number", [1, 42])
-def test_release_workflow_branch_versions_stage_all_package_roles(
-    tmp_path: Path, run_number: int
-) -> None:
+def _stage_fixture_version_in_all_roles(tmp_path: Path, version: str) -> None:
     from scripts import stage_browser_package as browser
 
-    workflow = (REPO / ".github/workflows/publish.yaml").read_text()
-    versions = re.findall(r'version_args=\(--version "([^"]+)"\)', workflow)
-    assert len(versions) == 3, "browser, platform and facade branch callers must be covered"
-    resolved = [value.replace("${GITHUB_RUN_NUMBER}", str(run_number)) for value in versions]
-    assert len(set(resolved)) == 1
-    version = resolved[0]
     mod = _load()
     native = mod.stage_platform(
         platform_id="linux-x64",
@@ -259,3 +251,29 @@ def test_release_workflow_branch_versions_stage_all_package_roles(
     assert set(
         json.loads((facade / "package.json").read_text())["optionalDependencies"].values()
     ) == {version}
+
+
+@pytest.mark.parametrize("run_number", [1, 42])
+def test_release_workflow_branch_versions_stage_all_package_roles(
+    tmp_path: Path, run_number: int
+) -> None:
+    workflow = (REPO / ".github/workflows/publish.yaml").read_text()
+    versions = re.findall(r'version_args=\(--version "([^"]+)"\)', workflow)
+    assert len(versions) == 3, "browser, platform and facade branch callers must be covered"
+    resolved = [value.replace("${GITHUB_RUN_NUMBER}", str(run_number)) for value in versions]
+    assert len(set(resolved)) == 1
+    _stage_fixture_version_in_all_roles(tmp_path, resolved[0])
+
+
+def test_consumer_smoke_fixture_version_stages_all_package_roles(tmp_path: Path) -> None:
+    tree = ast.parse((REPO / "scripts/consumer_apps_smoke.py").read_text())
+    versions = [
+        node.value.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "version" for target in node.targets)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
+    ]
+    assert len(versions) == 1
+    _stage_fixture_version_in_all_roles(tmp_path, versions[0])
