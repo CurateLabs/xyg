@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -222,3 +223,39 @@ def test_direct_staging_rejects_nonrelease_semver(tmp_path: Path, version: str) 
         _load().stage_facade(client=tmp_path / "absent.js", output=tmp_path, version=version)
     with pytest.raises(ValueError, match="invalid npm semver"):
         stage(dist=tmp_path / "absent", output=tmp_path, version=version)
+
+
+@pytest.mark.parametrize("run_number", [1, 42])
+def test_release_workflow_branch_versions_stage_all_package_roles(
+    tmp_path: Path, run_number: int
+) -> None:
+    from scripts import stage_browser_package as browser
+
+    workflow = (REPO / ".github/workflows/publish.yaml").read_text()
+    versions = re.findall(r'version_args=\(--version "([^"]+)"\)', workflow)
+    assert len(versions) == 3, "browser, platform and facade branch callers must be covered"
+    resolved = [value.replace("${GITHUB_RUN_NUMBER}", str(run_number)) for value in versions]
+    assert len(set(resolved)) == 1
+    version = resolved[0]
+    mod = _load()
+    native = mod.stage_platform(
+        platform_id="linux-x64",
+        wheel=_wheel(tmp_path / "xyg.whl", "libxyg_core.so"),
+        output=tmp_path / "native",
+        version=version,
+    )
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    for name in browser.ASSETS:
+        (dist / name).write_bytes(
+            b"\0asm\x01\0\0\0" if name.endswith(".wasm") else b"export const xyg=true;\n"
+        )
+    client = tmp_path / "standalone.js"
+    client.write_text("var xyg={renderStandalone(){}};")
+    facade = mod.stage_facade(client=client, output=tmp_path / "facade", version=version)
+    web = browser.stage(dist=dist, output=tmp_path / "browser", version=version)
+    for staged in (native, facade, web):
+        assert json.loads((staged / "package.json").read_text())["version"] == version
+    assert set(
+        json.loads((facade / "package.json").read_text())["optionalDependencies"].values()
+    ) == {version}

@@ -951,3 +951,13 @@ independent of ecosystem spelling.
 
 The [local #884 receipt](../releases/evidence/issue884-2026-11-05/README.md)
 records focused tests, fixture packaging hashes, commands and qualification limits.
+
+### Manual branch staging fixture versions (#884)
+
+A manual release dry run on a branch stages all three npm roles with the same
+canonical fixture version `0.0.0-rc.${GITHUB_RUN_NUMBER}`. This is an unreserved
+packaging fixture, not an accepted release candidate. The former `-dryrun.N`
+label is rejected by the shared canonical parser and is no longer sent by the
+workflow. Tagged runs still derive versions from the tag. Existing tag,
+repository, environment, dry-run and dual registry-opt-in guards continue to
+prevent branch fixture uploads; no guard is relaxed to admit fixture versions.
