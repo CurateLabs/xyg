@@ -1,0 +1,211 @@
+{
+  "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-f18c1bda",
+  "branch": "t3/browser-progressive-continuation",
+  "acceptedBase": "5e00c6b9147b67f20046cdfa6bd77aa413c18474",
+  "acceptedTree": "2bb6a0c3841d5cba19f6ed74b41524274d0a1ce7",
+  "syncMerge": "88a52156b191d3cc28d7614881695d1c8bc3a19a",
+  "node": "v22.23.4",
+  "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "7d57a86ebc56443936364817fc24d598fd9986774bcac0787f4a25750141d06e",
+      "bytes": 6109848
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "6b0d9bf82d01650ea6e452e2cfa555db0df1a86689e47a65f4e95acff5b6f77d",
+      "bytes": 2120259
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "29b3b9cad48045b97916333514f1b4513a28d4c83e2dbb098bf49eae40eaadd3",
+      "bytes": 796904
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "895ed0b3636dbf4da8e786387cd4eb9a2856b6d79c9327af5aa0629cd8f0d820",
+      "bytes": 796931
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "632510de5fef2adc675294167e133e99d3a2377f5f047f3a79a04987ee724d3d",
+      "bytes": 1922723
+    }
+  },
+  "sources": {
+    "js/src/63_graph_controller.ts": {
+      "sha256": "53a231dc02aafc217c37b764252a2459544ffec36b29c84b1e9fe65444bdd89d",
+      "bytes": 20649
+    },
+    "js/src/63_graph_session_wire.ts": {
+      "sha256": "84c4b1296e9246c6bd00f4988f88488886dc15839b51aa2eaa516f87fc2cf33c",
+      "bytes": 20259
+    },
+    "js/test/graph-session-controller-wire.test.mjs": {
+      "sha256": "6a8585ffcafca0729001985734209e6f4d7422b39992a8e93612fcd3768869ca",
+      "bytes": 17541
+    },
+    "scripts/graph_session_controller_wasm_smoke.mjs": {
+      "sha256": "1a6f18225377137c0888f1313b8b88b7bf614f59fdc50ffe413284f58d4267f4",
+      "bytes": 68265
+    },
+    "spec/api/browser-wasm.md": {
+      "sha256": "b785190e12d31f96f2357e679a85d8eed5eeb91cbb32e1b6f02ea446e6ee01d4",
+      "bytes": 27389
+    },
+    "spec/design/browser-wasm.md": {
+      "sha256": "8be809b7c81516adf1218be25de96df64329ea323efa31a6e37f01ab1512aa50",
+      "bytes": 120265
+    },
+    "spec/design/graph-interaction.md": {
+      "sha256": "47b3c138caf9f34e308296ed0387948480bc0a82e0e48c13e2b1431b07f6bfea",
+      "bytes": 100747
+    },
+    "spec/design/graph-mark.md": {
+      "sha256": "1963ad8021bed419bab228c46eb0e39cd36992f764058fd456f9d313810ba94b",
+      "bytes": 83338
+    },
+    "spec/design/graphforge-node-scheduling.md": {
+      "sha256": "e4c948634ca1223ebf24e7818d57fb11aa4ac228e91722ce58f13a949870adb7",
+      "bytes": 21758
+    },
+    "spec/releases/0.6.0-api-inventory.json": {
+      "sha256": "98ec6d9d45268a86c8a039425ce648127ffce763e26d4bfe3334e21857c13f11",
+      "bytes": 994875
+    },
+    "tests/browser/graph_session_controller_page.mjs": {
+      "sha256": "3900ecdc11131c68dfdcc7c31d58e579829f6d0d152a88aeff35445a4d1ccc3f",
+      "bytes": 28718
+    }
+  },
+  "checks": [
+    {
+      "command": "cargo build --release",
+      "exit": 0,
+      "log": "native.log.gz",
+      "logSha256": "9b106a07752253cd3e192191460ac10ef4e756b614f6f0c776e3c21fb3a772d5"
+    },
+    {
+      "command": "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exit": 0,
+      "log": "wasm.log.gz",
+      "logSha256": "62a4750fcf3c79f64a745309f24f469534eaaf5db47f2f455f3943c9b1db06fd"
+    },
+    {
+      "command": "node js/build.mjs",
+      "exit": 0,
+      "log": "build.log.gz",
+      "logSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    {
+      "command": "node js/package-wasm.mjs",
+      "exit": 0,
+      "log": "package.log.gz",
+      "logSha256": "bb8c014cc6928a86a24a649dc9946f8e44aeb2c1285862f32a41861feee67ae0"
+    },
+    {
+      "command": "node --test js/test/graph-session-controller-wire.test.mjs js/test/graph-session-gpu.test.mjs js/test/package-wasm-contract.test.mjs js/test/package-wasm-manifest.test.mjs",
+      "exit": 0,
+      "log": "wire.log.gz",
+      "logSha256": "35959d485afb817458c25435f6135301cc23c3dc3374410df6adddcf4a092d12"
+    },
+    {
+      "command": "node scripts/graph_session_controller_wasm_smoke.mjs",
+      "exit": 0,
+      "log": "legacy.log.gz",
+      "logSha256": "c1b84b44ef46266110292b7ddc7f7afe032e4a3632e9106653e1d39cef0f8b41"
+    },
+    {
+      "command": "XYG_GRAPH_PROGRESSIVE_ONLY=1 XYG_GRAPH_SESSION_REPORT=spec/performance/graph-browser-continuation-2026-11-05/progressive.json node scripts/graph_session_controller_wasm_smoke.mjs",
+      "exit": 0,
+      "log": "progressive.log.gz",
+      "logSha256": "f000e63693fe240648d1ab4535fb0a381f1dd8fbf4af5c0fe61ffa21e20e9968"
+    },
+    {
+      "command": "XYG_WASM_FOUNDATION_REPORT=spec/performance/graph-browser-continuation-2026-11-05/foundation.json node scripts/wasm_foundation_smoke.mjs",
+      "exit": 0,
+      "log": "foundation.log.gz",
+      "logSha256": "e9c3c5387845698380253d016d24a042f14aa6ee2b873da6780d607c119b30ea"
+    },
+    {
+      "command": "uv run python spec/performance/graph-browser-continuation-2026-11-05/replay.py",
+      "exit": 0,
+      "log": "parity.log.gz",
+      "logSha256": "6718eaf3cf537e1c4b4846f5ce61b7b3eeb345eb2c3f213737b8f66a2b5f5b4a"
+    },
+    {
+      "command": "cargo test -p xyg-engine --lib graphforge::interaction::tests::wire::p1",
+      "exit": 0,
+      "log": "rust-p1.log.gz",
+      "logSha256": "151571ed995d0aecd423ab3adaefa45895b5cc2ed176c44203536838cf28ba50"
+    },
+    {
+      "command": "uv run pytest tests/test_release_inventory.py tests/test_wasm_ticks_chartview_contract.py tests/test_wasm_density_chartview_contract.py -q",
+      "exit": 0,
+      "log": "contracts.log.gz",
+      "logSha256": "a09f42f0aaf7c1c4a0e83163447c292b5925f5b05cf8733c86368930cb2a84ed"
+    },
+    {
+      "command": "uv run pytest tests/test_graph_session_abi.py tests/test_graph_session_python_transport.py -q",
+      "exit": 0,
+      "log": "native-tests.log.gz",
+      "logSha256": "db6700113cad504d858217b4df0896dada6f2120678d5119b3c3e9758e5d9aa3"
+    },
+    {
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exit": 0,
+      "log": "inventory.log.gz",
+      "logSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+    },
+    {
+      "command": "uv run python scripts/check_release_inventory.py",
+      "exit": 0,
+      "log": "inventory-check.log.gz",
+      "logSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+    },
+    {
+      "command": "uv run python scripts/gen_abi_manifest.py --check",
+      "exit": 0,
+      "log": "abi.log.gz",
+      "logSha256": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed"
+    },
+    {
+      "command": "uv run python scripts/check_public_api.py",
+      "exit": 0,
+      "log": "api.log.gz",
+      "logSha256": "fef7ff8098e56676e13107515645763fbac712dc4baa23afbab2ec25081e1fea"
+    },
+    {
+      "command": "uv run python scripts/verify_ownership.py",
+      "exit": 0,
+      "log": "ownership.log.gz",
+      "logSha256": "f17a53990b48cff699969540e260eb763ace8561612b390ec05097f5035a185b"
+    },
+    {
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "log": "hooks.log.gz",
+      "logSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    {
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "log": "ruff.log.gz",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": "uv run ruff format --check .",
+      "exit": 0,
+      "log": "format.log.gz",
+      "logSha256": "509a079f767f1e45e1cbd35e7bcf9cc076889895357f39ab4b2cdfac71708ed1"
+    }
+  ],
+  "limits": [
+    "experimental bounded browser slice only",
+    "1k uses existing explicit 384 MiB arena; default 16 MiB refusal retained",
+    "trusted unfinished interaction at four nodes; no 1k focus claim",
+    "no 10k/100k/1M rendered ladder or Python widget integration",
+    "full #35/#1015/#36/#108 acceptance remains open",
+    "parent independent final-diff review required"
+  ]
+}

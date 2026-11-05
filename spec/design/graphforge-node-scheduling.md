@@ -287,3 +287,38 @@ A move Preview/Commit before the first presentation honors the one-tick seed
 when opted in, then invalidates the force continuation under the existing move
 contract; absent/zero progressive keeps the legacy 300-step seed. Failed wire
 requests install neither seed/move/pin state nor sequence/retry changes.
+
+
+### Bounded public browser continuation (#35, release #108 preparation)
+
+`attachWasmGraphSession` now schedules retained CoSE continuation when its
+existing `load.progressive` is true. The initial Rust publication is painted
+before continuation crosses a browser paint boundary. Each subsequent animation
+opportunity admits at most one opcode 15 request with the existing scheduler's
+8-step chunk; force work executes inside the claimed packaged WASM Worker.
+There is one outstanding request and no queued checkpoint backlog or held ACK.
+Presentation opportunities coalesce scheduling demand; callbacks are not ticks.
+`ready` still means the initial presentation. Render events and snapshots add
+nullable `relayout: {steps: bigint, alpha: number, done: boolean}` copied from
+validated Rust planes. Authored positions may initially have no report; the first
+step constructs native continuation. Empty/all-hidden states terminate from the
+Rust done flag without invented ticks. Absent/false progressive preserves the
+legacy initial layout and schedules no continuation.
+
+The existing scheduler 30-second wall bound includes initialization and ends
+continuation with an observable timeout; errors stop automatic scheduling.
+Disposal cancels scheduled frames/timers immediately, suppresses late installation,
+drains admitted commands and closes the session before releasing its Worker.
+Separate attachments require separate claimed Workers. Recreate only after
+awaiting disposal; no public replacement/update API is added. Selection, focus,
+and camera operations keep Rust continuation intact. Existing keyboard default
+timing, pointer/CSS guards, selection identity and painter admission stay intact.
+No algorithm, done inference, CPU geometry, resource ceiling, ABI, or shipped
+asset policy changes. The 1024-node composition ceiling remains unchanged.
+
+Evidence/reproduction: `XYG_GRAPH_PROGRESSIVE_ONLY=1 node
+scripts/graph_session_controller_wasm_smoke.mjs`, alongside its full legacy run,
+wire tests and foundation smoke. This bounded browser slice establishes no
+competitor win or full rendered 1k/10k/100k/1M ladder. Python notebook/widget
+progressive integration (#1015), broader #36 interactions and full #35/#108
+acceptance remain open. Publication still requires all #108 acceptance.
