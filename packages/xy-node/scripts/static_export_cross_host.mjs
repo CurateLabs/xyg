@@ -149,6 +149,10 @@ function failCloseFigure(name) {
   const f = new Figure({ width: 320, height: 240 });
   f.line([0, 1], [0, 1]);
   switch (name) {
+    case "annotation_text_x_nonfinite": fixedDomains(f); f.annotations = [{ kind: "text", x: Infinity, y: 0.5, text: "label" }]; break;
+    case "annotation_text_y_nonfinite": fixedDomains(f); f.annotations = [{ kind: "text", x: 0.5, y: Infinity, text: "label" }]; break;
+    case "annotation_text_x_nonnumeric": fixedDomains(f); f.annotations = [{ kind: "text", x: "category", y: 0.5, text: "label" }]; break;
+    case "annotation_text_y_nonnumeric": fixedDomains(f); f.annotations = [{ kind: "text", x: 0.5, y: "category", text: "label" }]; break;
     case "annotation_callout_style": fixedDomains(f); f.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "label", style: { head_size: 8 } }]; break;
     case "annotation_arrow_style": fixedDomains(f); f.annotations = [{ kind: "arrow", x0: 0, y0: 0, x1: 1, y1: 1, style: { head_size: 8 } }]; break;
     case "annotation_rule_style": fixedDomains(f); f.annotations = [{ kind: "rule", axis: "y", value: 0.5, style: { span_start: 8 } }]; break;

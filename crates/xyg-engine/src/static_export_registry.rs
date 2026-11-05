@@ -373,6 +373,22 @@ pub struct StaticExportFailClose {
 
 pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
     StaticExportFailClose {
+        name: "annotation_text_x_nonfinite",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric",
+    },
+    StaticExportFailClose {
+        name: "annotation_text_y_nonfinite",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric",
+    },
+    StaticExportFailClose {
+        name: "annotation_text_x_nonnumeric",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric",
+    },
+    StaticExportFailClose {
+        name: "annotation_text_y_nonnumeric",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric",
+    },
+    StaticExportFailClose {
         name: "annotation_callout_style",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: callout unsupported keys head_size",
     },

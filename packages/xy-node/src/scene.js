@@ -4007,9 +4007,9 @@ function rgba8(css, opacity = 1) {
 
 function annotationNumber(style, key, fallback, label) {
   const raw = Object.hasOwn(style, key) ? style[key] : fallback;
-  if (raw == null || typeof raw === "boolean" || (typeof raw === "string" && raw.trim() === "")) throw new RangeError(`Scene v12 annotation ${label} must be numeric`);
+  if (raw == null || typeof raw === "boolean" || (typeof raw === "string" && raw.trim() === "")) throw new RangeError(`XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: ${label} must be numeric`);
   const value = Number(raw);
-  if (!Number.isFinite(value)) throw new RangeError(`Scene v12 annotation ${label} must be numeric`);
+  if (!Number.isFinite(value)) throw new RangeError(`XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: ${label} must be numeric`);
   return value;
 }
 

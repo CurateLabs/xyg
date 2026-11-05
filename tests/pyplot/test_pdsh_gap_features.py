@@ -796,3 +796,31 @@ def test_null_major_locator_keeps_separately_authored_minor_marks(scale, domain,
     ]
     assert sum(0 < abs(right - left) < 20 for left, right in horizontal) == len(positions)
     assert len(ax.get_yticks()) == 0
+
+
+@pytest.mark.parametrize("axis", ["x", "y"])
+@pytest.mark.parametrize("hide", ["axis_off", "axis_visible"])
+@pytest.mark.parametrize("ticker", ["formatter", "locator"])
+def test_null_tickers_preserve_hidden_axis_decorations(axis, hide, ticker):
+    fig, ax = plt.subplots()
+    ax.plot([0, 10], [0, 10])
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+    ax.grid(True)
+    target = getattr(ax, f"{axis}axis")
+    target.set_minor_locator(plt.FixedLocator([2, 4, 6, 8]))
+    if hide == "axis_off":
+        ax.set_axis_off()
+    else:
+        target.set_visible(False)
+    before = ET.fromstring(_svg()).find('.//{*}g[@data-xy-chrome="axes"]')
+    if ticker == "formatter":
+        target.set_major_formatter(plt.NullFormatter())
+    else:
+        target.set_major_locator(plt.NullLocator())
+    built = ax._build_chart(640, 480).figure()
+    assert built.axis_options[axis]["tick_label_strategy"] == "none"
+    after = ET.fromstring(_svg()).find('.//{*}g[@data-xy-chrome="axes"]')
+    assert (None if before is None else ET.tostring(before)) == (
+        None if after is None else ET.tostring(after)
+    )

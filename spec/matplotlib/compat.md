@@ -71,7 +71,7 @@ dependency-free `triangles=` shorthand into Matplotlib's equivalent
 | `legend()` | `loc`, columns, title/font size/colors, frame styling, `borderpad`, `labelspacing`, `borderaxespad`, `fancybox`, `framealpha`, and `shadow` are retained across browser and static output. `loc='best'` scores the measured displayed legend box in Matplotlib location-code order using path vertices/crossings, collection offsets, and bar-rectangle overlaps. It resolves before the wire; pyplot rejects misspelled Matplotlib locations without narrowing core `xyg.legend()`'s independent location vocabulary. Text-box scoring and bounded long-path sampling are documented in `spec/api/styling.md` § Legend placement |
 | `grid(True/False)` | toggles the grid via the theme |
 | `xlim` / `ylim`, `set_xmargin` / `set_ymargin`, axis scales, `invert_xaxis/yaxis` | linear/log are native; symlog/logit/asinh use dependency-free monotone data transforms with inverse limit/tick semantics. Automatic linear ticks include Matplotlib's 2.5 step and use uniform decimal padding across a tick set; locations refresh as data arrives. `axes.autolimit_mode="round_numbers"` expands automatic linear limits to the first and last AutoLocator ticks after applying the configured margins. Artist `get_data()` reflects the transformed space; logit masks values at/outside (0, 1) |
-| `set_major_locator` / `set_major_formatter`, `plt.NullLocator/FixedLocator/MultipleLocator/MaxNLocator/LinearLocator/LogLocator`, `plt.NullFormatter/FixedFormatter/FuncFormatter/FormatStrFormatter/StrMethodFormatter/ScalarFormatter` | xy-owned re-implementations resolved at build time against live data limits (Null/Fixed/Multiple/Linear are position-exact; MaxN/Auto port Matplotlib's `MaxNLocator._raw_ticks` — same step tables, edge extension, and offset handling — with `nbins="auto"` budgeted from the estimated plot rect like `Axis.get_tick_space()`; Log remains approximate). Third-party locator objects work if they implement `tick_values(vmin, vmax)`; minor locators/formatters are retained for round-tripping but minor ticks do not render, except that a labeled minor pair under a blanked major formatter (the centered date-label idiom) is promoted to the drawn tick set |
+| `set_major_locator` / `set_major_formatter`, `plt.NullLocator/FixedLocator/MultipleLocator/MaxNLocator/LinearLocator/LogLocator`, `plt.NullFormatter/FixedFormatter/FuncFormatter/FormatStrFormatter/StrMethodFormatter/ScalarFormatter` | xy-owned re-implementations resolved at build time against live data limits (Null/Fixed/Multiple/Linear are position-exact; MaxN/Auto port Matplotlib's `MaxNLocator._raw_ticks` — same step tables, edge extension, and offset handling — with `nbins="auto"` budgeted from the estimated plot rect like `Axis.get_tick_space()`; Log remains approximate). Third-party locator objects work if they implement `tick_values(vmin, vmax)`; minor locators resolve an independent unlabelled tick tier; a labeled minor pair under a blanked major formatter (the centered date-label idiom) is promoted to the labeled tier |
 | `plt.dates.MonthLocator/YearLocator/DayLocator/DateFormatter` | xy-owned equivalents of the `matplotlib.dates` classes gallery scripts use; they locate and format in the engine's canonical ms-since-epoch axis unit (not Matplotlib's day floats), and `interval` approximates rrule by epoch-anchored occurrence counting |
 | datetime, timedelta, and string coordinates | datetime inputs use the engine's automatic date ticks, timedeltas are bounded to elapsed seconds, and common strings use categorical ticks; the general Matplotlib units registry is intentionally out of scope. datetime artist `get_{x,y}data(orig=False)` returns ms-since-epoch floats, and pandas' period-ordinal tickers (`TimeSeries_Date*`) are accepted as no-ops. pandas 3.1's default `Series.plot` period-ordinal input path is not converted back to epoch timestamps; use explicit timestamp input for browser output. Native static date-axis export still fails closed with `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS` (the shared static-route gap tracked by #889). The optional pandas probes expose these gaps when pandas is installed; the Matplotlib-only reference lane does not qualify pandas interop |
 | `xticks(positions, labels, rotation=)` / `tick_params(labelrotation=)` | Exact positions and strings render in browser, PNG, and SVG |
@@ -215,11 +215,16 @@ The current family-by-family qualification and remaining work are recorded in
 [the #889 acceptance audit](issue-889-evidence.md). This audit does not close the
 remaining static compatibility gaps.
 
-`NullFormatter` hides labels using the shared axis `tick_label_strategy="none"`
-while retaining locator positions. `NullLocator` supplies an empty authored
-major-tick list; their combination exports through Rust Scene/XYST without
-sending forbidden empty strings in the Scene tick-label table. Native annotation
-ingress still requires numeric coordinates: unresolved categorical text
+`NullFormatter` hides labels using the shared axis `tick_label_strategy="off"`
+while retaining locator positions and tick marks. An already hidden axis keeps
+`"none"`, which also suppresses decorations. `NullLocator` suppresses automatic
+major ticks/grid lines through zero tick length/grid width and labels off;
+empty major arrays retain the direct composition API's automatic-tick contract.
+Separately authored minor positions and style use the existing major slot with
+labels off when no majors exist, preventing coincident automatic majors from
+suppressing them. Hidden-axis `"none"` still takes precedence. Their combination
+exports through Rust Scene/XYST without empty strings in the tick-label table. Native annotation
+ingress in Python and Node requires finite numeric coordinates: unresolved categorical text
 coordinates fail closed with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE`
 (and the offending coordinate name), rather than a raw float-conversion error.
 Browser annotation conversion retains its existing category support.

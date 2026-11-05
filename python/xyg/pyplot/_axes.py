@@ -7199,7 +7199,8 @@ class Axes(PlotTypeMixin):
             # Scene tick labels are nonempty strings. Hide labels through the
             # shared axis policy while retaining locator positions (#889).
             props.pop("tick_labels", None)
-            props["tick_label_strategy"] = "off"
+            if props.get("tick_label_strategy") != "none":
+                props["tick_label_strategy"] = "off"
         elif formatter is not None:
             props["tick_labels"] = _formatter_tick_labels(
                 formatter,
@@ -7222,7 +7223,8 @@ class Axes(PlotTypeMixin):
             # null major locator through authored chrome, preserving that
             # contract and any separately authored minor tier.
             props.pop("tick_labels", None)
-            props["tick_label_strategy"] = "off"
+            if props.get("tick_label_strategy") != "none":
+                props["tick_label_strategy"] = "off"
             props["style"] = {**(props.get("style") or {}), "tick_length": 0, "grid_width": 0}
             if (minor_locator is None and not is_log) or _is_null_locator(minor_locator):
                 props["minor_style"] = {

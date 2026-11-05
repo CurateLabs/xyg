@@ -2097,4 +2097,9 @@ with Rust's automatic major positions without altering the empty-array contract.
 The redundant minor slot is disabled. A null minor locator, or an absent minor
 locator on a non-log axis, authors zero minor length/grid width; implicit log
 subdivisions retain their normal minor style. NullFormatter uses off to hide labels while
-retaining tick marks. This changes no ABI struct, signature or wire format.
+retaining tick marks. A pre-existing hidden-axis `none` strategy takes precedence
+for either null ticker. Python and Node annotation numeric admission uses the
+same `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE` diagnostic, including the
+coordinate name, for nonnumeric/nonfinite values. Four registry rejection cases
+check exact x/y messages across both hosts. This changes no ABI struct,
+signature or wire format.

@@ -265,7 +265,24 @@ def _dense_mesh_columns() -> tuple[np.ndarray, ...]:
 def _fail_close_figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
     figure.line([0, 1], [0, 1])
-    if name.startswith("annotation_") and name.endswith("_style"):
+    if name in {
+        "annotation_text_x_nonnumeric",
+        "annotation_text_y_nonnumeric",
+        "annotation_text_x_nonfinite",
+        "annotation_text_y_nonfinite",
+    }:
+        _fixed_domains(figure)
+        coordinate = "x" if "_x_" in name else "y"
+        figure.annotations = [
+            {
+                "kind": "text",
+                "x": 0.5,
+                "y": 0.5,
+                "text": "label",
+                coordinate: float("inf") if name.endswith("nonfinite") else "category",
+            }
+        ]
+    elif name.startswith("annotation_") and name.endswith("_style"):
         _fixed_domains(figure)
         kind = name.removeprefix("annotation_").removesuffix("_style")
         key = {"callout": "head_size", "arrow": "head_size", "rule": "span_start", "text": "width"}[
@@ -535,4 +552,11 @@ def test_unsupported_feature_families_fail_closed_in_both_hosts(
         reason = scene_export_support_reason(_fail_close_figure(case["name"]))
         assert reason is not None and reason.startswith(case["reason_prefix"]), case["name"]
         assert reason == node_cases[case["name"]]["reason"]
+        if case["name"] in {
+            "annotation_text_x_nonnumeric",
+            "annotation_text_y_nonnumeric",
+            "annotation_text_x_nonfinite",
+            "annotation_text_y_nonfinite",
+        }:
+            assert reason == case["reason_prefix"]
         assert public_static_export(_fail_close_figure(case["name"]), "svg") is None

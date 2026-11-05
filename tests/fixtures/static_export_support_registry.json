@@ -320,6 +320,22 @@
   ],
   "fail_close": [
     {
+      "name": "annotation_text_x_nonfinite",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric"
+    },
+    {
+      "name": "annotation_text_y_nonfinite",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric"
+    },
+    {
+      "name": "annotation_text_x_nonnumeric",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric"
+    },
+    {
+      "name": "annotation_text_y_nonnumeric",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric"
+    },
+    {
       "name": "annotation_callout_style",
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: callout unsupported keys head_size"
     },

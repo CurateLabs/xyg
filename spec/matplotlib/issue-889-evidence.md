@@ -153,3 +153,18 @@ minor style. Caller locator state and the direct empty-array-means-auto contract
 remain unchanged. Required pyplot now passes 1188 tests with 163 optional skips
 and 26 qualified xfails; host parity passes 1097 tests. Independent re-review of
 this repair is required before PR delivery.
+
+## PR #1096 review corrections
+
+Greptile's review of `8d59d227` found that null tickers overwrote a hidden
+axis's `none` decoration strategy, Node retained the old annotation-coordinate
+diagnostic, and the compatibility text still named `none` for NullFormatter.
+The [fourth repair record](evidence/889/review-r4/README.md) preserves the
+reproduced failures. Null tickers now retain a pre-existing hidden-axis `none`;
+Python and Node reject nonnumeric/nonfinite annotation literals with the same
+stable coordinate diagnostic. Four Rust-registry cases check exact x/y errors
+from independently authored host programs. The compatibility table and prose
+now distinguish visible-axis label-only `off`, full-axis `none`, null-major
+style suppression and coincident-minor promotion. Previous receipts remain
+historical; current-head CI and completed independent review remain delivery
+gates.

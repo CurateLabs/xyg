@@ -188,6 +188,10 @@ def _annotation_number(values: dict[str, Any], key: str, default: Any, label: st
         raise UnsupportedSceneV3(
             f"XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: {label} must be numeric"
         ) from error
+    if not np.isfinite(value):
+        raise UnsupportedSceneV3(
+            f"XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: {label} must be numeric"
+        )
     return value
 
 
