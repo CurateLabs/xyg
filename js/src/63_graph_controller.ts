@@ -1,6 +1,7 @@
 /** Experimental explicit retained WASM graph attachment (#36 bounded S5b).
  * Rust owns every graph decision; this module owns pointer/keyboard/DOM/lifetime only.
  * See spec/design/graph-interaction.md “Bounded explicit S5b attachment”. */
+import { XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS } from "./wasm_abi_generated";
 import { claimGraphWorker, XygWasmError, type XygWasmWorker } from "./47_wasm";
 import { createGraphGpuPainter, decodeGraphGpu } from "./63_graph_gpu";
 import { decodeGraphSessionAck, decodeGraphSessionResult, encodeGraphSessionRequest,
@@ -34,13 +35,14 @@ export interface XygWasmGraphSession {
 }
 
 /** Attach one initially Owned, unlinked session to one packaged Worker.
- * @experimental S5b subset; no temporal/link/update/hover/gesture/force API. */
+ * @experimental S5b subset; no temporal/link/update/hover/gesture API. */
 export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): XygWasmGraphSession {
   if (!options || !(options.el instanceof HTMLElement)) throw new TypeError("A graph container is required");
   // Frame immutable ingress synchronously before asynchronous application work.
-  const instanceId = options.instanceId;
+  const instanceId = options.instanceId, load = options.load === undefined ? undefined : { ...options.load };
   let opening: Uint8Array | null = encodeGraphSessionRequest({ instanceId, opSeq: 1n, revision: 0,
-    operation: 19, document: options.document, load: options.load });
+    operation: 19, document: options.document, load });
+  const progressive = load?.progressive === true;
   const cameraCopy = (camera: XygWasmGraphCamera): XygWasmGraphCamera => {
     if (!camera || camera.length !== 7 || Array.from(camera).some(v => typeof v !== "number")) throw new TypeError("An explicit seven-f64 session camera is required");
     return Object.freeze([...camera]) as unknown as XygWasmGraphCamera;
@@ -48,6 +50,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   let camera = cameraCopy(options.camera);
   const lane = claimGraphWorker(options.worker), doc = options.el.ownerDocument;
   let disposed = false, terminal = false, busy = true, needsRefresh = false, sequence = 2n, output: GraphSessionResult | null = null;
+  let continuation = progressive, frame: number | null = null, deadline: ReturnType<typeof setTimeout> | null = null;
   let disposal: Promise<void> | null = null, page = 0;
   const surface = doc.createElement("div"), companion = doc.createElement("div"), live = doc.createElement("div");
   const previous = doc.createElement("button"), next = doc.createElement("button"), table = doc.createElement("table"), body = doc.createElement("tbody");
@@ -78,13 +81,33 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   }
   function report(error: unknown) {
     if (disposed) return;
+    stopContinuation();
     if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) terminal = true;
     if (error instanceof XygWasmError && error.code === "GF_INTERACTION_STALE") {
       needsRefresh = true; dispatch("stale", { code: error.code, revision: output?.revision ?? 0 });
     } else dispatch("error", { code: error instanceof XygWasmError ? error.code : "GF_INTERACTION_INVALID", message: error instanceof Error ? error.message : String(error) });
   }
+  function stopContinuation() {
+    continuation = false;
+    if (frame !== null) cancelAnimationFrame(frame);
+    if (deadline !== null) clearTimeout(deadline);
+    frame = null; deadline = null;
+  }
+  function scheduleContinuation() {
+    if (!continuation || disposed || terminal || needsRefresh || frame !== null) return;
+    if (output?.relayout?.done) { stopContinuation(); return; }
+    frame = requestAnimationFrame(() => {
+      frame = null;
+      if (!continuation || disposed || terminal || needsRefresh) return;
+      if (busy) { scheduleContinuation(); return; }
+      // One bounded Rust operation per presentation opportunity. Worker replies
+      // are accepted immediately; no transport ACK is held to pace the force.
+      void run({ operation: 15, steps: XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS }, "render").catch(() => {});
+    });
+  }
   function setBusy(value: boolean) {
     busy = value;
+    if (!value) scheduleContinuation();
     if (disposed) return;
     surface.setAttribute("aria-busy", String(value));
     for (const button of companion.querySelectorAll("button")) {
@@ -92,10 +115,12 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       button.setAttribute("aria-disabled", String(value || unavailable || needsRefresh));
     }
   }
-  function install(bytes: ArrayBuffer, candidateCamera: XygWasmGraphCamera, candidatePage: number): XygWasmGraphSnapshot {
+  function install(bytes: ArrayBuffer, candidateCamera: XygWasmGraphCamera, candidatePage: number, requireProgress = false): XygWasmGraphSnapshot {
     // Validate the entire reply and all GPU sections before any upload/DOM/state.
     let candidate: GraphSessionResult, gpu: ReturnType<typeof decodeGraphGpu>;
-    try { candidate = decodeGraphSessionResult(bytes); gpu = decodeGraphGpu(candidate.sections); }
+    try { candidate = decodeGraphSessionResult(bytes);
+      if (requireProgress && !candidate.relayout) throw new XygWasmError("GF_INTERACTION_INVALID", "Relayout reply omitted its Rust progress report", -3);
+      gpu = decodeGraphGpu(candidate.sections); }
     catch (error) { needsRefresh = true; throw error; }
     const fragment = doc.createDocumentFragment();
     candidate.companion.rows.forEach((cells, index) => {
@@ -110,7 +135,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       });
       cell.append(button); row.append(cell); fragment.append(row);
     });
-    if (disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed");
+    if (disposed || terminal) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment lifetime ended");
     const focusedRow = doc.activeElement instanceof HTMLElement && body.contains(doc.activeElement) ? doc.activeElement.dataset.graphRow : undefined;
     // Painter stages a complete picture before presentation. Validation/refusal
     // leaves the preceding camera/revision/picture/selection/companion intact.
@@ -130,7 +155,19 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function request(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, candidateCamera = camera, candidatePage = page) {
     if (sequence > 0xffffffffffffffffn) throw new RangeError("Graph op_seq exhausted");
     const bytes = encodeGraphSessionRequest({ ...input, instanceId, opSeq: sequence++, revision: output?.revision ?? 0 });
-    return lane.execute(input.operation === 21 ? "render" : "interact", bytes).then(bytes => install(bytes, candidateCamera, input.operation === 17 || input.operation === 21 ? candidatePage : 0));
+    return lane.execute(input.operation === 21 ? "render" : "interact", bytes).then(async bytes => {
+      if (input.operation === 15 && candidatePage !== 0) {
+        // Step replies carry page zero. Preserve the user's companion page by
+        // coalescing that checkpoint with a same-state Rust render, never by
+        // manufacturing rows or retaining obsolete row/ref alignments.
+        const checkpoint = decodeGraphSessionResult(bytes);
+        if (!checkpoint.relayout) throw new XygWasmError("GF_INTERACTION_INVALID", "Relayout reply omitted progress", -3);
+        if (sequence > 0xffffffffffffffffn) throw new RangeError("Graph op_seq exhausted");
+        bytes = await lane.execute("render", encodeGraphSessionRequest({ instanceId, opSeq: sequence++, revision: checkpoint.revision,
+          operation: 21, camera: candidateCamera, page: candidatePage, pageSize: 50 }));
+      }
+      return install(bytes, candidateCamera, input.operation === 17 || input.operation === 21 || input.operation === 15 ? candidatePage : 0, input.operation === 15);
+    });
   }
   // Framing and lane admission happen synchronously. No event is retained by
   // asynchronous work, and no observer runs between choosing a Rust fact and
@@ -227,15 +264,23 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   painter.canvas.addEventListener("click", primaryClick);
   surface.addEventListener("keydown", keyDown); previous.addEventListener("click", previousPage); next.addEventListener("click", nextPage);
   setBusy(true);
+  if (progressive) deadline = setTimeout(() => {
+    report(new XygWasmError("XYG_WASM_TIMEOUT", "Graph continuation exceeded the scheduler wall limit"));
+  }, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS);
   const ready = (async () => {
     const ack = await lane.execute("open", opening!); opening = null; decodeGraphSessionAck(ack);
     if (disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed");
     return await request({ operation: 21, camera, page: 0, pageSize: 50 });
-  })().then(value => { if (!disposed) dispatch("render", value); return value; }).catch(async error => { report(error); await dispose(); throw error; }).finally(() => setBusy(false));
+  })().then(value => { if (!disposed) dispatch("render", value); return value; }).catch(async error => { report(error); await dispose(); throw error; }).finally(() => {
+    setBusy(false);
+    if (frame !== null) cancelAnimationFrame(frame);
+    frame = null;
+    if (continuation && !disposed) frame = requestAnimationFrame(() => { frame = null; scheduleContinuation(); });
+  });
   // Do not await ready in cleanup: its failure path itself awaits disposal.
   function dispose(): Promise<void> {
     if (disposal) return disposal;
-    disposed = true;
+    disposed = true; stopContinuation();
     painter.canvas.removeEventListener("click", primaryClick);
     surface.removeEventListener("keydown", keyDown); previous.removeEventListener("click", previousPage); next.removeEventListener("click", nextPage);
     for (const [name, value] of surfaceAttributes) { if (value === null) surface.removeAttribute(name); else surface.setAttribute(name, value); }

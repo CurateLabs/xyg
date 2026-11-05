@@ -1766,3 +1766,10 @@ replacement. Missing/malformed facts fail closed, including old same-ABI modules
 The shared GLHost resets sampler and texture state on units 0–2 so the graph
 reference texture cannot inherit a neighbor's LINEAR sampler. See the
 [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md).
+
+
+With `load.progressive: true`, this attachment now schedules retained opcode 15
+in the packaged Worker after initial paint, using the existing chunk/wall limits.
+See [the bounded continuation contract](graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation).
+This is a #35 slice; Python notebooks, the full rendered ladder and #108 acceptance
+remain open. Ordinary one-shot rendering and all admission limits are unchanged.
