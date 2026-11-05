@@ -179,11 +179,19 @@ def _annotation_number(values: dict[str, Any], key: str, default: Any, label: st
         or isinstance(raw, (bool, np.bool_))
         or (isinstance(raw, str) and not raw.strip())
     ):
-        raise ValueError(f"Scene v12 annotation {label} must be numeric")
+        raise UnsupportedSceneV3(
+            f"XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: {label} must be numeric"
+        )
     try:
         value = float(raw)
     except (TypeError, ValueError) as error:
-        raise ValueError(f"Scene v12 annotation {label} must be numeric") from error
+        raise UnsupportedSceneV3(
+            f"XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: {label} must be numeric"
+        ) from error
+    if not np.isfinite(value):
+        raise UnsupportedSceneV3(
+            f"XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: {label} must be numeric"
+        )
     return value
 
 
@@ -224,14 +232,9 @@ def _validate_xyaf_annotation_style(annotation: dict[str, Any]) -> None:
         and not _native.scene_annotation_style_admit(kind, wrapped, labelled, str(key))
     )
     if unsupported:
-        if wrapped:
-            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {unsupported!r}")
-        if kind == "arrow":
-            raise UnsupportedSceneV3(f"Scene arrow style does not encode {unsupported!r}")
-        if kind == "callout":
-            raise UnsupportedSceneV3(f"Scene callout style does not encode {unsupported!r}")
         raise UnsupportedSceneV3(
-            f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: "
+            f"{kind} unsupported keys {','.join(unsupported)}"
         )
 
 

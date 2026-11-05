@@ -1346,9 +1346,13 @@ encode time. Rust then:
    "Polar wedge SVG arcs" below), so a polar Scene still ends with XYPL when it
    has no XYIM or style sidecars.
 
-SVG clip is a circle at `(cx, cy, R)` (evenodd annulus when `hole>0`) for a
-full sector, or the sector path (outer arc + inner + radii) for a partial
-sector. Cartesian keeps the plot-rect clip. Polar chrome draws rings at radial
+SVG clip is a circle at `(cx, cy, R)` for a full disc, or one compound
+path with two closed circular subpaths and `clip-rule="evenodd"` when `hole>0`.
+Separate clip children must not represent the hole: SVG unions their silhouettes.
+A partial sector uses the sector path (outer arc + inner + radii). Native raster
+marks use the existing analytic annular-sector clip opcode with scaled radii
+and unscaled angles; chrome resets that clip. Cartesian keeps the plot-rect
+clip. Polar chrome draws rings at radial
 (`y`) ticks (`data-xy-grid="ring"`) and spokes at angular (`x`) ticks
 (`data-xy-grid="spoke"`), plus an outer frame at `r_hi`. Linear `grid_shape`
 uses polygon rings through angular ticks. Tick labels use
@@ -1413,8 +1417,9 @@ Polar bar/column/histogram wedges, constant-style polar heatmap lattice cells,
 and polar density cells all reach the encoded Scene as flattened PolyFill
 vertex runs from `polar_wedge_points` (span-proportional `polar_bar_segments`).
 Native raster and the XYPB browser painter draw those polygons unchanged — their
-display lists have no arc opcode — and their output is byte-identical to the
-pre-`XYWA` Scene. Static SVG instead writes each *plain* annular sector as exact
+display lists have no wedge-arc opcode. Adding/removing only XYWA on the same
+Scene leaves raster output byte-identical under the current polar clipping and
+chrome contract. Static SVG instead writes each *plain* annular sector as exact
 SVG elliptical arcs, the compatibility contract of the retired Python writer
 (polar-axes.md §5): a printed or zoomed wind rose keeps circular edges, and the
 PDF converted from that SVG draws the arcs as cubic Béziers.
@@ -1487,8 +1492,13 @@ gap swallows the whole outer arc. Scenes with no exact wedge emit no sidecar.
 (`arc_cubics`, deterministic). Python and Node consume the same Rust Scene and
 SVG, so the registered polar shapes (`public_polar_bar_sha256`,
 `public_polar_heatmap_sha256`) stay byte-identical across hosts.
-`tests/test_polar_wedge_svg_arcs.py` pins the rose/bar native PNG digests from
-the pre-arc native core (raster output is unchanged), and `benchmarks/test_codspeed_polar.py::test_svg_export_polar_wedges`
+`tests/test_polar_wedge_svg_arcs.py` compares the same compiled rose/bar Scene
+with and without only the bounded XYWA sidecar at scales 1 and 2: SVG changes,
+but native raster commands and PNG bytes must remain identical. Public PNG
+snapshots pin the separately reviewed #889 polar clipping/chrome corrections,
+which supersede the historical pre-arc snapshots; XYWA still has no raster
+effect. The old/new digests and exact byte-control proof are recorded in
+`spec/matplotlib/evidence/889/review-r5/`. `benchmarks/test_codspeed_polar.py::test_svg_export_polar_wedges`
 is the exact-arc control row for the flattening PNG row.
 
 ## Version 19 Rust-owned bounded colorbar ticks
@@ -2493,3 +2503,10 @@ domain, or a length mismatch yields no plane and the figure keeps the stable
 a negative or non-finite plane diameter is rejected by the attach pack.
 Constant color plus per-item size packs a plane too. Python and Node marshal
 the same raw channel and export identical bytes.
+
+### Stable nonfinite rejection (#889)
+
+The existing deferred missing-data-break/nonfinite-coordinate path now names
+`XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES` in both hosts, retaining its
+explanatory detail. The geometry/finite-data admission predicate is unchanged;
+NaN never becomes a vertex-buffer or Scene coordinate (§19).

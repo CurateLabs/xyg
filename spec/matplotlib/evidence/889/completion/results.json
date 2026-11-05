@@ -1,0 +1,92 @@
+{
+  "source_base": "74195403ccd18c760e3d20a18f024daab95d711a",
+  "accepted_main_same_tree": "40c0cc5af2fead54684197c0ef90affbbff53519",
+  "preserved_initial_repair": "14fe6c57d540f1f1f11a0caf2b8e853272322c32",
+  "environment": {
+    "base": "74195403ccd18c760e3d20a18f024daab95d711a",
+    "accepted_main": "40c0cc5af2fead54684197c0ef90affbbff53519",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "Python 3.12.15",
+    "node": "v22.23.4",
+    "browser": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "artifacts": "Built from this checkout; no dependency artifacts copied from other tasks.",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "browser_version": "Google Chrome for Testing 156.0.8078.4",
+    "initial_bundle_build_node": "v24.21.0"
+  },
+  "pyplot": {
+    "passed": 1184,
+    "skipped": 163,
+    "xfailed": 26,
+    "xpassed": 0,
+    "qualified_issue_889_future_tests": 24,
+    "other_existing_xfails": 2
+  },
+  "host_parity": {
+    "result": "OK",
+    "cross_host_passed": 1096,
+    "abi_checks": 673
+  },
+  "polar_bundle": {
+    "passed": 157,
+    "xfailed": 17,
+    "active_exact_rejection_tests": 19
+  },
+  "node_polar": {
+    "passed": 7
+  },
+  "rust": {
+    "unit_tests_passed": 1967,
+    "doctests_passed": 0,
+    "integration_tests_passed": 5
+  },
+  "typecheck": "passed",
+  "wasm": {
+    "schema_version": 1,
+    "artifact": "xyg-wasm.wasm",
+    "sha256": "772623d87f5be4221568fc1aa40283a614ff11e63d71c81b69571e57439d0b73",
+    "bytes": 1922723,
+    "abi_version": 35,
+    "scene_version": 34,
+    "painter_version": 17,
+    "rawBytes": 1922723,
+    "gzip6Bytes": 783177,
+    "rawLimitBytes": 1923072,
+    "gzip6LimitBytes": 783360,
+    "budgets_changed": false
+  },
+  "snapshot_changes": {
+    "polar_png": {
+      "old": {
+        "svg_sha256": "203fbfd4b95d848eddfff8098984bca5b229a534ebc89521301c321664bf2065",
+        "png_sha256": "c7b212b42437dae35b818e1b9483244c9177c824a2e06e2adc261dc0b8cc592a"
+      },
+      "new": {
+        "svg_sha256": "203fbfd4b95d848eddfff8098984bca5b229a534ebc89521301c321664bf2065",
+        "png_sha256": "f1d16b67910b69883ec05de25a98caec2403c8036368cfea31efec533c32444b"
+      },
+      "reason": "raster angular labels now render outside plot clip; SVG unchanged"
+    },
+    "continuous_fallback_svg": {
+      "before_sha256": "cf1cbb6eec0c5eb488dfa6a7dccda811c80d1e276cf231490d5c9310621fbb7a",
+      "after_sha256": "cd456c41b022c674fde7913d38bac0293e2f7442621493ec3275cd25022cb214",
+      "reason": "Carry the Rust-resolved colorbar frame into Scene, retaining the continuous-ramp fallback and unchanged stop budget."
+    }
+  },
+  "limits": [
+    "Optional reference dependencies are skipped, not qualified.",
+    "No competitor timing or massive-data performance claim.",
+    "Independent final review and merge queue remain with parent."
+  ],
+  "mandatory_checks": {
+    "pre_commit_all_files": "passed",
+    "ruff_check_full_worktree": "passed",
+    "ruff_format_check_full_worktree": "passed"
+  },
+  "native_core_sha256": "9da5c8b79079077a2044083f66c33b571cab9cdc90c964658d6e5f4fc731b2f6",
+  "source_file_sha256": {
+    "crates/xyg-engine/src/scene.rs": "9331479b499a5ab9f58c7b07f3f4cf92ae8d7250a21cdb0ccb7357130a6e03db",
+    "crates/xyg-engine/src/pdf.rs": "7bfddcf2cae5c6d8e6bdbf2e2cefdf5ec41905fb6e3afd5fa9452155bcad8777",
+    "crates/xyg-engine/src/static_export_registry.rs": "af56f8fbba9a42a51dff75db2c07450bb0b230cd9b5925d33eb7e06a21d26917"
+  }
+}

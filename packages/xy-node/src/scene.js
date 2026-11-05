@@ -114,7 +114,7 @@ function columnArg(column) {
 }
 
 function decodePackedRows(out, code) {
-  if (code === -5) throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+  if (code === -5) throw new RangeError("XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
   if (code === -6) throw new RangeError("Scene v12 does not support product kind");
   if (code < 0) throw new RangeError("invalid scene trace packing");
   const view = new DataView(out.buffer, out.byteOffset, Math.max(code, 0) * 56);
@@ -301,10 +301,7 @@ function validateXyafAnnotationStyle(annotation) {
     .map(([key]) => key)
     .sort();
   if (unsupported.length) {
-    if (wrapped) throw new RangeError(`Scene wrapped annotations do not encode ${JSON.stringify(unsupported)}`);
-    if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
-    if (kind === "callout") throw new RangeError(`Scene callout style does not encode ${JSON.stringify(unsupported)}`);
-    throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
+    throw new RangeError(`XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: ${kind} unsupported keys ${unsupported.join(",")}`);
   }
 }
 
@@ -3487,13 +3484,14 @@ export function figureStaticDocument(figure, {
     if (figure.extra_legends && (!Array.isArray(figure.extra_legends) || figure.extra_legends.length > 0)) {
       throw new RangeError("XYG_STATIC_UNSUPPORTED_MULTIPLE_PANEL_LEGENDS");
     }
-    const items = [];
+    let items = [];
     for (const trace of traces) {
       if (!trace.name) continue;
       const itemStyle = { ...trace.style };
       if (legendMarkers.has(trace)) itemStyle.legend_marker = legendMarkers.get(trace);
       items.push({ kind: trace.kind, name: trace.name, style: itemStyle });
     }
+    if (Object.hasOwn(figure.legend_options ?? {}, "items")) items = structuredClone(figure.legend_options.items);
     if (items.length) legend = { ...(figure.legend_options ?? {}), items };
   }
   const projected = Object.create(Object.getPrototypeOf(figure));
@@ -4009,9 +4007,9 @@ function rgba8(css, opacity = 1) {
 
 function annotationNumber(style, key, fallback, label) {
   const raw = Object.hasOwn(style, key) ? style[key] : fallback;
-  if (raw == null || typeof raw === "boolean" || (typeof raw === "string" && raw.trim() === "")) throw new RangeError(`Scene v12 annotation ${label} must be numeric`);
+  if (raw == null || typeof raw === "boolean" || (typeof raw === "string" && raw.trim() === "")) throw new RangeError(`XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: ${label} must be numeric`);
   const value = Number(raw);
-  if (!Number.isFinite(value)) throw new RangeError(`Scene v12 annotation ${label} must be numeric`);
+  if (!Number.isFinite(value)) throw new RangeError(`XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: ${label} must be numeric`);
   return value;
 }
 
@@ -5731,7 +5729,7 @@ function raiseTraceAttach(code, index, figure) {
   if (code === -6) throw new RangeError("Scene v12 heatmap requires a positive grid_shape");
   if (code === -7) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
   if (code === -8) throw new RangeError("Scene v12 heatmap grid must match rows x cols");
-  if (code === -9) throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+  if (code === -9) throw new RangeError("XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
   if (code === -10) throw new RangeError("Scene heatmap RGBA plane must match rows x cols");
   if (code === -11) throw new RangeError("Scene heatmap truecolor requires four RGBA planes");
   if (code === -12) {
@@ -5816,7 +5814,7 @@ function packXyCl(figure) {
 }
 
 function raiseTraceRows(code, index) {
-  if (code === -5) throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+  if (code === -5) throw new RangeError("XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
   if (code === -6) throw new RangeError("Scene v12 does not support product kind");
   if (code === -1) throw new RangeError("invalid scene trace packing");
   if (code === -2) throw new RangeError("invalid scene trace column facts version");
