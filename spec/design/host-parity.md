@@ -2091,6 +2091,10 @@ program rejection check; the family matrix and receipts live in
 Bulk chrome empty major arrays retain their existing automatic-ticks contract,
 including secondary axes. The pyplot NullLocator adapter authors zero major
 tick length/grid width and uses Rust's existing off label strategy. Separately
-authored minor tiers retain their style; absent/null minor locators author zero
-minor length/grid width too. NullFormatter uses off to hide labels while
+authored minor positions and their style use the existing authored-major slot
+with labels off when no majors exist. This preserves minor marks coincident
+with Rust's automatic major positions without altering the empty-array contract.
+The redundant minor slot is disabled. A null minor locator, or an absent minor
+locator on a non-log axis, authors zero minor length/grid width; implicit log
+subdivisions retain their normal minor style. NullFormatter uses off to hide labels while
 retaining tick marks. This changes no ABI struct, signature or wire format.

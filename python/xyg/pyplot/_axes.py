@@ -7224,7 +7224,7 @@ class Axes(PlotTypeMixin):
             props.pop("tick_labels", None)
             props["tick_label_strategy"] = "off"
             props["style"] = {**(props.get("style") or {}), "tick_length": 0, "grid_width": 0}
-            if minor_locator is None or _is_null_locator(minor_locator):
+            if (minor_locator is None and not is_log) or _is_null_locator(minor_locator):
                 props["minor_style"] = {
                     **(props.get("minor_style") or {}),
                     "tick_length": 0,
@@ -7264,6 +7264,20 @@ class Axes(PlotTypeMixin):
                 ~np.isclose(minor[:, None], ticks[None, :], rtol=1e-12, atol=0.0).any(axis=1)
             ]
         props["minor_tick_values"] = list(map(float, _scale_values(minor, spec)))
+        if _is_null_locator(locator) and not promoted_minor and len(minor):
+            # With no major locator, render the independent minor tier in the
+            # existing authored-major slot. Otherwise automatic majors would
+            # suppress coincident minors. Labels stay off; minor styling wins.
+            props["tick_values"] = props.pop("minor_tick_values")
+            props["style"] = {
+                **(props.get("style") or {}),
+                **(props.get("minor_style") or {}),
+            }
+            props["minor_style"] = {
+                **(props.get("minor_style") or {}),
+                "tick_length": 0,
+                "grid_width": 0,
+            }
 
     # -- materialization -----------------------------------------------------------
 

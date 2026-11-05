@@ -1,0 +1,34 @@
+{
+  "hooks.log.gz": {
+    "raw_sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+    "archive_sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+  },
+  "host-parity.log.gz": {
+    "raw_sha256": "c515ba88d98a24031fa9a2e57ecc64e588107b5717d2c2b606ecdfdbabcf7072",
+    "archive_sha256": "f41ca9ab86ff1c0734bb947501e3b8cf7b9a0cd0b66b5f35d093020dbbfd28ff"
+  },
+  "legacy-contracts.log.gz": {
+    "raw_sha256": "063ec091a331e8300194550bc520b7a62fccd54661f8b3b498a62885a0185a7b",
+    "archive_sha256": "4f6259980fa5a501e47cc9d51858a67ab68df6a9ea4ac94c1444753f3eacaa3f"
+  },
+  "locator.log.gz": {
+    "raw_sha256": "fa737b87090afea7cf428e05629fb820dcd6d8249ea4ad6b8745315c6921f267",
+    "archive_sha256": "0f70566dc610b12c9324d578b1d4e82551b9ec4cdb8eeb10e9e1b31eb49f2523"
+  },
+  "pyplot.log.gz": {
+    "raw_sha256": "f77dc06b94842bfcec7ec2ca0d313944f464187dd084806876ffaf3f5f4e8931",
+    "archive_sha256": "e730a4da7baf3d87062b730de99eba969fa30db06a64130a46867c65817d16ed"
+  },
+  "ruff-check.log.gz": {
+    "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "archive_sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+  },
+  "ruff-format.log.gz": {
+    "raw_sha256": "411fcf1ed834906dbb09d947a17c6d2fe140e696e4321610d139bbb83fd63fcd",
+    "archive_sha256": "2032d3da901efbcbb2ac4a3f6fa412e9a12b1034061476644e513d47375f47ba"
+  },
+  "typecheck.log.gz": {
+    "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "archive_sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+  }
+}

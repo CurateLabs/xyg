@@ -771,16 +771,28 @@ def test_default_rc_font_sizes_are_explicit_everywhere():
     assert text_ann["style"]["font_size"] == pytest.approx(13.8889, rel=1e-4)
 
 
-def test_null_major_locator_keeps_separately_authored_minor_marks():
+@pytest.mark.parametrize(
+    "scale,domain,positions",
+    [
+        ("linear", (0, 10), [2, 4, 6, 8]),
+        ("log", (1, 100), [1, 10, 100]),
+        ("linear", (0, 10), [2.5, 7.5]),
+    ],
+)
+def test_null_major_locator_keeps_separately_authored_minor_marks(scale, domain, positions):
     fig, ax = plt.subplots()
-    ax.plot([0, 9], [0, 9])
+    ax.plot(domain, domain)
+    ax.set_yscale(scale)
+    ax.set_ylim(*domain)
     ax.yaxis.set_major_locator(plt.NullLocator())
-    ax.yaxis.set_minor_locator(plt.FixedLocator([2.5, 7.5]))
-    axes = ET.fromstring(_svg()).find('.//{*}g[@data-xy-chrome="axes"]')
+    ax.yaxis.set_minor_locator(plt.FixedLocator(positions))
+    svg = ET.fromstring(_svg())
+    axes = svg.find('.//{*}g[@data-xy-chrome="axes"]')
     assert axes is not None
     horizontal = [
         (float(line.attrib["x1"]), float(line.attrib["x2"]))
         for line in axes.findall("{*}line")
         if line.attrib["y1"] == line.attrib["y2"]
     ]
-    assert sum(0 < abs(right - left) < 20 for left, right in horizontal) == 2
+    assert sum(0 < abs(right - left) < 20 for left, right in horizontal) == len(positions)
+    assert len(ax.get_yticks()) == 0

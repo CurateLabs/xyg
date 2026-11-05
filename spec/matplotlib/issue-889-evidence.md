@@ -138,3 +138,18 @@ Historical completion counts are corrected to five integration tests and zero
 doctests, with original records preserved. The new required pyplot gate passes
 1186 tests with 163 optional skips and 26 qualified xfails; host parity passes
 1097 tests. These repairs await independent Python/acceptance re-review.
+
+## Coincident minor tick review correction
+
+Independent Python re-review of `1351ae00` found that zeroing automatic major
+styles still suppressed separately authored minor positions coincident with
+those automatic majors. This supersedes the second repair's general minor-
+preservation claim. The [third repair record](evidence/889/review-r3/README.md)
+records the failing linear and log scenarios and their SVG regression tests.
+When NullLocator supplies no majors, the adapter frames the remaining minor
+positions and minor style in the existing authored-major slot, with labels off
+and the redundant minor slot disabled. Implicit log subdivisions retain their
+minor style. Caller locator state and the direct empty-array-means-auto contract
+remain unchanged. Required pyplot now passes 1188 tests with 163 optional skips
+and 26 qualified xfails; host parity passes 1097 tests. Independent re-review of
+this repair is required before PR delivery.
