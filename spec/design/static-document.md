@@ -291,3 +291,7 @@ SVG and raster use the same Rust baseline function. This keeps authored large
 axis titles inside a constrained panel without changing the plot rectangle.
 PDF path clips inherit `clip-rule` from their `clipPath` container unless the
 path overrides it; `evenodd` lowers to `W*`, preserving the annular hole.
+
+Annular clips use a single compound path, preserving SVG union semantics for
+separate children. PDF admits only the supported single-child clip shapes; it
+rejects unknown container clip rules and nonfinite circle/rectangle geometry.

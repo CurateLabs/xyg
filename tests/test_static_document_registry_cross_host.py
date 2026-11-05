@@ -153,8 +153,9 @@ def _scene(name: str) -> bytes:
         return figure_scene(
             xyg.polar_chart(
                 xyg.bar([30, 70], [3, 5], width=8, color="#ef4444", opacity=1),
+                xyg.line([0, 180], [5, 5], color="#00cc88", width=9),
                 xyg.theta_axis(unit="degrees", label="Time"),
-                xyg.r_axis(hole=0.3, label="Value"),
+                xyg.r_axis(hole=0.3, domain=(0, 5), label="Value"),
                 xyg.legend(show=False),
                 width=320,
                 height=240,
@@ -613,3 +614,39 @@ def test_registered_panel_flag_masks_cover_every_admitted_bit(node_results):
         base64.b64decode(node_results["cases"]["document_colorbar_discrete"]["document"]),
     ):
         assert struct.unpack_from("<I", source, 64 + 24)[0] & (1 << 25)
+
+
+def test_annulus_center_crossing_mark_uses_one_compound_clip():
+    document, scenes, _, _ = _build("document_polar_annulus")
+    svg = ET.fromstring(_native.static_document_export(document, "svg"))
+    clips = svg.findall(".//{*}clipPath/{*}path")
+    annulus = next(path for path in clips if path.attrib.get("clip-rule") == "evenodd")
+    assert annulus.attrib["d"].count("M") == 2
+    assert annulus.attrib["d"].count(" A ") == 4
+    # A single compound path defines a hole in SVG as well as PDF. Distinct
+    # clip children would instead be unioned by SVG, painting this center.
+    for clip in svg.findall(".//{*}clipPath"):
+        assert not (len(clip) == 2 and all(child.tag.endswith("circle") for child in clip))
+    values = list(
+        map(float, re.findall(r"[-+]?(?:\d*\.)?\d+(?:[eE][-+]?\d+)?", annulus.attrib["d"]))
+    )
+    cx, cy, radius = (values[0] + values[7]) / 2, values[1], values[2]
+    png = _native.static_document_export(document, "png")
+    with Image.open(io.BytesIO(png)) as image:
+        rgba = image.convert("RGBA")
+        for offset in (0, 320):
+            assert rgba.getpixel((round(cx) + offset, round(cy))) == (255, 255, 255, 255)
+            assert rgba.getpixel((round(cx + 0.65 * radius) + offset, round(cy))) == (
+                0,
+                204,
+                136,
+                255,
+            )
+    pdf = _native.static_document_export(document, "pdf")
+    streams = []
+    for payload in re.findall(rb"stream\n(.*?)\nendstream", pdf, re.S):
+        try:
+            streams.append(zlib.decompress(payload))
+        except zlib.error:
+            streams.append(payload)
+    assert any(b"W*" in stream for stream in streams)

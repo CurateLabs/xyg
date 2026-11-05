@@ -1346,9 +1346,13 @@ encode time. Rust then:
    "Polar wedge SVG arcs" below), so a polar Scene still ends with XYPL when it
    has no XYIM or style sidecars.
 
-SVG clip is a circle at `(cx, cy, R)` (evenodd annulus when `hole>0`) for a
-full sector, or the sector path (outer arc + inner + radii) for a partial
-sector. Cartesian keeps the plot-rect clip. Polar chrome draws rings at radial
+SVG clip is a circle at `(cx, cy, R)` for a full disc, or one compound
+path with two closed circular subpaths and `clip-rule="evenodd"` when `hole>0`.
+Separate clip children must not represent the hole: SVG unions their silhouettes.
+A partial sector uses the sector path (outer arc + inner + radii). Native raster
+marks use the existing analytic annular-sector clip opcode with scaled radii
+and unscaled angles; chrome resets that clip. Cartesian keeps the plot-rect
+clip. Polar chrome draws rings at radial
 (`y`) ticks (`data-xy-grid="ring"`) and spokes at angular (`x`) ticks
 (`data-xy-grid="spoke"`), plus an outer frame at `r_hi`. Linear `grid_shape`
 uses polygon rings through angular ticks. Tick labels use

@@ -111,3 +111,16 @@ Review images are native exports, reproduced with
 [shared frames/legend/scatter](evidence/889/completion/examples/shared-route.svg),
 [polar chrome](evidence/889/completion/examples/polar-chrome.png), and
 [wide overlap](evidence/889/completion/examples/overlap-red-blue.png).
+
+## Independent Rust review repair
+
+The initial complete candidate 9487d791 received two blocking Rust/PDF review
+findings. The [review repair record](evidence/889/review-r1/README.md) supersedes
+its annular-clip claim and records the independently reproduced original diff
+checksum. Scene now emits a genuine compound SVG annulus, native raster marks
+use the existing annular clip opcode, and PDF rejects invalid clip input.
+A diameter-crossing registry witness checks the clear center, painted ring and
+even-odd PDF path, with independently authored Python/Node byte parity. Fresh
+required pyplot, host-parity, polar/registry, Rust/Clippy and unchanged packaging
+gates passed as recorded there. Other independent reviews and re-review of this
+repair are still required; no PR or closure approval follows from these results.

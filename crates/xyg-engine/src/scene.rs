@@ -14602,18 +14602,8 @@ impl SceneDocument {
             let inner = polar.inner_radius();
             if polar.full_sector() {
                 if inner > 1e-9 {
-                    out.push_str(" clip-rule=\"evenodd\"><circle cx=\"");
-                    push_num(out, cx);
-                    out.push_str("\" cy=\"");
-                    push_num(out, cy);
-                    out.push_str("\" r=\"");
-                    push_num(out, radius);
-                    out.push_str("\"/><circle cx=\"");
-                    push_num(out, cx);
-                    out.push_str("\" cy=\"");
-                    push_num(out, cy);
-                    out.push_str("\" r=\"");
-                    push_num(out, inner);
+                    out.push_str("><path clip-rule=\"evenodd\" d=\"");
+                    push_polar_sector_path(out, polar, radius, inner);
                     out.push_str("\"/>");
                 } else {
                     out.push_str("><circle cx=\"");
@@ -16302,7 +16292,7 @@ impl SceneDocument {
             // Polar rings and the outer frame are 64-vertex closed polylines
             // (~560 bytes), not the 35-byte two-point strokes cartesian grid
             // capacity assumes. Spokes stay inside the existing stroke budget.
-            y_ticks.labeled.len().saturating_add(1).saturating_mul(560)
+            y_ticks.labeled.len().saturating_add(1).saturating_mul(560).saturating_add(25)
         } else {
             0
         };
@@ -16851,6 +16841,19 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
         self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+        if let Some(polar) = &self.polar {
+            // Existing analytic annular-sector opcode; coordinates/radii scale,
+            // while angles remain radians. Axes reset the clip before chrome.
+            out.push(18);
+            for value in [polar.cx(), polar.cy(), polar.inner_radius(), polar.radius()] {
+                push_raster_f32(&mut out, value, scale)?;
+            }
+            let sweep = if polar.full_sector() { std::f64::consts::TAU }
+                else { polar.sector_a1() - polar.sector_a0() };
+            for angle in [polar.sector_a0(), sweep] {
+                out.extend_from_slice(&(angle as f32).to_le_bytes());
+            }
+        }
         self.append_raster_marks(&mut out, scale)?;
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.

@@ -76,8 +76,9 @@ const options = {
 function figure(name) {
   if (name === "document_polar_annulus") {
     const fig = new Figure({ coords: "polar", width: 320, height: 240, title: "Panel", showLegend: false,
-      xAxis: { theta_unit: "degrees", label: "Time" }, yAxis: { hole: 0.3, label: "Value" } });
+      xAxis: { theta_unit: "degrees", label: "Time" }, yAxis: { hole: 0.3, domain: [0, 5], label: "Value" } });
     fig.bar([30, 70], [3, 5], { width: 8, color: "#ef4444", style: { opacity: 1 } });
+    fig.line([0, 180], [5, 5], { color: "#00cc88", width: 9 });
     return fig;
   }
   const fig = new Figure({ width: 320, height: 240, title: "Panel", showLegend: false,
