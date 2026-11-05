@@ -168,3 +168,16 @@ now distinguish visible-axis label-only `off`, full-axis `none`, null-major
 style suppression and coincident-minor promotion. Previous receipts remain
 historical; current-head CI and completed independent review remain delivery
 gates.
+
+## Late Python CI assertion and snapshot correction
+
+The original `8d59d227` Python 3.11 CI run exposed eleven old `Scene v12`
+annotation-message assertions and a PNG snapshot from before the independently
+reviewed polar clipping/chrome repair. The [fifth repair record](evidence/889/review-r5/README.md)
+preserves old/new hashes and failure evidence. Diagnostic assertions now compare
+complete expected strings. Public PNG snapshots pin the reviewed renderer, and
+four direct controls remove only XYWA from the same compiled rose/bar Scene:
+SVG must change, while raster commands and PNG bytes remain exactly equal at
+scales 1 and 2. This changes no product source, artifact, resource bound or
+pixel tolerance. Both affected Python modules pass 99 tests with one qualified
+xfail; current-head CI and independent review still gate delivery.

@@ -1417,8 +1417,9 @@ Polar bar/column/histogram wedges, constant-style polar heatmap lattice cells,
 and polar density cells all reach the encoded Scene as flattened PolyFill
 vertex runs from `polar_wedge_points` (span-proportional `polar_bar_segments`).
 Native raster and the XYPB browser painter draw those polygons unchanged — their
-display lists have no arc opcode — and their output is byte-identical to the
-pre-`XYWA` Scene. Static SVG instead writes each *plain* annular sector as exact
+display lists have no wedge-arc opcode. Adding/removing only XYWA on the same
+Scene leaves raster output byte-identical under the current polar clipping and
+chrome contract. Static SVG instead writes each *plain* annular sector as exact
 SVG elliptical arcs, the compatibility contract of the retired Python writer
 (polar-axes.md §5): a printed or zoomed wind rose keeps circular edges, and the
 PDF converted from that SVG draws the arcs as cubic Béziers.
@@ -1491,8 +1492,13 @@ gap swallows the whole outer arc. Scenes with no exact wedge emit no sidecar.
 (`arc_cubics`, deterministic). Python and Node consume the same Rust Scene and
 SVG, so the registered polar shapes (`public_polar_bar_sha256`,
 `public_polar_heatmap_sha256`) stay byte-identical across hosts.
-`tests/test_polar_wedge_svg_arcs.py` pins the rose/bar native PNG digests from
-the pre-arc native core (raster output is unchanged), and `benchmarks/test_codspeed_polar.py::test_svg_export_polar_wedges`
+`tests/test_polar_wedge_svg_arcs.py` compares the same compiled rose/bar Scene
+with and without only the bounded XYWA sidecar at scales 1 and 2: SVG changes,
+but native raster commands and PNG bytes must remain identical. Public PNG
+snapshots pin the separately reviewed #889 polar clipping/chrome corrections,
+which supersede the historical pre-arc snapshots; XYWA still has no raster
+effect. The old/new digests and exact byte-control proof are recorded in
+`spec/matplotlib/evidence/889/review-r5/`. `benchmarks/test_codspeed_polar.py::test_svg_export_polar_wedges`
 is the exact-arc control row for the flattening PNG row.
 
 ## Version 19 Rust-owned bounded colorbar ticks
