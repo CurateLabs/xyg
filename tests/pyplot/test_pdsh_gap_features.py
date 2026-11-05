@@ -48,13 +48,16 @@ def test_axis_proxy_getters_return_ticker_objects():
     assert isinstance(ax.yaxis.get_minor_formatter(), plt.NullFormatter)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_null_locator_removes_ticks_from_the_export():
     fig, ax = plt.subplots()
     ax.plot(np.arange(10), np.arange(10))
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.xaxis.set_major_formatter(plt.NullFormatter())
     assert len(ax.get_yticks()) == 0
+    built = ax._build_chart(640, 480).figure()
+    assert built.axis_options["x"]["tick_label_strategy"] == "none"
+    assert built.axis_options["x"].get("tick_labels") is None
+    assert built.axis_options["y"]["tick_values"] == []
     _png()
 
 
@@ -755,3 +758,16 @@ def test_default_rc_font_sizes_are_explicit_everywhere():
     assert axes["x"].style["label_size"] == pytest.approx(13.8889, rel=1e-4)
     (text_ann,) = [a for a in _annotation_specs(ax) if a["kind"] == "text"]
     assert text_ann["style"]["font_size"] == pytest.approx(13.8889, rel=1e-4)
+
+
+def test_categorical_text_static_export_has_a_stable_reason():
+    from xyg._static_document import UnsupportedStaticExport
+
+    fig, ax = plt.subplots()
+    ax.bar(["a", "b", "c"], [1.0, 3.0, 2.0])
+    ax.text("b", 3.1, "peak")
+    with pytest.raises(
+        UnsupportedStaticExport,
+        match="XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric",
+    ):
+        fig.savefig(io.BytesIO(), format="svg")

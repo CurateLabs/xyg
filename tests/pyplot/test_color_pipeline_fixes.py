@@ -108,7 +108,6 @@ def test_default_colorbar_ticks_are_round_numbers():
     assert ">20<" in svg
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_default_colorbar_ticks_are_dense_for_small_decimal_domains():
     image = plt.imshow([[0.0, 0.15], [0.05, 0.1]], vmin=0.0, vmax=0.15)
     plt.colorbar(image)
@@ -147,7 +146,6 @@ def test_zero_value_heatmap_cell_is_opaque_colormap_floor():
 # -- defect 5: imshow cmap (reversed) + clim reach the raster -----------------
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_imshow_reversed_cmap_and_post_hoc_clim_reach_the_heatmap():
     from xyg import _native
 

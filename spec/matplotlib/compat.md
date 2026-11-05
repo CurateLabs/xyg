@@ -208,3 +208,18 @@ python scripts/sync_matplotlib_compat.py
 
 Review the snapshot and generated matrix diff as an API change. Release-level
 changes are recorded in [the compatibility changelog](compat-changelog.md).
+
+### Issue 889 audit and raw-error repairs
+
+The current family-by-family qualification and remaining work are recorded in
+[the #889 acceptance audit](issue-889-evidence.md). This audit does not close the
+remaining static compatibility gaps.
+
+`NullFormatter` hides labels using the shared axis `tick_label_strategy="none"`
+while retaining locator positions. `NullLocator` supplies an empty authored
+major-tick list; their combination exports through Rust Scene/XYST without
+sending forbidden empty strings in the Scene tick-label table. Native annotation
+ingress still requires numeric coordinates: unresolved categorical text
+coordinates fail closed with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE`
+(and the offending coordinate name), rather than a raw float-conversion error.
+Browser annotation conversion retains its existing category support.

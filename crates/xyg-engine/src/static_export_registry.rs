@@ -250,9 +250,27 @@ pub const REQUIRED_EDGE_CONCERNS: &[&str] = &[
     // #1006: data rasterized in Rust to one Image record (density blit,
     // dense triangle mesh above the 1,024 PolyFill-group budget).
     "image-tier",
+    "hidden-tick-labels",
+    "empty-ticks",
 ];
 
 pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
+    StaticExportEdgeCase {
+        // #889: NullFormatter hides labels without invalid empty XYTL text;
+        // NullLocator retains an authored empty major-tick list.
+        name: "line_hidden_tick_labels",
+        shape: "line",
+        axis_mode: "authored-linear-xy",
+        concerns: &["hidden-tick-labels", "empty-ticks"],
+        reason_prefix: "",
+    },
+    StaticExportEdgeCase {
+        name: "scatter_hidden_tick_labels",
+        shape: "scatter",
+        axis_mode: "autorange-linear-xy",
+        concerns: &["hidden-tick-labels", "empty-ticks"],
+        reason_prefix: "",
+    },
     StaticExportEdgeCase {
         name: "line_authored_style",
         shape: "line",

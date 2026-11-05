@@ -146,9 +146,10 @@ area, errorbar, box (including whisker and median companions), violin, hexbin,
 segments, stem, error band, ribbon, triangle mesh, heatmap, and contour. It
 has separate vertical and horizontal violin rows. It
 compares canonical Scene, SVG, raster-command, and PNG bytes; separately checks
-decoded PNG dimensions/mode/pixel hashes; and exercises a bounded nine-row
+decoded PNG dimensions/mode/pixel hashes; and exercises a bounded registry-driven
 pairwise matrix across authored/autorange domains, empty/single/nonfinite data,
-categorical/time axes, styles, and linear/log scales. Rust pins those nine
+categorical/time axes, styles, linear/log scales, static LOD tiers, and (#889)
+hidden tick labels with empty authored tick lists. Rust pins those
 concerns and requires distinct shapes and axis-mode configurations for each
 concern pair. Nineteen unsupported
 families remain exact cross-host fail-closes: fluid viewport, browser CSS,

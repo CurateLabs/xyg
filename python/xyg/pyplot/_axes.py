@@ -7195,7 +7195,12 @@ class Axes(PlotTypeMixin):
                 ticks = ticks[(ticks >= lo - pad) & (ticks <= hi + pad)]
             auto_log = is_log
         props["tick_values"] = list(map(float, _scale_values(ticks, spec)))
-        if formatter is not None:
+        if _is_null_formatter(formatter):
+            # Scene tick labels are nonempty strings. Hide labels through the
+            # shared axis policy while retaining locator positions (#889).
+            props.pop("tick_labels", None)
+            props["tick_label_strategy"] = "none"
+        elif formatter is not None:
             props["tick_labels"] = _formatter_tick_labels(
                 formatter,
                 ticks,

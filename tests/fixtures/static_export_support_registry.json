@@ -12,7 +12,9 @@
     "linear-scale",
     "browser-lod-tier",
     "large-source",
-    "image-tier"
+    "image-tier",
+    "hidden-tick-labels",
+    "empty-ticks"
   ],
   "shapes": [
     {
@@ -175,6 +177,26 @@
     }
   ],
   "edge_cases": [
+    {
+      "name": "line_hidden_tick_labels",
+      "shape": "line",
+      "axis_mode": "authored-linear-xy",
+      "concerns": [
+        "hidden-tick-labels",
+        "empty-ticks"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "scatter_hidden_tick_labels",
+      "shape": "scatter",
+      "axis_mode": "autorange-linear-xy",
+      "concerns": [
+        "hidden-tick-labels",
+        "empty-ticks"
+      ],
+      "reason_prefix": ""
+    },
     {
       "name": "line_authored_style",
       "shape": "line",

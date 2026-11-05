@@ -179,11 +179,15 @@ def _annotation_number(values: dict[str, Any], key: str, default: Any, label: st
         or isinstance(raw, (bool, np.bool_))
         or (isinstance(raw, str) and not raw.strip())
     ):
-        raise ValueError(f"Scene v12 annotation {label} must be numeric")
+        raise UnsupportedSceneV3(
+            f"XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: {label} must be numeric"
+        )
     try:
         value = float(raw)
     except (TypeError, ValueError) as error:
-        raise ValueError(f"Scene v12 annotation {label} must be numeric") from error
+        raise UnsupportedSceneV3(
+            f"XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: {label} must be numeric"
+        ) from error
     return value
 
 

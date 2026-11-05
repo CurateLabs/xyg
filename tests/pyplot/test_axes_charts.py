@@ -111,7 +111,6 @@ def test_fill_between_uses_a_faint_full_perimeter_not_an_opaque_lower_line() -> 
     assert trace.style["line_opacity"] == pytest.approx(0.2)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_fill_betweenx_static_export_joins_dense_triangle_strip() -> None:
     fig, ax = plt.subplots()
     y = np.arange(0.0, 2.0, 0.01)
@@ -125,7 +124,6 @@ def test_fill_betweenx_static_export_joins_dense_triangle_strip() -> None:
     assert output.getvalue().count(b"<path d=") == 1
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_fill_betweenx_static_export_joins_each_disconnected_region() -> None:
     fig, ax = plt.subplots()
     y = np.arange(0.0, 2.0, 0.01)

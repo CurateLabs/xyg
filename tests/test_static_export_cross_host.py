@@ -174,7 +174,15 @@ def _base_figure(name: str) -> Figure:
 
 def _edge_figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
-    if name == "line_authored_style":
+    if name == "line_hidden_tick_labels":
+        _fixed_domains(figure).line([0, 1, 2], [1, 3, 2])
+        figure.axis_options["x"]["tick_label_strategy"] = "none"
+        figure.axis_options["y"]["tick_values"] = []
+    elif name == "scatter_hidden_tick_labels":
+        figure.scatter([0, 1, 2], [1, 3, 2])
+        figure.axis_options["x"]["tick_values"] = []
+        figure.axis_options["y"]["tick_label_strategy"] = "none"
+    elif name == "line_authored_style":
         _fixed_domains(figure).line([0, 1, 2], [1, 3, 2], color="#f97316", width=3, opacity=0.7)
     elif name == "scatter_single_log":
         figure.set_axis("x", type_="log")

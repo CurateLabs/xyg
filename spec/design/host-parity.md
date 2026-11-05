@@ -214,8 +214,10 @@ stable reason `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP` (fail closed,
 `segments` color channels and is left as is. `filled`, `dash_negative`, `extend`, and per-level widths remain
 Python-only on Node.
 
-Nine bounded pairwise rows cross authored/autorange domains, empty/single/NaN
-inputs, categorical/time axes, style, and linear/log scale. Rust pins that exact
+The Rust-registry-driven bounded pairwise rows cross authored/autorange domains,
+empty/single/NaN inputs, categorical/time axes, style, linear/log scale, and
+static LOD tiers. Issue #889 adds hidden tick labels paired with empty authored
+tick lists, on an authored-domain line and an autoranged scatter. Rust pins that exact
 concern vocabulary and requires each concern's two rows to use distinct public
 shapes and distinct axis-mode configurations. Admitted rows use
 the same byte-exact matrix; deliberately unsupported rows require identical
