@@ -1,5 +1,24 @@
 # Matplotlib compatibility changelog
 
+## #889 native static journey qualification (2026-11-05)
+
+- Fixed shared Rust polar raster rim-label clipping and annular PDF clipping;
+  preserved explicit relabelled/frameless legend items; carried the resolved
+  pyplot frame into Scene without repeating default title/tick/colorbar rooms.
+  X-axis title ink retains a four-pixel canvas clearance at rc sizes.
+- Replaced renderer-specific SVG assertions with per-point alpha/paint, actual
+  clip-rectangle, content, and pixel contracts. Removed only proven stale
+  #889 xfails; no output tolerance, resource guard, or WASM budget changed.
+- Qualified the remaining exact authoring shapes with active `XYG_*` rejection
+  tests and the matching [compatibility contract](compat.md#qualified-deferred-native-journeys-889).
+  Remaining #889 xfails describe future rendering capability, with every pyplot
+  case backed by an active exact-reason original-program check.
+- Extended the Rust-owned #875 registry with all-format authored-frame, legend,
+  scatter-alpha, annular-polar, overlap and per-kind rejection witnesses.
+  [Acceptance evidence and reproducible visual examples](issue-889-evidence.md)
+  record the before/after results and current future capability debt.
+
+
 This changelog records changes to the upstream compatibility target and to the
 meaning of xy's compatibility levels. It complements the project changelog,
 which covers user-visible releases across the whole package.

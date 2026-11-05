@@ -82,17 +82,22 @@ def test_default_circle_scatter_matches_matplotlib_size_edge_and_opacity() -> No
     assert kwargs["stroke_width"] == pytest.approx(1 * 100 / 72)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_colormapped_scatter_default_edges_use_each_points_face_color() -> None:
     fig, ax = plt.subplots()
     ax.scatter([0, 1], [0, 1], c=[0.0, 1.0], cmap="viridis", alpha=0.4)
     output = BytesIO()
     fig.savefig(output, format="svg")
     svg = output.getvalue().decode()
-    assert '<g fill-opacity="0.4" stroke-opacity="0.4">' in svg
-    # The two LUT endpoints must each border themselves; no generic blue edge.
-    assert 'fill="rgb(68,1,84)" stroke="rgb(68,1,84)"' in svg
-    assert 'fill="rgb(253,231,37)" stroke="rgb(253,231,37)"' in svg
+    from xml.etree import ElementTree as ET
+
+    points = ET.fromstring(svg).findall(".//{*}circle")
+    assert len(points) == 2
+    # Native Scene carries alpha on each point's face and edge.
+    assert [point.attrib["fill"] for point in points] == ["rgb(68,1,84)", "rgb(253,231,37)"]
+    for point in points:
+        assert point.attrib["stroke"] == point.attrib["fill"]
+        assert float(point.attrib["fill-opacity"]) == pytest.approx(0.4)
+        assert float(point.attrib["stroke-opacity"]) == pytest.approx(0.4)
 
 
 def test_colormapped_scatter_does_not_create_an_implicit_legend() -> None:
@@ -111,7 +116,6 @@ def test_fill_between_uses_a_faint_full_perimeter_not_an_opaque_lower_line() -> 
     assert trace.style["line_opacity"] == pytest.approx(0.2)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_fill_betweenx_static_export_joins_dense_triangle_strip() -> None:
     fig, ax = plt.subplots()
     y = np.arange(0.0, 2.0, 0.01)
@@ -125,7 +129,6 @@ def test_fill_betweenx_static_export_joins_dense_triangle_strip() -> None:
     assert output.getvalue().count(b"<path d=") == 1
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_fill_betweenx_static_export_joins_each_disconnected_region() -> None:
     fig, ax = plt.subplots()
     y = np.arange(0.0, 2.0, 0.01)

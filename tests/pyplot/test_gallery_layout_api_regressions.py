@@ -75,7 +75,6 @@ def test_absolute_subplot_composition_preserves_neighboring_spines() -> None:
     assert dark_by_column.max() > 0.9 * (bottom - top)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_constrained_subplot_xlabels_stay_inside_static_canvas() -> None:
     """The invert-axes gallery xlabel reached the panel edge and was clipped."""
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(6.4, 4), layout="constrained")

@@ -214,7 +214,7 @@ def _validate_coords(self) -> None:
     )
     if extra_axes:
         raise ValueError(
-            "coords='polar' supports a single angular ('x') and radial ('y') "
+            "XYG_POLAR_UNSUPPORTED_SECONDARY_AXIS: coords='polar' supports a single angular ('x') and radial ('y') "
             f"axis; found {extra_axes}. See spec/design/polar-axes.md."
         )
     theta = self.axis_options.get("x", {})

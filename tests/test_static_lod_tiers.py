@@ -170,7 +170,7 @@ def test_large_line_fails_closed_where_the_m4_tier_does_not_hold() -> None:
     gap[123] = np.nan
     nonfinite = xyg.chart(xyg.line(x=x, y=gap)).figure()
     assert scene_export_support_reason(nonfinite, width=WIDTH, height=HEIGHT) == (
-        "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
     )
     # Line marks sort x at ingest (§28); a mutated trace that is no longer
     # ascending cannot be M4-binned, so it fails closed instead.
