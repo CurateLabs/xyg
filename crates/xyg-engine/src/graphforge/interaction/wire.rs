@@ -232,7 +232,7 @@ impl<'a> Request<'a> {
         for i in match operation {
             1 | 7 | 10 | 11 => &[2][..],
             2 | 3 => &[2, 3],
-            5 | 8 => &[5],
+            0 | 5 | 8 => &[5],
             9 | 13 => &[5],
             12 => &[2, 4],
             14 => &[6, 8],
@@ -247,7 +247,7 @@ impl<'a> Request<'a> {
             || (used[4] && w[4] > 2)
             || (matches!(operation, 5 | 8) && w[5] != 1 && w[5] != u32::MAX)
             || (operation == 9 && w[5] > 2)
-            || (operation == 13 && w[5] > 1)
+            || (matches!(operation, 0 | 13) && w[5] > 1)
             || (operation == 14 && (w[6] > 2 || w[8] > 1))
             || (operation == 15 && (w[7] == 0 || w[7] > 64))
         {
@@ -258,7 +258,7 @@ impl<'a> Request<'a> {
                 "header.u64" => Some(Dtype::U64),
                 "header.u32" => Some(Dtype::U32),
                 "camera.f64" if operation == RENDER => Some(Dtype::F64),
-                "coordinates.f64" if operation <= 3 || operation == 14 => Some(Dtype::F64),
+                "coordinates.f64" if (operation == 0 && w[5] == 0) || matches!(operation, 1..=3 | 14) => Some(Dtype::F64),
                 "refs.bytes" if matches!(operation, 6 | 9 | 11 | 12 | 13 | 14) => {
                     Some(Dtype::Bytes)
                 }
@@ -668,14 +668,14 @@ impl WireSession {
             .ok_or(InteractionStatus::Budget)?;
         let mut projection = n.checked_add(m).ok_or(InteractionStatus::Budget)?
             .min(MAX_GRAPH_SELECTION_REFS).checked_mul(256)
-            .and_then(|v| v.checked_add(4096)).ok_or(InteractionStatus::Budget)?;
+            .and_then(|v| v.checked_add(8192)).ok_or(InteractionStatus::Budget)?;
         // Reserve all new tables/scratch BEFORE cloning the candidate. No
         // source-sized row Vec: each plane contributes at most the selection cap.
         for (name, _, section) in &c.sections {
             if matches!(*name, "layer.node_rows" | "layer.edge_rows") {
                 let count = if *name == "layer.node_rows" { n } else { m };
                 if section.dtype != Dtype::U64 || section.count != count { return bad(); }
-                projection = projection.checked_add(count.min(MAX_GRAPH_SELECTION_REFS)
+                projection = projection.checked_add(count.min(MAX_GRAPH_SELECTION_REFS).checked_add(1).ok_or(InteractionStatus::Budget)?
                     .checked_mul(128).ok_or(InteractionStatus::Budget)?)
                     .ok_or(InteractionStatus::Budget)?;
             } else if *name == "layer.schema" {
@@ -1120,6 +1120,7 @@ fn apply(s: &mut GraphSession, r: &Request<'_>) -> Result<OpOutcome> {
         Ok(v[0].clone())
     };
     match r.operation {
+        0 if r.words[5] == 1 => s.hover_leave(h),
         0 => {
             let (x, y) = pair()?;
             s.hover_at(h, x, y)
@@ -1245,19 +1246,27 @@ fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
 }
 // Complete snapshot, independent of changed.refs and coordination. Work is
 // O(layers * selected), with borrowed row planes and exact u64 source rows.
-fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteractionState, bytes: &[u8]) -> Result<()> {
+fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteractionState, bytes: &[u8], pick: Option<&PickReceipt>) -> Result<()> {
     let doc = gf(ComposedDocument::decode(bytes))?;
     let mut refs = transport(s, &s.identity.refs_of(state.selection()))?;
     // The temporal owner may retain derived keys belonging to another
     // composition. refs_of deliberately omits those without mutating the owner.
     if refs.len() > MAX_GRAPH_SELECTION_REFS { return bad(); }
     refs.sort_by(super::coordination::compare);
-    let work = doc.projection_work(refs.len()).ok_or(InteractionStatus::Budget)?;
-    if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); }
-    let resolved = refs.iter().map(|r| s.identity.resolve(r).map_err(|_| InteractionStatus::Invalid))
-        .collect::<Result<Vec<_>>>()?;
-    let planes = gf(doc.projection_layers(s.identity.node_count(), s.identity.edge_count()))?;
-    let row = |index: ElementIndex, layer: usize| -> Option<u64> {
+    let picked_source = pick.and_then(|p| p.source.as_ref());
+    let selected = refs.len();
+    let targets = selected + usize::from(picked_source.is_some());
+    let work = doc.projection_work(targets).ok_or(InteractionStatus::Budget)?;
+    if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); } #[cfg(test)] projection_probe::admit(targets);
+    // Admit both sparse passes before allocating combined projection scratch.
+    // The optional source is deliberately duplicated even if already selected.
+    let mut resolved = Vec::with_capacity(targets);
+    for reference in &refs {
+        resolved.push(s.identity.resolve(reference).map_err(|_| InteractionStatus::Invalid)?);
+    }
+    if let Some((index, _)) = picked_source { resolved.push(*index); }
+    let planes = gf(doc.projection_layers(s.identity.node_count(), s.identity.edge_count()))?; #[cfg(test)] projection_probe::borrow();
+    let row = |index: ElementIndex, layer: usize| -> Option<u64> { #[cfg(test)] projection_probe::row();
         let (plane, i) = match index {
             ElementIndex::Node(i) => (planes[layer].node_rows?, i),
             ElementIndex::Edge(i) => (planes[layer].edge_rows?, i),
@@ -1269,9 +1278,9 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
     // includes builder/final/retry copies (existing cache charge is 3x bytes).
     let count = resolved.iter().try_fold(0usize, |sum, &index| {
         sum.checked_add((0..planes.len()).filter(|&layer| row(index, layer).is_some()).count())
-    }).ok_or(InteractionStatus::Budget)?;
-    let mut indices = Vec::with_capacity(refs.len());
-    let mut offsets = Vec::with_capacity(refs.len() + 1);
+    }).ok_or(InteractionStatus::Budget)?; #[cfg(test)] projection_probe::output(count);
+    let mut indices = Vec::with_capacity(targets);
+    let mut offsets = Vec::with_capacity(targets + 1);
     let mut layers = Vec::with_capacity(count);
     let mut rows = Vec::with_capacity(count);
     offsets.push(0);
@@ -1285,12 +1294,33 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
     let texts = planes.iter().map(|layer| layer.result_id.unwrap_or("")).collect::<Vec<_>>();
     let valid = planes.iter().map(|layer| u8::from(layer.result_id.is_some())).collect::<Vec<_>>();
     b.bytes("selection.refs.bytes", 0, &encode_refs(&refs)?);
-    b.u64s("selection.indices.u64", 0, &indices);
-    b.u64s("selection.layer_offsets.u64", 0, &offsets);
-    b.u32s("selection.layers.u32", 0, &layers);
-    b.u64s("selection.rows.u64", 0, &rows);
+    let boundary = offsets[selected] as usize;
+    b.u64s("selection.indices.u64", 0, &indices[..selected]);
+    b.u64s("selection.layer_offsets.u64", 0, &offsets[..=selected]);
+    b.u32s("selection.layers.u32", 0, &layers[..boundary]);
+    b.u64s("selection.rows.u64", 0, &rows[..boundary]);
     b.texts("selection.result_ids.texts", 0, &texts);
     b.u8s("selection.result_ids.valid.u8", 0, &valid);
+    if let Some(pick) = pick {
+        let (kind, render_index) = match pick.target {
+            None => (0, 0),
+            Some(PickTarget::Node(i)) => (1, i as u64),
+            Some(PickTarget::Edge(i)) => (2, i as u64),
+        };
+        let form = if kind == 0 { 0 } else if pick.source.is_some() { 1 } else { 2 };
+        let (source_index, pick_refs) = match picked_source {
+            Some((ElementIndex::Node(i) | ElementIndex::Edge(i), reference)) =>
+                (*i as u64, std::slice::from_ref(reference)),
+            None => (0, &[][..]),
+        };
+        b.u32s("pick.header.u32", 0, &[1, pick.operation, pick.action,
+            pick.header.stamp.render_revision, kind, form, 0, 0]);
+        b.u64s("pick.query.u64", 0, &[pick.header.stamp.instance_id, pick.header.op_seq,
+            render_index, pick.member_count, source_index]);
+        b.bytes("pick.ref.bytes", 0, &encode_refs(pick_refs)?);
+        b.u32s("pick.layers.u32", 0, &layers[boundary..]);
+        b.u64s("pick.rows.u64", 0, &rows[boundary..]);
+    }
     Ok(())
 }
 
@@ -1375,7 +1405,7 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome, document: &
     b.u32s("edge.flags.u32", 0, &render.source_edge_flags);
     let state = s.read_state(Clone::clone)?;
     b.u32s("clear.action.u32", 0, &[1, u32::from(state.can_clear())]);
-    selection_projection(&mut b, s, &state, document)?;
+    selection_projection(&mut b, s, &state, document, out.pick.as_ref())?;
     let focus = s.focus()?.into_iter().collect::<Vec<_>>();
     b.bytes("focus.bytes", 0, &encode_refs(&transport(s, &focus)?)?);
     focus_actions(&mut b, s, &state)?;
@@ -1645,3 +1675,11 @@ fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> R
     }
     Ok(text)
 }
+
+#[cfg(test)]
+#[path = "tests/wire/projection_reuse.rs"]
+mod projection_reuse_tests;
+
+#[cfg(test)]
+#[path = "tests/wire/projection_probe.rs"]
+pub(super) mod projection_probe;

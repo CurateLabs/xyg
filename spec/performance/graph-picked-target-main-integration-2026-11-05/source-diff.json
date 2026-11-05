@@ -1,0 +1,14 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--binary",
+    "--full-index",
+    "5e00c6b9147b67f20046cdfa6bd77aa413c18474",
+    "--",
+    ".",
+    ":(exclude)spec/performance/**"
+  ],
+  "sha256": "7d2bd180e78cd319d82c743210af7144697d3c2a3cbebeb24ae0e5418485507e",
+  "bytes": 155018
+}

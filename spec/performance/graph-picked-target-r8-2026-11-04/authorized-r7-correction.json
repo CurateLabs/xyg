@@ -1,0 +1,14 @@
+{
+  "authorization": "Separate explicit parent permission: single historical-reference wording correction, no naming guard/path allowlist/source-policy changes; all other prior receipt bytes protected",
+  "path": "spec/performance/graph-picked-target-r7-2026-11-04/README.md",
+  "original_commit": "44626a8a477649442c72d8b5e0e0ef98e8ee7baa",
+  "pre_correction_snapshot": "spec/performance/graph-picked-target-r8-2026-11-04/r7-readme-before-correction.md.txt",
+  "before_bytes": 10874,
+  "after_bytes": 10897,
+  "before_sha256": "ab7475ab1d5d89fc0d907ae7c0411766dd83f8ba65fca54142ba950f6c98ba74",
+  "after_sha256": "f5e20b2ecfda517becdd5b51ae4a57282a645286e14f83bb00795d22c5d88442",
+  "snapshot_sha256": "ab7475ab1d5d89fc0d907ae7c0411766dd83f8ba65fca54142ba950f6c98ba74",
+  "line": 16,
+  "after_line": "The reproduction creates the temporary crate\u2019s root Rust module with `pub mod tests; pub mod live;`,",
+  "all_other_bytes_exact": true
+}

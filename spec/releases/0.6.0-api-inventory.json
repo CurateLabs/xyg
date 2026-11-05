@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"88a52156b191d3cc28d7614881695d1c8bc3a19a",
+  "baseCommit":"945b3ec13a3d78e7e99d9476889ed5d2b6dc8dc6",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1373,7 +1373,7 @@
   "python/xyg/pyplot/_ticker.py":"94ab8ae124e14bcf5d3f75b53f34476f4e0e13849c21c36026263f2986b5ccd8",
   "python/xyg/temporal_controller.py":"b2707a686ec1707378cac98c1eba70b39b75a3a26f4c8d10974140634806f6b0",
   "python/xyg/temporal_graph.py":"f872b808275748032edd52502935928525cc32bd0663f7cf8b81c401ef5ac9b8",
-  "scripts/check_release_inventory.py":"f354f75aa859918c5d275c2c5da86abf4931136207005006847f81541d5354cc",
+  "scripts/check_release_inventory.py":"0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
   "scripts/check_release_version.py":"49fc49be846049e2200d897eb585a084d4359d2ff8d87d2391d8e3d14dc1382e",
   "scripts/gen_abi_manifest.py":"66e426507717973dfdf463bb586e3082be909e995c54ec8e128a52147ad0ec1c",
   "scripts/publish_node_packages.py":"9f6742a5969e0e19dacb837364b7a08a179d991be5e46daeeb4a83aed55e1c80",
@@ -1384,11 +1384,11 @@
   "spec/api/api-examples.md":"f6bc43d28cf9ba88855561ff41bd62eb2f3a823c71ca2c87c5356e1b2a2fa094",
   "spec/api/browser-wasm.md":"b785190e12d31f96f2357e679a85d8eed5eeb91cbb32e1b6f02ea446e6ee01d4",
   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
-  "spec/design/browser-wasm.md":"8be809b7c81516adf1218be25de96df64329ea323efa31a6e37f01ab1512aa50",
+  "spec/design/browser-wasm.md":"ac21ab02e032abd7fae2fe017773bddf0ed2f30574e29fe8468df7f53afb9721",
   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
   "spec/design/host-parity.md":"770771e10e68e3c39ac61939a482118920c79b24ddf707ac05dbe32f58c4cfa3",
   "spec/matplotlib/compat.md":"ce611d16d6de418ab6d9c998f57b80827b28ff61a4b0bcd27e447176f91b4f2a",
-  "spec/process/production-readiness.md":"19a304efde415a7cf6d4dc60f8f82381058a591088b94939c2650077376ce4f7",
+  "spec/process/production-readiness.md":"d94f73d548a4d907e93a20eb8c547dfc77bd488ee220d265955c7811eb5f4b1c",
   "spec/wasm/abi.json":"cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
  }
 }

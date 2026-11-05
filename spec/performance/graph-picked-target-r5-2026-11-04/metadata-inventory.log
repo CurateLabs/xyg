@@ -1,0 +1,1 @@
+API contract drift: environmentVariables; review and run python3 scripts/check_release_inventory.py --write

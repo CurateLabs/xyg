@@ -251,10 +251,16 @@ records the normal merge of actual main `3ebf70c3`, whose tree exactly equals
 reviewed `7c581024`. It preserves the Buffer implementation and all earlier
 proof bytes, source qualifications and artifact identities without a new
 browser run or native/client build. Historical receipts retain their original
-review and remote-status text. This new accepted-main sync candidate requires
-its own completed independent final review and actual main-based CI before
-queueing or integration; earlier `eb9ea4c` CI, prior-head approval and skipped
-checks on a conflicted head do not qualify it.
+review and remote-status text. The parent now reports completed independent
+final approval of exact `74195403` and #1094 landing as main `40c0cc5a` on
+2026-11-04 at 07:59:51Z. Their full Git trees are identical. The
+[Rust R10 accepted-main receipt](../performance/graph-picked-target-r10-2026-11-04/README.md)
+records that tree comparison and the normal merge of accepted main into the
+separately reviewed Rust checkpoint `c318a0cb`, without a native/WASM/client
+rebuild or new browser measurement. The new combined Rust tip requires its own completed
+independent final review and fresh main-based CI before queueing or integration;
+prior-head approval, earlier `eb9ea4c` CI and skipped checks on a conflicted head
+do not qualify it.
 
 This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
 unheld initial trusted response, public browser progressive scheduling and

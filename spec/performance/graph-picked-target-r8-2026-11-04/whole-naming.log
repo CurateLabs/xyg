@@ -1,0 +1,3 @@
+spec/performance/graph-picked-target-r7-2026-11-04/README.md:16: stale src/lib.rs ABI: The full reproduction creates `src/lib.rs` with `pub mod tests; pub mod live;`,
+1 stale XY identity name(s)
+Use XYG/xyg for the current product and package. Retain xy only for explicitly documented browser protocol, coordinates, provenance, or history; otherwise migrate it or annotate the intentional line with 'xyg-stale-name: allow'.
