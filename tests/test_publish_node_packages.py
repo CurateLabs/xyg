@@ -310,3 +310,10 @@ def test_pre_pypi_cli_rejects_missing_browser_without_registry_access(
         lambda spec: pytest.fail("incomplete archives must fail before registry access"),
     )
     assert mod.main([str(tmp_path), "--tag", "xyg-v0.6.0-rc.1", "--check"]) == 1
+
+
+@pytest.mark.parametrize("version", ["1.2.3-dev.1", "1.2.3-post.1", "1.2.3-rc4"])
+def test_publisher_rejects_nonrelease_semver_without_tag(tmp_path: Path, version: str) -> None:
+    mod = _release(tmp_path, version=version)
+    with pytest.raises(ValueError, match="invalid XYG npm version"):
+        mod.load_release(tmp_path)

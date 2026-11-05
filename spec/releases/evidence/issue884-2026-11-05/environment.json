@@ -1,0 +1,9 @@
+{
+  "python": "3.14.4",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "node": "v24.21.0",
+  "npm": "12.2.0",
+  "initialHead": "74195403ccd18c760e3d20a18f024daab95d711a",
+  "mergedOriginMain": "5e00c6b9147b67f20046cdfa6bd77aa413c18474",
+  "integrationHead": "5feab47c03d89c7350a6cf51d76ad910da0e2dbf"
+}

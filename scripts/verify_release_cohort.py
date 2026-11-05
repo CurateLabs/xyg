@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from release_version import parse_tag
+    from release_version import parse_npm, parse_tag
 except ModuleNotFoundError:
-    from scripts.release_version import parse_tag
+    from scripts.release_version import parse_npm, parse_tag
 
 EXPECTED = {
     "facade": "@curatelabs/xyg-node",
@@ -91,7 +91,7 @@ def _validate_core_compatibility(declared: Any) -> list[str]:
     if not isinstance(supported, list) or not supported:
         raise ValueError("Core compatibility supportedCoreVersions must be a nonempty list")
     for version in supported:
-        if not isinstance(version, str) or parse_tag(f"xyg-v{version}").npm != version:
+        if not isinstance(version, str) or parse_npm(version).npm != version:
             raise ValueError(
                 "Core compatibility supported versions must use exact canonical versions"
             )
@@ -124,7 +124,14 @@ def _validate_core_compatibility(declared: Any) -> list[str]:
 
 
 def verify(
-    *, tag: str, commit: str, wheel: Path, facade: Path, native: Path, browser: Path
+    *,
+    tag: str,
+    commit: str,
+    wheel: Path,
+    facade: Path,
+    native: Path,
+    browser: Path,
+    core_version: str | None = None,
 ) -> dict[str, Any]:
     if re.fullmatch(r"[0-9a-f]{40}", commit) is None:
         raise ValueError("release commit must be a full lowercase Git SHA")
@@ -197,6 +204,16 @@ def verify(
             )
     supported = _validate_core_compatibility(json.loads(compatibility))
 
+    if core_version is not None:
+        parse_npm(core_version)
+        if core_version not in supported:
+            raise ValueError(
+                f"Core {core_version!r} is not declared compatible with XYG {npm_version!r}; "
+                f"supported Core versions: {', '.join(supported)}. "
+                "Qualify its authentic corpus and result fixtures under #936 before pairing; "
+                "matching RC numbers do not establish compatibility."
+            )
+
     paths = {"python": wheel, "nodeFacade": facade, "nodeNative": native, "browser": browser}
     return {
         "schemaVersion": 1,
@@ -205,6 +222,7 @@ def verify(
         "pythonVersion": python_version,
         "npmVersion": npm_version,
         "platform": "linux-x64",
+        **({"selectedCoreVersion": core_version} if core_version is not None else {}),
         "supportedCoreVersions": supported,
         "graphforgeCompatibilitySha256": _digest(compatibility),
         "sharedNativeSha256": _digest(wheel_native),
@@ -235,6 +253,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--node-facade", type=Path, required=True)
     parser.add_argument("--node-native", type=Path, required=True)
     parser.add_argument("--browser", type=Path, required=True)
+    parser.add_argument(
+        "--core-version", help="exact Core version to check against the declaration"
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
@@ -245,6 +266,7 @@ def main(argv: list[str] | None = None) -> int:
             facade=args.node_facade,
             native=args.node_native,
             browser=args.browser,
+            core_version=args.core_version,
         )
         args.output.write_text(
             json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"

@@ -1,0 +1,22 @@
+{
+  ".gitignore": {
+    "bytes": 1,
+    "sha256": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1"
+  },
+  "curatelabs-xyg-node-0.6.0-rc.42.tgz": {
+    "bytes": 657694,
+    "sha256": "5cdad031c9a10fb70fec6a915b2d29393a5ac59dbe60a82978b6f0a833bd0b99"
+  },
+  "curatelabs-xyg-node-linux-x64-0.6.0-rc.42.tgz": {
+    "bytes": 2839843,
+    "sha256": "8cdda317837e25510ef91afba95ed19e47bd8bf07784f15a27ddca85fddd2292"
+  },
+  "xyg-0.6.0rc42-py3-none-linux_x86_64.whl": {
+    "bytes": 4330443,
+    "sha256": "f24f8d55d29c4d46e0d033a8a80de3f96b93f75b2a346719b25cbf619ae0f7aa"
+  },
+  "xyg-0.6.0rc42.tar.gz": {
+    "bytes": 4250388,
+    "sha256": "2980fd218338bbda7df7f634e0743bb2fb1070d53e24be42ed7dffb04a079125"
+  }
+}

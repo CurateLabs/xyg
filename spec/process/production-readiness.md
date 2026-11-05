@@ -513,7 +513,9 @@ through the same pipeline; pip ignores them unless a pre-release is requested
 explicitly. One conversion authority, `scripts/release_version.py`, drives tag
 validation (`check_release_version.py`), npm staging
 (`stage_node_packages.py`, `stage_browser_package.py`) and the release-cohort
-check (`verify_release_cohort.py`). The same release has three spellings:
+check (`verify_release_cohort.py`). Direct `--version` staging and publisher archive loading also use this parser;
+a generic semver prerelease such as `-dev.1` or `-rc5` is not releasable.
+The same release has three spellings:
 
 | Surface | Spelling for the fifth 0.6.0 candidate |
 | --- | --- |
@@ -902,3 +904,50 @@ the planned installable 0.6.0 artifact pair. #108 must add
 complete candidate evidence before claiming that pair. No editor/Hub
 handshake is introduced, and native/Scene/WASM compatibility identifiers
 keep their separate contracts.
+
+
+### Issue #884 focused verification (2026-11-05)
+
+PR #1062's parser, changelog, tag-derived metadata and publication flow remain
+in use. Direct Node/browser staging and publisher archive loading now reject
+noncanonical prereleases through that same parser. No candidate is selected by
+these examples.
+
+`verify_release_cohort.py --core-version <exact-canonical-Core-version>` checks
+the supplied identity against the byte-identical packaged declaration, and
+records `selectedCoreVersion` only on success. A refusal names the requested
+Core/XYG identities, supported Core versions and #936 qualification action.
+Omitting the option retains inventory-only cohort verification; it does not
+prove a selected pair, actual Core artifact identity, or composition acceptance.
+The existing corpus tests separately bind the declaration to authentic source,
+registry corpus and result manifest hashes. Neither check substitutes for the
+final paired-artifact proof under #108.
+
+As of this check, the declaration qualifies only Core `0.5.2` and
+`0.6.0-rc.5`. Core #1095's published rc.7 is source
+`f871a2a1c2a397d8d74dfabcede611f3b5e5f906`; Core #1096's later tested packed
+candidate is `aaf0448293915796cecf69bb8109c0b96c6a427d` (dry run 41960987276).
+The [latest Core handoff](https://github.com/CurateLabs/graphforge/issues/1095#issuecomment-6661444716)
+says final `0.6.0` is not published. These are distinct inputs, and none is
+qualified by XYG's older rc.5 evidence. The older selected-RC language in #884
+must be reconciled with the maintainer's eventual actual declaration, including
+a final Core identity if chosen. Do not infer compatibility from a release line
+or copy the rc.5 evidence onto a new version. No tag, publication or launch-pair
+selection is performed here.
+
+Focused reproduction:
+
+```bash
+uv run --with dunamai pytest -q tests/test_release_version.py tests/test_check_release_version.py \
+  tests/test_stage_node_packages.py tests/test_stage_browser_package.py \
+  tests/test_publish_node_packages.py tests/test_verify_release_cohort.py \
+  tests/test_graphforge_contract_corpus.py tests/test_xyg_package_identity.py
+```
+
+Use the ordinary local wheel/sdist build and `npm pack` staging smoke for a
+fixture identity, then the existing #54/#108 matrix for the actual selected
+candidate. Keep native ABI, Scene, wire, painter and WASM compatibility checks
+independent of ecosystem spelling.
+
+The [local #884 receipt](../releases/evidence/issue884-2026-11-05/README.md)
+records focused tests, fixture packaging hashes, commands and qualification limits.

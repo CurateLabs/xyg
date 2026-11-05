@@ -209,3 +209,16 @@ def test_source_manifests_remain_publish_safe() -> None:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         assert manifest["private"] is True
         assert manifest["version"] == "0.0.0"
+
+
+@pytest.mark.parametrize(
+    "version",
+    ["0.6.0-dev.1", "0.6.0-post.1", "0.6.0-rc5", "0.6.0-preview.1", "0.6.0-rc.1.extra"],
+)
+def test_direct_staging_rejects_nonrelease_semver(tmp_path: Path, version: str) -> None:
+    from scripts.stage_browser_package import stage
+
+    with pytest.raises(ValueError, match="invalid npm semver"):
+        _load().stage_facade(client=tmp_path / "absent.js", output=tmp_path, version=version)
+    with pytest.raises(ValueError, match="invalid npm semver"):
+        stage(dist=tmp_path / "absent", output=tmp_path, version=version)
