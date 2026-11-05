@@ -282,3 +282,12 @@ importable. Node authored-plan parity is complete: `figureStaticDocument`
 mirrors the projection, and the registry corpus pins byte-identical XYST,
 SVG, PNG, PDF, JPEG, and WebP output per admitted shape. Remaining pyplot
 static-route admissions are explicit fail-closes tracked in #889.
+
+### Native text and PDF corrections (#889)
+
+Native x-axis title baselines reserve at least four pixels after the measured
+text descent, retaining the six-pixel minimum baseline inset when sufficient.
+SVG and raster use the same Rust baseline function. This keeps authored large
+axis titles inside a constrained panel without changing the plot rectangle.
+PDF path clips inherit `clip-rule` from their `clipPath` container unless the
+path overrides it; `evenodd` lowers to `W*`, preserving the annular hole.

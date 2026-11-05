@@ -8497,6 +8497,19 @@ class Axes(PlotTypeMixin):
             coords=self._projection,
         )
         core_figure = self._chart.figure()
+        if chart_padding is not None and self._padding is None:
+            # These are the Rust-resolved panel gutters used by composition.
+            # Carry their literal final frame to XYCF's authored-margin slot;
+            # Scene must not measure another set of default tick/title rooms.
+            extra_top, extra_right, extra_bottom = self._outside_padding(width < 520)
+            top, right, bottom, left = map(float, chart_padding)
+            core_figure.__dict__["_pyplot_static_margins"] = (
+                left,
+                right + extra_right,
+                top + extra_top,
+                bottom + extra_bottom,
+            )
+
         named_sources = [
             entry.get("kwargs", {}).get("name")
             for entry in self._entries

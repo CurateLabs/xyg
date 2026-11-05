@@ -221,10 +221,11 @@ tick lists, on an authored-domain line and an autoranged scatter. Rust pins that
 concern vocabulary and requires each concern's two rows to use distinct public
 shapes and distinct axis-mode configurations. Admitted rows use
 the same byte-exact matrix; deliberately unsupported rows require identical
-fail-close reasons. The 19-row fail-close registry separately pins fluid
+fail-close reasons. The fail-close registry separately pins fluid
 viewport, browser CSS/classes, custom font, title options, extra legend layout,
 alternate axes, unsupported symbol/mark, user-authored violin orientation
-metadata, layered autorange, annotation HTML/collision/markup/schema, colorbar
+metadata, layered autorange, annotation HTML/collision/markup/schema and the
+#889 per-kind unadmitted annotation styles, colorbar
 schema, LOD, malformed band/segment geometry, and triangle-mesh budget. This
 is designed to grow by appending Rust registry rows when #873 expands
 `StaticDocument`; the corpus runner and CI wiring do not need another
@@ -2076,3 +2077,11 @@ are specified in [geographic-hosts.md](geographic-hosts.md), including public
 composition wiring, one-mount admission, release acknowledgment, actual host
 journey evidence and the remaining native live-update/orphan-recovery gates.
 This checkpoint is pending follow-up PR integration.
+
+Issue #889 extends the same registry with all-format witnesses for exact authored
+frames, colormapped scatter alpha, explicit relabelled/frameless legend items,
+annular polar documents, and two opposite paint orders of wide overlapping
+translucent panels. The overlap witnesses also pin exact source-over RGBA pixels.
+Every retained pyplot #889 future-rendering xfail has an active exact original-
+program rejection check; the family matrix and receipts live in
+`spec/matplotlib/issue-889-evidence.md`.

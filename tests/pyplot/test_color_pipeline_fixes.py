@@ -775,8 +775,10 @@ def test_contourf_colorbar_beyond_the_scene_stop_budget_keeps_the_ramp():
     assert len(_colorbar_bands(svg.decode())) > 20
     # The fill-opacity correction changes the image bytes, while the colorbar
     # retains its continuous-ramp fallback beyond the stop budget (#1046).
+    # #889 carries the resolved colorbar gutter into the canonical Scene,
+    # so mark geometry now uses the same final frame as the panel placement.
     assert hashlib.sha256(svg).hexdigest() == (
-        "cf1cbb6eec0c5eb488dfa6a7dccda811c80d1e276cf231490d5c9310621fbb7a"
+        "cd456c41b022c674fde7913d38bac0293e2f7442621493ec3275cd25022cb214"
     )
 
 

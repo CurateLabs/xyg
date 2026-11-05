@@ -5397,7 +5397,7 @@ class SceneTraceRowsError(ValueError):
         self.index = int(index)
         messages = {
             -2: "invalid scene trace column facts version",
-            -5: "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
+            -5: "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
             -6: "Scene v12 does not support product kind",
             -7: "invalid scene trace column packing",
         }
@@ -6338,7 +6338,7 @@ def scene_pack_trace(
         raise RuntimeError("scene pack columns must be six native buffers")
     if code == -5:
         raise ValueError(
-            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+            "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
         )
     if code < 0:
         raise ValueError("invalid scene trace packing")
@@ -6427,7 +6427,7 @@ def scene_pack_product(
         raise RuntimeError("scene product columns must be seven native buffers")
     if code == -5:
         raise ValueError(
-            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+            "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
         )
     if code == -6:
         raise ValueError(f"Scene v12 does not support product kind {kind!r}")
@@ -6484,7 +6484,7 @@ def scene_pack_product_facts(
         raise RuntimeError("scene product columns must be seven native buffers")
     if code == -5:
         raise ValueError(
-            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+            "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
         )
     if code == -6:
         raise ValueError("Scene v12 does not support product kind")

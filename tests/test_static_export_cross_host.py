@@ -255,7 +255,21 @@ def _dense_mesh_columns() -> tuple[np.ndarray, ...]:
 def _fail_close_figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
     figure.line([0, 1], [0, 1])
-    if name == "fluid_viewport":
+    if name.startswith("annotation_") and name.endswith("_style"):
+        _fixed_domains(figure)
+        kind = name.removeprefix("annotation_").removesuffix("_style")
+        key = {"callout": "head_size", "arrow": "head_size", "rule": "span_start", "text": "width"}[
+            kind
+        ]
+        geometry = (
+            {"x0": 0.0, "y0": 0.0, "x1": 1.0, "y1": 1.0}
+            if kind == "arrow"
+            else {"axis": "y", "value": 0.5}
+            if kind == "rule"
+            else {"x": 0.5, "y": 0.5, "text": "label"}
+        )
+        figure.annotations = [{"kind": kind, **geometry, "style": {key: 8.0}}]
+    elif name == "fluid_viewport":
         figure.width = "100%"
     elif name == "browser_css":
         figure.class_name = "browser-only"

@@ -149,6 +149,10 @@ function failCloseFigure(name) {
   const f = new Figure({ width: 320, height: 240 });
   f.line([0, 1], [0, 1]);
   switch (name) {
+    case "annotation_callout_style": fixedDomains(f); f.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "label", style: { head_size: 8 } }]; break;
+    case "annotation_arrow_style": fixedDomains(f); f.annotations = [{ kind: "arrow", x0: 0, y0: 0, x1: 1, y1: 1, style: { head_size: 8 } }]; break;
+    case "annotation_rule_style": fixedDomains(f); f.annotations = [{ kind: "rule", axis: "y", value: 0.5, style: { span_start: 8 } }]; break;
+    case "annotation_text_style": fixedDomains(f); f.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "label", style: { width: 8 } }]; break;
     case "fluid_viewport": f.width = "100%"; break;
     case "browser_css": f.class_name = "browser-only"; break;
     case "custom_font": f.chrome_styles = { title: { "font-family": "Example Sans" } }; break;

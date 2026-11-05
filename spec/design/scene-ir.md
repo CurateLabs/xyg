@@ -2493,3 +2493,10 @@ domain, or a length mismatch yields no plane and the figure keeps the stable
 a negative or non-finite plane diameter is rejected by the attach pack.
 Constant color plus per-item size packs a plane too. Python and Node marshal
 the same raw channel and export identical bytes.
+
+### Stable nonfinite rejection (#889)
+
+The existing deferred missing-data-break/nonfinite-coordinate path now names
+`XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES` in both hosts, retaining its
+explanatory detail. The geometry/finite-data admission predicate is unchanged;
+NaN never becomes a vertex-buffer or Scene coordinate (§19).

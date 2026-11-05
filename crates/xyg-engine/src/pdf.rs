@@ -311,7 +311,7 @@ fn allowed_attrs(tag: &str) -> &'static [&'static str] {
         ],
         "svg-nested" => &["x", "y", "width", "height", "viewBox"],
         "defs" => &[],
-        "clipPath" => &["id"],
+        "clipPath" => &["id", "clip-rule"],
         "clip-circle" => &["cx", "cy", "r"],
         "clip-path-shape" => &["d", "clip-rule"],
         "clip-rect" => &["x", "y", "width", "height"],
@@ -1349,6 +1349,28 @@ impl Converter {
                     let cid = el.attr("id").ok_or_else(|| {
                         unsupported("<clipPath> without a single <rect>, <circle> or <path>")
                     })?;
+                    // Scene full-turn annuli use two concentric circles and
+                    // an inherited even-odd clip, not a flattened polygon.
+                    if el.children.len() == 2 && el.attr("clip-rule") == Some("evenodd")
+                        && el.children.iter().all(|shape| shape.name == "circle")
+                    {
+                        let mut circles = Vec::new();
+                        for shape in &el.children {
+                            check_attrs(shape, "clipPath circle", allowed_attrs("clip-circle"))?;
+                            circles.push((parse_float(shape.attr("cx"), 0.0, "clip cx")?,
+                                parse_float(shape.attr("cy"), 0.0, "clip cy")?,
+                                parse_float(shape.attr("r"), 0.0, "clip r")?));
+                        }
+                        let (cx, cy, outer) = circles[0];
+                        let (ix, iy, inner) = circles[1];
+                        if cx != ix || cy != iy || inner <= 0.0 || inner >= outer {
+                            return fail("invalid concentric annular clip");
+                        }
+                        let mut path = circle_segments(cx, cy, outer);
+                        path.extend(circle_segments(cx, cy, inner));
+                        this.clips.insert(cid.into(), Clip::Path(path, "evenodd".into()));
+                        return Ok(());
+                    }
                     if el.children.len() != 1 {
                         return fail("<clipPath> without a single <rect>, <circle> or <path>");
                     }
@@ -1359,7 +1381,7 @@ impl Converter {
                             let d = shape
                                 .attr("d")
                                 .ok_or_else(|| unsupported("<clipPath> path without d"))?;
-                            let rule = shape.attr("clip-rule").unwrap_or("nonzero");
+                            let rule = shape.attr("clip-rule").or_else(|| el.attr("clip-rule")).unwrap_or("nonzero");
                             if rule != "nonzero" && rule != "evenodd" {
                                 return fail(format!("clip-rule {rule:?}"));
                             }
@@ -2466,4 +2488,30 @@ mod tests {
         assert!(decompressed.contains("2 12 Tm"));
         assert!(decompressed.contains("2 26.4 Tm"));
     }
+    #[test]
+    fn clip_path_inherits_evenodd_rule_from_container() {
+        let pdf = svg_to_pdf(r#"<svg width="100" height="100"><defs><clipPath id="hole" clip-rule="evenodd"><path d="M0 0 L100 0 L100 100 L0 100 Z M25 25 L75 25 L75 75 L25 75 Z"/></clipPath></defs><g clip-path="url(#hole)"><rect width="100" height="100" fill="red"/></g></svg>"#).unwrap();
+        use flate2::read::ZlibDecoder;
+        use std::io::Read;
+        let start = pdf.windows(7).position(|w| w == b"stream\n").unwrap() + 7;
+        let end = pdf.windows(9).position(|w| w == b"endstream").unwrap();
+        let mut stream = String::new();
+        ZlibDecoder::new(&pdf[start..end]).read_to_string(&mut stream).unwrap();
+        assert!(stream.contains("W*"), "{stream}");
+    }
+
+    #[test]
+    fn scene_concentric_circle_annulus_pdf_retains_hole() {
+        let svg = r#"<svg width="100" height="100"><defs><clipPath id="hole" clip-rule="evenodd"><circle cx="50" cy="50" r="45"/><circle cx="50" cy="50" r="15"/></clipPath></defs><g clip-path="url(#hole)"><rect width="100" height="100" fill="red"/></g></svg>"#;
+        let pdf = svg_to_pdf(svg).unwrap();
+        use flate2::read::ZlibDecoder;
+        use std::io::Read;
+        let start = pdf.windows(7).position(|w| w == b"stream\n").unwrap() + 7;
+        let end = pdf.windows(9).position(|w| w == b"endstream").unwrap();
+        let mut stream = String::new();
+        ZlibDecoder::new(&pdf[start..end]).read_to_string(&mut stream).unwrap();
+        assert!(stream.contains("W*"), "{stream}");
+        assert_eq!(stream.matches(" c\n").count(), 8);
+    }
+
 }

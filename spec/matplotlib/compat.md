@@ -223,3 +223,53 @@ ingress still requires numeric coordinates: unresolved categorical text
 coordinates fail closed with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE`
 (and the offending coordinate name), rather than a raw float-conversion error.
 Browser annotation conversion retains its existing category support.
+
+### Qualified deferred native journeys (#889)
+
+The native route remains Scene → Rust XYST → SVG/PNG/PDF/JPEG/WebP. The following
+are **scenario-specific existing rejections**, not declarations that the entire
+chart family is unsupported. The exact original pyplot programs and complete
+messages are pinned by
+[`issue_889_rejections.json`](../../tests/pyplot/issue_889_rejections.json),
+executed without xfail by `test_issue_889_rejections.py`. The corresponding
+future-rendering tests retain their #889 xfails. An unexpected successful export
+also fails the active rejection test and requires updating this contract.
+
+| Deferred native authoring shape | Stable reason |
+|---|---|
+| Direct contour level paints, per-face bar/mesh paints, and corner-mask contourf triangles whose unresolved color channel is still classified as a Scene gradient | `XYG_SCENE_UNSUPPORTED_GRADIENT` |
+| Direct line-contour colorbar, contour `add_lines` overlays, and the listed contour-band/extension program in the rejection fixture | `XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR` |
+| Second automatic colorbar's additional axes style in the fixture | `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` |
+| Direct composed figures with domain-shaping axis options and no authored domains: rotated labels, errorbar containers, collections, labeled minor/date tickers, and text annotations in the fixture | `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS` |
+| Callout `gap_start`, `gap_end`, `head_size`, `head_style`, `label_clear`, `label_color`, `start_offset`; arrow `head_size`; rule `span_start`/`span_end` | `XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE` plus kind and exact sorted keys |
+| An arrow `head_style` outside the admitted `none`/`triangle`/`v` vocabulary | `XYG_SCENE_UNSUPPORTED_ARROW_STYLE` |
+| Direct composed figure carrying pyplot rc chrome font-weight overrides | `XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT` |
+| Quoted custom font-family program in the fixture | `XYG_STATIC_UNSUPPORTED_CUSTOM_FONT` |
+| Non-circle scatter glyph in an explicitly requested native legend | `XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE` |
+| Unresolved categorical string annotation coordinate in native annotation ingress | `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE` |
+
+Axes-fraction text is admitted by the shared XYAW coordinate-space path and is
+qualified by `tests/test_static_annotation_space_cross_host.py`; figure-fraction
+text still rejects with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE`.
+Literal pyplot frames, public `savefig` tick padding, relabelled/frameless
+legends, and colormapped scatter face/edge alpha are admitted; their active tests
+inspect actual geometry, content, and paint rather than old SVG spellings.
+
+Rich polar native exports have an equivalent exact-program rejection inventory
+in [`issue_889_polar_rejections.json`](../../tests/fixtures/issue_889_polar_rejections.json),
+executed by `tests/test_issue_889_polar_rejections.py`. The listed advanced
+axis/domain/style combinations (authored tick strategies/angles, radial clipping,
+full-turn and variable-width wedges, point annotations, rounded/gradient wedges,
+reversed radial axes, zero-slice pie, and radial-label collision configurations)
+remain `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`. The all-NaN radar-area program is
+`XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES`. These diagnostics identify the
+actual first rejection; they do not claim that every polar combination has the
+same support status. Ordinary categorical radar labels, ordinary authored theta
+ticks, polar line/scatter/bar geometry, hole/sector PDF clips, and styled polar
+chrome retain active rendering coverage in `tests/test_polar_charts.py`.
+Secondary angular/radial axes already rejected at polar validation now name
+`XYG_POLAR_UNSUPPORTED_SECONDARY_AXIS`, including the exact offending axis ID.
+
+No new feature rejection, renderer fallback, or lower visual threshold was added
+by this qualification. The remaining xfailed rendering goals are future
+capability work; their exact fail-closed behavior is active #889 acceptance proof.

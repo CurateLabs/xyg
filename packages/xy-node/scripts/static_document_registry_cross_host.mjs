@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
-import { Figure, staticDocumentEncode, staticDocumentExport } from "../src/index.js";
+import { Figure, staticDocumentEncode, staticDocumentExport, sceneRasterCommands } from "../src/index.js";
 
 const registryPath = process.env.XYG_STATIC_EXPORT_REGISTRY ?? fileURLToPath(new URL("../../../tests/fixtures/static_export_support_registry.json", import.meta.url));
 const registry = JSON.parse(readFileSync(registryPath, "utf8")).document;
@@ -40,6 +40,9 @@ const options = {
   document_colorbar_discrete: [{ colorbarPyplotLabel: true, colorbarDiscrete: [true, ["one", "ten", "hundred"], null, null] }, {}],
   document_colorbar_discrete_extend: [{ colorbarPyplotLabel: true, colorbarExtend: "both", colorbarDiscrete: [false, [], [68, 1, 84, 255], [253, 231, 37, 255]] }, {}],
   document_defaults: [{}, {}],
+  document_authored_frame: [{}, {}],
+  document_polar_annulus: [{}, {}],
+  document_scatter_colormap_alpha: [{}, {}],
   document_background: [{}, { background: "#ddeeff80" }],
   document_optimized_png: [{}, { optimizePng: true }],
   document_tight_crop: [{}, { tightCrop: true, cropPadding: 3 }],
@@ -55,8 +58,12 @@ const options = {
   document_labels_end_bottom: [{}, {}],
   document_labels_baseline_rotated: [{}, {}],
   document_legend: [{}, {}],
+  document_legend_relabel: [{}, {}],
+  document_legend_frameless: [{}, {}],
   document_signed_panels: [{}, {}],
   document_overlap: [{}, {}],
+  document_overlap_red_blue: [{}, { background: "white" }],
+  document_overlap_blue_red: [{}, { background: "white" }],
   document_colorbar_vertical: [{ colorbarLayout: [0.75, 0.5, 0.5] }, {}],
   document_colorbar_horizontal: [{}, {}],
   document_shared_colorbar: [{}, { colorbar: "viridis" }],
@@ -67,8 +74,22 @@ const options = {
 };
 
 function figure(name) {
+  if (name === "document_polar_annulus") {
+    const fig = new Figure({ coords: "polar", width: 320, height: 240, title: "Panel", showLegend: false,
+      xAxis: { theta_unit: "degrees", label: "Time" }, yAxis: { hole: 0.3, label: "Value" } });
+    fig.bar([30, 70], [3, 5], { width: 8, color: "#ef4444", style: { opacity: 1 } });
+    return fig;
+  }
   const fig = new Figure({ width: 320, height: 240, title: "Panel", showLegend: false,
     xAxis: { domain: [0, 2], label: "Time" }, yAxis: { domain: [0, 4], label: "Value" } });
+  if (name === "document_scatter_colormap_alpha") {
+    fig.scatter([0, 1, 2], [1, 3, 2], { color: [0, 0.5, 1], colorDomain: [0, 1], style: { size: 10, opacity: 0.4, stroke_width: 2 } });
+    return fig;
+  }
+  if (name.startsWith("overlap_paint_")) {
+    fig.bar([1], [4], { width: 2, color: name.endsWith("red") ? "#ff000080" : "#0000ff80", style: { opacity: 1 } });
+    return fig;
+  }
   if (name.includes("colorbar") && name !== "document_shared_colorbar") {
     fig.scatter([0, 1, 2], [1, 3, 2], { color: [1, 10, 100], size: 6 });
     fig.setColorbar({ domain: [1, 100], colormap: "viridis", label: "Intensity",
@@ -101,6 +122,17 @@ function legend() {
 }
 
 function build(name) {
+  if (["document_legend_relabel", "document_legend_frameless"].includes(name)) {
+    const fig = new Figure({ width: 320, height: 240, title: "Panel", showLegend: true,
+      xAxis: { domain: [0, 2], label: "Time" }, yAxis: { domain: [0, 4], label: "Value" } });
+    fig.line([0, 1, 2], [1, 3, 2], { name: "Original", color: "#ef4444", width: 2 });
+    fig.legend_options = { items: [{ kind: "line", name: "Relabelled", style: { color: "#ef4444", width: 2 } }] };
+    if (name.endsWith("frameless")) fig.legend_options.style = { background: "transparent", borderColor: "transparent" };
+    const document = Buffer.from(fig.toStaticDocument());
+    const start = 64 + 128 + [24, 52, 60, 164].reduce((sum, offset) => sum + document.readUInt32LE(offset), 0);
+    const scene = document.subarray(start + document.readUInt32LE(80), start + document.readUInt32LE(80) + document.readUInt32LE(84));
+    return { document, scenes: [scene], sceneRaster: [sceneRasterCommands(scene, 1)], scale: 1, quality: 90 };
+  }
   const [panel, authored] = options[name];
   const document = { ...authored };
   if (name.startsWith("document_title_")) Object.assign(document, { title: "Document < & >", titleX: 160, titleY: 20 });
@@ -108,15 +140,24 @@ function build(name) {
   if (name.startsWith("document_labels_")) document.labels = labels(name);
   if (name === "document_legend") document.legend = legend();
   const fig = figure(name);
-  const scene = fig.toScene();
+  const sceneOptions = name === "document_authored_frame" ? { margins: [46, 8, 32, 36] } : {};
+  const scene = fig.toScene(sceneOptions);
   let panels = [{ scene, x: 0, y: 0, width: 320, height: 240, ...panel }];
   if (["document_signed_panels", "document_overlap"].includes(name)) {
     panels = [{ scene, x: -5, y: 0, width: 320, height: 240 },
       { scene, x: name.endsWith("overlap") ? 150 : 320, y: 10, width: 320, height: 240 }];
   }
+  if (name === "document_polar_annulus") {
+    panels = [0, 320].map(x => ({ scene, x, y: 0, width: 320, height: 240 }));
+  }
+  let panelFigures = panels.map(() => fig);
+  if (name.startsWith("document_overlap_")) {
+    panelFigures = name.slice("document_overlap_".length).split("_").map(color => figure(`overlap_paint_${color}`));
+    panels = panelFigures.map((paint, index) => ({ scene: paint.toScene(), x: index * 150, y: 0, width: 320, height: 240 }));
+  }
   return { document: staticDocumentEncode({ panels, width: name === "document_title_x_center" ? 321 : panels.length === 2 ? 640 : 320,
     height: panels.length === 2 ? 260 : 240, ...document }),
-    scenes: panels.map(() => scene), sceneRaster: panels.map(() => fig.toSceneRasterCommands({ scale: 1 })),
+    scenes: panels.map(panel => panel.scene), sceneRaster: panelFigures.map(paint => paint.toSceneRasterCommands({ ...sceneOptions, scale: 1 })),
     scale: name === "document_half_scale" ? 0.5 : name === "document_double_scale" ? 2 : 1,
     quality: name === "document_jpeg_quality_low" ? 1 : name === "document_jpeg_quality_high" ? 100 : 90 };
 }
