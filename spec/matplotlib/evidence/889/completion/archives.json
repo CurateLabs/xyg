@@ -1,0 +1,37 @@
+[
+  {
+    "file": "initial-pyplot-unmasked.log.gz",
+    "raw_sha256": "d0e81ac4ec55d4b7681250057b66de1f334962e4831dea5a24c8a777c627ca20",
+    "gzip_sha256": "d63bb4ef720b1fe2364457e9e56a72f08de8ddfba7c2c1cddee8c7711784adba"
+  },
+  {
+    "file": "initial-polar-unmasked.log.gz",
+    "raw_sha256": "57abd82c1a46a540cacec73400d845d52efdd815d2a83e603032471374f2ab38",
+    "gzip_sha256": "7a213bf5c8388af2d7340a21c96b4fce3297d9314a39a73e75c327d905d77b8a"
+  },
+  {
+    "file": "initial-pyplot-regular.log.gz",
+    "raw_sha256": "d778edf81ac0a580678314d1865fc58d884051048cd213b2e229db999a482ea8",
+    "gzip_sha256": "a44eb9235d2d11f8a9c4f099116586633c1a1f2a5c61fcdec08809b3b05202ee"
+  },
+  {
+    "file": "qualified-pyplot-unmasked.log.gz",
+    "raw_sha256": "8369e436b0daff8349cdac57834ba44e6318012fadb377bf56d896d4af880f6a",
+    "gzip_sha256": "787aa8529ef637eff8d49e16aa57bfe0f03827f31a53173b8aa983d5a5c74883"
+  },
+  {
+    "file": "qualified-polar-unmasked.log.gz",
+    "raw_sha256": "ffe93964c66c1935827e12539804f1c80d90214f112a66b59f4cfe656e1b6fb4",
+    "gzip_sha256": "57267687f0f6898d0db9c140e46dfb4026669061dc97bb8019f72b12b9196482"
+  },
+  {
+    "file": "integration-before-followups.log.gz",
+    "raw_sha256": "4d4df7fac87555b7eaa9490ebf4fd7a44fb67db33333716a0284f22c4d751544",
+    "gzip_sha256": "bd86ce20446ccfd057bcfe1901eaeb85bb035e97783c7a28a0cb9bba0b671dae"
+  },
+  {
+    "file": "polar-golden-change.json.gz",
+    "raw_sha256": "db9fcfe72a66f4d3babc32fa6ff8cb7fa4f5cbeeb189b0fd4db038197cc65ee6",
+    "gzip_sha256": "700e35a2868aef04f7ff09819831ad5c1ad93e0b49a2b904a55032b1215deb29"
+  }
+]

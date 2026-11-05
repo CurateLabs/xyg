@@ -1,8 +1,7 @@
 """The rendered axes frame must land on the rectangle `get_position()` reports.
 
-Every assertion here reads real emitted geometry: `_svg.layout()` is the single
-plot-rect resolver both static exporters use (and the browser client mirrors it),
-and the dense-grid check probes the composed PNG buffer itself.  Reference values
+Frame assertions read the actual Rust SVG clip rectangles and compare them to
+reported axes positions; the dense-grid check probes the composed PNG buffer.  Reference values
 are Matplotlib 3.11's own — figure.subplot.* frame, gridspec cell arithmetic, and
 `Axes.get_window_extent()` — so a drift shows up as a compatibility failure
 rather than a snapshot churn.
@@ -11,7 +10,6 @@ rather than a snapshot churn.
 from __future__ import annotations
 
 import io
-import re
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -27,25 +25,25 @@ def teardown_function():
 
 
 def _plot_rects(fig) -> list[tuple[float, float, float, float]]:
-    """Absolute (x0, y0_from_top, w, h) px of every panel's plot rect."""
-    from xyg.pyplot._rc import rc_figsize_px
+    """Read the actual shared Rust SVG frames, including panel offsets."""
+    from xml.etree import ElementTree as ET
 
-    canvas = rc_figsize_px(fig._figsize, fig._dpi)
-    charts = fig._charts()
-    rects = fig._effective_rects()
-    if rects is None:
-        offsets = [(0.0, 0.0)]
-    else:
-        offsets = [
-            (round(p[0] * canvas[0]), round((1.0 - p[1] - p[3]) * canvas[1]))
-            for p in fig._panel_positions(rects, canvas)
-        ]
-    out = []
-    for (ox, oy), chart in zip(offsets, charts, strict=True):
-        spec, _blob = chart.figure().build_payload()
-        _w, _h, _compact, plot = _svg.layout(spec)
-        out.append((ox + plot["x"], oy + plot["y"], plot["w"], plot["h"]))
-    return out
+    output = io.BytesIO()
+    fig.savefig(output, format="svg")
+    root = ET.fromstring(output.getvalue())
+    frames = []
+    for panel in root.findall("{*}svg"):
+        clip = panel.find(".//{*}clipPath/{*}rect")
+        assert clip is not None
+        frames.append(
+            (
+                float(panel.attrib.get("x", 0)) + float(clip.attrib["x"]),
+                float(panel.attrib.get("y", 0)) + float(clip.attrib["y"]),
+                float(clip.attrib["width"]),
+                float(clip.attrib["height"]),
+            )
+        )
+    return frames
 
 
 def _reported_rects(fig) -> list[tuple[float, float, float, float]]:
@@ -104,7 +102,6 @@ def test_axes_title_does_not_move_the_rendered_frame():
     assert titled == pytest.approx(plain, abs=0.5)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_cached_axes_aligns_with_same_position_overlay_in_static_exports():
     """A cached one-panel chart must be rebuilt for absolute composition.
 
@@ -133,11 +130,12 @@ def test_cached_axes_aligns_with_same_position_overlay_in_static_exports():
     assert first_rect == pytest.approx(second_rect, abs=0.5)
     assert png.getvalue().startswith(b"\x89PNG\r\n\x1a\n")
 
-    nested_sizes = re.findall(
-        rb'<svg x="[^"]+" y="[^"]+" width="([^"]+)" height="([^"]+)" '
-        rb'viewBox="0 0 ([^ ]+) ([^"]+)">',
-        svg.getvalue(),
-    )
+    from xml.etree import ElementTree as ET
+
+    nested_sizes = [
+        tuple(panel.attrib[key] for key in ("width", "height", "viewBox"))
+        for panel in ET.fromstring(svg.getvalue()).findall("{*}svg")
+    ]
     assert len(nested_sizes) == 2
     assert nested_sizes[0] == nested_sizes[1]
 
@@ -243,7 +241,6 @@ def test_tight_gridspec_panels_contain_terminal_x_tick_labels_in_static_exports(
     )
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_constrained_colorbar_grid_keeps_balanced_cells_across_static_exports():
     """The contourf gallery's PNG→SVG capture must not compound colorbar room."""
     x = np.linspace(-3.0, 3.0, 17)
@@ -276,14 +273,8 @@ def test_constrained_colorbar_grid_keeps_balanced_cells_across_static_exports():
     assert [(float(node.attrib["width"]), float(node.attrib["height"])) for node in panels] == [
         (320.0, 240.0)
     ] * 4
-    plot_boxes = [
-        next(
-            node
-            for node in panel.iter()
-            if node.tag.endswith("rect") and node.attrib.get("fill") == "white"
-        )
-        for panel in panels
-    ]
+    plot_boxes = [panel.find(".//{*}clipPath/{*}rect") for panel in panels]
+    assert all(box is not None for box in plot_boxes)
     assert all(
         float(box.attrib["width"]) >= 0.9 * float(box.attrib["height"]) for box in plot_boxes
     )

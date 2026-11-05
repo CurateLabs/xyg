@@ -6,7 +6,6 @@ import pytest
 from tests.svg_test_utils import tick_label_positions
 
 import xyg.pyplot as plt
-from xyg._svg import layout
 
 
 @pytest.fixture(autouse=True)
@@ -232,7 +231,6 @@ def test_tick_params_records_supported_style_and_rejects_unknown() -> None:
     assert _axis_child(ax, "y").minor_style["tick_length"] == pytest.approx(2 * 100 / 72)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_rc_tick_padding_places_labels_by_the_matplotlib_rule() -> None:
     """The shim always supplies `{x,y}tick.major.size` and `.pad` from rcParams,
     so its tick labels follow matplotlib's geometry rule — padding measured from
@@ -246,8 +244,18 @@ def test_rc_tick_padding_places_labels_by_the_matplotlib_rule() -> None:
     ax.set_yticks([0.0, 0.5, 1.0])
 
     chart = ax._build_chart(400, 300)
-    plot = layout(chart.figure().build_payload()[0])[3]
-    labels = tick_label_positions(chart.to_svg())
+    from xml.etree import ElementTree as ET
+
+    svg = chart.to_svg()
+    rect = ET.fromstring(svg).find(".//{*}clipPath/{*}rect")
+    assert rect is not None
+    plot = {
+        "x": float(rect.attrib["x"]),
+        "y": float(rect.attrib["y"]),
+        "w": float(rect.attrib["width"]),
+        "h": float(rect.attrib["height"]),
+    }
+    labels = tick_label_positions(svg)
 
     scale = 100.0 / 72.0  # figure.dpi 100: points -> px
     # 3.5 pt outward tick + 3.5 pt pad, then 0.8 * the 10 pt label font.
@@ -271,8 +279,18 @@ def test_tick_params_pad_moves_the_labels_further_from_the_spine() -> None:
     ax.tick_params(axis="y", pad=12)
 
     chart = ax._build_chart(400, 300)
-    plot = layout(chart.figure().build_payload()[0])[3]
-    labels = tick_label_positions(chart.to_svg())
+    from xml.etree import ElementTree as ET
+
+    svg = chart.to_svg()
+    rect = ET.fromstring(svg).find(".//{*}clipPath/{*}rect")
+    assert rect is not None
+    plot = {
+        "x": float(rect.attrib["x"]),
+        "y": float(rect.attrib["y"]),
+        "w": float(rect.attrib["width"]),
+        "h": float(rect.attrib["height"]),
+    }
+    labels = tick_label_positions(svg)
 
     scale = 100.0 / 72.0
     assert labels["0.5"][0] == pytest.approx(plot["x"] - (3.5 + 12.0) * scale, abs=0.01)
@@ -296,3 +314,23 @@ def test_set_anchor_accepts_mpl_anchor_codes_and_rejects_unknown() -> None:
 
     with pytest.raises(ValueError, match="unsupported anchor"):
         ax.set_anchor("baseline")
+
+
+def test_public_savefig_tick_padding_uses_the_resolved_frame():
+    """Pyplot's public adapter resolves domains/chrome before Scene compile."""
+    from io import BytesIO
+    from xml.etree import ElementTree as ET
+
+    fig, ax = plt.subplots(figsize=(4, 3), dpi=100)
+    ax.plot([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
+    ax.set_yticks([0.0, 0.5, 1.0])
+    ax.tick_params(axis="y", pad=12)
+    output = BytesIO()
+    fig.savefig(output, format="svg")
+    svg = output.getvalue().decode()
+    rect = ET.fromstring(svg).find(".//{*}clipPath/{*}rect")
+    assert rect is not None
+    labels = tick_label_positions(svg)
+    assert labels["0.5"][0] == pytest.approx(
+        float(rect.attrib["x"]) - (3.5 + 12.0) * 100 / 72, abs=0.01
+    )
