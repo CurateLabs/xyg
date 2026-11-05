@@ -1836,3 +1836,10 @@ further size allowance, public hover integration, #36/M4/#108 acceptance or
 publication follows from this integration. The receipt records actual current
 results and any remaining blockers; independent final review and fresh remote
 CI remain parent-owned acceptance requirements.
+
+
+With `load.progressive: true`, this attachment now schedules retained opcode 15
+in the packaged Worker after initial paint, using the existing chunk/wall limits.
+See [the bounded continuation contract](graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation).
+This is a #35 slice; Python notebooks, the full rendered ladder and #108 acceptance
+remain open. Ordinary one-shot rendering and all admission limits are unchanged.

@@ -1,0 +1,62 @@
+{
+  "packages/xy-client/dist/index.js": {
+    "sha256": "29b3b9cad48045b97916333514f1b4513a28d4c83e2dbb098bf49eae40eaadd3",
+    "bytes": 796904
+  },
+  "packages/xy-client/dist/standalone.js": {
+    "sha256": "895ed0b3636dbf4da8e786387cd4eb9a2856b6d79c9327af5aa0629cd8f0d820",
+    "bytes": 796931
+  },
+  "packages/xy-client/dist/wasm-worker.js": {
+    "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "bytes": 56051
+  },
+  "packages/xy-client/dist/wasm-inline-worker.js": {
+    "sha256": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+    "bytes": 19000
+  },
+  "packages/xy-client/dist/xyg-wasm.wasm": {
+    "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7",
+    "bytes": 1926555
+  },
+  "packages/xy-client/dist/xyg-wasm-inline.js": {
+    "sha256": "371e0f5e68307054a3f4d9260f79c5eaceafda20948e4817d4695d192f108947",
+    "bytes": 2587929
+  },
+  "packages/xy-client/dist/xyg-wasm.manifest.json": {
+    "sha256": "df39ed30ac859444711c74242602b428c70b6f2cb90026b79101f81e3e0a9b31",
+    "bytes": 226
+  },
+  "python/xyg/static/index.js": {
+    "sha256": "29b3b9cad48045b97916333514f1b4513a28d4c83e2dbb098bf49eae40eaadd3",
+    "bytes": 796904
+  },
+  "python/xyg/static/standalone.js": {
+    "sha256": "895ed0b3636dbf4da8e786387cd4eb9a2856b6d79c9327af5aa0629cd8f0d820",
+    "bytes": 796931
+  },
+  "python/xyg/static/wasm-worker.js": {
+    "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "bytes": 56051
+  },
+  "python/xyg/static/xyg-wasm.wasm": {
+    "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7",
+    "bytes": 1926555
+  },
+  "python/xyg/static/xyg-wasm-inline.js": {
+    "sha256": "371e0f5e68307054a3f4d9260f79c5eaceafda20948e4817d4695d192f108947",
+    "bytes": 2587929
+  },
+  "python/xyg/static/xyg-wasm.manifest.json": {
+    "sha256": "df39ed30ac859444711c74242602b428c70b6f2cb90026b79101f81e3e0a9b31",
+    "bytes": 226
+  },
+  "target/release/libxyg_core.so": {
+    "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "bytes": 6119880
+  },
+  "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+    "sha256": "f323d12e662abf2ef97a57e0606941147453d5d4306c2cde3a1b41f8d1ac4e05",
+    "bytes": 2124514
+  }
+}
