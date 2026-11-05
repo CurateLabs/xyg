@@ -291,3 +291,47 @@ def test_release_cohort_accepts_exact_evidence_without_hardcoded_core_versions(
     ledger = cohort.verify(tag="xyg-v1.2.3-rc.4", commit="a" * 40, **files)
     assert ledger["supportedCoreVersions"] == ["9.8.7-beta.6"]
     assert ledger["graphforgeCompatibilitySha256"] == cohort._digest(payload)
+
+
+@pytest.mark.parametrize("core_version", ["0.5.2", "0.6.0-rc.5"])
+def test_selected_core_pair_uses_authentic_declaration(tmp_path: Path, core_version: str) -> None:
+    files = _fixtures(tmp_path)
+    ledger = cohort.verify(
+        tag="xyg-v1.2.3-rc.4", commit="a" * 40, core_version=core_version, **files
+    )
+    assert ledger["selectedCoreVersion"] == core_version
+    assert core_version in ledger["supportedCoreVersions"]
+
+
+@pytest.mark.parametrize("core_version", ["0.6.0-rc.4", "0.6.0-rc.7", "0.6.0"])
+def test_selected_core_pair_refuses_unqualified_versions(tmp_path: Path, core_version: str) -> None:
+    files = _fixtures(tmp_path)
+    with pytest.raises(ValueError, match=r"Qualify its authentic corpus.*#936") as error:
+        cohort.verify(tag="xyg-v1.2.3-rc.4", commit="a" * 40, core_version=core_version, **files)
+    assert core_version in str(error.value)
+    assert "0.6.0-rc.5" in str(error.value)
+
+
+@pytest.mark.parametrize("core_version", ["0.6.0rc5", "0.6.0-rc.05", "0.6.0-dev.1"])
+def test_selected_core_pair_requires_canonical_identity(tmp_path: Path, core_version: str) -> None:
+    with pytest.raises(ValueError, match="invalid XYG npm version"):
+        cohort.verify(
+            tag="xyg-v1.2.3-rc.4", commit="a" * 40, core_version=core_version, **_fixtures(tmp_path)
+        )
+
+
+@pytest.mark.parametrize("role", ["facade", "native", "browser"])
+def test_cohort_rejects_mismatched_candidate_numbers(tmp_path: Path, role: str) -> None:
+    files = _fixtures(tmp_path)
+    archive = cohort._read_tgz(files[role])
+    manifest = json.loads(archive["package/package.json"])
+    manifest["version"] = "1.2.3-rc.5"
+    archive["package/package.json"] = json.dumps(manifest).encode()
+    files[role] = _tgz(tmp_path / f"{role}-wrong-candidate.tgz", archive)
+    with pytest.raises(ValueError, match="identity/version mismatch"):
+        cohort.verify(tag="xyg-v1.2.3-rc.4", commit="a" * 40, **files)
+
+
+def test_cohort_rejects_mismatched_python_candidate(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match=r"does not match xyg '1\.2\.3rc5'"):
+        cohort.verify(tag="xyg-v1.2.3-rc.5", commit="a" * 40, **_fixtures(tmp_path))
