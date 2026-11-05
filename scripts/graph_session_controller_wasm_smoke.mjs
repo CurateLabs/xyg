@@ -75,6 +75,76 @@ try {
         return {initial,...result};
       });
     }
+    await run('progressive-companion-page-survives-step-and-row-selection', async()=>{
+      await page.evaluate(async()=>{
+        const s=window.__graphSession;
+        await s.progressiveFixture(64, 3064n, {}, 384*1024*1024);
+        const p=s.progressives.at(-1);
+        p.el.dataset.progressivePaging=''; p.pages=[]; p.choices=[]; p.choiceProgress=[];
+        p.firstRefs=p.handle.snapshot().companion.refs;
+        p.el.addEventListener('xy:graph-render',()=>{
+          const command=s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).at(-1);
+          if(![17,21].includes(command?.operation)) return;
+          const bytes=s.section(command.bytes,'companion.u32');
+          if(new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength).getUint32(0,true)!==1) return;
+          const snapshot=p.handle.snapshot();
+          p.pages.push({operation:command.operation,progress:snapshot.relayout,
+            rows:snapshot.companion.rows,refs:snapshot.companion.refs,
+            displayed:[...p.el.querySelectorAll('tbody tr')].map(row=>[...row.querySelectorAll('td')].slice(0,-1).map(cell=>cell.textContent))});
+        });
+        p.el.addEventListener('xy:graph-select',e=>{p.choices.push(e.detail.selection.refs);p.choiceProgress.push(e.detail.relayout);});
+      });
+      const next=page.locator('[data-progressive-paging] button[aria-label="Next graph companion page"]');
+      await next.focus();
+      for(let attempt=0;attempt<30;attempt++) {
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).pages.length>0)) break;
+        await page.keyboard.press('Enter');
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).pages.length>0)) break;
+        await delay(5);
+      }
+      await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).pages.some(p=>p.operation===21),null,{timeout:10000});
+      const before=await page.evaluate(()=>{const p=window.__graphSession.progressives.at(-1);return {pages:p.pages,firstRefs:p.firstRefs};});
+      assert.equal(before.pages[0].operation,17);
+      assert.equal(before.pages[0].progress.done,false);
+      const expected=before.pages[0];
+      assert.equal(expected.rows.length,50); assert.equal(expected.refs.length,50);
+      assert.notDeepEqual(expected.refs,before.firstRefs);
+      const stepped=before.pages.filter(p=>p.operation===21);
+      assert.ok(stepped.length>0); assert.ok(stepped[0].progress.steps>expected.progress.steps);
+      assert.equal(stepped[0].progress.done,false);
+      for(const publication of before.pages) {
+        assert.deepEqual(publication.rows,expected.rows);
+        assert.deepEqual(publication.refs,expected.refs);
+        assert.deepEqual(publication.displayed,publication.rows);
+      }
+      for(let attempt=0;attempt<30;attempt++) {
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).choices.length>0)) break;
+        await page.evaluate(()=>window.__graphSession.progressives.at(-1).el.querySelector('tbody button').focus());
+        await page.keyboard.press('Enter');
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).choices.length>0)) break;
+        await delay(5);
+      }
+      const result=await page.evaluate(async()=>{
+        const s=window.__graphSession,p=s.progressives.at(-1);
+        const commands=s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner);
+        const result={count:64,arenaBytes:384*1024*1024,delivery:"Playwright keyboard.press Enter",pages:p.pages,choices:p.choices,choiceProgress:p.choiceProgress,errors:p.errors,held:s.held.length,
+          operations:commands.map(c=>c.operation)};
+        clearInterval(p.timer); await p.handle.dispose(); await p.worker.dispose(); p.el.remove();
+        return result;
+      });
+      assert.deepEqual(result.errors,[]); assert.equal(result.held,0);
+      for(const publication of result.pages) {
+        assert.deepEqual(publication.rows,expected.rows);
+        assert.deepEqual(publication.refs,expected.refs);
+        assert.deepEqual(publication.displayed,publication.rows);
+      }
+      assert.deepEqual(result.choices[0],[expected.refs[0]]);
+      assert.equal(result.choiceProgress[0].done,false);
+      const paging=result.operations.indexOf(17), step=result.operations.indexOf(15,paging+1);
+      assert.ok(paging>=0&&step>paging); assert.equal(result.operations[step+1],21);
+      assert.ok(result.operations.includes(11));
+      return result;
+    });
     await run('1k-default-arena-still-refuses-without-fallback',async()=>{
       const code=await page.evaluate(async()=>{try{await window.__graphSession.progressiveFixture(1000,3099n,{},16*1024*1024);return 'unexpected success';}catch(e){return e.code;}});
       assert.equal(code,'GF_INTERACTION_BUDGET');return {code,arenaBytes:16*1024*1024};

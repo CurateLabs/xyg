@@ -322,3 +322,14 @@ wire tests and foundation smoke. This bounded browser slice establishes no
 competitor win or full rendered 1k/10k/100k/1M ladder. Python notebook/widget
 progressive integration (#1015), broader #36 interactions and full #35/#108
 acceptance remain open. Publication still requires all #108 acceptance.
+
+
+The progressive companion paging regression under
+`spec/performance/graph-browser-progressive-paging-2026-11-05/` uses the real
+public attachment and trusted keyboard activation to move to a nonzero page
+while Rust layout is unfinished. Subsequent unheld continuation must preserve
+that page's complete row/ref ordering and matching displayed cells; selecting
+its first row must yield the exact aligned Rust ref. The recorded command path
+includes companion paging, continuation followed by same-state render, and ref
+selection. This 64-node fixture explicitly requests the existing 384 MiB arena;
+no default/maximum is raised and no broader scale or interaction claim follows.
