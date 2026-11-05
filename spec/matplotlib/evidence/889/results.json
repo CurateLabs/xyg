@@ -1,0 +1,43 @@
+{
+  "pyplot_before": {
+    "failed": 1,
+    "passed": 1128,
+    "skipped": 163,
+    "xfailed": 41,
+    "xpassed": 4,
+    "failure": "missing WASM asset during setup"
+  },
+  "pyplot_unmasked_before": {
+    "failed": 39,
+    "passed": 4
+  },
+  "pyplot_after_explicit_browser": {
+    "passed": 1135,
+    "skipped": 163,
+    "xfailed": 40,
+    "xpassed": 0
+  },
+  "polar_baseline": {
+    "passed": 118,
+    "xfailed": 31
+  },
+  "registry_after": {
+    "passed": 34
+  },
+  "host_parity": {
+    "result": "passed",
+    "cross_host_passed": 1089,
+    "abi_checks": 673
+  },
+  "annotation_chrome": {
+    "passed": 16
+  },
+  "dense_grid": {
+    "passed": 1
+  },
+  "limits": [
+    "Issue 889 acceptance incomplete",
+    "Optional reference dependencies not qualified",
+    "Independent review pending with parent"
+  ]
+}

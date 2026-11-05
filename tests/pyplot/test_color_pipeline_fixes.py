@@ -108,7 +108,6 @@ def test_default_colorbar_ticks_are_round_numbers():
     assert ">20<" in svg
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_default_colorbar_ticks_are_dense_for_small_decimal_domains():
     image = plt.imshow([[0.0, 0.15], [0.05, 0.1]], vmin=0.0, vmax=0.15)
     plt.colorbar(image)
@@ -147,7 +146,6 @@ def test_zero_value_heatmap_cell_is_opaque_colormap_floor():
 # -- defect 5: imshow cmap (reversed) + clim reach the raster -----------------
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_imshow_reversed_cmap_and_post_hoc_clim_reach_the_heatmap():
     from xyg import _native
 
@@ -777,8 +775,10 @@ def test_contourf_colorbar_beyond_the_scene_stop_budget_keeps_the_ramp():
     assert len(_colorbar_bands(svg.decode())) > 20
     # The fill-opacity correction changes the image bytes, while the colorbar
     # retains its continuous-ramp fallback beyond the stop budget (#1046).
+    # #889 carries the resolved colorbar gutter into the canonical Scene,
+    # so mark geometry now uses the same final frame as the panel placement.
     assert hashlib.sha256(svg).hexdigest() == (
-        "cf1cbb6eec0c5eb488dfa6a7dccda811c80d1e276cf231490d5c9310621fbb7a"
+        "cd456c41b022c674fde7913d38bac0293e2f7442621493ec3275cd25022cb214"
     )
 
 

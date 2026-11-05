@@ -322,6 +322,7 @@ def _pyplot_static_document(
             width=width,
             height=height,
             y2_chrome=getattr(figure, "_static_document_y2_chrome", None),
+            margins=getattr(figure, "_pyplot_static_margins", None),
         )
         if reason is not None or scene is None:
             raise _static_document.UnsupportedStaticExport(
@@ -594,6 +595,8 @@ def _pyplot_scene_figure(figure: Any) -> Any:
             for trace in projected.traces
             if trace.name
         ]
+        if "items" in projected.legend_options:
+            legend_items = copy.deepcopy(projected.legend_options["items"])
         if legend_items:
             panel_legend = {**copy.deepcopy(projected.legend_options), "items": legend_items}
     projected.show_legend = False

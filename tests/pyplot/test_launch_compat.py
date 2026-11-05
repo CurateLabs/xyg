@@ -814,7 +814,6 @@ def test_reversed_colormap_exact_ticks_and_fractional_annotations_export() -> No
     assert fig._to_png().startswith(b"\x89PNG\r\n\x1a\n")
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_imshow_interpolation_upsamples_gradients_but_nearest_keeps_cells() -> None:
     _fig, ax = plt.subplots()
     ax.imshow([[0.0, 1.0], [1.0, 0.0]], interpolation="bicubic")
@@ -824,7 +823,13 @@ def test_imshow_interpolation_upsamples_gradients_but_nearest_keeps_cells() -> N
     core = ax._build_chart(640, 480).figure()
     spec, _blob = core.build_payload()
     assert spec["dom"]["style"]["--chart-grid"] == "transparent"
-    assert 'stroke="transparent"' in core.to_svg()
+    from xml.etree import ElementTree as ET
+
+    root = ET.fromstring(core.to_svg())
+    axes = root.find('.//{*}g[@data-xy-chrome="axes"]')
+    assert axes is not None
+    # Hidden image grid produces no line ink outside the axes chrome.
+    assert root.findall(".//{*}line") == axes.findall(".//{*}line")
 
 
 def test_imshow_equal_aspect_preserves_explicit_extent_at_plot_edges() -> None:

@@ -1822,3 +1822,17 @@ gates and 613/886-byte measured headroom are unchanged. No additional allowance,
 optimizer search, arena/guard/validator change, integration or broad acceptance.
 685 preparation gaps and baseline freeze UNACCEPTED remain unchanged; independent
 final full-source and policy review precedes any PR/integration.
+
+
+The [2026-11-05 accepted-main integration receipt](../performance/graph-picked-target-main-integration-2026-11-05/README.md)
+records the normal merge of R10 `24ab6804` with accepted #889 main `5e00c6b9`
+(reviewed tree `2bb6a0c3`). The merge preserves the picked-target source and
+all inherited receipts, incorporates the accepted static-output fixes, and
+regenerates release inventory through its official generator. Both native and
+WASM require fresh producers because #889 changes shared Rust source. The
+existing 1882/768-KiB gates apply to the combined artifact; historical 1878/765
+main limits do not supersede the explicit picked-target decision above. No
+further size allowance, public hover integration, #36/M4/#108 acceptance or
+publication follows from this integration. The receipt records actual current
+results and any remaining blockers; independent final review and fresh remote
+CI remain parent-owned acceptance requirements.
