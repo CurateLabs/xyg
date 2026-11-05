@@ -37,7 +37,8 @@
   },
   "rust": {
     "unit_tests_passed": 1967,
-    "doctests_passed": 5
+    "doctests_passed": 0,
+    "integration_tests_passed": 5
   },
   "typecheck": "passed",
   "wasm": {

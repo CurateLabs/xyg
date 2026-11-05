@@ -1,0 +1,48 @@
+{
+  "source_parent": "3a91236542fe1b45c093d83b1e4fc6980956ebf4",
+  "prior_rust_review": "APPROVE, scoped to unchanged Rust/PDF/registry implementation",
+  "source_sha256": {
+    "packages/xy-node/scripts/static_export_cross_host.mjs": "443561722cb469bca7cd4f71ab5e46ccac066dc62ea6016180580e702fc3653d",
+    "python/xyg/pyplot/_axes.py": "ac70f0368aa093d09d44fb0f34fd57ae407d4d8f540abadd7afba4ff4c99776e",
+    "spec/design/host-parity.md": "7d194f3ea8beae91be1d46950c34ee75773ef843ef824e0c1562e7068a5dde45",
+    "spec/matplotlib/evidence/889/completion/marker-coverage.json": "ef12c65c2edad58af9009305e561fb962e23935672321b093f118f1890bf9d87",
+    "spec/matplotlib/evidence/889/completion/results.json": "1df64193cad522fce03f18380d50455a2cefd2cedf54eef265cda6a955daef01",
+    "spec/matplotlib/issue-889-evidence.md": "f80c7004c8c25942e6d40fd620f1dddedb94f2d5374c8759bcace749e3a0465f",
+    "tests/pyplot/issue_889_rejections.json": "198d4d568378774cd9e1eb3806d6f588ebd3c38c415fe2e7b3c71898bd9ac052",
+    "tests/pyplot/test_issue_889_rejections.py": "ff7b398e54ee29cc3a97f8d0c340d2639dbf8f9a5bf32c54a02425a6bf6e7422",
+    "tests/pyplot/test_pdsh_gap_features.py": "155914e63097ef6feb49d77948ab3acfc5b3695f879a60a9b9a02701d454136f",
+    "tests/test_static_export_cross_host.py": "1f6aa4317c5eec42a55e0d0c7978a4ec057f1890a42b34d4a0c6642ca82f54d3"
+  },
+  "native_sha256": "7d57a86ebc56443936364817fc24d598fd9986774bcac0787f4a25750141d06e",
+  "wasm_manifest": {
+    "schema_version": 1,
+    "artifact": "xyg-wasm.wasm",
+    "sha256": "632510de5fef2adc675294167e133e99d3a2377f5f047f3a79a04987ee724d3d",
+    "bytes": 1922723,
+    "abi_version": 35,
+    "scene_version": 34,
+    "painter_version": 17
+  },
+  "passed": {
+    "pyplot": [
+      1186,
+      163,
+      26
+    ],
+    "host_parity": 1097,
+    "focused_rejection_and_receipt_checks": 36,
+    "null_locator_and_authored_minor_tests": 2,
+    "cross_host_hidden_tick_rows": 2,
+    "legacy_empty_auto_contract_tests": 26,
+    "rust_workspace": true,
+    "clippy_workspace_all_targets_D_warnings": true,
+    "typecheck": true,
+    "mandatory_hooks_and_ruff": true
+  },
+  "post_full_suite_delta": "receipt-consistency assertions added to the coverage test; all 36 rejection/coverage cases reran and passed",
+  "rejected_attempt": "pointer-presence FFI experiment failed two established empty-means-auto tests and was fully reverted; failed host-parity log retained",
+  "rust_and_ffi_changes_retained": false,
+  "pending": [
+    "new Python and acceptance independent review"
+  ]
+}

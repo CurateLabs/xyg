@@ -176,12 +176,22 @@ def _edge_figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
     if name == "line_hidden_tick_labels":
         _fixed_domains(figure).line([0, 1, 2], [1, 3, 2])
-        figure.axis_options["x"]["tick_label_strategy"] = "none"
-        figure.axis_options["y"]["tick_values"] = []
+        figure.axis_options["x"]["tick_label_strategy"] = "off"
+        figure.axis_options["y"].update(
+            tick_values=[],
+            tick_label_strategy="off",
+            style={"tick_length": 0, "grid_width": 0},
+            minor_style={"tick_length": 0, "grid_width": 0},
+        )
     elif name == "scatter_hidden_tick_labels":
         figure.scatter([0, 1, 2], [1, 3, 2])
-        figure.axis_options["x"]["tick_values"] = []
-        figure.axis_options["y"]["tick_label_strategy"] = "none"
+        figure.axis_options["x"].update(
+            tick_values=[],
+            tick_label_strategy="off",
+            style={"tick_length": 0, "grid_width": 0},
+            minor_style={"tick_length": 0, "grid_width": 0},
+        )
+        figure.axis_options["y"]["tick_label_strategy"] = "off"
     elif name == "line_authored_style":
         _fixed_domains(figure).line([0, 1, 2], [1, 3, 2], color="#f97316", width=3, opacity=0.7)
     elif name == "scatter_single_log":
@@ -476,6 +486,23 @@ def test_python_and_node_scene_svg_raster_and_decoded_png_are_identical(
     node_png = base64.b64decode(node_case["png_b64"])
     node_document_svg = base64.b64decode(node_case["document_svg_b64"])
     node_document_png = base64.b64decode(node_case["document_png_b64"])
+    if case_name in {"line_hidden_tick_labels", "scatter_hidden_tick_labels"}:
+        import xml.etree.ElementTree as ET
+
+        axes = ET.fromstring(svg).find('.//{*}g[@data-xy-chrome="axes"]')
+        assert axes is not None
+        assert not axes.findall("{*}text"), (
+            "explicit-empty majors and hidden labels must render no labels"
+        )
+        lines = [
+            tuple(float(line.attrib[k]) for k in ("x1", "y1", "x2", "y2"))
+            for line in axes.findall("{*}line")
+        ]
+        vertical = any(x1 == x2 and 0 < abs(y2 - y1) < 20 for x1, y1, x2, y2 in lines)
+        horizontal = any(y1 == y2 and 0 < abs(x2 - x1) < 20 for x1, y1, x2, y2 in lines)
+        assert (vertical, horizontal) == (
+            (True, False) if case_name == "line_hidden_tick_labels" else (False, True)
+        )
     assert node_scene == scene
     assert node_svg == svg
     assert node_document_svg == figure.to_svg().encode()

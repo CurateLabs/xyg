@@ -2085,3 +2085,12 @@ translucent panels. The overlap witnesses also pin exact source-over RGBA pixels
 Every retained pyplot #889 future-rendering xfail has an active exact original-
 program rejection check; the family matrix and receipts live in
 `spec/matplotlib/issue-889-evidence.md`.
+
+### Null locator/formatter observations (#889 review correction)
+
+Bulk chrome empty major arrays retain their existing automatic-ticks contract,
+including secondary axes. The pyplot NullLocator adapter authors zero major
+tick length/grid width and uses Rust's existing off label strategy. Separately
+authored minor tiers retain their style; absent/null minor locators author zero
+minor length/grid width too. NullFormatter uses off to hide labels while
+retaining tick marks. This changes no ABI struct, signature or wire format.

@@ -126,5 +126,10 @@
       "test": "test_raster_polar_area_culls_vertices_outside_the_sector",
       "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
     }
-  ]
+  ],
+  "generated_from": [
+    "tests/pyplot/test_*.py xfail AST",
+    "tests/pyplot/issue_889_rejections.json"
+  ],
+  "verified_by": "tests/pyplot/test_issue_889_rejections.py::test_every_issue_889_future_program_has_an_active_original_body_case"
 }

@@ -7199,7 +7199,7 @@ class Axes(PlotTypeMixin):
             # Scene tick labels are nonempty strings. Hide labels through the
             # shared axis policy while retaining locator positions (#889).
             props.pop("tick_labels", None)
-            props["tick_label_strategy"] = "none"
+            props["tick_label_strategy"] = "off"
         elif formatter is not None:
             props["tick_labels"] = _formatter_tick_labels(
                 formatter,
@@ -7217,6 +7217,19 @@ class Axes(PlotTypeMixin):
             props["tick_labels"] = [f"{value:g}" for value in ticks]
         else:
             props.pop("tick_labels", None)
+        if _is_null_locator(locator) and not promoted_minor:
+            # The core's existing empty-list contract is automatic. Express a
+            # null major locator through authored chrome, preserving that
+            # contract and any separately authored minor tier.
+            props.pop("tick_labels", None)
+            props["tick_label_strategy"] = "off"
+            props["style"] = {**(props.get("style") or {}), "tick_length": 0, "grid_width": 0}
+            if minor_locator is None or _is_null_locator(minor_locator):
+                props["minor_style"] = {
+                    **(props.get("minor_style") or {}),
+                    "tick_length": 0,
+                    "grid_width": 0,
+                }
         if len(ticks):
             props["tick_count"] = len(ticks)
         else:
@@ -9594,6 +9607,10 @@ _MATPLOTLIB_EPOCH = datetime(1970, 1, 1)
 
 def _is_foreign_matplotlib_date_object(value: Any) -> bool:
     return (type(value).__module__ or "").startswith("matplotlib.dates")
+
+
+def _is_null_locator(value: Any) -> bool:
+    return value is not None and type(value).__name__ == "NullLocator"
 
 
 def _is_null_formatter(value: Any) -> bool:

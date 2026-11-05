@@ -31,7 +31,8 @@ successful export also fails that active test.
 | 6 rc font weight and quoted font families | Native rc/chrome projection outside the deferred direct programs retains its existing tests | The two exact original direct programs assert `XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT` and `XYG_STATIC_UNSUPPORTED_CUSTOM_FONT`. No custom font or rc-weight policy was invented or weakened |
 | 7 figure/panel legend glyphs, relabel and frame | Explicit relabelled items are preserved instead of rebuilt from trace names. `test_legend_handles_labels_form_relabels_handles` and `test_legend_frameon_false_removes_frame_in_static_export` pass. Registry `document_legend_relabel` / `document_legend_frameless` checks exact content, transparent frame and five-format cross-host identity | The explicitly requested non-circle scatter legend program asserts `XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE`, the existing XYDL contract. Tests request a legend explicitly, matching pyplot's documented semantics |
 | 8 shared layout / serialization | `tests/pyplot/test_frame_geometry.py` reads actual emitted clip rectangles and proves reported/rendered agreement for single/grid/dense/overlay/matshow/twinx/constrained frames without changing tolerances. `test_constrained_subplot_xlabels_stay_inside_static_canvas`, rc tick spacing, public tick-pad override, suptitle/facecolor, boxed text and imshow-hidden-grid checks pass. Registry `document_authored_frame` pins exact XYCF margins through both hosts/all formats | Direct raw Chart tick-padding export without qualifying domains remains the exact family-4 rejection. User/notebook `_padding` remains a minimum gutter, preserving the long-y-title clearance tests |
-| 9 two raw errors | `test_null_locator_removes_ticks_from_the_export` passes through Rust using hidden labels and empty authored ticks. Rust registry `line_hidden_tick_labels` / `scatter_hidden_tick_labels` pins two shapes/axis modes with unchanged pairwise rules | `test_categorical_text_static_export_has_a_stable_reason` asserts `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE`; the original future-rendering test stays xfailed |
+| 9 two raw errors | `test_null_locator_removes_ticks_from_the_export` passes through Rust using hidden labels and empty authored ticks. Rust registry `line_hidden_tick_labels` / `scatter_hidden_tick_labels` pins two shapes/axis modes with unchanged pairwise rules | The original-body active rejection case for
+`test_text_string_coordinates_stay_categorical_on_category_axes` asserts `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE`; the original future-rendering test stays xfailed |
 | 10 dense and overlapping composition | Unchanged `test_dense_grid_composite_draws_every_panel` probes all 64 panels, original >0.5 coverage and opaque canvas. Registry `document_overlap_red_blue` / `document_overlap_blue_red` independently authors wide translucent panels, checks all five formats and exact opposite-order source-over pixels `(127,63,191,255)` / `(191,63,127,255)` | None for these named journeys |
 | 11 rich polar | Ordinary categorical radar labels, authored theta ticks, line/scatter/bar projection, styled grid/labels, and hole/sector PDF export have active rendering tests. Raster rim labels now paint after the plot clip resets. Full annular PDF clips retain both circle boundaries under even-odd clipping. Registry `document_polar_annulus` checks both hosts/all formats | All 17 deferred original programs/parameter cases are active exact checks in `tests/test_issue_889_polar_rejections.py`: the documented advanced combinations assert `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`, and all-NaN radar asserts `XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES`. Secondary angular/radial validation has exact `XYG_POLAR_UNSUPPORTED_SECONDARY_AXIS` checks. Full case details are in the polar JSON inventory |
 
@@ -76,7 +77,7 @@ uv run ruff format --check .
   ABI smoke (673 checks), inventory/ownership and delegation corpus.
 - Polar bundle: **157 passed, 17 xfailed**, including 19 active rejection cases
   and the shared large-source/LOD golden checks. Node polar suite: **7 passed**.
-- Full Rust workspace: **1967 unit tests passed**, plus **5 doctests passed**;
+- Full Rust workspace: **1967 unit tests passed**, plus **5 integration tests passed** and zero doctests;
   no failures. Type checking and packaged WASM verification pass.
 - Post-type-check metadata-storage adjustment: focused frame/gutter/padding
   tests **45 passed, 3 pre-existing/qualified xfailed**. Assignment uses the
@@ -124,3 +125,16 @@ even-odd PDF path, with independently authored Python/Node byte parity. Fresh
 required pyplot, host-parity, polar/registry, Rust/Clippy and unchanged packaging
 gates passed as recorded there. Other independent reviews and re-review of this
 repair are still required; no PR or closure approval follows from these results.
+
+## Python and acceptance review corrections
+
+The [second repair record](evidence/889/review-r2/README.md) records two further
+blocking findings and their disposition. NullLocator uses authored Rust chrome
+styles to suppress major ticks while preserving separate minor ticks and the
+legacy direct empty-array-means-auto contract. NullFormatter uses label strategy
+off, retaining marks. The original categorical test body now has active exact
+rejection coverage, and the coverage test checks the generated receipt itself.
+Historical completion counts are corrected to five integration tests and zero
+doctests, with original records preserved. The new required pyplot gate passes
+1186 tests with 163 optional skips and 26 qualified xfails; host parity passes
+1097 tests. These repairs await independent Python/acceptance re-review.

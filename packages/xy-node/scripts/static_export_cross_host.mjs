@@ -65,13 +65,13 @@ function edgeFigure(name) {
   switch (name) {
     case "line_hidden_tick_labels":
       fixedDomains(f).line([0, 1, 2], [1, 3, 2]);
-      f.setAxis("x", { tick_label_strategy: "none" });
-      f.setAxis("y", { tick_values: [] });
+      f.setAxis("x", { tick_label_strategy: "off" });
+      f.setAxis("y", { tick_values: [], tick_label_strategy: "off", style: { tick_length: 0, grid_width: 0 }, minor_style: { tick_length: 0, grid_width: 0 } });
       break;
     case "scatter_hidden_tick_labels":
       f.scatter([0, 1, 2], [1, 3, 2]);
-      f.setAxis("x", { tick_values: [] });
-      f.setAxis("y", { tick_label_strategy: "none" });
+      f.setAxis("x", { tick_values: [], tick_label_strategy: "off", style: { tick_length: 0, grid_width: 0 }, minor_style: { tick_length: 0, grid_width: 0 } });
+      f.setAxis("y", { tick_label_strategy: "off" });
       break;
     case "line_authored_style":
       fixedDomains(f).line([0, 1, 2], [1, 3, 2], { color: "#f97316", width: 3, style: { opacity: 0.7 } });

@@ -113,5 +113,10 @@
     "path": "tests/pyplot/test_visual_parity_fixes.py",
     "test": "test_legend_scatter_entry_renders_marker_glyph",
     "reason": "XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE"
+  },
+  {
+    "path": "tests/pyplot/test_pdsh_gap_features.py",
+    "test": "test_text_string_coordinates_stay_categorical_on_category_axes",
+    "reason": "pyplot panel 0: XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric"
   }
 ]

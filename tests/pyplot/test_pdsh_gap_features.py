@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import io
 import re
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import pytest
@@ -55,9 +56,19 @@ def test_null_locator_removes_ticks_from_the_export():
     ax.xaxis.set_major_formatter(plt.NullFormatter())
     assert len(ax.get_yticks()) == 0
     built = ax._build_chart(640, 480).figure()
-    assert built.axis_options["x"]["tick_label_strategy"] == "none"
+    assert built.axis_options["x"]["tick_label_strategy"] == "off"
     assert built.axis_options["x"].get("tick_labels") is None
     assert built.axis_options["y"]["tick_values"] == []
+    svg = ET.fromstring(_svg())
+    assert not svg.findall(".//{*}text"), "neither axis may emit numeric labels"
+    axes = svg.find('.//{*}g[@data-xy-chrome="axes"]')
+    assert axes is not None
+    lines = [
+        tuple(float(line.attrib[k]) for k in ("x1", "y1", "x2", "y2"))
+        for line in axes.findall("{*}line")
+    ]
+    assert any(x1 == x2 and 0 < abs(y2 - y1) < 20 for x1, y1, x2, y2 in lines)
+    assert not any(y1 == y2 and 0 < abs(x2 - x1) < 20 for x1, y1, x2, y2 in lines)
     _png()
 
 
@@ -760,14 +771,16 @@ def test_default_rc_font_sizes_are_explicit_everywhere():
     assert text_ann["style"]["font_size"] == pytest.approx(13.8889, rel=1e-4)
 
 
-def test_categorical_text_static_export_has_a_stable_reason():
-    from xyg._static_document import UnsupportedStaticExport
-
+def test_null_major_locator_keeps_separately_authored_minor_marks():
     fig, ax = plt.subplots()
-    ax.bar(["a", "b", "c"], [1.0, 3.0, 2.0])
-    ax.text("b", 3.1, "peak")
-    with pytest.raises(
-        UnsupportedStaticExport,
-        match="XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric",
-    ):
-        fig.savefig(io.BytesIO(), format="svg")
+    ax.plot([0, 9], [0, 9])
+    ax.yaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_minor_locator(plt.FixedLocator([2.5, 7.5]))
+    axes = ET.fromstring(_svg()).find('.//{*}g[@data-xy-chrome="axes"]')
+    assert axes is not None
+    horizontal = [
+        (float(line.attrib["x1"]), float(line.attrib["x2"]))
+        for line in axes.findall("{*}line")
+        if line.attrib["y1"] == line.attrib["y2"]
+    ]
+    assert sum(0 < abs(right - left) < 20 for left, right in horizontal) == 2

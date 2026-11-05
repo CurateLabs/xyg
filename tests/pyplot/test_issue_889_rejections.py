@@ -7,6 +7,7 @@ a changed diagnostic or unexpected successful export fails this active test.
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 from functools import cache
@@ -82,3 +83,25 @@ def test_arrow_head_style_outside_the_native_vocabulary_has_stable_reason():
             ]
         )
     assert str(error.value) == ARROW_STYLE_UNSUPPORTED
+
+
+def test_every_issue_889_future_program_has_an_active_original_body_case():
+    marked = set()
+    for path in (ROOT / "tests/pyplot").glob("test_*.py"):
+        tree = ast.parse(path.read_text())
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for decorator in node.decorator_list:
+                    text = ast.unparse(decorator)
+                    if "xfail" in text and "889" in text:
+                        marked.add((str(path.relative_to(ROOT)), node.name))
+    active = {(case["path"], case["test"]) for case in CASES}
+    assert marked, "the fixture must exercise qualified future programs"
+    assert marked <= active, sorted(marked - active)
+    assert len(active) == len(CASES), "duplicate inventory programs"
+    receipt = json.loads(
+        (ROOT / "spec/matplotlib/evidence/889/completion/marker-coverage.json").read_text()
+    )
+    assert receipt["pyplot_future_tests"] == sorted(test for _, test in marked)
+    assert receipt["active_original_body_tests"] == sorted(test for _, test in active)
+    assert receipt["exact_coverage"] == (marked == active)
