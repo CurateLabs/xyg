@@ -1,0 +1,38 @@
+{
+  "annulus-tests.log.gz": {
+    "raw_sha256": "7c5b7dba13fb2b3213cd2f5925f29782f87683ea660510b570bf50594e7c81b5",
+    "archive_sha256": "21164ae9fc4589a62c46ca2e5dfb33808abc7267f53a82ef215278484ebdbf62"
+  },
+  "clippy.log.gz": {
+    "raw_sha256": "62b968d9f9949dcc05507195b912926b71c5de4008689d851987b9cb9ea47555",
+    "archive_sha256": "310826b7355c21fc0418d3597823a552ad7ff7cfafc152f976dc2751a063cb63"
+  },
+  "host-parity.log.gz": {
+    "raw_sha256": "bc60f6a256a18acc45ad945c54a73cf5670ad5122ea710d36fe000ee3b2a2b49",
+    "archive_sha256": "a1bb55e84163b0964cbabd993296831e054dc8fbc7c17134c0546acd24a0deee"
+  },
+  "native-build.log.gz": {
+    "raw_sha256": "51a95e8597660312ac546ee10e4fad9527335aada82802c96e150c70c5a9caf7",
+    "archive_sha256": "6d4ce6c41e7817cfa2d0c806fa91d91d78d57ebcc92ef2c6d3a3c38abe7e1f9c"
+  },
+  "polar-registry.log.gz": {
+    "raw_sha256": "5309aa82f3d214b64187f866a40027bb6897e213dba1d31759942d879b5e44d4",
+    "archive_sha256": "55b07cf425f4b99b407723558d58555a67d6e1147ca1df073f10bbb70f36c7e5"
+  },
+  "pyplot.log.gz": {
+    "raw_sha256": "266805453096bd471175db53a1bfc968f8ad2d8362bc5d6a360d410e00441823",
+    "archive_sha256": "d88f1ba103dece2db6f158f5f5caa53bb3c2c27791ca20583eda7fb8fe011b3e"
+  },
+  "rust-tests.log.gz": {
+    "raw_sha256": "494a91085a65551010cd04c3c0a2959de6560899a11d924842d2e442d808ff60",
+    "archive_sha256": "f5afea91450df7bf52366bc927de31296f7dbc3abd41fd7bd3762c653a7d7f34"
+  },
+  "wasm-build.log.gz": {
+    "raw_sha256": "53a81b5b70697253626edb20033cd728fad00e0d7bfcd6e3d0e10fc49a7153cd",
+    "archive_sha256": "0b88ef2dc853a2f00b20f770dafdc8eec475837ac5b42a09e326ca4648f1a3f8"
+  },
+  "wasm-verify.log.gz": {
+    "raw_sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+    "archive_sha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+  }
+}

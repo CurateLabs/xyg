@@ -1380,6 +1380,8 @@ def project_figure(
             if id(trace) in legend_markers:
                 item_style["legend_marker"] = legend_markers[id(trace)]
             items.append({"kind": trace.kind, "name": trace.name, "style": item_style})
+        if "items" in projected.legend_options:
+            items = copy.deepcopy(projected.legend_options["items"])
         if items:
             legend_options = {
                 key: value

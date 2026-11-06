@@ -1,0 +1,14 @@
+{
+  "before.log.gz": {
+    "raw_sha256": "fa24354d724f59d3775db8b7bdc1ddd0e0826e906e3f7a0186a8039a63913909",
+    "archive_sha256": "3ae5d04be207b368c26d9bfeceec61fbc7121cb1dad5bb9529626f679fccdb33"
+  },
+  "check-ci.log.gz": {
+    "raw_sha256": "eb19acf06fc57f90d3a6763b8696ae1cff02d9d1919050830e161ba6813135a6",
+    "archive_sha256": "21c213e466225547dba117198b64c997c18a0bbc84b2a3ea0f72ed8d0c220f7f"
+  },
+  "focused.log.gz": {
+    "raw_sha256": "7c15721b517100ddde95ad9b084d218850d32dfdd8997ce5c87d55c552ac60c7",
+    "archive_sha256": "86f7fea0f8fc6abc115054c62cdfb35fae27b69de977bcda1d545d1912626d5f"
+  }
+}

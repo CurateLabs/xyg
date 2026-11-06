@@ -1,0 +1,484 @@
+Updating 207ebdbd..c3d2e4aa
+Fast-forward
+ spec/design/browser-wasm.md                        |     12 +-
+ spec/design/dual-host-parity-matrix.md             |      2 +-
+ spec/design/graph-interaction.md                   |      4 +-
+ spec/design/graph-mark.md                          |     17 +-
+ spec/design/graphforge-node-scheduling.md          |     28 +-
+ spec/design/host-parity.md                         |     17 +-
+ .../HANDOFF.md                                     |     75 +
+ .../graph-node-first-paint-1k-2026-11-04/README.md |    226 +
+ .../client-build.log                               |     39 +
+ .../fixture.mjs                                    |    140 +
+ .../focused-tests.log                              |     58 +
+ .../gates.json                                     |     24 +
+ .../identities.json                                |     78 +
+ .../inspection-v2.log                              |      1 +
+ .../inspection.log                                 |      1 +
+ .../inspection.mjs                                 |     85 +
+ .../instrumentation-v1-source/fixture.mjs          |    138 +
+ .../instrumentation-v1-source/inspection.mjs       |     85 +
+ .../instrumentation-v1-source/protocol.mjs         |     29 +
+ .../instrumentation-v1-source/protocol.test.mjs    |     22 +
+ .../instrumentation-v1-source/run.mjs              |    119 +
+ .../instrumentation-v1-source/worker-audit.mjs     |      7 +
+ .../npm-host.log                                   |      7 +
+ .../npm-root.log                                   |     12 +
+ .../pre-commit.log                                 |      3 +
+ .../protocol.mjs                                   |     31 +
+ .../protocol.test.mjs                              |     22 +
+ .../raw/held/fixture.log                           |      5 +
+ .../raw/held/held-final-reset.png                  |    Bin 0 -> 202342 bytes
+ .../raw/held/held-initial-panned.png               |    Bin 0 -> 92330 bytes
+ .../raw/held/positions-uuid.json                   |   1002 +
+ .../raw/held/result.json                           |   3309 +
+ .../raw/held/step-1-buffer.bin                     |    Bin 0 -> 333004 bytes
+ .../raw/held/step-1-spec.json                      |   1538 +
+ .../raw/held/step-1-x.f64                          |    Bin 0 -> 8000 bytes
+ .../raw/held/step-1-y.f64                          |    Bin 0 -> 8000 bytes
+ .../raw/held/step-401-buffer.bin                   |    Bin 0 -> 333004 bytes
+ .../raw/held/step-401-spec.json                    |   1538 +
+ .../raw/held/step-401-x.f64                        |    Bin 0 -> 8000 bytes
+ .../raw/held/step-401-y.f64                        |    Bin 0 -> 8000 bytes
+ .../raw/instrumentation-v1-held/fixture.log        |      5 +
+ .../instrumentation-v1-held/held-final-reset.png   |    Bin 0 -> 202342 bytes
+ .../held-initial-panned.png                        |    Bin 0 -> 92330 bytes
+ .../instrumentation-v1-held/positions-uuid.json    |   1002 +
+ .../raw/instrumentation-v1-held/result.json        |   3218 +
+ .../raw/instrumentation-v1-held/step-1-buffer.bin  |    Bin 0 -> 333004 bytes
+ .../raw/instrumentation-v1-held/step-1-spec.json   |   1538 +
+ .../raw/instrumentation-v1-held/step-1-x.f64       |    Bin 0 -> 8000 bytes
+ .../raw/instrumentation-v1-held/step-1-y.f64       |    Bin 0 -> 8000 bytes
+ .../instrumentation-v1-held/step-401-buffer.bin    |    Bin 0 -> 333004 bytes
+ .../raw/instrumentation-v1-held/step-401-spec.json |   1538 +
+ .../raw/instrumentation-v1-held/step-401-x.f64     |    Bin 0 -> 8000 bytes
+ .../raw/instrumentation-v1-held/step-401-y.f64     |    Bin 0 -> 8000 bytes
+ .../raw/instrumentation-v1-unheld/final-canvas.png |    Bin 0 -> 225775 bytes
+ .../raw/instrumentation-v1-unheld/final-page.png   |    Bin 0 -> 198145 bytes
+ .../raw/instrumentation-v1-unheld/fixture.log      |      9 +
+ .../instrumentation-v1-unheld/initial-canvas.png   |    Bin 0 -> 112879 bytes
+ .../raw/instrumentation-v1-unheld/panned-page.png  |    Bin 0 -> 199627 bytes
+ .../instrumentation-v1-unheld/positions-uuid.json  |   1002 +
+ .../raw/instrumentation-v1-unheld/result.json      |   2993 +
+ .../instrumentation-v1-unheld/step-1-buffer.bin    |    Bin 0 -> 333004 bytes
+ .../raw/instrumentation-v1-unheld/step-1-spec.json |   1538 +
+ .../raw/instrumentation-v1-unheld/step-1-x.f64     |    Bin 0 -> 8000 bytes
+ .../raw/instrumentation-v1-unheld/step-1-y.f64     |    Bin 0 -> 8000 bytes
+ .../instrumentation-v1-unheld/step-401-buffer.bin  |    Bin 0 -> 333004 bytes
+ .../instrumentation-v1-unheld/step-401-spec.json   |   1538 +
+ .../raw/instrumentation-v1-unheld/step-401-x.f64   |    Bin 0 -> 8000 bytes
+ .../raw/instrumentation-v1-unheld/step-401-y.f64   |    Bin 0 -> 8000 bytes
+ .../raw/unheld/final-canvas.png                    |    Bin 0 -> 225775 bytes
+ .../raw/unheld/final-page.png                      |    Bin 0 -> 198145 bytes
+ .../raw/unheld/fixture.log                         |      9 +
+ .../raw/unheld/initial-canvas.png                  |    Bin 0 -> 112879 bytes
+ .../raw/unheld/panned-page.png                     |    Bin 0 -> 199627 bytes
+ .../raw/unheld/positions-uuid.json                 |   1002 +
+ .../raw/unheld/result.json                         |   3170 +
+ .../raw/unheld/step-1-buffer.bin                   |    Bin 0 -> 333004 bytes
+ .../raw/unheld/step-1-spec.json                    |   1538 +
+ .../raw/unheld/step-1-x.f64                        |    Bin 0 -> 8000 bytes
+ .../raw/unheld/step-1-y.f64                        |    Bin 0 -> 8000 bytes
+ .../raw/unheld/step-401-buffer.bin                 |    Bin 0 -> 333004 bytes
+ .../raw/unheld/step-401-spec.json                  |   1538 +
+ .../raw/unheld/step-401-x.f64                      |    Bin 0 -> 8000 bytes
+ .../raw/unheld/step-401-y.f64                      |    Bin 0 -> 8000 bytes
+ .../receipt-files.json                             |     87 +
+ .../ruff-check.log                                 |      1 +
+ .../ruff-format.log                                |      1 +
+ .../run-v2.log                                     |      1 +
+ .../graph-node-first-paint-1k-2026-11-04/run.log   |      1 +
+ .../graph-node-first-paint-1k-2026-11-04/run.mjs   |    124 +
+ .../uv-sync.log                                    |     49 +
+ .../verify-receipt.test.mjs                        |     70 +
+ .../worker-audit.mjs                               |      7 +
+ .../README.md                                      |    133 +
+ .../before-sync.json                               |     25 +
+ .../capability-check.command.json                  |     27 +
+ .../capability-check.stderr                        |      0
+ .../capability-check.stdout                        |      1 +
+ .../capability-write.command.json                  |     27 +
+ .../capability-write.stderr                        |      0
+ .../capability-write.stdout                        |      2 +
+ .../changed-paths.json                             |   1308 +
+ .../checks.json                                    |     42 +
+ .../complete-parent-file-identities.json           | 177953 ++++++++++++++++++
+ .../hooks.command.json                             |     29 +
+ .../hooks.stderr                                   |      0
+ .../hooks.stdout                                   |      3 +
+ .../inventory-check.command.json                   |     26 +
+ .../inventory-check.stderr                         |      0
+ .../inventory-check.stdout                         |      1 +
+ .../inventory-write.command.json                   |     27 +
+ .../inventory-write.stderr                         |      0
+ .../inventory-write.stdout                         |      1 +
+ .../merge.command.json                             |     27 +
+ .../merge.stderr                                   |      1 +
+ .../merge.stdout                                   |      0
+ .../metadata-tests.command.json                    |     29 +
+ .../metadata-tests.stderr                          |      0
+ .../metadata-tests.stdout                          |      2 +
+ .../metadata-verifier-initial-assumption.txt       |     13 +
+ .../naming-final-whole-repository.command.json     |     26 +
+ .../naming-final-whole-repository.stderr           |      0
+ .../naming-final-whole-repository.stdout           |      1 +
+ .../naming-tests.command.json                      |     27 +
+ .../naming-tests.stderr                            |      0
+ .../naming-tests.stdout                            |      4 +
+ .../naming-whole-repository.command.json           |     26 +
+ .../naming-whole-repository.stderr                 |      0
+ .../naming-whole-repository.stdout                 |      1 +
+ .../native-declarations.command.json               |     27 +
+ .../native-declarations.stderr                     |      0
+ .../native-declarations.stdout                     |      1 +
+ .../ownership.command.json                         |     26 +
+ .../ownership.stderr                               |      0
+ .../ownership.stdout                               |      1 +
+ .../preservation-corrected.command.json            |     26 +
+ .../preservation-corrected.stderr                  |      7 +
+ .../preservation-corrected.stdout                  |      0
+ .../preservation-final.command.json                |     26 +
+ .../preservation-final.stderr                      |      0
+ .../preservation-final.stdout                      |      1 +
+ .../preservation.command.json                      |     26 +
+ .../preservation.json                              |     67 +
+ .../preservation.stderr                            |      7 +
+ .../preservation.stdout                            |      0
+ .../proof-tests.command.json                       |     26 +
+ .../proof-tests.stderr                             |      0
+ .../proof-tests.stdout                             |     58 +
+ .../receipt-files.json                             |     71 +
+ .../review-diff-contract.json                      |     33 +
+ .../ruff-check.command.json                        |     27 +
+ .../ruff-check.stderr                              |      0
+ .../ruff-check.stdout                              |      1 +
+ .../ruff-format.command.json                       |     28 +
+ .../ruff-format.stderr                             |      0
+ .../ruff-format.stdout                             |      1 +
+ .../run.py                                         |     65 +
+ .../verify-sync-initial.py.txt                     |    143 +
+ .../verify-sync-parent-comparison.py.txt           |    142 +
+ .../verify_sync.py                                 |    154 +
+ .../wasm-declarations.command.json                 |     27 +
+ .../wasm-declarations.stderr                       |      0
+ .../wasm-declarations.stdout                       |      0
+ .../README.md                                      |    167 +
+ .../before-sync.json                               |  27815 +++
+ .../capability-check.command.json                  |     40 +
+ .../capability-check.log                           |      1 +
+ .../capability-check.stderr                        |      0
+ .../capability-check.stdout                        |      1 +
+ .../conflict-stages.txt                            |     25 +
+ .../conflicts.json                                 |     52 +
+ .../history-union-sha256.json                      |   9830 +
+ .../hooks.command.json                             |     42 +
+ .../hooks.log                                      |      3 +
+ .../hooks.stderr                                   |      0
+ .../hooks.stdout                                   |      3 +
+ .../inventory-check.command.json                   |     39 +
+ .../inventory-check.log                            |      1 +
+ .../inventory-check.stderr                         |      0
+ .../inventory-check.stdout                         |      1 +
+ .../inventory-write.command.json                   |     40 +
+ .../inventory-write.log                            |      1 +
+ .../inventory-write.stderr                         |      0
+ .../inventory-write.stdout                         |      1 +
+ ...__src__63_graph_controller.ts.conflicted.txt.gz |    Bin 0 -> 5704 bytes
+ ...src__63_graph_session_wire.ts.conflicted.txt.gz |    Bin 0 -> 5747 bytes
+ ...sion-controller-wire.test.mjs.conflicted.txt.gz |    Bin 0 -> 4788 bytes
+ .../merge.command.json                             |     40 +
+ .../merge.log                                      |     22 +
+ .../merge.stderr                                   |      0
+ .../merge.stdout                                   |     22 +
+ .../metadata-tests.command.json                    |     42 +
+ .../metadata-tests.log                             |      2 +
+ .../metadata-tests.stderr                          |      0
+ .../metadata-tests.stdout                          |      2 +
+ .../naming-tests.command.json                      |     40 +
+ .../naming-tests.log                               |      4 +
+ .../naming-tests.stderr                            |      0
+ .../naming-tests.stdout                            |      4 +
+ .../naming-whole-repository.command.json           |     39 +
+ .../naming-whole-repository.log                    |      1 +
+ .../naming-whole-repository.stderr                 |      0
+ .../naming-whole-repository.stdout                 |      1 +
+ .../native-declarations.command.json               |     40 +
+ .../native-declarations.log                        |      1 +
+ .../native-declarations.stderr                     |      0
+ .../native-declarations.stdout                     |      1 +
+ .../ownership.command.json                         |     39 +
+ .../ownership.log                                  |      1 +
+ .../ownership.stderr                               |      0
+ .../ownership.stdout                               |      1 +
+ .../pre-status-resolution.json                     |     16 +
+ .../preservation.command.json                      |     37 +
+ .../preservation.json                              |    136 +
+ .../preservation.log                               |    136 +
+ .../preservation.stderr                            |      0
+ .../preservation.stdout                            |    136 +
+ .../proof-inputs.json                              |    163 +
+ .../resolved-status-inventory.patch                |     66 +
+ .../ruff-check.command.json                        |     40 +
+ .../ruff-check.log                                 |      1 +
+ .../ruff-check.stderr                              |      0
+ .../ruff-check.stdout                              |      1 +
+ .../ruff-format.command.json                       |     41 +
+ .../ruff-format.log                                |      1 +
+ .../ruff-format.stderr                             |      0
+ .../ruff-format.stdout                             |      1 +
+ .../run.py                                         |     81 +
+ ...ion_controller_wasm_smoke.mjs.conflicted.txt.gz |    Bin 0 -> 14593 bytes
+ .../spec__api__browser-wasm.md.conflicted.txt.gz   |    Bin 0 -> 11111 bytes
+ ...spec__design__browser-wasm.md.conflicted.txt.gz |    Bin 0 -> 45272 bytes
+ ..._design__graph-interaction.md.conflicted.txt.gz |    Bin 0 -> 37589 bytes
+ ...ses__0.6.0-api-inventory.json.conflicted.txt.gz |    Bin 0 -> 106955 bytes
+ ...c__releases__api-inventory.md.conflicted.txt.gz |    Bin 0 -> 5002 bytes
+ ...h_session_controller_page.mjs.conflicted.txt.gz |    Bin 0 -> 8371 bytes
+ .../typecheck.command.json                         |     40 +
+ .../typecheck.log                                  |      1 +
+ .../typecheck.stderr                               |      0
+ .../typecheck.stdout                               |      1 +
+ .../verify_sync.py                                 |    171 +
+ .../wasm-declarations.command.json                 |     40 +
+ .../wasm-declarations.log                          |      0
+ .../wasm-declarations.stderr                       |      0
+ .../wasm-declarations.stdout                       |      0
+ spec/releases/0.6.0-api-inventory.json             |      6 +-
+ 244 files changed, 250868 insertions(+), 17 deletions(-)
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/HANDOFF.md
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/README.md
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/client-build.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/fixture.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/focused-tests.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/gates.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/identities.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/inspection-v2.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/inspection.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/inspection.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/fixture.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/inspection.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/protocol.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/protocol.test.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/run.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/instrumentation-v1-source/worker-audit.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/npm-host.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/npm-root.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/pre-commit.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/protocol.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/protocol.test.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/fixture.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/held-final-reset.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/held-initial-panned.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/positions-uuid.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/result.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-1-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/held/step-401-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/fixture.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/held-final-reset.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/held-initial-panned.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/positions-uuid.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/result.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-1-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-held/step-401-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/final-canvas.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/final-page.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/fixture.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/initial-canvas.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/panned-page.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/positions-uuid.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/result.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-1-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/instrumentation-v1-unheld/step-401-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/final-canvas.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/final-page.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/fixture.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/initial-canvas.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/panned-page.png
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/positions-uuid.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/result.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-1-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-buffer.bin
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-spec.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-x.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/raw/unheld/step-401-y.f64
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/receipt-files.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/ruff-check.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/ruff-format.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/run-v2.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/run.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/run.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/uv-sync.log
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/verify-receipt.test.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-2026-11-04/worker-audit.mjs
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/README.md
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/before-sync.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-check.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/capability-write.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/changed-paths.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/checks.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/complete-parent-file-identities.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/hooks.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-check.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/inventory-write.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/merge.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-tests.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/metadata-verifier-initial-assumption.txt
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-final-whole-repository.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-tests.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/naming-whole-repository.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/native-declarations.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ownership.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-corrected.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation-final.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/preservation.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/proof-tests.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/receipt-files.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/review-diff-contract.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-check.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/ruff-format.stdout
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/run.py
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-initial.py.txt
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify-sync-parent-comparison.py.txt
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/verify_sync.py
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.command.json
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stderr
+ create mode 100644 spec/performance/graph-node-first-paint-1k-parent-sync-2026-11-04/wasm-declarations.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/README.md
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/before-sync.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/capability-check.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/conflict-stages.txt
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/conflicts.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/history-union-sha256.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/hooks.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-check.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/inventory-write.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/js__src__63_graph_controller.ts.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/js__src__63_graph_session_wire.ts.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/js__test__graph-session-controller-wire.test.mjs.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/merge.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/metadata-tests.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-tests.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/naming-whole-repository.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/native-declarations.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ownership.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/pre-status-resolution.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/preservation.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/proof-inputs.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/resolved-status-inventory.patch
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-check.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/ruff-format.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/run.py
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/scripts__graph_session_controller_wasm_smoke.mjs.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__api__browser-wasm.md.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__design__browser-wasm.md.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__design__graph-interaction.md.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__releases__0.6.0-api-inventory.json.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/spec__releases__api-inventory.md.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/tests__browser__graph_session_controller_page.mjs.conflicted.txt.gz
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/typecheck.stdout
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/verify_sync.py
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.command.json
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.log
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.stderr
+ create mode 100644 spec/performance/graph-s5b-pointer-accepted-main-sync-2026-11-04/wasm-declarations.stdout

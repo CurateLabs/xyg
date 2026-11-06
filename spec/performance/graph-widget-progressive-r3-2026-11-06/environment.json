@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-11-06T05:30:59.660340+00:00",
+  "headAtCapture": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+  "mergeHead": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+  "sourceIdentity": "actual combined working-tree bytes, not a claim capture HEAD produced them",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "projectPython": "Python 3.12.15",
+  "systemPython": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "node": "v22.23.4",
+  "coreReadOnlyHead": "69c9a3d75d501203aa90bd50f038906bf5f27615",
+  "browser": "156.0.8078.4",
+  "cachedDunamai": "uv run --offline --with dunamai; 177 tests, zero skips"
+}

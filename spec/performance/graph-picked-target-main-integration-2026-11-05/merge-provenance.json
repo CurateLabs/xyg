@@ -1,0 +1,12 @@
+{
+  "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-05a35a31",
+  "branch": "t3/integrate-picked-target-receipt",
+  "initial_base": "74195403ccd18c760e3d20a18f024daab95d711a",
+  "first_parent": "24ab68045c98ea50055061191759c25479ddedcd",
+  "second_parent": "5e00c6b9147b67f20046cdfa6bd77aa413c18474",
+  "operations_observed": [
+    "git merge --ff-only 24ab68045c98ea50055061191759c25479ddedcd: exit 0, fast-forward",
+    "git merge --no-ff --no-commit 5e00c6b9147b67f20046cdfa6bd77aa413c18474: exit 0, stopped before commit, no textual conflicts"
+  ],
+  "note": "Recorded after operations from actual tool results; no fabricated raw merge log."
+}

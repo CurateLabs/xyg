@@ -1,0 +1,16 @@
+{
+  "first_parent": "f39edf76635e6e572aec64b6bcedc20cfed3f7eb",
+  "second_parent": "74195403ccd18c760e3d20a18f024daab95d711a",
+  "incoming_parents": [
+    "6e240f4bd3189640779fd684e97072923cbfb9c8",
+    "3ebf70c3aa5a351aeec3843da14ba2aa197b469e"
+  ],
+  "incoming_product_build_tests_exact_to_6e240": true,
+  "before_nonspec_files": 2569,
+  "before_performance_history_files": 11039,
+  "prior_R1_R9_receipt_files": 610,
+  "normal_merge_required": true,
+  "new_independent_combined_tip_review": "Required, parent owned; not performed or inferred",
+  "preparation_gaps": 685,
+  "freeze": "UNACCEPTED"
+}

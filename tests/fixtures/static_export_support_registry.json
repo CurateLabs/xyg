@@ -12,7 +12,9 @@
     "linear-scale",
     "browser-lod-tier",
     "large-source",
-    "image-tier"
+    "image-tier",
+    "hidden-tick-labels",
+    "empty-ticks"
   ],
   "shapes": [
     {
@@ -176,6 +178,26 @@
   ],
   "edge_cases": [
     {
+      "name": "line_hidden_tick_labels",
+      "shape": "line",
+      "axis_mode": "authored-linear-xy",
+      "concerns": [
+        "hidden-tick-labels",
+        "empty-ticks"
+      ],
+      "reason_prefix": ""
+    },
+    {
+      "name": "scatter_hidden_tick_labels",
+      "shape": "scatter",
+      "axis_mode": "autorange-linear-xy",
+      "concerns": [
+        "hidden-tick-labels",
+        "empty-ticks"
+      ],
+      "reason_prefix": ""
+    },
+    {
       "name": "line_authored_style",
       "shape": "line",
       "axis_mode": "authored-linear-xy",
@@ -203,7 +225,7 @@
         "nonfinite",
         "authored-domain"
       ],
-      "reason_prefix": "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
     },
     {
       "name": "bar_categorical_style",
@@ -243,7 +265,7 @@
         "nonfinite",
         "linear-scale"
       ],
-      "reason_prefix": "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
     },
     {
       "name": "histogram_empty_categorical",
@@ -297,6 +319,38 @@
     }
   ],
   "fail_close": [
+    {
+      "name": "annotation_text_x_nonfinite",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric"
+    },
+    {
+      "name": "annotation_text_y_nonfinite",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric"
+    },
+    {
+      "name": "annotation_text_x_nonnumeric",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric"
+    },
+    {
+      "name": "annotation_text_y_nonnumeric",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric"
+    },
+    {
+      "name": "annotation_callout_style",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: callout unsupported keys head_size"
+    },
+    {
+      "name": "annotation_arrow_style",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys head_size"
+    },
+    {
+      "name": "annotation_rule_style",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: rule unsupported keys span_start"
+    },
+    {
+      "name": "annotation_text_style",
+      "reason_prefix": "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: text unsupported keys width"
+    },
     {
       "name": "fluid_viewport",
       "reason_prefix": "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
@@ -666,6 +720,101 @@
       }
     ],
     "cases": [
+      {
+        "name": "document_authored_frame",
+        "vocabulary": [
+          "panel.x-chrome-metrics",
+          "panel.y-chrome-metrics"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_legend_relabel",
+        "vocabulary": [
+          "legend.line"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_legend_frameless",
+        "vocabulary": [
+          "legend.line"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_polar_annulus",
+        "vocabulary": [
+          "panel.multiple"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_scatter_colormap_alpha",
+        "vocabulary": [
+          "panel.x-chrome-metrics",
+          "panel.y-chrome-metrics"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_overlap_red_blue",
+        "vocabulary": [
+          "panel.overlap",
+          "panel.multiple"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
+      {
+        "name": "document_overlap_blue_red",
+        "vocabulary": [
+          "panel.overlap",
+          "panel.multiple"
+        ],
+        "formats": [
+          "svg",
+          "png",
+          "pdf",
+          "jpeg",
+          "webp"
+        ]
+      },
       {
         "name": "document_title_x_center",
         "vocabulary": [
