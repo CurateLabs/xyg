@@ -3,7 +3,8 @@
   "ledgerVersion": 2,
   "supportedCoreVersions": [
     "0.5.2",
-    "0.6.0-rc.5"
+    "0.6.0-rc.5",
+    "0.6.0-rc.7"
   ],
   "algorithmSchemaVersions": [
     1
@@ -23,6 +24,12 @@
       "coreSourceCommit": "aaa573f446bbed5b8d7577c9a9824ddd6664e840",
       "contractCorpusSha256": "12259b971134af394d10794ad26a35fc83647430aebf91c32c6fb33168bc2efc",
       "resultManifestSha256": "5cfec9ade2ae502c05b0c041a0b316b1740283dc8ae17bd57de898af978438a0"
+    },
+    {
+      "coreVersion": "0.6.0-rc.7",
+      "coreSourceCommit": "f871a2a1c2a397d8d74dfabcede611f3b5e5f906",
+      "contractCorpusSha256": "12259b971134af394d10794ad26a35fc83647430aebf91c32c6fb33168bc2efc",
+      "resultManifestSha256": "b5a7e320205020debfa5b44df0e521f5b0edcf5038aecfdb5db0f3b38b305092"
     }
   ]
 }

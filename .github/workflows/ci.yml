@@ -154,7 +154,7 @@ jobs:
         run: |
           python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
           import json
-          pin = json.load(open("tests/fixtures/graphforge/core/0.6.0-rc.5/provenance.json"))["commit"]
+          pin = json.load(open("tests/fixtures/graphforge/core/0.6.0-rc.7/provenance.json"))["commit"]
           assert len(pin) == 40 and all(c in "0123456789abcdef" for c in pin)
           print(f"commit={pin}")
           PYCODE
@@ -175,6 +175,7 @@ jobs:
         run: |
           python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts
           python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts --output tests/fixtures/graphforge/core/0.6.0-rc.5
+          python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts --output tests/fixtures/graphforge/core/0.6.0-rc.7
 
       - name: Rust unit tests
         run: cargo test --workspace

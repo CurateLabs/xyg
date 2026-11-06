@@ -293,7 +293,7 @@ def test_release_cohort_accepts_exact_evidence_without_hardcoded_core_versions(
     assert ledger["graphforgeCompatibilitySha256"] == cohort._digest(payload)
 
 
-@pytest.mark.parametrize("core_version", ["0.5.2", "0.6.0-rc.5"])
+@pytest.mark.parametrize("core_version", ["0.5.2", "0.6.0-rc.5", "0.6.0-rc.7"])
 def test_selected_core_pair_uses_authentic_declaration(tmp_path: Path, core_version: str) -> None:
     files = _fixtures(tmp_path)
     ledger = cohort.verify(
@@ -303,7 +303,7 @@ def test_selected_core_pair_uses_authentic_declaration(tmp_path: Path, core_vers
     assert core_version in ledger["supportedCoreVersions"]
 
 
-@pytest.mark.parametrize("core_version", ["0.6.0-rc.4", "0.6.0-rc.7", "0.6.0"])
+@pytest.mark.parametrize("core_version", ["0.6.0-rc.4", "0.6.0-rc.6", "0.6.0"])
 def test_selected_core_pair_refuses_unqualified_versions(tmp_path: Path, core_version: str) -> None:
     files = _fixtures(tmp_path)
     with pytest.raises(ValueError, match=r"Qualify its authentic corpus.*#936") as error:
