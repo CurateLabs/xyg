@@ -8,11 +8,57 @@ from pathlib import Path
 import pytest
 from scripts.classify_release_surface import classify
 from scripts.verify_ci_workflow import validate_workflow
-from scripts.verify_graph_notebook_report import verify
+from scripts.verify_graph_notebook_report import geometry_expected, verify
 
 
 def green():
     return {
+        "geometryCallbacks": [
+            {"identities": geometry_expected(mode)} for mode in ("box", "lasso", "box", "lasso")
+        ],
+        "geometry": [
+            {
+                "phase": phase,
+                "expected": geometry_expected(mode),
+                "mode": mode,
+                "startStep": step,
+                "endStep": step,
+                "path": [[0, 0], [10, 10]]
+                if mode == "box"
+                else [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]],
+                "pointer": [
+                    {"kind": "pointerdown", "target": "CANVAS", "trusted": True, "x": 0, "y": 0}
+                ]
+                + [
+                    {"kind": "pointermove", "target": "CANVAS", "trusted": True, "x": x, "y": y}
+                    for x, y in (
+                        [(10, 10)] * 8
+                        if mode == "box"
+                        else [(10, 0), (10, 10), (0, 10), (0, 0)] * 4
+                    )
+                ]
+                + [
+                    {
+                        "kind": "pointerup",
+                        "target": "CANVAS",
+                        "trusted": True,
+                        "x": 10 if mode == "box" else 0,
+                        "y": 10 if mode == "box" else 0,
+                    }
+                ],
+                "picture": {
+                    "colors": 3,
+                    "sha256": "a" * 64,
+                    "edgeInk": 100 if mode == "box" else 10,
+                },
+            }
+            for phase, mode, step in (
+                ("progressive", "box", 9),
+                ("progressive", "lasso", 17),
+                ("complete", "box", 300),
+                ("complete", "lasso", 300),
+            )
+        ],
         "ok": True,
         "presentation": "Progressive property graph GraphForge result Company Person",
         "widgetCount": 2,
@@ -150,9 +196,11 @@ def test_legacy_row_selection_report_still_uses_original_contract():
     assert verify(report)
 
 
-def test_retained_legacy_notebook_capture_still_passes():
+def test_retained_legacy_capture_does_not_claim_geometry_proof():
     path = Path("spec/performance/graph-widget-pr1100-repair-2026-11-06/notebook.json")
-    assert not verify(json.loads(path.read_text()))
+    assert any(
+        "geometric selection proof" in error for error in verify(json.loads(path.read_text()))
+    )
 
 
 @pytest.mark.parametrize(
@@ -162,3 +210,50 @@ def test_prior_identity_captures_do_not_claim_complete_uuid_request_proof(name):
     path = Path("spec/performance/graph-notebook-identity-2026-11-06") / f"{name}.json.gz"
     report = json.loads(gzip.decompress(path.read_bytes()))
     assert any("requires its UUID selection request" in error for error in verify(report))
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "wrong_uuid",
+        "wrong_kind",
+        "wrong_row",
+        "missing",
+        "duplicate",
+        "path",
+        "terminal",
+        "untrusted",
+        "vertex",
+        "unfinished_release",
+    ],
+)
+def test_geometry_proof_rejects_same_count_wrong_identities_and_incomplete_paths(mutation):
+    report = green()
+    records = report["geometryCallbacks"][0]["identities"]
+    if mutation == "wrong_uuid":
+        records[0]["uuid"] = records[1]["uuid"]
+    elif mutation == "wrong_kind":
+        records[0]["kind"] = "edge"
+    elif mutation == "wrong_row":
+        records[0]["layers"] = [{"layer": 0, "result_id": "wrong", "row": 7}]
+    elif mutation == "missing":
+        records.pop()
+    elif mutation == "duplicate":
+        records[-1] = records[0]
+    elif mutation == "path":
+        report["geometry"][0]["pointer"].pop()
+    elif mutation == "untrusted":
+        report["geometry"][0]["pointer"][0]["trusted"] = False
+    elif mutation == "vertex":
+        report["geometry"][0]["pointer"][-1]["x"] = 99
+    elif mutation == "unfinished_release":
+        report["geometry"][0]["endStep"] = 300
+    else:
+        report["geometry"][0]["startStep"] = 300
+    assert verify(report)
+
+
+def test_geometry_requires_visible_edge_mask_change():
+    report = green()
+    report["geometry"][1]["picture"]["edgeInk"] = report["geometry"][0]["picture"]["edgeInk"]
+    assert any("visible edge masks" in error for error in verify(report))

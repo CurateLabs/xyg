@@ -919,6 +919,8 @@ uniform int u_colorMode;
 uniform int u_instanceStyleCss; uniform float u_dpr;
 uniform vec2 u_x0meta; uniform vec2 u_x1meta; uniform vec2 u_y0meta; uniform vec2 u_y1meta;
 uniform int u_x0mode; uniform float u_x0constant; uniform int u_x1mode; uniform float u_x1constant; uniform int u_y0mode; uniform float u_y0constant; uniform int u_y1mode; uniform float u_y1constant;
+uniform int u_selActive; uniform float u_selectedOpacity; uniform float u_unselectedOpacity;
+out float v_dim;
 out float v_off; out float v_cval; out float v_dash; out vec4 v_rgba; out vec4 v_style;
 out vec2 v_edgeDash; out float v_edgeDist;
 out vec2 v_cap;
@@ -966,6 +968,7 @@ void xyEdgeHide() {
   v_edgeDash = vec2(0.0); v_edgeDist = 0.0; v_cap=vec2(0.0);
 }
 void main() {
+  v_dim = u_selActive == 1 ? mix(u_unselectedOpacity, u_selectedOpacity, step(0.5, a_cval)) : 1.0;
   vec2 p0;
   vec2 p1;
   if (u_edgePass == 1 && u_edgeEnds == 0) { xyEdgeHide(); return; }
@@ -1097,6 +1100,7 @@ export const SEGMENT_FS = `#version 300 es
 precision highp float; precision highp int;
 uniform vec4 u_color; uniform float u_width; uniform int u_colorMode; uniform sampler2D u_lut; uniform float u_opacity;
 uniform int u_dashCount; uniform float u_dashArr[8]; uniform float u_dashPeriod;
+in float v_dim;
 in float v_off; in float v_cval; in float v_dash; in vec4 v_rgba; in vec4 v_style;
 in vec2 v_edgeDash; in float v_edgeDist;
 in vec2 v_cap; uniform int u_instanceStyleCss;
@@ -1109,7 +1113,7 @@ void main() {
   float half_w = itemWidth * 0.5;
   vec4 paint = u_colorMode == 3 ? v_rgba : (u_colorMode != 0 ? vec4(texture(u_lut, vec2(clamp(v_cval, 0.0, 1.0), 0.5)).rgb, 1.0) : u_color);
   vec3 rgb = paint.rgb;
-  float paintAlpha = (v_style.y >= 0.0 ? v_style.y : paint.a) * v_style.x * u_opacity;
+  float paintAlpha = (v_style.y >= 0.0 ? v_style.y : paint.a) * v_style.x * u_opacity * v_dim;
   float distance = u_instanceStyleCss == 1 ? length(vec2(v_off,max(-v_cap.x,v_cap.x-v_cap.y))) : abs(v_off);
   if (u_instanceStyleCss == 1 && v_cap.x >= 0.0 && v_cap.x <= v_cap.y) distance=abs(v_off);
   float alpha = (1.0 - smoothstep(half_w - 0.5, half_w + 0.5, distance)) * paintAlpha;

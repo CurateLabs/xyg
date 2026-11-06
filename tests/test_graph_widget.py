@@ -744,3 +744,108 @@ def test_derived_edge_callback_uses_native_exact_result_reference():
             await asyncio.sleep(0)
 
     asyncio.run(journey())
+
+
+@pytest.mark.parametrize("polygon", [False, True])
+def test_geometric_selection_includes_exact_induced_parallel_edges_and_loop(polygon):
+    """Authored endpoints, not callback counts, define this independent oracle."""
+    _, w = widget()
+    try:
+        figure, _ = w._compile(
+            SimpleNamespace(
+                x=np.array([0.0, 40.0, 80.0, 120.0, 160.0]), y=np.zeros(5), step=1, alpha=1.0
+            )
+        )
+        if polygon:
+            rows = figure.select_polygon([[30, -10], [50, -10], [50, 10], [30, 10]])
+            expected = [("node", 2), ("edge", 3)]
+        else:
+            rows = figure.select_range(-10, 50, -10, 10)
+            expected = [("node", 1), ("node", 2), ("edge", 1), ("edge", 2), ("edge", 3)]
+        meta = figure._graph_meta[0]
+        assert rows[meta["node_trace"]].tolist() == ([1] if polygon else [0, 1])
+        assert rows[meta["edge_trace"]].tolist() == ([2, 3, 4] if polygon else [0, 1, 2, 3, 4])
+        identities = figure._notebook_graph_identity.project(rows)
+        assert [(row["kind"], row["uuid"]) for row in identities] == [
+            (kind, f"0{1 if kind == 'node' else 2}000000-0000-0000-0000-{i:012d}")
+            for kind, i in expected
+        ]
+        # All native route pieces for each selected edge must reach the mask.
+        assert set(rows) == {
+            figure._graph_meta[0]["node_trace"],
+            figure._graph_meta[0]["edge_trace"],
+        }
+    finally:
+        w.close()
+
+
+def test_geometric_layer_provenance_uses_native_projection():
+    composition = _compose("pagerank", "euler_path", result_id="geometry-result")
+    w = xyg.graphforge_chart(composition).widget()
+    try:
+        figure, _ = w._compile(
+            SimpleNamespace(
+                x=np.arange(composition.nodes.count, dtype=float) * 40,
+                y=np.zeros(composition.nodes.count),
+                step=1,
+                alpha=1.0,
+            )
+        )
+        rows = figure.select_polygon([[-10, -10], [1000, -10], [1000, 10], [-10, 10]])
+        actual = figure._notebook_graph_identity.project(rows)
+        expected = [
+            composition.identify(kind, i)
+            for kind, side in (("node", composition.nodes), ("edge", composition.edges))
+            for i in range(side.count)
+        ]
+        assert actual == sorted(
+            [{k: row[k] for k in ("kind", "uuid", "index", "layers")} for row in expected],
+            key=lambda row: (row["kind"] == "edge", row["uuid"] or ""),
+        )
+        assert {layer["result_id"] for row in actual for layer in row["layers"]} == {
+            "geometry-result"
+        }
+    finally:
+        w.close()
+
+
+def test_filtered_graph_selection_preserves_ordinary_hidden_trace_contract():
+    _, w = widget()
+    try:
+        figure, _ = w._compile(
+            SimpleNamespace(x=np.arange(5, dtype=float) * 40, y=np.zeros(5), step=1, alpha=1.0)
+        )
+        node = figure._graph_meta[0]["node_trace"]
+        figure.legend_toggle(node, True)
+        assert figure.select_range(-1e6, 1e6, -1e6, 1e6) == {}
+    finally:
+        w.close()
+
+
+def test_geometric_resource_refusal_keeps_row_reply_and_explicit_signal(monkeypatch):
+    from xyg._graph_session import GraphSessionError, GraphSessionStatus
+    from xyg.channel import handle_message
+
+    received = []
+    _, w = widget(on_select=received.append)
+    try:
+        figure, _ = w._compile(
+            SimpleNamespace(x=np.arange(5, dtype=float) * 40, y=np.zeros(5), step=1, alpha=1.0)
+        )
+
+        def refuse(points):
+            raise GraphSessionError("bounded refusal", status=GraphSessionStatus.BUDGET)
+
+        monkeypatch.setattr(figure._notebook_graph_identity, "geometry", refuse)
+        reply, buffers = handle_message(
+            figure,
+            {"type": "select", "x0": -1e6, "x1": 1e6, "y0": -1e6, "y1": 1e6},
+            callbacks=w._identity_callbacks(figure),
+        )
+        assert reply["type"] == "selection" and reply["total"] == 5 and buffers
+        assert len(received[-1]) == 5
+        assert received[-1].graphforge_error == "XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"
+        handle_message(figure, {"type": "select_clear"}, callbacks=w._identity_callbacks(figure))
+        assert not getattr(received[-1], "graphforge_error", None)
+    finally:
+        w.close()

@@ -321,10 +321,11 @@ with other selection arguments. Commands wait for their frame's paint ACK.
 Individual highlights require individually rendered source identities; Aggregate
 LOD and compound/merged render identities refuse rather than highlight unrelated
 entities. Row highlights retain the ordinary non-durable selection contract;
-resubmit UUIDs after remount. Generic box/lasso geometry still uses the ordinary
-selection policy: exact graph-specific edge-intersection/induced-edge policy is
-not established by this slice. See the
-[bounded notebook identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
+resubmit UUIDs after remount. Unfiltered direct box/lasso selection now uses
+Rust NodesAndInducedEdges, as detailed in the bounded geometric correction
+below. Filtered/aggregate/compound and edge-intersection-only acceptance remain
+open. The [earlier identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md)
+records the preceding, narrower proof.
 Instance, mount epoch and exact picture revision prevent cross-widget and stale
 snapshot application. See the [notebook transport contract](../design/graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
 for lifecycle, timeout, validation evidence and remaining #1015 requirements.
@@ -332,3 +333,16 @@ for lifecycle, timeout, validation evidence and remaining #1015 requirements.
 `show(display="html")` and `to_html()` remain static/batch snapshots. Their
 browser output has no kernel return channel: selections do not invoke Python
 callbacks and native progressive work does not continue after export.
+
+The bounded unfiltered direct notebook box/lasso path now uses Rust's
+`NodesAndInducedEdges`: node-center inclusion induces persisted edges between
+selected endpoints, including every parallel edge and self-loop. The existing
+Figure masks visibly select those routes, and `Selection.graphforge` returns
+the complete canonical kind-qualified identities and native per-layer rows.
+Filtered, aggregate/compound and trace-specific behavior retains the generic
+contract and is outside this bounded proof. The
+[geometric notebook correction](../performance/graph-notebook-geometry-2026-11-06/README.md)
+records the real pointer journeys; wider notebook acceptance remains open.
+
+Final accepted-main source and rebuilt native artifact bindings are recorded in
+the [append-only main-sync receipt](../performance/graph-notebook-geometry-main-sync-2026-11-06/README.md).

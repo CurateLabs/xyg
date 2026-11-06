@@ -1397,3 +1397,15 @@ wire tests and foundation smoke. This bounded browser slice establishes no
 competitor win or full rendered 1k/10k/100k/1M ladder. Python notebook/widget
 progressive integration (#1015), broader #36 interactions and full #35/#108
 acceptance remain open. Publication still requires all #108 acceptance.
+
+### Public notebook direct geometric selection checkpoint
+
+The ordinary progressive notebook Figure host now transports unfiltered direct
+box/lasso polygons to the existing Rust `NodesAndInducedEdges` operation. Nodes
+use center inclusion; self-loops and parallel edges are induced by their selected
+endpoints. No host endpoint/UUID inference is permitted. Four real JupyterLab
+pointer paths plus exact complete identity/provenance assertions and selected
+screenshots are required by the existing notebook CI gate. See the
+[bounded correction](../performance/graph-notebook-geometry-2026-11-06/README.md).
+Filtered, compound/aggregate, edge-intersection-only and wider accessibility,
+frontend and scale acceptance remain outstanding.

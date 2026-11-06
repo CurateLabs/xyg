@@ -6868,6 +6868,13 @@ export class ChartView {
     gl.uniform4f(u("u_color"), r, gg, b, a);
     gl.uniform1f(u("u_opacity"), this._strokeOpacity(g.trace.style) * (g._transitionOpacity ?? 1) * (g._legendDim ?? 1));
     gl.uniform1i(u("u_colorMode"), g.colorMode || 0);
+    // Graph segment colors are uniform/RGBA, leaving the scalar attribute free
+    // for the ordinary selection mask without exceeding WebGL2's input limit.
+    const selOn = !!(g.selActive && g.selBuf && (g.colorMode === 0 || g.colorMode === 3));
+    const scalarBuf = selOn ? g.selBuf : g.cBuf;
+    gl.uniform1i(u("u_selActive"), selOn ? 1 : 0);
+    gl.uniform1f(u("u_selectedOpacity"), this._markStateNumber("selected", "opacity", 1));
+    gl.uniform1f(u("u_unselectedOpacity"), this._markStateNumber("unselected", "opacity", 0.12));
     const dashed = this._segmentDash(g, prog);
     if (g.colorMode && g.lut) {
       gl.activeTexture(gl.TEXTURE0);
@@ -6887,7 +6894,7 @@ export class ChartView {
         g,
         layers ? "segment-layered" : "segment",
         [g.x0Buf._fcId, g.x1Buf._fcId, g.y0Buf._fcId, g.y1Buf._fcId,
-          g.colorMode && g.cBuf ? g.cBuf._fcId : 0,
+          scalarBuf ? scalarBuf._fcId : 0,
           rgbaBuf ? rgbaBuf._fcId : 0,
           styleBuf ? styleBuf._fcId : 0,
           dashed ? g._segmentDashOffsetBuf._fcId : 0,
@@ -6903,7 +6910,7 @@ export class ChartView {
           this._vaoAttr(ATTR_SLOTS.ax1, g.x1Buf, 0, div);
           this._vaoAttr(ATTR_SLOTS.ay0, g.y0Buf, 0, div);
           this._vaoAttr(ATTR_SLOTS.ay1, g.y1Buf, 0, div);
-          if (g.colorMode && g.cBuf) this._vaoAttr(ATTR_SLOTS.a_cval, g.cBuf, 0, div);
+          if (scalarBuf) this._vaoAttr(ATTR_SLOTS.a_cval, scalarBuf, 0, div);
           if (rgbaBuf) this._vaoAttr(ATTR_SLOTS.a_rgba, rgbaBuf, 0, div, 4, true);
           if (styleBuf) this._vaoAttr(ATTR_SLOTS.a_style, styleBuf, 0, div, 4);
           if (dashed) {
@@ -6920,7 +6927,7 @@ export class ChartView {
           }
         }
       );
-      if (!g.cBuf) gl.vertexAttrib1f(ATTR_SLOTS.a_cval, 0);
+      if (!scalarBuf) gl.vertexAttrib1f(ATTR_SLOTS.a_cval, 0);
       if (!rgbaBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_rgba, r, gg, b, a);
       if (!styleBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
       if (!g.endsBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_ends, 0, 0, 0, 0);

@@ -42,12 +42,56 @@ def select_range(
     self, x0: float, x1: float, y0: float, y1: float, trace_id: Optional[int] = None
 ) -> dict[int, np.ndarray]:
     """Box-select: the canonical row indices inside the box, per scatter trace."""
-    return interaction.select_range(self, x0, x1, y0, y1, trace_id)
+    rows = interaction.select_range(self, x0, x1, y0, y1, trace_id)
+    return _notebook_graph_geometry(
+        self,
+        rows,
+        [
+            [min(x0, x1), min(y0, y1)],
+            [max(x0, x1), min(y0, y1)],
+            [max(x0, x1), max(y0, y1)],
+            [min(x0, x1), max(y0, y1)],
+        ],
+        trace_id,
+    )
 
 
 def select_polygon(self, points: Any, trace_id: Optional[int] = None) -> dict[int, np.ndarray]:
     """Lasso-select → canonical indices per scatter trace."""
-    return interaction.select_polygon(self, points, trace_id)
+    rows = interaction.select_polygon(self, points, trace_id)
+    return _notebook_graph_geometry(self, rows, points, trace_id)
+
+
+def _notebook_graph_geometry(self, rows, points, trace_id):
+    adapter = getattr(self, "_notebook_graph_identity", None)
+    if adapter is None or trace_id is not None:
+        return rows
+    adapter._geometry_error = None
+    if adapter.composition.edges.count == 0:
+        return rows
+    if (
+        adapter.meta["tier_name"] != "direct"
+        or adapter.meta["n_nodes"] != adapter.meta["source_n_nodes"]
+    ):
+        return rows
+    if any(
+        self.traces[tid].hidden or self.traces[tid].hidden_categories
+        for tid in (adapter.meta["node_trace"], adapter.meta["edge_trace"])
+    ):
+        return rows  # Retain the ordinary filtered selection universe.
+    from ._graph_session import GraphSessionError, GraphSessionStatus
+
+    try:
+        graph_rows = adapter.geometry(points)
+    except GraphSessionError as error:
+        if error.status not in (GraphSessionStatus.BUDGET, GraphSessionStatus.SELECTION_TOO_LARGE):
+            raise
+        adapter._geometry_error = "XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"
+        # Preserve the ordinary full row path and explicit refusal metadata.
+        return rows
+    rows.pop(adapter.meta["node_trace"], None)
+    rows.update(graph_rows)
+    return rows
 
 
 def to_shipped_indices(self, trace_id: int, canonical: np.ndarray) -> np.ndarray:

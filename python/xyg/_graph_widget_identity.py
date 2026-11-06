@@ -70,14 +70,14 @@ class NotebookGraphIdentity:
         if self.session is not None:
             self.session.close()
 
-    def _request(self, operation, extra=()):
+    def _request(self, operation, extra=(), *, policy=0):
         sequence = self.sequence
         self.sequence += 1
         return encode_container(
             "XYGI",
             [
                 ("header.u64", 0, D.U64, [self.instance, 0, sequence]),
-                ("header.u32", 0, D.U32, [self.revision, operation, 0, 0, 0, 0, 0, 0, 0]),
+                ("header.u32", 0, D.U32, [self.revision, operation, 0, policy, 0, 0, 0, 0, 0]),
                 *extra,
             ],
         )
@@ -160,6 +160,17 @@ class NotebookGraphIdentity:
                 self._decode(session.interact(self._request(10, [("uuids.uuid", 0, D.UUID, data)])))
             )
         return self._merge(batches)
+
+    def geometry(self, points):
+        """Transport a canonical polygon to Rust's NodesAndInducedEdges policy."""
+        session = self.prepare()
+        # With no camera, native paint centers retain the canonical f64 space.
+        self._decode(session.render(self._request(21)))
+        request = self._request(
+            3, [("coordinates.f64", 0, D.F64, np.asarray(points).ravel())], policy=2
+        )
+        rows = self.render_rows(self._merge([self._decode(session.interact(request))]))
+        return {tid: indices for tid, indices in rows.items() if not self.figure.traces[tid].hidden}
 
     def source_rows(self, trace, index):
         m = self.meta

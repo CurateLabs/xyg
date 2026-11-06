@@ -10,8 +10,80 @@ from itertools import pairwise
 from pathlib import Path
 
 
+def geometry_expected(mode):
+    """Property fixture endpoints are authored in gen_graphforge_ipc_fixtures.py."""
+    oracle = (
+        Path(__file__).resolve().parents[1] / "tests/fixtures/graphforge/notebook_geometry.json"
+    )
+    return json.loads(oracle.read_text())[mode]
+
+
+def verify_geometry(report):
+    try:
+        journeys = report["geometry"]
+        callbacks = report["geometryCallbacks"]
+        if len(journeys) != 4 or len(callbacks) != 4:
+            return ["four exact geometric callbacks required"]
+        for i, (phase, mode) in enumerate(
+            (
+                ("progressive", "box"),
+                ("progressive", "lasso"),
+                ("complete", "box"),
+                ("complete", "lasso"),
+            )
+        ):
+            journey = journeys[i]
+            step = journey["startStep"]
+            if (
+                journey["phase"] != phase
+                or journey["mode"] != mode
+                or not (
+                    1 <= step <= journey["endStep"] < 300
+                    if phase == "progressive"
+                    else step == journey["endStep"] == 300
+                )
+            ):
+                return ["geometric gesture phase mismatch"]
+            if callbacks[i]["identities"] != geometry_expected(mode) or journey[
+                "expected"
+            ] != geometry_expected(mode):
+                return ["exact geometric kind/UUID/provenance mismatch"]
+            pointer = journey["pointer"]
+            path = journey["path"]
+            if (
+                type(step) is not int
+                or type(journey["endStep"]) is not int
+                or len(path) != (2 if mode == "box" else 5)
+                or (mode == "lasso" and path[0] != path[-1])
+                or [pointer[0]["x"], pointer[0]["y"]] != path[0]
+                or [pointer[-1]["x"], pointer[-1]["y"]] != path[-1]
+                or any(
+                    point not in [[event["x"], event["y"]] for event in pointer] for point in path
+                )
+            ):
+                return ["exact complete geometric pointer vertices required"]
+            kinds = [event["kind"] for event in pointer]
+            if (
+                kinds[0] != "pointerdown"
+                or kinds[-1] != "pointerup"
+                or kinds.count("pointermove") < (4 if mode == "box" else 8)
+                or any(
+                    event["target"] != "CANVAS" or event["trusted"] is not True for event in pointer
+                )
+            ):
+                return ["complete trusted canvas pointer path required"]
+            if journey["picture"]["colors"] <= 2 or len(journey["picture"]["sha256"]) != 64:
+                return ["visible geometric selection capture required"]
+        for box, lasso in ((journeys[0], journeys[1]), (journeys[2], journeys[3])):
+            if not box["picture"]["edgeInk"] > max(20, lasso["picture"]["edgeInk"] * 2):
+                return ["visible edge masks must distinguish box and loop-only lasso"]
+        return []
+    except (KeyError, IndexError, TypeError, ValueError):
+        return ["missing or malformed exact geometric selection proof"]
+
+
 def verify(report):
-    errors = []
+    errors = verify_geometry(report)
     if report.get("ok") is not True or report.get("external"):
         errors.append("notebook journey must succeed without external data requests")
     if not all(

@@ -93,3 +93,27 @@ spec/performance/graph-notebook-identity-limits-2026-11-06/*.png -text
 spec/performance/graph-notebook-identity-order-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.gz -text
+
+# Exact notebook geometry source/oracle and appended correction bindings.
+python/xyg/_figure_runtime.py text eol=lf
+spec/design/graph-interaction.md text eol=lf
+tests/fixtures/graphforge/notebook_geometry.json text eol=lf
+spec/performance/graph-notebook-geometry-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-geometry-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-geometry-2026-11-06/*.gz -text
+spec/performance/graph-notebook-geometry-2026-11-06/*.png -text
+
+# Accepted-main correction for final notebook geometry proof.
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.gz -text
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.png -text
+
+# Geometry integration after parent merge.
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.gz -text
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.png -text
+js/src/49_wasm_temporal.ts text eol=lf
+js/src/64_geo_retained_controller.ts text eol=lf
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.ipynb text eol=lf
