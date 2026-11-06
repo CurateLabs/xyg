@@ -1,0 +1,97 @@
+{
+  "repairBase": "f4052f326c70bb0bb9abb36a5dbb093585621c06",
+  "sourceSha256": {
+    "js/src/49_wasm_temporal.ts": "5af6cd26451de05d76ab280d3305f234ba5299b77f34190e3af117479e1daaaf",
+    "scripts/geo_retained_wasm_smoke.mjs": "29307910aaae555035c6e605dc913a9c56bb4d1e63d1383b08701a5f23732905",
+    "tests/browser/geo_retained_page.mjs": "8877ce2c2e6250fcaebde0c5887440dae60c37a6e74c31180cef5777a14c7400",
+    "spec/design/temporal-controller.md": "889d367acb18597bfb1e97c57fe4b6f286f2ee8c872f868f2ed4ce3ca062555f",
+    "spec/releases/0.6.0-api-inventory.json": "680da4d6509048f6fc557ae58c3cf01b657e2284bf9341da4da6a3d0b4732344",
+    "spec/performance/geo-temporal-observer-rejection-2026-11-06/README.md": "cce2c782263bfaea58c3290bfeaf22c1a3040cc3cc6df3b46bb6bb113426d60d",
+    "spec/performance/geo-temporal-observer-rejection-2026-11-06/.gitattributes": "bd33c8ef5fb33950a4e41c61028c5665f6d5ee395ff6f17d8fb3e2dad2d9ff12"
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+      "bytes": 6119880
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "f323d12e662abf2ef97a57e0606941147453d5d4306c2cde3a1b41f8d1ac4e05",
+      "bytes": 2124514
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7",
+      "bytes": 1926555
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "a153c45ab04a5ae8a923bfc3b005c9986a966660f2aa292e95112313c68e6359",
+      "bytes": 803663
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    }
+  },
+  "logs": {
+    "before": {
+      "exitCode": 1,
+      "rawSha256": "5268f85e5bd5a5a970e8843bae4bf499a1305a63e192b0e142d107ba34c11318",
+      "archiveSha256": "597ceca0b71a17374663801b9c34de6c507ed3aa76c77f5f50102b7c5d34988e"
+    },
+    "build": {
+      "exitCode": 0,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "after": {
+      "exitCode": 0,
+      "rawSha256": "c1b2a20e6873ccaccd24ecb7e6bdb0f193fe274c2fc197b35fbc945da960248e",
+      "archiveSha256": "01799ff46e602ebfe0f1ea75e785f8a943543c5c3d2deee67042f999e3026048"
+    },
+    "after-final": {
+      "exitCode": 0,
+      "rawSha256": "df9ceee8184393a4b15efc97ec30a374798f176e56ecd574614f651175c733e4",
+      "archiveSha256": "d987504a752b28fbffe46a224468bb9a8da018a59f6e8c1f0efef696fb3c0755"
+    },
+    "inventory-generate": {
+      "exitCode": 0,
+      "rawSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+      "archiveSha256": "829f2c1074a4f38acde3d22c1ecb789a662925c5c59afe71127d27c0648c42c7"
+    },
+    "tests": {
+      "exitCode": 0,
+      "rawSha256": "615dc343fc4615eac33acae2634d260c0bf746aaeb8fe2677bd28c10cec7412c",
+      "archiveSha256": "7ba903bc7f89a41a83a71018e3e24e9f56e18c95243572798a807e1fe7397885"
+    },
+    "inventory": {
+      "exitCode": 0,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "archiveSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+    },
+    "hooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "exitCode": 0,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "archiveSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181"
+    }
+  },
+  "browserReport": {
+    "sha256": "cb74c4db9014a81f77daa5bfca31167963f5e6e1e155f8a3d1c381804d28c7a8",
+    "bytes": 3809
+  },
+  "beforeFixture": {
+    "rawSha256": "a8f16f8fa6e106e5b3ecaaf81c5bb5f81eac2cf9e2fa763f8d46ac336108d65a",
+    "archiveSha256": "60b5b23d2c8938b833bf69e87ba2cb60a0ad65615096e764a6ab293f7ed95232"
+  },
+  "pythonTestInterpreter": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+  "previousReceiptSha256": "ca819717a96dcfd45b5e07d5b0a9f7f0193ee1129cead2a45af7a00cfdb242e9",
+  "limits": "bounded browser observer lifecycle only; no milestone acceptance"
+}

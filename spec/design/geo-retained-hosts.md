@@ -183,3 +183,44 @@ are specified in [geographic-hosts.md](geographic-hosts.md), including public
 composition wiring, one-mount admission, release acknowledgment, actual host
 journey evidence and the remaining native live-update/orphan-recovery gates.
 This checkpoint is pending follow-up PR integration.
+
+## Automatic browser temporal binding (#50 partial)
+
+`await retainedChart.bindTemporal(temporalController, mode)` binds the public
+`XygWasmTemporalController` to one ready retained Point/MultiPoint chart. The
+explicit mode is `cursor` (default: existing Instant predicate) or `range`
+(existing half-open Overlap predicate). The adapter copies exact signed i64
+fields from complete Rust snapshots; it does no arithmetic on time, row filtering,
+projection, LOD, membership or tile policy. Initial state, local scrubber/playback
+changes and received coordination snapshots use the same path, including controllers
+with no exchange group. Selection-only and playback-status changes that leave the
+chosen predicate unchanged do not issue a geographic query.
+
+The binding retains one running automatic update and one latest pending intent.
+New time cancels the old read/preparation but waits for callback settlement and
+Rust ticket ACK before reuse. Every changed predicate advances the geographic
+query's existing time revision (with checked u64 exhaustion). All explicit
+`update(query)` calls while bound inherit the latest bound time/revision; their
+camera, source and budget fields still come from the explicit caller. This lets
+viewport changes race playback without restoring a stale time. The existing
+Rust source/optional index handle, authenticated chunk cache, admission and
+immutable Data ownership remain authoritative. No additional host cache is added.
+Failure preserves the last painted frame and reports through `onError`.
+
+The returned binding exposes `whenIdle()` for work accepted so far and async
+`dispose()` to detach and settle automatic work. Rebinding detaches the prior
+subscription. Geographic disposal detaches before awaiting its operation chain;
+temporal disposal detaches without disposing the geographic source. Independent
+chart updates remain available afterward. Caller-owned temporal Workers and
+controllers retain their own lifetime; a geographic binding never destroys them.
+`subscribeState` on the temporal controller observes immutable Rust snapshots,
+including received events and disposal, without consuming the existing event
+callback or changing coordination policy. Observer exceptions are isolated.
+
+This is a bounded browser retained-point integration slice. It does not establish
+automatic mixed-layer/tile coordination, Python/Node/native-host automatic binding,
+frozen attributed temporal export, complete linked selection, or #50/#39 closure.
+The existing retained-source strict-CSP smoke now exercises real temporal Worker
+commands, direct identity, aggregate membership, cursor/range updates, an unsettled
+read racing viewport/time, failed-read recovery and independent disposal. See
+[the implementation receipt](../performance/geo-temporal-binding-2026-11-06/README.md).
