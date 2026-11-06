@@ -64,6 +64,21 @@ over-budget, or stale request cannot advance
 the applied revision or mutate selection/focus/pin state. Revision zero and any
 revision not newer than the applied revision fail as stale.
 
+The Rust engine's `frame_with_output` prepares a downstream output against an
+immutable candidate before publishing its revision and visibility. Output
+admission failure leaves the previous world and its frozen provenance usable;
+the caller may retry the same revision. Cancellation after output construction
+still rejects publication through the existing lock-held gate. The ordinary
+native `frame` delegates to this same path with no transport output.
+
+The WASM XYTF encoder uses this gate: exact reply-size admission and complete
+packed topology/membership construction precede publication. A one-byte-under
+reply budget returns ResourceLimit without advancing temporal state observed by
+bound interaction sessions. This does not change ABI versions, packet bytes,
+work budgets, arena limits or spatial policy. It closes a failure-atomicity gap
+in #45's temporal-before-downstream contract; automatic temporal/geographic
+controller wiring remains unimplemented.
+
 ABI 82 exposes the native graph seam through opaque graph handles. Creation
 binds one projection handle and up to six temporal-column handles, copying the
 canonical identity/time planes before returning so those source handles may be
@@ -127,3 +142,16 @@ state. #45 remains open until:
 - HTML/PNG/SVG adapters attach and render frozen temporal provenance; and
 - large/massive playback, accessibility, and native-versus-WASM parity evidence
   passes the documented budgets.
+
+## Focused output-publication proof (2026-11-06)
+
+[Receipt and raw logs](../performance/temporal-frame-publication-2026-11-06/README.md)
+cover output-budget rejection, same-revision retry, cancellation after output
+preparation, unchanged persistent UUID state and frozen prior provenance, and
+exact native-engine/WASM-adapter output equivalence. Existing real wasm32/native
+replays qualify the artifact separately. These bounded checks make no massive
+latency, competitor advantage, rendered export or whole-issue acceptance claim.
+The supported application matrix is defined by
+[application-consumers.md](application-consumers.md); obsolete Reflex wording in
+#46/#50 does not restore the retired adapter or waive the remaining supported
+host, accessibility, export and scale requirements.
