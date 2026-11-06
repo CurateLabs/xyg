@@ -71,3 +71,8 @@ docs/styling/capabilities.md text eol=lf
 spec/performance/graph-notebook-identity-2026-11-06/** text eol=lf
 spec/performance/graph-notebook-identity-2026-11-06/*.gz -text
 spec/performance/graph-notebook-identity-2026-11-06/*.png -text
+
+# Notebook identity ownership correction receipt.
+spec/performance/graph-notebook-identity-ownership-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-identity-ownership-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-identity-ownership-2026-11-06/*.gz -text
