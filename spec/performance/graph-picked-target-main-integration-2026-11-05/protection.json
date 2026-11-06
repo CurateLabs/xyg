@@ -1,0 +1,35 @@
+{
+  "prior": "24ab68045c98ea50055061191759c25479ddedcd",
+  "accepted_main": "5e00c6b9147b67f20046cdfa6bd77aa413c18474",
+  "accepted_main_tree_exact_reviewed": "2bb6a0c3841d5cba19f6ed74b41524274d0a1ce7",
+  "protected_file_counts": {
+    "R10": 11182,
+    "accepted-main": 10574
+  },
+  "source_file_counts": {
+    "R10": 10,
+    "accepted-main": 865
+  },
+  "R10_source_paths": [
+    ".github/workflows/ci.yml",
+    "crates/xyg-engine/src/graphforge/interaction.rs",
+    "crates/xyg-engine/src/graphforge/interaction/pick.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs",
+    "js/package-wasm.mjs",
+    "js/test/graph-picked-golden-migration.test.mjs",
+    "js/test/graph-session-controller-wire.test.mjs",
+    "packages/xy-node/test/graph-picked-receipt-diagnostic.mjs",
+    "packages/xy-node/test/graph-picked-receipt-shipping.mjs",
+    "packages/xy-node/test/graph-session-replay-helpers.mjs",
+    "packages/xy-node/test/graph-session-wire.test.mjs",
+    "scripts/check_release_inventory.py",
+    "scripts/verify_ci_workflow.py"
+  ],
+  "no_new_external_review_claim": true
+}

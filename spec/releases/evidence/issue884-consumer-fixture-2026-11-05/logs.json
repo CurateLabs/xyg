@@ -1,0 +1,34 @@
+{
+  "before.log.gz": {
+    "raw_sha256": "10c8adaf0f0f484807abc8b6370d4c90748d87b03244c1557dcaba5d57da27dc",
+    "archive_sha256": "f7c22f4b1d1c58eca0b296abf7abe152c1174726f249f25c877df7005732cccf"
+  },
+  "client-build.log.gz": {
+    "raw_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "archive_sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+  },
+  "consumer-smoke.log.gz": {
+    "raw_sha256": "4337923c4d8761cdf1e58881c21ec87bb0101c12bd3248b8a7039069474fc304",
+    "archive_sha256": "3c6d3d53160e579a5c8305ab638a1f04665b98fe6524491a1412ea9cb47f906e"
+  },
+  "focused.log.gz": {
+    "raw_sha256": "451ac2b360335028bebf4a67e89c9d8ffd668acaccd52a7215e51d6ee66f8f24",
+    "archive_sha256": "8ec5b4dac3ed18063412b7a9f99fdeae6132d5d09c3ba19b363df3397e4b54d1"
+  },
+  "retained-wheel-missing-wasm.log.gz": {
+    "raw_sha256": "9c7f778656a4db374bc3499d7e60f3483833d3a1f9c28423b30a5d0fb970b5f3",
+    "archive_sha256": "bc6c4b83125436441fececc11ad2202398a57e48af61a1ea4636b462083fe475"
+  },
+  "wasm-build.log.gz": {
+    "raw_sha256": "b48bc6fe931f3ba7a36a71e23fb049a444c9f89a6632260bc2f5ac395949dfe3",
+    "archive_sha256": "3309d9a05931f4ec8c770cac4fb97df6a82144aac1eeae40aeb55c67f1103757"
+  },
+  "wasm-package.log.gz": {
+    "raw_sha256": "331eab78707c05baf336125c127ce308505220f50fdfb2011a5d8adc7ac3d6a9",
+    "archive_sha256": "bed4048cda2346b02d57702576167bb2fa90c93ab334d51d8f63826d6ec9ac68"
+  },
+  "wheel-build.log.gz": {
+    "raw_sha256": "e44dbb8b357a39d6726cfe62acf49299ca2f81b60433780e3bc03110fd5edcce",
+    "archive_sha256": "4272a82ac95ed91d6e4b0b978624887f9a10f545733ea7e10b653aec019332f0"
+  }
+}

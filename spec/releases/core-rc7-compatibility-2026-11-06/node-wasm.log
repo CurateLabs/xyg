@@ -1,0 +1,406 @@
+TAP version 13
+# Subtest: native and WASM compose byte-identical XYGF documents on every fixture
+ok 1 - native and WASM compose byte-identical XYGF documents on every fixture
+  ---
+  duration_ms: 59.75275
+  type: 'test'
+  ...
+# Subtest: zero-layer defaults repeat on packaged WASM with every persisted identity
+ok 2 - zero-layer defaults repeat on packaged WASM with every persisted identity
+  ---
+  duration_ms: 291.4751
+  type: 'test'
+  ...
+# Subtest: composition v2 hierarchy and root conflicts match native and WASM
+ok 3 - composition v2 hierarchy and root conflicts match native and WASM
+  ---
+  duration_ms: 9.600169
+  type: 'test'
+  ...
+# Subtest: rendered Scenes are identical and carry every composed identity
+ok 4 - rendered Scenes are identical and carry every composed identity
+  ---
+  duration_ms: 10.294201
+  type: 'test'
+  ...
+# Subtest: rendered Scenes stay identical on graphs large enough to exercise layout seeding
+ok 5 - rendered Scenes stay identical on graphs large enough to exercise layout seeding
+  ---
+  duration_ms: 327.388323
+  type: 'test'
+  ...
+# Subtest: a 100-node GraphForge run renders identical Scenes on both hosts
+ok 6 - a 100-node GraphForge run renders identical Scenes on both hosts
+  ---
+  duration_ms: 73.615952
+  type: 'test'
+  ...
+# Subtest: the browser bundle frames the same request bytes and decodes the same identities
+ok 7 - the browser bundle frames the same request bytes and decodes the same identities
+  ---
+  duration_ms: 3.115896
+  type: 'test'
+  ...
+# Subtest: unsupported-schema diagnostics are byte-identical on native and WASM
+ok 8 - unsupported-schema diagnostics are byte-identical on native and WASM
+  ---
+  duration_ms: 8.482233
+  type: 'test'
+  ...
+# Subtest: published Core 0.6.0-rc.5 catalog and path-cost schema rejection match actual WASM
+ok 9 - published Core 0.6.0-rc.5 catalog and path-cost schema rejection match actual WASM
+  ---
+  duration_ms: 58.188272
+  type: 'test'
+  ...
+# Subtest: published Core 0.6.0-rc.7 catalog and path-cost schema rejection match actual WASM
+ok 10 - published Core 0.6.0-rc.7 catalog and path-cost schema rejection match actual WASM
+  ---
+  duration_ms: 45.938079
+  type: 'test'
+  ...
+# Subtest: Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 11 - Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 4.979882
+  type: 'test'
+  ...
+# Subtest: Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 12 - Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.690844
+  type: 'test'
+  ...
+# Subtest: Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+ok 13 - Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.205502
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 14 - ArrayBuffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.726096
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 15 - ArrayBuffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.202733
+  type: 'test'
+  ...
+# Subtest: ArrayBuffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 16 - ArrayBuffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.131739
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 17 - unaligned Uint8Array: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.600088
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 18 - unaligned Uint8Array: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.179388
+  type: 'test'
+  ...
+# Subtest: unaligned Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+ok 19 - unaligned Uint8Array: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.320311
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 20 - unaligned DataView: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 2.442591
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 21 - unaligned DataView: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.26465
+  type: 'test'
+  ...
+# Subtest: unaligned DataView: generic f64 framing preserves nonfinite values for downstream policy
+ok 22 - unaligned DataView: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.103386
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 23 - pooled Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.558326
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 24 - pooled Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.169538
+  type: 'test'
+  ...
+# Subtest: pooled Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 25 - pooled Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.094659
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 26 - odd backing Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.51237
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 27 - odd backing Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.129752
+  type: 'test'
+  ...
+# Subtest: odd backing Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 28 - odd backing Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.101927
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 29 - aligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.552233
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 30 - aligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.139124
+  type: 'test'
+  ...
+# Subtest: aligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 31 - aligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.099883
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+ok 32 - unaligned sentinel Buffer: exact numeric spans, BigInts, zero index, empty sections and detached results
+  ---
+  duration_ms: 0.543732
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+ok 33 - unaligned sentinel Buffer: text offsets decode ASCII, UTF-8 and empty lists within the payload
+  ---
+  duration_ms: 0.135741
+  type: 'test'
+  ...
+# Subtest: unaligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+ok 34 - unaligned sentinel Buffer: generic f64 framing preserves nonfinite values for downstream policy
+  ---
+  duration_ms: 0.112672
+  type: 'test'
+  ...
+# Subtest: Buffer and Uint8Array reject the same malformed section bytes
+ok 35 - Buffer and Uint8Array reject the same malformed section bytes
+  ---
+  duration_ms: 3.12738
+  type: 'test'
+  ...
+# Subtest: a request with no result layer composes the property-graph defaults
+ok 36 - a request with no result layer composes the property-graph defaults
+  ---
+  duration_ms: 3.609336
+  type: 'test'
+  ...
+# Subtest: zero-layer PNG and SVG exports repeat exactly at the canonical positions
+ok 37 - zero-layer PNG and SVG exports repeat exactly at the canonical positions
+  ---
+  duration_ms: 260.363323
+  type: 'test'
+  ...
+# Subtest: a directed property graph keeps its arrowheads in the interactive graph mark
+ok 38 - a directed property graph keeps its arrowheads in the interactive graph mark
+  ---
+  duration_ms: 8.776344
+  type: 'test'
+  ...
+# Subtest: every node and edge layer joins by UUID, matching an independent decoder
+ok 39 - every node and edge layer joins by UUID, matching an independent decoder
+  ---
+  duration_ms: 5.905692
+  type: 'test'
+  ...
+# Subtest: scores become the node metric plane; communities class codes
+ok 40 - scores become the node metric plane; communities class codes
+  ---
+  duration_ms: 0.599125
+  type: 'test'
+  ...
+# Subtest: edge overlays mark members, dim context, and keep persisted identity
+ok 41 - edge overlays mark members, dim context, and keep persisted identity
+  ---
+  duration_ms: 0.875558
+  type: 'test'
+  ...
+# Subtest: identity round-trips for selection: UUID → index → UUID + result rows
+ok 42 - identity round-trips for selection: UUID → index → UUID + result rows
+  ---
+  duration_ms: 0.799105
+  type: 'test'
+  ...
+# Subtest: failures carry stable codes and no identities or values
+ok 43 - failures carry stable codes and no identities or values
+  ---
+  duration_ms: 1.798718
+  type: 'test'
+  ...
+# Subtest: missing and extra identity policies are explicit and recorded
+ok 44 - missing and extra identity policies are explicit and recorded
+  ---
+  duration_ms: 2.523251
+  type: 'test'
+  ...
+# Subtest: diagnostics are value-free
+ok 45 - diagnostics are value-free
+  ---
+  duration_ms: 1.28731
+  type: 'test'
+  ...
+# Subtest: request framing is host-neutral bytes; the document decodes identically
+ok 46 - request framing is host-neutral bytes; the document decodes identically
+  ---
+  duration_ms: 1.475551
+  type: 'test'
+  ...
+# Subtest: container numbers are little-endian bytes regardless of host order
+ok 47 - container numbers are little-endian bytes regardless of host order
+  ---
+  duration_ms: 0.33065
+  type: 'test'
+  ...
+# Subtest: container codec round-trips and rejects corruption
+ok 48 - container codec round-trips and rejects corruption
+  ---
+  duration_ms: 0.413995
+  type: 'test'
+  ...
+# Subtest: table documents with inconsistent shapes are rejected, not iterated
+ok 49 - table documents with inconsistent shapes are rejected, not iterated
+  ---
+  duration_ms: 4.449627
+  type: 'test'
+  ...
+# Subtest: graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+ok 50 - graphforgeChart paints the Rust planes with the Rust legend and UUID tooltips
+  ---
+  duration_ms: 77.997929
+  type: 'test'
+  ...
+# Subtest: graph mark accepts edge visual-state flags only with edge semantic fields
+ok 51 - graph mark accepts edge visual-state flags only with edge semantic fields
+  ---
+  duration_ms: 6.732183
+  type: 'test'
+  ...
+# Subtest: the Rust ledger covers every GraphForge 0.5.2 contract
+ok 52 - the Rust ledger covers every GraphForge 0.5.2 contract
+  ---
+  duration_ms: 0.572817
+  type: 'test'
+  ...
+# Subtest: derived pairs are identified by layer and result row, never a persisted UUID
+ok 53 - derived pairs are identified by layer and result row, never a persisted UUID
+  ---
+  duration_ms: 0.579262
+  type: 'test'
+  ...
+# Subtest: ordered overlays expose paths, step order, and position labels
+ok 54 - ordered overlays expose paths, step order, and position labels
+  ---
+  duration_ms: 4.144141
+  type: 'test'
+  ...
+# Subtest: scalar and category results compose as tables and bar charts, never graphs
+ok 55 - scalar and category results compose as tables and bar charts, never graphs
+  ---
+  duration_ms: 50.985511
+  type: 'test'
+  ...
+# Subtest: table cells are escaped text
+ok 56 - table cells are escaped text
+  ---
+  duration_ms: 2.656589
+  type: 'test'
+  ...
+# Subtest: embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+ok 57 - embeddings: parallel coordinates or explicit coordinates, never dims 0/1
+  ---
+  duration_ms: 50.469305
+  type: 'test'
+  ...
+# Subtest: render requests append the canonical Scene and selections paint selected
+ok 58 - render requests append the canonical Scene and selections paint selected
+  ---
+  duration_ms: 0.938225
+  type: 'test'
+  ...
+# Subtest: webview payloads relay picks back to GraphForge identity
+ok 59 - webview payloads relay picks back to GraphForge identity
+  ---
+  duration_ms: 17.080993
+  type: 'test'
+  ...
+# Subtest: recompositions reuse a layout by node UUID instead of laying out again
+ok 60 - recompositions reuse a layout by node UUID instead of laying out again
+  ---
+  duration_ms: 26.697045
+  type: 'test'
+  ...
+# Subtest: composition identities decode lazily and agree with the planes
+ok 61 - composition identities decode lazily and agree with the planes
+  ---
+  duration_ms: 0.623958
+  type: 'test'
+  ...
+# Subtest: derived edges carry no provenance row in hover rows
+ok 62 - derived edges carry no provenance row in hover rows
+  ---
+  duration_ms: 2.427304
+  type: 'test'
+  ...
+# Subtest: unsupported result-schema versions name the schema and next action
+ok 63 - unsupported result-schema versions name the schema and next action
+  ---
+  duration_ms: 1.129798
+  type: 'test'
+  ...
+# Subtest: published Core 0.6.0-rc.5 catalog composes, including endpoint-only path costs
+ok 64 - published Core 0.6.0-rc.5 catalog composes, including endpoint-only path costs
+  ---
+  duration_ms: 33.081196
+  type: 'test'
+  ...
+# Subtest: published Core 0.6.0-rc.7 catalog composes, including endpoint-only path costs
+ok 65 - published Core 0.6.0-rc.7 catalog composes, including endpoint-only path costs
+  ---
+  duration_ms: 37.873352
+  type: 'test'
+  ...
+# Subtest: property-only Rust chrome precedes authored styles and preserves layered chrome
+ok 66 - property-only Rust chrome precedes authored styles and preserves layered chrome
+  ---
+  duration_ms: 16.091593
+  type: 'test'
+  ...
+1..66
+# tests 66
+# suites 0
+# pass 66
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1044.894111

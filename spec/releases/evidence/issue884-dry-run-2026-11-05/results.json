@@ -1,0 +1,14 @@
+{
+  "source_parent": "1ad4ac478ff3de52f78a9222ae67243999cd7da7",
+  "source_sha256": {
+    ".github/workflows/publish.yaml": "47eb541283366cf2c5c6380fce41e508915d8195ee650f536c3b0351736e19d5",
+    "tests/test_stage_node_packages.py": "9c8dcbbfb60c25d0f73a57872a265f9601f8d76bf2cfb6114d5aad1745e05cef",
+    "spec/process/production-readiness.md": "b0702fce83be56609b13d04e1c9b86785a0e30cda03d24d37414999de4639ee2"
+  },
+  "focused_passed": 219,
+  "check_ci_passed": 757,
+  "pending": [
+    "final repair review",
+    "new-head CI"
+  ]
+}

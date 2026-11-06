@@ -1,0 +1,9 @@
+The first identity assertion incorrectly expected picked_checkpoint.rs among
+R6's 285 production inputs. That record already excludes external test modules.
+Actual changed-input list was empty; the local assertion emitted:
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+AssertionError: []
+The corrected scoped proof checks all285 unchanged production inputs and
+separately asserts the test fixture's only change is the leading inner guard.
+No source, artifact, comparison guard or runtime limit was changed to resolve it.

@@ -1,0 +1,39 @@
+{
+  "parent": "4fc50fe556b836507ceecaae6b88ef5673325d0b",
+  "focusedTests": 173,
+  "coreReleaseTests": 177,
+  "browserTransportTests": 3,
+  "notebookFrames": 39,
+  "checks": [
+    {
+      "name": "focused-final",
+      "exit": 0,
+      "archive": "focused-final.log.gz"
+    },
+    {
+      "name": "core-final",
+      "exit": 0,
+      "archive": "core-final.log.gz"
+    },
+    {
+      "name": "browser-final",
+      "exit": 0,
+      "archive": "browser-final.log.gz"
+    },
+    {
+      "name": "ci-final",
+      "exit": 0,
+      "archive": "ci-final.log.gz"
+    },
+    {
+      "name": "types-final",
+      "exit": 0,
+      "archive": "types-final.log.gz"
+    },
+    {
+      "name": "notebook-final",
+      "exit": 0,
+      "archive": "notebook-final.log.gz"
+    }
+  ]
+}

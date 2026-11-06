@@ -1,0 +1,13 @@
+{
+  "prior": "945b3ec13a3d78e7e99d9476889ed5d2b6dc8dc6",
+  "main": "c818fac4f1522eccc0e5532beb77ff0ba7719842",
+  "preserved_performance_counts": {
+    "prior": 11271,
+    "accepted_main": 10515
+  },
+  "conflicts": [
+    "spec/design/browser-wasm.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "mismatches": []
+}

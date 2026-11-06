@@ -1,0 +1,29 @@
+{
+  "classification": "R5_PRODUCERS_AND_FULL_CSP_REUSED_BY_EXACT_SOURCE_AND_ARTIFACT_IDENTITY",
+  "r5_records": {
+    "spec/performance/graph-picked-target-r5-2026-11-04/native-release.command.json": "9ca5c4b26aba23a1e933520e8aa903707eee98c1f3c99e6ec81106f2cd3a6d3c",
+    "spec/performance/graph-picked-target-r5-2026-11-04/native-release.log": "41f5cdf4af36da23c71f700b405a129ad8c6e68d55bf6538807c776376219989",
+    "spec/performance/graph-picked-target-r5-2026-11-04/wasm-release.command.json": "c78c03d2007678cc0c4706e3984a3511ec963c241c164645c788f9c811bcb916",
+    "spec/performance/graph-picked-target-r5-2026-11-04/wasm-release.log": "da7a1058f7a16f525630282949ec18555a9c484d7f98ae7c26abadf694d7b49a",
+    "spec/performance/graph-picked-target-r5-2026-11-04/client-build.command.json": "f518dc4325825fb76642bfde1e6612069ca651760d1dfdf0af3ad6df0c72f960",
+    "spec/performance/graph-picked-target-r5-2026-11-04/client-build.log": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "spec/performance/graph-picked-target-r5-2026-11-04/normal-package.command.json": "06781feff1165051ddb470c39b3dee9a04b1eaa4e03d094e027e565ca3219908",
+    "spec/performance/graph-picked-target-r5-2026-11-04/normal-package.log": "6f88686d7e66747e64a6c28a06ea1a344f1dc67e59c8a958ced41e01c9e56c33",
+    "spec/performance/graph-picked-target-r5-2026-11-04/paired-assets.command.json": "c8a0fc6b9e82e37ed90f2435c12d985ac7e4deaa65bb72e9b265382fac8acf7b",
+    "spec/performance/graph-picked-target-r5-2026-11-04/paired-assets.log": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+    "spec/performance/graph-picked-target-r5-2026-11-04/foundation.command.json": "644ea5ad53c346f7f7b10f309aded6b3db114b239419c38c698491e3caa5585a",
+    "spec/performance/graph-picked-target-r5-2026-11-04/foundation.log": "13980ed7605286227e9d01b920b79dc4e53fc00e5a85aa91b285b352f28c18a7"
+  },
+  "foundation_harness_exact": true,
+  "15_artifacts_exact_before_after": true,
+  "Rust_client_packager_inputs_exact": true,
+  "inventory_contracts_unchanged": true,
+  "preparation_gaps": 685,
+  "frozen_R2_transcript_sha256": "26833b00743ba689888483ada900d90ba6f3b3e27b5294e99242a60efc5d7842",
+  "R5_R6_corpus_sha256": "db0d268055247cb4025d6738d973e04215440f6ab4cc95a2ad724a6ef58beb36",
+  "R6_fresh_parity": {
+    "cases": 9,
+    "steps": 468,
+    "full_publications": 430
+  }
+}

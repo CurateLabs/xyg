@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-56fb3ea2/python/xyg/graph_layout.py", line 149, in layout
+    result = await future
+             ^^^^^^^^^^^^
+TimeoutError: graph layout exceeded max_wall_ms
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/tmp/ipykernel_2827632/3439971056.py", line 27, in debug_layout
+    return await _original_layout(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-56fb3ea2/python/xyg/graph_layout.py", line 162, in layout
+    raise GraphLayoutError(f"progressive graph layout failed: {exc}") from exc
+xyg.graph_layout.GraphLayoutError: progressive graph layout failed: graph layout exceeded max_wall_ms

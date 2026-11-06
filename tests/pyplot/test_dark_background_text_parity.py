@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from io import BytesIO
 
-import pytest
-
 import xyg.pyplot as plt
 
 
@@ -64,18 +62,16 @@ def _delayed_dark_suptitle(**kwargs: object) -> tuple[str, bytes]:
     return fig._suptitle_style["color"], output.getvalue()
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_dark_background_suptitle_snapshots_default_and_none_before_export() -> None:
     for kwargs in ({}, {"color": None}):
         color, svg = _delayed_dark_suptitle(**kwargs)
         assert color == "white"
         assert b"visible figure title" in svg
-        assert b'fill="white"' in svg
+        assert b'fill="rgb(255,255,255)"' in svg
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_dark_background_suptitle_keeps_explicit_color() -> None:
     color, svg = _delayed_dark_suptitle(color="gold")
 
     assert color == "gold"
-    assert b'fill="gold"' in svg
+    assert b'fill="rgb(255,215,0)"' in svg

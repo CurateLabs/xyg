@@ -1,0 +1,63 @@
+{
+  "source_parent": "8d59d2270db316fe9274e723324d6804f5c053b0",
+  "source_sha256": {
+    "crates/xyg-engine/src/static_export_registry.rs": "fb59d9386aa347ad39a94bd84be4dbe690acb991b0cc83d83cb254a7d505a263",
+    "packages/xy-node/scripts/static_export_cross_host.mjs": "e87673f4c080b1a561fd82811b3426cced5f3c480f110f652ec38fd36b29472d",
+    "packages/xy-node/src/scene.js": "375514a4c5fae24462a6ed768710df57ce4476488138d6baf017b8496149785d",
+    "packages/xy-node/test/scene.test.mjs": "8494bf8e4646bdf2331eb79b7e0093e4c1a3ab07d00126b6fa0fd1d05dd09a71",
+    "python/xyg/_scene_annotations.py": "cb00629852a4abbe2f4417fc93c0da31d75b7db9a983280a5bcd94ec9e57632c",
+    "python/xyg/pyplot/_axes.py": "1c97924ff11092b564db1838ae4227061121bfb572c9e26a28426376c8709d9b",
+    "spec/design/host-parity.md": "770771e10e68e3c39ac61939a482118920c79b24ddf707ac05dbe32f58c4cfa3",
+    "spec/matplotlib/compat.md": "ce611d16d6de418ab6d9c998f57b80827b28ff61a4b0bcd27e447176f91b4f2a",
+    "spec/matplotlib/issue-889-evidence.md": "9917225e815924d01a43798da143b4ae115344f5b155f16b91679ac8f97d2508",
+    "tests/fixtures/static_export_support_registry.json": "963b380ace0d33fefae36c8e9a7ea5a1296f89632abb43586e3964823f4a6d85",
+    "tests/pyplot/test_pdsh_gap_features.py": "e463099e78ad2d4a4fad92e22c835f41e21a4058061179d0c4f76be71e8d2075",
+    "tests/test_static_export_cross_host.py": "401a02624ef354856924e43528f9eab748ca44c4b407a5dfc721dd503ed7bdc2"
+  },
+  "native_sha256": "7d57a86ebc56443936364817fc24d598fd9986774bcac0787f4a25750141d06e",
+  "packaged_wasm_manifest": {
+    "schema_version": 1,
+    "artifact": "xyg-wasm.wasm",
+    "sha256": "632510de5fef2adc675294167e133e99d3a2377f5f047f3a79a04987ee724d3d",
+    "bytes": 1922723,
+    "abi_version": 35,
+    "scene_version": 34,
+    "painter_version": 17
+  },
+  "passed": {
+    "pyplot": {
+      "passed": 1196,
+      "skipped": 163,
+      "xfailed": 26
+    },
+    "host_parity": 1097,
+    "focused_pyplot_export_native_style": {
+      "passed": 167,
+      "skipped": 3,
+      "xfailed": 4
+    },
+    "rust_registry": 4,
+    "node_scene": {
+      "passed": 131,
+      "skipped": 1
+    },
+    "typecheck": true,
+    "mandatory_hooks_and_ruff": true
+  },
+  "review_findings_repaired": [
+    "hidden-axis none strategy overridden by null tickers",
+    "Python/Node coordinate rejection drift",
+    "incorrect NullFormatter/NullLocator compatibility text"
+  ],
+  "prior_failure_evidence": [
+    "hidden-before.log.gz",
+    "coordinate-before.log.gz",
+    "node-scene-missing-env.log.gz",
+    "node-scene-old-assertions.log.gz"
+  ],
+  "post_required_gate_delta": "Node assertion-only updates; complete Node Scene module rerun green",
+  "pending": [
+    "independent final repair review",
+    "current-head CI and merge queue"
+  ]
+}

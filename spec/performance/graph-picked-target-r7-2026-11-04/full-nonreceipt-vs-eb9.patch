@@ -1,0 +1,2724 @@
+diff --git a/crates/xyg-engine/src/graphforge/interaction.rs b/crates/xyg-engine/src/graphforge/interaction.rs
+index 5e516083272f981be60e80154077c2917f7324c6..3f07ce1477bb61560b8e62092b8073b98411d8b4 100644
+--- a/crates/xyg-engine/src/graphforge/interaction.rs
++++ b/crates/xyg-engine/src/graphforge/interaction.rs
+@@ -189,6 +189,20 @@ pub struct OpOutcome {
+     pub positions: Vec<NodePosition>,
+     pub relayout: Option<RelayoutReport>,
+     pub disclosure: Option<DisclosureReport>,
++    /// Query-scoped fact captured from the pre-mutation publication (§2.1.2).
++    pub pick: Option<PickReceipt>,
++}
++
++/// Exact result of one point query, or a typed leave (no query).
++#[derive(Clone, Debug, PartialEq)]
++pub struct PickReceipt {
++    pub header: OpHeader,
++    pub operation: u32,
++    pub action: u32,
++    pub target: Option<PickTarget>,
++    pub member_count: u64,
++    /// Only source-backed targets have a canonical transport ref and index.
++    pub source: Option<(ElementIndex, ElementRef)>,
+ }
+ 
+ /// Transient hover emphasis; never part of the shared interaction state.
+diff --git a/crates/xyg-engine/src/graphforge/interaction/pick.rs b/crates/xyg-engine/src/graphforge/interaction/pick.rs
+index adeef73e62d5f8f301ca8d7d01e928709d64ee5b..fe9e3a4198b2ec45ff11e07b68fbbdf72b256779 100644
+--- a/crates/xyg-engine/src/graphforge/interaction/pick.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/pick.rs
+@@ -373,7 +373,7 @@ fn piece_region(
+     Ok(false)
+ }
+ impl RenderOutput {
+-    fn point(&self, p: [f64; 2], work: &mut Work) -> Result<Option<PickTarget>, InteractionStatus> {
++    fn point(&self, p: [f64; 2], work: &mut Work) -> Result<Option<PickTarget>, InteractionStatus> { #[cfg(test)] POINT_QUERY_COUNT.with(|n| n.set(n.get() + 1));
+         if !p.iter().all(|v| v.is_finite()) {
+             return invalid();
+         }
+@@ -425,6 +425,42 @@ impl RenderOutput {
+     }
+ }
+ impl GraphSession {
++    // Capture before mutation, using the same source mapping that paints this
++    // publication. At Direct/EdgeSample focus_node is the actual visible
++    // representative, not an Aggregate keyboard stand-in. Never expand a group.
++    fn pick_receipt(
++        &self,
++        header: OpHeader,
++        operation: u32,
++        target: Option<PickTarget>,
++    ) -> Result<PickReceipt, InteractionStatus> {
++        let render = self.published().ok_or(InteractionStatus::Stale)?;
++        let (member_count, source) = match target {
++            Some(PickTarget::Node(i)) => (
++                render.members_of_node(i).len() as u64,
++                ElementIndex::Node(render.focus_node[i] as usize),
++            ),
++            Some(PickTarget::Edge(i)) => (
++                render.members_of_edge(i).len() as u64,
++                ElementIndex::Edge(render.members_of_edge(i)[0] as usize),
++            ),
++            None => return Ok(PickReceipt {
++                header, operation, action: 0, target, member_count: 0, source: None,
++            }),
++        };
++        let source = if render.tier == crate::graph::LodTier::Aggregate {
++            None
++        } else {
++            let reference = match source {
++                ElementIndex::Node(i) => self.identity.node_ref(i),
++                ElementIndex::Edge(i) => self.identity.edge_ref(i),
++            };
++            Some((source, self.identity.to_transport(&reference)
++                .ok_or(InteractionStatus::Invalid)?))
++        };
++        Ok(PickReceipt { header, operation, action: 0, target, member_count, source })
++    }
++
+     fn picked_set(
+         &self,
+         render: &RenderOutput,
+@@ -465,9 +501,13 @@ impl GraphSession {
+             let r = s.published().ok_or(InteractionStatus::Stale)?;
+             let mut work = Work::default();
+             let hit = r.point([x, y], &mut work)?;
++            work.charge(1)?;
++            let pick = s.pick_receipt(header, 1, hit)?;
+             let set = s.picked_set(r, hit, &mut work)?;
+             s.work += work.0;
+-            s.select_set(w, mode, set, 0)
++            let mut out = s.select_set(w, mode, set, 0)?;
++            out.pick = Some(pick);
++            Ok(out)
+         })
+     }
+     pub fn hover_at(
+@@ -480,6 +520,8 @@ impl GraphSession {
+             let r = s.published().ok_or(InteractionStatus::Stale)?;
+             let mut work = Work::default();
+             let hit = r.point([x, y], &mut work)?;
++            work.charge(1)?;
++            let pick = s.pick_receipt(header, 0, hit)?;
+             let mut next = Hover::default();
+             match hit {
+                 Some(PickTarget::Node(i)) => {
+@@ -497,7 +539,21 @@ impl GraphSession {
+             let changed = s.hover != next;
+             s.work += work.0;
+             s.hover = next;
+-            Ok(s.outcome(w, changed))
++            let mut out = s.outcome(w, changed);
++            out.pick = Some(pick);
++            Ok(out)
++        })
++    }
++    /// Clear only transient hover; no coordinates, publication query or CSR walk.
++    pub fn hover_leave(&mut self, header: OpHeader) -> Result<OpOutcome, InteractionStatus> {
++        self.operate(header, |s, w| {
++            let changed = s.hover != Hover::default();
++            s.hover = Hover::default();
++            let mut out = s.outcome(w, changed);
++            out.pick = Some(PickReceipt {
++                header, operation: 0, action: 1, target: None, member_count: 0, source: None,
++            });
++            Ok(out)
+         })
+     }
+     /// Region nodes use their published centers; edges use intersections with
+@@ -760,3 +816,8 @@ mod admission_tests {
+         );
+     }
+ }
++
++#[cfg(test)]
++thread_local! { static POINT_QUERY_COUNT: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
++#[cfg(test)]
++pub(super) fn point_query_count() -> u64 { POINT_QUERY_COUNT.with(|n| n.get()) }
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire.rs
+index 95ea0827aa90a2118b3859dae45b996b23cb3cee..fc94b6866ba406920b8f71d64b9dc12f3e7cc7bb 100644
+--- a/crates/xyg-engine/src/graphforge/interaction/tests/wire.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire.rs
+@@ -4,6 +4,9 @@ use crate::graphforge::interaction::wire::{self, Request, WireSession};
+ 
+ mod gpu;
+ mod p1;
++mod picked;
++mod picked_checkpoint;
++mod representation;
+ 
+ fn request(seq: u64, rev: u32, op: u32, extra: impl FnOnce(&mut Builder)) -> Vec<u8> {
+     let mut b = Builder::new(wire::REQUEST_MAGIC);
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5fa3b950446448b3b857fd8a50373127250d63e8
+--- /dev/null
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
+@@ -0,0 +1,61 @@
++//! Query-scoped picked target and typed leave checkpoint (§2.1.2).
++use super::*;
++
++fn point(seq: u64, rev: u32, op: u32, action: u32, xy: Option<[f64; 2]>) -> Vec<u8> {
++    let mut b = Builder::new(wire::REQUEST_MAGIC);
++    b.u64s("header.u64", 0, &[7, 9, seq]);
++    b.u32s("header.u32", 0, &[rev, op, 0, 0, 0, action, 0, 0, 0]);
++    if let Some(xy) = xy { b.f64s("coordinates.f64", 0, &xy); }
++    b.finish()
++}
++
++#[test]
++fn query_receipt_exact_target_miss_leave_retry_and_strict_frames() {
++    let mut s = opened();
++    let reply = s.execute(&request(2, 0, wire::RENDER, |_| {}), 0, None).unwrap().to_vec();
++    let rev = header_of(&reply)[0];
++    assert!(Container::decode(&reply, wire::RESULT_MAGIC).unwrap().get("pick.header.u32", 0).is_none());
++    let render = s.session().published().unwrap();
++    let p = render.paint.nodes[0].center;
++    assert_eq!(render.pick_at(p[0], p[1]), Ok(Some(PickTarget::Node(0))));
++    let reference = s.session().identity().node_ref(render.focus_node[0] as usize);
++    for (seq, op) in [(3, 1), (4, 0)] {
++        let req = point(seq, rev, op, 0, Some(p));
++        let reply = s.execute(&req, 0, None).unwrap().to_vec();
++        assert_eq!(s.execute(&req, usize::MAX, None).unwrap(), reply);
++        let c = Container::decode(&reply, wire::RESULT_MAGIC).unwrap();
++        assert_eq!(c.get("pick.header.u32", 0).unwrap().as_u32("pick").unwrap(), [1, op, 0, rev, 1, 1, 0, 0]);
++        assert_eq!(c.get("pick.query.u64", 0).unwrap().as_u64("pick").unwrap(), [7, seq, 0, 1, 0]);
++        assert_eq!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap(), [reference.clone()]);
++        assert_eq!(header_of(&reply)[0], rev);
++    }
++    let before = s.reply().to_vec();
++    for req in [
++        point(5, rev, 0, 1, Some(p)), // leave forbids even finite coordinates
++        point(5, rev, 0, 2, None),
++        point(5, rev, 0, 0, None),
++        point(5, rev, 0, 0, Some([f64::NAN, 0.])),
++        point(5, rev, 1, 1, Some(p)),
++    ] {
++        assert_eq!(s.execute(&req, 0, None), Err(InteractionStatus::Invalid));
++        assert_eq!(s.reply(), before);
++    }
++    assert_eq!(s.execute(&point(5, rev + 1, 0, 1, None), 0, None), Err(InteractionStatus::Stale));
++    let budget = s.max_bytes;
++    s.max_bytes = s.retained_budget();
++    assert_eq!(s.execute(&point(5, rev, 0, 1, None), 0, None), Err(InteractionStatus::Budget));
++    assert_eq!(s.reply(), before);
++    s.max_bytes = budget;
++    for (seq, action, xy, changed) in [(5, 1, None, 1), (6, 1, None, 0), (7, 0, Some([-1000., -1000.]), 0)] {
++        let req = point(seq, rev, 0, action, xy);
++        let reply = s.execute(&req, 0, None).unwrap().to_vec();
++        assert_eq!(s.execute(&req, 0, None).unwrap(), reply);
++        let c = Container::decode(&reply, wire::RESULT_MAGIC).unwrap();
++        assert_eq!(c.get("pick.header.u32", 0).unwrap().as_u32("pick").unwrap(), [1, 0, action, rev, 0, 0, 0, 0]);
++        assert_eq!(c.get("pick.query.u64", 0).unwrap().as_u64("pick").unwrap(), [7, seq, 0, 0, 0]);
++        assert!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap().is_empty());
++        assert_eq!(c.get("outcome.u32", 0).unwrap().as_u32("outcome").unwrap()[1], changed);
++        assert!(s.session().hover.nodes.is_empty());
++        assert_eq!(s.session().selection().unwrap(), [reference.clone()]);
++    }
++}
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4dc2b4d613d2ed8ba91d5e97034cb42fbcdfb744
+--- /dev/null
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs
+@@ -0,0 +1,775 @@
++#![cfg(test)]
++
++//! R4 actual-query correctness and replay corpus. Product remains exact R2.
++use super::*;
++use crate::graph::LodTier;
++use crate::graph_interaction_state::HighlightPlane;
++use crate::graphforge::interaction::{pick::point_query_count, wire::projection_probe};
++use std::io::Write;
++
++#[derive(Default)]
++struct Replay {
++    name: String,
++    budget: u32,
++    steps: Vec<(Vec<u8>, i32, Vec<u8>)>,
++}
++fn query(seq: u64, rev: u32, op: u32, mode: u32, action: u32, p: Option<[f64; 2]>) -> Vec<u8> {
++    let mut b = Builder::new(wire::REQUEST_MAGIC);
++    b.u64s("header.u64", 0, &[7, 9, seq]);
++    b.u32s("header.u32", 0, &[rev, op, mode, 0, 0, action, 0, 0, 0]);
++    if let Some(p) = p {
++        b.f64s("coordinates.f64", 0, &p);
++    }
++    b.finish()
++}
++fn capture(s: &mut WireSession, replay: &mut Replay, bytes: Vec<u8>) -> Vec<u8> {
++    let out = s.execute(&bytes, 0, None).unwrap().to_vec();
++    replay.steps.push((bytes.clone(), 0, out.clone()));
++    let count = point_query_count();
++    projection_probe::reset();
++    assert_eq!(s.execute(&bytes, usize::MAX, None).unwrap(), out);
++    assert_eq!(point_query_count(), count);
++    assert_eq!(
++        projection_probe::counts(),
++        Default::default(),
++        "retry must not project or query"
++    );
++    replay.steps.push((bytes, 0, out.clone()));
++    out
++}
++fn refuse(
++    s: &mut WireSession,
++    replay: Option<&mut Replay>,
++    bytes: Vec<u8>,
++    status: InteractionStatus,
++    queries: u64,
++) {
++    let before = (
++        s.reply().to_vec(),
++        s.session().selection().unwrap(),
++        s.session().focus().unwrap(),
++        s.session().hover.clone(),
++        s.session().last_op.clone(),
++        s.session().published().cloned(),
++        s.session().pending_outbound().cloned(),
++    );
++    let q = point_query_count();
++    projection_probe::reset();
++    assert_eq!(s.execute(&bytes, 0, None), Err(status));
++    assert_eq!(point_query_count() - q, queries);
++    assert_eq!(projection_probe::counts(), Default::default());
++    assert_eq!(
++        (
++            s.reply().to_vec(),
++            s.session().selection().unwrap(),
++            s.session().focus().unwrap(),
++            s.session().hover.clone(),
++            s.session().last_op.clone(),
++            s.session().published().cloned(),
++            s.session().pending_outbound().cloned()
++        ),
++        before
++    );
++    if let Some(r) = replay {
++        r.steps.push((bytes, status.number(), Vec::new()));
++    }
++}
++fn read32(c: &Container<'_>, name: &str) -> Vec<u32> {
++    c.get(name, 0).unwrap().as_u32(name).unwrap()
++}
++fn read64(c: &Container<'_>, name: &str) -> Vec<u64> {
++    c.get(name, 0).unwrap().as_u64(name).unwrap()
++}
++fn point(r: &RenderOutput, target: PickTarget) -> [f64; 2] {
++    match target {
++        PickTarget::Node(i) => {
++            let p = r.paint.nodes[i].center;
++            assert_eq!(r.pick_at(p[0], p[1]), Ok(Some(target)));
++            p
++        }
++        PickTarget::Edge(i) => r
++            .paint
++            .pieces
++            .iter()
++            .filter(|p| p.edge == i)
++            .flat_map(|p| {
++                [0.2, 0.4, 0.5, 0.6, 0.8].map(|t| {
++                    [
++                        p.start[0] + t * (p.end[0] - p.start[0]),
++                        p.start[1] + t * (p.end[1] - p.start[1]),
++                    ]
++                })
++            })
++            .find(|p| r.pick_at(p[0], p[1]) == Ok(Some(target)))
++            .unwrap_or_else(|| {
++                panic!(
++                    "no actual point: tier={:?} target={:?} pieces={:?}",
++                    r.tier, target, r.paint.pieces
++                )
++            }),
++    }
++}
++fn geometry(
++    r: &RenderOutput,
++) -> (
++    Vec<f64>,
++    Vec<f64>,
++    Vec<u64>,
++    Vec<u64>,
++    Vec<u64>,
++    Vec<u64>,
++    Vec<u64>,
++    Vec<u64>,
++) {
++    (
++        r.node_x.clone(),
++        r.node_y.clone(),
++        r.edge_source.clone(),
++        r.edge_target.clone(),
++        r.node_member_offsets.clone(),
++        r.node_members.clone(),
++        r.edge_member_offsets.clone(),
++        r.edge_members.clone(),
++    )
++}
++fn verify(
++    s: &GraphSession,
++    before: &RenderOutput,
++    bytes: &[u8],
++    target: Option<PickTarget>,
++    seq: u64,
++    op: u32,
++    action: u32,
++    collapsed: bool,
++) {
++    let c = Container::decode(bytes, wire::RESULT_MAGIC).unwrap();
++    let (kind, index, count, source) = match target {
++        None => (0, 0, 0, None),
++        Some(PickTarget::Node(i)) => (
++            1,
++            i,
++            before.members_of_node(i).len(),
++            (before.tier != LodTier::Aggregate).then(|| {
++                ElementIndex::Node(if collapsed && before.members_of_node(i).len() > 1 {
++                    2
++                } else {
++                    before.members_of_node(i)[0] as usize
++                })
++            }),
++        ),
++        Some(PickTarget::Edge(i)) => (
++            2,
++            i,
++            before.members_of_edge(i).len(),
++            (before.tier != LodTier::Aggregate)
++                .then(|| ElementIndex::Edge(before.members_of_edge(i)[0] as usize)),
++        ),
++    };
++    let form = if kind == 0 {
++        0
++    } else if source.is_some() {
++        1
++    } else {
++        2
++    };
++    assert_eq!(
++        read32(&c, "pick.header.u32"),
++        [1, op, action, before.revision, kind, form, 0, 0]
++    );
++    let source_index = source.map_or(0, |i| match i {
++        ElementIndex::Node(i) | ElementIndex::Edge(i) => i as u64,
++    });
++    assert_eq!(
++        read64(&c, "pick.query.u64"),
++        [7, seq, index as u64, count as u64, source_index]
++    );
++    let refs = wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap();
++    if let Some(src) = source {
++        let reference = match src {
++            ElementIndex::Node(i) => s.identity.node_ref(i),
++            ElementIndex::Edge(i) => s.identity.edge_ref(i),
++        };
++        assert_eq!(refs, [s.identity.to_transport(&reference).unwrap()]);
++        if collapsed && count > 1 {
++            assert_eq!(refs, [ElementRef::Node(id(3))]);
++            assert_eq!(source_index, 2);
++        }
++        let expected = (0..3usize)
++            .filter(|&layer| (source_index as usize + layer) % 3 != 1)
++            .collect::<Vec<_>>();
++        assert_eq!(
++            read32(&c, "pick.layers.u32"),
++            expected.iter().map(|&l| l as u32).collect::<Vec<_>>()
++        );
++        assert_eq!(
++            read64(&c, "pick.rows.u64"),
++            expected
++                .iter()
++                .map(|&l| (1u64 << 60) + source_index * 10 + l as u64)
++                .collect::<Vec<_>>()
++        );
++    } else {
++        assert!(
++            refs.is_empty(),
++            "Aggregate singleton must never invent a UUID or keyboard stand-in"
++        );
++        assert!(read32(&c, "pick.layers.u32").is_empty());
++        assert!(read64(&c, "pick.rows.u64").is_empty());
++    }
++    assert_eq!(read32(&c, "header.u32")[0], before.revision);
++    assert_eq!(geometry(s.published().unwrap()), geometry(before));
++    assert_eq!(
++        c.get("selection.result_ids.valid.u8", 0)
++            .unwrap()
++            .payload
++            .len(),
++        3
++    );
++    let selection_refs =
++        wire::decode_refs(c.get("selection.refs.bytes", 0).unwrap().payload).unwrap();
++    assert_eq!(
++        read64(&c, "selection.indices.u64").len(),
++        selection_refs.len()
++    );
++    assert_eq!(
++        read64(&c, "selection.layer_offsets.u64").len(),
++        selection_refs.len() + 1
++    );
++}
++fn document(base: &[u8], n: usize, m: usize) -> Vec<u8> {
++    let mut c = Container::decode(base, DOCUMENT_MAGIC).unwrap();
++    c.sections
++        .retain(|(name, _, _)| !matches!(*name, "layer.node_rows" | "layer.edge_rows"));
++    let mut b = Builder::new(DOCUMENT_MAGIC);
++    b.extend_from(&c);
++    for layer in 0..3 {
++        let rows = |count: usize| {
++            (0..count)
++                .map(|i| {
++                    if (i + layer) % 3 == 1 {
++                        u64::MAX
++                    } else {
++                        (1u64 << 60) + (i * 10 + layer) as u64
++                    }
++                })
++                .collect::<Vec<_>>()
++        };
++        b.u64s("layer.node_rows", layer, &rows(n));
++        b.u64s("layer.edge_rows", layer, &rows(m));
++    }
++    b.finish()
++}
++fn run_case(
++    name: &str,
++    base: Vec<u8>,
++    x: &[f64],
++    budgets: (u64, u64),
++    collapsed: bool,
++    tier: LodTier,
++) -> Replay {
++    println!("actual query fixture {name}");
++    let n = x.len();
++    let m = ComposedDocument::decode(&base)
++        .unwrap()
++        .uuids("edge.uuid")
++        .unwrap()
++        .len();
++    let doc = document(&base, n, m);
++    let opening = request(1, 0, wire::OPEN, |b| {
++        b.bytes("document.bytes", 0, &doc);
++        b.f64s("load.x.f64", 0, x);
++        b.f64s("load.y.f64", 0, &vec![0.; n]);
++        b.u64s("load.budgets.u64", 0, &[budgets.0, budgets.1]);
++        if collapsed {
++            b.u8s("load.collapsed.u8", 0, &[0, 0, 1, 0]);
++        }
++    });
++    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
++    let mut replay = Replay {
++        name: name.into(),
++        budget: 16 * 1024 * 1024,
++        steps: vec![(opening, 0, s.reply().to_vec())],
++    };
++    let out = capture(
++        &mut s,
++        &mut replay,
++        request(2, 0, wire::RENDER, |b| {
++            b.f64s("camera.f64", 0, &[1., 100., 20., 100., 400., 300., 1.])
++        }),
++    );
++    let rev = header_of(&out)[0];
++    assert_eq!(s.session().published().unwrap().tier, tier);
++    let focus = s.session().identity.node_ref(if collapsed { 2 } else { 0 });
++    capture(
++        &mut s,
++        &mut replay,
++        request(3, rev, 6, |b| {
++            b.bytes(
++                "refs.bytes",
++                0,
++                &wire::encode_refs(std::slice::from_ref(&focus)).unwrap(),
++            )
++        }),
++    );
++    let mut b = Builder::new(wire::REQUEST_MAGIC);
++    b.u64s("header.u64", 0, &[7, 9, 4]);
++    b.u32s("header.u32", 0, &[rev, 12, 0, 0, 2, 0, 0, 0, 0]);
++    b.bytes(
++        "refs.bytes",
++        0,
++        &wire::encode_refs(std::slice::from_ref(&focus)).unwrap(),
++    );
++    capture(&mut s, &mut replay, b.finish());
++    let mut seq = 4;
++    let r = s.session().published().unwrap();
++    let targets = (0..r.node_count())
++        .map(PickTarget::Node)
++        .chain((0..r.edge_count()).map(PickTarget::Edge))
++        .collect::<Vec<_>>();
++    let mut singleton_node = false;
++    let mut singleton_edge = false;
++    for target in targets {
++        for (op, mode) in [(0, 0), (1, 0), (1, 1), (1, 2)] {
++            let before = s.session().published().unwrap().clone();
++            let p = point(&before, target);
++            let focus = s.session().focus().unwrap();
++            let highlights = s
++                .session()
++                .read_state(|st| {
++                    [
++                        HighlightPlane::Path,
++                        HighlightPlane::Community,
++                        HighlightPlane::External,
++                    ]
++                    .map(|p| st.highlight_set(p).clone())
++                })
++                .unwrap();
++            let selected = s.session().selection().unwrap();
++            let q = point_query_count();
++            projection_probe::reset();
++            seq += 1;
++            let bytes = query(seq, rev, op, mode, 0, Some(p));
++            let out = s.execute(&bytes, 0, None).unwrap().to_vec();
++            assert_eq!(point_query_count() - q, 1);
++            let c = Container::decode(&out, wire::RESULT_MAGIC).unwrap();
++            let selected_n = read64(&c, "selection.indices.u64").len();
++            let source = usize::from(tier != LodTier::Aggregate);
++            let counts = projection_probe::counts();
++            assert_eq!(
++                (counts.admissions, counts.borrows, counts.outputs),
++                (1, 1, 1)
++            );
++            assert_eq!(counts.targets, selected_n + source);
++            assert_eq!(counts.rows, 2 * (selected_n + source) * 3);
++            replay.steps.push((bytes.clone(), 0, out.clone()));
++            assert_eq!(s.execute(&bytes, usize::MAX, None).unwrap(), out);
++            assert_eq!(point_query_count() - q, 1);
++            replay.steps.push((bytes, 0, out.clone()));
++            verify(
++                s.session(),
++                &before,
++                &out,
++                Some(target),
++                seq,
++                op,
++                0,
++                collapsed,
++            );
++            assert_eq!(s.session().focus().unwrap(), focus);
++            assert_eq!(
++                s.session()
++                    .read_state(|st| [
++                        HighlightPlane::Path,
++                        HighlightPlane::Community,
++                        HighlightPlane::External
++                    ]
++                    .map(|p| st.highlight_set(p).clone()))
++                    .unwrap(),
++                highlights
++            );
++            if op == 0 {
++                assert_eq!(s.session().selection().unwrap(), selected);
++            }
++            if tier == LodTier::Aggregate {
++                match target {
++                    PickTarget::Node(i) => singleton_node |= before.members_of_node(i).len() == 1,
++                    PickTarget::Edge(i) => singleton_edge |= before.members_of_edge(i).len() == 1,
++                }
++            }
++        }
++    }
++    if tier == LodTier::Aggregate {
++        assert!(singleton_node && singleton_edge);
++    }
++    // Clear an actually applied hover, with direct point-query instrumentation.
++    let before = s.session().published().unwrap().clone();
++    let p = point(&before, PickTarget::Node(0));
++    seq += 1;
++    capture(&mut s, &mut replay, query(seq, rev, 0, 0, 0, Some(p)));
++    let before = s.session().published().unwrap().clone();
++    let selected = s.session().selection().unwrap();
++    let focus = s.session().focus().unwrap();
++    let pins = s.session().pinned().unwrap();
++    let q = point_query_count();
++    seq += 1;
++    let out = capture(&mut s, &mut replay, query(seq, rev, 0, 0, 1, None));
++    assert_eq!(point_query_count(), q);
++    verify(s.session(), &before, &out, None, seq, 0, 1, collapsed);
++    assert!(s.session().hover.nodes.is_empty() && s.session().hover.edges.is_empty());
++    assert_eq!(s.session().selection().unwrap(), selected);
++    assert_eq!(s.session().focus().unwrap(), focus);
++    assert_eq!(s.session().pinned().unwrap(), pins);
++    assert!(s
++        .session()
++        .published()
++        .unwrap()
++        .source_node_flags
++        .iter()
++        .all(|f| f & (crate::graph_style::FLAG_HOVERED | crate::graph_style::FLAG_NEIGHBOR) == 0));
++    for (op, action, p) in [
++        (0, 0, Some([-9999., -9999.])),
++        (1, 0, Some([-9999., -9999.])),
++        (0, 1, None),
++        (0, 1, None),
++    ] {
++        let before = s.session().published().unwrap().clone();
++        let focus = s.session().focus().unwrap();
++        seq += 1;
++        let q = point_query_count();
++        let out = capture(&mut s, &mut replay, query(seq, rev, op, 0, action, p));
++        assert_eq!(point_query_count() - q, u64::from(action == 0));
++        verify(s.session(), &before, &out, None, seq, op, action, collapsed);
++        assert_eq!(s.session().focus().unwrap(), focus);
++    }
++    refuse(
++        &mut s,
++        Some(&mut replay),
++        query(seq + 1, rev + 1, 0, 0, 1, None),
++        InteractionStatus::Stale,
++        0,
++    );
++    for bad in [
++        query(seq + 1, rev, 0, 0, 2, None),
++        query(seq + 1, rev, 0, 0, 1, Some([0., 0.])),
++        query(seq + 1, rev, 0, 0, 0, Some([f64::NAN, 0.])),
++    ] {
++        refuse(
++            &mut s,
++            Some(&mut replay),
++            bad,
++            InteractionStatus::Invalid,
++            0,
++        );
++    }
++    let max = s.max_bytes;
++    s.max_bytes = s.retained_budget();
++    for (op, action, p) in [
++        (0, 0, Some([20., 100.])),
++        (1, 0, Some([20., 100.])),
++        (0, 1, None),
++    ] {
++        refuse(
++            &mut s,
++            None,
++            query(seq + 1, rev, op, 0, action, p),
++            InteractionStatus::Budget,
++            0,
++        );
++    }
++    s.max_bytes = max;
++    capture(&mut s, &mut replay, query(seq + 1, rev, 0, 0, 1, None));
++    replay
++}
++#[test]
++fn actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts() {
++    let ids = [None, Some(""), Some(" λ 空 🦀 ")];
++    let mut cases = Vec::new();
++    for (name, budgets, tier) in [
++        ("Direct", (3, 10), LodTier::Direct),
++        ("Aggregate-singletons", (2, 10), LodTier::Aggregate),
++        ("EdgeSample", (3, 1), LodTier::EdgeSample),
++    ] {
++        let base = handmade_ends(
++            COMPOSITION_VERSION,
++            &[id(1), id(2), id(3)],
++            &[
++                E::Persisted(id(11)),
++                E::Persisted(id(12)),
++                E::Persisted(id(13)),
++            ],
++            &ids,
++            None,
++            Some(&[(0, 2), (1, 2), (2, 0)]),
++        );
++        cases.push(run_case(name, base, &[0., 10., 100.], budgets, false, tier));
++    }
++    let base = handmade_with(
++        COMPOSITION_VERSION,
++        &[id(1), id(2), id(3), id(4)],
++        &[E::Persisted(id(11))],
++        &ids,
++        Some((&[2, 2, NONE_U32, NONE_U32], &[1, 1, 0, 0])),
++    );
++    cases.push(run_case(
++        "collapsed-representative-source-index-2",
++        base,
++        &[0., 20., 10., 100.],
++        (4, 10),
++        true,
++        LodTier::Direct,
++    ));
++    for (i, result_id) in ids.into_iter().enumerate() {
++        let base = handmade_ends(
++            COMPOSITION_VERSION,
++            &[id(1), id(2)],
++            &[
++                E::Persisted(id(11)),
++                E::Persisted(id(12)),
++                E::Overlay {
++                    layer: 0,
++                    path: 4,
++                    order: 0,
++                },
++                E::Persisted(id(14)),
++            ],
++            &[result_id, Some(""), Some(" λ 空 🦀 ")],
++            None,
++            Some(&[(0, 1), (0, 1), (1, 0), (1, 1)]),
++        );
++        let c = Container::decode(&base, DOCUMENT_MAGIC).unwrap();
++        let mut b = Builder::new(DOCUMENT_MAGIC);
++        b.extend_from(&c);
++        b.u8s("edge.status", 0, &[1; 4]);
++        cases.push(run_case(
++            &format!("parallel-loop-derived-{i}"),
++            b.finish(),
++            &[0., 100.],
++            (2, 10),
++            false,
++            LodTier::Direct,
++        ));
++    }
++    cases.push(empty_case());
++    cases.push(full_selection_case());
++    if let Some(path) = std::env::var_os("XYG_PICK_CORPUS") {
++        let mut bytes = b"XYQ2".to_vec();
++        bytes.extend_from_slice(&(cases.len() as u32).to_le_bytes());
++        for case in &cases {
++            bytes.extend_from_slice(&(case.name.len() as u32).to_le_bytes());
++            bytes.extend_from_slice(case.name.as_bytes());
++            bytes.extend_from_slice(&case.budget.to_le_bytes());
++            bytes.extend_from_slice(&(case.steps.len() as u32).to_le_bytes());
++            for (req, status, out) in &case.steps {
++                bytes.extend_from_slice(&(req.len() as u64).to_le_bytes());
++                bytes.extend_from_slice(req);
++                bytes.extend_from_slice(&status.to_le_bytes());
++                bytes.extend_from_slice(&(out.len() as u64).to_le_bytes());
++                bytes.extend_from_slice(out);
++            }
++        }
++        std::fs::OpenOptions::new()
++            .write(true)
++            .create_new(true)
++            .open(path)
++            .unwrap()
++            .write_all(&bytes)
++            .unwrap();
++        println!(
++            "DIAGNOSTIC corpus: {} cases, {} steps, {} bytes",
++            cases.len(),
++            cases.iter().map(|c| c.steps.len()).sum::<usize>(),
++            bytes.len()
++        );
++    }
++}
++
++#[test]
++fn full_selection_actual_query_suffix_and_overflow_refusal_are_atomic() {
++    full_selection_case();
++}
++fn full_selection_case() -> Replay {
++    let n = MAX_GRAPH_SELECTION_REFS + 1;
++    let base = handmade(
++        &(0..n).map(|i| id(i as u32 + 1)).collect::<Vec<_>>(),
++        &[],
++        &[None, Some(""), Some("λ")],
++    );
++    let doc = document(&base, n, 0);
++    let opening = request(1, 0, wire::OPEN, |b| {
++        b.bytes("document.bytes", 0, &doc);
++        b.f64s(
++            "load.x.f64",
++            0,
++            &(0..n).map(|i| i as f64 * 30.).collect::<Vec<_>>(),
++        );
++        b.f64s("load.y.f64", 0, &vec![0.; n]);
++    });
++    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
++    let mut replay = Replay {
++        name: "full-selection-10000-existing-384MiB-max".into(),
++        budget: 384 * 1024 * 1024,
++        steps: vec![(opening, 0, s.reply().to_vec())],
++    };
++    let rendered = capture(&mut s, &mut replay, request(2, 0, wire::RENDER, |_| {}));
++    let rev = header_of(&rendered)[0];
++    let refs = (0..MAX_GRAPH_SELECTION_REFS)
++        .map(|i| ElementRef::Node(id(i as u32 + 1)))
++        .collect::<Vec<_>>();
++    capture(
++        &mut s,
++        &mut replay,
++        request(3, rev, 11, |b| {
++            b.bytes("refs.bytes", 0, &wire::encode_refs(&refs).unwrap())
++        }),
++    );
++    let p = s.session().published().unwrap().paint.nodes[0].center;
++    projection_probe::reset();
++    let req = query(4, rev, 0, 0, 0, Some(p));
++    let out = s.execute(&req, 0, None).unwrap().to_vec();
++    replay.steps.push((req.clone(), 0, out.clone()));
++    assert_eq!(s.execute(&req, 0, None).unwrap(), out);
++    replay.steps.push((req, 0, out.clone()));
++    let c = Container::decode(&out, wire::RESULT_MAGIC).unwrap();
++    assert_eq!(
++        read64(&c, "selection.indices.u64").len(),
++        MAX_GRAPH_SELECTION_REFS
++    );
++    assert_eq!(
++        read64(&c, "selection.layer_offsets.u64").len(),
++        MAX_GRAPH_SELECTION_REFS + 1
++    );
++    assert_eq!(read64(&c, "pick.rows.u64"), [1u64 << 60, (1u64 << 60) + 2]);
++    assert_eq!(
++        projection_probe::counts().targets,
++        MAX_GRAPH_SELECTION_REFS + 1
++    );
++    let p = s.session().published().unwrap().paint.nodes[MAX_GRAPH_SELECTION_REFS].center;
++    refuse(
++        &mut s,
++        Some(&mut replay),
++        query(5, rev, 1, 1, 0, Some(p)),
++        InteractionStatus::SelectionTooLarge,
++        1,
++    );
++    capture(&mut s, &mut replay, query(5, rev, 0, 0, 1, None));
++    assert_eq!(
++        s.session().selection().unwrap().len(),
++        MAX_GRAPH_SELECTION_REFS
++    );
++    replay
++}
++
++#[test]
++fn leave_has_zero_instrumented_queries_even_without_a_publication() {
++    let mut s = GraphSession::create(
++        &standard_doc(),
++        SessionLoad {
++            x: Some(vec![0., 30., 60.]),
++            y: Some(vec![0.; 3]),
++            ..Default::default()
++        },
++        7,
++    )
++    .unwrap();
++    assert!(s.published().is_none());
++    s.hover.nodes = vec![0];
++    let h = header(&s, 1);
++    let before = point_query_count();
++    let out = s.hover_leave(h).unwrap();
++    assert_eq!(point_query_count(), before);
++    assert!(s.hover.nodes.is_empty());
++    assert!(s.published().is_none());
++    assert!(out.state_changed);
++    let p = out.pick.as_ref().unwrap();
++    assert_eq!(
++        (p.header, p.operation, p.action, p.target, p.member_count),
++        (h, 0, 1, None, 0)
++    );
++    assert_eq!(s.hover_leave(h).unwrap(), out);
++    assert_eq!(point_query_count(), before);
++}
++
++#[test]
++fn actual_query_work_refusal_precedes_projection_allocations_and_preserves_all_state() {
++    let n = 10_000;
++    let doc = handmade(
++        &(0..n).map(|i| id(i as u32 + 1)).collect::<Vec<_>>(),
++        &[],
++        &vec![None; 200],
++    );
++    let opening = request(1, 0, wire::OPEN, |b| {
++        b.bytes("document.bytes", 0, &doc);
++        b.f64s(
++            "load.x.f64",
++            0,
++            &(0..n).map(|i| i as f64 * 30.).collect::<Vec<_>>(),
++        );
++        b.f64s("load.y.f64", 0, &vec![0.; n]);
++    });
++    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
++    let mut replay = Replay::default();
++    let out = capture(&mut s, &mut replay, request(2, 0, wire::RENDER, |_| {}));
++    let rev = header_of(&out)[0];
++    let selected = n - 2;
++    let d = ComposedDocument::decode(&doc).unwrap();
++    assert!(d.projection_work(selected).unwrap() as u64 <= MAX_GRAPH_INTERACTION_WORK);
++    assert!(d.projection_work(selected + 1).unwrap() as u64 > MAX_GRAPH_INTERACTION_WORK);
++    capture(
++        &mut s,
++        &mut replay,
++        request(3, rev, 11, |b| {
++            b.bytes(
++                "refs.bytes",
++                0,
++                &wire::encode_refs(
++                    &(0..selected)
++                        .map(|i| ElementRef::Node(id(i as u32 + 1)))
++                        .collect::<Vec<_>>(),
++                )
++                .unwrap(),
++            )
++        }),
++    );
++    let p = s.session().published().unwrap().paint.nodes[0].center;
++    refuse(
++        &mut s,
++        None,
++        query(4, rev, 0, 0, 0, Some(p)),
++        InteractionStatus::Budget,
++        1,
++    );
++    let out = capture(&mut s, &mut replay, query(4, rev, 0, 0, 1, None));
++    let c = Container::decode(&out, wire::RESULT_MAGIC).unwrap();
++    assert_eq!(read64(&c, "selection.indices.u64").len(), selected);
++    assert!(s.session().hover.nodes.is_empty());
++}
++
++fn empty_case() -> Replay {
++    let doc = document(&handmade(&[], &[], &[None, Some(""), Some("λ")]), 0, 0);
++    let opening = request(1, 0, wire::OPEN, |b| {
++        b.bytes("document.bytes", 0, &doc);
++        b.f64s("load.x.f64", 0, &[]);
++        b.f64s("load.y.f64", 0, &[]);
++    });
++    let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
++    let mut replay = Replay {
++        name: "empty-miss-typed-leave".into(),
++        budget: 16 * 1024 * 1024,
++        steps: vec![(opening, 0, s.reply().to_vec())],
++    };
++    let rendered = capture(&mut s, &mut replay, request(2, 0, wire::RENDER, |_| {}));
++    let rev = header_of(&rendered)[0];
++    for (seq, op, action, p) in [
++        (3, 0, 0, Some([0., 0.])),
++        (4, 1, 0, Some([0., 0.])),
++        (5, 0, 1, None),
++        (6, 0, 1, None),
++    ] {
++        let before = s.session().published().unwrap().clone();
++        let q = point_query_count();
++        let out = capture(&mut s, &mut replay, query(seq, rev, op, 0, action, p));
++        assert_eq!(point_query_count() - q, u64::from(action == 0));
++        verify(s.session(), &before, &out, None, seq, op, action, false);
++    }
++    replay
++}
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..65589d440ea5187997c15df70422c60c5fccc6db
+--- /dev/null
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs
+@@ -0,0 +1,43 @@
++//! Test-only phase/probe counts; no allocator or product-policy hook.
++use std::cell::Cell;
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub(crate) struct Counts {
++    pub targets: usize,
++    pub admissions: usize,
++    pub borrows: usize,
++    pub rows: usize,
++    pub outputs: usize,
++    pub mappings: usize,
++}
++thread_local! { static COUNTS: Cell<Counts> = Cell::new(Counts::default()); }
++fn change(f: impl FnOnce(&mut Counts)) {
++    COUNTS.with(|cell| {
++        let mut c = cell.get();
++        f(&mut c);
++        cell.set(c);
++    });
++}
++pub(super) fn admit(n: usize) {
++    change(|c| {
++        c.targets = n;
++        c.admissions += 1;
++    });
++}
++pub(super) fn borrow() {
++    change(|c| c.borrows += 1);
++}
++pub(super) fn row() {
++    change(|c| c.rows += 1);
++}
++pub(super) fn output(n: usize) {
++    change(|c| {
++        c.outputs += 1;
++        c.mappings = n;
++    });
++}
++pub(crate) fn reset() {
++    COUNTS.with(|c| c.set(Counts::default()));
++}
++pub(crate) fn counts() -> Counts {
++    COUNTS.with(Cell::get)
++}
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..1227b98cfda26597672430d6340c866e087645ed
+--- /dev/null
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs
+@@ -0,0 +1,446 @@
++//! R2 projection reuse: frozen R1 byte oracle and combined-prefix/suffix proof.
++//! The reference below is copied verbatim from the fa6d5e R1 candidate, with only
++//! its name and formatting changed. It is test-only and never linked into production artifacts.
++use super::*;
++use crate::graphforge::compose::COMPOSITION_VERSION;
++use crate::graphforge::container::DOCUMENT_MAGIC;
++
++fn r1_projection(
++    b: &mut Builder,
++    s: &GraphSession,
++    state: &GraphInteractionState,
++    bytes: &[u8],
++    pick: Option<&PickReceipt>,
++) -> Result<()> {
++    let doc = gf(ComposedDocument::decode(bytes))?;
++    let mut refs = transport(s, &s.identity.refs_of(state.selection()))?;
++    // The temporal owner may retain derived keys belonging to another
++    // composition. refs_of deliberately omits those without mutating the owner.
++    if refs.len() > MAX_GRAPH_SELECTION_REFS {
++        return bad();
++    }
++    refs.sort_by(super::coordination::compare);
++    let work = doc
++        .projection_work(refs.len() + usize::from(pick.is_some_and(|p| p.source.is_some())))
++        .ok_or(InteractionStatus::Budget)?;
++    if work as u64 > MAX_GRAPH_INTERACTION_WORK {
++        return Err(InteractionStatus::Budget);
++    }
++    let resolved = refs
++        .iter()
++        .map(|r| {
++            s.identity
++                .resolve(r)
++                .map_err(|_| InteractionStatus::Invalid)
++        })
++        .collect::<Result<Vec<_>>>()?;
++    let planes = gf(doc.projection_layers(s.identity.node_count(), s.identity.edge_count()))?;
++    let row = |index: ElementIndex, layer: usize| -> Option<u64> {
++        let (plane, i) = match index {
++            ElementIndex::Node(i) => (planes[layer].node_rows?, i),
++            ElementIndex::Edge(i) => (planes[layer].edge_rows?, i),
++        };
++        let value = u64_at(plane, i * 8);
++        (value != u64::MAX).then_some(value)
++    };
++    // Count the actual sparse output before allocating it. Reservation above
++    // includes builder/final/retry copies (existing cache charge is 3x bytes).
++    let count = resolved
++        .iter()
++        .try_fold(0usize, |sum, &index| {
++            sum.checked_add(
++                (0..planes.len())
++                    .filter(|&layer| row(index, layer).is_some())
++                    .count(),
++            )
++        })
++        .ok_or(InteractionStatus::Budget)?;
++    let mut indices = Vec::with_capacity(refs.len());
++    let mut offsets = Vec::with_capacity(refs.len() + 1);
++    let mut layers = Vec::with_capacity(count);
++    let mut rows = Vec::with_capacity(count);
++    offsets.push(0);
++    for index in resolved {
++        indices.push(match index {
++            ElementIndex::Node(i) | ElementIndex::Edge(i) => i as u64,
++        });
++        for layer in 0..planes.len() {
++            if let Some(value) = row(index, layer) {
++                layers.push(layer as u32);
++                rows.push(value);
++            }
++        }
++        offsets.push(rows.len() as u64);
++    }
++    let texts = planes
++        .iter()
++        .map(|layer| layer.result_id.unwrap_or(""))
++        .collect::<Vec<_>>();
++    let valid = planes
++        .iter()
++        .map(|layer| u8::from(layer.result_id.is_some()))
++        .collect::<Vec<_>>();
++    b.bytes("selection.refs.bytes", 0, &encode_refs(&refs)?);
++    b.u64s("selection.indices.u64", 0, &indices);
++    b.u64s("selection.layer_offsets.u64", 0, &offsets);
++    b.u32s("selection.layers.u32", 0, &layers);
++    b.u64s("selection.rows.u64", 0, &rows);
++    b.texts("selection.result_ids.texts", 0, &texts);
++    b.u8s("selection.result_ids.valid.u8", 0, &valid);
++    if let Some(pick) = pick {
++        let (kind, render_index) = match pick.target {
++            None => (0, 0),
++            Some(PickTarget::Node(i)) => (1, i as u64),
++            Some(PickTarget::Edge(i)) => (2, i as u64),
++        };
++        let form = if kind == 0 {
++            0
++        } else if pick.source.is_some() {
++            1
++        } else {
++            2
++        };
++        let mut pick_layers = Vec::new();
++        let mut pick_rows = Vec::new();
++        let mut pick_refs = Vec::new();
++        let mut source_index = 0;
++        if let Some((index, reference)) = &pick.source {
++            // Work was admitted with the selection projection before borrowing
++            // planes. Count sparse mappings before allocating output tables.
++            let count = (0..planes.len())
++                .filter(|&layer| row(*index, layer).is_some())
++                .count();
++            pick_layers.reserve(count);
++            pick_rows.reserve(count);
++            for layer in 0..planes.len() {
++                if let Some(value) = row(*index, layer) {
++                    pick_layers.push(layer as u32);
++                    pick_rows.push(value);
++                }
++            }
++            source_index = match index {
++                ElementIndex::Node(i) | ElementIndex::Edge(i) => *i as u64,
++            };
++            pick_refs.push(reference.clone());
++        }
++        b.u32s(
++            "pick.header.u32",
++            0,
++            &[
++                1,
++                pick.operation,
++                pick.action,
++                pick.header.stamp.render_revision,
++                kind,
++                form,
++                0,
++                0,
++            ],
++        );
++        b.u64s(
++            "pick.query.u64",
++            0,
++            &[
++                pick.header.stamp.instance_id,
++                pick.header.op_seq,
++                render_index,
++                pick.member_count,
++                source_index,
++            ],
++        );
++        b.bytes("pick.ref.bytes", 0, &encode_refs(&pick_refs)?);
++        b.u32s("pick.layers.u32", 0, &pick_layers);
++        b.u64s("pick.rows.u64", 0, &pick_rows);
++    }
++    Ok(())
++}
++
++fn uuid(i: usize) -> Uuid {
++    let mut id = [0; 16];
++    id[..8].copy_from_slice(&(i as u64 + 1).to_le_bytes());
++    id
++}
++
++fn document(nodes: usize, layers: usize, rows: bool, poison: bool) -> Vec<u8> {
++    let mut b = Builder::new(DOCUMENT_MAGIC);
++    b.u32s("status", 0, &[0]);
++    b.utf8("kind", 0, "graph");
++    b.u32s("composition.version", 0, &[COMPOSITION_VERSION]);
++    b.uuids("node.uuid", 0, &(0..nodes).map(uuid).collect::<Vec<_>>());
++    let edges = if nodes == 3 { 3 } else { 0 };
++    b.uuids("edge.uuid", 0, &vec![[0; 16]; edges]);
++    b.u8s("edge.derived", 0, &vec![1; edges]);
++    b.u32s("edge.layer", 0, &(0..edges as u32).collect::<Vec<_>>());
++    b.i64s("edge.order", 0, &vec![0; edges]);
++    b.u64s("edge.path", 0, &vec![0; edges]);
++    b.u64s("edge.source", 0, &(0..edges as u64).collect::<Vec<_>>());
++    b.u64s(
++        "edge.target",
++        0,
++        &(0..edges as u64).map(|i| (i + 1) % 3).collect::<Vec<_>>(),
++    );
++    for layer in 0..layers {
++        b.utf8("layer.schema", layer, "test");
++        match layer {
++            0 => {}
++            1 => b.utf8("layer.result_id", layer, ""),
++            _ => b.utf8("layer.result_id", layer, " λ 空 🦀 "),
++        }
++        if rows {
++            b.u64s(
++                "layer.node_rows",
++                layer,
++                &(0..nodes)
++                    .map(|i| {
++                        if (i + layer) % 3 == 1 {
++                            u64::MAX
++                        } else {
++                            (1 << 62) + (i * 3 + layer) as u64
++                        }
++                    })
++                    .collect::<Vec<_>>(),
++            );
++        }
++        if edges > 0 {
++            let mut values = vec![u64::MAX; edges];
++            if layer < edges {
++                values[layer] = (1 << 60) + layer as u64;
++            }
++            b.u64s("layer.edge_rows", layer, &values);
++        }
++    }
++    if poison {
++        b.u32s("layer.node_rows", 0, &[123]);
++    }
++    b.finish()
++}
++
++fn session(doc: &[u8], nodes: usize) -> GraphSession {
++    GraphSession::create(
++        doc,
++        SessionLoad {
++            x: Some((0..nodes).map(|i| i as f64 * 30.).collect()),
++            y: Some(vec![0.; nodes]),
++            ..Default::default()
++        },
++        7,
++    )
++    .unwrap()
++}
++
++fn selected(nodes: usize) -> GraphInteractionState {
++    let mut state = GraphInteractionState::default();
++    let set = ElementSet {
++        nodes: (0..nodes).map(uuid).collect(),
++        ..Default::default()
++    };
++    state.select(SelectMode::Replace, &set).unwrap();
++    state
++}
++
++fn receipt(
++    s: &GraphSession,
++    source: Option<ElementIndex>,
++    target: Option<PickTarget>,
++    action: u32,
++) -> PickReceipt {
++    PickReceipt {
++        header: OpHeader {
++            stamp: Stamp {
++                instance_id: 7,
++                render_revision: 42,
++            },
++            op_seq: 123,
++        },
++        operation: 0,
++        action,
++        target,
++        member_count: u64::from(target.is_some()),
++        source: source.map(|i| {
++            let r = match i {
++                ElementIndex::Node(i) => s.identity.node_ref(i),
++                ElementIndex::Edge(i) => s.identity.edge_ref(i),
++            };
++            (i, s.identity.to_transport(&r).unwrap())
++        }),
++    }
++}
++
++fn projected(
++    s: &GraphSession,
++    state: &GraphInteractionState,
++    doc: &[u8],
++    pick: Option<&PickReceipt>,
++    r1: bool,
++) -> Result<Vec<u8>> {
++    let mut builder = Builder::new(RESULT_MAGIC);
++    if r1 {
++        r1_projection(&mut builder, s, state, doc, pick)?;
++    } else {
++        selection_projection(&mut builder, s, state, doc, pick)?;
++    }
++    Ok(builder.finish())
++}
++
++#[test]
++fn r2_projection_matches_frozen_r1_bytes_for_empty_duplicate_miss_group_and_exact_ids() {
++    let doc = document(3, 3, true, false);
++    let s = session(&doc, 3);
++    let picks = [
++        None,
++        Some(receipt(&s, None, None, 0)),
++        Some(receipt(&s, None, None, 1)),
++        Some(receipt(&s, None, Some(PickTarget::Node(0)), 0)),
++        Some(receipt(&s, None, Some(PickTarget::Edge(0)), 0)),
++        Some(receipt(
++            &s,
++            Some(ElementIndex::Node(0)),
++            Some(PickTarget::Node(0)),
++            0,
++        )),
++        Some(receipt(
++            &s,
++            Some(ElementIndex::Node(2)),
++            Some(PickTarget::Node(2)),
++            0,
++        )),
++        Some(receipt(
++            &s,
++            Some(ElementIndex::Edge(0)),
++            Some(PickTarget::Edge(0)),
++            0,
++        )),
++        Some(receipt(
++            &s,
++            Some(ElementIndex::Edge(1)),
++            Some(PickTarget::Edge(1)),
++            0,
++        )),
++        Some(receipt(
++            &s,
++            Some(ElementIndex::Edge(2)),
++            Some(PickTarget::Edge(2)),
++            0,
++        )),
++    ];
++    for count in [0, 1, 3] {
++        let state = selected(count);
++        let without = projected(&s, &state, &doc, None, false).unwrap();
++        let prefix = Container::decode(&without, RESULT_MAGIC).unwrap();
++        for pick in &picks {
++            let actual = projected(&s, &state, &doc, pick.as_ref(), false).unwrap();
++            assert_eq!(
++                actual,
++                projected(&s, &state, &doc, pick.as_ref(), true).unwrap(),
++                "selected={count} pick={pick:?}"
++            );
++            let c = Container::decode(&actual, RESULT_MAGIC).unwrap();
++            for (name, index, section) in &prefix.sections {
++                let emitted = c.get(name, *index).unwrap();
++                assert_eq!(
++                    (emitted.dtype, emitted.count, emitted.payload),
++                    (section.dtype, section.count, section.payload)
++                );
++            }
++            if let Some(pick) = pick {
++                let expected = pick
++                    .source
++                    .as_ref()
++                    .map(|(_, r)| std::slice::from_ref(r))
++                    .unwrap_or(&[]);
++                assert_eq!(
++                    decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap(),
++                    expected
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn r2_full_selection_plus_duplicate_query_source_is_not_a_selection_cap_increase() {
++    let n = MAX_GRAPH_SELECTION_REFS;
++    let doc = document(n, 3, true, false);
++    let s = session(&doc, n);
++    let state = selected(n);
++    let pick = receipt(
++        &s,
++        Some(ElementIndex::Node(0)),
++        Some(PickTarget::Node(0)),
++        0,
++    );
++    let actual = projected(&s, &state, &doc, Some(&pick), false).unwrap();
++    assert_eq!(
++        actual,
++        projected(&s, &state, &doc, Some(&pick), true).unwrap()
++    );
++    let c = Container::decode(&actual, RESULT_MAGIC).unwrap();
++    assert_eq!(
++        decode_refs(c.get("selection.refs.bytes", 0).unwrap().payload)
++            .unwrap()
++            .len(),
++        n
++    );
++    assert_eq!(c.get("selection.indices.u64", 0).unwrap().count, n);
++    assert_eq!(
++        c.get("selection.layer_offsets.u64", 0).unwrap().count,
++        n + 1
++    );
++    assert_eq!(
++        c.get("pick.layers.u32", 0)
++            .unwrap()
++            .as_u32("layers")
++            .unwrap(),
++        [0, 2]
++    );
++    assert_eq!(
++        c.get("pick.rows.u64", 0).unwrap().as_u64("rows").unwrap(),
++        [1 << 62, (1 << 62) + 2]
++    );
++    assert_eq!(state.selection().len(), MAX_GRAPH_SELECTION_REFS);
++    let overflow = ElementSet {
++        nodes: [uuid(n)].into(),
++        ..Default::default()
++    };
++    let mut state = state;
++    assert!(state.select(SelectMode::Add, &overflow).is_err());
++    assert_eq!(state.selection().len(), MAX_GRAPH_SELECTION_REFS);
++}
++
++#[test]
++fn r2_combined_work_admission_precedes_projection_descriptors_and_output_allocation() {
++    let n = MAX_GRAPH_SELECTION_REFS;
++    let doc = document(n, 200, false, false);
++    let s = session(&doc, n);
++    let state = selected(n - 2);
++    let pick = receipt(
++        &s,
++        Some(ElementIndex::Node(0)),
++        Some(PickTarget::Node(0)),
++        0,
++    );
++    let reader = ComposedDocument::decode(&doc).unwrap();
++    assert!(reader.projection_work(n - 2).unwrap() as u64 <= MAX_GRAPH_INTERACTION_WORK);
++    assert!(reader.projection_work(n - 1).unwrap() as u64 > MAX_GRAPH_INTERACTION_WORK);
++    assert!(projected(&s, &state, &doc, None, false).is_ok());
++    assert_eq!(
++        projected(&s, &state, &doc, Some(&pick), false),
++        Err(InteractionStatus::Budget)
++    );
++    // A malformed borrowed plane would fail Invalid when descriptors are read.
++    // Combined work must refuse Budget first, before allocating/reading them or
++    // emitting any projection output. No counting allocator or runtime hook.
++    let poison = document(n, 200, false, true);
++    assert_eq!(
++        projected(&s, &state, &poison, None, false),
++        Err(InteractionStatus::Invalid)
++    );
++    let mut b = Builder::new(RESULT_MAGIC);
++    let empty = Builder::new(RESULT_MAGIC).finish();
++    assert_eq!(
++        selection_projection(&mut b, &s, &state, &poison, Some(&pick)),
++        Err(InteractionStatus::Budget)
++    );
++    assert_eq!(b.finish(), empty);
++    assert_eq!(state.selection().len(), n - 2);
++}
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5451ad2b287b6649a27e69cfb6d76f4201b0f327
+--- /dev/null
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs
+@@ -0,0 +1,167 @@
++//! Frozen R2 complete-wire transcript regression; inline receipt retained.
++use super::*;
++
++fn query(seq: u64, rev: u32, op: u32, mode: u32, action: u32, xy: Option<[f64; 2]>) -> Vec<u8> {
++    let mut b = Builder::new(wire::REQUEST_MAGIC);
++    b.u64s("header.u64", 0, &[7, 9, seq]);
++    b.u32s("header.u32", 0, &[rev, op, mode, 0, 0, action, 0, 0, 0]);
++    if let Some(xy) = xy {
++        b.f64s("coordinates.f64", 0, &xy);
++    }
++    b.finish()
++}
++
++fn record(out: &mut Vec<u8>, request: &[u8], status: i32, reply: &[u8]) {
++    out.extend_from_slice(&(request.len() as u64).to_le_bytes());
++    out.extend_from_slice(request);
++    out.extend_from_slice(&status.to_le_bytes());
++    out.extend_from_slice(&(reply.len() as u64).to_le_bytes());
++    out.extend_from_slice(reply);
++}
++
++fn success(s: &mut WireSession, out: &mut Vec<u8>, request: Vec<u8>) -> Vec<u8> {
++    let reply = s.execute(&request, 0, None).unwrap().to_vec();
++    record(out, &request, 0, &reply);
++    assert_eq!(s.execute(&request, usize::MAX, None).unwrap(), reply);
++    record(out, &request, 0, s.reply());
++    reply
++}
++
++fn refusal(s: &mut WireSession, out: &mut Vec<u8>, request: Vec<u8>, error: InteractionStatus) {
++    let before = (
++        s.reply().to_vec(),
++        s.session().selection().unwrap(),
++        s.session().focus().unwrap(),
++        s.session().hover.clone(),
++        s.session().last_op.clone(),
++        s.session().published().cloned(),
++        s.session().pending_outbound().cloned(),
++    );
++    assert_eq!(s.execute(&request, 0, None), Err(error));
++    let after = (
++        s.reply().to_vec(),
++        s.session().selection().unwrap(),
++        s.session().focus().unwrap(),
++        s.session().hover.clone(),
++        s.session().last_op.clone(),
++        s.session().published().cloned(),
++        s.session().pending_outbound().cloned(),
++    );
++    assert_eq!(after, before, "refusal changed authoritative state/cache");
++    record(out, &request, error.number(), s.reply());
++}
++
++#[test]
++fn frozen_r2_complete_receipt_selection_reply_and_refusal_transcript() {
++    let mut transcript = Vec::new();
++    for result_id in [None, Some(""), Some(" λ 空 🦀 ")] {
++        let bytes = standard_doc();
++        let mut c = Container::decode(&bytes, DOCUMENT_MAGIC).unwrap();
++        c.sections.retain(|(name, _, _)| {
++            !matches!(
++                *name,
++                "layer.result_id" | "layer.node_rows" | "layer.edge_rows"
++            )
++        });
++        let mut b = Builder::new(DOCUMENT_MAGIC);
++        b.extend_from(&c);
++        if let Some(id) = result_id {
++            b.utf8("layer.result_id", 0, id);
++        }
++        b.u64s("layer.node_rows", 0, &[42, u64::MAX, 1 << 62]);
++        b.u64s("layer.edge_rows", 0, &[11, 12, 13]);
++        let doc = b.finish();
++        let opening = open_doc(&doc);
++        let mut s = WireSession::open(&opening, wire::DEFAULT_MAX_BYTES, 0).unwrap();
++        record(&mut transcript, &opening, 0, s.reply());
++        let rendered = success(&mut s, &mut transcript, request(2, 0, wire::RENDER, |_| {}));
++        let rev = header_of(&rendered)[0];
++        let r = s.session().published().unwrap();
++        let node = r.paint.nodes[0].center;
++        let edge = r
++            .paint
++            .pieces
++            .iter()
++            .filter(|p| p.edge == 2)
++            .flat_map(|p| {
++                [0.25, 0.5, 0.75].map(|t| {
++                    [
++                        p.start[0] + t * (p.end[0] - p.start[0]),
++                        p.start[1] + t * (p.end[1] - p.start[1]),
++                    ]
++                })
++            })
++            .find(|p| r.pick_at(p[0], p[1]) == Ok(Some(PickTarget::Edge(2))))
++            .expect("actual derived-edge point hit");
++        for (seq, op, mode, action, xy) in [
++            (3, 0, 0, 0, Some(node)),
++            (4, 1, 0, 0, Some(node)),
++            (5, 0, 0, 0, Some(edge)),
++            (6, 1, 1, 0, Some(edge)),
++            (7, 0, 0, 0, Some([-9999., -9999.])),
++            (8, 0, 0, 1, None),
++            (9, 0, 0, 0, Some(node)),
++            (10, 0, 0, 1, None),
++            (11, 0, 0, 1, None),
++        ] {
++            let reply = success(
++                &mut s,
++                &mut transcript,
++                query(seq, rev, op, mode, action, xy),
++            );
++            assert_eq!(header_of(&reply)[0], rev);
++            let c = Container::decode(&reply, wire::RESULT_MAGIC).unwrap();
++            let refs = wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap();
++            if seq == 5 || seq == 6 {
++                assert!(
++                    matches!(&refs[..], [ElementRef::Derived(DerivedRef { result: ResultRef::Exact(id), .. })] if id.as_deref() == result_id)
++                );
++                assert_eq!(
++                    c.get("pick.rows.u64", 0).unwrap().as_u64("rows").unwrap(),
++                    [13]
++                );
++            }
++        }
++        refusal(
++            &mut s,
++            &mut transcript,
++            query(12, rev + 1, 0, 0, 1, None),
++            InteractionStatus::Stale,
++        );
++        let max = s.max_bytes;
++        s.max_bytes = s.retained_budget();
++        for (op, action, xy) in [(0, 0, Some(node)), (1, 0, Some(node)), (0, 1, None)] {
++            refusal(
++                &mut s,
++                &mut transcript,
++                query(12, rev, op, 0, action, xy),
++                InteractionStatus::Budget,
++            );
++        }
++        s.max_bytes = max;
++        success(&mut s, &mut transcript, query(12, rev, 0, 0, 0, Some(node)));
++        refusal(
++            &mut s,
++            &mut transcript,
++            query(13, rev, 0, 0, 1, Some(node)),
++            InteractionStatus::Invalid,
++        );
++        success(&mut s, &mut transcript, query(13, rev, 0, 0, 1, None));
++        assert!(s.session().hover.nodes.is_empty());
++        assert_eq!(s.session().selection().unwrap().len(), 2);
++    }
++    println!(
++        "native layout: OpOutcome={} PickReceipt={} align={}",
++        std::mem::size_of::<OpOutcome>(),
++        std::mem::size_of::<PickReceipt>(),
++        std::mem::align_of::<PickReceipt>()
++    );
++    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
++        .join("../../spec/performance/graph-picked-target-r3-2026-11-04/r2-wire-transcript.bin");
++    assert_eq!(
++        transcript,
++        std::fs::read(path).unwrap(),
++        "changed frozen R2 full wire transcript"
++    );
++    println!("complete transcript bytes={}", transcript.len());
++}
+diff --git a/crates/xyg-engine/src/graphforge/interaction/wire.rs b/crates/xyg-engine/src/graphforge/interaction/wire.rs
+index 2a277b34b968fa6ad1a4edcfbe484428ddbd110e..433ee6aeb43de4f8bbcf1bb523c443c3af5713b6 100644
+--- a/crates/xyg-engine/src/graphforge/interaction/wire.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/wire.rs
+@@ -232,7 +232,7 @@ impl<'a> Request<'a> {
+         for i in match operation {
+             1 | 7 | 10 | 11 => &[2][..],
+             2 | 3 => &[2, 3],
+-            5 | 8 => &[5],
++            0 | 5 | 8 => &[5],
+             9 | 13 => &[5],
+             12 => &[2, 4],
+             14 => &[6, 8],
+@@ -247,7 +247,7 @@ impl<'a> Request<'a> {
+             || (used[4] && w[4] > 2)
+             || (matches!(operation, 5 | 8) && w[5] != 1 && w[5] != u32::MAX)
+             || (operation == 9 && w[5] > 2)
+-            || (operation == 13 && w[5] > 1)
++            || (matches!(operation, 0 | 13) && w[5] > 1)
+             || (operation == 14 && (w[6] > 2 || w[8] > 1))
+             || (operation == 15 && (w[7] == 0 || w[7] > 64))
+         {
+@@ -258,7 +258,7 @@ impl<'a> Request<'a> {
+                 "header.u64" => Some(Dtype::U64),
+                 "header.u32" => Some(Dtype::U32),
+                 "camera.f64" if operation == RENDER => Some(Dtype::F64),
+-                "coordinates.f64" if operation <= 3 || operation == 14 => Some(Dtype::F64),
++                "coordinates.f64" if (operation == 0 && w[5] == 0) || matches!(operation, 1..=3 | 14) => Some(Dtype::F64),
+                 "refs.bytes" if matches!(operation, 6 | 9 | 11 | 12 | 13 | 14) => {
+                     Some(Dtype::Bytes)
+                 }
+@@ -668,14 +668,14 @@ impl WireSession {
+             .ok_or(InteractionStatus::Budget)?;
+         let mut projection = n.checked_add(m).ok_or(InteractionStatus::Budget)?
+             .min(MAX_GRAPH_SELECTION_REFS).checked_mul(256)
+-            .and_then(|v| v.checked_add(4096)).ok_or(InteractionStatus::Budget)?;
++            .and_then(|v| v.checked_add(8192)).ok_or(InteractionStatus::Budget)?;
+         // Reserve all new tables/scratch BEFORE cloning the candidate. No
+         // source-sized row Vec: each plane contributes at most the selection cap.
+         for (name, _, section) in &c.sections {
+             if matches!(*name, "layer.node_rows" | "layer.edge_rows") {
+                 let count = if *name == "layer.node_rows" { n } else { m };
+                 if section.dtype != Dtype::U64 || section.count != count { return bad(); }
+-                projection = projection.checked_add(count.min(MAX_GRAPH_SELECTION_REFS)
++                projection = projection.checked_add(count.min(MAX_GRAPH_SELECTION_REFS).checked_add(1).ok_or(InteractionStatus::Budget)?
+                     .checked_mul(128).ok_or(InteractionStatus::Budget)?)
+                     .ok_or(InteractionStatus::Budget)?;
+             } else if *name == "layer.schema" {
+@@ -1120,6 +1120,7 @@ fn apply(s: &mut GraphSession, r: &Request<'_>) -> Result<OpOutcome> {
+         Ok(v[0].clone())
+     };
+     match r.operation {
++        0 if r.words[5] == 1 => s.hover_leave(h),
+         0 => {
+             let (x, y) = pair()?;
+             s.hover_at(h, x, y)
+@@ -1245,19 +1246,27 @@ fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
+ }
+ // Complete snapshot, independent of changed.refs and coordination. Work is
+ // O(layers * selected), with borrowed row planes and exact u64 source rows.
+-fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteractionState, bytes: &[u8]) -> Result<()> {
++fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteractionState, bytes: &[u8], pick: Option<&PickReceipt>) -> Result<()> {
+     let doc = gf(ComposedDocument::decode(bytes))?;
+     let mut refs = transport(s, &s.identity.refs_of(state.selection()))?;
+     // The temporal owner may retain derived keys belonging to another
+     // composition. refs_of deliberately omits those without mutating the owner.
+     if refs.len() > MAX_GRAPH_SELECTION_REFS { return bad(); }
+     refs.sort_by(super::coordination::compare);
+-    let work = doc.projection_work(refs.len()).ok_or(InteractionStatus::Budget)?;
+-    if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); }
+-    let resolved = refs.iter().map(|r| s.identity.resolve(r).map_err(|_| InteractionStatus::Invalid))
+-        .collect::<Result<Vec<_>>>()?;
+-    let planes = gf(doc.projection_layers(s.identity.node_count(), s.identity.edge_count()))?;
+-    let row = |index: ElementIndex, layer: usize| -> Option<u64> {
++    let picked_source = pick.and_then(|p| p.source.as_ref());
++    let selected = refs.len();
++    let targets = selected + usize::from(picked_source.is_some());
++    let work = doc.projection_work(targets).ok_or(InteractionStatus::Budget)?;
++    if work as u64 > MAX_GRAPH_INTERACTION_WORK { return Err(InteractionStatus::Budget); } #[cfg(test)] projection_probe::admit(targets);
++    // Admit both sparse passes before allocating combined projection scratch.
++    // The optional source is deliberately duplicated even if already selected.
++    let mut resolved = Vec::with_capacity(targets);
++    for reference in &refs {
++        resolved.push(s.identity.resolve(reference).map_err(|_| InteractionStatus::Invalid)?);
++    }
++    if let Some((index, _)) = picked_source { resolved.push(*index); }
++    let planes = gf(doc.projection_layers(s.identity.node_count(), s.identity.edge_count()))?; #[cfg(test)] projection_probe::borrow();
++    let row = |index: ElementIndex, layer: usize| -> Option<u64> { #[cfg(test)] projection_probe::row();
+         let (plane, i) = match index {
+             ElementIndex::Node(i) => (planes[layer].node_rows?, i),
+             ElementIndex::Edge(i) => (planes[layer].edge_rows?, i),
+@@ -1269,9 +1278,9 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
+     // includes builder/final/retry copies (existing cache charge is 3x bytes).
+     let count = resolved.iter().try_fold(0usize, |sum, &index| {
+         sum.checked_add((0..planes.len()).filter(|&layer| row(index, layer).is_some()).count())
+-    }).ok_or(InteractionStatus::Budget)?;
+-    let mut indices = Vec::with_capacity(refs.len());
+-    let mut offsets = Vec::with_capacity(refs.len() + 1);
++    }).ok_or(InteractionStatus::Budget)?; #[cfg(test)] projection_probe::output(count);
++    let mut indices = Vec::with_capacity(targets);
++    let mut offsets = Vec::with_capacity(targets + 1);
+     let mut layers = Vec::with_capacity(count);
+     let mut rows = Vec::with_capacity(count);
+     offsets.push(0);
+@@ -1285,12 +1294,33 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
+     let texts = planes.iter().map(|layer| layer.result_id.unwrap_or("")).collect::<Vec<_>>();
+     let valid = planes.iter().map(|layer| u8::from(layer.result_id.is_some())).collect::<Vec<_>>();
+     b.bytes("selection.refs.bytes", 0, &encode_refs(&refs)?);
+-    b.u64s("selection.indices.u64", 0, &indices);
+-    b.u64s("selection.layer_offsets.u64", 0, &offsets);
+-    b.u32s("selection.layers.u32", 0, &layers);
+-    b.u64s("selection.rows.u64", 0, &rows);
++    let boundary = offsets[selected] as usize;
++    b.u64s("selection.indices.u64", 0, &indices[..selected]);
++    b.u64s("selection.layer_offsets.u64", 0, &offsets[..=selected]);
++    b.u32s("selection.layers.u32", 0, &layers[..boundary]);
++    b.u64s("selection.rows.u64", 0, &rows[..boundary]);
+     b.texts("selection.result_ids.texts", 0, &texts);
+     b.u8s("selection.result_ids.valid.u8", 0, &valid);
++    if let Some(pick) = pick {
++        let (kind, render_index) = match pick.target {
++            None => (0, 0),
++            Some(PickTarget::Node(i)) => (1, i as u64),
++            Some(PickTarget::Edge(i)) => (2, i as u64),
++        };
++        let form = if kind == 0 { 0 } else if pick.source.is_some() { 1 } else { 2 };
++        let (source_index, pick_refs) = match picked_source {
++            Some((ElementIndex::Node(i) | ElementIndex::Edge(i), reference)) =>
++                (*i as u64, std::slice::from_ref(reference)),
++            None => (0, &[][..]),
++        };
++        b.u32s("pick.header.u32", 0, &[1, pick.operation, pick.action,
++            pick.header.stamp.render_revision, kind, form, 0, 0]);
++        b.u64s("pick.query.u64", 0, &[pick.header.stamp.instance_id, pick.header.op_seq,
++            render_index, pick.member_count, source_index]);
++        b.bytes("pick.ref.bytes", 0, &encode_refs(pick_refs)?);
++        b.u32s("pick.layers.u32", 0, &layers[boundary..]);
++        b.u64s("pick.rows.u64", 0, &rows[boundary..]);
++    }
+     Ok(())
+ }
+ 
+@@ -1375,7 +1405,7 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome, document: &
+     b.u32s("edge.flags.u32", 0, &render.source_edge_flags);
+     let state = s.read_state(Clone::clone)?;
+     b.u32s("clear.action.u32", 0, &[1, u32::from(state.can_clear())]);
+-    selection_projection(&mut b, s, &state, document)?;
++    selection_projection(&mut b, s, &state, document, out.pick.as_ref())?;
+     let focus = s.focus()?.into_iter().collect::<Vec<_>>();
+     b.bytes("focus.bytes", 0, &encode_refs(&transport(s, &focus)?)?);
+     focus_actions(&mut b, s, &state)?;
+@@ -1645,3 +1675,11 @@ fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> R
+     }
+     Ok(text)
+ }
++
++#[cfg(test)]
++#[path = "tests/wire/projection_reuse.rs"]
++mod projection_reuse_tests;
++
++#[cfg(test)]
++#[path = "tests/wire/projection_probe.rs"]
++pub(super) mod projection_probe;
+diff --git a/js/package-wasm.mjs b/js/package-wasm.mjs
+index 65516dba91161ff1ce17ab29d83fced9b848d1a2..51b5a650a9a89b6f19f8126e7f46a2e1e1b89138 100644
+--- a/js/package-wasm.mjs
++++ b/js/package-wasm.mjs
+@@ -104,7 +104,7 @@ function wasmType(rustType) {
+ 
+ // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
+ // deliberate, recorded decision, not drift.
+-const WASM_SIZE_BUDGET_BYTES = 1878 * 1024;
++const WASM_SIZE_BUDGET_BYTES = 1882 * 1024;
+ // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
+ // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
+ // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
+@@ -162,7 +162,16 @@ const WASM_SIZE_BUDGET_BYTES = 1878 * 1024;
+ // See graph-property-default-package-2026-11-03/README.md for fresh shipping proof.
+ // No compiler/profile/toolchain/optimizer/dependency/export/validation/runtime
+ // change, performance claim, or automatic allowance for future growth.
+-const WASM_GZIP_BUDGET_BYTES = 765 * 1024;
++// #36 actual picked-target/provenance/typed-Leave explicit parent decision
++// (2026-11-04), after completed m4_defaults_audit and s5a_final_review:
++// retain R2 inline Option<PickReceipt>, shared CSR projection and borrowed refs.
++// R2 measures 1,926,555 / 785,546: old 1,878/765 gates fail by 3,483/2,186.
++// Exactly 1,882/768 KiB leaves 613/886 bytes; 1,881/767 still fails by 411/138.
++// R2 reuse saves 1,022/380 over R1; rejected R3 Arc grows 1,768/55 over R2.
++// Growth over the 207 baseline is 3,832/2,365. No further size experiments or
++// automatic allowance. All guards, exports, toolchain and runtime caps stay fixed.
++// See graph-picked-target-r5-2026-11-04/README.md for fresh production proof.
++const WASM_GZIP_BUDGET_BYTES = 768 * 1024;
+ const gzipBytes = gzipSync(bytes).length;
+ if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
+ if (bytes.length > WASM_SIZE_BUDGET_BYTES) {
+diff --git a/js/test/graph-picked-golden-migration.test.mjs b/js/test/graph-picked-golden-migration.test.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..563a1d3bd88afc4fc64aec10ad7abcf89a920dad
+--- /dev/null
++++ b/js/test/graph-picked-golden-migration.test.mjs
+@@ -0,0 +1,98 @@
++// Actual browser golden migration: historical bytes remain immutable.
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import { gunzipSync } from "node:zlib";
++import { createHash } from "node:crypto";
++import { fileURLToPath } from "node:url";
++import test from "node:test";
++import { build } from "vite";
++import { decodeContainer } from "../../packages/xy-node/src/graphforge-container.js";
++
++const root = fileURLToPath(new URL("../../", import.meta.url));
++const oldPath = "spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/captured-requests.json.gz";
++const currentPath = "spec/performance/graph-picked-target-r6-2026-11-04/captured-requests.json.gz";
++const sha = b => createHash("sha256").update(b).digest("hex");
++const capture = p => JSON.parse(gunzipSync(fs.readFileSync(root + p)));
++const bytes = b => Uint8Array.from(Buffer.from(b, "base64"));
++// Decode first through the unchanged guards, then inspect original raw payloads.
++function rawSections(b) {
++  const decoded = decodeContainer(b, "XYGR"), view = new DataView(b.buffer, b.byteOffset, b.byteLength);
++  const names = 32 + decoded.size * 40, out = new Map();
++  for (let i = 0; i < decoded.size; i++) {
++    const at = 32 + i * 40;
++    const name = new TextDecoder().decode(b.subarray(names + view.getUint32(at, true), names + view.getUint32(at, true) + view.getUint32(at + 4, true)));
++    const index = view.getUint32(at + 12, true), offset = Number(view.getBigUint64(at + 16, true)), length = Number(view.getBigUint64(at + 32, true));
++    out.set(`${name}#${index}`, { dtype: view.getUint32(at + 8, true), index, count: view.getBigUint64(at + 24, true), payload: b.slice(offset, offset + length) });
++  }
++  assert.deepEqual([...out.keys()], [...decoded.keys()]);
++  return out;
++}
++const built = await build({ configFile: false, logLevel: "error", build: { write: false, minify: false, lib: { entry: fileURLToPath(new URL("../src/63_graph_session_wire.ts", import.meta.url)), formats: ["es"] } } });
++const chunks = (Array.isArray(built) ? built : [built]).flatMap(r => r.output).filter(x => x.type === "chunk");
++assert.equal(chunks.length, 1);
++const wire = await import(`data:text/javascript;base64,${Buffer.from(chunks[0].code).toString("base64")}`);
++const uuid = b => Buffer.from(b).toString("hex").replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");
++
++test("fresh actual browser goldens preserve every old raw section and add only exact query receipts", () => {
++  const old = capture(oldPath), current = capture(currentPath);
++  assert.equal(old.length, 19); assert.equal(current.length, 19);
++  const document = decodeContainer(decodeContainer(bytes(current[0].request), "XYGI").get("document.bytes#0").value, "XYGF");
++  const value = (c, n, i = 0) => c.get(`${n}#${i}`).value;
++  // Independently expected source targets of the existing real mouse journey:
++  // nodes/modifiers, parallel lanes, self-loop, derived head, compound frame,
++  // shaft gap, interior, node, then blank Add/Toggle/Replace.
++  const targets = [[1,1],[1,2],[1,1],[1,1],[1,1],[1,1],[2,0],[2,1],[2,2],[2,4],[1,0],[1,1],[0,0],[1,1],[0,0],[0,0],[0,0]];
++  const allowed = ["pick.header.u32#0", "pick.query.u64#0", "pick.ref.bytes#0", "pick.layers.u32#0", "pick.rows.u64#0"].sort();
++  const report = { oldPath, currentPath, oldSha256: sha(fs.readFileSync(root + oldPath)), currentSha256: sha(fs.readFileSync(root + currentPath)), requestBytesExact: 0, selectAt: 0, cases: [] };
++  let previous = null;
++  for (let i = 0; i < current.length; i++) {
++    const a = old[i], b = current[i], request = bytes(b.request), priorReply = bytes(a.reply), reply = bytes(b.reply);
++    assert.deepEqual(request, bytes(a.request), `request ${i} stays byte-exact`); report.requestBytesExact++;
++    assert.equal(b.operation, a.operation);
++    const oldSections = rawSections(priorReply), newSections = rawSections(reply);
++    for (const [key, section] of oldSections) assert.deepEqual(newSections.get(key), section, `request ${i} exact old dtype/index/count/RAW payload ${key}`);
++    const added = [...newSections.keys()].filter(k => !oldSections.has(k)).sort();
++    const decoded = decodeContainer(reply, "XYGR"), q = decodeContainer(request, "XYGI");
++    if (b.operation !== 1) { assert.deepEqual(reply, priorReply, `Open/Render ${i} remains fully byte-exact`); assert.deepEqual(added, []); }
++    else {
++      assert.equal(i, report.selectAt + 2); report.selectAt++;
++      assert.deepEqual(added, allowed);
++      assert.equal(b.nativeEvent.trusted, true); assert.equal(b.nativeEvent.canvas, true); assert.equal(b.nativeEvent.zoom, 1);
++      assert.deepEqual(Array.from(value(q, "coordinates.f64")), b.nativeEvent.nativeCoordinates);
++      const [kind, source] = targets[i - 2], header = Array.from(value(decoded, "pick.header.u32")), query = Array.from(value(decoded, "pick.query.u64"));
++      const words = value(q, "header.u32"), stamp = Array.from(value(q, "header.u64"));
++      assert.deepEqual(header, [1, 1, 0, words[0], kind, kind ? 1 : 0, 0, 0]);
++      assert.equal(header[3], value(previous, "header.u32")[0], "pre-query publication revision");
++      assert.deepEqual(query.slice(0, 2), [stamp[0],stamp[2]]);
++      for (const [name,dtype,count] of [["pick.header.u32",2,8n],["pick.query.u64",3,5n],["pick.ref.bytes",6,BigInt(value(decoded,"pick.ref.bytes").length)],["pick.layers.u32",2,kind?1n:0n],["pick.rows.u64",3,kind?1n:0n]]) {
++        const section=newSections.get(name+"#0"); assert.deepEqual([section.dtype,section.index,section.count],[dtype,0,count]);
++      }
++      let ref;
++      if (!kind) {
++        assert.deepEqual(query.slice(2), [0n,0n,0n]);
++        assert.deepEqual(wire.decodeGraphSessionRefs(value(decoded, "pick.ref.bytes")), []);
++        assert.deepEqual(Array.from(value(decoded, "pick.layers.u32")), []); assert.deepEqual(Array.from(value(decoded, "pick.rows.u64")), []);
++      } else {
++        const prefix = kind === 1 ? "node" : "edge", members = value(previous, `render.${prefix}_members.u64`), offsets = value(previous, `render.${prefix}_member_offsets.u64`);
++        const render = Number(query[2]), start = Number(offsets[render]), end = Number(offsets[render + 1]);
++        assert.deepEqual(Array.from(members.slice(start, end)), [BigInt(source)], "actual render maps to independently expected source");
++        assert.deepEqual(query.slice(3), [BigInt(end - start), BigInt(source)]);
++        if (kind === 2 && value(document, "edge.derived")[source]) {
++          const layer = value(document,"edge.layer")[source];
++          ref = {kind:2,resultId:value(document,"layer.result_id",layer),layer,path:value(document,"edge.path")[source],order:BigInt.asUintN(64,value(document,"edge.order")[source])};
++        } else ref = {kind:kind-1,uuid:uuid(value(document, `${prefix}.uuid`).subarray(source*16,(source+1)*16))};
++        assert.deepEqual(value(decoded, "pick.ref.bytes"), wire.encodeGraphSessionRefs([ref]), "exact canonical/derived ref bytes");
++        assert.deepEqual(Array.from(value(decoded, "pick.layers.u32")), [0]);
++        assert.deepEqual(Array.from(value(decoded, "pick.rows.u64")), [value(document, `layer.${prefix}_rows`)[source]]);
++        assert.deepEqual(value(decoded, "selection.result_ids.texts"), [value(document,"layer.result_id")]);
++        assert.deepEqual(Array.from(value(decoded,"selection.result_ids.valid.u8")),[1]);
++      }
++      const semantic = wire.decodeGraphSessionResult(reply);
++      assert.equal(Object.hasOwn(semantic,"pick"),false); for(const key of allowed)assert.ok(semantic.sections.has(key));
++    }
++    report.cases.push({ index:i,operation:b.operation,requestSha256:sha(request),replySha256:sha(reply),priorReplySha256:sha(priorReply),added,oldRawSections:[...oldSections].map(([key,s])=>({key,dtype:s.dtype,index:s.index,count:String(s.count),rawSha256:sha(s.payload)})) });
++    if (b.operation !== 19) previous = decoded;
++  }
++  assert.equal(report.selectAt,17); assert.equal(report.requestBytesExact,19);
++  if(process.env.XYG_PICK_MIGRATION_REPORT)fs.writeFileSync(process.env.XYG_PICK_MIGRATION_REPORT,JSON.stringify(report,null,2)+"\n",{flag:"wx"});
++});
+diff --git a/js/test/graph-session-controller-wire.test.mjs b/js/test/graph-session-controller-wire.test.mjs
+index b91ca7430d8c2fc0c4f4e273bd5383baf19a1f6a..836a4f47a8f0805f6c323bd1b328b250cd9a19fd 100644
+--- a/js/test/graph-session-controller-wire.test.mjs
++++ b/js/test/graph-session-controller-wire.test.mjs
+@@ -213,6 +213,14 @@ test("actual default-arena WASM composition/session bytes decode through focus/s
+     assert.equal(result.clearAction.applicable, false);
+     result = run(4);
+     assert.equal(result.outcome.stateChanged, false, "empty Escape outcome propagates");
++    result = run(1, { coordinates: [10, 100], mode: 0 });
++    const picked = result.sections.get("pick.header.u32#0");
++    assert.ok(picked, "actual SelectAt publication carries additive receipt sections");
++    assert.deepEqual(Array.from(picked.bytes.subarray(0, 12)), [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
++    for (const name of ["pick.query.u64", "pick.ref.bytes", "pick.layers.u32", "pick.rows.u64"]) {
++      assert.ok(result.sections.has(`${name}#0`), `${name} retained as a raw unknown section`);
++    }
++    assert.equal(Object.hasOwn(result, "pick"), false, "existing semantic decoder exposes no new public hover/pick property");
+     const wrong = wire.encodeGraphSessionRequest({ instanceId: instanceId + 1n, opSeq: sequence + 1n, revision, operation: 4 });
+     assert.equal(call(x, handle, "xyg_wasm_graphforge_session_interact", wrong).status, -3);
+     const stale = wire.encodeGraphSessionRequest({ instanceId, opSeq: sequence + 1n, revision: revision + 1, operation: 4 });
+diff --git a/packages/xy-node/test/graph-picked-receipt-diagnostic.mjs b/packages/xy-node/test/graph-picked-receipt-diagnostic.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae91f967232b36ae71b7c11447e7682022280784
+--- /dev/null
++++ b/packages/xy-node/test/graph-picked-receipt-diagnostic.mjs
+@@ -0,0 +1,61 @@
++// Diagnostic actual C/WASM full-byte replay. Reuses existing capacity/arena helpers.
++// Explicit rejected module override is mandatory here; never a shipping qualification.
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import path from "node:path";
++import { createHash } from "node:crypto";
++import { gzipSync } from "node:zlib";
++import test from "node:test";
++import * as native from "../src/native.js";
++import { decodeContainer } from "../src/graphforge-container.js";
++import { ptr, equalBytes, nativeCall, nativeComplete, wasmCall } from "./graph-session-replay-helpers.mjs";
++const sha = b => createHash("sha256").update(b).digest("hex");
++const required = key => { assert.ok(process.env[key], `${key} must explicitly select diagnostic evidence`); return path.resolve(process.env[key]); };
++const modulePath = required("XYG_SESSION_WASM"), corpusPath = required("XYG_PICK_CORPUS"), reportPath = required("XYG_PICK_REPORT");
++assert.ok(!modulePath.includes("/packages/xy-client/dist/") && !modulePath.includes("/python/xyg/static/"));
++const moduleBytes = fs.readFileSync(modulePath), corpus = fs.readFileSync(corpusPath), nativeBytes = fs.readFileSync(native.nativeLibraryPath);
++assert.equal(sha(moduleBytes), "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96", "archived rejected R2 optimized module");
++assert.equal(sha(nativeBytes), "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880", "exact R2 native product identity");
++const view = new DataView(corpus.buffer, corpus.byteOffset, corpus.byteLength); let at = 4;
++const u32 = () => {const n=view.getUint32(at,true);at+=4;return n;};
++const bytes = () => {const n=Number(view.getBigUint64(at,true));at+=8;assert.ok(n<=corpus.length-at);const b=Uint8Array.from(corpus.subarray(at,at+n));at+=n;return b;};
++const format=corpus.subarray(0,4).toString();assert.ok(["XYQP","XYQ2"].includes(format));
++const cases = Array.from({length:u32()},()=>{const n=u32(),name=corpus.subarray(at,at+n).toString();at+=n;const budget=format==="XYQ2"?u32():16*1024*1024;assert.ok([16*1024*1024,384*1024*1024].includes(budget));const steps=Array.from({length:u32()},()=>{const request=bytes(),status=view.getInt32(at,true);at+=4;const expected=bytes();return {request,status,expected};});return {name,budget,steps};});
++assert.equal(at,corpus.length);assert.ok(cases.length>=7);
++const evidence={qualification:"DIAGNOSTIC_CORRECTNESS_ONLY",shippingQualified:false,node:process.version,modulePath,moduleSha256:sha(moduleBytes),nativePath:native.nativeLibraryPath,nativeSha256:sha(nativeBytes),corpusPath,corpusSha256:sha(corpus),cases:[]};
++for (const scenario of cases) test(`DIAGNOSTIC R2 full native/WASM receipt bytes: ${scenario.name}`,async()=>{
++  const {instance}=await WebAssembly.instantiate(moduleBytes,{}),x=instance.exports;
++  const wasm=x.xyg_wasm_instance_new(scenario.budget);assert.ok(wasm>0);
++  const handle=new BigUint64Array(1);let opened=false,last=null;const results=[];
++  try {
++    for(const [index,step] of scenario.steps.entries()){
++      const c=decodeContainer(step.request,"XYGI"),h=c.get("header.u64#0").value,w=c.get("header.u32#0").value,op=w[1];
++      if(op===19){const document=c.get("document.bytes#0").value;assert.equal(native.xyGraphforgeSessionCreate(ptr(document),BigInt(document.length),ptr(step.request),BigInt(step.request.length),h[0],h[1],native.pointer(handle,"uint64_t *")),0);opened=true;}
++      const fn=op===21?native.xyGraphforgeSessionRender:native.xyGraphforgeSessionInteract;
++      const name=op===19?"xyg_wasm_graphforge_session_open":op===21?"xyg_wasm_graphforge_session_render":"xyg_wasm_graphforge_session_interact";
++      const result=wasmCall(x,wasm,name,step.request);assert.equal(result.status,step.status,`step ${index}`);
++      let actualNative=null;
++      if(step.status===0){
++        if(op!==19){actualNative=nativeComplete(fn,handle[0],step.request);equalBytes(actualNative,step.expected,`${scenario.name} ${index} complete native/engine`);equalBytes(result.output,actualNative,`${scenario.name} ${index} complete WASM/native`);}
++        equalBytes(result.output,step.expected,`${scenario.name} ${index} complete WASM/engine`);
++        const retry=wasmCall(x,wasm,name,step.request);assert.equal(retry.status,0);equalBytes(retry.output,result.output,"full WASM retry");
++        if(op!==19)last={request:step.request,fn,reply:step.expected};
++      }else{
++        const refused=nativeCall(fn,handle[0],step.request,0);assert.equal(refused.status,step.status);assert.equal(refused.length,0);
++        assert.ok(last);equalBytes(nativeComplete(last.fn,handle[0],last.request),last.reply,"native refusal preserved retained reply");
++        assert.equal(result.output.length,0,"arena resize discards observable instance output before a new request");
++        const recovered=wasmCall(x,wasm,last.fn===native.xyGraphforgeSessionRender?"xyg_wasm_graphforge_session_render":"xyg_wasm_graphforge_session_interact",last.request);
++        assert.equal(recovered.status,0);equalBytes(recovered.output,last.reply,"WASM refusal preserved retained session retry bytes");
++      }
++      results.push({index,operation:op,status:step.status,requestBytes:step.request.length,requestSha256:sha(step.request),replyBytes:result.output.length,wasmReplySha256:sha(result.output),nativeReplySha256:actualNative?sha(actualNative):null});
++    }
++  }finally{if(opened){assert.equal(native.xyGraphforgeSessionDestroy(handle[0]),0);assert.equal(x.xyg_wasm_graphforge_session_close(wasm),0);}assert.equal(x.xyg_wasm_instance_dispose(wasm),0);}
++  evidence.cases.push({name:scenario.name,budget:scenario.budget,steps:results});
++});
++// beforeExit runs after the test runner has completed all registered cases.
++process.on("beforeExit",()=>{
++  if(evidence.cases.length!==cases.length)return;
++  evidence.cases.sort((a,b)=>a.name.localeCompare(b.name));
++  if(!fs.existsSync(reportPath))fs.writeFileSync(reportPath,JSON.stringify(evidence,null,2)+"\n",{flag:"wx"});
++  const archive=reportPath+".corpus.gz";if(!fs.existsSync(archive))fs.writeFileSync(archive,gzipSync(corpus,{level:6}),{flag:"wx"});
++});
+diff --git a/packages/xy-node/test/graph-picked-receipt-shipping.mjs b/packages/xy-node/test/graph-picked-receipt-shipping.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..b82f1910c5a68e081557477395c02e61c94ca5bf
+--- /dev/null
++++ b/packages/xy-node/test/graph-picked-receipt-shipping.mjs
+@@ -0,0 +1,68 @@
++// Fresh normal shipping-module actual C/WASM full-byte receipt replay.
++// The R4 diagnostic runner remains separate; all replay/capacity guards are identical.
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import path from "node:path";
++import { createHash } from "node:crypto";
++import { gzipSync } from "node:zlib";
++import test from "node:test";
++import { fileURLToPath } from "node:url";
++import * as native from "../src/native.js";
++import { decodeContainer } from "../src/graphforge-container.js";
++import { ptr, equalBytes, nativeCall, nativeComplete, wasmCall } from "./graph-session-replay-helpers.mjs";
++const sha = b => createHash("sha256").update(b).digest("hex");
++const required = key => { assert.ok(process.env[key], `${key} must explicitly select replay evidence`); return path.resolve(process.env[key]); };
++assert.equal(process.env.XYG_SESSION_WASM, undefined, "shipping replay forbids diagnostic module override");
++const modulePath = fileURLToPath(new URL("../../xy-client/dist/xyg-wasm.wasm", import.meta.url));
++const corpusPath = required("XYG_PICK_CORPUS"), reportPath = required("XYG_PICK_REPORT");
++const moduleBytes = fs.readFileSync(modulePath), corpus = fs.readFileSync(corpusPath), nativeBytes = fs.readFileSync(native.nativeLibraryPath);
++const manifest = JSON.parse(fs.readFileSync(new URL("../../xy-client/dist/xyg-wasm.manifest.json", import.meta.url), "utf8"));
++assert.equal(sha(moduleBytes), "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96", "fresh R2 shipping module identity");
++assert.equal(sha(nativeBytes), "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880", "exact R2 native product identity");
++assert.equal(manifest.bytes, moduleBytes.length);
++assert.equal(manifest.sha256, sha(moduleBytes));
++assert.ok(moduleBytes.length <= 1882 * 1024);
++assert.ok(gzipSync(moduleBytes, {level: 6}).length <= 768 * 1024);
++const view = new DataView(corpus.buffer, corpus.byteOffset, corpus.byteLength); let at = 4;
++const u32 = () => {const n=view.getUint32(at,true);at+=4;return n;};
++const bytes = () => {const n=Number(view.getBigUint64(at,true));at+=8;assert.ok(n<=corpus.length-at);const b=Uint8Array.from(corpus.subarray(at,at+n));at+=n;return b;};
++const format=corpus.subarray(0,4).toString();assert.ok(["XYQP","XYQ2"].includes(format));
++const cases = Array.from({length:u32()},()=>{const n=u32(),name=corpus.subarray(at,at+n).toString();at+=n;const budget=format==="XYQ2"?u32():16*1024*1024;assert.ok([16*1024*1024,384*1024*1024].includes(budget));const steps=Array.from({length:u32()},()=>{const request=bytes(),status=view.getInt32(at,true);at+=4;const expected=bytes();return {request,status,expected};});return {name,budget,steps};});
++assert.equal(at,corpus.length);assert.ok(cases.length>=7);
++const evidence={qualification:"FRESH_SHIPPING_MODULE_RECEIPT_BYTE_PARITY",integrationAccepted:false,node:process.version,modulePath,moduleSha256:sha(moduleBytes),nativePath:native.nativeLibraryPath,nativeSha256:sha(nativeBytes),corpusPath,corpusSha256:sha(corpus),cases:[]};
++for (const scenario of cases) test(`shipping R2 full native/WASM receipt bytes: ${scenario.name}`,async()=>{
++  const {instance}=await WebAssembly.instantiate(moduleBytes,{}),x=instance.exports;
++  const wasm=x.xyg_wasm_instance_new(scenario.budget);assert.ok(wasm>0);
++  const handle=new BigUint64Array(1);let opened=false,last=null;const results=[];
++  try {
++    for(const [index,step] of scenario.steps.entries()){
++      const c=decodeContainer(step.request,"XYGI"),h=c.get("header.u64#0").value,w=c.get("header.u32#0").value,op=w[1];
++      if(op===19){const document=c.get("document.bytes#0").value;assert.equal(native.xyGraphforgeSessionCreate(ptr(document),BigInt(document.length),ptr(step.request),BigInt(step.request.length),h[0],h[1],native.pointer(handle,"uint64_t *")),0);opened=true;}
++      const fn=op===21?native.xyGraphforgeSessionRender:native.xyGraphforgeSessionInteract;
++      const name=op===19?"xyg_wasm_graphforge_session_open":op===21?"xyg_wasm_graphforge_session_render":"xyg_wasm_graphforge_session_interact";
++      const result=wasmCall(x,wasm,name,step.request);assert.equal(result.status,step.status,`step ${index}`);
++      let actualNative=null;
++      if(step.status===0){
++        if(op!==19){actualNative=nativeComplete(fn,handle[0],step.request);equalBytes(actualNative,step.expected,`${scenario.name} ${index} complete native/engine`);equalBytes(result.output,actualNative,`${scenario.name} ${index} complete WASM/native`);}
++        equalBytes(result.output,step.expected,`${scenario.name} ${index} complete WASM/engine`);
++        const retry=wasmCall(x,wasm,name,step.request);assert.equal(retry.status,0);equalBytes(retry.output,result.output,"full WASM retry");
++        if(op!==19)last={request:step.request,fn,reply:step.expected};
++      }else{
++        const refused=nativeCall(fn,handle[0],step.request,0);assert.equal(refused.status,step.status);assert.equal(refused.length,0);
++        assert.ok(last);equalBytes(nativeComplete(last.fn,handle[0],last.request),last.reply,"native refusal preserved retained reply");
++        assert.equal(result.output.length,0,"arena resize discards observable instance output before a new request");
++        const recovered=wasmCall(x,wasm,last.fn===native.xyGraphforgeSessionRender?"xyg_wasm_graphforge_session_render":"xyg_wasm_graphforge_session_interact",last.request);
++        assert.equal(recovered.status,0);equalBytes(recovered.output,last.reply,"WASM refusal preserved retained session retry bytes");
++      }
++      results.push({index,operation:op,status:step.status,requestBytes:step.request.length,requestSha256:sha(step.request),replyBytes:result.output.length,wasmReplySha256:sha(result.output),nativeReplySha256:actualNative?sha(actualNative):null});
++    }
++  }finally{if(opened){assert.equal(native.xyGraphforgeSessionDestroy(handle[0]),0);assert.equal(x.xyg_wasm_graphforge_session_close(wasm),0);}assert.equal(x.xyg_wasm_instance_dispose(wasm),0);}
++  evidence.cases.push({name:scenario.name,budget:scenario.budget,steps:results});
++});
++// beforeExit runs after the test runner has completed all registered cases.
++process.on("beforeExit",()=>{
++  if(evidence.cases.length!==cases.length)return;
++  evidence.cases.sort((a,b)=>a.name.localeCompare(b.name));
++  if(!fs.existsSync(reportPath))fs.writeFileSync(reportPath,JSON.stringify(evidence,null,2)+"\n",{flag:"wx"});
++  const archive=reportPath+".corpus.gz";if(!fs.existsSync(archive))fs.writeFileSync(archive,gzipSync(corpus,{level:6}),{flag:"wx"});
++});
+diff --git a/packages/xy-node/test/graph-session-replay-helpers.mjs b/packages/xy-node/test/graph-session-replay-helpers.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..1d103182ebca955cad6d78db236f5a30da225201
+--- /dev/null
++++ b/packages/xy-node/test/graph-session-replay-helpers.mjs
+@@ -0,0 +1,50 @@
++// Shared test-only actual C/WASM replay calls. No wire validation bypass.
++import assert from "node:assert/strict";
++import * as native from "../src/native.js";
++import { decodeContainer } from "../src/graphforge-container.js";
++export const ptr = (bytes) => native.pointer(bytes, "uint8_t *");
++export function equalBytes(actual, expected, label) {
++  const left = Buffer.from(actual);
++  const right = Buffer.from(expected);
++  let differences = "";
++  if (!left.equals(right)) {
++    const a = decodeContainer(actual, "XYGR");
++    const b = decodeContainer(expected, "XYGR");
++    const json = (v) => JSON.stringify(v, (_, x) => typeof x === "bigint" ? `${x}n` : x);
++    differences = [...new Set([...a.keys(), ...b.keys()])]
++      .filter((key) => json(a.get(key)?.value) !== json(b.get(key)?.value))
++      .map((key) => `${key}: WASM=${json(a.get(key)?.value)} native=${json(b.get(key)?.value)}`).join("; ");
++  }
++  assert.equal(Buffer.compare(left, right), 0, `${label}${differences ? `: ${differences}` : ""}`);
++}
++
++export function nativeCall(fn, handle, bytes, capacity) {
++  const output = new Uint8Array(capacity).fill(0xa5);
++  const length = new BigUint64Array(1);
++  const status = fn(handle, ptr(bytes), BigInt(bytes.length), ptr(output), BigInt(capacity), native.pointer(length, "size_t *"));
++  return { status, length: Number(length[0]), output };
++}
++
++export function nativeComplete(fn, handle, bytes) {
++  const zero = nativeCall(fn, handle, bytes, 0);
++  assert.equal(zero.status, -5, "zero capacity applies once and reports required bytes");
++  assert.ok(zero.length > 0);
++  const short = nativeCall(fn, handle, bytes, zero.length - 1);
++  assert.equal(short.status, -5);
++  assert.equal(short.length, zero.length);
++  assert.ok(short.output.every((v) => v === 0xa5), "short output is untouched");
++  const exact = nativeCall(fn, handle, bytes, zero.length);
++  assert.equal(exact.status, 0);
++  assert.equal(exact.length, zero.length);
++  assert.deepEqual(nativeCall(fn, handle, bytes, zero.length).output, exact.output, "serialized retry is byte-identical");
++  return exact.output;
++}
++
++export function wasmCall(x, handle, name, bytes) {
++  assert.equal(x.xyg_wasm_arena_resize(handle, bytes.length), 0);
++  new Uint8Array(x.memory.buffer, x.xyg_wasm_arena_ptr(handle) >>> 0, bytes.length).set(bytes);
++  const status = x[name](handle, 0, bytes.length);
++  const output = new Uint8Array(x.memory.buffer, x.xyg_wasm_output_ptr(handle) >>> 0, x.xyg_wasm_output_len(handle) >>> 0).slice();
++  return { status, output };
++}
++
+diff --git a/packages/xy-node/test/graph-session-wire.test.mjs b/packages/xy-node/test/graph-session-wire.test.mjs
+index 047bbc893b29ef79a781e05c89959d786e78f0da..cfdd72c6566a76f8868fc4dc718cf6f61a0db388 100644
+--- a/packages/xy-node/test/graph-session-wire.test.mjs
++++ b/packages/xy-node/test/graph-session-wire.test.mjs
+@@ -17,22 +17,7 @@ const WASM = process.env.XYG_SESSION_WASM
+   : path.join(ROOT, "packages/xy-client/dist/xyg-wasm.wasm");
+ const field = (name, dtype, values) => ({ name, dtype: DTYPE[dtype], values });
+ const value = (bytes, name, magic = "XYGR") => decodeContainer(bytes, magic).get(`${name}#0`)?.value;
+-const ptr = (bytes) => native.pointer(bytes, "uint8_t *");
+-
+-function equalBytes(actual, expected, label) {
+-  const left = Buffer.from(actual);
+-  const right = Buffer.from(expected);
+-  let differences = "";
+-  if (!left.equals(right)) {
+-    const a = decodeContainer(actual, "XYGR");
+-    const b = decodeContainer(expected, "XYGR");
+-    const json = (v) => JSON.stringify(v, (_, x) => typeof x === "bigint" ? `${x}n` : x);
+-    differences = [...new Set([...a.keys(), ...b.keys()])]
+-      .filter((key) => json(a.get(key)?.value) !== json(b.get(key)?.value))
+-      .map((key) => `${key}: WASM=${json(a.get(key)?.value)} native=${json(b.get(key)?.value)}`).join("; ");
+-  }
+-  assert.equal(Buffer.compare(left, right), 0, `${label}${differences ? `: ${differences}` : ""}`);
+-}
++import { ptr, equalBytes, nativeCall, nativeComplete, wasmCall } from "./graph-session-replay-helpers.mjs";
+ 
+ // Inspection oracle only: compare Rust's GPU buffers with its CPU publication.
+ // This code does not generate geometry or own rendering policy.
+@@ -245,36 +230,6 @@ function withResultIds(data, replacements) {
+   };
+ }
+ 
+-function nativeCall(fn, handle, bytes, capacity) {
+-  const output = new Uint8Array(capacity).fill(0xa5);
+-  const length = new BigUint64Array(1);
+-  const status = fn(handle, ptr(bytes), BigInt(bytes.length), ptr(output), BigInt(capacity), native.pointer(length, "size_t *"));
+-  return { status, length: Number(length[0]), output };
+-}
+-
+-function nativeComplete(fn, handle, bytes) {
+-  const zero = nativeCall(fn, handle, bytes, 0);
+-  assert.equal(zero.status, -5, "zero capacity applies once and reports required bytes");
+-  assert.ok(zero.length > 0);
+-  const short = nativeCall(fn, handle, bytes, zero.length - 1);
+-  assert.equal(short.status, -5);
+-  assert.equal(short.length, zero.length);
+-  assert.ok(short.output.every((v) => v === 0xa5), "short output is untouched");
+-  const exact = nativeCall(fn, handle, bytes, zero.length);
+-  assert.equal(exact.status, 0);
+-  assert.equal(exact.length, zero.length);
+-  assert.deepEqual(nativeCall(fn, handle, bytes, zero.length).output, exact.output, "serialized retry is byte-identical");
+-  return exact.output;
+-}
+-
+-function wasmCall(x, handle, name, bytes) {
+-  assert.equal(x.xyg_wasm_arena_resize(handle, bytes.length), 0);
+-  new Uint8Array(x.memory.buffer, x.xyg_wasm_arena_ptr(handle) >>> 0, bytes.length).set(bytes);
+-  const status = x[name](handle, 0, bytes.length);
+-  const output = new Uint8Array(x.memory.buffer, x.xyg_wasm_output_ptr(handle) >>> 0, x.xyg_wasm_output_len(handle) >>> 0).slice();
+-  return { status, output };
+-}
+-
+ test("standalone temporal owners keep frame and replacement staging at the default arena", async () => {
+   const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+   const x = instance.exports;
+@@ -702,7 +657,7 @@ test("real native/WASM resolved routes, heads, frames and aggregate singleton se
+ // packaged strict-CSP journey. Replaying bytes is a separate host-parity proof.
+ test("captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes", async (t) => {
+   const { gunzipSync } = await import("node:zlib");
+-  const capture = process.env.XYG_GRAPH_POINTER_CAPTURE || path.join(ROOT, "spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/captured-requests.json.gz");
++  const capture = process.env.XYG_GRAPH_POINTER_CAPTURE || path.join(ROOT, "spec/performance/graph-picked-target-r6-2026-11-04/captured-requests.json.gz");
+   const stored = fs.readFileSync(capture);
+   const records = JSON.parse((capture.endsWith(".gz") ? gunzipSync(stored) : stored).toString());
+   assert.ok(records.length > 10);
+diff --git a/scripts/check_release_inventory.py b/scripts/check_release_inventory.py
+index 15eb0c528d5c59effe056bc75700b1f6f6b10722..a2e6b27885cd5587c074456941e77fe151689a04 100644
+--- a/scripts/check_release_inventory.py
++++ b/scripts/check_release_inventory.py
+@@ -462,7 +462,13 @@ def environment_inventory(root: Path, python: PythonInventory) -> list[dict[str,
+         for path in sorted((root / "crates" / crate / "src").rglob("*.rs")):
+             if "bin" in path.parts:
+                 continue
+-            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", path.read_text(), maxsplit=1)[0]
++            text = path.read_text()
++            # This exact leading inner attribute gates the entire module,
++            # even if its parent declares it unconditionally. A directory
++            # name, outer attribute or changed/missing guard proves nothing.
++            if text.startswith("#![cfg(test)]\n"):
++                continue
++            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", text, maxsplit=1)[0]
+             for match in re.finditer(
+                 r'(?:std::)?env::var(?:_os)?\("((?:XYG?_[A-Z0-9_]+)|CODSPEED_ENV)"\)', text
+             ):
+diff --git a/spec/design-dossier.md b/spec/design-dossier.md
+index d359d170a17341079cdba06bdb79d720c5910141..d9e2d851ba709ba2cbcce9749cc8779cd86cab5b 100644
+--- a/spec/design-dossier.md
++++ b/spec/design-dossier.md
+@@ -1247,15 +1247,20 @@ Where it must run, and what each environment denies us:
+ `python/xyg/static/`; these generated bundles are not committed (§33). The
+ direct-browser Rust/WASM surface additionally packages its Worker, optimized
+ module, deterministic inline bootstrap and version/hash manifest. Current
+-WASM functionality gates are **1,878 KiB raw / 765 KiB gzip6 (1,923,072 /
+-783,360 bytes)**, explicitly adopted by the parent on 2026-11-03 after
+-independent property-default source and package assessment. The reviewed
+-1,922,561 / 783,148-byte module leaves 511 / 212 bytes. Shared native home/label
+-policy is newly reachable on that path; exact component costs are unmeasured.
+-The old P1 gate failure remains historical, not a retroactive package pass.
+-The [property package decision receipt](performance/graph-property-default-package-2026-11-03/README.md)
+-records fresh combined CSS/property production packaging, paired asset and
+-manifest validation, full strict-CSP foundation and six unmasked image pairs.
++WASM functionality gates are **1,882 KiB raw / 768 KiB gzip6 (1,927,168 /
++786,432 bytes)**, explicitly adopted by the parent on 2026-11-04 after completed
++independent functionality/correctness reviews for #36 actual picked-target,
++source/group provenance and typed Leave. The best measured R2 inline candidate
++is 1,926,555 / 785,546 bytes, leaving 613 / 886 bytes. The former 1,878/765 gates
++failed it by 3,483 / 2,186 bytes; 1,881/767 still fails by 411 / 138. Growth over
++207 is 3,832 / 2,365. Shared CSR and borrowed refs save 1,022 / 380 over R1;
++rejected R3 Arc adds 1,768 / 55 over R2. Required receipt facts are retained.
++The [R5 functionality decision receipt](performance/graph-picked-target-r5-2026-11-04/README.md)
++separates this explicit decision from fresh production qualification. R1–R4
++measurements and failures remain immutable, including diagnostic-only R4 proof.
++The [R6 current-golden receipt](performance/graph-picked-target-r6-2026-11-04/README.md)
++records the separately authorized fresh actual shipping-browser capture and
++strict raw-section migration, preserving R5's failed historical-golden replay.
+ Compiler/profile/toolchain/optimizer/dependencies/exports/validation and
+ 16-MiB default / 384-MiB maximum arenas are unchanged. No automatic allowance
+ for later growth or performance/milestone/publication acceptance is granted.
+@@ -2856,7 +2861,7 @@ requiring a Rust toolchain — an instant adoption cliff.
+   retains that failure, source/artifact hashes, unchanged historical evidence,
+   and scoped preservation checks; parent integration and independent review
+   remain required. No comparative performance or milestone completion claim.
+-- **Current property-default functionality limits (parent decision 2026-11-03):**
++- **Historical property-default functionality limits (parent decision 2026-11-03):**
+   1,878 KiB raw / 765 KiB gzip6 (1,923,072 / 783,360 bytes), after independent
+   `m4_defaults_audit` source approval of `2ed544dc` and package assessment. The
+   required shared home/label behavior is retained. The reviewed 1,922,561 /
+diff --git a/spec/design/browser-wasm.md b/spec/design/browser-wasm.md
+index 5e70ad9c8f8c1002dffcb41e4dcd67d6a4e9e7b0..a6fbb124e23bc8c09cc033550ba5bfd6c9dc2ec5 100644
+--- a/spec/design/browser-wasm.md
++++ b/spec/design/browser-wasm.md
+@@ -486,7 +486,7 @@ Runtime arenas remain 16 MiB default / 384 MiB maximum; conservative graph
+ admission still prevents the required massive-graph ladder. This establishes no
+ scale, speed, public host/controller/notebook, issue, M4 or #108 acceptance.
+ 
+-**Current property-default functionality gates (parent decision 2026-11-03):
++**Historical property-default functionality gates (parent decision 2026-11-03):
+ 1,878 KiB raw / 765 KiB gzip6 (1,923,072 / 783,360 bytes).** After completed
+ independent source review (`m4_defaults_audit`, approved `2ed544dc`) and package
+ assessment, the parent explicitly retains zero-layer property presentation
+@@ -575,7 +575,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
+ The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
+ bytes (512 KiB)**. They are historical and superseded by the linked-state and
+ temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
+-packaging now enforces 1,878 KiB raw / 765 KiB gzip6 limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only, S4 session-functionality, S5a GPU/result-functionality, P1 selection/progressive-functionality and property-default shared-presentation decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
++packaging now enforces 1,882 KiB raw / 768 KiB gzip6 limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only, S4 session-functionality, S5a GPU/result-functionality, P1 selection/progressive-functionality property-default shared-presentation and #36 picked-target functionality decisions). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+ --all-features` profile remain unchanged; this decision admits functionality,
+ not a compiler optimization or performance win.
+ 
+@@ -1766,3 +1766,59 @@ replacement. Missing/malformed facts fail closed, including old same-ABI modules
+ The shared GLHost resets sampler and texture state on units 0–2 so the graph
+ reference texture cannot inherit a neighbor's LINEAR sampler. See the
+ [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md).
++
++
++### Rust picked-target/typed-leave checkpoint (#36)
++
++The Rust-only query-scoped [receipt contract](graph-interaction.md#212-rust-only-query-receipt-checkpoint-not-integrated-hover)
++adds optional `pick.*` XYGR sections for Hover/SelectAt and action-1 Hover Leave
++with coordinates absent. No export/signature, ABI, GPU-v1 or TypeScript public
++interface changes. The current semantic decoder permits these additive named
++sections without projecting them into a public hover result. Browser scheduling,
++controller hover/events/tooltips and broader acceptance remain deferred. The
++unchanged production optimizer and explicitly adopted 1,882/768-KiB gates remain mandatory.
++
++R4 uses the existing explicit `XYG_SESSION_WASM` test override to replay the
++archived, rejected R2 module from a new `target/` diagnostic directory, against
++the exact R2 native core. No rejected bytes are copied into either shipping asset
++set. Passing the [diagnostic receipt](../performance/graph-picked-target-r4-2026-11-04/README.md)
++provides scoped correctness evidence only. The historical 1,878/765-KiB producer
++failure remains; R4 tests adopted no larger functionality allowance.
++
++
++**Current #36 functionality gates (explicit parent decision 2026-11-04):
++1,882 KiB raw / 768 KiB gzip6 (1,927,168 / 786,432 bytes).** Completed independent
++`m4_defaults_audit` assessment and `s5a_final_review` of the exact R4 patch
++`5383a32d4077dea01d8b9342068c1f20c0eaff6d5a7d7b5e4ef3580a637d3ef8`
++precede the separate parent decision. R2 inline actual-target receipts retain all
++five sections, source/group identity, provenance and no-query typed Leave.
++Measured R2 is 1,926,555 / 785,546 bytes: headroom 613 / 886; previous limits
++failed by 3,483 / 2,186 and 1,881/767 still fails by 411 / 138. R2 shared CSR and
++borrowed refs saved 1,022 / 380 over R1; R3 Arc was worse by 1,768 / 55 and is
++rejected. Growth over 207 is 3,832 / 2,365. No further optimization search or
++automatic allowance is authorized. Compiler/profile/optimizer/dependencies,
++exports, guards, tolerances and existing 16/384-MiB arenas remain unchanged.
++The [R5 decision and production receipt](../performance/graph-picked-target-r5-2026-11-04/README.md)
++records fresh normal shipping producers and remaining qualification. Historical
++failures and diagnostic-only proofs are not retroactive shipping passes.
++The controller still ignores additive receipt sections; no public hover API or
++browser scheduling change is included. #36/M4/#108 and the 685 preparation gaps
++remain open; baseline freeze remains UNACCEPTED. Independent final source and
++policy review remains required before integration.
++
++
++The [R6 current-golden and shipping qualification receipt](../performance/graph-picked-target-r6-2026-11-04/README.md)
++records a fresh actual shipping-browser capture after inheriting reviewed Node
++Buffer exact-span decoding from eb9ea4c7. It preserves all historical captures,
++the R5 25/1 failure, and all R1–R5 receipts. All 19 request bytes are unchanged;
++17 SelectAt replies add only the five versioned pick sections, with every
++pre-existing dtype/index/count/raw payload byte preserved. Open/Render remain
++full-byte exact. The existing full native/WASM replay defaults to this current
++browser golden; it does not ignore sections or expose a public hover result.
++Verified identical R5 producer inputs and all 15 relevant artifacts permit reuse
++of recorded production/CSP proof; fresh browser capture, shipping receipt parity
++and inline-file startup results are recorded separately. The exact 1,882/768-KiB
++gates and 613/886-byte measured headroom are unchanged. No additional allowance,
++optimizer search, arena/guard/validator change, integration or broad acceptance.
++685 preparation gaps and baseline freeze UNACCEPTED remain unchanged; independent
++final full-source and policy review precedes any PR/integration.
+diff --git a/spec/design/graph-interaction.md b/spec/design/graph-interaction.md
+index a5b6a946e5176e3936cadcfd577d4fb12c9e4f92..c69c5d58128c4db6a0dbc3899d395f7e4e6d052b 100644
+--- a/spec/design/graph-interaction.md
++++ b/spec/design/graph-interaction.md
+@@ -188,6 +188,106 @@ builder/final buffers and the existing 3× reply-cache charge. This conservative
+ envelope can refuse sparse multi-layer documents; it never raises session caps.
+ No source-wide element×layer output scratch is allocated.
+ 
++### 2.1.2 Rust-only query receipt checkpoint (not integrated hover)
++
++Hover (operation 0) uses header action 0 for a point query with exactly two
++finite `coordinates.f64` values. Action 1 is typed Leave and forbids the
++coordinates section entirely. Other actions and inapplicable fields refuse
++Invalid. Leave clears only transient hover and performs no pick query; selection,
++focus, pins, highlights and geometry retain their existing semantics.
++
++Successful Hover and SelectAt replies alone add five index-zero sections:
++
++| Section | Dtype/count | Meaning |
++|---|---|---|
++| `pick.header.u32` | U32/8 | `[1, operation, action, queried_revision, kind, form, 0, 0]` |
++| `pick.query.u64` | U64/5 | `[instance_id, op_seq, render_index, member_count, source_index]` |
++| `pick.ref.bytes` | Bytes/existing refs encoding | zero or one exact canonical transport ref |
++| `pick.layers.u32` | U32/M | ascending original layer indices |
++| `pick.rows.u64` | U64/M | aligned original result rows, omitting existing absent-row `u64::MAX` |
++
++Kind is 0 miss/leave, 1 render node, 2 render edge. Form is 0 none, 1 source,
++2 group. Kind explicitly makes `render_index` absent for 0; form explicitly
++makes `source_index` absent unless 1. Absent scalar slots are canonically zero;
++zero is **not** an absence sentinel (source/render index zero remains valid).
++None has zero members, no ref and empty provenance. A group has its actual
++render index/member count, no ref and empty provenance. Aggregate tier nodes
++**and edges always use group form, including singletons**. Direct/EdgeSample
++hits use the actual painted source mapping and exact canonical reference;
++a collapsed Direct representative retains its real source UUID even when its
++member count exceeds one. This is not a keyboard-focus stand-in projection.
++
++The actual `PickTarget`, pre-mutation request stamp, membership count and
++optional source identity are captured in `OpOutcome` at the original single
++point query before state changes. Serialization never repicks or reconstructs
++from selection/focus/flags. The stamp describes that request and pre-query
++publication, not an indefinitely current target. Open, Poll and unrelated
++operations omit all receipt sections. Same-revision style changes and exact
++retries retain the actual query result. Existing stale/refusal transaction
++atomicity applies to receipt construction too.
++
++Provenance reuses `selection.result_ids.texts`/`valid.u8`, preserving absent vs
++present-empty UTF-8. Selection and the optional source borrow projection planes
++once. The picked source index is appended after the resolved selected indices,
++even when already selected. One counted CSR projection handles both sparse
++passes. Combined-target work is admitted before allocating resolved-index and
++borrowed-plane scratch; indices and offsets reserve combined-target count and
++count+1, and layer/row arrays reserve the exact counted mappings. Selection
++emits only the original prefix (including its N+1 offsets); pick emits the row
++suffix. Empty selection, miss, leave and group results preserve valid empty
++slices. The extra provenance entry does not increase the 10,000-ref selection
++cap. The canonical pick ref is encoded from a borrowed one-element slice (or
++empty slice), without a second Vec/ref clone.
++Pre-candidate reservations retain the additional 4,096 fixed bytes and 128
++bytes per present row plane for receipt/scratch/builder/final/cache copies,
++including the extra combined target. No source×layer cache or UUID group
++expansion is introduced; runtime caps remain fixed.
++
++This checkpoint changes no C/WASM signature or browser public interface. The
++existing semantic decoder accepts additive container sections and leaves these
++raw sections unconsumed. TypeScript coalescing/controller hover, public events,
++tooltips, linking and legacy replacement remain unimplemented and unaccepted.
++Production budget qualification is required before any such next phase. The
++685 API preparation gaps remain; the baseline freeze remains **UNACCEPTED**.
++
++The R4 correctness checkpoint retains exact R2 product bytes and inline
++`Option<PickReceipt>`; the rejected R3 Arc experiment is not retained. Test-only
++thread-local probes count actual point calls, admitted combined targets, plane
++borrows, sparse row probes and output-allocation phases. Leave and retries make
++zero point calls; real-query budget/work/cap refusals preserve retained state and
++retry bytes. These phase probes are not a general allocator/RSS measurement.
++The [R4 diagnostic receipt](../performance/graph-picked-target-r4-2026-11-04/README.md)
++records actual-query tier/identity/provenance tests, the frozen R2 full-wire
++transcript and full C/WASM byte replay using an explicitly isolated rejected R2
++module. Small diagnostic cases use the existing 16 MiB arena; the 10,000-selection
++case uses the existing 384 MiB maximum, with no changed limit or default.
++Diagnostic correctness is not package, CSP, controller, release or integration
++qualification. The old 1,878/765-KiB gates rejected R2. After completed independent
++functionality and exact-R4 correctness reviews, a separate explicit parent
++decision adopts exactly 1,882/768 KiB (1,927,168/786,432 bytes). R2 measures
++1,926,555/785,546, leaving 613/886 bytes; no further allowance or size experiment
++is authorized. Fresh production packaging, paired assets, full unfiltered CSP
++and old-controller compatibility are recorded separately in the
++[R5 receipt](../performance/graph-picked-target-r5-2026-11-04/README.md).
++This does not expose receipts through the browser controller or accept #36,
++M4/#108 or the 685 preparation gaps; baseline freeze remains UNACCEPTED.
++Independent final source and policy review is required before integration.
++
++The [R6 current-golden migration](../performance/graph-picked-target-r6-2026-11-04/README.md)
++retains all historical captures and R5's failed exact comparison. A fresh actual
++shipping-browser capture supplies the current default full-byte replay golden:
++19 requests / 17 SelectAt, with all request bytes unchanged. The migration test
++compares each pre-existing section's exact dtype/index/count and raw payload;
++only the five versioned pick sections are added to SelectAt. Open/Render remain
++fully byte-exact. It validates actual request/revision stamps, explicit kind/form,
++source/render mapping, canonical/derived ref bytes and original-row provenance.
++The existing semantic controller retains these as unknown raw sections without
++exposing a public pick API. Fresh native/shipping-WASM replay uses full replies;
++no section filtering, normalization or weakened identity comparison is allowed.
++The reviewed Node exact-span Buffer decoder repair is inherited from eb9ea4c7;
++no Rust production or mapper behavior changes in this migration. Scoped proof
++and explicit size policy do not constitute #36/M4/#108 or freeze acceptance.
++
+ ### 2.2 Operations (`GraphInteractionEvent`)
+ ```
+ 0 Hover{x,y} 1 SelectAt{x,y,mode} 2 Brush{bounds,mode,policy} 3 Lasso{pts,mode,policy} 4 Clear
+@@ -916,7 +1016,7 @@ The subsequent accepted-main integration and explicit parent functionality
+ budget decision are recorded separately in the
+ [integration receipt](../performance/graph-s5a-integration-2026-11-03/README.md)
+ and [package decision receipt](../performance/graph-s5a-package-budget-2026-11-03/README.md).
+-Current hard package limits are 1,829 KiB raw / 747 KiB gzip6, the smallest
++Historical S5a hard package limits were 1,829 KiB raw / 747 KiB gzip6, the smallest
+ next-KiB limits for the integrated 1,872,541 / 764,063-byte module. They retain
+ 355 / 865 bytes of headroom. The historical failed-gate and diagnostic records
+ above remain unchanged. No runtime-arena, ABI/export, compiler/profile/optimizer,
+diff --git a/spec/design/ownership-audit.json b/spec/design/ownership-audit.json
+index 148180297cf166b81696795ee9c781c4803fb4db..45ca4449826fa2fda8995511bf319e46f5d01b5a 100644
+--- a/spec/design/ownership-audit.json
++++ b/spec/design/ownership-audit.json
+@@ -4393,6 +4393,46 @@
+       "disposition": "keep-host",
+       "follow_up_issue": null,
+       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+     }
+   ]
+ }
+diff --git a/spec/design/ownership-audit.md b/spec/design/ownership-audit.md
+index cad1619c691641699352d6e1e335f425973cfb2d..80eb91506d6332ddbf05de4ed886b683f889f3b2 100644
+--- a/spec/design/ownership-audit.md
++++ b/spec/design/ownership-audit.md
+@@ -41,7 +41,7 @@ injected native faults propagate before output, and a host-local fallback event
+ fails the verifier. Dynamic traces prove execution, not absence of every
+ possible duplicate algorithm, so the structural tripwires remain complementary.
+ 
+-The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
++The verifier inventories tracked source under its listed roots. Top-level tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are outside this ledger. Internal Rust test modules under `crates/*/src/` remain in scope and require exact file entries; a `tests` directory name does not waive ownership classification.
+ 
+ Migration status: Scene v25 now moves canonical viewport/plot bounds, numeric
+ axis transforms, chart/plot backgrounds, authored axis side and visibility,
+@@ -1360,6 +1360,12 @@ These additions use the existing ownership policies without adding a host policy
+ | `packages/xy-node/src/graphforge_layout.js` | Node host | `node-host` | `keep-host` | — |
+ | `packages/xy-node/src/graphforge_layout_worker.js` | Node host | `node-host` | `keep-host` | — |
+ 
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++
+ ## Contributor rule
+ 
+ Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
+@@ -1464,3 +1470,9 @@ post-operation state snapshot. TypeScript validates this required fact and owns
+ synchronous keyboard default cancellation after local command admission. It does
+ not infer applicability from selection counts, projected refs, styles or DOM.
+ GLHost resets textures/samplers through unit 2 for shared-client isolation.
++
++
++The R7 inventory review disposition classifies the five R6 picked-target Rust
++test modules in the file ledger under the existing `rust-engine` policy, without
++a new policy or exclusion. They cover exact receipts, projection admission,
++retry/atomicity and diagnostic corpus generation for the shared Rust owner.
+diff --git a/spec/releases/0.6.0-api-inventory.json b/spec/releases/0.6.0-api-inventory.json
+index bc2e4f775936fb556f82c535dd49d3a9cf0bdb6d..22ab71cf1985957018f3a3437cbff9ad7f76c15d 100644
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@ -1195,7 +1195,7 @@
+  "releaseLine":"0.6.0",
+  "schema":"xyg.release-api-inventory/v1",
+  "sourceProvenance":{
+-  "baseCommit":"c3d2e4aa19bcfbf9940775819f03c71cc0934472",
++  "baseCommit":"01f1072985b891d75015290999381f66d901d049",
+   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+  },
+  "sourceSha256":{
+@@ -1373,7 +1373,7 @@
+   "python/xyg/pyplot/_ticker.py":"94ab8ae124e14bcf5d3f75b53f34476f4e0e13849c21c36026263f2986b5ccd8",
+   "python/xyg/temporal_controller.py":"b2707a686ec1707378cac98c1eba70b39b75a3a26f4c8d10974140634806f6b0",
+   "python/xyg/temporal_graph.py":"f872b808275748032edd52502935928525cc32bd0663f7cf8b81c401ef5ac9b8",
+-  "scripts/check_release_inventory.py":"f354f75aa859918c5d275c2c5da86abf4931136207005006847f81541d5354cc",
++  "scripts/check_release_inventory.py":"0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
+   "scripts/check_release_version.py":"49fc49be846049e2200d897eb585a084d4359d2ff8d87d2391d8e3d14dc1382e",
+   "scripts/gen_abi_manifest.py":"66e426507717973dfdf463bb586e3082be909e995c54ec8e128a52147ad0ec1c",
+   "scripts/publish_node_packages.py":"9f6742a5969e0e19dacb837364b7a08a179d991be5e46daeeb4a83aed55e1c80",
+@@ -1384,7 +1384,7 @@
+   "spec/api/api-examples.md":"f6bc43d28cf9ba88855561ff41bd62eb2f3a823c71ca2c87c5356e1b2a2fa094",
+   "spec/api/browser-wasm.md":"7ab775b061bb98d0f0c6f430c935318a651b0f4f1cb3976229d49157ef3a1f0a",
+   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
+-  "spec/design/browser-wasm.md":"a0d0ecba333188d681d9ff2a129aef1b186b36de959aaec1ac56127851de056c",
++  "spec/design/browser-wasm.md":"0a5469ed427bee4ad8854d0eee18eff1a2c61a435d0866262bc129fc90695563",
+   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
+   "spec/design/host-parity.md":"81fcd7fee6ff643ef4d5a398010478d360f901760400136f1463645875266743",
+   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",
+diff --git a/spec/releases/api-inventory.md b/spec/releases/api-inventory.md
+index 2680c7ae460c6970f33685efeb0988ce5c640afd..2d457510be4832c8640c7afc6529e7f52f02e152 100644
+--- a/spec/releases/api-inventory.md
++++ b/spec/releases/api-inventory.md
+@@ -36,6 +36,16 @@ A checkout without that compiler fails with the `npm ci` remedy.
+ | CLI and builds | `pyproject.toml` project scripts and Hatch hook mappings; documented repository operator scripts | Installed CLI entrypoints, hook source paths, and declared operator argument names/options/default expressions. The project currently declares no installed `[project.scripts]` CLI. Repository maintenance scripts are not silently advertised as installed product commands. |
+ | Environment configuration | Source environment lookups in shipped Python/Node/Rust code and `hatch_build.py` | Names, direct lookup defaults and source references; documented browser-discovery constants are included. `XYG_ABI_TRACE_*` diagnostics and `CODSPEED_ENV` benchmark controls remain internal; the Rust SIMD kill switch is included. Build/development/export controls retain their actual scope; a raw lookup default is not a claim about every downstream effective behavior. |
+ 
++Rust environment inspection does not infer test-only ownership from directory or
++module names. An external fixture is omitted only when its source starts with
++the exact module-wide inner attribute `#![cfg(test)]` followed by a newline.
++That actual guard excludes the entire module outside tests even under an
++unconditional parent declaration. Missing, changed, outer, commented or otherwise
++unrecognized guards are scanned conservatively; production modules under a
++`tests/` directory remain inventoried. Existing inline `#[cfg(test)] mod` handling
++is unchanged. The [R7 review disposition](../performance/graph-picked-target-r7-2026-11-04/README.md)
++records positive/negative regression proof and the preserved P2 reproduction.
++
+ Python typing remains source annotations plus `py.typed`; the inspector does not
+ manufacture stubs. Node declarations may be inferred JavaScript types or existing
+ `.d.ts` contracts; callable `any` positions are recorded as review gaps. Browser
+diff --git a/tests/test_release_inventory.py b/tests/test_release_inventory.py
+index bd36f4e42b1a3e2b2f907346dac46ab16e28f5c7..2e8dc5ccdac2b0a860d9c2675907d2e6cff73c34 100644
+--- a/tests/test_release_inventory.py
++++ b/tests/test_release_inventory.py
+@@ -228,11 +228,55 @@ def test_rust_runtime_switches_are_inventoried_but_test_fixtures_are_not(tmp_pat
+     (source / "simd.rs").write_text(
+         'pub fn enabled() { std::env::var_os("XYG_SIMD").is_none_or(|v| v != "0"); }\n#[cfg(test)] mod tests { fn fixture() { std::env::var("XYG_TEST_ONLY"); } }\n'
+     )
++    external = source / "graphforge/interaction/tests/wire"
++    external.mkdir(parents=True)
++    (external / "corpus.rs").write_text(
++        '#![cfg(test)]\nfn fixture() { std::env::var("XYG_PICK_CORPUS"); }\n'
++    )
+     result = inventory.environment_inventory(tmp_path, inventory.PythonInventory(tmp_path))
+     assert [item["name"] for item in result] == ["XYG_SIMD"]
+     assert 'v != "0"' in result[0]["lookups"][0]["expression"]
+ 
+ 
++@pytest.mark.parametrize(
++    ("guard", "production"),
++    [
++        ("", True),
++        ("#![cfg(not(test))]\n", True),
++        ("#[cfg(test)]\n", True),
++        ("// #![cfg(test)]\n", True),
++        ("\n#![cfg(test)]\n", True),  # Unrecognized placement scans conservatively.
++        ("#![cfg(test)]\n", False),
++    ],
++)
++def test_external_rust_modules_require_a_leading_module_wide_test_guard(
++    tmp_path: Path, guard: str, production: bool
++):
++    (tmp_path / "hatch_build.py").write_text("")
++    source = tmp_path / "crates/xyg-engine/src"
++    (source / "tests").mkdir(parents=True)
++    (source / "lib.rs").write_text("pub mod tests;\npub mod live;\n")
++    body = 'pub fn enabled() { std::env::var("XYG_PRODUCTION_UNDER_TESTS"); }\n'
++    fixture = source / "tests/mod.rs"
++    fixture.write_text(guard + body)
++    (source / "live.rs").write_text(body)
++
++    def lookups():
++        result = inventory.environment_inventory(tmp_path, inventory.PythonInventory(tmp_path))
++        assert [row["name"] for row in result] == ["XYG_PRODUCTION_UNDER_TESTS"]
++        assert result[0]["status"] == "unclassified"
++        return {row["source"] for row in result[0]["lookups"]}
++
++    expected = {"crates/xyg-engine/src/live.rs"}
++    if production:
++        expected.add("crates/xyg-engine/src/tests/mod.rs")
++    assert lookups() == expected
++    if not production:
++        # Removing the verified guard must reveal the same production lookup.
++        fixture.write_text(body)
++        assert lookups() == expected | {"crates/xyg-engine/src/tests/mod.rs"}
++
++
+ @pytest.mark.parametrize("typed", [False, True])
+ @pytest.mark.parametrize(
+     "declaration",
