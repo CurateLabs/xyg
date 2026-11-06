@@ -1,3 +1,4 @@
+import { renderGraphHost } from "./66_graph_host";
 import { renderGeoHost } from "./65_geo_host";
 export { XygGeoHostView } from "./65_geo_host";
 export type { XygGeoHostComm } from "./65_geo_host";
@@ -119,6 +120,7 @@ function attachHostWasmTicks(view: ChartView & { _dispatchChartEvent?: Function 
 
 export function render({ model, el }) {
   const spec = model.get("spec");
+  if (spec?.graph_host === true) return renderGraphHost({model,el,attachTicks:attachHostWasmTicks});
   if (spec?.geo_host === true) return renderGeoHost({model,el});
   const buffer = payloadBuffers(spec, model.get("buffers"));
   const comm = {

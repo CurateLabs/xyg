@@ -5,7 +5,8 @@ PolyFill vertex run for the raster and browser painters. The Scene also carries
 the wedge's exact circle geometry (`XYWA`, scene-ir.md "Polar wedge SVG arcs"),
 so static SVG writes `M … A … L … A … Z` with the arc endpoints taken from the
 flattened run, and the PDF converted from that SVG draws Bézier arcs. Native
-PNG output is byte-identical to the pre-arc HEAD.
+PNG output follows the repaired polar clipping/chrome contract; removing only
+the exact-arc sidecar must leave raster commands and PNG bytes unchanged.
 """
 
 from __future__ import annotations
@@ -16,17 +17,20 @@ import re
 import zlib
 
 import numpy as np
+import pytest
 
 import xyg
+from xyg import _native
 from xyg._pdf import svg_to_pdf
 
 _PATH = re.compile(r'<path d="([^"]*)"')
 _CLIP_CIRCLE = re.compile(r'<clipPath id="[^"]*"><circle cx="([^"]+)" cy="([^"]+)" r="([^"]+)"/>')
 
-# Native PNG digests recorded from the pre-arc native core (this branch before XYWA):
-# the exact-arc sidecar must never reach the raster path.
-_HEAD_ROSE_PNG = "eaef5b30e2fa07399e0b837376fd57a3c3b91ee180b860e4a13c56d8934a8dbd"
-_HEAD_POLAR_BAR_PNG = "c87d79ebb18af53d0a32402dd8ff27ec1cbcab39f2c25375b6e115000775212a"
+# #889's independently reviewed native polar clip/chrome repairs supersede the
+# pre-arc output snapshots. XYWA itself must still have no raster effect, proved
+# below by rendering the identical compiled Scene with only XYWA removed.
+_REPAIRED_ROSE_PNG = "7126b2c5228c0e66b80596d6be38e98698f0e08d31c125224a2316b4afa8e2c4"
+_REPAIRED_POLAR_BAR_PNG = "28b91d25f740bd40c5b66cfc8e7935d380cab4fcd11f1870d080599ca60f5bd9"
 
 
 def _rose() -> xyg.Chart:
@@ -137,11 +141,11 @@ def test_full_turn_annulus_splits_each_circle_into_two_arcs() -> None:
     assert math.isclose(arcs[0][3], cy, abs_tol=0.011)
 
 
-def test_native_png_keeps_the_flattened_polygons_byte_identical() -> None:
+def test_native_png_pins_the_repaired_polar_chrome() -> None:
     rose = _rose().figure().to_png(engine=xyg.Engine.default, scale=1.0)
     bar = _polar_bar().figure().to_png(engine=xyg.Engine.default, scale=1.0)
-    assert hashlib.sha256(rose).hexdigest() == _HEAD_ROSE_PNG
-    assert hashlib.sha256(bar).hexdigest() == _HEAD_POLAR_BAR_PNG
+    assert hashlib.sha256(rose).hexdigest() == _REPAIRED_ROSE_PNG
+    assert hashlib.sha256(bar).hexdigest() == _REPAIRED_POLAR_BAR_PNG
 
 
 def test_pdf_draws_wedge_arcs_as_curves() -> None:
@@ -156,3 +160,26 @@ def test_pdf_draws_wedge_arcs_as_curves() -> None:
         if stream
     )
     assert re.search(rb"(?m)^(?:[-\d.]+ ){6}c$", content)
+
+
+@pytest.mark.parametrize("build", [_rose, _polar_bar])
+@pytest.mark.parametrize("scale", [1.0, 2.0])
+def test_exact_arc_sidecar_cannot_change_flattened_raster_output(build, scale):
+    figure = build().figure()
+    scene = figure.to_scene()
+    start = scene.rfind(b"XYWA")
+    assert start >= 0
+    assert int.from_bytes(scene[start + 4 : start + 8], "little") == 1
+    count = int.from_bytes(scene[start + 8 : start + 12], "little")
+    assert count > 0
+    end = start + 32 + 56 * count
+    assert scene[end : end + 4] == b"XYPL", "only remove the bounded XYWA sidecar"
+    flattened = scene[:start] + scene[end:]
+    assert _native.scene_svg(scene) != _native.scene_svg(flattened)
+    assert _native.scene_raster_commands(scene, scale) == _native.scene_raster_commands(
+        flattened, scale
+    )
+    options = {"scale": scale, "width": int(figure.width), "height": int(figure.height)}
+    assert _native.scene_static_export(scene, "png", **options) == _native.scene_static_export(
+        flattened, "png", **options
+    )

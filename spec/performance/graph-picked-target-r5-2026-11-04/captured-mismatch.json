@@ -1,0 +1,343 @@
+{
+  "capture": "spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/captured-requests.json.gz",
+  "captureSha256": "f74f282792a5a71d9f4718277670c897d91affc4d42fa3c0b6a5021ff1a5abc9",
+  "classification": "READ_ONLY_FAILURE_DIAGNOSIS_NOT_A_REPLACEMENT_TEST",
+  "results": [
+    {
+      "index": 1,
+      "operation": 21,
+      "exact": true,
+      "actualBytes": 9128,
+      "expectedBytes": 9128,
+      "actualSha256": "624d5fcab5a48d573f22dacfe31ac408f1a8234ce4136ecea2eb7ea65ebbda7c",
+      "expectedSha256": "624d5fcab5a48d573f22dacfe31ac408f1a8234ce4136ecea2eb7ea65ebbda7c",
+      "added": [],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 2,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9688,
+      "expectedBytes": 9264,
+      "actualSha256": "ba8884da45c55c95e7401dfeb053f5cce22da3c6eb1306c7f922f586849ae79c",
+      "expectedSha256": "d36d4fa5239223f3fd9184d75a40db3764952af3340b25dc825ad781d24343fc",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 3,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9768,
+      "expectedBytes": 9344,
+      "actualSha256": "43d63447f50100ea4c89d12de5c79c5fc380a9c7d1e7ee569ea67021a3f62ec9",
+      "expectedSha256": "1f1d3c3d106fbe16cb54030e4a9d60ea3d70736c987c6bb5d20201f8c827652e",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 4,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9688,
+      "expectedBytes": 9264,
+      "actualSha256": "2e8696297d4052fcbeaddda6117db931bb44bae5eb06674427b627e3be26ab73",
+      "expectedSha256": "da89e10ba23174b1ac0980f5142b33c12cffe44006eb17083a943d3fb212d2bc",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 5,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9768,
+      "expectedBytes": 9344,
+      "actualSha256": "475f1a105b1251e5785187d415699bbf769ecb91d425769b7aac5a5a06938f21",
+      "expectedSha256": "9663891fb1c2fb9001b9bfaeed8e282669bea61585ab829c9b3abaaaf37e51ae",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 6,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9688,
+      "expectedBytes": 9264,
+      "actualSha256": "7c1f90116323e806600f762e13f0a7461fa8c2344f7411773d52e8f32864c6c7",
+      "expectedSha256": "da89e10ba23174b1ac0980f5142b33c12cffe44006eb17083a943d3fb212d2bc",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 7,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9768,
+      "expectedBytes": 9344,
+      "actualSha256": "5b8beb1acc612916bcb2306ff819a80cfece223e9d1444d344cd9aa21b3a4265",
+      "expectedSha256": "9663891fb1c2fb9001b9bfaeed8e282669bea61585ab829c9b3abaaaf37e51ae",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 8,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9800,
+      "expectedBytes": 9376,
+      "actualSha256": "f5abdc4113ce77c0465bb856d3d54216cb70095e077f8e77699bfcffa69d7c74",
+      "expectedSha256": "bbf60b20e4e12aac2fda80dee5f62dddefe5208b0db4486457293d6f435e3e68",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 9,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9744,
+      "expectedBytes": 9320,
+      "actualSha256": "a38cd6ec0f2807e5a1b8238f1c734fcdbd9354682a57cb45cc55fc8d23e33506",
+      "expectedSha256": "6518bba42406448bfc82a7a73c5308844f030813d738433174506b76acb92886",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 10,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9744,
+      "expectedBytes": 9320,
+      "actualSha256": "59e5736497107b2ea48afc6d6657c9ac559d699149fbf92737f901d44cc71958",
+      "expectedSha256": "facbc96a2f4a7c0598c37b2e46b2f7b44eb611f23a39c2491d3bcf5ca8cd6757",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 11,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9792,
+      "expectedBytes": 9352,
+      "actualSha256": "22a01f948b83f21024fbba56b8f4097e0c9eb15ad7535ac44dd08cfa93bc7224",
+      "expectedSha256": "dc9c5b5e91cdee88afa14d1855822fe0baa61693bb5feef183ac7d2902d6c7bf",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 12,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9760,
+      "expectedBytes": 9336,
+      "actualSha256": "6310a8aa14fbe7cd90d3dd082f57e42afe26f17886917b483d6394e4c368fd05",
+      "expectedSha256": "c2b366701924f2a90ae0124860f0b2e7f0195803203f1765b4b379c9ba0e5c1d",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 13,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9744,
+      "expectedBytes": 9320,
+      "actualSha256": "33076abf6f47a6e66bb49ec6b2a781df7d17437bf5d0f51fc640d12035b00e28",
+      "expectedSha256": "022d7e422333bdde78732b1c877be04b77dda3df16896b5fe785e1a8a2fa4efb",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 14,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9536,
+      "expectedBytes": 9184,
+      "actualSha256": "86c38f452ce9338423c40805455f558654ce7a021b278304c9615d073bdf1c1d",
+      "expectedSha256": "f5e9ca0026dce7948447b952a8bc62b401bb09f6e53f52a850c67ba0aaf59b19",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 15,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9688,
+      "expectedBytes": 9264,
+      "actualSha256": "c7d660f1ec3724ab204d3089052e84a4bae044b103abd33e6af010445a515883",
+      "expectedSha256": "d36d4fa5239223f3fd9184d75a40db3764952af3340b25dc825ad781d24343fc",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 16,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9560,
+      "expectedBytes": 9208,
+      "actualSha256": "4a27ae25c9fa17e3f2c04ab33acbc39ef4c046e114492845f931f8a59f1da1fc",
+      "expectedSha256": "58f0ef1baf54b94774842c4974b52cf39f9e1f31284d43fefa5afe876e843f37",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 17,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9560,
+      "expectedBytes": 9208,
+      "actualSha256": "9b90da7fa18c5668af484ea2292108e0052c0f30cd2408e61d9c7d1a714153a7",
+      "expectedSha256": "58f0ef1baf54b94774842c4974b52cf39f9e1f31284d43fefa5afe876e843f37",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    },
+    {
+      "index": 18,
+      "operation": 1,
+      "exact": false,
+      "actualBytes": 9536,
+      "expectedBytes": 9184,
+      "actualSha256": "ecfbd279cf67b71188139186def0527c18fe6d5ae6d49f4c44b2a68278b65b80",
+      "expectedSha256": "f5e9ca0026dce7948447b952a8bc62b401bb09f6e53f52a850c67ba0aaf59b19",
+      "added": [
+        "pick.header.u32#0",
+        "pick.query.u64#0",
+        "pick.ref.bytes#0",
+        "pick.layers.u32#0",
+        "pick.rows.u64#0"
+      ],
+      "removed": [],
+      "changed": [],
+      "expectedBufferDecodeError": "RangeError: malformed XYGR container: text offsets"
+    }
+  ]
+}

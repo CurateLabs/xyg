@@ -1,0 +1,44 @@
+{
+  "qualification": "exact byte reuse from recorded Core/R2 artifacts; no new Rust/WASM production",
+  "native": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-56fb3ea2/target/release/libxyg_core.so",
+    "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "qualifiedBy": "spec/releases/core-rc7-compatibility-2026-11-06/checks.json"
+  },
+  "copiedWasmAssets": {
+    "xyg-wasm.wasm": {
+      "readOnlySource": "/home/ubuntu/.t3/worktrees/xyg/t3-c566baa0/packages/xy-client/dist/xyg-wasm.wasm",
+      "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7"
+    },
+    "xyg-wasm-inline.js": {
+      "readOnlySource": "/home/ubuntu/.t3/worktrees/xyg/t3-c566baa0/packages/xy-client/dist/xyg-wasm-inline.js",
+      "sha256": "371e0f5e68307054a3f4d9260f79c5eaceafda20948e4817d4695d192f108947"
+    },
+    "xyg-wasm.manifest.json": {
+      "readOnlySource": "/home/ubuntu/.t3/worktrees/xyg/t3-c566baa0/packages/xy-client/dist/xyg-wasm.manifest.json",
+      "sha256": "df39ed30ac859444711c74242602b428c70b6f2cb90026b79101f81e3e0a9b31"
+    }
+  },
+  "reusedR2Client": {
+    "packages/xy-client/dist/index.js": {
+      "sha256": "b4520df6dc498c87658c7250a584c6d540de927489345a82e9cb4af657b56aa8",
+      "qualifiedBy": "spec/performance/graph-widget-progressive-r2-2026-11-06/hashes.json"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "69b42f6f6a2caf27694a0302c60bf7cb3a88ec6e78c9ea23d304f8aa00247105",
+      "qualifiedBy": "spec/performance/graph-widget-progressive-r2-2026-11-06/hashes.json"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "qualifiedBy": "spec/performance/graph-widget-progressive-r2-2026-11-06/hashes.json"
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "b4520df6dc498c87658c7250a584c6d540de927489345a82e9cb4af657b56aa8",
+      "qualifiedBy": "spec/performance/graph-widget-progressive-r2-2026-11-06/hashes.json"
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "69b42f6f6a2caf27694a0302c60bf7cb3a88ec6e78c9ea23d304f8aa00247105",
+      "qualifiedBy": "spec/performance/graph-widget-progressive-r2-2026-11-06/hashes.json"
+    }
+  }
+}

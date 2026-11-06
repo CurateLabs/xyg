@@ -1,0 +1,14 @@
+{
+  "js/package-wasm.mjs": "e27f7a26c57d857b2897df83a08619f0d5ab9e534bc2b214f159a101a3a14d17",
+  "js/test/graph-picked-golden-migration.test.mjs": "670bc33a2e5d6d1ded4b2a4848d34d6e0ec6f077095106eeaa693e7b1d926fd0",
+  "js/test/graph-session-controller-wire.test.mjs": "5d48fd85c35837601dbd26697df5ff31fb02e3dfafa7a776c43b55ac25400f1c",
+  "scripts/check_release_inventory.py": "0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
+  "scripts/verify_ci_workflow.py": "4a626b929febb2833f17aa7f8ccefcfd677ee544b772aabacf418708b7670a6a",
+  "spec/design/browser-wasm.md": "ac21ab02e032abd7fae2fe017773bddf0ed2f30574e29fe8468df7f53afb9721",
+  "spec/design/graph-interaction.md": "2e0c08d27201c4089ea215c7a5d2bbc2f003c6337a9de5fc1fd83b9bc61eaa73",
+  "spec/design/graphforge-node-scheduling.md": "1cf2bda3308188d26261337474092e4e81a7fe541aac61f7606341e128467a33",
+  "spec/design/ownership-audit.json": "f5f7d1317863bda0cd92becad40639e6c3a4f316a4cbeaa4fadd79eecac7c0fc",
+  "spec/design/ownership-audit.md": "f5a4639da1243f62b6e99c1b977a7f5ce445d270bb7175401cbc159fd6c382a6",
+  "spec/releases/0.6.0-api-inventory.json": "fe62d8faf9e013d5abfd1f3c515a6d51ae626fde396976e573239b6f26d61c5e",
+  "spec/releases/api-inventory.md": "ba791cc3fb21c60dbda419f6c9cc870eb701b15b839d10d68958789d04dd94cb"
+}

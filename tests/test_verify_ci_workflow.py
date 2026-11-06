@@ -110,6 +110,74 @@ def test_ci_workflow_requires_active_graph_suite_commands(
     assert any(gate in error for error in errors)
 
 
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "js/test/graph-picked-golden-migration.test.mjs",
+    ],
+)
+@pytest.mark.parametrize("replacement", ["remove", "comment", "echo", "mask"])
+def test_ci_requires_active_picked_target_receipt_compatibility(
+    tmp_path: Path, test_path: str, replacement: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text()
+    command = "node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs"
+    assert workflow.count(command) == 1
+    if replacement == "remove":
+        changed = workflow.replace(" " + test_path, "", 1)
+    else:
+        altered = {
+            "comment": "# " + command,
+            "echo": "echo " + command,
+            "mask": command + " || true",
+        }[replacement]
+        changed = workflow.replace(command, altered, 1)
+    target = tmp_path / "ci.yml"
+    target.write_text(changed)
+    assert any(
+        "receipt compatibility" in error
+        for error in verify_ci_workflow.validate_ci_workflow(target)
+    )
+
+
+@pytest.mark.parametrize("key", ["if: false", "continue-on-error: true"])
+def test_ci_receipt_compatibility_step_cannot_be_skipped_or_advisory(
+    tmp_path: Path, key: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text()
+    heading = "      - name: GraphForge native/WASM equivalence\n"
+    target = tmp_path / "ci.yml"
+    target.write_text(workflow.replace(heading, heading + "        " + key + "\n", 1))
+    assert any(
+        "receipt compatibility" in error
+        for error in verify_ci_workflow.validate_ci_workflow(target)
+    )
+
+
+@pytest.mark.parametrize(
+    "prerequisite", ["Build native core", "Build JS client", verify_ci_workflow.WASM_VERIFY_STEP]
+)
+def test_ci_receipt_compatibility_requires_ready_native_client_and_verified_wasm(
+    tmp_path: Path, prerequisite: str
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text()
+    job = verify_ci_workflow._job_blocks(workflow)["test"]
+    block = verify_ci_workflow._named_step_blocks(job)["GraphForge native/WASM equivalence"]
+    # Move the actual command block ahead of one required producer/verification step.
+    # The commands remain intact; their ordering alone must fail the gate.
+    body = job.replace(block, "", 1)
+    heading = "      - name: " + prerequisite
+    assert heading in body
+    changed = body.replace(heading, block + "\n" + heading, 1)
+    target = tmp_path / "ci.yml"
+    target.write_text(workflow.replace(job, changed, 1))
+    assert any(
+        f"must run after {prerequisite}" in error
+        for error in verify_ci_workflow.validate_ci_workflow(target)
+    )
+
+
 def test_ci_workflow_rejects_missing_release_surface_aggregate(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"

@@ -1,0 +1,33 @@
+{
+  "classification": "DIAGNOSTIC_CORRECTNESS_ONLY",
+  "cases": 9,
+  "steps": 468,
+  "publication_successes": 430,
+  "error_steps": 29,
+  "negative_statuses": [
+    -8,
+    -3,
+    -1
+  ],
+  "budgets": {
+    "Aggregate-singletons": 16777216,
+    "collapsed-representative-source-index-2": 16777216,
+    "Direct": 16777216,
+    "EdgeSample": 16777216,
+    "empty-miss-typed-leave": 16777216,
+    "full-selection-10000-existing-384MiB-max": 402653184,
+    "parallel-loop-derived-0": 16777216,
+    "parallel-loop-derived-1": 16777216,
+    "parallel-loop-derived-2": 16777216
+  },
+  "artifacts": {
+    "diagnostic-parity-handoff.json": {
+      "bytes": 207042,
+      "sha256": "5cc885907f96b489d46d5b55a5ca67fafd2a8fc0395f9211f69c3d2960d975b5"
+    },
+    "diagnostic-parity-handoff.json.corpus.gz": {
+      "bytes": 2161156,
+      "sha256": "178501f14ce0c15d90e263d38609594ff2a4c17d96a08ca2c0f7ff49b7909dba"
+    }
+  }
+}

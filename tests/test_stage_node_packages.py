@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -209,3 +211,69 @@ def test_source_manifests_remain_publish_safe() -> None:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         assert manifest["private"] is True
         assert manifest["version"] == "0.0.0"
+
+
+@pytest.mark.parametrize(
+    "version",
+    ["0.6.0-dev.1", "0.6.0-post.1", "0.6.0-rc5", "0.6.0-preview.1", "0.6.0-rc.1.extra"],
+)
+def test_direct_staging_rejects_nonrelease_semver(tmp_path: Path, version: str) -> None:
+    from scripts.stage_browser_package import stage
+
+    with pytest.raises(ValueError, match="invalid npm semver"):
+        _load().stage_facade(client=tmp_path / "absent.js", output=tmp_path, version=version)
+    with pytest.raises(ValueError, match="invalid npm semver"):
+        stage(dist=tmp_path / "absent", output=tmp_path, version=version)
+
+
+def _stage_fixture_version_in_all_roles(tmp_path: Path, version: str) -> None:
+    from scripts import stage_browser_package as browser
+
+    mod = _load()
+    native = mod.stage_platform(
+        platform_id="linux-x64",
+        wheel=_wheel(tmp_path / "xyg.whl", "libxyg_core.so"),
+        output=tmp_path / "native",
+        version=version,
+    )
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    for name in browser.ASSETS:
+        (dist / name).write_bytes(
+            b"\0asm\x01\0\0\0" if name.endswith(".wasm") else b"export const xyg=true;\n"
+        )
+    client = tmp_path / "standalone.js"
+    client.write_text("var xyg={renderStandalone(){}};")
+    facade = mod.stage_facade(client=client, output=tmp_path / "facade", version=version)
+    web = browser.stage(dist=dist, output=tmp_path / "browser", version=version)
+    for staged in (native, facade, web):
+        assert json.loads((staged / "package.json").read_text())["version"] == version
+    assert set(
+        json.loads((facade / "package.json").read_text())["optionalDependencies"].values()
+    ) == {version}
+
+
+@pytest.mark.parametrize("run_number", [1, 42])
+def test_release_workflow_branch_versions_stage_all_package_roles(
+    tmp_path: Path, run_number: int
+) -> None:
+    workflow = (REPO / ".github/workflows/publish.yaml").read_text()
+    versions = re.findall(r'version_args=\(--version "([^"]+)"\)', workflow)
+    assert len(versions) == 3, "browser, platform and facade branch callers must be covered"
+    resolved = [value.replace("${GITHUB_RUN_NUMBER}", str(run_number)) for value in versions]
+    assert len(set(resolved)) == 1
+    _stage_fixture_version_in_all_roles(tmp_path, resolved[0])
+
+
+def test_consumer_smoke_fixture_version_stages_all_package_roles(tmp_path: Path) -> None:
+    tree = ast.parse((REPO / "scripts/consumer_apps_smoke.py").read_text())
+    versions = [
+        node.value.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "version" for target in node.targets)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
+    ]
+    assert len(versions) == 1
+    _stage_fixture_version_in_all_roles(tmp_path, versions[0])

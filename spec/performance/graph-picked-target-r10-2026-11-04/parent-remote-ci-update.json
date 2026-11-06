@@ -1,0 +1,29 @@
+{
+  "source": "New parent wake, recorded as supplied status; no child GitHub read/mutation",
+  "commit": "c318a0cb2a25bd18d21dc925eb234340b06ddbbb",
+  "all_applicable_CI_completed": "SUCCESS",
+  "categories": [
+    "Starlight docs",
+    "packaged WASM",
+    "conformance",
+    "Scene",
+    "install",
+    "matplotlib",
+    "Rust Python JS",
+    "foundation",
+    "Python floor",
+    "sdist",
+    "Linux wheels",
+    "ARM wheels",
+    "Windows wheels",
+    "required Release surfaces"
+  ],
+  "CodeRabbit": {
+    "updated": "2026-11-04T08:00:02Z",
+    "status": "SKIPPED, automatic review disabled",
+    "finding": null
+  },
+  "supersedes": "Earlier pending/may-be-running status recorded in before-sync.json, preserved byte-exact",
+  "scope": "Completed remote success for FINAL APPROVED pre-main-sync c318 only; new R10 independent final review and fresh main-based CI remain required",
+  "new_code_issue_or_scope_change": false
+}

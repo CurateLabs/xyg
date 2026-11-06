@@ -159,3 +159,20 @@ Reconsider a second build system only if an actual hermetic publication
 requirement or a same-runner measured cache benefit justifies its maintenance
 cost. Preserve a complete coverage map in any future migration, including
 feature-gated and cross-host tests.
+
+### Bounded public graph notebook journey
+
+The existing `test` job now runs `Progressive graph notebook journey` after the
+native/client builds and Python environment installation. It installs pinned
+JupyterLab/IPykernel test tooling (no package runtime dependency), drives
+`tests/notebook_graph_progressive.ipynb` through real anywidget binary comms with
+Chromium, and validates the JSON report with
+`scripts/verify_graph_notebook_report.py`. Two widgets, unfinished native
+progress with trusted input, kernel callbacks, screenshots, Python row selection
+and disposal are required. The workflow verifier rejects a removed, conditional
+or replaced command; focused tests reject missing proof and terminal-only input.
+The normal source-path classifier selects these files as release surfaces, and
+`test` remains an input to the existing Release surfaces aggregate. No status,
+merge queue rule, blanket size ladder or release compatibility policy is added.
+Local reproduction is in the
+[R2 receipt](../performance/graph-widget-progressive-r2-2026-11-06/README.md).
