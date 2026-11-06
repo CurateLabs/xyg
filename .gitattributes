@@ -76,3 +76,9 @@ spec/performance/graph-notebook-identity-2026-11-06/*.png -text
 spec/performance/graph-notebook-identity-ownership-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-identity-ownership-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-identity-ownership-2026-11-06/*.gz -text
+
+# Notebook UUID-selection report correction bindings.
+spec/performance/graph-notebook-identity-report-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-identity-report-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-identity-report-2026-11-06/*.gz -text
+spec/performance/graph-notebook-identity-report-2026-11-06/*.png -text

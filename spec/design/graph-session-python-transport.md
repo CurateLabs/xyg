@@ -342,3 +342,14 @@ all browser pointer journeys, accessibility and the full ladder remain open.
 
 Focused tests and the public notebook proof are recorded in the
 [identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
+
+### Notebook identity report contract
+
+The bounded typed-identity notebook proof records its node/edge UUID request
+and Rust composition identity records as `uuidSelection`. The report verifier
+requires that distinct canonical pair and exactly two delivered browser rows.
+Historical row-only reports retain their original one-row requirement; typed
+callback reports without request metadata cannot satisfy the new proof. This
+checks request identity and delivery cardinality, not complete geometric UUID
+sets or scale/frontend/export acceptance. The append-only correction and fresh
+capture are in [the report receipt](../performance/graph-notebook-identity-report-2026-11-06/README.md).
