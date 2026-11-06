@@ -282,3 +282,9 @@ pytest tests/test_chunked_columns.py -q`, and with Node 22 and the same explicit
 native library `node --test packages/xy-node/test/chunked-columns.test.mjs`.
 These are bounded correctness proofs, not larger-than-RAM or competitive timing
 claims. Existing scheduled/manual infrastructure remains the scale authority.
+
+The local canonical reuse regression also exercises 32,768 valid four-row
+chunks: cold reads, warm interior overlap, exact row IDs, doubly linked LRU
+invariants, and shrink/eviction order. Its debug timings are diagnostic output,
+not timing-dependent CI assertions or end-to-end scale qualification. The
+resident lookup must not scan or shift entries as chunk count grows.

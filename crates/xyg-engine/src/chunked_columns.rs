@@ -5,7 +5,7 @@
 //! a fixed header, checked per-chunk metadata, then paired `(x, y)` f64 rows.
 //! Hosts only open a local artifact and request a viewport (§5/§22/§28).
 
-use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::Path;
@@ -170,20 +170,64 @@ impl From<io::Error> for Error {
     }
 }
 
+struct ResidentChunk {
+    raw: Vec<u8>,
+    previous: Option<u32>,
+    next: Option<u32>,
+}
+
 #[derive(Default)]
 struct ResidentChunks {
-    // Front is least recently used. No Arc clones: eviction releases the slab.
-    entries: VecDeque<(u32, Vec<u8>)>,
+    // Hash iteration never determines eviction: links preserve exact LRU order.
+    // No Arc clones: taking or evicting an entry transfers sole slab ownership.
+    entries: HashMap<u32, ResidentChunk>,
+    oldest: Option<u32>,
+    newest: Option<u32>,
     bytes: u64,
     #[cfg(test)]
     positioned_reads: u64,
 }
 impl ResidentChunks {
+    fn take(&mut self, id: u32) -> Option<Vec<u8>> {
+        let entry = self.entries.remove(&id)?;
+        if let Some(previous) = entry.previous {
+            self.entries.get_mut(&previous).unwrap().next = entry.next;
+        } else {
+            self.oldest = entry.next;
+        }
+        if let Some(next) = entry.next {
+            self.entries.get_mut(&next).unwrap().previous = entry.previous;
+        } else {
+            self.newest = entry.previous;
+        }
+        self.bytes -= entry.raw.len() as u64;
+        Some(entry.raw)
+    }
+
+    fn put(&mut self, id: u32, raw: Vec<u8>) {
+        debug_assert!(!self.entries.contains_key(&id));
+        if let Some(newest) = self.newest {
+            self.entries.get_mut(&newest).unwrap().next = Some(id);
+        } else {
+            self.oldest = Some(id);
+        }
+        self.bytes += raw.len() as u64;
+        self.entries.insert(
+            id,
+            ResidentChunk {
+                raw,
+                previous: self.newest,
+                next: None,
+            },
+        );
+        self.newest = Some(id);
+    }
+
     fn trim(&mut self, limit: u64, evicted: &mut Vec<u32>) {
         while self.bytes > limit {
-            let (id, raw) = self.entries.pop_front().unwrap();
+            let id = self.oldest.unwrap();
+            self.take(id).unwrap();
             evicted.push(id);
-            self.bytes -= raw.len() as u64;
         }
     }
 }
@@ -759,11 +803,9 @@ impl ChunkedColumns {
         }
         let bytes = u64::from(meta.row_count) * ROW_BYTES;
         let limit = budget.min(RESIDENT_LIMIT);
-        let position = resident.entries.iter().position(|(id, _)| *id == index);
-        let hit = position.is_some();
-        let raw = if let Some(position) = position {
-            let (_, raw) = resident.entries.remove(position).unwrap();
-            resident.bytes -= bytes;
+        let cached = resident.take(index);
+        let hit = cached.is_some();
+        let raw = if let Some(raw) = cached {
             raw
         } else {
             // Reserve space before allocating scratch. Oversized chunks retain
@@ -814,8 +856,7 @@ impl ChunkedColumns {
             }
         }
         if bytes <= limit {
-            resident.bytes += bytes;
-            resident.entries.push_back((index, raw));
+            resident.put(index, raw);
         }
         Ok(())
     }
@@ -988,12 +1029,83 @@ mod tests {
             resident.bytes,
             resident
                 .entries
-                .iter()
-                .map(|(_, raw)| raw.len() as u64)
+                .values()
+                .map(|entry| entry.raw.len() as u64)
                 .sum()
         );
         assert!(resident.bytes <= limit);
-        resident.entries.iter().map(|(id, _)| *id).collect()
+        let mut ids = Vec::new();
+        let mut current = resident.oldest;
+        let mut previous = None;
+        while let Some(id) = current {
+            assert!(ids.len() < resident.entries.len(), "LRU cycle");
+            let entry = &resident.entries[&id];
+            assert_eq!(entry.previous, previous);
+            ids.push(id);
+            previous = Some(id);
+            current = entry.next;
+        }
+        assert_eq!(ids.len(), resident.entries.len());
+        assert_eq!(previous, resident.newest);
+        ids
+    }
+
+    #[test]
+    fn small_chunks_reuse_and_trim_preserve_exact_lru_and_rows() {
+        let p = path("cache-small-chunks.xygc");
+        let chunks = 32_768u32;
+        let rows = u64::from(chunks) * 4;
+        ChunkedColumns::create(&p, (0..rows as usize).map(|i| (i as f64, i as f64)), 4).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let started = std::time::Instant::now();
+        let first = store
+            .read_range(0.0, (rows - 1) as f64, None, RESIDENT_LIMIT, 1, |_| true)
+            .unwrap();
+        let cold = started.elapsed();
+        assert_eq!(first.chunks_read, chunks);
+        assert_eq!(first.bytes_read, rows * ROW_BYTES);
+        assert_eq!(first.row_ids, (0..rows).collect::<Vec<_>>());
+        assert_eq!(first.resident_bytes, rows * ROW_BYTES);
+        let start = rows / 4;
+        let end = rows * 3 / 4;
+        let started = std::time::Instant::now();
+        let warm = store
+            .read_range(
+                start as f64,
+                (end - 1) as f64,
+                None,
+                RESIDENT_LIMIT,
+                2,
+                |_| true,
+            )
+            .unwrap();
+        let warm_time = started.elapsed();
+        assert_eq!(warm.chunks_read, 0);
+        assert_eq!(warm.bytes_read, 0);
+        assert!(warm.accesses.iter().all(|access| access.hit));
+        assert_eq!(warm.row_ids, (start..end).collect::<Vec<_>>());
+        let expected: Vec<_> = (0..chunks / 4)
+            .chain(chunks * 3 / 4..chunks)
+            .chain(chunks / 4..chunks * 3 / 4)
+            .collect();
+        assert_eq!(assert_accounting(&store, RESIDENT_LIMIT), expected);
+        let page = store
+            .read_range_page((0.0, 31.0), None, 8 * 64, 3, 0, |_| true)
+            .unwrap();
+        assert_eq!(page.read.row_ids, (0..32).collect::<Vec<_>>());
+        assert_eq!(page.read.chunks_read, 8);
+        assert_eq!(page.read.resident_bytes, 8 * 64);
+        assert_eq!(
+            assert_accounting(&store, 8 * 64),
+            (0..8).collect::<Vec<_>>()
+        );
+        assert_eq!(page.read.evicted_chunks, expected);
+        eprintln!(
+            "small-chunk lookup: chunks={chunks}, cold_us={}, warm_middle_us={}",
+            cold.as_micros(),
+            warm_time.as_micros()
+        );
+        std::fs::remove_file(p).unwrap();
     }
 
     #[test]
@@ -1289,10 +1401,11 @@ mod tests {
         assert_eq!(full.points.last().unwrap().row, rows.len() as u64 - 1);
         assert_eq!(full.source_rows, rows.len() as u64);
         assert!(full.points.windows(2).all(|pair| pair[0].row < pair[1].row));
-        assert!(full
-            .points
-            .iter()
-            .all(|point| rows[point.row as usize] == (point.x, point.y)));
+        assert!(
+            full.points
+                .iter()
+                .all(|point| rows[point.row as usize] == (point.x, point.y))
+        );
 
         let bounded = store.overview(37).unwrap();
         assert_eq!(bounded.points.len(), 37);

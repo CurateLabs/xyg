@@ -486,7 +486,9 @@ chunks considered/read, and bytes read. A hard byte budget is checked before I/O
 generation changes cancel stale work between reads. Both read modes reuse validated
 canonical slabs through a per-open Rust LRU capped at 8 MiB and the request byte
 budget. Admission/page boundaries still count hit bytes; only misses perform
-positioned reads. Rust records exact row/chunk identity, hit/miss, evictions and
+positioned reads. A chunk-keyed hash table and linked LRU avoid resident scans
+or entry shifts; hash iteration never controls eviction order. Rust records exact
+row/chunk identity, hit/miss, evictions and
 resident bytes; existing host byte/read counters count actual fetches. Oversized
 admitted chunks bypass retention. See [the precise residency and accounting
 contract](design/rust-engine.md#51a-bounded-local-canonical-chunk-reuse-110),

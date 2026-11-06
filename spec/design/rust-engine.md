@@ -772,6 +772,13 @@ Result rows and access records are bounded by admitted rows/chunks; vectors use
 ordinary Rust capacity growth. Idle stores retain their last admitted residency
 until the next current request or close. Multiple handles have separate budgets.
 
+A chunk-keyed hash table supplies expected amortized constant-time lookup,
+removal and insertion. Previous/next chunk-ID links establish deterministic LRU
+order independently of hash iteration, so hits and evictions do not scan or
+shift resident entries. Trimming costs linear work in entries actually evicted;
+zone-map selection and row validation/decoding retain their existing costs.
+Hash-table capacity and link metadata remain additional to the raw-slab cap.
+
 A per-store lock serializes raw slab ownership, reads and byte accounting;
 generation supersession uses the existing independent atomic watermark and does
 not wait for I/O. Both modes check generation after lock acquisition, around
