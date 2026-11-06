@@ -29,13 +29,17 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "packages" / "xy-client"
 PACKAGE_NAME = "@curatelabs/xyg"
-ASSETS = ("index.js", "standalone.js", "wasm-worker.js", "xyg-wasm.wasm")
+ASSETS = (
+    "index.js",
+    "standalone.js",
+    "wasm-worker.js",
+    "wasm-standalone-worker.js",
+    "xyg-wasm.wasm",
+)
 # `js/package-wasm.mjs` also writes the self-contained HTML inline worker into
 # dist; Python static exports consume it (hatch_build.py), the npm browser
 # package does not, so staging leaves it out rather than rejecting the build.
 PYTHON_ONLY_ARTIFACTS = (
-    # Node HTML uses the full shared tick worker as a classic file: bundle.
-    "wasm-standalone-worker.js",
     "wasm-inline-worker.js",
     "xyg-wasm-inline.js",
     "xyg-wasm.manifest.json",

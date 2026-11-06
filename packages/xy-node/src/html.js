@@ -205,7 +205,9 @@ ${css}</head>
   const view = xy.renderStandalone(${BROWSER_DOCUMENT}.getElementById("chart"), spec, buf);
   const inline = { base64: ${jsonForInlineScript(wasm.toString("base64"))}, classicWorkerSource: ${jsonForInlineScript(workerJs)} };
   const status = ${BROWSER_DOCUMENT}.getElementById("xy-status");
-  addEventListener("pagehide", () => view.destroy(), { once: true });
+  addEventListener("pagehide", (event) => {
+    if (!event.persisted) view.destroy();
+  });
   void (async () => {
     try {
       const worker = new xy.XygWasmWorker({ inline });

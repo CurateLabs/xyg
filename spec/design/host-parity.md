@@ -99,7 +99,8 @@ closed.
 Node `toHtml()` embeds the standalone painter, classic tick Worker and checked
 WASM bytes from the same client distribution directory. The one-file artifact
 attaches the public `attachWasmTicks` lifecycle with owned-worker cleanup and
-disposes its view on `pagehide`. Its CSP allows inline script and WASM compilation,
+disposes its view on non-cached `pagehide`. Cached Back/Forward navigation
+retains the live view and worker, including repeated restores. Its CSP allows inline script and WASM compilation,
 Blob workers, and no network connections. Missing local tick assets fail export
 with `XYG_HTML_ASSET_MISSING`; runtime tick failures show an accessible alert.
 Axis generation and formatting remain in Rust/WASM; no JavaScript tick fallback
@@ -108,7 +109,10 @@ Cartesian HTML snapshots, including time axes; it does not establish temporal
 playback or cursor/range/window export semantics.
 The classic `wasm-standalone-worker.js` is built from the same `wasm_worker.ts`
 tick lane. It accepts inline bytes at initialization, avoiding Chromium's
-opaque-origin rejection of Blob module workers in `file:` documents.
+opaque-origin rejection of Blob module workers in `file:` documents. The
+browser package includes this worker in its five-asset inventory, so resolving
+a separately installed `@curatelabs/xyg/standalone` supplies the same complete
+offline asset set as the bundled Node facade.
 Bounded reproduction: after `node js/build.mjs` and `node js/package-wasm.mjs`,
 run `XYG_NATIVE_LIB=<absolute native library> node scripts/node_html_offline_smoke.mjs <Chromium executable> <evidence directory>`.
 The smoke opens a self-contained UTC-time artifact with the browser offline,

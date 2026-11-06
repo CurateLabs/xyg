@@ -627,7 +627,7 @@ the same npm versions; stable versions are identical.
 Every run packs and dry-publishes all six Node tarballs and the browser tarball.
 The publisher requires exactly these seven packages at one version: five native
 packages, `@curatelabs/xyg`, and `@curatelabs/xyg-node`. Browser validation rechecks
-the four-asset inventory, SHA-256 digests, byte lengths, WASM header, canonical
+the five-asset inventory (including the classic standalone worker), SHA-256 digests, byte lengths, WASM header, canonical
 exports, and absence of runtime dependencies or package executables. A real
 npm upload is additionally gated by an `xyg-v*` ref, non-dry dispatch, repository identity,
 the `npm` GitHub environment, and both `XYG_ALLOW_PYPI_PUBLISH=true` and

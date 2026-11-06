@@ -220,7 +220,7 @@ Recorded (non-fatal) decisions arrive in `composition.decisions` as
   `darwin-x64`, `linux-x64`, `linux-arm64`, `win32-x64`; the native core with
   its NOTICE). Linux cores are the release wheels' `manylinux_2_17` builds, so
   the glibc floor is 2.17, the same as `pip install xyg`.
-- `@curatelabs/xyg` (browser: `index.js`, `standalone.js`, `wasm-worker.js`,
+- `@curatelabs/xyg` (browser: `index.js`, `standalone.js`, `wasm-worker.js`, `wasm-standalone-worker.js`,
   `xyg-wasm.wasm`, `ASSET-MANIFEST.json` with sizes and SHA-256, NOTICE).
   Copy these into the extension's media folder; do not mix versions.
 - Until public npm publication (the 0.6.0-rc.1 cohort, #108), consume the exact-version

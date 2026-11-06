@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { standaloneClientPath, toHtml } from "../src/html.js";
@@ -75,6 +76,25 @@ test("standalone HTML escapes hostile payload text and worker script boundaries"
   assert.ok(!doc.includes(title));
   assert.ok(doc.includes("\\u003c/script\\u003e"));
   assert.ok(doc.includes("pagehide"));
+});
+
+test("cached pagehide retains the chart across repeated restores and final exit cleans up", async () => {
+  const doc = toHtml({ spec: {}, buffers: new Uint8Array() });
+  const bootstrap = doc.slice(doc.lastIndexOf("<script>") + 8, doc.lastIndexOf("</script>"));
+  const events = new EventTarget();
+  let destroyed = 0;
+  runInNewContext(bootstrap, {
+    __xyChunks: [],
+    document: { getElementById: () => ({ remove() {} }) },
+    xy: { renderStandalone: () => ({ destroy() { destroyed++; } }),
+      XygWasmWorker: class {}, attachWasmTicks: async () => {} },
+    addEventListener: events.addEventListener.bind(events),
+  });
+  await Promise.resolve();
+  for (const persisted of [true, true, false]) {
+    events.dispatchEvent(Object.assign(new Event("pagehide"), { persisted }));
+    assert.equal(destroyed, persisted ? 0 : 1);
+  }
 });
 
 test("an incomplete installed client fails before writing an HTML artifact", async () => {

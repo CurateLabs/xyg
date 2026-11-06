@@ -57,6 +57,7 @@ def _fixtures(tmp_path: Path, *, compatibility: bytes | None = None) -> dict[str
         "standalone.js": client,
         "index.js": b"export {};",
         "wasm-worker.js": b"export {};",
+        "wasm-standalone-worker.js": b"/* classic worker */",
         "xyg-wasm.wasm": b"\0asm\x01\0\0\0",
     }
     manifest = {

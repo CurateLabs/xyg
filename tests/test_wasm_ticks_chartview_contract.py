@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -109,7 +110,12 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert '"./xyg-wasm.wasm": "./dist/xyg-wasm.wasm"' in package
     assert "attachWasmTicks" in entries
     assert "XygWasmTicksHandle" in entries
-    assert entries.split("// Public API.", 1)[1].count("attachWasmTicks") == 1
+    public_api = entries.split("// Public API.", 1)[1]
+    assert len(re.findall(r"^\s+attachWasmTicks,\s*$", public_api, re.MULTILINE)) == 1
+    assert re.search(
+        r"export\s*\{\s*attachWasmTicks\s+as\s+attachRustTicks\s*\}\s*from\s*['\"]\./49_wasm_ticks['\"]",
+        public_api,
+    )
     assert "attachHostWasmTicks" in entries.split("// Public API.", 1)[1]
     assert "xy:wasm_ticks_error" in api
     assert "and ChartView may admit" in api

@@ -2235,6 +2235,14 @@
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     },
     {
+      "path": "js/src/49_host_ticks.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
       "path": "js/src/50_chartview.ts",
       "current_owner": "Shared TypeScript browser client",
       "policy": "browser-client",

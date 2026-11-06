@@ -42,6 +42,15 @@ try {
   assert.deepEqual(actual.spec, payload.spec);
   assert.equal(actual.payloadSha256, createHash("sha256").update(Buffer.from(payload.buffers)).digest("hex"));
   assert.ok(actual.timeLabelCount > 0 && actual.injectionAbsent && actual.canvasCount > 0);
+  const cachedPagehideRetainsView = await page.evaluate(() => {
+    const view = globalThis.__offlineView;
+    for (let restore = 0; restore < 2; restore++) {
+      dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true }));
+      dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    }
+    return !view._destroyed && view.root.isConnected;
+  });
+  assert.ok(cachedPagehideRetainsView, "Cached navigation must retain the same live chart");
   assert.deepEqual(requests, []);
   assert.deepEqual(errors, []);
   await page.screenshot({ path: path.join(evidenceDirectory, "temporal.png"), fullPage: true });
@@ -49,7 +58,7 @@ try {
     host: { platform: process.platform, arch: process.arch, nodeVersion: process.version },
     sourceHashes: Object.fromEntries(["../packages/xy-node/src/html.js", "../js/src/wasm_worker.ts", "../js/build.mjs"].map(file =>
       [file, createHash("sha256").update(fs.readFileSync(new URL(file, import.meta.url))).digest("hex")])),
-    offline: true, specMatches: true, payloadMatches: true, timeLabelCount: actual.timeLabelCount,
+    offline: true, specMatches: true, payloadMatches: true, timeLabelCount: actual.timeLabelCount, cachedPagehideRetainsView,
     injectionAbsent: actual.injectionAbsent, httpRequests: requests.length, scriptErrors: errors.length,
     artifactSha256: createHash("sha256").update(html).digest("hex") }, null, 2) + "\n");
   console.log("Node standalone temporal HTML passed offline browser acceptance.");

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -50,6 +52,36 @@ def test_stage_browser_package_is_exact_versioned_offline_inventory(tmp_path: Pa
     ).read_bytes()
     assert (staged / "NOTICE").is_file()
     assert (staged / "LICENSE").is_file()
+
+
+def test_staged_browser_package_supports_external_node_html_fallback(tmp_path: Path) -> None:
+    source = _dist(tmp_path / "dist")
+    (source / "wasm-standalone-worker.js").write_text("/* classic worker fixture */")
+    staged = stage_browser.stage(dist=source, output=tmp_path / "out", version="1.2.3")
+    isolated = tmp_path / "isolated"
+    module = isolated / "src" / "html.js"
+    module.parent.mkdir(parents=True)
+    (isolated / "package.json").write_text('{"type":"module"}')
+    shutil.copyfile(stage_browser.ROOT / "packages/xy-node/src/html.js", module)
+    shutil.copytree(staged, isolated / "node_modules/@curatelabs/xyg")
+    probe = subprocess.run(
+        [
+            "node",
+            "--input-type=module",
+            "--eval",
+            """
+const {toHtml} = await import(process.argv[1]);
+const html = toHtml({spec:{protocol:13,traces:[],columns:[]},buffers:new Uint8Array()});
+if (!html.includes('xy.attachWasmTicks')) throw Error('offline tick bootstrap missing');
+""",
+            module.as_uri(),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert probe.returncode == 0, probe.stderr
+    assert (staged / "dist/wasm-standalone-worker.js").is_file()
 
 
 @pytest.mark.parametrize("extra", ["bundle.js.map", "legacy-xy.js"])
