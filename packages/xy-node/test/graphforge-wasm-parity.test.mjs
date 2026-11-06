@@ -284,9 +284,9 @@ test("unsupported-schema diagnostics are byte-identical on native and WASM", { s
   }
 });
 
-test("published Core rc.5 catalog and path-cost schema rejection match actual WASM", { skip }, async () => {
+for (const coreVersion of ["0.6.0-rc.5", "0.6.0-rc.7"]) test(`published Core ${coreVersion} catalog and path-cost schema rejection match actual WASM`, { skip }, async () => {
   const wasm = await loadWasm();
-  const results = path.join(ROOT, "tests/fixtures/graphforge/results-0.6.0-rc.5");
+  const results = path.join(ROOT, `tests/fixtures/graphforge/results-${coreVersion}`);
   const manifest = JSON.parse(fs.readFileSync(path.join(results, "manifest.json")));
   const read = (name) => fs.readFileSync(path.join(results, `${name}.arrow`));
   const registry = new Map(graphforgeLedger().flatMap((row) => row.algorithms.map((a) => [a, row])));

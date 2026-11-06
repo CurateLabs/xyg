@@ -2120,3 +2120,13 @@ smoke runs within the existing Release surfaces `test` job. It does not prove
 required rendered ladder budgets, every notebook frontend, UUID box/lasso/export
 parity, competitor leadership or #35/#36/#1015 closure. The R1 geometry-only
 candidate is superseded; its receipt remains historical evidence.
+
+
+### Authentic Core rc.7 composition qualification
+
+The [Core rc.7 receipt](../releases/core-rc7-compatibility-2026-11-06/README.md)
+records real published-addon IPC for 96 algorithms plus find, native/Python/Node
+composition, and exact native/WASM document parity. The supported-Core
+declaration adds exact `0.6.0-rc.7`; it declares no interval or final `0.6.0`.
+This Linux x64 GNU qualification is not an installed XYG release cohort, complete
+platform matrix, or notebook/frontend acceptance. #936/#884/#108 remain open.
