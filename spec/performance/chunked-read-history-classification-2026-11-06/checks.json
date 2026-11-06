@@ -1,0 +1,53 @@
+{
+  "reviewedProduct": "82fab9c1239e8df3d4e065c0a7fbcf98759ec9e7",
+  "ci": {
+    "run": 42290594869,
+    "job": 128144199643,
+    "failedStep": "Stale XYG identity names"
+  },
+  "checks": {
+    "before": {
+      "errors": 9,
+      "rawSha256": "fbd614c4a88c788b0b64d897c4d972a9a229a2559dd1952e5fae308494603d21",
+      "archiveSha256": "f77ddf5852cbd4c042f629217782d858e0c55b4eb924288d1a3df8339d3b7841"
+    },
+    "after-bounded": {
+      "errors": 0,
+      "rawSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "archiveSha256": "74420f89d2d2a4256b5b578f1c2a01dd2b605f9aca4905db839d008cfd29cac0"
+    },
+    "focused": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_stale_names.py",
+        "-k",
+        "not repository_has_no_stale_native_identity",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "112e6f555f8367104fe5ae551f42303b888ee8fda790ccc688eb9c748b154e15",
+      "archiveSha256": "2b8766aba90f06e59ed61393b21cf91aa75694cc3835ea850476a92fd04d83ad"
+    },
+    "repository": {
+      "command": [
+        "python3",
+        "scripts/check_stale_names.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840",
+      "archiveSha256": "c37334890ddf4df9c85150168328b2d0cc5bac95e9815dd234d2f9e53e0eba6f"
+    }
+  },
+  "frozenSnapshots": {
+    "spec/performance/chunked-read-validation-2026-11-06/issue-11-blocked-by.json": "644f7b508bb36c53c3af96e9c4212cc6833eadf4020ef32ae68ad2ba3a8c8604",
+    "spec/performance/chunked-read-validation-2026-11-06/issue-5-blocked-by.json": "8add22090cd068e7d1d00999e6517a8b218377ddeaed16aea0749ecc1eaed82d"
+  },
+  "sourceSha256": {
+    "scripts/check_stale_names.py": "fb06164817c46e759cd4624bbc56afd1a53486a3e020009e6053a3e9ebeec20a",
+    "tests/test_stale_names.py": "64637e3f36411802301e224f6c789fcfa65ab1b41784451e98632c133df03121",
+    "spec/design/xyg-naming.md": "ec269681bef573ace25af15c2b17dfe41a53eebd584b0143b7bc3872f28dce8a",
+    "spec/performance/chunked-read-history-classification-2026-11-06/README.md": "3b25fa84f9f7aa764d259236e3c68a0bef8cbec0f448d45fce18e2bb76156572"
+  }
+}

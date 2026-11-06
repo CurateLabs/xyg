@@ -343,3 +343,15 @@ inside this frame; changing any of it means editing this section first.
 - [xy-coverage.md](xy-coverage.md)
 - [host-parity.md](host-parity.md) — three runtime surfaces
 - Dossier §27 (rebuildable caches), §28 (recorded decisions), §32 / §32b
+
+
+## Canonical-column continuation (#110)
+
+The local ordered XYGC path now validates fetched detail slabs against admitted
+zone-map extrema and ordering and cancels stale empty nonpaged reads. The
+bounded failure proof is described in [tier3-testing.md](tier3-testing.md).
+This advances #110 independently while #11/#5 still require successful
+accelerated 100M browser evidence and normalized competitive/remaining headline
+proof. Chunk reuse, full cross-host/WASM orchestration, larger-than-RAM journeys,
+shared-context dashboards (#111) and indexed linked views (#112) remain open;
+this change adds no completion claim or revised resource/performance budget.

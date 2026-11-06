@@ -578,6 +578,7 @@ impl ChunkedColumns {
             if !is_current(generation) {
                 return Err(Error::Cancelled);
             }
+            validate_chunk_rows(&raw, &meta)?;
             out.chunks_read += 1;
             out.bytes_read += bytes;
             for row in raw.chunks_exact(16) {
@@ -593,6 +594,9 @@ impl ChunkedColumns {
                     out.y.push(yy);
                 }
             }
+        }
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
         }
         Ok(out)
     }
@@ -674,6 +678,7 @@ impl ChunkedColumns {
             if !is_current(generation) {
                 return Err(Error::Cancelled);
             }
+            validate_chunk_rows(&raw, &meta)?;
             out.chunks_read += 1;
             out.bytes_read += bytes;
             for row in raw.chunks_exact(16) {
@@ -700,6 +705,38 @@ impl ChunkedColumns {
             done: index >= end,
         })
     }
+}
+
+// Validate fetched detail before it can be published. This checks structural
+// consistency with the admitted zone map, not arbitrary byte authentication.
+fn validate_chunk_rows(raw: &[u8], meta: &ChunkMeta) -> Result<(), Error> {
+    let (mut xmin, mut xmax, mut ymin, mut ymax) = (
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+    );
+    let mut previous_x = f64::NEG_INFINITY;
+    for row in raw.chunks_exact(ROW_BYTES as usize) {
+        let x = f64::from_le_bytes(row[..8].try_into().unwrap());
+        let y = f64::from_le_bytes(row[8..].try_into().unwrap());
+        if x.is_finite() {
+            if x < previous_x {
+                return Err(Error::Corrupt("unordered fetched chunk rows"));
+            }
+            previous_x = x;
+            xmin = xmin.min(x);
+            xmax = xmax.max(x);
+        }
+        if y.is_finite() {
+            ymin = ymin.min(y);
+            ymax = ymax.max(y);
+        }
+    }
+    if (xmin, xmax, ymin, ymax) != (meta.x_min, meta.x_max, meta.y_min, meta.y_max) {
+        return Err(Error::Corrupt("fetched chunk bounds differ from metadata"));
+    }
+    Ok(())
 }
 
 fn write_chunk(
@@ -780,6 +817,55 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn fetched_chunk_corruption_fails_closed_in_both_read_modes() {
+        let p = path("detail-corruption.xygc");
+        ChunkedColumns::create(&p, (0..8).map(|i| (i as f64, i as f64)), 4).unwrap();
+        let original = std::fs::read(&p).unwrap();
+        let offset = (HEADER_BYTES + 2 * META_BYTES) as usize;
+        // Wrong extrema, an out-of-map ordinate, and unordered interior x
+        // values all preserve file length and valid open-time metadata.
+        for (row, axis, value) in [(0, 0, 0.5), (1, 1, 99.0), (2, 0, 0.5)] {
+            let mut bytes = original.clone();
+            let start = offset + row * 16 + axis * 8;
+            bytes[start..start + 8].copy_from_slice(&f64::to_le_bytes(value));
+            std::fs::write(&p, &bytes).unwrap();
+            let store = ChunkedColumns::open(&p).unwrap();
+            assert!(matches!(
+                store.read_range(0.0, 7.0, None, 128, 0, |_| true),
+                Err(Error::Corrupt(_))
+            ));
+            assert!(matches!(
+                store.read_range_page((0.0, 7.0), None, 64, 0, 0, |_| true),
+                Err(Error::Corrupt(_))
+            ));
+        }
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn unpaged_read_checks_generation_even_without_io_and_before_publication() {
+        let p = path("empty-cancel.xygc");
+        ChunkedColumns::create(&p, (0..8).map(|i| (i as f64, i as f64)), 4).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        for (x0, x1, y) in [(20.0, 30.0, None), (0.0, 7.0, Some((20.0, 30.0)))] {
+            assert!(matches!(
+                store.read_range(x0, x1, y, 128, 0, |_| false),
+                Err(Error::Cancelled)
+            ));
+        }
+        let mut checks = 0;
+        assert!(matches!(
+            store.read_range(0.0, 3.0, None, 64, 0, |_| {
+                checks += 1;
+                checks < 3
+            }),
+            Err(Error::Cancelled)
+        ));
+        assert_eq!(checks, 3);
+        std::fs::remove_file(p).unwrap();
     }
 
     #[test]
