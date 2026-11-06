@@ -70,7 +70,10 @@ try{
  const expectedNativeHash=createHash('sha256').update(await readFile(join(root,'target/release/libxyg_core.so'))).digest('hex');
  if(kernel.native.sha256!==expectedNativeHash||kernel.otherClicks!==0)throw Error('native provenance or widget isolation mismatch');
  await page.locator('.jp-Notebook .jp-Cell').nth(2).locator('.cm-content').click();await page.keyboard.press('Shift+Enter');
- await page.getByText('XYG graph Python rows selected',{exact:true}).waitFor({timeout:20000});
+ const selectionOutput=page.locator('.jp-OutputArea').getByText('XYG graph Python rows selected',{exact:false}).last();await selectionOutput.waitFor({timeout:20000});
+ const selectionText=await selectionOutput.innerText();
+ const uuidSelection=JSON.parse(selectionText.slice(selectionText.indexOf('XYG graph Python rows selected')+'XYG graph Python rows selected'.length).trim());
+ await page.waitForFunction(()=>globalThis.__graphEvents.some(e=>e.kind==='select'&&e.detail.total===2),{},{timeout:20000});
  await canvas.scrollIntoViewIfNeeded();
  await page.getByText('Layout complete',{exact:true}).first().waitFor({timeout:45000});
  const finalSteps=await surface.getAttribute('data-graph-steps');
@@ -101,7 +104,7 @@ try{
  if(external.length)throw Error('external requests '+external.join(','));
  const frames=await page.evaluate(()=>globalThis.__graphFrames);
  if(frames[0]?.step!=='1'||!frames[0]?.width)throw Error('missing initial one-tick native paint');
- const result={artifactDir:temp,presentation:title,kernel,finalPointer,finalPointerVerified:finalPointer.after>finalPointer.before,expectedNativeHash,initialPicture,widgetCount,events,frames,kernelVerified:true,disposed:true,pageErrors,ok:true,journey:'actual JupyterLab/IPython/anywidget/native retained graph',firstSteps,finalSteps,dimensions,browser:browser.version(),external,errors};
+ const result={artifactDir:temp,presentation:title,kernel,uuidSelection,finalPointer,finalPointerVerified:finalPointer.after>finalPointer.before,expectedNativeHash,initialPicture,widgetCount,events,frames,kernelVerified:true,disposed:true,pageErrors,ok:true,journey:'actual JupyterLab/IPython/anywidget/native retained graph',firstSteps,finalSteps,dimensions,browser:browser.version(),external,errors};
  if(process.env.XYG_GRAPH_NOTEBOOK_REPORT)await writeFile(process.env.XYG_GRAPH_NOTEBOOK_REPORT,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 }catch(error){throw Error(JSON.stringify({error:error.message,errors,frames:await page?.evaluate(()=>globalThis.__graphFrames),actions:await page?.evaluate(()=>globalThis.__graphActions),body:await page?.locator('body').innerText().catch(()=>''),outputs:await page?.locator('.jp-OutputArea').evaluateAll(els=>els.map(el=>el.innerHTML.slice(-6000))).catch(()=>[]),logs:logs.slice(-6000)}));}
 finally{await browser?.close();server.kill('SIGTERM');}

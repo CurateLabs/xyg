@@ -14,6 +14,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from functools import partial
 
+from ._graph_session import GraphSessionError, GraphSessionStatus
+from ._graph_widget_identity import NotebookGraphIdentity
 from .channel import handle_message
 from .graph_layout import GraphLayoutController
 from .widget import FigureWidget
@@ -86,6 +88,20 @@ class GraphWidget(FigureWidget):
             figure.legend_toggle(trace, visibility["hidden"])
             for category in visibility["categories"]:
                 figure.legend_toggle(trace, True, category)
+        figure._notebook_graph_identity = NotebookGraphIdentity(
+            self._chart._graphforge_composition,
+            figure._graph_meta[graph_index],
+            figure,
+            checkpoint.x,
+            checkpoint.y,
+            prepare=False,
+        )
+        if any((self._callbacks.on_click, self._callbacks.on_hover, self._callbacks.on_select)):
+            try:
+                figure._notebook_graph_identity.prepare()
+            except GraphSessionError as error:
+                if error.status != GraphSessionStatus.BUDGET:
+                    raise
         return figure, figure.build_payload_split()
 
     async def _run(self, epoch):
@@ -232,8 +248,57 @@ class GraphWidget(FigureWidget):
             return copy.deepcopy(self._last_view_state)
         return super().view_state()
 
-    def select(self, **kwargs):
+    def select(self, *, uuids=None, **kwargs):
+        if uuids is not None:
+            if kwargs:
+                raise ValueError("uuids cannot be combined with geometric or row selection")
+            return self._host_call(self._select_uuids, tuple(uuids))
         return self._host_call(super().select, **kwargs)
+
+    def _select_uuids(self, uuids):
+        identity = self._figure._notebook_graph_identity
+        rows = identity.render_rows(identity.select(uuids))
+        self._state_versions["selection"] += 1
+        self._figure_versions[self._revision]["selection"] = self._state_versions["selection"]
+        return super().select(rows=rows)
+
+    def _identity_callbacks(self, figure):
+        def project(per_trace):
+            try:
+                return figure._notebook_graph_identity.project(per_trace), None
+            except GraphSessionError as error:
+                if error.status not in (
+                    GraphSessionStatus.BUDGET,
+                    GraphSessionStatus.SELECTION_TOO_LARGE,
+                ):
+                    raise
+                return [], "XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"
+
+        def row_callback(callback, row):
+            projection, error = project({row["trace"]: [row["index"]]})
+            result = {**row, "graphforge": projection}
+            if error:
+                result["graphforge_error"] = error
+            callback(result)
+
+        def selection_callback(selection):
+            selection.graphforge, error = project(selection.per_trace)
+            if error:
+                selection.graphforge_error = error
+            callback = self._callbacks.on_select
+            assert callback is not None
+            callback(selection)
+
+        return replace(
+            self._callbacks,
+            on_click=partial(row_callback, self._callbacks.on_click)
+            if self._callbacks.on_click
+            else None,
+            on_hover=partial(row_callback, self._callbacks.on_hover)
+            if self._callbacks.on_hover
+            else None,
+            on_select=selection_callback if self._callbacks.on_select else None,
+        )
 
     def set_view(self, *args, **kwargs):
         return self._host_call(super().set_view, *args, **kwargs)
@@ -277,6 +342,14 @@ class GraphWidget(FigureWidget):
             "visibility": [(t.hidden, set(t.hidden_categories)) for t in figure.traces],
         }
 
+    def _retire_identity(self, keep=None):
+        figures = list(self._figures.values())
+        if self._figure is not None:
+            figures.append(self._figure)
+        for figure in figures:
+            if figure is not keep:
+                figure._notebook_graph_identity.close()
+
     def _cancel(self):
         if self._loop is not None and self._loop.is_running():
             try:
@@ -316,6 +389,7 @@ class GraphWidget(FigureWidget):
             self._cancel()
             self._epoch = epoch
             self._failed = False
+            self._retire_identity()
             self._figures.clear()
             self._figure_versions.clear()
             if self._figure is not None:
@@ -328,6 +402,7 @@ class GraphWidget(FigureWidget):
         if epoch == self._epoch and content.get("type") == "graph_dispose":
             self._epoch = None
             self._cancel()
+            self._retire_identity()
             self._figures.clear()
             return
         revision = content.get("graph_revision")
@@ -335,6 +410,7 @@ class GraphWidget(FigureWidget):
             return
         if content.get("type") == "graph_painted":
             if revision == self._revision and self._ack is not None:
+                self._retire_identity(keep=self._figures[revision])
                 self._figures = {revision: self._figures[revision]}
                 self._figure_versions = {revision: self._figure_versions[revision]}
                 self._ack.set()
@@ -348,7 +424,9 @@ class GraphWidget(FigureWidget):
             # never reinterpret old indices against newer moving geometry.
             figure = self._figures[revision]
             before = self._state(figure)
-            reply = handle_message(figure, content, msg_buffers, callbacks=self._callbacks)
+            reply = handle_message(
+                figure, content, msg_buffers, callbacks=self._identity_callbacks(figure)
+            )
             after = self._state(figure)
             for field in before:
                 if before[field] == after[field]:
@@ -389,6 +467,7 @@ class GraphWidget(FigureWidget):
             return
         self._closed = True
         self._pending_api.clear()
+        self._retire_identity()
         self._figures.clear()
         self._epoch = None
         self._cancel()

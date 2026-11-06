@@ -35,6 +35,10 @@ retains native-coordinate/full-byte parity and capability refusal evidence.
 This adds exact Rust-owned selection to that opt-in browser attachment;
 it does not establish hover/gesture, public-host, scale or competitor acceptance.
 
+Python notebooks expose a bounded [typed graph identity/UUID highlight slice](../design/graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06).
+Its focused Rust provenance and small JupyterLab journey evidence does not
+qualify all frontends, exact geometric UUID sets, exports or scale budgets.
+
 Named-colorbar numeric-domain admission has a separate
 [capability comparison and reproducible Matplotlib evidence](../benchmarks/named-colorbar-888/README.md).
 Static XYCB v2 retains every named palette sample on admitted extreme finite

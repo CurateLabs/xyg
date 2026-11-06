@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import uuid
 from itertools import pairwise
 from pathlib import Path
 
@@ -49,11 +50,35 @@ def verify(report):
         or kernel.get("views", 0) < 1
     ):
         errors.append("actual kernel keyboard/readout/navigation callbacks required")
+    uuid_selection = report.get("uuidSelection")
+    expected_total = 1
+    if uuid_selection is not None:
+        expected_total = 2
+        try:
+            requested = uuid_selection["requested"]
+            identities = uuid_selection["identities"]
+            if (
+                not isinstance(requested, list)
+                or len(requested) != 2
+                or len(set(requested)) != 2
+                or any(str(uuid.UUID(value)) != value for value in requested)
+                or not isinstance(identities, list)
+                or len(identities) != 2
+                or [identity["kind"] for identity in identities] != ["node", "edge"]
+                or [identity["uuid"] for identity in identities] != requested
+            ):
+                errors.append("exact node and edge UUID selection request required")
+        except (KeyError, ValueError, TypeError, AttributeError):
+            errors.append("malformed node and edge UUID selection request")
+    elif any("graphforge" in click for click in kernel.get("clicks", [])):
+        errors.append("typed identity journey requires its UUID selection request")
     if not any(
-        event.get("kind") == "select" and event.get("detail", {}).get("total") == 1
+        event.get("kind") == "select"
+        and type(event.get("detail", {}).get("total")) is int
+        and event["detail"]["total"] == expected_total
         for event in report.get("events", {}).get("events", [])
     ):
-        errors.append("exactly one Python-origin selected row must reach the view")
+        errors.append(f"exactly {expected_total} Python-origin selected rows must reach the view")
     pointer = report.get("finalPointer", {})
     if (
         report.get("finalPointerVerified") is not True
