@@ -1,0 +1,46 @@
+{
+  "reviewedCandidate": "cd46f5dc036346344496a1d9b8c416b98d6c0e82",
+  "discovery": {
+    "before": false,
+    "after": true,
+    "soleAddition": "test/temporal-graph-publication.test.mjs",
+    "existingCiCommand": "npm test --prefix packages/xy-node"
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "uvPython": "Python 3.12.15"
+  },
+  "sourceSha256": {
+    "packages/xy-node/package.json": "d9806c71ca9cd5e667d11d37ce69665f0244f6a04ca320da57ffd1ebbd69360d",
+    "packages/xy-node/test/temporal-graph-publication.test.mjs": "83e4d97c64c9ce9178fc98916a78cde7b6ed2cb6ade4c95792a1bd1698ba8413",
+    ".github/workflows/ci.yml": "281b58be7f0bf65a2a03de177ebb622220e351e0118a0308262f8f2d56822cec",
+    "spec/performance/temporal-frame-ci-wiring-2026-11-06/README.md": "f1a714f9b5a60f2c66b7e1f28b8b872fa7aa82ff8fd30a9054a2787bc7a7a984"
+  },
+  "artifactSha256": {
+    "target/release/libxyg_core.so": "02f0edf9c79ae1408821c197981b37ebe8f5746a4e1a8df4f8a3ccf468f6519e",
+    "packages/xy-client/dist/xyg-wasm.wasm": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+  },
+  "checks": {
+    "node": {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/temporal-graph-publication.test.mjs"
+      ],
+      "exitCode": 0,
+      "rawSha256": "3e29121d111348ec2af1a9ec1a0ab034932a77dfb69c33c5c2c80a0ea107161d",
+      "archiveSha256": "28fdf2d563474aa318e6da42b16f5e831e8287df9368fe9efc6c7747adffe7fb"
+    },
+    "workflow": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ci_workflow.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "063287236b54e40c8c91e90c2bfc5c890a330ebc0cb22074c4cac51311d12899",
+      "archiveSha256": "abf191a7a9aa6f324b3a5b72e93ce75cdb7d8f23304b562c11c76c1589f93e2b"
+    }
+  }
+}
