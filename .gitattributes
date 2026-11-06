@@ -24,3 +24,10 @@ scripts/gen_graphforge_rc7_result_fixtures.cjs text eol=lf
 tests/fixtures/graphforge/results-0.6.0-rc.7/*.json text eol=lf
 spec/releases/core-rc7-compatibility-2026-11-06/** text eol=lf
 spec/releases/core-rc7-generator-default-2026-11-06/** text eol=lf
+
+# Current Core rc.7 source bindings must survive autocrlf checkouts byte-for-byte.
+.gitattributes text eol=lf
+spec/api/graphforge-integration.md text eol=lf
+spec/design/host-parity.md text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+spec/releases/core-rc7-checkout-repair-2026-11-06/** text eol=lf

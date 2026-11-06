@@ -32,6 +32,16 @@ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> N
             for name in ("contracts.tsv", "provenance.json")
         )
         paths.append(Path("tests/fixtures/graphforge") / results / "manifest.json")
+    correction = Path("spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json")
+    current = json.loads((ROOT / correction).read_text())
+    paths.extend(Path(path) for path in current["sourceSha256"])
+    paths.extend(
+        [
+            correction,
+            Path("spec/releases/core-rc7-generator-default-2026-11-06/original-generator.cjs"),
+        ]
+    )
+    paths = list(dict.fromkeys(paths))
     original = {path: (ROOT / path).read_bytes() for path in paths}
     # An unpinned control must change, proving checkout filtering was exercised.
     original[Path("windows-default.txt")] = b"Windows default line endings\n"
@@ -139,13 +149,6 @@ def test_rc5_fixtures_record_the_actual_published_binding_and_generation() -> No
         (ROOT / "tests/fixtures/graphforge/core/0.6.0-rc.5/provenance.json").read_text()
     )
     assert generation["coreVersion"] == provenance["coreVersion"] == "0.6.0-rc.5"
-    # The original IPC producer is frozen; later CLI/default changes are bound
-    # separately so historical fixtures never claim a different producing source.
-    current = json.loads(
-        (ROOT / "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json").read_text()
-    )
-    for source, expected in current["sourceSha256"].items():
-        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == expected
     assert generation["coreSourceCommit"] == provenance["commit"]
     assert (
         generation["manifestSha256"]
@@ -173,7 +176,7 @@ def test_rc7_artifact_provenance_and_every_generated_ipc_are_bound() -> None:
     # The original IPC producer is frozen; later CLI/default changes are bound
     # separately so historical fixtures never claim a different producing source.
     current = json.loads(
-        (ROOT / "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json").read_text()
+        (ROOT / "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json").read_text()
     )
     for source, expected in current["sourceSha256"].items():
         assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == expected
