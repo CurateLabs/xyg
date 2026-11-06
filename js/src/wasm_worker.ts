@@ -137,7 +137,12 @@ async function initialize(message: any) {
   try {
     evidenceCapability = typeof message.evidenceCapability === "string" && message.evidenceCapability.length >= 24
       ? message.evidenceCapability : null;
-    const module = await loadModule(message.source);
+    // The classic standalone build receives checked bytes inline, without a
+    // URL/module loader. Initialization and all tick admission stay shared.
+    const source = typeof message.base64 === "string" && message.base64.length
+      ? { kind: "bytes", value: Uint8Array.from(atob(message.base64), character => character.charCodeAt(0)).buffer }
+      : message.source;
+    const module = await loadModule(source);
     if (isDisposed()) return;
     if (WebAssembly.Module.imports(module).length !== 0) {
       throw new WasmInitError("XYG_WASM_IMPORTS_REJECTED", "XYG WASM module must not request ambient imports");

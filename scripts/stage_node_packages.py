@@ -30,6 +30,7 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ROOT / "packages"
+STANDALONE_ASSETS = ("standalone.js", "wasm-standalone-worker.js", "xyg-wasm.wasm")
 
 PLATFORMS = {
     "darwin-arm64": ("libxyg_core.dylib", "darwin", "arm64"),
@@ -179,7 +180,8 @@ def stage_facade(*, client: Path, output: Path, version: str) -> Path:
         ROOT / "python/xyg/graphforge-compatibility.json",
         destination / "graphforge-compatibility.json",
     )
-    _copy_file(client, destination / "client" / "standalone.js")
+    for name in STANDALONE_ASSETS:
+        _copy_file(client.parent / name, destination / "client" / name)
 
     manifest = _release_manifest(source / "package.json", version)
     manifest["optionalDependencies"] = {
@@ -187,7 +189,7 @@ def stage_facade(*, client: Path, output: Path, version: str) -> Path:
     }
     manifest["files"] = [
         "src",
-        "client/standalone.js",
+        *(f"client/{name}" for name in STANDALONE_ASSETS),
         "graphforge-compatibility.json",
         "README.md",
         "NOTICE",
@@ -246,9 +248,9 @@ def _verify_facade(directory: Path, version: str, source_client: Path) -> None:
     expected = {f"@curatelabs/xyg-node-{platform_id}": version for platform_id in sorted(PLATFORMS)}
     if manifest.get("optionalDependencies") != expected:
         raise ValueError("facade optionalDependencies are not exact-version aligned")
-    staged_client = directory / "client" / "standalone.js"
-    if _sha256(staged_client) != _sha256(source_client):
-        raise ValueError("facade standalone client drifted during staging")
+    for name in STANDALONE_ASSETS:
+        if _sha256(directory / "client" / name) != _sha256(source_client.parent / name):
+            raise ValueError(f"facade standalone asset {name} drifted during staging")
 
 
 def main(argv: list[str] | None = None) -> int:

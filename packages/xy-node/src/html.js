@@ -20,7 +20,7 @@ const B64_CHUNK_BYTES = 48 * 2 ** 20;
 
 const STANDALONE_CSP =
   "default-src 'none'; " +
-  "script-src 'unsafe-inline'; " +
+  "script-src 'unsafe-inline' 'wasm-unsafe-eval'; " +
   "style-src 'unsafe-inline'; " +
   "img-src data:; " +
   "font-src data:; " +
@@ -156,7 +156,15 @@ export function toHtml(figOrPayload, path = null, opts = {}) {
     throw new TypeError("toHtml payload is missing spec");
   }
   const blob = asBuffer(buffers);
-  const clientJs = javascriptForInlineScript(readFileSync(standaloneClientPath(), "utf8"));
+  const clientDirectory = dirname(standaloneClientPath());
+  const clientJs = javascriptForInlineScript(readFileSync(join(clientDirectory, "standalone.js"), "utf8"));
+  let workerJs, wasm;
+  try {
+    workerJs = readFileSync(join(clientDirectory, "wasm-standalone-worker.js"), "utf8");
+    wasm = readFileSync(join(clientDirectory, "xyg-wasm.wasm"));
+  } catch (cause) {
+    throw Object.assign(new Error("Standalone HTML tick assets missing; bundle wasm-standalone-worker.js and xyg-wasm.wasm beside standalone.js.", { cause }), { code: "XYG_HTML_ASSET_MISSING" });
+  }
   const specJs = jsonForInlineScript(spec);
   const titleHtml = escapeHtml(title || "XYG");
   const css = customCssBlock(opts.customCss);
@@ -172,6 +180,7 @@ html,body{margin:0;width:100%;min-height:100%;font-family:system-ui,sans-serif;b
 </style>
 ${css}</head>
 <body>
+<p id="xy-status" role="status">Loading chart…</p>
 <div id="chart"></div>
 <script>`,
     clientJs,
@@ -193,7 +202,24 @@ ${css}</head>
   parts.push(`;
   const buf = xyDecodeB64(__xyChunks, ${blob.length});
   __xyChunks.length = 0;
-  xy.renderStandalone(${BROWSER_DOCUMENT}.getElementById("chart"), spec, buf);
+  const view = xy.renderStandalone(${BROWSER_DOCUMENT}.getElementById("chart"), spec, buf);
+  const inline = { base64: ${jsonForInlineScript(wasm.toString("base64"))}, classicWorkerSource: ${jsonForInlineScript(workerJs)} };
+  const status = ${BROWSER_DOCUMENT}.getElementById("xy-status");
+  addEventListener("pagehide", (event) => {
+    if (!event.persisted) view.destroy();
+  });
+  void (async () => {
+    try {
+      const worker = new xy.XygWasmWorker({ inline });
+      await xy.attachWasmTicks(view, { worker, workerOwnership: "own" });
+      status.remove();
+    } catch (error) {
+      status.textContent = "XYG could not initialize chart axis ticks. Export the chart again with a complete XYG installation.";
+      status.setAttribute("role", "alert");
+      if (typeof globalThis.__xygStandaloneObserver === "function")
+        globalThis.__xygStandaloneObserver({ phase: "ticks_error", code: error.code, message: error.message });
+    }
+  })();
 </script>
 </body>
 </html>`);

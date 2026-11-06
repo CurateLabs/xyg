@@ -96,6 +96,32 @@ two native hosts and the real-browser Worker proof. TypeScript owns viewport
 framing/admission and DOM paint only; absent or invalid Rust output fails
 closed.
 
+Node `toHtml()` embeds the standalone painter, classic tick Worker and checked
+WASM bytes from the same client distribution directory. The one-file artifact
+attaches the public `attachWasmTicks` lifecycle with owned-worker cleanup and
+disposes its view on non-cached `pagehide`. Cached Back/Forward navigation
+retains the live view and worker, including repeated restores. Its CSP allows inline script and WASM compilation,
+Blob workers, and no network connections. Missing local tick assets fail export
+with `XYG_HTML_ASSET_MISSING`; runtime tick failures show an accessible alert.
+Axis generation and formatting remain in Rust/WASM; no JavaScript tick fallback
+or source-checkout URL is emitted. This closes the label omission for admitted
+Cartesian HTML snapshots, including time axes; it does not establish temporal
+playback or cursor/range/window export semantics.
+The classic `wasm-standalone-worker.js` is built from the same `wasm_worker.ts`
+tick lane. It accepts inline bytes at initialization, avoiding Chromium's
+opaque-origin rejection of Blob module workers in `file:` documents. The
+browser package includes this worker in its five-asset inventory, so resolving
+a separately installed `@curatelabs/xyg/standalone` supplies the same complete
+offline asset set as the bundled Node facade.
+Bounded reproduction: after `node js/build.mjs` and `node js/package-wasm.mjs`,
+run `XYG_NATIVE_LIB=<absolute native library> node scripts/node_html_offline_smoke.mjs <Chromium executable> <evidence directory>`.
+The smoke opens a self-contained UTC-time artifact with the browser offline,
+compares the acknowledged spec and payload hash, requires rendered date labels,
+rejects script injection, and records a screenshot plus a value-free receipt.
+The [macOS-arm64 receipt](../releases/evidence/node-html-offline-2026-11-06.json)
+binds the producer source hashes; it is bounded browser evidence, not a scale
+or cross-platform release qualification.
+
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
 exact Scene v23 output under a local-only strict CSP. Native Python and Node

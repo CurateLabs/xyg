@@ -131,6 +131,8 @@ def test_facade_staging_locks_optionals_and_embeds_client(tmp_path: Path) -> Non
     mod = _load()
     client = tmp_path / "standalone.js"
     client.write_text("var xyg={renderStandalone(){}};", encoding="utf-8")
+    for name in mod.STANDALONE_ASSETS[1:]:
+        (tmp_path / name).write_bytes(b"fixture-asset")
     staged = mod.stage_facade(client=client, output=tmp_path / "out", version="0.6.0-rc.1")
     assert (staged / "graphforge-compatibility.json").read_bytes() == (
         REPO / "python/xyg/graphforge-compatibility.json"
@@ -143,6 +145,9 @@ def test_facade_staging_locks_optionals_and_embeds_client(tmp_path: Path) -> Non
     assert set(manifest["optionalDependencies"].values()) == {"0.6.0-rc.1"}
     assert (staged / "client" / "standalone.js").read_bytes() == client.read_bytes()
     assert "client/standalone.js" in manifest["files"]
+    for name in mod.STANDALONE_ASSETS:
+        assert (staged / "client" / name).read_bytes() == (tmp_path / name).read_bytes()
+        assert f"client/{name}" in manifest["files"]
     (staged / "src" / "index.js").unlink()
     with pytest.raises(ValueError, match="entry point is missing"):
         mod._verify_facade(staged, "0.6.0-rc.1", client)

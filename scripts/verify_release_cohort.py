@@ -23,7 +23,13 @@ EXPECTED = {
     "native": "@curatelabs/xyg-node-linux-x64",
     "browser": "@curatelabs/xyg",
 }
-EXPECTED_BROWSER_ASSETS = {"index.js", "standalone.js", "wasm-worker.js", "xyg-wasm.wasm"}
+EXPECTED_BROWSER_ASSETS = {
+    "index.js",
+    "standalone.js",
+    "wasm-worker.js",
+    "wasm-standalone-worker.js",
+    "xyg-wasm.wasm",
+}
 
 
 def _digest(payload: bytes) -> str:
@@ -174,7 +180,7 @@ def verify(
         raise ValueError("browser asset manifest version does not match release cohort")
     assets = manifest.get("assets", {})
     if not isinstance(assets, dict) or set(assets) != EXPECTED_BROWSER_ASSETS:
-        raise ValueError("browser asset manifest must list the exact four XYG assets")
+        raise ValueError("browser asset manifest must list the exact five XYG assets")
     for name, expected in assets.items():
         if not isinstance(expected, dict):
             raise ValueError(f"browser asset manifest entry for {name} must be an object")

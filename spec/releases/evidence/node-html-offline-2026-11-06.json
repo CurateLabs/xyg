@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "browserVersion": "156.0.8078.80",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "nodeVersion": "v26.6.0"
+  },
+  "sourceHashes": {
+    "../packages/xy-node/src/html.js": "b9e65be381c179961f75e0e8a69bb9f7584ebed342f6946a80e843840ebc16a4",
+    "../js/src/wasm_worker.ts": "961012ba822c29a353da0c88cb205c7ae3f5d12719091651dee8d7abc1fdfd19",
+    "../js/build.mjs": "1afe90deb1d379ccfde07f955e7d24b18c5dee3f4a697cd3bfde3936b2c629bc"
+  },
+  "offline": true,
+  "specMatches": true,
+  "payloadMatches": true,
+  "timeLabelCount": 9,
+  "cachedPagehideRetainsView": true,
+  "injectionAbsent": true,
+  "httpRequests": 0,
+  "scriptErrors": 0,
+  "artifactSha256": "737f45180e5b8a0ddd44e15252aea96d6541c64e4ed82bc4abc2bdcf230a0d65"
+}

@@ -159,14 +159,14 @@ def _validate_browser_archive(archive: tarfile.TarFile, manifest: dict[str, obje
         raise ValueError("browser asset manifest identity/version does not match package")
     assets = inventory.get("assets")
     if not isinstance(assets, dict) or set(assets) != set(ASSETS):
-        raise ValueError("browser asset manifest must list the exact four XYG assets")
+        raise ValueError("browser asset manifest must list the exact five XYG assets")
     paths = {f"package/dist/{name}" for name in ASSETS}
     if {
         item.name
         for item in archive.getmembers()
         if item.isfile() and item.name.startswith("package/dist/")
     } != paths:
-        raise ValueError("browser archive dist inventory must contain the exact four XYG assets")
+        raise ValueError("browser archive dist inventory must contain the exact five XYG assets")
     for name in ASSETS:
         member = archive.getmember(f"package/dist/{name}")
         stream = archive.extractfile(member)
