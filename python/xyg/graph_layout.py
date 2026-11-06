@@ -8,6 +8,7 @@ to an interactive Python event loop.
 from __future__ import annotations
 
 import asyncio
+import inspect
 from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -48,7 +49,7 @@ class GraphLayoutCheckpoint:
     job_id: str | int | None
 
 
-ProgressCallback = Callable[[GraphLayoutCheckpoint], None]
+ProgressCallback = Callable[[GraphLayoutCheckpoint], Any]
 
 
 class GraphLayoutController:
@@ -108,7 +109,9 @@ class GraphLayoutController:
                         not self._disposed and self._revision == revision and not cancel.is_set()
                     )
                 if current:
-                    on_update(checkpoint)
+                    result = on_update(checkpoint)
+                    if inspect.isawaitable(result):
+                        await result
 
             asyncio.run_coroutine_threadsafe(deliver(), loop).result()
 

@@ -11,6 +11,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+CURRENT_BINDINGS = Path(
+    "spec/performance/graph-widget-pr1100-repair-2026-11-06/current-bindings.json"
+)
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -32,9 +35,10 @@ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> N
             for name in ("contracts.tsv", "provenance.json")
         )
         paths.append(Path("tests/fixtures/graphforge") / results / "manifest.json")
-    correction = Path("spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json")
+    correction = CURRENT_BINDINGS
     current = json.loads((ROOT / correction).read_text())
     paths.extend(Path(path) for path in current["sourceSha256"])
+    paths.extend(Path(path) for path in current["historicalBindings"])
     paths.extend(
         [
             correction,
@@ -175,11 +179,22 @@ def test_rc7_artifact_provenance_and_every_generated_ipc_are_bound() -> None:
     )
     # The original IPC producer is frozen; later CLI/default changes are bound
     # separately so historical fixtures never claim a different producing source.
-    current = json.loads(
-        (ROOT / "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json").read_text()
-    )
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
     for source, expected in current["sourceSha256"].items():
         assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == expected
+    for snapshot, expected in current["historicalBindings"].items():
+        assert hashlib.sha256((ROOT / snapshot).read_bytes()).hexdigest() == expected
+    assert current["manifestSha256"] == generation["manifestSha256"]
+    assert current["originalProducerSha256"] == generation["generatorSha256"]
+    producer = json.loads((receipt / "checks.json").read_text())
+    assert (
+        current["originalProducerSha256"]
+        == producer["sourceSha256"]["scripts/gen_graphforge_rc7_result_fixtures.cjs"]
+    )
+    assert (
+        hashlib.sha256((results / "generation.json").read_bytes()).hexdigest()
+        == producer["sourceSha256"]["tests/fixtures/graphforge/results-0.6.0-rc.7/generation.json"]
+    )
     assert generation["coreSourceCommit"] == provenance["commit"]
     assert generation["coreVersion"] == provenance["coreVersion"] == "0.6.0-rc.7"
     for key, path in [

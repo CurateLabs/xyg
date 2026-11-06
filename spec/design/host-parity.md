@@ -2104,6 +2104,23 @@ coordinate name, for nonnumeric/nonfinite values. Four registry rejection cases
 check exact x/y messages across both hosts. This changes no ABI struct,
 signature or wire format.
 
+### Python public notebook progressive scheduling (R2, 2026-11-06)
+
+All public GraphForge graph widgets now feed retained native force checkpoints
+through the original Figure compiler, ChartView and widget channel. Layered and
+configured graphs share that route; there is no theme/style routing fork. The
+initial native checkpoint precedes terminal layout, and paint acknowledgements
+bound delivery to one pending picture. Static/batch routes remain synchronous.
+[The transport contract](graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
+records exact snapshot/epoch ownership, cross-loop dispatch, cancellation,
+selection-mask validity, preserved generic presentation and event semantics.
+The private GraphSession wrapper is unchanged; full GraphSession refs and UUID
+selection remain future integration work. The real five-node/two-widget notebook
+smoke runs within the existing Release surfaces `test` job. It does not prove
+required rendered ladder budgets, every notebook frontend, UUID box/lasso/export
+parity, competitor leadership or #35/#36/#1015 closure. The R1 geometry-only
+candidate is superseded; its receipt remains historical evidence.
+
 
 ### Authentic Core rc.7 composition qualification
 

@@ -2387,6 +2387,14 @@
       "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     },
     {
+      "path": "js/src/66_graph_host.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
       "path": "js/src/63_graph_gpu.ts",
       "current_owner": "Shared TypeScript browser client",
       "policy": "browser-client",
@@ -4332,6 +4340,14 @@
     },
     {
       "path": "python/xyg/widget.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_graph_widget.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",

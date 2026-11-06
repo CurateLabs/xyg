@@ -31,3 +31,32 @@ spec/api/graphforge-integration.md text eol=lf
 spec/design/host-parity.md text eol=lf
 tests/test_graphforge_contract_corpus.py text eol=lf
 spec/releases/core-rc7-checkout-repair-2026-11-06/** text eol=lf
+
+# Current combined Core/notebook integration binding (historical receipts stay frozen).
+.github/workflows/ci.yml text eol=lf
+scripts/verify_ci_workflow.py text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.gz -text
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.png -text
+
+# Current notebook review-repair source and evidence bindings.
+python/xyg/_graph_widget.py text eol=lf
+tests/test_graph_widget.py text eol=lf
+spec/design/graph-session-python-transport.md text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.gz -text
+spec/performance/graph-widget-review-repair-2026-11-06/*.png -text
+tests/test_graph_notebook_report.py text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.py text eol=lf
+
+# PR1100 correction bindings and retained evidence.
+spec/design/ownership-audit.json text eol=lf
+spec/design/ownership-audit.md text eol=lf
+scripts/verify_graph_notebook_report.py text eol=lf
+tests/notebook_graph_progressive.ipynb text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.gz -text
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.png -text
