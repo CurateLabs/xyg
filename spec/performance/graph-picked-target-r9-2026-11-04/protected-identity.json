@@ -1,0 +1,74 @@
+{
+  "base": "8b231d70d03e53e380f7198b4f618c0f33ec9ddf",
+  "production_inputs_exact": 285,
+  "qualified_artifacts_exact": {
+    "packages/xy-client/dist/index.js": {
+      "expected": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+      "actual": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "expected": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+      "actual": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "expected": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "actual": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "expected": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+      "actual": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "expected": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96",
+      "actual": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "expected": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9",
+      "actual": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "expected": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd",
+      "actual": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd"
+    },
+    "python/xyg/static/index.js": {
+      "expected": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+      "actual": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "python/xyg/static/standalone.js": {
+      "expected": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+      "actual": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "expected": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "actual": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "expected": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96",
+      "actual": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "expected": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9",
+      "actual": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "expected": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd",
+      "actual": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd"
+    },
+    "target/release/libxyg_core.so": {
+      "expected": "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880",
+      "actual": "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "expected": "f66281328c0ffa9a53db8ab4728ab9ed3d88f2f3ca8b58ecc6ac3db212e08231",
+      "actual": "f66281328c0ffa9a53db8ab4728ab9ed3d88f2f3ca8b58ecc6ac3db212e08231"
+    }
+  },
+  "prior_R1_R8_receipt_files_exact": 552,
+  "all_other_inherited_performance_history_unchanged": true,
+  "Rust_change_scope": "exactly two test-only borrowed-slice assertions; full comparison semantics retained",
+  "production_Rust_client_packager_and_caps_unchanged": true,
+  "inventory_contracts_and_classifications_unchanged": true,
+  "preparation_gaps": 685,
+  "release_native_WASM_client_browser_rebuild": false,
+  "qualification_reuse": "R8 qualified production source/artifact/runtime/capture proof only; new assertions and CI wiring have fresh checks; remote CI and final independent review remain pending"
+}

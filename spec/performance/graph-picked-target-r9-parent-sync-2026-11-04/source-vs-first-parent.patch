@@ -1,0 +1,41 @@
+diff --git a/spec/design/graphforge-node-scheduling.md b/spec/design/graphforge-node-scheduling.md
+index 2d17019b0740de17ba306859126fce681d8e234a..0f2a5903c05563f2925c2e72a3f16c545ed84e69 100644
+--- a/spec/design/graphforge-node-scheduling.md
++++ b/spec/design/graphforge-node-scheduling.md
+@@ -242,10 +242,19 @@ The native composition producer returns ordinary `Uint8Array` document bytes;
+ the Buffer subclass defect is covered separately by the pure codec regressions.
+ The captures are retained evidence at their recorded state, not new timings or
+ an execution of the Buffer-fixed tree. Native byte identity still does not
+-establish the historical artifact's origin or rebuild history. The combined
+-Buffer sync candidate requires its own completed independent final review and
+-actual sync CI before integration. Earlier `eb9ea4c` CI and skipped checks on a
+-conflicted head do not qualify the new candidate.
++establish the historical artifact's origin or rebuild history.
++
++The combined Buffer sync was committed as `6e240f4b`; the parent reports its
++independent final approval and push. The later
++[Buffer accepted-main sync receipt](../performance/node-buffer-codec-accepted-main-sync-2026-11-04/README.md)
++records the normal merge of actual main `3ebf70c3`, whose tree exactly equals
++reviewed `7c581024`. It preserves the Buffer implementation and all earlier
++proof bytes, source qualifications and artifact identities without a new
++browser run or native/client build. Historical receipts retain their original
++review and remote-status text. This new accepted-main sync candidate requires
++its own completed independent final review and actual main-based CI before
++queueing or integration; earlier `eb9ea4c` CI, prior-head approval and skipped
++checks on a conflicted head do not qualify it.
+ 
+ This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
+ unheld initial trusted response, public browser progressive scheduling and
+diff --git a/spec/releases/0.6.0-api-inventory.json b/spec/releases/0.6.0-api-inventory.json
+index b788ca5dbc5e20c8fb2b37f154ec3f9f1a0c7ef4..e7e2ac45b340b31a18920c9cbc27c3f62d21e5c7 100644
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@ -1195,7 +1195,7 @@
+  "releaseLine":"0.6.0",
+  "schema":"xyg.release-api-inventory/v1",
+  "sourceProvenance":{
+-  "baseCommit":"8b231d70d03e53e380f7198b4f618c0f33ec9ddf",
++  "baseCommit":"f39edf76635e6e572aec64b6bcedc20cfed3f7eb",
+   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+  },
+  "sourceSha256":{

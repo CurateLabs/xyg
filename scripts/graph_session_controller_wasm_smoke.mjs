@@ -44,6 +44,152 @@ try {
       return { ok: true, point, after, delivery: "Playwright mouse.click" };
     });
   }
+  if (process.env.XYG_GRAPH_PROGRESSIVE_ONLY) {
+    const delay = ms => new Promise(r=>setTimeout(r,ms));
+    for (const count of [0,4,1000]) {
+      await run(`public-progressive-${count}-unheld-painter-heartbeat`, async()=>{
+        const id=BigInt(2000+count);
+        const initial=await page.evaluate(({count,id})=>window.__graphSession.progressiveFixture(count,id),{count,id});
+        if(count===4) {
+          const surface=page.locator('[data-xy-graph-session]').last();
+          await surface.focus();
+          for(let attempt=0;attempt<30;attempt++) {
+            await page.keyboard.press('ArrowRight');
+            if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).handle.snapshot()?.focus.length>0)) break;
+            await delay(5);
+          }
+        }
+        await page.waitForFunction(()=>{const p=window.__graphSession.progressives.at(-1);return p.handle.snapshot()?.relayout?.done||p.errors.length;},null,{timeout:40000});
+        const result=await page.evaluate(()=>{const p=window.__graphSession.progressives.at(-1);return {frames:p.frames,errors:p.errors,beats:p.beats,focus:p.handle.snapshot()?.focus,held:window.__graphSession.held.length,trusted:p.trusted,heartbeats:p.heartbeats,commands:window.__graphSession.commands.filter(c=>c.instanceId===p.id).map(c=>({at:c.at,operation:c.operation}))};});
+        assert.deepEqual(result.errors,[]); assert.equal(result.held,0);
+        const firstStep=result.commands.find(c=>c.operation===15);
+        if(firstStep) assert.ok(firstStep.at>result.frames[0].at);
+        assert.equal(result.frames.at(-1).progress.done,true);
+        if(count) { assert.ok(result.frames.length>3); assert.ok(result.frames.some(f=>f.pixels>0)); if(count===4) { assert.ok(result.focus.length>0); assert.ok(result.trusted.some(e=>e.prevented&&!e.progress?.done)); } assert.ok(result.beats>3); assert.ok(result.frames[0].progress.steps < result.frames.at(-1).progress.steps); }
+        else assert.equal(result.frames[0].progress.steps,0n);
+        if(count===4 && process.env.XYG_GRAPH_SESSION_REPORT) {
+          const capture=await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1),b64=b=>btoa(String.fromCharCode(...b));return s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(c=>({operation:c.operation,request:b64(c.bytes),reply:b64(s.replies.find(r=>r.owner===c.owner&&r.requestId===c.requestId)?.bytes??[])}));});
+          await writeFile(process.env.XYG_GRAPH_SESSION_REPORT+'.replay.json',JSON.stringify(capture,null,2)+'\n');
+        }
+        await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1);clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();});
+        return {initial,...result};
+      });
+    }
+    await run('progressive-companion-page-survives-step-and-row-selection', async()=>{
+      await page.evaluate(async()=>{
+        const s=window.__graphSession;
+        await s.progressiveFixture(64, 3064n, {}, 384*1024*1024);
+        const p=s.progressives.at(-1);
+        p.el.dataset.progressivePaging=''; p.pages=[]; p.choices=[]; p.choiceProgress=[];
+        p.firstRefs=p.handle.snapshot().companion.refs;
+        p.el.addEventListener('xy:graph-render',()=>{
+          const command=s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).at(-1);
+          if(![17,21].includes(command?.operation)) return;
+          const bytes=s.section(command.bytes,'companion.u32');
+          if(new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength).getUint32(0,true)!==1) return;
+          const snapshot=p.handle.snapshot();
+          p.pages.push({operation:command.operation,progress:snapshot.relayout,
+            rows:snapshot.companion.rows,refs:snapshot.companion.refs,
+            displayed:[...p.el.querySelectorAll('tbody tr')].map(row=>[...row.querySelectorAll('td')].slice(0,-1).map(cell=>cell.textContent))});
+        });
+        p.el.addEventListener('xy:graph-select',e=>{p.choices.push(e.detail.selection.refs);p.choiceProgress.push(e.detail.relayout);});
+      });
+      const next=page.locator('[data-progressive-paging] button[aria-label="Next graph companion page"]');
+      await next.focus();
+      for(let attempt=0;attempt<30;attempt++) {
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).pages.length>0)) break;
+        await page.keyboard.press('Enter');
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).pages.length>0)) break;
+        await delay(5);
+      }
+      await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).pages.some(p=>p.operation===21),null,{timeout:10000});
+      const before=await page.evaluate(()=>{const p=window.__graphSession.progressives.at(-1);return {pages:p.pages,firstRefs:p.firstRefs};});
+      assert.equal(before.pages[0].operation,17);
+      assert.equal(before.pages[0].progress.done,false);
+      const expected=before.pages[0];
+      assert.equal(expected.rows.length,50); assert.equal(expected.refs.length,50);
+      assert.notDeepEqual(expected.refs,before.firstRefs);
+      const stepped=before.pages.filter(p=>p.operation===21);
+      assert.ok(stepped.length>0); assert.ok(stepped[0].progress.steps>expected.progress.steps);
+      assert.equal(stepped[0].progress.done,false);
+      for(const publication of before.pages) {
+        assert.deepEqual(publication.rows,expected.rows);
+        assert.deepEqual(publication.refs,expected.refs);
+        assert.deepEqual(publication.displayed,publication.rows);
+      }
+      for(let attempt=0;attempt<30;attempt++) {
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).choices.length>0)) break;
+        await page.evaluate(()=>window.__graphSession.progressives.at(-1).el.querySelector('tbody button').focus());
+        await page.keyboard.press('Enter');
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-1).choices.length>0)) break;
+        await delay(5);
+      }
+      const result=await page.evaluate(async()=>{
+        const s=window.__graphSession,p=s.progressives.at(-1);
+        const commands=s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner);
+        const result={count:64,arenaBytes:384*1024*1024,delivery:"Playwright keyboard.press Enter",pages:p.pages,choices:p.choices,choiceProgress:p.choiceProgress,errors:p.errors,held:s.held.length,
+          operations:commands.map(c=>c.operation)};
+        clearInterval(p.timer); await p.handle.dispose(); await p.worker.dispose(); p.el.remove();
+        return result;
+      });
+      assert.deepEqual(result.errors,[]); assert.equal(result.held,0);
+      for(const publication of result.pages) {
+        assert.deepEqual(publication.rows,expected.rows);
+        assert.deepEqual(publication.refs,expected.refs);
+        assert.deepEqual(publication.displayed,publication.rows);
+      }
+      assert.deepEqual(result.choices[0],[expected.refs[0]]);
+      assert.equal(result.choiceProgress[0].done,false);
+      const paging=result.operations.indexOf(17), step=result.operations.indexOf(15,paging+1);
+      assert.ok(paging>=0&&step>paging); assert.equal(result.operations[step+1],21);
+      assert.ok(result.operations.includes(11));
+      return result;
+    });
+    await run('1k-default-arena-still-refuses-without-fallback',async()=>{
+      const code=await page.evaluate(async()=>{try{await window.__graphSession.progressiveFixture(1000,3099n,{},16*1024*1024);return 'unexpected success';}catch(e){return e.code;}});
+      assert.equal(code,'GF_INTERACTION_BUDGET');return {code,arenaBytes:16*1024*1024};
+    });
+    await run('authored-pinned-progressive-and-explicit-false-legacy',async()=>{
+      const results=[];
+      for(const progressive of [true,false]) {
+        const initial=await page.evaluate(progressive=>window.__graphSession.progressiveFixture(4,3100n,{progressive,x:[0,1,2,3],y:[0,0,0,0],pinned:[1,0,0,0]}),progressive);
+        assert.equal(initial.progress,null);
+        if(progressive) await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).handle.snapshot()?.relayout?.done,null,{timeout:40000});
+        else await delay(100);
+        results.push(await page.evaluate(async()=>{const s=window.__graphSession,p=s.progressives.at(-1),commands=s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner),replies=s.replies.filter(r=>r.owner===p.worker.worker.__graphOwner),centers=replies.filter(r=>{try{s.section(r.bytes,'paint.node.center.f64');return true;}catch{return false;}}).map(r=>s.values(r.bytes,'paint.node.center.f64').slice(0,2));const result={progress:p.handle.snapshot().relayout,centers,steps:commands.filter(c=>c.operation===15).length,errors:p.errors};clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return result;}));
+        const r=results.at(-1);assert.deepEqual(r.errors,[]);assert.ok(r.centers.every(c=>JSON.stringify(c)===JSON.stringify(r.centers[0])));
+        assert.equal(progressive ? r.progress.done : r.steps===0,true);
+      }
+      return results;
+    });
+    await run('two-independent-progressive-attachments-dispose-recreate',async()=>{
+      await page.evaluate(async()=>{const s=window.__graphSession;await Promise.all([s.progressiveFixture(4,3001n),s.progressiveFixture(4,3002n)]);});
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.progressives.at(-2);clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();await s.progressiveFixture(4,3001n);});
+      await page.waitForFunction(()=>window.__graphSession.progressives.slice(-2).every(p=>p.handle.snapshot()?.relayout?.done),null,{timeout:40000});
+      return page.evaluate(async()=>{const ps=window.__graphSession.progressives.slice(-2),result=ps.map(p=>({id:p.id,frames:p.frames.length,errors:p.errors}));for(const p of ps){clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();}return result;});
+    });
+    await run('progressive-stale-terminal-dispose-late-reply-cleanup',async()=>{
+      const result=[];
+      for(const fault of ['stale','wrong-lifetime','dispose-held']) {
+        await page.evaluate(async fault=>{const s=window.__graphSession;await s.progressiveFixture(4,4001n);s.inject=fault==='dispose-held'?null:fault;s.hold=fault==='dispose-held';},fault);
+        if(fault==='dispose-held') {
+          await page.waitForFunction(()=>window.__graphSession.held.length>0);
+          await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);p.disposal=p.handle.dispose();p.frameCount=p.frames.length;s.release();});
+          await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1);await p.disposal;if(p.frames.length!==p.frameCount||p.handle.snapshot()!==null)throw Error('late disposed publication');});
+        } else {
+          await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).errors.length>0);
+          const before=await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length);
+          await delay(80);
+          assert.equal(await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length),before);
+        }
+        result.push(await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1),out={errors:p.errors,frames:p.frames.length};clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return out;}));
+      }
+      return result;
+    });
+    assert.deepEqual(violations,[]); assert.deepEqual(errors,[]);
+    if(process.env.XYG_GRAPH_SESSION_REPORT) await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
+    console.log('PASS public progressive attachment');
+  } else {
   await run("default16MiB-compose-attach-GPU-lastgood-signed-camera", () => check(() => {
     const s = window.__graphSession, pixel = s.pixel(s.el), image = pixel.some((v, i) => i % 4 === 3 && v > 0), before = s.handle.snapshot();
     s.initialPixels = pixel; s.initial = before;
@@ -564,4 +710,5 @@ try {
   evidence.status = "passed"; evidence.requests = requests; evidence.cspViolations = violations; evidence.pageErrors = errors;
   if (process.env.XYG_GRAPH_SESSION_REPORT) await writeFile(process.env.XYG_GRAPH_SESSION_REPORT, JSON.stringify(evidence, (_, v) => typeof v === "bigint" ? v.toString() : v, 2) + "\n");
   console.log(`graph session strict-CSP shipping journey: ${evidence.cases.length} cases passed, zero skips`);
+  }
 } finally { await browser.close(); await new Promise(r => server.close(r)); }

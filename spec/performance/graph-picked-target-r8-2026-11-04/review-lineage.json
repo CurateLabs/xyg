@@ -1,0 +1,16 @@
+{
+  "first_parent": "44626a8a477649442c72d8b5e0e0ef98e8ee7baa",
+  "second_parent": "6e240f4bd3189640779fd684e97072923cbfb9c8",
+  "completed_reviews": {
+    "44626a8": "parent reports s5a_final_review FINAL APPROVE on exact candidate, not future merge",
+    "6e240": "parent reports m4_defaults_audit FINAL APPROVE and pushed #1094; exact parent reviewed"
+  },
+  "subsequent_authorization": "Parent explicitly permits only one historical-reference wording correction in R7 README; original snapshot preserved, naming guard unchanged",
+  "qualification_reused_only_for_unchanged_product_inputs_and_artifacts": true,
+  "whole_naming_and_149_regressions": "PASS",
+  "metadata_226": "PASS",
+  "strict_wire_codec_migration_52": "PASS_ZERO_SKIPS",
+  "current_final_merge_review": "PENDING_NEW_INDEPENDENT_REVIEW",
+  "public_hover_issue_milestone_freeze": "UNACCEPTED",
+  "PR_push_GitHub_root_mutation": false
+}

@@ -1,0 +1,9 @@
+{
+  "node": "v22.23.4",
+  "raw": 1926555,
+  "gzip6": 785542,
+  "rawCap": 1927168,
+  "gzipCap": 786432,
+  "rawHeadroom": 613,
+  "gzipHeadroom": 890
+}

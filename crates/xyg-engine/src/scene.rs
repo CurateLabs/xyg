@@ -11722,6 +11722,13 @@ fn push_svg_text_flags(out: &mut String, flags: u8) {
     }
 }
 
+fn x_label_baseline(document: &SceneDocument) -> f64 {
+    let size = document.chrome.x_axis.label_size(document.chrome.label_font_size);
+    let descent = textblock::measure(&document.text.x_label, size, textblock::LINE_HEIGHT, None)
+        .map_or(0.0, |block| block.descent);
+    document.layout.viewport_height - 6.0_f64.max(4.0 + descent)
+}
+
 fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
     let chrome = &document.chrome;
     let text = &document.text;
@@ -11752,7 +11759,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         out.push_str("<g data-xy-chrome=\"x-label\"><text x=\"");
         push_num(out, 0.5 * (layout.left + layout.right));
         out.push_str("\" y=\"");
-        push_num(out, layout.viewport_height - 6.0);
+        push_num(out, x_label_baseline(document));
         out.push_str("\" fill=\"");
         out.push_str(&rgba_css(chrome.x_axis.title_paint()));
         out.push_str("\" font-size=\"");
@@ -14595,18 +14602,8 @@ impl SceneDocument {
             let inner = polar.inner_radius();
             if polar.full_sector() {
                 if inner > 1e-9 {
-                    out.push_str(" clip-rule=\"evenodd\"><circle cx=\"");
-                    push_num(out, cx);
-                    out.push_str("\" cy=\"");
-                    push_num(out, cy);
-                    out.push_str("\" r=\"");
-                    push_num(out, radius);
-                    out.push_str("\"/><circle cx=\"");
-                    push_num(out, cx);
-                    out.push_str("\" cy=\"");
-                    push_num(out, cy);
-                    out.push_str("\" r=\"");
-                    push_num(out, inner);
+                    out.push_str("><path clip-rule=\"evenodd\" d=\"");
+                    push_polar_sector_path(out, polar, radius, inner);
                     out.push_str("\"/>");
                 } else {
                     out.push_str("><circle cx=\"");
@@ -15691,6 +15688,19 @@ impl SceneDocument {
                 )?;
             }
         }
+        Ok(())
+    }
+
+    fn append_raster_polar_labels(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+        polar: &PolarSceneState,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) -> Result<(), SceneError> {
+        let t_style = self.chrome.x_axis;
+        let r_style = self.chrome.y_axis;
         const POLAR_TICK_GAP: f64 = 8.0;
         const POLAR_RLABEL_DEG: f64 = 22.5;
         let size = self.chrome.label_font_size;
@@ -15882,8 +15892,9 @@ impl SceneDocument {
         ] {
             push_raster_f32(out, value, scale)?;
         }
-        if self.polar.is_some() {
-            return Ok(());
+        if let Some(polar) = &self.polar {
+            // Rim labels are chrome, outside the plot/disc clip like SVG.
+            return self.append_raster_polar_labels(out, scale, polar, x_ticks, y_ticks);
         }
         for (slot, ticks, axis_scale, style) in self.axis_slots(x_ticks, y_ticks, y2_ticks) {
             let is_x = slot == AxisSlot::X;
@@ -16128,7 +16139,7 @@ impl SceneDocument {
         push_label(
             out,
             0.5 * (self.layout.left + self.layout.right),
-            self.layout.viewport_height - 6.0,
+            x_label_baseline(self),
             1,
             self.chrome.x_axis.label_size(self.chrome.label_font_size),
             self.chrome.x_axis.title_paint(),
@@ -16281,7 +16292,7 @@ impl SceneDocument {
             // Polar rings and the outer frame are 64-vertex closed polylines
             // (~560 bytes), not the 35-byte two-point strokes cartesian grid
             // capacity assumes. Spokes stay inside the existing stroke budget.
-            y_ticks.labeled.len().saturating_add(1).saturating_mul(560)
+            y_ticks.labeled.len().saturating_add(1).saturating_mul(560).saturating_add(25)
         } else {
             0
         };
@@ -16830,6 +16841,19 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
         self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+        if let Some(polar) = &self.polar {
+            // Existing analytic annular-sector opcode; coordinates/radii scale,
+            // while angles remain radians. Axes reset the clip before chrome.
+            out.push(18);
+            for value in [polar.cx(), polar.cy(), polar.inner_radius(), polar.radius()] {
+                push_raster_f32(&mut out, value, scale)?;
+            }
+            let sweep = if polar.full_sector() { std::f64::consts::TAU }
+                else { polar.sector_a1() - polar.sector_a0() };
+            for angle in [polar.sector_a0(), sweep] {
+                out.extend_from_slice(&(angle as f32).to_le_bytes());
+            }
+        }
         self.append_raster_marks(&mut out, scale)?;
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.

@@ -1,0 +1,35 @@
+Updating c3d2e4aa..eb9ea4c7
+Fast-forward
+ packages/xy-node/src/graphforge-container.js       |   3 +-
+ .../xy-node/test/graphforge-container.test.mjs     | 127 ++++++
+ packages/xy-node/test/graphforge.test.mjs          |   2 +
+ spec/design/graphforge-compositions.md             |  14 +
+ .../node-buffer-codec-2026-11-04/README.md         | 105 +++++
+ .../node-buffer-codec-2026-11-04/after.json        |  21 +
+ .../api-inventory-check.log                        |   1 +
+ .../api-inventory-write.log                        |   1 +
+ .../node-buffer-codec-2026-11-04/before.json       |  17 +
+ .../node-buffer-codec-2026-11-04/codec-after.tap   | 160 +++++++
+ .../compositions-layout.tap                        | 502 +++++++++++++++++++++
+ .../node-buffer-codec-2026-11-04/context.json      | 131 ++++++
+ .../node-buffer-codec-2026-11-04/pre-commit.log    |   6 +
+ .../node-buffer-codec-2026-11-04/reproduce.mjs     |  41 ++
+ .../node-buffer-codec-2026-11-04/ruff-check.log    |   1 +
+ .../node-buffer-codec-2026-11-04/ruff-format.log   |   1 +
+ .../node-buffer-codec-2026-11-04/session-wire.tap  |  54 +++
+ spec/releases/0.6.0-api-inventory.json             |   4 +-
+ 18 files changed, 1188 insertions(+), 3 deletions(-)
+ create mode 100644 packages/xy-node/test/graphforge-container.test.mjs
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/README.md
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/after.json
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/api-inventory-check.log
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/api-inventory-write.log
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/before.json
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/codec-after.tap
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/compositions-layout.tap
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/context.json
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/pre-commit.log
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/reproduce.mjs
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/ruff-check.log
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/ruff-format.log
+ create mode 100644 spec/performance/node-buffer-codec-2026-11-04/session-wire.tap

@@ -1,0 +1,11 @@
+{
+  "finding": "Existing Node numeric decoder uses Buffer.slice().buffer without restricting backing span",
+  "productionFile": "packages/xy-node/src/graphforge-container.js",
+  "sha256": "57e2250967df1322e0a5d449774a073f4687e01d45ef563e17b736d42e998a6a",
+  "validInputBytes": 112,
+  "bufferBackingBytes": 113,
+  "inputBytesIdentical": true,
+  "plainUint8ArrayPasses": true,
+  "bufferThrowsRangeError": true,
+  "productChanged": false
+}

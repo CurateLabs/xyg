@@ -1,0 +1,25 @@
+{
+  "reviewer": "s5a_final_review",
+  "reviewed_commit": "01f1072985b891d75015290999381f66d901d049",
+  "review_result": "REQUEST_CHANGES",
+  "finding": {
+    "priority": "P2",
+    "path": "scripts/check_release_inventory.py",
+    "reviewed_line": 468,
+    "description": "Directory named tests does not imply cfg(test); unconditional production lookup omitted"
+  },
+  "disposition": "Replaced directory exclusion with verified leading Rust module-wide cfg(test) inner attribute; fixture guard explicit; positive and negative regressions passed",
+  "additional_metadata_finding": "Five R6 tracked Rust test files require existing-policy ownership entries; added exact JSON/human ledger rows without exclusions",
+  "fresh_tests": {
+    "focused_boundary": 7,
+    "metadata": 226,
+    "Rust_interaction": 152
+  },
+  "protected": {
+    "production_inputs": 285,
+    "artifacts": 15,
+    "historical_receipt_files": 396
+  },
+  "final_review": "PENDING_NEW_INDEPENDENT_SOURCE_AND_POLICY_REVIEW",
+  "no_PR_push_GitHub_root_mutation": true
+}

@@ -1,0 +1,35 @@
+{
+  "argv": [
+    "uv",
+    "run",
+    "python",
+    "scripts/verify_ownership.py"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd",
+  "started": "2026-11-04T08:04:21.514975+00:00",
+  "finished": "2026-11-04T08:04:22.110289+00:00",
+  "elapsed_seconds": 0.595314,
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_SESSION_REPORT": null,
+    "XYG_GRAPH_POINTER_CAPTURE": null,
+    "XYG_GRAPH_SESSION_SCREENSHOT": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_SESSION_WASM": null,
+    "XYG_PICK_CORPUS": null,
+    "XYG_PICK_REPORT": null,
+    "XYG_PICK_MIGRATION_REPORT": null,
+    "XYG_BROWSER_DIST": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "c5aa14def5ab71ddcf818ef1a32f3a6098225fd9f656c72112000270853b6133"
+}

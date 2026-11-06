@@ -1,0 +1,18 @@
+ M crates/xyg-engine/src/graphforge/interaction.rs
+ M crates/xyg-engine/src/graphforge/interaction/pick.rs
+ M crates/xyg-engine/src/graphforge/interaction/tests/wire.rs
+ M crates/xyg-engine/src/graphforge/interaction/wire.rs
+ M packages/xy-node/test/graph-session-wire.test.mjs
+ M spec/design/browser-wasm.md
+ M spec/design/graph-interaction.md
+?? crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
+?? crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs
+?? crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs
+?? crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs
+?? crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs
+?? packages/xy-node/test/graph-picked-receipt-diagnostic.mjs
+?? packages/xy-node/test/graph-session-replay-helpers.mjs
+?? spec/performance/graph-picked-target-checkpoint-2026-11-04/
+?? spec/performance/graph-picked-target-r2-2026-11-04/
+?? spec/performance/graph-picked-target-r3-2026-11-04/
+?? spec/performance/graph-picked-target-r4-2026-11-04/

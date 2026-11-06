@@ -1285,3 +1285,15 @@ session functionality decision uses 1,817-KiB raw / 742-KiB gzip gates and recor
 fresh shipping validation in the [S4 package receipt](../performance/graph-s4-package-budget-2026-10-31/README.md).
 It establishes no S5 painter/controller, #36 or milestone acceptance; final
 policy-diff review and CI remain required.
+
+
+### Bounded public browser continuation (#35)
+
+The experimental `attachWasmGraphSession` now honors `load.progressive: true`
+with bounded off-thread retained CoSE continuation, initial-first painting and
+Rust-reported progress. Its render-event/snapshot `relayout` field is nullable
+`{steps: bigint, alpha: number, done: boolean}`; authored positions may initially
+lack a report. Absent/false retains legacy semantics. See
+[the controller contract](../design/graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation)
+for scheduling, limits, failure and disposal. No new method or ABI is added.
+This does not close #35/#1015/#36 or waive any #108 publication acceptance.

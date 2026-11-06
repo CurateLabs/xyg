@@ -373,7 +373,7 @@ fn piece_region(
     Ok(false)
 }
 impl RenderOutput {
-    fn point(&self, p: [f64; 2], work: &mut Work) -> Result<Option<PickTarget>, InteractionStatus> {
+    fn point(&self, p: [f64; 2], work: &mut Work) -> Result<Option<PickTarget>, InteractionStatus> { #[cfg(test)] POINT_QUERY_COUNT.with(|n| n.set(n.get() + 1));
         if !p.iter().all(|v| v.is_finite()) {
             return invalid();
         }
@@ -425,6 +425,42 @@ impl RenderOutput {
     }
 }
 impl GraphSession {
+    // Capture before mutation, using the same source mapping that paints this
+    // publication. At Direct/EdgeSample focus_node is the actual visible
+    // representative, not an Aggregate keyboard stand-in. Never expand a group.
+    fn pick_receipt(
+        &self,
+        header: OpHeader,
+        operation: u32,
+        target: Option<PickTarget>,
+    ) -> Result<PickReceipt, InteractionStatus> {
+        let render = self.published().ok_or(InteractionStatus::Stale)?;
+        let (member_count, source) = match target {
+            Some(PickTarget::Node(i)) => (
+                render.members_of_node(i).len() as u64,
+                ElementIndex::Node(render.focus_node[i] as usize),
+            ),
+            Some(PickTarget::Edge(i)) => (
+                render.members_of_edge(i).len() as u64,
+                ElementIndex::Edge(render.members_of_edge(i)[0] as usize),
+            ),
+            None => return Ok(PickReceipt {
+                header, operation, action: 0, target, member_count: 0, source: None,
+            }),
+        };
+        let source = if render.tier == crate::graph::LodTier::Aggregate {
+            None
+        } else {
+            let reference = match source {
+                ElementIndex::Node(i) => self.identity.node_ref(i),
+                ElementIndex::Edge(i) => self.identity.edge_ref(i),
+            };
+            Some((source, self.identity.to_transport(&reference)
+                .ok_or(InteractionStatus::Invalid)?))
+        };
+        Ok(PickReceipt { header, operation, action: 0, target, member_count, source })
+    }
+
     fn picked_set(
         &self,
         render: &RenderOutput,
@@ -465,9 +501,13 @@ impl GraphSession {
             let r = s.published().ok_or(InteractionStatus::Stale)?;
             let mut work = Work::default();
             let hit = r.point([x, y], &mut work)?;
+            work.charge(1)?;
+            let pick = s.pick_receipt(header, 1, hit)?;
             let set = s.picked_set(r, hit, &mut work)?;
             s.work += work.0;
-            s.select_set(w, mode, set, 0)
+            let mut out = s.select_set(w, mode, set, 0)?;
+            out.pick = Some(pick);
+            Ok(out)
         })
     }
     pub fn hover_at(
@@ -480,6 +520,8 @@ impl GraphSession {
             let r = s.published().ok_or(InteractionStatus::Stale)?;
             let mut work = Work::default();
             let hit = r.point([x, y], &mut work)?;
+            work.charge(1)?;
+            let pick = s.pick_receipt(header, 0, hit)?;
             let mut next = Hover::default();
             match hit {
                 Some(PickTarget::Node(i)) => {
@@ -497,7 +539,21 @@ impl GraphSession {
             let changed = s.hover != next;
             s.work += work.0;
             s.hover = next;
-            Ok(s.outcome(w, changed))
+            let mut out = s.outcome(w, changed);
+            out.pick = Some(pick);
+            Ok(out)
+        })
+    }
+    /// Clear only transient hover; no coordinates, publication query or CSR walk.
+    pub fn hover_leave(&mut self, header: OpHeader) -> Result<OpOutcome, InteractionStatus> {
+        self.operate(header, |s, w| {
+            let changed = s.hover != Hover::default();
+            s.hover = Hover::default();
+            let mut out = s.outcome(w, changed);
+            out.pick = Some(PickReceipt {
+                header, operation: 0, action: 1, target: None, member_count: 0, source: None,
+            });
+            Ok(out)
         })
     }
     /// Region nodes use their published centers; edges use intersections with
@@ -760,3 +816,8 @@ mod admission_tests {
         );
     }
 }
+
+#[cfg(test)]
+thread_local! { static POINT_QUERY_COUNT: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+pub(super) fn point_query_count() -> u64 { POINT_QUERY_COUNT.with(|n| n.get()) }
