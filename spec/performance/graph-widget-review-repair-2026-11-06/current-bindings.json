@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "parents": {
+    "widget": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+    "acceptedMain": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8"
+  },
+  "sourceIdentity": "corrected working-tree source bytes; capture HEAD is reviewed parent",
+  "sourceSha256": {
+    "scripts/gen_graphforge_rc7_result_fixtures.cjs": "14122498a63020f291e1f8428fb842d0cb153e9241fd3bad874812b87cfcded2",
+    "spec/api/graphforge-integration.md": "c931ea0e1bce2444f3b24d538539b680d57d915b079bca4907157f882bc221c0",
+    "spec/design/host-parity.md": "ce7d76d453add59863a35c634d365d90a5f32711ae4c86c7264154bdff566fe6",
+    "tests/test_graphforge_contract_corpus.py": "d6274a5e64a31437288a2967baef222e49279661b717f8256e2d9aaa56a43da1",
+    ".gitattributes": "fa413779d5e4f3c74f0f8c1e2a7043d48626066ba4631352480b544d2c316a4b",
+    ".github/workflows/ci.yml": "281b58be7f0bf65a2a03de177ebb622220e351e0118a0308262f8f2d56822cec",
+    "scripts/verify_ci_workflow.py": "0468f973bf1c5c58de99729f6e59fca6cbe1de8f267f2d808be4fb974d56f7d7",
+    "spec/performance/graph-widget-progressive-r3-2026-11-06/README.md": "24b9053e9c5ba418cbda455326bfca8db6896cdb8a44f0721549b1513c7a921c",
+    "python/xyg/_graph_widget.py": "5e0a2772bbc6aee211182e2bf4d917ab0872536b10b47d35e33d98b0604e34ec",
+    "tests/test_graph_widget.py": "42a30ff5bacc03b9b1f2b75b858e7fd4ccbf786cb04dc2603f537d6e3c6d3f9f",
+    "js/src/66_graph_host.ts": "94b1908b02b3c938056336244761725a5d26b96172484718f3224d44c046e898",
+    "js/test/graph-host-transport.test.mjs": "7e4c7f1dd037006354ed65aa0f7fb30b63560ce1558d2cf1369819e6fd821045",
+    "spec/design/graph-session-python-transport.md": "63f81cad6e363b29d920c739410a1921b5e55ac19c6e365f65353da70f31bb40",
+    "spec/performance/graph-widget-review-repair-2026-11-06/README.md": "c0ad9f01568bb8d422efb5e41897ef7f970e0ba199579a3db10efccb5a2868e3",
+    "tests/test_graph_notebook_report.py": "02c97b20400f1e6d9fff7fd0b3669684efda622c2f14f50a47bf0a8239d3a1f0"
+  },
+  "historicalBindings": {
+    "spec/releases/core-rc7-compatibility-2026-11-06/checks.json": "7d03d70d0f62d9713aa4eb869eb9a4fdca04a1b3438fbdc0cf9aa703266424d3",
+    "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json": "935d1c13c39e316a8a6cbda1d184fb618cb488a1853f429a9456626c05fa7168",
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json": "bf9baaf0d5b0e3a3dd06c756e98f5032f8a091b3157a742b590d550acb53abcc",
+    "spec/performance/graph-widget-progressive-r3-2026-11-06/current-bindings.json": "bd50d6ce0d4ed6781a3f2933ef78b8523ab192a7c1e31737079cb518a7b0ebb8"
+  },
+  "manifestSha256": "b5a7e320205020debfa5b44df0e521f5b0edcf5038aecfdb5db0f3b38b305092",
+  "originalProducerSha256": "eff4f2a91531ae58cb9b1578ba40e128e14f5f55737a2141c0c2846a82e23d05",
+  "reviewedParent": "4fc50fe556b836507ceecaae6b88ef5673325d0b"
+}

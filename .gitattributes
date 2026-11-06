@@ -39,3 +39,14 @@ spec/performance/graph-widget-progressive-r3-2026-11-06/*.json text eol=lf
 spec/performance/graph-widget-progressive-r3-2026-11-06/*.md text eol=lf
 spec/performance/graph-widget-progressive-r3-2026-11-06/*.gz -text
 spec/performance/graph-widget-progressive-r3-2026-11-06/*.png -text
+
+# Current notebook review-repair source and evidence bindings.
+python/xyg/_graph_widget.py text eol=lf
+tests/test_graph_widget.py text eol=lf
+spec/design/graph-session-python-transport.md text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.gz -text
+spec/performance/graph-widget-review-repair-2026-11-06/*.png -text
+tests/test_graph_notebook_report.py text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.py text eol=lf

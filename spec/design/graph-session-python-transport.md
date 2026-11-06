@@ -271,3 +271,24 @@ rendered ladder remain. The five-node property fixture and current composition
 ceilings do not establish any ladder rung, first-paint budget, scale win or
 competitor lead. Static `.figure()` / `.to_html()` and HTML-mode `.show()` remain
 explicit synchronous batch snapshots; HTML has no kernel return channel.
+
+
+### Notebook mutation ordering and remount state
+
+Python view/selection/append commands wait for the intended published frame's
+paint acknowledgement; commands arriving during compilation wait as well. A
+queued command belongs to its mount epoch and is cancelled when that mount is
+superseded. Commands authored before a mount target its first accepted picture.
+Generic readout replies retain their original revision. Older messages propagate
+only facets they actually changed, and cannot replace a facet already owned by
+a newer Python mutation. Selection clears participate in the same browser
+request backpressure as box/lasso selection, so a pending checkpoint cannot
+restore a mask while the clear's exact reply is outstanding.
+
+Streaming append uses the existing Figure append and browser refresh contract,
+retains the graph notebook state envelope, and carries appended native canonical
+columns into later checkpoint compilation. No host append-history replay or
+layout/identity implementation is added. Restored committed ranges and durable
+geometric selection are applied before the first remounted picture is ACKed;
+opaque row-selection markers are not reconstructed into a durable mask.
+The deterministic ordering regressions run in the existing notebook CI step.

@@ -63,7 +63,14 @@ def test_completed_only_input_is_not_unfinished_layout_proof():
     assert verify(report)
 
 
-def test_notebook_changes_select_release_surfaces_and_smoke_is_required(tmp_path):
+@pytest.mark.parametrize(
+    "command",
+    [
+        "node scripts/graph_notebook_progressive_smoke.mjs",
+        "node --test js/test/graph-host-transport.test.mjs",
+    ],
+)
+def test_notebook_changes_select_release_surfaces_and_smoke_is_required(tmp_path, command):
     for path in (
         "tests/notebook_graph_progressive.ipynb",
         "scripts/graph_notebook_progressive_smoke.mjs",
@@ -74,7 +81,7 @@ def test_notebook_changes_select_release_surfaces_and_smoke_is_required(tmp_path
     broken = tmp_path / "ci.yml"
     broken.write_text(
         workflow.replace(
-            "          node scripts/graph_notebook_progressive_smoke.mjs",
+            "          " + command,
             "          echo skipped-notebook",
         )
     )

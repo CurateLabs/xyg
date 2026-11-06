@@ -28,11 +28,16 @@ class GraphWidget(FigureWidget):
         self._figures = {}
         self._last_view_state = {"v": 1, "ranges": {}, "selection": None}
         self._closed = False
+        self._failed = False
         self._task = None
         self._loop = None
         self._controller = None
         self._ack = None
         self._pending_api = []
+        self._building = False
+        self._appended_traces = {}
+        self._state_versions = dict.fromkeys(("ranges", "selection", "visibility"), 0)
+        self._figure_versions = {}
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="xyg-graph-build")
         super().__init__(None, **kwargs)
         self._wasm_ticks = self.spec.get("wasm_ticks")
@@ -63,6 +68,18 @@ class GraphWidget(FigureWidget):
         figure._graph_meta[graph_index].update(
             layout=mark.props["layout"], iterations=checkpoint.step, alpha=checkpoint.alpha
         )
+        # Reuse the canonical native columns of appended traces; rebuilding a
+        # layout frame must not reconstruct these traces from initial authoring.
+        # Fresh trace bookkeeping owns its own derived native caches/finalizers;
+        # dataclass replacement retains canonical columns but resets caches.
+        # There is no append history or duplicate canonical row store.
+        for trace_id, trace in self._appended_traces.items():
+            figure.traces[trace_id] = replace(
+                trace,
+                hidden_categories=set(trace.hidden_categories),
+                shipped_sel=None,
+                drill_mode=False,
+            )
         return figure, figure.build_payload_split()
 
     async def _run(self, epoch):
@@ -72,35 +89,40 @@ class GraphWidget(FigureWidget):
         self._controller = controller
 
         async def publish(checkpoint):
-            figure, (spec, buffers) = await loop.run_in_executor(
-                self._executor, self._compile, checkpoint
-            )
+            self._building = True
+            try:
+                figure, (spec, buffers) = await loop.run_in_executor(
+                    self._executor, self._compile, checkpoint
+                )
+            finally:
+                self._building = False
             if self._closed or self._epoch != epoch:
                 return
             self._configure_transport(spec)
             if self._wasm_ticks is not None:
                 spec["wasm_ticks"] = self._wasm_ticks
+            restore = None
+            if self._figure is None and self._last_view_state["ranges"]:
+                figure._record_view_ranges(self._last_view_state["ranges"])
+                figure._record_selection(copy.deepcopy(self._last_view_state["selection"]))
+                restore = copy.deepcopy(self._last_view_state)
+                # Row masks are non-durable; a view-state marker is not a mask.
+                if restore["selection"] == {"rows": True}:
+                    restore.pop("selection")
+                    figure._record_selection(None)
             if self._figure is not None:
-                figure._view_state_ranges = self._figure._view_state_ranges
-                figure._view_state_selection = self._figure._view_state_selection
+                figure._view_state_ranges = copy.deepcopy(self._figure._view_state_ranges)
+                figure._view_state_selection = copy.deepcopy(self._figure._view_state_selection)
                 for previous, current in zip(self._figure.traces, figure.traces, strict=True):
                     current.hidden = previous.hidden
                     current.hidden_categories = set(previous.hidden_categories)
             self._figure = figure
             self._revision += 1
             self._figures[self._revision] = figure
+            self._figure_versions[self._revision] = dict(self._state_versions)
             # A single immutable picture is retained until the browser paints it.
             # All events are admitted against exactly this figure/revision.
             self._ack = asyncio.Event()
-            self.send(
-                {
-                    "type": "graph_frame",
-                    "spec": spec,
-                    "step": checkpoint.step,
-                    "phase": checkpoint.phase,
-                },
-                buffers=buffers,
-            )
             # Preserve ordinary saved-widget state without a second buffer send.
             # The browser mirrors this state locally when it accepts the frame.
             snapshot = {
@@ -110,14 +132,22 @@ class GraphWidget(FigureWidget):
                     "spec": spec,
                     "step": checkpoint.step,
                     "phase": checkpoint.phase,
+                    "restore_state": restore,
                 },
             }
             with self._lock_property(spec=json.loads(json.dumps(snapshot)), buffers=buffers):
                 self.spec = snapshot
                 self.buffers = buffers
-            pending, self._pending_api = self._pending_api, []
-            for callback in pending:
-                callback()
+            self.send(
+                {
+                    "type": "graph_frame",
+                    "spec": spec,
+                    "step": checkpoint.step,
+                    "phase": checkpoint.phase,
+                    "restore_state": restore,
+                },
+                buffers=buffers,
+            )
             await asyncio.wait_for(self._ack.wait(), timeout=30)
 
         try:
@@ -135,6 +165,8 @@ class GraphWidget(FigureWidget):
             raise
         except Exception:
             if not self._closed and self._epoch == epoch:
+                self._failed = True
+                self._pending_api.clear()
                 self.send({"type": "graph_failed", "code": "XYG_GRAPH_WORKER_FAILED"})
         finally:
             controller.dispose()
@@ -155,16 +187,35 @@ class GraphWidget(FigureWidget):
     def _host_call(self, callback, *args, **kwargs):
         if self._closed:
             raise RuntimeError("graph widget disposed")
+        if self._failed:
+            raise RuntimeError("XYG_GRAPH_WORKER_FAILED")
         try:
             current = asyncio.get_running_loop()
         except RuntimeError:
             current = None
         if self._loop is not None and current is not self._loop:
-            self._loop.call_soon_threadsafe(self._host_call, partial(callback, *args, **kwargs))
+            self._loop.call_soon_threadsafe(partial(self._host_call, callback, *args, **kwargs))
             return
-        if self._figure is None:
-            self._pending_api.append(partial(callback, *args, **kwargs))
+        if (
+            self._figure is None
+            or self._epoch is None
+            or self._building
+            or self._ack is None
+            or not self._ack.is_set()
+        ):
+            self._pending_api.append(
+                (self._epoch, partial(self._host_call, callback, *args, **kwargs))
+            )
             return
+        fields = {
+            "select": ("selection",),
+            "clear_selection": ("selection",),
+            "set_view": ("ranges",),
+            "reset_view": ("ranges",),
+        }.get(callback.__name__, ())
+        for field in fields:
+            self._state_versions[field] += 1
+            self._figure_versions[self._revision][field] = self._state_versions[field]
         return callback(*args, **kwargs)
 
     def view_state(self):
@@ -183,6 +234,31 @@ class GraphWidget(FigureWidget):
 
     def clear_selection(self):
         return self._host_call(super().clear_selection)
+
+    def append(self, trace_id, x, y, **kwargs):
+        return self._host_call(self._append, trace_id, x, y, **kwargs)
+
+    def _append(self, trace_id, x, y, **kwargs):
+        msg, buffers = self._figure.append(trace_id, x, y, **kwargs)
+        self._appended_traces[trace_id] = self._figure.traces[trace_id]
+        self._configure_transport(msg["spec"])
+        snapshot = {
+            **self.spec,
+            "graph_snapshot": {**self.spec["graph_snapshot"], "spec": msg["spec"]},
+        }
+        with self._lock_property(spec=json.loads(json.dumps(snapshot)), buffers=buffers):
+            self.spec, self.buffers = snapshot, buffers
+        # The ordinary append message preserves the native canonical-column and
+        # generic renderer contract; the wrapper envelope remains notebook state.
+        self.send(msg, buffers=buffers)
+
+    @staticmethod
+    def _state(figure):
+        return {
+            "ranges": copy.deepcopy(figure._view_state_ranges),
+            "selection": copy.deepcopy(figure._view_state_selection),
+            "visibility": [(t.hidden, set(t.hidden_categories)) for t in figure.traces],
+        }
 
     def _cancel(self):
         if self._loop is not None and self._loop.is_running():
@@ -222,7 +298,9 @@ class GraphWidget(FigureWidget):
                 return
             self._cancel()
             self._epoch = epoch
+            self._failed = False
             self._figures.clear()
+            self._figure_versions.clear()
             if self._figure is not None:
                 self._last_view_state = self._figure.view_state()
             self._figure = None
@@ -240,19 +318,36 @@ class GraphWidget(FigureWidget):
         if content.get("type") == "graph_painted":
             if revision == self._revision and self._ack is not None:
                 self._figures = {revision: self._figures[revision]}
+                self._figure_versions = {revision: self._figure_versions[revision]}
                 self._ack.set()
+                pending, self._pending_api = self._pending_api, []
+                for epoch, callback in pending:
+                    if epoch is None or epoch == self._epoch:
+                        callback()
         else:
             # Retain the displayed snapshot until the pending picture's ACK.
             # Resolve an event against its exact native-compiled row space;
             # never reinterpret old indices against newer moving geometry.
             figure = self._figures[revision]
+            before = self._state(figure)
             reply = handle_message(figure, content, msg_buffers, callbacks=self._callbacks)
-            if figure is not self._figure:
-                self._figure._view_state_ranges = figure._view_state_ranges
-                self._figure._view_state_selection = figure._view_state_selection
-                for old, current in zip(figure.traces, self._figure.traces, strict=True):
-                    current.hidden = old.hidden
-                    current.hidden_categories = set(old.hidden_categories)
+            after = self._state(figure)
+            for field in before:
+                if before[field] == after[field]:
+                    continue
+                if self._figure_versions[revision][field] != self._state_versions[field]:
+                    continue  # a later Python mutation already owns this facet
+                self._state_versions[field] += 1
+                self._figure_versions[revision][field] = self._state_versions[field]
+                if figure is not self._figure:
+                    if field == "visibility":
+                        for trace, (hidden, categories) in zip(
+                            self._figure.traces, after[field], strict=True
+                        ):
+                            trace.hidden, trace.hidden_categories = hidden, set(categories)
+                    else:
+                        setattr(self._figure, "_view_state_" + field, copy.deepcopy(after[field]))
+                    self._figure_versions[self._revision][field] = self._state_versions[field]
             if reply is not None:
                 msg, buffers = reply
                 self.send({**msg, "graph_revision": revision}, buffers=buffers)

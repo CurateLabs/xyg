@@ -21,7 +21,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
   const listeners = new Set<(content: any, buffers: any) => void>();
   const send = (content, buffers = []) => {
     if (revision === 0 && !["graph_mount", "graph_dispose"].includes(content.type)) return;
-    if (content.type === "select" || content.type === "select_polygon") selections++;
+    if (content.type === "select" || content.type === "select_polygon" || content.type === "select_clear") selections++;
     if (content.type === "pick") picks.add(`${revision}:${content.seq}`);
     model.send({ ...content, graph_instance: instance, graph_epoch: epoch, graph_revision: revision }, {}, buffers);
   };
@@ -30,11 +30,39 @@ export function renderGraphHost({ model, el, attachTicks }) {
     wantsViewChange: () => view?.spec?.interaction?._transport_view_change === true,
     onMessage: cb => { listeners.add(cb); return () => listeners.delete(cb); },
   };
+  function refresh(spec, buffers, affected = spec.traces.map(t => t.id)) {
+      const previousRows = rowSpace(), hover = view._hoverTarget;
+      // The generic refresh replaces GPU trace objects. Release transient
+      // handles before it draws; retain an index only when Rust's ordered
+      // row space survives, then bind it to the new GPU object.
+      view._hoverTarget = null; view._graphNbrKey = null; view._graphNbrGpu = null;
+      view._applyAppend({ spec, affected }, buffers);
+      if (!sameRows(previousRows, rowSpace())) {
+        view._hoverId = null; view._a11yPointIndex = -1; view._hideTooltip?.();
+      } else if (hover) {
+        const next = view.gpuTraces.find(g => g.trace.id === hover.trace);
+        if (next && hover.index >= 0 && hover.index < next.n && !next._legendHidden) {
+          view._hoverTarget = { ...hover, g: next }; view._drawKeepPick();
+        }
+      }
+      // Same generic canonical trace-row contract as selection_rows; the
+      // native compiler emits the routing/membership planes for every frame.
+      // Revoke a cached mask if Rust emitted a different ordered row space.
+      // This compares native planes; it never guesses or remaps identities.
+      if (selection && !sameRows(selectedRows, rowSpace())) selection = null;
+      if (selection) { view._applySelectionBuffers(selection.content, selection.buffers); view.draw(); }
+  }
   function message(content, buffers) {
     if (disposed || content.graph_instance !== instance || content.graph_epoch !== epoch) return;
     if (content.type === "graph_failed") { status.textContent = "XYG_GRAPH_WORKER_FAILED"; return; }
     if (content.type !== "graph_frame") {
       if (content.graph_revision === revision) {
+        if (content.type === "append") {
+          refresh(content.spec, buffers, content.affected);
+          const saved = model.get("spec");
+          model.set({ spec: { ...saved, graph_snapshot: { ...saved.graph_snapshot, spec: content.spec } }, buffers }, { silent: true });
+          return;
+        }
         if (content.type === "selection" || content.type === "selection_rows") {
           selection = { content, buffers }; selectedRows = rowSpace();
         }
@@ -55,30 +83,14 @@ export function renderGraphHost({ model, el, attachTicks }) {
     revision = content.graph_revision;
     if (!view) { view = new ChartView(el, spec, payload, comm); attachTicks(view, spec); }
     else {
-      const previousRows = rowSpace(), hover = view._hoverTarget;
-      // The generic refresh replaces GPU trace objects. Release transient
-      // handles before it draws; retain an index only when Rust's ordered
-      // row space survives, then bind it to the new GPU object.
-      view._hoverTarget = null; view._graphNbrKey = null; view._graphNbrGpu = null;
-      view._applyAppend({ spec, affected: spec.traces.map(t => t.id) }, buffers);
-      if (!sameRows(previousRows, rowSpace())) {
-        view._hoverId = null; view._a11yPointIndex = -1; view._hideTooltip?.();
-      } else if (hover) {
-        const next = view.gpuTraces.find(g => g.trace.id === hover.trace);
-        if (next && hover.index >= 0 && hover.index < next.n && !next._legendHidden) {
-          view._hoverTarget = { ...hover, g: next }; view._drawKeepPick();
-        }
-      }
-      // Same generic canonical trace-row contract as selection_rows; the
-      // native compiler emits the routing/membership planes for every frame.
-      // Revoke a cached mask if Rust emitted a different ordered row space.
-      // This compares native planes; it never guesses or remaps identities.
-      if (selection && !sameRows(selectedRows, rowSpace())) selection = null;
-      if (selection) { view._applySelectionBuffers(selection.content, selection.buffers); view.draw(); }
+      refresh(spec, buffers);
+    }
+    if (content.restore_state) {
+      for (const cb of listeners) cb({ type: "state_patch", state: content.restore_state, animate: false, history: false }, []);
     }
     // Saved notebook/embed state uses the same accepted picture, with no
     // second wire transfer or save_changes echo to the kernel.
-    model.set({ spec: { graph_host: true, instance, graph_snapshot: { spec, step: content.step, phase: content.phase } }, buffers }, { silent: true });
+    model.set({ spec: { graph_host: true, instance, graph_snapshot: { spec, step: content.step, phase: content.phase, restore_state: content.restore_state } }, buffers }, { silent: true });
     el.dataset.graphRevision = String(revision); el.dataset.graphSteps = String(content.step);
     status.textContent = content.phase === "complete" ? "Layout complete" : "Laying out graph";
     // A presented frame releases exactly one subsequent native checkpoint.
@@ -92,6 +104,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
     const saved = bootstrap.graph_snapshot;
     view = new ChartView(el, saved.spec, payloadBuffers(saved.spec, model.get("buffers")), comm);
     attachTicks(view, saved.spec);
+    if (saved.restore_state) for (const cb of listeners) cb({ type: "state_patch", state: saved.restore_state, animate: false, history: false }, []);
     el.dataset.graphSteps = String(saved.step);
     status.textContent = saved.phase === "complete" ? "Layout complete" : "Laying out graph";
   }

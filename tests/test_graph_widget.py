@@ -103,6 +103,7 @@ def test_native_frames_callbacks_identity_and_two_widget_isolation():
             assert data.sources[2] == data.targets[2]
             message(a, "select", x0=-1e9, x1=1e9, y0=-1e9, y1=1e9)
             assert selections and len(selections[-1])
+            message(a, "graph_painted")
             a.select(rows={node: [0]})
             assert messages[a][-1][0]["type"] == "selection_rows"
             a.set_view({"x": [-10, 10]}, animate=False)
@@ -151,6 +152,9 @@ def test_kernel_responsive_during_compile_and_stable_worker_failure(monkeypatch)
             release.set()
             await wait_for(lambda: bool(seen))
             assert seen == [{"type": "graph_failed", "code": "XYG_GRAPH_WORKER_FAILED"}]
+            assert not w._pending_api
+            with pytest.raises(RuntimeError, match=r"^XYG_GRAPH_WORKER_FAILED$"):
+                w.select(rows={0: [0]})
         finally:
             release.set()
             w.close()
@@ -272,6 +276,138 @@ def test_axes_and_css_dimensions_use_the_same_declarative_compiler():
             assert spec["x_axis"]["range"] == [-20.0, 20.0]
             assert w._figure.style["background"] == "#123456"
             assert w._figure._graph_meta[0]["style_contract"]["theme"] == "dark"
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_python_commands_wait_for_their_painted_frame(monkeypatch):
+    from xyg.widget import FigureWidget
+
+    async def journey():
+        sent = []
+        monkeypatch.setattr(
+            FigureWidget, "send", lambda self, content, buffers=None: sent.append(content)
+        )
+        _, w = widget()
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            message(w, "graph_painted")
+            await wait_for(lambda: w._revision == 2)
+            node = w._figure._graph_meta[0]["node_trace"]
+            before = len(sent)
+            w.select(rows={node: [0]})
+            assert len(sent) == before  # revision 2 is not yet displayed
+            message(w, "click", revision=1, trace=node, index=0)
+            message(w, "graph_painted", revision=2)
+            assert sent[-1]["type"] == "selection_rows"
+            assert sent[-1]["graph_revision"] == 2
+            assert w.view_state()["selection"] == {"rows": True}
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_old_readout_does_not_copy_unmodified_selection_or_ranges():
+    async def journey():
+        _, w = widget()
+        w.send = lambda *args, **kwargs: None
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            message(w, "graph_painted")
+            await wait_for(lambda: w._revision == 2)
+            w._figure._record_selection({"rows": True})
+            w._figure._record_view_ranges({"x": [-20, 20]})
+            expected = w.view_state()
+            node = w._figure._graph_meta[0]["node_trace"]
+            message(w, "click", revision=1, trace=node, index=0)
+            assert w.view_state() == expected
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_append_before_mount_survives_checkpoints_and_preserves_graph_envelope():
+    async def journey():
+        chart, w = widget()
+        chart.children = (*chart.children, xyg.scatter([0.0, 1.0], [2.0, 3.0], name="extra"))
+        trace = chart.figure().traces[-1].id
+        w.send = lambda *args, **kwargs: None
+        try:
+            w.append(trace, [2.0], [4.0])
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            message(w, "graph_painted")
+            assert len(w._figure.traces[trace].x) == 3
+            assert w.spec["graph_host"] is True
+            appended = w._figure.traces[trace]
+            appended._spatial_index = object()  # derived cache belongs to that frame
+            await wait_for(lambda: w._revision == 2)
+            message(w, "graph_painted")
+            assert w._figure.traces[trace].x is appended.x  # one canonical column
+            assert w._figure.traces[trace]._spatial_index is not appended._spatial_index
+            assert list(w._figure.traces[trace].x.values) == [0.0, 1.0, 2.0]
+            w.append(trace, [3.0], [5.0])
+            assert w.spec["graph_host"] is True
+            await wait_for(lambda: w._revision == 3)
+            assert list(w._figure.traces[trace].x.values) == [0.0, 1.0, 2.0, 3.0]
+            assert len(w._figure.traces[trace].y) == 4
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_remount_restores_committed_view_in_first_frame():
+    async def journey():
+        _, w = widget()
+        frames = []
+        w.send = lambda content, buffers=(): frames.append(content)
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            message(w, "graph_painted")
+            message(w, "view_change", ranges={"x": [-20, 20], "y": [-20, 20]})
+            expected = w.view_state()["ranges"]
+            message(w, "graph_mount", epoch="replacement")
+            await wait_for(lambda: w._epoch == "replacement" and w._revision > 1)
+            assert w.view_state()["ranges"] == expected
+            first = next(f for f in reversed(frames) if f["type"] == "graph_frame")
+            assert first["restore_state"]["ranges"] == expected
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_remount_cancels_commands_queued_for_the_old_mount(monkeypatch):
+    from xyg.widget import FigureWidget
+
+    async def journey():
+        sent = []
+        monkeypatch.setattr(
+            FigureWidget, "send", lambda self, content, buffers=None: sent.append(content)
+        )
+        _, w = widget()
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            node = w._figure._graph_meta[0]["node_trace"]
+            w.select(rows={node: [0]})
+            message(w, "graph_mount", epoch="replacement")
+            await wait_for(lambda: w._revision == 2)
+            message(w, "graph_painted", epoch="replacement")
+            assert not [m for m in sent if m["type"] == "selection_rows"]
         finally:
             w.close()
             await asyncio.sleep(0)
