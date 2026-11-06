@@ -96,8 +96,9 @@ export class XygWasmTemporalGraph {
     }
   }
   async frameAndLayout(options: { revision: bigint; cursor: bigint; range: readonly [bigint, bigint]; budget: bigint; layout?: Omit<XygWasmGraphRequest, "sources" | "targets" | "nNodes">; onUpdate?: (checkpoint: XygWasmGraphCheckpoint) => void }) {
-    if (options.revision <= 0n || options.revision > 0xffffffffn) throw new RangeError("layout revision must fit u32");
-    const frame = await this.frame(options);
+    const revision = options.revision;
+    if (typeof revision !== "bigint" || revision <= 0n || revision > 0xffffffffn) throw new RangeError("layout revision must fit u32");
+    const frame = await this.frame({ revision, cursor: options.cursor, range: options.range, budget: options.budget });
     const attempt = this.attempt;
     if (this.requestedRevision !== frame.revision || this.disposed) throw new Error("temporal graph layout reply is stale");
     const task = layoutWasmCose(this.worker, { ...(options.layout ?? {}), sources: frame.sources, targets: frame.targets, nNodes: frame.visibleNodeIds.byteLength / 16 }, {

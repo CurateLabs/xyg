@@ -122,8 +122,9 @@ arena cap. A transport failure permits another submission but cannot establish
 whether Rust already committed before delivery failed. Rust remains the applied
 revision authority in that case. Once a valid frame returns, later layout
 encoding, scheduling, or execution failure leaves that frame revision consumed.
-`frameAndLayout` checks its narrower nonzero u32 revision width before submitting
-the frame. These transport guards do not filter topology or change Rust layout,
+`frameAndLayout` captures its revision once, checks that same scalar against
+the narrower nonzero u32 width, and submits it unchanged to `frame`. It does not
+re-read a caller revision getter between admission and encoding. These transport guards do not filter topology or change Rust layout,
 identity, or work-budget policy.
 
 The [public retry receipt](../performance/temporal-browser-retry-2026-11-06/README.md)

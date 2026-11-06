@@ -141,6 +141,17 @@ test("submitted revision is immutable while actual WASM reply delivery is delaye
     let reads = 0;
     assert.equal((await graph.frame({ ...options, get revision() { reads++; return 3n; } })).revision, 3n);
     assert.equal(reads, 1);
+    worker.layoutCose = (_command, options) => ({
+      result: Promise.resolve({ revision: options.revision }), cancel() {},
+    });
+    let layoutReads = 0;
+    const laidOut = await graph.frameAndLayout({
+      ...options,
+      get revision() { return ++layoutReads <= 2 ? 4n : 0x100000000n; },
+    });
+    assert.equal(layoutReads, 1);
+    assert.equal(laidOut.frame.revision, 4n);
+    assert.equal(laidOut.layout.revision, 4);
   } finally { graph.dispose(); assert.equal(x.xyg_wasm_instance_dispose(handle), 0); }
 });
 
