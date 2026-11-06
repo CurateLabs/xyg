@@ -262,3 +262,29 @@ at the final publication checkpoint. Existing exact-oracle, page-backpressure,
 legacy-v1, overview and non-finite fixtures remain the regression net. These
 checks neither authenticate arbitrary corruption nor establish larger-than-RAM
 latency, remote reads, chunk-cache reuse or complete #110 acceptance.
+
+
+## Bounded canonical chunk reuse proof (#110)
+
+Rust chunk tests compare repeated overlapping predicates against physical row IDs
+and a full-scan oracle with duplicate x and nonfinite y, while an instrumented
+counter at the actual positioned-read seam proves that warm hits perform no I/O.
+They assert deterministic LRU order, byte sums after each operation, unchanged
+warm admission and page boundaries, shrink behavior, failed I/O, corruption,
+cancellation immediately after positioned I/O and on hits, and a superseded
+thread waiting for the cache lock. A bounded 8 MiB + 16-byte slab fixture checks
+oversized bypass through both modes. Python and Node fixtures prove shared
+native reuse across nonpaged/page calls and unchanged budget diagnostics.
+
+Reproduce with `cargo test -p xyg-engine chunked_columns -- --nocapture`, then
+`cargo build --release`, `XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so uv run
+pytest tests/test_chunked_columns.py -q`, and with Node 22 and the same explicit
+native library `node --test packages/xy-node/test/chunked-columns.test.mjs`.
+These are bounded correctness proofs, not larger-than-RAM or competitive timing
+claims. Existing scheduled/manual infrastructure remains the scale authority.
+
+The local canonical reuse regression also exercises 32,768 valid four-row
+chunks: cold reads, warm interior overlap, exact row IDs, doubly linked LRU
+invariants, and shrink/eviction order. Its debug timings are diagnostic output,
+not timing-dependent CI assertions or end-to-end scale qualification. The
+resident lookup must not scan or shift entries as chunk count grows.

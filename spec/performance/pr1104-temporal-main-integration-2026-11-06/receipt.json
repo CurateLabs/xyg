@@ -1,0 +1,447 @@
+{
+  "schema": "xyg.temporal-main-integration/v1",
+  "parents": [
+    "0768a35a377014066d27ba524e1a46004cfe61c7",
+    "885330e228b6ada9bff54ef1b903e5da2f79b45c"
+  ],
+  "sourceUnion": {
+    "producer": "0768a35a377014066d27ba524e1a46004cfe61c7",
+    "acceptedMain": "885330e228b6ada9bff54ef1b903e5da2f79b45c",
+    "priorMain": "9a75c4c00588eef20fdbf5c97952bb2d8f46beb4",
+    "oldCount": 14673,
+    "incomingPaths": [
+      "crates/xyg-engine/src/temporal_graph.rs",
+      "crates/xyg-wasm/src/temporal_graph.rs",
+      "packages/xy-node/package.json",
+      "packages/xy-node/test/temporal-graph-publication.test.mjs",
+      "spec/design/temporal-graph.md",
+      "spec/performance/temporal-frame-ci-wiring-2026-11-06/README.md",
+      "spec/performance/temporal-frame-ci-wiring-2026-11-06/checks.json",
+      "spec/performance/temporal-frame-ci-wiring-2026-11-06/node.log.gz",
+      "spec/performance/temporal-frame-ci-wiring-2026-11-06/workflow.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/README.md",
+      "spec/performance/temporal-frame-publication-2026-11-06/changed-paths.txt",
+      "spec/performance/temporal-frame-publication-2026-11-06/results.json",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-dependency-32.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-dependency-43.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-dependency-44.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-dependency-47.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-dependency-48.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-dependency-49.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-issue-38.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-issue-39.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-issue-45.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-issue-46.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-issue-50.json.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-clippy.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-commit-format.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-commit-hooks.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-commit-ruff.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-engine-final.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-engine.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-final-format.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-final-hooks.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-final-ruff.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-js-build.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-native-build.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-node-install.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-node-native-final.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-node-native.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-package-wasm.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-packaged-parity.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-python-final.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-python.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-real-wasm-diagnostic.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-session-parity.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-sync-format.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-sync-hooks.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-sync-ruff.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-wasm-assets.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-wasm-build.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-wasm-host-final.log.gz",
+      "spec/performance/temporal-frame-publication-2026-11-06/xyg-temporal-wasm-host.log.gz"
+    ],
+    "allIncomingExactMain": true,
+    "unchangedOldPaths": 14669,
+    "changedPriorPaths": [
+      "crates/xyg-engine/src/temporal_graph.rs",
+      "crates/xyg-wasm/src/temporal_graph.rs",
+      "packages/xy-node/package.json",
+      "spec/design/temporal-graph.md"
+    ],
+    "exactIndexEntryProof": true,
+    "reviewed4cFileCount": 14632,
+    "reviewed4cChangedPriorPaths": [
+      "crates/xyg-engine/src/temporal_graph.rs",
+      "crates/xyg-wasm/src/temporal_graph.rs",
+      "packages/xy-node/package.json",
+      "scripts/consumer_apps_smoke.py",
+      "spec/design/application-consumers.md",
+      "spec/design/temporal-graph.md"
+    ],
+    "reviewed4cUnchangedCount": 14626
+  },
+  "checks": [
+    {
+      "name": "rust-cache",
+      "command": "cargo test -p xyg-engine --lib chunked_columns",
+      "exitCode": 0,
+      "seconds": 1.43
+    },
+    {
+      "name": "rust-temporal",
+      "command": "cargo test -p xyg-engine --lib temporal_graph",
+      "exitCode": 0,
+      "seconds": 0.12
+    },
+    {
+      "name": "wasm-host-temporal",
+      "command": "cargo test -p xyg-wasm --lib temporal_graph",
+      "exitCode": 0,
+      "seconds": 35.66
+    },
+    {
+      "name": "clippy",
+      "command": "cargo clippy -p xyg-engine -p xyg-core -p xyg-wasm --all-targets -- -D warnings",
+      "exitCode": 0,
+      "seconds": 49.19
+    },
+    {
+      "name": "python-host",
+      "command": "uv run pytest tests/test_chunked_columns.py tests/test_temporal_graph_native.py tests/test_temporal_controller.py -q",
+      "exitCode": 0,
+      "seconds": 1.98
+    },
+    {
+      "name": "node-host",
+      "command": "node --test packages/xy-node/test/chunked-columns.test.mjs packages/xy-node/test/temporal-graph.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/temporal-graph-publication.test.mjs",
+      "exitCode": 1,
+      "seconds": 0.24
+    },
+    {
+      "name": "node-host",
+      "command": "node --test packages/xy-node/test/chunked-columns.test.mjs packages/xy-node/test/temporal-graph.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/temporal-graph-publication.test.mjs",
+      "exitCode": 0,
+      "seconds": 0.25
+    },
+    {
+      "name": "wasm-assets",
+      "command": "uv run python scripts/verify_wasm_assets.py",
+      "exitCode": 0,
+      "seconds": 0.1
+    },
+    {
+      "name": "ci",
+      "command": "uv run pytest tests/test_verify_ci_workflow.py tests/test_release_surface_gate.py tests/test_verify_wasm_assets.py tests/test_check_scheduled_evidence.py -q",
+      "exitCode": 143,
+      "seconds": 150.7
+    },
+    {
+      "name": "abi",
+      "command": "uv run python scripts/abi_smoke.py",
+      "exitCode": 0,
+      "seconds": 0.14
+    },
+    {
+      "name": "consumer",
+      "command": "uv run python scripts/consumer_apps_smoke.py --chromium /home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "exitCode": 0,
+      "seconds": 48.45
+    }
+  ],
+  "environment": {
+    "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-3f7c8f30",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.12.15",
+    "node": "v22.23.4",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargoBuildJobs": 2
+  },
+  "logs": {
+    "pr1104-abi": {
+      "path": "pr1104-abi.log.gz",
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "archiveSha256": "aa3af828689b39e5cb48e96ed8fa99ca3d3a9326510eb29838bb24208e32deba",
+      "rawBytes": 52
+    },
+    "pr1104-backend": {
+      "path": "pr1104-backend.log.gz",
+      "rawSha256": "c54b6fd77bc699a17876ed9b46dcf770b66d0bd01380e25cd620ec82adf9c736",
+      "archiveSha256": "8fc31f6b124aa88952071a19225cba4377f0148a7db3f70bdf927daea7d6dff6",
+      "rawBytes": 7
+    },
+    "pr1104-ci-broad-interrupted": {
+      "path": "pr1104-ci-broad-interrupted.log.gz",
+      "rawSha256": "c99972cfd8b6040b417a00f1dcd87b70b9de7c422765b9b7a67fbfb1f7a4f85f",
+      "archiveSha256": "a6c8ac2af2fbac4112cba3eae064b65dcc17e11d4375700491b1f40eb9d4a8f7",
+      "rawBytes": 142
+    },
+    "pr1104-ci-current": {
+      "path": "pr1104-ci-current.log.gz",
+      "rawSha256": "baec9cf0565235da4d093c19ad788afdd9db6012e3382071e93f3ed03b30a73b",
+      "archiveSha256": "539cf9d2dffe6c9c87c174bec81cec265813dbc61c89dd6e9ee47184fba6a611",
+      "rawBytes": 567
+    },
+    "pr1104-ci-focused": {
+      "path": "pr1104-ci-focused.log.gz",
+      "rawSha256": "4d1430f453820520275342c92b6964c067199d6d67fdfaac326362aeb5fa7e41",
+      "archiveSha256": "6ac9390bb87132074f73608ff757ba796a9d2ad15949a1f566ca5b5c081d467f",
+      "rawBytes": 100
+    },
+    "pr1104-ci": {
+      "path": "pr1104-ci.log.gz",
+      "rawSha256": "c99972cfd8b6040b417a00f1dcd87b70b9de7c422765b9b7a67fbfb1f7a4f85f",
+      "archiveSha256": "a6c8ac2af2fbac4112cba3eae064b65dcc17e11d4375700491b1f40eb9d4a8f7",
+      "rawBytes": 142
+    },
+    "pr1104-client": {
+      "path": "pr1104-client.log.gz",
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+      "rawBytes": 5448
+    },
+    "pr1104-clippy": {
+      "path": "pr1104-clippy.log.gz",
+      "rawSha256": "40dceabe03328bd5da34ebf07f18452e74bfd62548f1fbf7d0a2368b89dddd47",
+      "archiveSha256": "ae551b5294580c412f92481b5a4205fd9bfa0bdd639bef750f09d745c00a90f1",
+      "rawBytes": 1555
+    },
+    "pr1104-consumer": {
+      "path": "pr1104-consumer.log.gz",
+      "rawSha256": "74bfd95367686fd0552716d46af85fd370e04e767aacc3c5a5f013356b24e6d4",
+      "archiveSha256": "6f82a23aa524831e0702f51706b31691b9626cd270dc250e3a3bf2818cb1061a",
+      "rawBytes": 52639
+    },
+    "pr1104-contracts": {
+      "path": "pr1104-contracts.log.gz",
+      "rawSha256": "1a6f5593d90b1eb0256ee88729910cf6a39c4dc161169cd5834afae3e3636fd8",
+      "archiveSha256": "3130308d61126c09814a2e5c83f505e8c10cea8582d86bca9cea0f5bb87e5bc3",
+      "rawBytes": 352
+    },
+    "pr1104-final-format": {
+      "path": "pr1104-final-format.log.gz",
+      "rawSha256": "cc538e17af1940ec0a16ea7e360b3a394df9e1fd9caed2d2c4e109c351bbf919",
+      "archiveSha256": "dfc4ef8ea5a242a88f2a4d87df8eda65a629c2a5d068b530577649172a194ad9",
+      "rawBytes": 29
+    },
+    "pr1104-final-hooks": {
+      "path": "pr1104-final-hooks.log.gz",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "rawBytes": 240
+    },
+    "pr1104-final-ruff": {
+      "path": "pr1104-final-ruff.log.gz",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "rawBytes": 19
+    },
+    "pr1104-initial-format": {
+      "path": "pr1104-initial-format.log.gz",
+      "rawSha256": "cc538e17af1940ec0a16ea7e360b3a394df9e1fd9caed2d2c4e109c351bbf919",
+      "archiveSha256": "dfc4ef8ea5a242a88f2a4d87df8eda65a629c2a5d068b530577649172a194ad9",
+      "rawBytes": 29
+    },
+    "pr1104-initial-hooks": {
+      "path": "pr1104-initial-hooks.log.gz",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "rawBytes": 240
+    },
+    "pr1104-initial-ruff": {
+      "path": "pr1104-initial-ruff.log.gz",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "rawBytes": 19
+    },
+    "pr1104-inventory": {
+      "path": "pr1104-inventory.log.gz",
+      "rawSha256": "7b98a3067f1a6814b1376f3b1b7acfe4967df7108dea122ff8d1443cfca5a78c",
+      "archiveSha256": "febede10b3a444094ba6d0712d24c835fc1324d4e0677625bf3e72b65f3db3f4",
+      "rawBytes": 201
+    },
+    "pr1104-main-final": {
+      "path": "pr1104-main-final.log.gz",
+      "rawSha256": "4f64c7200ab19cb6fa066ad4691d9045aad653f349c3e377af25ac8241c965c1",
+      "archiveSha256": "60a482405d207daf6bedc46eba240cd7ad83ac62b7ff3dbb2e52d0c41b79b58e",
+      "rawBytes": 87
+    },
+    "pr1104-native": {
+      "path": "pr1104-native.log.gz",
+      "rawSha256": "6f39f258eb285952fd5cd96d8b4ce872d2ed490df5006f447e7e1234147445a4",
+      "archiveSha256": "e1c4d68eb01d28000c7f67de39149c4a56d9ac2648d34d18ce9b74b8598c161d",
+      "rawBytes": 597
+    },
+    "pr1104-node-before-package": {
+      "path": "pr1104-node-before-package.log.gz",
+      "rawSha256": "0dd1495791c553136867e159254c4a47baeb78fc38130bc5ac55a96a184d53f2",
+      "archiveSha256": "3ee75a66148c779d1eabe1597c84389e71f50fb2bce15a5ddaa495b0ad5738b6",
+      "rawBytes": 5890
+    },
+    "pr1104-node-host": {
+      "path": "pr1104-node-host.log.gz",
+      "rawSha256": "351c300cc1d3de8a1088c186136e4cde6e558b245004c7868fd1dc5a64e43b7d",
+      "archiveSha256": "8ceb4d1a2ca08661084cdc468f15e3b46bad4e7dfc661baebd2ab809563b3d7e",
+      "rawBytes": 4200
+    },
+    "pr1104-node-install": {
+      "path": "pr1104-node-install.log.gz",
+      "rawSha256": "2af35efb9d3aad95bd50d210d8f17c6910bb8eaa397d5c7a0fccc6a60db0e63f",
+      "archiveSha256": "6263b91ec6c731f1c94d7970c43d1ce8fba15606878c63d8da45dffb72876676",
+      "rawBytes": 495
+    },
+    "pr1104-npm": {
+      "path": "pr1104-npm.log.gz",
+      "rawSha256": "30f93900401f83801a790a2d609f85b4d1be643c942cc67c162a1c0c1342ac9e",
+      "archiveSha256": "0b5d414dc546848e4e5c28f4113f3c289b0598a0d1a19407fe038d1811450480",
+      "rawBytes": 222
+    },
+    "pr1104-ownership": {
+      "path": "pr1104-ownership.log.gz",
+      "rawSha256": "35a6c199dcb3f20c32f4706147eede039bcb52c616c265a75d5bd09fc2fcdc6e",
+      "archiveSha256": "738a13a248117136cc1c9e52fe0a1d7199268f7e57134df5dea7e66c60e9f481",
+      "rawBytes": 60
+    },
+    "pr1104-package-wasm": {
+      "path": "pr1104-package-wasm.log.gz",
+      "rawSha256": "fff1e1e47717e208611eea7656ac7acf0204cbf5774d5fd5d195b17bce3a4343",
+      "archiveSha256": "d0a940723214f0c48ecfebe4150f09004b619091f24aa9c6ebf6fc46170bb26d",
+      "rawBytes": 493
+    },
+    "pr1104-python-host": {
+      "path": "pr1104-python-host.log.gz",
+      "rawSha256": "3880005e3a734350ac6e3ed39c0bc29f69047331087cf634ae97aa0564ee74e0",
+      "archiveSha256": "05a4accbce51d82a4f1d8fbea75118f0b0bb1ebff7e01af65c5b9a2b41b72f15",
+      "rawBytes": 99
+    },
+    "pr1104-rust-cache": {
+      "path": "pr1104-rust-cache.log.gz",
+      "rawSha256": "75e3dd815402410a87b0adecedff99d4f0f63cde5aff1a68fa41a676fb3f09ce",
+      "archiveSha256": "3db90a70261b20bc56cd68f605d8fad1c3bdf9c8efba316308508c8da0ad15c8",
+      "rawBytes": 1955
+    },
+    "pr1104-rust-temporal": {
+      "path": "pr1104-rust-temporal.log.gz",
+      "rawSha256": "5887b5b1b9b5d1b2106c32d1f01696ea0237a285ef72eea75a218bbeee5175ba",
+      "archiveSha256": "98f2a28dc2ba9cbca08225ceb26a6945db79e8d1dfe1b8e2629c4872662353b3",
+      "rawBytes": 1568
+    },
+    "pr1104-uv": {
+      "path": "pr1104-uv.log.gz",
+      "rawSha256": "f09c75ce476ce805d659c6633e0dc3ae86f3a1993e49f4e3940da947527dc813",
+      "archiveSha256": "20bb63a5266c26d9e642aa29532352b002975befcaccfc4172c512bfdd07b720",
+      "rawBytes": 1196
+    },
+    "pr1104-wasm-assets": {
+      "path": "pr1104-wasm-assets.log.gz",
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18",
+      "rawBytes": 88
+    },
+    "pr1104-wasm-confirm": {
+      "path": "pr1104-wasm-confirm.log.gz",
+      "rawSha256": "d285ce495313667bd7fcf799e1ed9eecda6eae148e37b7b83dddb6d60ca92bac",
+      "archiveSha256": "34b321114c0f70e5acd664a3f8df1c72ba8c1589696e77494174f47f4ec13d89",
+      "rawBytes": 3533
+    },
+    "pr1104-wasm-host-temporal": {
+      "path": "pr1104-wasm-host-temporal.log.gz",
+      "rawSha256": "2c0efe0e48ba22a93da7241095de81ee445a7781f72c255ae5c33bc688bca4ad",
+      "archiveSha256": "c64aa74fe2043aa3c183904e22b3e32ef159c157deca6c85784c360f0bbc59b2",
+      "rawBytes": 1207
+    },
+    "pr1104-wasm-size": {
+      "path": "pr1104-wasm-size.log.gz",
+      "rawSha256": "d93f95a1c16d077bec9ee453b1649c25742d5010e4f4f85a1142977a63b86972",
+      "archiveSha256": "5c3dc3d39ea2273bdd69e641d2d1aee0484dc3676e7741d48afeda6c5f85d94f",
+      "rawBytes": 127
+    },
+    "pr1104-wasm": {
+      "path": "pr1104-wasm.log.gz",
+      "rawSha256": "a4b9e7d0f9c9926ee09ff63928b6fe7667af5d45fa438383a04a90a079bbdb48",
+      "archiveSha256": "7f8837b83dd07e7a020312147c0cad22227ae8e43835495b046f9d91f2db2463",
+      "rawBytes": 3663
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895",
+      "bytes": 6127864
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d",
+      "bytes": 2124856
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+      "bytes": 801639
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+      "bytes": 801666
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    }
+  },
+  "producerSourceManifest": {
+    "path": "producer-source-sha256.json.gz",
+    "rawSha256": "bdc2e16f4abf19483bda9f7bb0f21524544f85baf70cac43c7c51dc94858f196",
+    "archiveSha256": "ee6a450c41568e7eb1c17e16db781e16bbbf4b758f1756104b364a0c171092c0",
+    "rawBytes": 2265476
+  },
+  "smokeReport": {
+    "path": "consumer-apps-smoke.json.gz",
+    "rawSha256": "d8e31adc1486963eb0b903e0e832deb97e5688d005c29fd822f0a096fbd6f636",
+    "archiveSha256": "33d627a9954ef512e5e138aec6e0ff54135762a1ecfe40576bba747f4d661086",
+    "rawBytes": 49993
+  },
+  "sourceSha256": {
+    "crates/xyg-engine/src/chunked_columns.rs": "2f14fee24e6bab44f7b82403c64ad391baf7b551188585814d05f8db51ab58cc",
+    "crates/xyg-engine/src/temporal_graph.rs": "09b49b3acaf9ed53e4ecfb1c0593b1b43f94109069884b5ca6dd8e9c673caa7e",
+    "crates/xyg-wasm/src/temporal_graph.rs": "439433dbb10071a7e7fb7b1d8da23cd1bb88df28289582549e0396d1d52ce81b",
+    "scripts/consumer_apps_smoke.py": "42adc0d1fbde151958ca1ceb5065837dfb45f305c96929c294c79a8b1647dea5",
+    "scripts/check_stale_names.py": "215fe4f6047ce01feec47d08531996c5920702ac1278497dbe31146b48b70f5a",
+    "js/package-wasm.mjs": "e27f7a26c57d857b2897df83a08619f0d5ab9e534bc2b214f159a101a3a14d17",
+    "spec/performance/graph-widget-pr1100-repair-2026-11-06/current-bindings.json": "f2b3d6b6fa73d87e168bbb74c3173c0d7efa2686d9bf33b4e963ca78c344682d"
+  },
+  "wasmBudget": {
+    "rawCap": 1927168,
+    "gzip6Cap": 786432,
+    "nodeGzip6Bytes": 786115
+  },
+  "additionalChecks": {
+    "contracts": {
+      "command": "uv run pytest tests/test_stale_names.py tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py tests/test_verify_ownership.py tests/test_audit_python_host_core.py tests/test_consumer_smoke_ports.py tests/test_stage_node_packages.py -q",
+      "passed": 238,
+      "namingSubset": 155,
+      "exitCode": 0
+    },
+    "inventory": {
+      "command": "uv run python scripts/check_release_inventory.py",
+      "exitCode": 0,
+      "note": "Declarations match; 12 historical generation source hashes differ; acceptance/classification gaps explicit"
+    },
+    "ownership": {
+      "command": "uv run python scripts/verify_ownership.py",
+      "classified": 515,
+      "exitCode": 0
+    },
+    "builds": "Fresh cargo release native and wasm32, JS build and normal WASM packaging passed",
+    "precommit": "Full-worktree hooks and both Ruff commands passed; final captured immediately before merge commit",
+    "ciFocused": {
+      "command": "uv run python scripts/verify_ci_workflow.py; uv run pytest tests/test_verify_ci_workflow.py::test_ci_workflow_accepts_current_gates tests/test_verify_ci_workflow.py::test_ci_workflow_requires_active_graph_suite_commands tests/test_verify_wasm_assets.py -q",
+      "exitCode": 0
+    }
+  },
+  "limitations": "Final independent integration/port review and remote CI pending with parent. #110/M7/larger-than-RAM/browser-WASM/full-host/100M/#111\u2013113 acceptance open. No publishing, RC reservation, or closure. No full hours-long suite or new performance claim; unchanged broader proofs remain historical."
+}

@@ -483,7 +483,16 @@ retain both endpoints, while a one-point request returns the first point. A view
 maps, optionally prunes by y, performs positioned reads of only candidate chunks,
 and applies the exact row predicate. Every reply records generation, first chunk,
 chunks considered/read, and bytes read. A hard byte budget is checked before I/O;
-generation changes cancel stale work between reads. Python `ChunkedColumns` and Node
+generation changes cancel stale work between reads. Both read modes reuse validated
+canonical slabs through a per-open Rust LRU capped at 8 MiB and the request byte
+budget. Admission/page boundaries still count hit bytes; only misses perform
+positioned reads. A chunk-keyed hash table and linked LRU avoid resident scans
+or entry shifts; hash iteration never controls eviction order. Rust records exact
+row/chunk identity, hit/miss, evictions and
+resident bytes; existing host byte/read counters count actual fetches. Oversized
+admitted chunks bypass retention. See [the precise residency and accounting
+contract](design/rust-engine.md#51a-bounded-local-canonical-chunk-reuse-110),
+including additional metadata/output memory and cooperative cancellation. Python `ChunkedColumns` and Node
 `ChunkedColumns` are thin, behavior-identical hosts. The artifact is local/offline;
 no network lookup is attempted. This is the ordered/time-series half of Tier 3 and
 does **not** complete this paragraph: remote HTTP range sources, direct-browser WASM
