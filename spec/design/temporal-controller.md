@@ -219,3 +219,18 @@ are contained and reported to `onError`. Observer promises are not awaited and
 cannot delay temporal commands; failures from `onError` are also contained.
 The first automatic geographic consumer is specified in
 [geo-retained-hosts.md](geo-retained-hosts.md#automatic-browser-temporal-binding-50-partial).
+
+## Native state observers
+
+Python `TemporalController.subscribe_state(callback)` and Node
+`temporalControllerSubscribeState(handle, callback)` return unsubscribe functions.
+Successful wrapper mutations publish complete independently copied snapshots;
+Node snapshots are frozen. Reentrant commands queue the latest snapshot for the
+next observer pass. Unsubscribe is idempotent. Observer throws and rejected
+awaitables/promises cannot fail an already successful native command or delay
+publication. Python asynchronous observers require a running loop; coroutine
+results outside one are closed. Node same-process coordination delivery refreshes
+subscribed peers; Python automatic observation covers wrapper commands and
+`apply_event`, not direct calls to `_native`. Disposal notifies observers before
+handle destruction and detaches geographic bindings. See the bounded native
+contract in [geo-retained-hosts.md](geo-retained-hosts.md).

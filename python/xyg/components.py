@@ -7433,6 +7433,12 @@ class GeoChart:
     tile_vector_styles: Any = None
     tile_image_id: int | None = None
 
+    def bind_temporal(self, controller, mode="cursor"):
+        """Automatically query retained points from exact native temporal snapshots."""
+        from ._geo_temporal import GeoTemporalBinding
+
+        return GeoTemporalBinding(self, controller, mode)
+
     def host(self, *, frame=None, selected_scope=None, hierarchy_lane=None):
         """Create a single-mount native host adapter for retained points or overview.
 
@@ -7653,7 +7659,7 @@ class GeoChart:
             )
         return dict(query), g._uint(props["sequence"]), style
 
-    def compile(self, *, event: Mapping[str, Any] | None = None) -> Any:
+    def compile(self, *, event: Mapping[str, Any] | None = None, _publish=True) -> Any:
         """Return a static catalog dict, or an explicitly owned retained Scene frame."""
         overview = self._overview_layer()
         if overview is not None:
@@ -7670,7 +7676,7 @@ class GeoChart:
             if event is not None:
                 raise ValueError("retained compile does not accept catalog interaction events")
             query, sequence, style = self._retained_inputs(retained)
-            return retained.source.update(query, sequence=sequence, style=style)
+            return retained.source.update(query, sequence=sequence, style=style, _publish=_publish)
         from . import _geocatalog
 
         encoded = self._catalog_packet(event)
@@ -7738,7 +7744,7 @@ class GeoChart:
         encoded = _geocatalog.encode_request(request, self.budget)
         return encoded
 
-    async def compile_async(self) -> Any:
+    async def compile_async(self, *, _publish=True) -> Any:
         """Compile the same retained composition with an async source reader."""
         overview = self._overview_layer()
         if overview is not None:
@@ -7748,7 +7754,9 @@ class GeoChart:
         if self.tile_session is not None or retained is None:
             return self.compile()
         query, sequence, style = self._retained_inputs(retained)
-        return await retained.source.aupdate(query, sequence=sequence, style=style)
+        return await retained.source.aupdate(
+            query, sequence=sequence, style=style, _publish=_publish
+        )
 
     def to_image(
         self, format: str = "png", *, scale: float = 1.0, quality: int = 90, frame: Any = None

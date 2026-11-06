@@ -1,0 +1,62 @@
+# LF everywhere for the JS client sources so `node js/build.mjs` produces a
+# reproducible bundle on every platform, including Windows checkouts with
+# autocrlf. (The static/ bundles themselves are generated, not committed — see
+# .gitignore and hatch_build.py.)
+*.js text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+
+# Core compatibility evidence and the runtime declaration are bound by raw-byte
+# hashes. Preserve those bytes on Windows, including the hashed CJS generator.
+python/xyg/graphforge-compatibility.json text eol=lf
+scripts/gen_graphforge_result_fixtures.cjs text eol=lf
+tests/fixtures/graphforge/core/**/contracts.tsv text eol=lf
+tests/fixtures/graphforge/core/**/provenance.json text eol=lf
+tests/fixtures/graphforge/results/manifest.json text eol=lf
+tests/fixtures/graphforge/results-0.6.0-rc.5/manifest.json text eol=lf
+tests/fixtures/graphforge/results-0.6.0-rc.5/generation.json text eol=lf
+
+# The measured source patch preserves unified-diff context whitespace byte-for-byte.
+spec/performance/geo-scale-2026-10-08/measured-source.patch whitespace=-blank-at-eol,-blank-at-eof
+
+# Appended authentic Core rc.7 receipt bytes.
+scripts/gen_graphforge_rc7_result_fixtures.cjs text eol=lf
+tests/fixtures/graphforge/results-0.6.0-rc.7/*.json text eol=lf
+spec/releases/core-rc7-compatibility-2026-11-06/** text eol=lf
+spec/releases/core-rc7-generator-default-2026-11-06/** text eol=lf
+
+# Current Core rc.7 source bindings must survive autocrlf checkouts byte-for-byte.
+.gitattributes text eol=lf
+spec/api/graphforge-integration.md text eol=lf
+spec/design/host-parity.md text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+spec/releases/core-rc7-checkout-repair-2026-11-06/** text eol=lf
+
+# Current combined Core/notebook integration binding (historical receipts stay frozen).
+.github/workflows/ci.yml text eol=lf
+scripts/verify_ci_workflow.py text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.gz -text
+spec/performance/graph-widget-progressive-r3-2026-11-06/*.png -text
+
+# Current notebook review-repair source and evidence bindings.
+python/xyg/_graph_widget.py text eol=lf
+tests/test_graph_widget.py text eol=lf
+spec/design/graph-session-python-transport.md text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.gz -text
+spec/performance/graph-widget-review-repair-2026-11-06/*.png -text
+tests/test_graph_notebook_report.py text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/*.py text eol=lf
+
+# PR1100 correction bindings and retained evidence.
+spec/design/ownership-audit.json text eol=lf
+spec/design/ownership-audit.md text eol=lf
+scripts/verify_graph_notebook_report.py text eol=lf
+tests/notebook_graph_progressive.ipynb text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.gz -text
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.png -text

@@ -976,14 +976,44 @@ export function temporalControllerState(handle) {
   };
 }
 
+const temporalObservers = new Map();
+const temporalPublishing = new Set();
+const temporalPending = new Map();
+/** Subscribe to exact native snapshots. Observers cannot fail a successful command. */
+export function temporalControllerSubscribeState(handle, observer) {
+  temporalControllerState(handle);
+  if(typeof observer !== 'function') throw new TypeError('observer must be a function');
+  let observers = temporalObservers.get(handle);
+  if(!observers) temporalObservers.set(handle, observers = new Set());
+  observers.add(observer);
+  return () => { observers.delete(observer); if(!observers.size)temporalObservers.delete(handle); };
+}
+function publishTemporalState(handle, disposed = false) {
+  if(!temporalObservers.has(handle))return;
+  const raw=temporalControllerState(handle);
+  const state=Object.freeze({...raw, disposed:disposed || raw.disposed, selection:Object.freeze([...raw.selection])});
+  temporalPending.set(handle,state);
+  if(temporalPublishing.has(handle))return;
+  temporalPublishing.add(handle);
+  try { while(temporalPending.has(handle)) {
+    const next=temporalPending.get(handle);temporalPending.delete(handle);
+    for(const observer of [...(temporalObservers.get(handle)??[])]) {
+      if(!temporalObservers.get(handle)?.has(observer))continue;
+      try { Promise.resolve(observer(next)).catch(()=>{}); } catch {}
+    }
+  }} finally { temporalPublishing.delete(handle); }
+}
+
 export function temporalControllerSetRange(handle, start, end) {
   temporalStatus(xyTemporalControllerSetRange(
     toU64(handle, "handle"), toI64(start, "start"), toI64(end, "end"),
   ));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerSetCursor(handle, cursor) {
   temporalStatus(xyTemporalControllerSetCursor(toU64(handle, "handle"), toI64(cursor, "cursor")));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerSetSelection(handle, ids) {
@@ -991,42 +1021,50 @@ export function temporalControllerSetSelection(handle, ids) {
   temporalStatus(xyTemporalControllerSetSelection(
     toU64(handle, "handle"), u64Ptr(selection), BigInt(selection.length),
   ));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerStep(handle) {
   temporalStatus(xyTemporalControllerStep(toU64(handle, "handle")));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerPlay(handle) {
   temporalStatus(xyTemporalControllerPlay(toU64(handle, "handle")));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerPause(handle) {
   temporalStatus(xyTemporalControllerPause(toU64(handle, "handle")));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerSetRateMilli(handle, rateMilli) {
   temporalStatus(xyTemporalControllerSetRateMilli(
     toU64(handle, "handle"), toStrictU32(rateMilli, "rateMilli"),
   ));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerSetDirection(handle, direction) {
   temporalStatus(xyTemporalControllerSetDirection(
     toU64(handle, "handle"), toI32(direction, "direction"),
   ));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerSetLoop(handle, enabled) {
   temporalStatus(xyTemporalControllerSetLoop(
     toU64(handle, "handle"), toStrictBool(enabled, "enabled") ? 1 : 0,
   ));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerSetReducedMotion(handle, enabled) {
   temporalStatus(xyTemporalControllerSetReducedMotion(
     toU64(handle, "handle"), toStrictBool(enabled, "enabled") ? 1 : 0,
   ));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerTick(handle, dtMicros) {
@@ -1034,6 +1072,7 @@ export function temporalControllerTick(handle, dtMicros) {
   temporalStatus(xyTemporalControllerTick(
     toU64(handle, "handle"), toI64(dtMicros, "dtMicros"), u32Ptr(advanced),
   ));
+  publishTemporalState(handle);
   return advanced[0] !== 0;
 }
 
@@ -1092,6 +1131,7 @@ export function temporalControllerApplyEvent(handle, event) {
     BigInt(selection.length),
     u32Ptr(applied),
   ));
+  publishTemporalState(handle);
   return applied[0] !== 0;
 }
 
@@ -1111,14 +1151,18 @@ export function temporalCoordinateDeliver(event) {
     BigInt(selection.length),
     u32Ptr(applied),
   ));
+  for (const handle of temporalObservers.keys()) publishTemporalState(handle);
   return applied[0];
 }
 
 export function temporalControllerDispose(handle) {
   temporalStatus(xyTemporalControllerDispose(toU64(handle, "handle")));
+  publishTemporalState(handle);
 }
 
 export function temporalControllerDestroy(handle) {
+  publishTemporalState(handle, true);
+  temporalObservers.delete(handle);
   temporalStatus(xyTemporalControllerDestroy(toU64(handle, "handle")));
 }
 

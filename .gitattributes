@@ -60,3 +60,19 @@ spec/performance/graph-widget-pr1100-repair-2026-11-06/*.json text eol=lf
 spec/performance/graph-widget-pr1100-repair-2026-11-06/*.md text eol=lf
 spec/performance/graph-widget-pr1100-repair-2026-11-06/*.gz -text
 spec/performance/graph-widget-pr1100-repair-2026-11-06/*.png -text
+
+# Native temporal binding receipts and exact source/checkout evidence.
+spec/performance/geo-native-temporal-binding-2026-11-06/** text eol=lf
+spec/performance/geo-native-temporal-binding-2026-11-06/*.gz -text
+python/xyg/_geo_temporal.py text eol=lf
+python/xyg/temporal_controller.py text eol=lf
+python/xyg/_geo_retained.py text eol=lf
+python/xyg/components.py text eol=lf
+packages/xy-node/src/geo-temporal.js text eol=lf
+packages/xy-node/src/abi.js text eol=lf
+packages/xy-node/src/charts.js text eol=lf
+packages/xy-node/src/geo-retained.js text eol=lf
+packages/xy-node/src/index.js text eol=lf
+packages/xy-node/package.json text eol=lf
+tests/test_geo_temporal_binding.py text eol=lf
+packages/xy-node/test/geo-temporal-binding.test.mjs text eol=lf
