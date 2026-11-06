@@ -18,14 +18,30 @@ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> N
     paths = [
         Path("python/xyg/graphforge-compatibility.json"),
         Path("scripts/gen_graphforge_result_fixtures.cjs"),
+        Path("scripts/gen_graphforge_rc7_result_fixtures.cjs"),
+        Path("tests/fixtures/graphforge/results-0.6.0-rc.7/generation.json"),
         Path("tests/fixtures/graphforge/results-0.6.0-rc.5/generation.json"),
     ]
-    for corpus, results in [("core", "results"), ("core/0.6.0-rc.5", "results-0.6.0-rc.5")]:
+    for corpus, results in [
+        ("core", "results"),
+        ("core/0.6.0-rc.5", "results-0.6.0-rc.5"),
+        ("core/0.6.0-rc.7", "results-0.6.0-rc.7"),
+    ]:
         paths.extend(
             Path("tests/fixtures/graphforge") / corpus / name
             for name in ("contracts.tsv", "provenance.json")
         )
         paths.append(Path("tests/fixtures/graphforge") / results / "manifest.json")
+    correction = Path("spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json")
+    current = json.loads((ROOT / correction).read_text())
+    paths.extend(Path(path) for path in current["sourceSha256"])
+    paths.extend(
+        [
+            correction,
+            Path("spec/releases/core-rc7-generator-default-2026-11-06/original-generator.cjs"),
+        ]
+    )
+    paths = list(dict.fromkeys(paths))
     original = {path: (ROOT / path).read_bytes() for path in paths}
     # An unpinned control must change, proving checkout filtering was exercised.
     original[Path("windows-default.txt")] = b"Windows default line endings\n"
@@ -54,7 +70,11 @@ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> N
 
 @pytest.mark.parametrize(
     ("corpus_dir", "results_dir", "count"),
-    [("core", "results", 94), ("core/0.6.0-rc.5", "results-0.6.0-rc.5", 96)],
+    [
+        ("core", "results", 94),
+        ("core/0.6.0-rc.5", "results-0.6.0-rc.5", 96),
+        ("core/0.6.0-rc.7", "results-0.6.0-rc.7", 96),
+    ],
 )
 def test_compatibility_declaration_is_grounded_in_real_core_evidence(
     corpus_dir: str, results_dir: str, count: int
@@ -69,7 +89,7 @@ def test_compatibility_declaration_is_grounded_in_real_core_evidence(
     declaration = json.loads((ROOT / "python/xyg/graphforge-compatibility.json").read_text())
     assert provenance["corpusSha256"] == hashlib.sha256(corpus).hexdigest()
     assert manifest["failures"] == {}
-    assert declaration["supportedCoreVersions"] == ["0.5.2", "0.6.0-rc.5"]
+    assert declaration["supportedCoreVersions"] == ["0.5.2", "0.6.0-rc.5", "0.6.0-rc.7"]
     assert manifest["graphforgeVersion"] == provenance["coreVersion"]
     assert provenance["coreVersion"] in declaration["supportedCoreVersions"]
     assert {
@@ -94,6 +114,8 @@ def test_ci_rebuilds_the_core_corpus_from_the_pinned_owner_sources() -> None:
 
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     steps = workflow["jobs"]["test"]["steps"]
+    pin = next(step for step in steps if step.get("id") == "core_contract_pin")
+    assert "core/0.6.0-rc.7/provenance.json" in pin["run"]
     checkout = next(
         step
         for step in steps
@@ -116,6 +138,7 @@ def test_ci_rebuilds_the_core_corpus_from_the_pinned_owner_sources() -> None:
     )
     assert "sync_graphforge_contract_corpus.py --core-repo target/core-contracts" in verify["run"]
     assert "--output tests/fixtures/graphforge/core/0.6.0-rc.5" in verify["run"]
+    assert "--output tests/fixtures/graphforge/core/0.6.0-rc.7" in verify["run"]
     assert "--write" not in verify["run"]
 
 
@@ -139,3 +162,58 @@ def test_rc5_fixtures_record_the_actual_published_binding_and_generation() -> No
     for package in generation["npmPackages"].values():
         assert package["version"] == "0.6.0-rc.5"
         assert package["integrity"].startswith("sha512-")
+
+
+def test_rc7_artifact_provenance_and_every_generated_ipc_are_bound() -> None:
+    import base64
+
+    results = ROOT / "tests/fixtures/graphforge/results-0.6.0-rc.7"
+    receipt = ROOT / "spec/releases/core-rc7-compatibility-2026-11-06"
+    generation = json.loads((results / "generation.json").read_text())
+    provenance = json.loads(
+        (ROOT / "tests/fixtures/graphforge/core/0.6.0-rc.7/provenance.json").read_text()
+    )
+    # The original IPC producer is frozen; later CLI/default changes are bound
+    # separately so historical fixtures never claim a different producing source.
+    current = json.loads(
+        (ROOT / "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json").read_text()
+    )
+    for source, expected in current["sourceSha256"].items():
+        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == expected
+    assert generation["coreSourceCommit"] == provenance["commit"]
+    assert generation["coreVersion"] == provenance["coreVersion"] == "0.6.0-rc.7"
+    for key, path in [
+        ("manifestSha256", results / "manifest.json"),
+        (
+            "generatorSha256",
+            ROOT / "spec/releases/core-rc7-generator-default-2026-11-06/original-generator.cjs",
+        ),
+    ]:
+        assert generation[key] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert generation["files"] == {
+        p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in results.glob("*.arrow")
+    }
+    assert len(generation["files"]) == 112
+    for package, metadata in generation["npmPackages"].items():
+        name = package.split("/")[-1]
+        attestations = json.loads((receipt / f"{name}-attestations.json").read_text())
+        attestation = next(
+            a
+            for a in attestations["attestations"]
+            if a["predicateType"] == "https://slsa.dev/provenance/v1"
+        )
+        statement = json.loads(base64.b64decode(attestation["bundle"]["dsseEnvelope"]["payload"]))
+        assert statement["subject"] == [
+            {
+                "name": f"pkg:npm/%40curatelabs/{name}@0.6.0-rc.7",
+                "digest": {
+                    "sha512": base64.b64decode(metadata["integrity"].removeprefix("sha512-")).hex()
+                },
+            }
+        ]
+        assert statement["predicate"]["buildDefinition"]["resolvedDependencies"] == [
+            {
+                "uri": "git+https://github.com/CurateLabs/graphforge@refs/tags/v0.6.0-rc.7",
+                "digest": {"gitCommit": provenance["commit"]},
+            }
+        ]

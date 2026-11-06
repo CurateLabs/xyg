@@ -436,13 +436,16 @@ def test_unsupported_schema_version_names_schema_and_action_without_fallback(
     assert not UUID.search(str(rejected.value))
 
 
-def test_published_core_rc5_catalog_composes_and_path_costs_keep_only_endpoint_identity() -> None:
+@pytest.mark.parametrize("core_version", ["0.6.0-rc.5", "0.6.0-rc.7"])
+def test_published_core_catalog_composes_and_path_costs_keep_only_endpoint_identity(
+    core_version: str,
+) -> None:
     import math
     import uuid
 
     import pyarrow.ipc as ipc
 
-    results = ROOT / "tests/fixtures/graphforge/results-0.6.0-rc.5"
+    results = ROOT / f"tests/fixtures/graphforge/results-{core_version}"
     manifest = json.loads((results / "manifest.json").read_text())
     registry = {a: row for row in xyg.graphforge_ledger() for a in row["algorithms"]}
     registry["find"] = next(row for row in xyg.graphforge_ledger() if row["schema"] == "search")

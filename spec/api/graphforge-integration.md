@@ -192,7 +192,7 @@ via #1015 remain open for #35:
 | `XYGF` composition semantics | 2 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 2 | `composition.ledgerVersion` |
-| GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5: 96 algorithms) |
+| GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5 and rc.7: 96 algorithms each) |
 
 ## 6. Error codes
 
