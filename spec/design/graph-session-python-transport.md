@@ -307,13 +307,25 @@ baseline; earlier keyboard or pointer callbacks cannot satisfy that check.
 ### Notebook typed identity slice (2026-11-06)
 
 The ordinary Figure compiler and ChartView remain authoritative for painting.
-Each compiled checkpoint owns a private native GraphSession solely for identity
-projection. Creation and its preset-position publication run in the existing
-compile executor; the resulting session render buffers are unused. Its render
-revision is private and distinct from the displayed notebook envelope revision.
-No browser controller, layout algorithm, or retained-session renderer replaces
-the public renderer. The extra retained session is bounded by the existing
-384-MiB admission and 10,000-ref selection caps; this is not scale qualification.
+Each compiled checkpoint owns a private identity adapter. A native GraphSession
+is created only when identity callbacks or a UUID command need it; a chart
+without these requests does not open the extra session. Callback preparation
+runs in the existing compile executor and no initial session render is requested.
+A derived-reference companion query may prepare native companion data. Any
+session render revision is private and distinct from the displayed notebook
+envelope revision. The ordinary Figure remains the renderer. Native admission
+still uses the existing 384-MiB envelope and 10,000-ref selection cap; neither
+limit is increased to accommodate the identity adapter.
+
+Identity admission cannot reject an otherwise supported Figure frame. If the
+extra identity envelope is unavailable, callbacks still receive their ordinary
+row or full canonical Selection, with `graphforge=[]` and
+`graphforge_error="XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"`. The normal reply and
+subsequent layout frames continue. This explicitly signals unavailable typed
+metadata; it is not a successful empty identity result or complete #1015 scale
+acceptance. An explicit UUID command that cannot be admitted fails before
+applying a view mask; ordinary rendering and row/geometric selection remain
+available. Closed/retired adapters cannot lazily open a new session.
 
 The adapter encodes canonical kind-qualified refs from the composition and the
 original compiler's Rust source/render membership planes. SelectRefs resolves
@@ -323,6 +335,15 @@ without matching UUID strings or inferring result rows. Derived refs transport
 the exact canonical result id/layer/path/order. Non-graph traces project no
 GraphForge refs. The readout session's private selection is scratch resolution
 state, independent of the public view's ordinary selection masks.
+
+Ref and UUID resolution uses at most 1,000 transport inputs per request, each
+replacing the scratch selection. Rust still enforces its original caps on each
+operation; the adapter never accumulates a native selection beyond them. The
+callback combines the complete ordered projection, while explicit UUID masks
+apply only after all batches succeed. Node source/render joins cache an inverse
+of the existing Rust member plane, preserving its one-to-one highlight refusal
+without rescanning all source rows for each selected element. Host projection
+and callback output memory is additional and is not qualified at scale here.
 
 Callback dictionaries add a `graphforge` list; Selection objects add the same
 attribute. Each entry has kind, UUID (null for derived edges), composed index,

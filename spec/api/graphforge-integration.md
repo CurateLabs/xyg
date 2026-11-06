@@ -303,6 +303,17 @@ its existing shape. Routed edges resolve through the compiler's Rust membership
 planes, including parallel edges and loops. Derived edges have a null UUID and
 retain per-layer provenance.
 
+The extra native identity service is optional for rendering. A graph with no
+identity callback does not allocate it. If its unchanged resource envelope
+cannot admit typed metadata, the callback still runs with its ordinary row or
+full Selection and reports `graphforge=[]` plus
+`graphforge_error="XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"`. This does not stop view
+replies or progressive layout and does not mean no graph identities were
+selected. Large admitted selections resolve in bounded native batches. UUID
+commands that exceed the identity envelope fail before applying a highlight;
+ordinary row/geometric selection and rendering remain available. Full typed
+identity coverage at scale is still required before #1015 closes.
+
 `widget.select(uuids=[node_uuid, relationship_uuid])` resolves through Rust
 SelectUuids and sends the ordinary binary row masks. Unknown UUIDs are unmatched;
 a UUID shared by a node and relationship selects both. This form is exclusive

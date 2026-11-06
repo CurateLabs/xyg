@@ -2,7 +2,9 @@
 
 import asyncio
 import threading
+from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 import xyg
@@ -13,6 +15,88 @@ from xyg._graph_widget import GraphWidget
 def widget(**props):
     chart = xyg.graphforge_chart(xyg.compose_graphforge(base=_base("property")), **props)
     return chart, chart.widget()
+
+
+def large_composition(count):
+    ids = b"".join((i + 1).to_bytes(16, "big") for i in range(count))
+    return xyg.compose_graphforge(
+        base={
+            "node_uuid": ids,
+            "edge_uuid": b"",
+            "edge_source_uuid": b"",
+            "edge_target_uuid": b"",
+        }
+    )
+
+
+@pytest.mark.parametrize("callbacks", [False, True])
+def test_identity_admission_cannot_reject_existing_large_figure_frames(callbacks):
+    composition = large_composition(40_000)
+    received = []
+    chart = xyg.graphforge_chart(
+        composition, **({"on_click": received.append} if callbacks else {})
+    )
+    w = chart.widget()
+    try:
+        figure, (spec, buffers) = w._compile(
+            SimpleNamespace(
+                x=np.arange(40_000, dtype=np.float64), y=np.zeros(40_000), step=1, alpha=1.0
+            )
+        )
+        assert figure._graph_meta[0]["source_n_nodes"] == 40_000
+        assert spec["traces"] and buffers
+        adapter = figure._notebook_graph_identity
+        assert adapter.session is None
+        if callbacks:
+            node_trace = figure._graph_meta[0]["node_trace"]
+            w._identity_callbacks(figure).on_click(
+                {"trace": node_trace, "index": 0, "id": composition.nodes.uuid[0]}
+            )
+            assert received[0]["id"] == composition.nodes.uuid[0]
+            assert received[0]["graphforge"] == []
+            assert received[0]["graphforge_error"] == "XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"
+        else:
+            assert adapter._error is None
+    finally:
+        w.close()
+
+
+@pytest.mark.parametrize("count", [10_001, 40_000])
+def test_large_identity_selection_delivers_callback_reply_and_next_frame(count):
+    async def journey():
+        composition = large_composition(count)
+        selected, sent = [], []
+        w = xyg.graphforge_chart(composition, on_select=selected.append).widget()
+        w.send = lambda content, buffers=(): sent.append(content)
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: bool(sent))
+            assert sent[0]["type"] == "graph_frame"
+            assert w._figure._graph_meta[0]["tier_name"] == "direct"
+            message(w, "select", x0=-1e9, x1=1e9, y0=-1e9, y1=1e9)
+            assert len(selected[-1]) == count
+            assert sent[-1]["type"] == "selection" and sent[-1]["total"] == count
+            if count == 10_001:
+                assert [row["uuid"] for row in selected[-1].graphforge] == list(
+                    composition.nodes.uuid
+                )
+                assert not getattr(selected[-1], "graphforge_error", None)
+                adapter = w._figure._notebook_graph_identity
+                resolved = adapter.select(composition.nodes.uuid)
+                rows = adapter.render_rows(resolved)
+                assert rows[adapter.meta["node_trace"]].tolist() == list(range(count))
+            else:
+                assert selected[-1].graphforge == []
+                assert selected[-1].graphforge_error == "XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"
+            old = w._revision
+            message(w, "graph_painted")
+            await wait_for(lambda: w._revision > old)
+            assert not w._failed and sent[-1]["type"] == "graph_frame"
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
 
 
 async def wait_for(predicate):

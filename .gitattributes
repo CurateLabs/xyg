@@ -82,3 +82,9 @@ spec/performance/graph-notebook-identity-report-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-identity-report-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-identity-report-2026-11-06/*.gz -text
 spec/performance/graph-notebook-identity-report-2026-11-06/*.png -text
+
+# Notebook identity admission/selection correction evidence.
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.gz -text
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.png -text

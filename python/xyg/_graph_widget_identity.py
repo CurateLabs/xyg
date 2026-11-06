@@ -13,32 +13,61 @@ import weakref
 
 import numpy as np
 
-from ._graph_session import GraphSession
+from ._graph_session import GraphSession, GraphSessionError, GraphSessionStatus
 from ._graphforge_container import DTYPE as D
 from ._graphforge_container import decode_container, encode_container
 
+_BATCH_SIZE = 1000  # Transport batch; Rust's unchanged selection cap remains authoritative.
+
 
 class NotebookGraphIdentity:
-    def __init__(self, composition, meta, figure, x, y):
+    def __init__(self, composition, meta, figure, x, y, *, prepare=True):
         self.composition = composition
         self.meta = meta
         self.figure = weakref.proxy(figure)
         self.instance = secrets.randbits(63) or 1
         self.sequence = 1
         self.revision = 0
+        self.session = None
+        self._error = None
+        self._closed = False
+        self._positions = x, y
+        self._node_sources = None
+        self._shared_node_rows = set()
+        if prepare:
+            self.prepare()
+
+    def prepare(self):
+        if self._closed:
+            raise GraphSessionError("notebook graph identity is closed")
+        if self._error is not None:
+            raise GraphSessionError("notebook graph identity resource limit", status=self._error)
+        if self.session is not None:
+            return self.session
+        x, y = self._positions
         opening = self._request(
             19,
             [
-                ("document.bytes", 0, D.BYTES, composition.bytes),
+                ("document.bytes", 0, D.BYTES, self.composition.bytes),
                 ("load.x.f64", 0, D.F64, x),
                 ("load.y.f64", 0, D.F64, y),
             ],
         )
-        self.session = GraphSession(
-            composition.bytes, opening, instance_id=self.instance, group_id=0
-        )
+        try:
+            self.session = GraphSession(
+                self.composition.bytes, opening, instance_id=self.instance, group_id=0
+            )
+        except GraphSessionError as error:
+            if error.status == GraphSessionStatus.BUDGET:
+                self._error = error.status
+            raise
         weakref.finalize(self, self.session.close)
-        self._decode(self.session.render(self._request(21)))
+        return self.session
+
+    def close(self):
+        self._closed = True
+        if self.session is not None:
+            self.session.close()
 
     def _request(self, operation, extra=()):
         sequence = self.sequence
@@ -86,17 +115,26 @@ class NotebookGraphIdentity:
         return out
 
     def select(self, uuids):
-        data = b"".join(uuid.UUID(value).bytes for value in uuids)
-        return self._decode(
-            self.session.interact(self._request(10, [("uuids.uuid", 0, D.UUID, data)]))
-        )
+        # Validate the complete caller input before issuing any native request.
+        values = [uuid.UUID(value).bytes for value in uuids]
+        if not values:
+            return []
+        session = self.prepare()
+        out = []
+        for start in range(0, max(1, len(values)), _BATCH_SIZE):
+            data = b"".join(values[start : start + _BATCH_SIZE])
+            out.extend(
+                self._decode(session.interact(self._request(10, [("uuids.uuid", 0, D.UUID, data)])))
+            )
+        return out
 
     def source_rows(self, trace, index):
         m = self.meta
         if m["tier_name"] == "aggregate":
             return []  # aggregate membership is not an individual identity
         if trace == m["node_trace"]:
-            return [("node", i) for i, render in enumerate(m["member_of"]) if render == index][:1]
+            source = self._index_node_rows().get(index)
+            return [] if source is None else [("node", source)]
         if trace == m["edge_trace"]:
             identity = self.figure._graph_edge_identity[trace]
             if 0 <= index < len(identity.render_edge_index):
@@ -106,6 +144,18 @@ class NotebookGraphIdentity:
                 ]
         return []
 
+    def _index_node_rows(self) -> dict[int, int]:
+        if self._node_sources is not None:
+            return self._node_sources
+        self._node_sources = {}
+        for source, render in enumerate(self.meta["member_of"]):
+            render = int(render)
+            if render in self._node_sources:
+                self._shared_node_rows.add(render)
+            else:
+                self._node_sources[render] = source
+        return self._node_sources
+
     def project(self, per_trace):
         sources = sorted(
             {
@@ -113,8 +163,18 @@ class NotebookGraphIdentity:
                 for trace, indices in per_trace.items()
                 for index in indices
                 for item in self.source_rows(trace, int(index))
-            }
+            },
+            key=lambda item: (item[0] == "edge", item[1]),
         )
+        if not sources:
+            return []
+        session = self.prepare()
+        out = []
+        for start in range(0, max(1, len(sources)), _BATCH_SIZE):
+            out.extend(self._project_batch(session, sources[start : start + _BATCH_SIZE]))
+        return out
+
+    def _project_batch(self, session, sources):
         # Encode canonical refs; only Rust resolves identity and provenance.
         records, pool = [], bytearray()
         for kind, index in sources:
@@ -125,11 +185,10 @@ class NotebookGraphIdentity:
                 # derived pair-vs-path key policy must stay inside Rust.
                 page = self.composition.nodes.count + index
                 reply = decode_container(
-                    self.session.interact(
-                        self._request(17, [("companion.u32", 0, D.U32, [page, 1])])
-                    ),
+                    session.interact(self._request(17, [("companion.u32", 0, D.U32, [page, 1])])),
                     "XYGR",
                 )
+                self.revision = int(reply["header.u32", 0][0])
                 canonical = reply["candidates.bytes", 0]
                 record = bytearray(canonical[8:64])
                 offset, length = struct.unpack_from("<II", record, 48)
@@ -153,9 +212,7 @@ class NotebookGraphIdentity:
                     )
                 )
         refs = struct.pack("<II", len(records), len(pool)) + b"".join(records) + pool
-        return self._decode(
-            self.session.interact(self._request(11, [("refs.bytes", 0, D.BYTES, refs)]))
-        )
+        return self._decode(session.interact(self._request(11, [("refs.bytes", 0, D.BYTES, refs)])))
 
     def render_rows(self, identities):
         m = self.meta
@@ -165,9 +222,9 @@ class NotebookGraphIdentity:
         edges = {row["index"] for row in identities if row["kind"] == "edge"}
         identity = self.figure._graph_edge_identity[m["edge_trace"]]
         selected_nodes = {m["member_of"][i] for i in nodes}
+        self._index_node_rows()
         if any(
-            render >= m["n_nodes"] or sum(value == render for value in m["member_of"]) != 1
-            for render in selected_nodes
+            render >= m["n_nodes"] or render in self._shared_node_rows for render in selected_nodes
         ):
             raise ValueError("UUID highlights require individually rendered nodes")
         if any(

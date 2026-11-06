@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from functools import partial
 
+from ._graph_session import GraphSessionError, GraphSessionStatus
 from ._graph_widget_identity import NotebookGraphIdentity
 from .channel import handle_message
 from .graph_layout import GraphLayoutController
@@ -93,7 +94,14 @@ class GraphWidget(FigureWidget):
             figure,
             checkpoint.x,
             checkpoint.y,
+            prepare=False,
         )
+        if any((self._callbacks.on_click, self._callbacks.on_hover, self._callbacks.on_select)):
+            try:
+                figure._notebook_graph_identity.prepare()
+            except GraphSessionError as error:
+                if error.status != GraphSessionStatus.BUDGET:
+                    raise
         return figure, figure.build_payload_split()
 
     async def _run(self, epoch):
@@ -255,12 +263,28 @@ class GraphWidget(FigureWidget):
         return super().select(rows=rows)
 
     def _identity_callbacks(self, figure):
+        def project(per_trace):
+            try:
+                return figure._notebook_graph_identity.project(per_trace), None
+            except GraphSessionError as error:
+                if error.status not in (
+                    GraphSessionStatus.BUDGET,
+                    GraphSessionStatus.SELECTION_TOO_LARGE,
+                ):
+                    raise
+                return [], "XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"
+
         def row_callback(callback, row):
-            projection = figure._notebook_graph_identity.project({row["trace"]: [row["index"]]})
-            callback({**row, "graphforge": projection})
+            projection, error = project({row["trace"]: [row["index"]]})
+            result = {**row, "graphforge": projection}
+            if error:
+                result["graphforge_error"] = error
+            callback(result)
 
         def selection_callback(selection):
-            selection.graphforge = figure._notebook_graph_identity.project(selection.per_trace)
+            selection.graphforge, error = project(selection.per_trace)
+            if error:
+                selection.graphforge_error = error
             callback = self._callbacks.on_select
             assert callback is not None
             callback(selection)
@@ -324,7 +348,7 @@ class GraphWidget(FigureWidget):
             figures.append(self._figure)
         for figure in figures:
             if figure is not keep:
-                figure._notebook_graph_identity.session.close()
+                figure._notebook_graph_identity.close()
 
     def _cancel(self):
         if self._loop is not None and self._loop.is_running():
