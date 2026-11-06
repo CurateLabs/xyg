@@ -1,0 +1,15 @@
+{
+  "node": "v22.23.4",
+  "moduleSha256": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96",
+  "raw": 1926555,
+  "gzip6": 785546,
+  "limits": {
+    "raw": 1927168,
+    "gzip6": 786432
+  },
+  "classification": "R5_PRODUCTION_BYTES_REMEASURED_NO_REBUILD",
+  "headroom": {
+    "raw": 613,
+    "gzip6": 886
+  }
+}

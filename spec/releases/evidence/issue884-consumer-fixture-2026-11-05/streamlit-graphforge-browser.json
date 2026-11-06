@@ -1,0 +1,77 @@
+{
+  "cases": {
+    "graphforge-property": {
+      "paintPixels": 807,
+      "pixelOracle": "chromatic (label-color defaults)",
+      "directHtmlSha256": "da360a3f0a045112a02ff22b3268906e47c2c51b457c5430e8c4578d07a399ff",
+      "localAssets": true,
+      "nativePreviews": 2,
+      "downloads": {
+        "svg": {
+          "bytes": 4558,
+          "sha256": "0dda634a842b863038f85cd5b06efa4f299f415d740ef257912c0c84ca7f5b12"
+        },
+        "png": {
+          "bytes": 65359,
+          "sha256": "05925d75005ee97f95b27ca0f245d9e76ae7677d3de6a37573ad31d7a3dc7151"
+        }
+      },
+      "localZoom": true,
+      "lifecycles": [
+        {
+          "outgoingContextRetired": true,
+          "singleIframe": true,
+          "identicalDocument": true,
+          "paintPixels": 807
+        },
+        {
+          "outgoingContextRetired": true,
+          "singleIframe": true,
+          "identicalDocument": true,
+          "paintPixels": 807
+        }
+      ],
+      "localBrush": true,
+      "pythonSelectionCallbacks": false,
+      "lifecycle": "browser retires snapshot execution context; no application ChartView.destroy bridge"
+    },
+    "graphforge-pagerank": {
+      "paintPixels": 5167,
+      "pixelOracle": "nonwhite (neutral score-size defaults)",
+      "directHtmlSha256": "d32bf42a17ac9ced811fa07fc62c7c9771c243d41f87299aae8c09f31fd1ca28",
+      "localAssets": true,
+      "nativePreviews": 2,
+      "downloads": {
+        "svg": {
+          "bytes": 2605,
+          "sha256": "a4756d5dce22182010bdfec58385a112d7d14297027674804e6882914324fe20"
+        },
+        "png": {
+          "bytes": 71923,
+          "sha256": "e4c947be84f3136490c69ab6852177b65ac319f529d6a5876a1c9b7e2608ea38"
+        }
+      },
+      "localZoom": true,
+      "lifecycles": [
+        {
+          "outgoingContextRetired": true,
+          "singleIframe": true,
+          "identicalDocument": true,
+          "paintPixels": 5167
+        },
+        {
+          "outgoingContextRetired": true,
+          "singleIframe": true,
+          "identicalDocument": true,
+          "paintPixels": 5167
+        }
+      ],
+      "localBrush": true,
+      "pythonSelectionCallbacks": false,
+      "lifecycle": "browser retires snapshot execution context; no application ChartView.destroy bridge"
+    }
+  },
+  "errors": [],
+  "cspViolations": [],
+  "externalRequests": []
+}

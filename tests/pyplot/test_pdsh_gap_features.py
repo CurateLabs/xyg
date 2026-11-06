@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import io
 import re
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import pytest
@@ -48,13 +49,26 @@ def test_axis_proxy_getters_return_ticker_objects():
     assert isinstance(ax.yaxis.get_minor_formatter(), plt.NullFormatter)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_null_locator_removes_ticks_from_the_export():
     fig, ax = plt.subplots()
     ax.plot(np.arange(10), np.arange(10))
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.xaxis.set_major_formatter(plt.NullFormatter())
     assert len(ax.get_yticks()) == 0
+    built = ax._build_chart(640, 480).figure()
+    assert built.axis_options["x"]["tick_label_strategy"] == "off"
+    assert built.axis_options["x"].get("tick_labels") is None
+    assert built.axis_options["y"]["tick_values"] == []
+    svg = ET.fromstring(_svg())
+    assert not svg.findall(".//{*}text"), "neither axis may emit numeric labels"
+    axes = svg.find('.//{*}g[@data-xy-chrome="axes"]')
+    assert axes is not None
+    lines = [
+        tuple(float(line.attrib[k]) for k in ("x1", "y1", "x2", "y2"))
+        for line in axes.findall("{*}line")
+    ]
+    assert any(x1 == x2 and 0 < abs(y2 - y1) < 20 for x1, y1, x2, y2 in lines)
+    assert not any(y1 == y2 and 0 < abs(x2 - x1) < 20 for x1, y1, x2, y2 in lines)
     _png()
 
 
@@ -755,3 +769,58 @@ def test_default_rc_font_sizes_are_explicit_everywhere():
     assert axes["x"].style["label_size"] == pytest.approx(13.8889, rel=1e-4)
     (text_ann,) = [a for a in _annotation_specs(ax) if a["kind"] == "text"]
     assert text_ann["style"]["font_size"] == pytest.approx(13.8889, rel=1e-4)
+
+
+@pytest.mark.parametrize(
+    "scale,domain,positions",
+    [
+        ("linear", (0, 10), [2, 4, 6, 8]),
+        ("log", (1, 100), [1, 10, 100]),
+        ("linear", (0, 10), [2.5, 7.5]),
+    ],
+)
+def test_null_major_locator_keeps_separately_authored_minor_marks(scale, domain, positions):
+    fig, ax = plt.subplots()
+    ax.plot(domain, domain)
+    ax.set_yscale(scale)
+    ax.set_ylim(*domain)
+    ax.yaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_minor_locator(plt.FixedLocator(positions))
+    svg = ET.fromstring(_svg())
+    axes = svg.find('.//{*}g[@data-xy-chrome="axes"]')
+    assert axes is not None
+    horizontal = [
+        (float(line.attrib["x1"]), float(line.attrib["x2"]))
+        for line in axes.findall("{*}line")
+        if line.attrib["y1"] == line.attrib["y2"]
+    ]
+    assert sum(0 < abs(right - left) < 20 for left, right in horizontal) == len(positions)
+    assert len(ax.get_yticks()) == 0
+
+
+@pytest.mark.parametrize("axis", ["x", "y"])
+@pytest.mark.parametrize("hide", ["axis_off", "axis_visible"])
+@pytest.mark.parametrize("ticker", ["formatter", "locator"])
+def test_null_tickers_preserve_hidden_axis_decorations(axis, hide, ticker):
+    fig, ax = plt.subplots()
+    ax.plot([0, 10], [0, 10])
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+    ax.grid(True)
+    target = getattr(ax, f"{axis}axis")
+    target.set_minor_locator(plt.FixedLocator([2, 4, 6, 8]))
+    if hide == "axis_off":
+        ax.set_axis_off()
+    else:
+        target.set_visible(False)
+    before = ET.fromstring(_svg()).find('.//{*}g[@data-xy-chrome="axes"]')
+    if ticker == "formatter":
+        target.set_major_formatter(plt.NullFormatter())
+    else:
+        target.set_major_locator(plt.NullLocator())
+    built = ax._build_chart(640, 480).figure()
+    assert built.axis_options[axis]["tick_label_strategy"] == "none"
+    after = ET.fromstring(_svg()).find('.//{*}g[@data-xy-chrome="axes"]')
+    assert (None if before is None else ET.tostring(before)) == (
+        None if after is None else ET.tostring(after)
+    )

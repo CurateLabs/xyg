@@ -706,3 +706,11 @@ hand-authored polar axis is the case that must hear about it, and does.
 | Polar LOD | §7. Exit criterion for `scatterpolargl`-scale claims. Point traces remain direct and capped. |
 | Polar facets / animation | Untouched by this increment; no support claim is made. |
 | Angular navigation / sector selection | Authored sector limits ship; interactive θ pan, sector zoom, annulus/sector selection, and rectangular box select remain disabled per §8. |
+
+### Static rim-label clipping (#889)
+
+Angular and radial tick labels are chrome. Both SVG and the raster display list
+emit them after mark painting with the full viewport clip; the disc/sector clip
+applies only to data marks. In particular the angular labels sit outside the
+rim and must not be clipped by the plot rectangle. Raster label paint uses the
+same axis-owned color as SVG. No geometry, source-size or resource limit changes.

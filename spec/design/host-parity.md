@@ -214,15 +214,18 @@ stable reason `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP` (fail closed,
 `segments` color channels and is left as is. `filled`, `dash_negative`, `extend`, and per-level widths remain
 Python-only on Node.
 
-Nine bounded pairwise rows cross authored/autorange domains, empty/single/NaN
-inputs, categorical/time axes, style, and linear/log scale. Rust pins that exact
+The Rust-registry-driven bounded pairwise rows cross authored/autorange domains,
+empty/single/NaN inputs, categorical/time axes, style, linear/log scale, and
+static LOD tiers. Issue #889 adds hidden tick labels paired with empty authored
+tick lists, on an authored-domain line and an autoranged scatter. Rust pins that exact
 concern vocabulary and requires each concern's two rows to use distinct public
 shapes and distinct axis-mode configurations. Admitted rows use
 the same byte-exact matrix; deliberately unsupported rows require identical
-fail-close reasons. The 19-row fail-close registry separately pins fluid
+fail-close reasons. The fail-close registry separately pins fluid
 viewport, browser CSS/classes, custom font, title options, extra legend layout,
 alternate axes, unsupported symbol/mark, user-authored violin orientation
-metadata, layered autorange, annotation HTML/collision/markup/schema, colorbar
+metadata, layered autorange, annotation HTML/collision/markup/schema and the
+#889 per-kind unadmitted annotation styles, colorbar
 schema, LOD, malformed band/segment geometry, and triangle-mesh budget. This
 is designed to grow by appending Rust registry rows when #873 expands
 `StaticDocument`; the corpus runner and CI wiring do not need another
@@ -2074,3 +2077,29 @@ are specified in [geographic-hosts.md](geographic-hosts.md), including public
 composition wiring, one-mount admission, release acknowledgment, actual host
 journey evidence and the remaining native live-update/orphan-recovery gates.
 This checkpoint is pending follow-up PR integration.
+
+Issue #889 extends the same registry with all-format witnesses for exact authored
+frames, colormapped scatter alpha, explicit relabelled/frameless legend items,
+annular polar documents, and two opposite paint orders of wide overlapping
+translucent panels. The overlap witnesses also pin exact source-over RGBA pixels.
+Every retained pyplot #889 future-rendering xfail has an active exact original-
+program rejection check; the family matrix and receipts live in
+`spec/matplotlib/issue-889-evidence.md`.
+
+### Null locator/formatter observations (#889 review correction)
+
+Bulk chrome empty major arrays retain their existing automatic-ticks contract,
+including secondary axes. The pyplot NullLocator adapter authors zero major
+tick length/grid width and uses Rust's existing off label strategy. Separately
+authored minor positions and their style use the existing authored-major slot
+with labels off when no majors exist. This preserves minor marks coincident
+with Rust's automatic major positions without altering the empty-array contract.
+The redundant minor slot is disabled. A null minor locator, or an absent minor
+locator on a non-log axis, authors zero minor length/grid width; implicit log
+subdivisions retain their normal minor style. NullFormatter uses off to hide labels while
+retaining tick marks. A pre-existing hidden-axis `none` strategy takes precedence
+for either null ticker. Python and Node annotation numeric admission uses the
+same `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE` diagnostic, including the
+coordinate name, for nonnumeric/nonfinite values. Four registry rejection cases
+check exact x/y messages across both hosts. This changes no ABI struct,
+signature or wire format.

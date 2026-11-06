@@ -2088,6 +2088,31 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "GraphForge native/WASM equivalence",
+        "complete graph equivalence and picked-target receipt compatibility commands",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        "node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs",
+        "node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs",
+        "node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
+        "node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs",
+        "node scripts/gen_geo_hierarchy_node.mjs --check",
+        "node scripts/gen_geo_overview_hosts.mjs --check",
+        'XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-recovery.test.mjs packages/xy-node/test/geo-overview-members.test.mjs packages/xy-node/test/geo-overview-members-recovery.test.mjs',
+        "cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance --bin geo_layers_conformance",
+        "node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs packages/xy-node/test/geo-catalog-wasm-parity.test.mjs",
+    )
+    graph_step = "GraphForge native/WASM equivalence"
+    step_order = list(test_steps)
+    for prerequisite in ("Build native core", "Build JS client", WASM_VERIFY_STEP):
+        if (
+            prerequisite not in step_order
+            or graph_step not in step_order
+            or step_order.index(prerequisite) >= step_order.index(graph_step)
+        ):
+            errors.append(f"CI {graph_step} must run after {prerequisite}")
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "Node host suite",
         "complete Node host suite against the shared native core",
         'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',

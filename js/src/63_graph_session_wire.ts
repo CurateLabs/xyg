@@ -24,7 +24,8 @@ export interface GraphSessionLoad {
 }
 export interface GraphSessionRequest {
   instanceId: bigint; opSeq: bigint; revision: number;
-  operation: 19 | 21 | 1 | 4 | 5 | 7 | 11 | 17;
+  operation: 19 | 21 | 1 | 4 | 5 | 7 | 11 | 15 | 17;
+  steps?: number;
   document?: Uint8Array | ArrayBuffer; load?: GraphSessionLoad; camera?: GraphSessionCamera;
   coordinates?: readonly [number, number];
   direction?: 1 | -1; mode?: 0 | 1 | 2; refs?: readonly GraphSessionRef[];
@@ -112,10 +113,14 @@ export function decodeGraphSessionRefs(bytes: Uint8Array): GraphSessionRef[] {
 /** A bounded internal operation vocabulary. It is not a public arbitrary-command API. */
 export function encodeGraphSessionRequest(input: GraphSessionRequest): Uint8Array {
   exactU64(input.instanceId, "instanceId", true); exactU64(input.opSeq, "opSeq", true); exactU32(input.revision, "revision");
-  if (![19, 21, 1, 4, 5, 7, 11, 17].includes(input.operation)) throw new TypeError("unsupported graph controller operation");
+  if (![19, 21, 1, 4, 5, 7, 11, 15, 17].includes(input.operation)) throw new TypeError("unsupported graph controller operation");
   const words = [input.revision, input.operation, 0, 0, 0, 0, 0, 0, 0];
   const sections: Array<{ name: string; dtype: number; values: any }> = [];
   const add = (name: string, dtype: number, values: any) => sections.push({ name, dtype, values });
+  if (input.operation === 15) {
+    if (input.steps === undefined || !Number.isInteger(input.steps) || input.steps < 1 || input.steps > 64) throw new TypeError("relayout steps must be an integer in 1..64");
+    words[7] = input.steps;
+  } else if (input.steps !== undefined) throw new TypeError("steps are only valid for relayout");
   if (input.operation === 5) {
     if (input.direction !== 1 && input.direction !== -1) throw new TypeError("focus direction must be ±1");
     words[5] = input.direction === 1 ? 1 : MAX_U32;
@@ -183,6 +188,7 @@ export interface GraphSessionResult extends GraphSessionHeader {
   disclosure: { refs: GraphSessionRef[]; collapsed: boolean[] };
   companion: { rows: string[][]; refs: GraphSessionRef[]; total: number };
   summary: string;
+  relayout: { steps: bigint; alpha: number; done: boolean } | null;
 }
 function reader(input: Uint8Array | ArrayBuffer) {
   let sections: Map<string, GraphForgeRawSection>;
@@ -273,8 +279,19 @@ export function decodeGraphSessionResult(input: Uint8Array | ArrayBuffer): Graph
     // Split transport separators first: escaped tabs/newlines belong to a cell.
     const companionRows = source === "" ? [] : source.split("\n").map((row) => row.split("\t").map(unescapeCell));
     if (companionRows.length !== candidates.length || companionRows.some((row) => row.length !== 5)) fail("companion row alignment");
+    const progressNames = ["relayout.steps.u64", "relayout.alpha.f64", "relayout.done.u8"];
+    const progress = [...r.sections.values()].filter(s => progressNames.includes(s.name));
+    let relayout: GraphSessionResult["relayout"] = null;
+    if (progress.length) {
+      if (progress.length !== 3 || progress.some(s => s.index !== 0)) fail("relayout planes");
+      const steps = u64("relayout.steps.u64", 1)[0]!;
+      const a = get("relayout.alpha.f64", DT.f64, 1), alpha = new DataView(a.bytes.buffer, a.bytes.byteOffset, a.bytes.byteLength).getFloat64(0, true);
+      const done = get("relayout.done.u8", DT.u8, 1).bytes[0]!;
+      if (!Number.isFinite(alpha) || alpha < 0 || alpha > 1 || done > 1) fail("relayout report");
+      relayout = { steps, alpha, done: !!done };
+    }
     return {
-      ...r.header, sections: r.sections,
+      relayout, ...r.header, sections: r.sections,
       selection: { refs: selectedRefs, indices, layerOffsets, layers, rows, resultIds }, changed, focus, focusRing,
       focusAction: { refs: actionRefs, disclosureEligible: !!facts[1], collapsed: !!facts[2], pinEligible: !!facts[3], pinned: !!facts[4], moveCapability: !!facts[5] },
       clearAction: { applicable: !!clear[1] },

@@ -1,0 +1,19 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+
+running 4 tests
+actual query fixture Direct
+test graphforge::interaction::tests::wire::picked_checkpoint::leave_has_zero_instrumented_queries_even_without_a_publication ... ok
+actual query fixture Aggregate-singletons
+actual query fixture EdgeSample
+actual query fixture collapsed-representative-source-index-2
+actual query fixture parallel-loop-derived-0
+actual query fixture parallel-loop-derived-1
+actual query fixture parallel-loop-derived-2
+DIAGNOSTIC corpus: 7 cases, 419 steps, 3358836 bytes
+test graphforge::interaction::tests::wire::picked_checkpoint::actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts ... ok
+test graphforge::interaction::tests::wire::picked_checkpoint::full_selection_actual_query_suffix_and_overflow_refusal_are_atomic ... ok
+test graphforge::interaction::tests::wire::picked_checkpoint::actual_query_work_refusal_precedes_projection_allocations_and_preserves_all_state ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 1830 filtered out; finished in 0.82s
+

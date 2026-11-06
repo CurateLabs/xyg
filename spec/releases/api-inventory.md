@@ -36,6 +36,16 @@ A checkout without that compiler fails with the `npm ci` remedy.
 | CLI and builds | `pyproject.toml` project scripts and Hatch hook mappings; documented repository operator scripts | Installed CLI entrypoints, hook source paths, and declared operator argument names/options/default expressions. The project currently declares no installed `[project.scripts]` CLI. Repository maintenance scripts are not silently advertised as installed product commands. |
 | Environment configuration | Source environment lookups in shipped Python/Node/Rust code and `hatch_build.py` | Names, direct lookup defaults and source references; documented browser-discovery constants are included. `XYG_ABI_TRACE_*` diagnostics and `CODSPEED_ENV` benchmark controls remain internal; the Rust SIMD kill switch is included. Build/development/export controls retain their actual scope; a raw lookup default is not a claim about every downstream effective behavior. |
 
+Rust environment inspection does not infer test-only ownership from directory or
+module names. An external fixture is omitted only when its source starts with
+the exact module-wide inner attribute `#![cfg(test)]` followed by a newline.
+That actual guard excludes the entire module outside tests even under an
+unconditional parent declaration. Missing, changed, outer, commented or otherwise
+unrecognized guards are scanned conservatively; production modules under a
+`tests/` directory remain inventoried. Existing inline `#[cfg(test)] mod` handling
+is unchanged. The [R7 review disposition](../performance/graph-picked-target-r7-2026-11-04/README.md)
+records positive/negative regression proof and the preserved P2 reproduction.
+
 Python typing remains source annotations plus `py.typed`; the inspector does not
 manufacture stubs. Node declarations may be inferred JavaScript types or existing
 `.d.ts` contracts; callable `any` positions are recorded as review gaps. Browser

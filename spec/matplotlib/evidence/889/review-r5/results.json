@@ -1,0 +1,24 @@
+{
+  "source_parent": "13c4cc163a900ea1160ab30a64b6aef871706b99",
+  "source_sha256": {
+    "spec/design/scene-ir.md": "93a73d157edf000328a1700edb14d6a80855ad010f538c9cd831b0c21ccc1a73",
+    "spec/matplotlib/issue-889-evidence.md": "fd04ff8a19e109d41dd1d3fffa0632b5316927ed549ea57e538296c58ffd22c7",
+    "tests/test_polar_wedge_svg_arcs.py": "b6c867e2b573f79cec6c54d289d29e3caa840533fc6227c1b3be0ebb380b4785",
+    "tests/test_scene_ir.py": "477d8ea563554b286be15c762f75d40a2205c4ab16bed1602aeaf1444f557b44"
+  },
+  "native_sha256": "7d57a86ebc56443936364817fc24d598fd9986774bcac0787f4a25750141d06e",
+  "production_diff_empty": true,
+  "passed": {
+    "scene_and_polar_modules": {
+      "passed": 99,
+      "xfailed": 1
+    },
+    "same_scene_arc_sidecar_controls": 4,
+    "exact_annotation_error_cases": 14,
+    "mandatory_hooks_and_ruff": true
+  },
+  "pending": [
+    "independent test/spec repair review",
+    "current-head CI and merge queue"
+  ]
+}

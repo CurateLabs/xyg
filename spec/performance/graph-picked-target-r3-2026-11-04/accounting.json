@@ -1,0 +1,18 @@
+{
+  "basis": "Existing admitted wire transaction; additional fixed receipt reserve unchanged from R1/R2",
+  "fixed_receipt_reserve_bytes": 4096,
+  "arc_allocation_subreserve_bytes": 1024,
+  "remaining_fixed_reserve_bytes": 3072,
+  "native_pick_receipt_size": 120,
+  "native_pick_receipt_alignment": 8,
+  "native_usize_bytes": 8,
+  "logical_two_arc_body_counter_alignment_bound": 304,
+  "native_outcome_size_r2": 272,
+  "native_outcome_size_r3": 160,
+  "native_layout_source": "Actual --nocapture Rust test outputs, not inferred WASM layout",
+  "compile_time_guards": "alignment <= 2*usize and 2*(size_of(PickReceipt)+4*usize) <= 1024; checked separately by each target build",
+  "admission_order": "WireSession::execute -> admit -> owner state charge -> candidate -> apply/operate stamp check -> Arc::new -> mutation; typed Leave allocates before clearing hover",
+  "retention": "At most old/new distinct engine-owned receipts in a wire transaction. Outcome, candidate and retry copies share each Arc. Existing per-row/text/cache envelopes retain all encoding/copy reserves.",
+  "lifetime_probe": "Weak reference observes strong counts 2/4/1 and loss of upgrade on replacement. The Weak keeps the old control block allocated until the probe drops; data release is not a claim that the probe control block was already freed.",
+  "measurement_limit": "No allocator instrumentation or measured RSS. Logical allocation/accounting and source-order proof plus real retry/stale/budget-refusal state/cache comparisons. Other existing decode/ref/outcome Vec allocations retain their old accounting."
+}

@@ -1,0 +1,18 @@
+........................................................................ [ 31%]
+.....F.................................................................. [ 63%]
+........................................................................ [ 95%]
+..........                                                               [100%]
+=================================== FAILURES ===================================
+_________________ test_repository_has_no_stale_native_identity _________________
+
+    def test_repository_has_no_stale_native_identity() -> None:
+>       assert check_stale_names.check_stale_names() == []
+E       AssertionError: assert ['spec/perfor... mod live;`,'] == []
+E         
+E         Left contains one more item: 'spec/performance/graph-picked-target-r7-2026-11-04/README.md:16: stale src/lib.rs ABI: The full reproduction creates `src/lib.rs` with `pub mod tests; pub mod live;`,'
+E         Use -v to get more diff
+
+tests/test_stale_names.py:29: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_stale_names.py::test_repository_has_no_stale_native_identity
+1 failed, 225 passed in 101.15s (0:01:41)
