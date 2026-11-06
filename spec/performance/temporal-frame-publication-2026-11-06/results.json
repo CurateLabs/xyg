@@ -1,0 +1,93 @@
+{
+  "base": "c3152d97bdb3a1efd61686b21d84385ee0f8de9e",
+  "syncMerge": "4e00fa09518adb0309bab978f3727f29699b8223",
+  "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-4585b57b",
+  "branch": "t3/temporal-lod-coordination",
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "node": "v22.23.4",
+    "python": "3.14.4"
+  },
+  "sourceSha256": {
+    "crates/xyg-engine/src/temporal_graph.rs": "09b49b3acaf9ed53e4ecfb1c0593b1b43f94109069884b5ca6dd8e9c673caa7e",
+    "crates/xyg-wasm/src/temporal_graph.rs": "439433dbb10071a7e7fb7b1d8da23cd1bb88df28289582549e0396d1d52ce81b",
+    "packages/xy-node/test/temporal-graph-publication.test.mjs": "83e4d97c64c9ce9178fc98916a78cde7b6ed2cb6ade4c95792a1bd1698ba8413",
+    "spec/design/temporal-graph.md": "b39c6efb11c0559583e25f2b5433f2384c80535bd8a91616f292d79fa32726ca"
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "02f0edf9c79ae1408821c197981b37ebe8f5746a4e1a8df4f8a3ccf468f6519e",
+      "bytes": 6119720
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d",
+      "bytes": 2124856
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    }
+  },
+  "optimizedGzip6Bytes": 782869,
+  "logSha256": {
+    "xyg-dependency-32.json.gz": "6b34e4de39afa9ce78e1f19d5e218063b247cd6ce23c3e940e17faf9d6609505",
+    "xyg-dependency-43.json.gz": "ec057361bd9765d88c44afeff88beb2335f6bea714d9ef0f5670879e38fcd2d1",
+    "xyg-dependency-44.json.gz": "c17a41956656f78ddfcae6a3bf1af7b047e6b60f64826d1c534e64e4c09715e7",
+    "xyg-dependency-47.json.gz": "73cb542a148bf9ddc077e453f7ac246d836ffd5d958a445e54d735062ddefd3a",
+    "xyg-dependency-48.json.gz": "9ad4d7a7e6a70b0a666bb4b0c72aa9d02333386e445badea88820c17478a1804",
+    "xyg-dependency-49.json.gz": "5a25bf76334aac58b184e96fac994626ae2574ba1692e7a9966bd97245e64275",
+    "xyg-issue-38.json.gz": "f9a11c660b77449153f63fa8d28d1634fcbe582409c381b6158c19da2fa09e01",
+    "xyg-issue-39.json.gz": "8c9a113cd3b107a71686128a1e10127b53bb9eeda4839ba460ffa0ef7d96892b",
+    "xyg-issue-45.json.gz": "b7a9908c68da84ece127bdf2ba066f4087b8556d710b83cb26afbb773ac2b2d0",
+    "xyg-issue-46.json.gz": "0059e72049062611876e60826381c99ee06abd791e7d71e14effd2c1da373025",
+    "xyg-issue-50.json.gz": "21d9eb2769afa926745f608dcf9e8ccf152a89722fbc3809cfea5b7072b877d9",
+    "xyg-temporal-clippy.log.gz": "6141c6f974efba24943ee65d3e654cfdfa5282a1ed4bb4076c083469093e5f21",
+    "xyg-temporal-commit-format.log.gz": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+    "xyg-temporal-commit-hooks.log.gz": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+    "xyg-temporal-commit-ruff.log.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "xyg-temporal-engine-final.log.gz": "ef12f7bae4010736e2454f12877acd96f995cc38aae523e20c436f2518107c9a",
+    "xyg-temporal-engine.log.gz": "321a8c75c6dd193dc0dbaa5139fe2655d521022dcf21ad9fe6cc0b4a754f7172",
+    "xyg-temporal-final-format.log.gz": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+    "xyg-temporal-final-hooks.log.gz": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+    "xyg-temporal-final-ruff.log.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "xyg-temporal-js-build.log.gz": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+    "xyg-temporal-native-build.log.gz": "1aebc846a5a81304b03fbebae3442f6ae10153dbf0e015c28d597840b27a8540",
+    "xyg-temporal-node-install.log.gz": "2c785d3d31659f387777f07785ab7a1c57b686ce718f464c376e7ca3190d1245",
+    "xyg-temporal-node-native-final.log.gz": "ee419517d4caf781529f8cff615300a21a63c840bc5fc9957c2d36d83e8ca654",
+    "xyg-temporal-node-native.log.gz": "d938b46357f4d4133be72635f5a2a3ce0dbdee8a7f8ca6fe67ddeaee133e8d92",
+    "xyg-temporal-package-wasm.log.gz": "fe80c381502a20e711b8c7f7e8a45f417af799474ba2cf7d89fa539439e1320b",
+    "xyg-temporal-packaged-parity.log.gz": "75d53f3b1a376dc88b413a8ddca04cade650cafaca68dabdd72e007b9c4e318d",
+    "xyg-temporal-python-final.log.gz": "73f9fe5a3a846487daab957fb3039675428360225d4fb5b98984b357cbec9350",
+    "xyg-temporal-python.log.gz": "ba23e35f0d4f6d3f81a58f4ade562be19c586b60cf82d90406b19cb32ffdb401",
+    "xyg-temporal-real-wasm-diagnostic.log.gz": "763ec670423a3013e6e927e6b5eb5219d99247ba684319d6bedda34e8173c0c3",
+    "xyg-temporal-session-parity.log.gz": "ea2c29bc853912e7a17b71163a962c8989c16c57947ee5ed6e2dc74e26b40c22",
+    "xyg-temporal-sync-format.log.gz": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+    "xyg-temporal-sync-hooks.log.gz": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+    "xyg-temporal-sync-ruff.log.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "xyg-temporal-wasm-assets.log.gz": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+    "xyg-temporal-wasm-build.log.gz": "7f355ef91db4ae052bc5196765df6342b8ce7d6f73c212933de879b3ba324186",
+    "xyg-temporal-wasm-host-final.log.gz": "e423491de6a43c23079af95da6e15ea6a2e72b4a4f199042e4f6fc9ac5fe30f2",
+    "xyg-temporal-wasm-host.log.gz": "96cad268869c7304e1ab22db93ec8c63b25532bdbcdaed0b89655ca7d4e1b721"
+  },
+  "tests": {
+    "engineTemporal": 13,
+    "wasmHostTemporal": 7,
+    "python": 50,
+    "packagedNodeTemporal": 16,
+    "existingTemporalSessionReplay": 2,
+    "clippy": "passed -D warnings",
+    "packageBudget": "passed unchanged",
+    "wasmAssets": "passed",
+    "fullWorktreeCommitChecks": "pre-commit --all-files, ruff check ., ruff format --check .: passed"
+  },
+  "limitations": [
+    "Focused failure atomicity only; no #45/#50/#38/#39 closure claim",
+    "No rendered export, automatic linked playback, massive or competitor performance claim",
+    "Independent final review and delivery owned by parent"
+  ]
+}
