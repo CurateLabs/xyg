@@ -266,3 +266,13 @@ headline table is withdrawn; see `spec/benchmarks/results.md`. Do not relabel
 upstream historical measurements as current XYG results or imply a universal
 performance/customization win over Matplotlib, Seaborn, Plotly, Bokeh, Altair,
 Datashader, HoloViews/hvPlot, or emerging alternatives.
+
+### Frozen issue-response history
+
+Two chunk-read evidence files retain complete historical GitHub dependency
+responses, including retired names quoted in old issue bodies. The naming
+scanner treats those exact paths and SHA-256-bound canonical UTF-8/LF contents
+as frozen history. Any content edit or copied/renamed file receives every
+ordinary identity check. This preserves the original audit bytes without
+excluding a directory, current product surface, or future evidence. Platform
+newline normalization matches the scanner’s existing text-reading behavior.
