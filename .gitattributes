@@ -108,3 +108,12 @@ spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.gz -text
 spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.png -text
+
+# Geometry integration after parent merge.
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.gz -text
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.png -text
+js/src/49_wasm_temporal.ts text eol=lf
+js/src/64_geo_retained_controller.ts text eol=lf
+spec/performance/graph-notebook-geometry-parent-integration-2026-11-06/*.ipynb text eol=lf

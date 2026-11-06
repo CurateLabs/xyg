@@ -1,0 +1,61 @@
+{
+  "acceptedBase": "c3152d97bdb3a1efd61686b21d84385ee0f8de9e",
+  "mergeCheckpoint": "043c3dba1a1352228519b5d06a1d4dcd11348462",
+  "nativeSourceTree": "7adb98fa64edd551a6096878afaa3ec3f43f028f",
+  "sources": {
+    "js/src/49_wasm_temporal.ts": "d8443d178e7951f2ac4d865aa589f2e488386e291ac0ab31e3e3df704742cf0f",
+    "js/src/64_geo_retained_controller.ts": "3be21ad483015b40d220e21279ee9bf3565e3f561554ea4be9388504e9cf4c3d",
+    "scripts/geo_retained_wasm_smoke.mjs": "4aa831916a56b29541aa288fab17a87cecabdb73da28b9e9007614b3f84d7664",
+    "tests/browser/geo_retained_page.mjs": "cebb88342799f628713bcf7e674d855478c91f4204b0cece61413341bdf7146d",
+    "packages/xy-node/test/geo-scale-wasm-parity.test.mjs": "14cc89999b146edf0997bde2e8e0745604a74359a2aef3f752f41a40ea540d26",
+    "packages/xy-node/test/geoscale-fixture.mjs": "2b23b77d007c6770ba4dc10ca836346bdef31aff3dcac49d4891ec155ee3d12a"
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+      "bytes": 6119880
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "f323d12e662abf2ef97a57e0606941147453d5d4306c2cde3a1b41f8d1ac4e05",
+      "bytes": 2124514
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7",
+      "bytes": 1926555
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "0330077288ddfa42889d8b64bacae7ec65239f82a95d9dc3c01fbec3c6abed5f",
+      "bytes": 803619
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    }
+  },
+  "logs": {
+    "browser-initial-failure.log.gz": "4ae764a9a7d55380cb94d31c0d4065e64f95a4eb14a4c95546efe1732526b22f",
+    "browser.log.gz": "02fe50a657c3a12514942f11380050e0b107bb11b6af54c4f3372e2890ef396a",
+    "build.log.gz": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+    "final-format.log.gz": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+    "final-hooks.log.gz": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+    "final-ruff.log.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "native-build.log.gz": "4de51841fa43858e1f4cc898d738636afd16ac36acf73fcdd4d91a55f00f7236",
+    "node-host-install.log.gz": "8f05dfb914f7a52fcbef7107cc6324f80f3c1a8722d3a552f53b75f2a73b6cf8",
+    "npm.log.gz": "2f4d7d4931e525739504f94764cb17f0ba42b33db57f1903110732692eb12715",
+    "parity-initial-failure.log.gz": "c0b3e3e1fdaad24ca24d16e4a4f90618dd163187b3d28b2bc9b2823b8fdfd83c",
+    "parity.log.gz": "70223417b320c370700ec29b242c4e125724164f3d3bf0a5144ed834d1b281c9",
+    "python.log.gz": "5b996eb6208d2a6e289528cbde06b421b0d1ac88beafe697c36672a6b8ae34a2",
+    "sync-format.log.gz": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+    "sync-hooks.log.gz": "fafae81fd4ff3697b29dba34cbd61cf5d4baa5d8c06dc1ae1de26e4502266ca7",
+    "sync-ruff.log.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "temporal-node.log.gz": "f8a41dbfdac7a7298b3e1579c932595ef0eaa7aa40633fe39c4de301a4b23b6d",
+    "wasm-build.log.gz": "7b84e19429443ee309646ef45749e7b7f8c737c4715fd12c27e0fa499240a169",
+    "wasm-package.log.gz": "de8940d51039df814548b4744912075530bce226c1bf5e0e9ade767fe8ff6883"
+  },
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "rustToolchain": "[toolchain]\nchannel = \"1.96.0\"\ncomponents = [\"rustfmt\", \"clippy\"]\n",
+  "cargoLockSha256": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+  "packageLockSha256": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+  "scope": "Fresh native/WASM/client builds; no reused binary. Raw source hashes cover changed JS/TS implementation and harness, all LF-pinned by root attributes. Native source tree unchanged from accepted base."
+}
