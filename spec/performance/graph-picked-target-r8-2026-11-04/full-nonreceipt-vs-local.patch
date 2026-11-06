@@ -1,0 +1,142 @@
+diff --git a/spec/design/dual-host-parity-matrix.md b/spec/design/dual-host-parity-matrix.md
+index 543b8c6fb00bb4eed0dbb9736ca226325a71a79d..0afc6da3b4b638730c7ced8e84c8646cc378b95c 100644
+--- a/spec/design/dual-host-parity-matrix.md
++++ b/spec/design/dual-host-parity-matrix.md
+@@ -45,7 +45,7 @@ runtime may still be landing).
+ | GraphForge / Streamlit consumer (#1016) | partial: repository test/docs host; plain property graph and PageRank snapshot, native PNG/SVG | n/a (uses Python host) | Public composition → same Rust graph buffers/static writers | AppTest + installed-wheel Chromium proof in [application-consumers.md](application-consumers.md#bounded-graphforge-consumer-1016); local browser interaction only, no Python UUID selection bridge; bounded fixtures, not full #36/#934/#935 or release-cohort acceptance |
+ | Dense `u64` indices + f64 columns | required | required | Host→Rust pointers | No `u32` element identity |
+ | Layout (preset/grid/circle/force/…) | Rust ABI | Rust ABI | `xyg_graph_layout` / force handle | Seeded FR goldens bit-identical |
+-| Force ticks (progressive) | Host schedules | Host schedules | `xyg_graph_force_*`; configured CoSE descriptor | **Never browser main-thread decisions**; Rust owns CoSE options, pins, compounds, bounds, and Barnes–Hut/grid approximation; CoSE Python/Node native↔WASM **bitwise** on the 12-fixture golden (`graph-mark.md` §4; `portable_sin_cos`, no libm). Historical `cb78c1f4` checkpoint-delivery evidence in `spec/performance/cose-progressive-ladder-2026-10-20/` is not current-main timing or first paint. Default Node live payloads now use bridge/force Workers; explicit composition stays synchronous. The separate `graph-node-first-paint-1k-2026-11-04/` receipt proves bounded initial/final render and GPU hit readiness only; full rendered ladder, unheld initial trusted interaction, public browser progressive scheduling and Python notebook delivery (#1015) remain open for #35, as does clarification of literal async-compose wording. |
++| Force ticks (progressive) | Host schedules | Host schedules | `xyg_graph_force_*`; configured CoSE descriptor | **Never browser main-thread decisions**; Rust owns CoSE options, pins, compounds, bounds, and Barnes–Hut/grid approximation; CoSE Python/Node native↔WASM **bitwise** on the 12-fixture golden (`graph-mark.md` §4; `portable_sin_cos`, no libm). Historical `cb78c1f4` checkpoint-delivery evidence in `spec/performance/cose-progressive-ladder-2026-10-20/` is not current-main timing or first paint. Default Node live payloads now use bridge/force Workers; explicit composition stays synchronous. The separate `graph-node-first-paint-1k-review-repair-2026-11-04/` receipt supersedes frozen historical runners, drains held update ACKs, checks the first replacement and directly observes selected native path/hash/ABI in fixture and bridge/force Workers (origin is separate from byte identity). Its captures predate the Node Buffer codec repair: the integrated Node package tree differs; only individually checked producer sources and artifact bytes are reused ([Node evidence scope](graphforge-node-scheduling.md#evidence-and-remaining-boundary)). It proves bounded initial/final render and GPU hit readiness only; full rendered ladder, unheld initial trusted interaction, public browser progressive scheduling and Python notebook delivery (#1015) remain open for #35, as does clarification of literal async-compose wording. |
+ | Viewport + graph LOD + edge LOD | Rust | Rust | `xyg_graph_lod_*` / cluster / sample | Recorded §28; Rust emits render graph |
+ | GeoArrow / GeoColumn ingest (#47) | `_geoarrow` adapter + `_native.geo_column_*` | `geoDescriptorFromGeoArrow` + `geoColumn*` (partial: no Arrow reader; typed arrays + extension metadata) | `xyg_geo_column_*` (ABI 379) + canonical `XYGM` v1 metadata | Rust owns validation, CRS, f64 geometry, identity, limits; `tests/fixtures/geo_cross_host.json` pins byte-identical metadata and read-back planes ([geospatial.md](geospatial.md)); direct-browser ABI 29 ingests typed `XYGD` and returns the same `XYGM`; frozen zero-pitch `XYGP` lowers to ordinary point/outline `XYGS`, with actual native/wasm32 metadata and scene goldens (geographic chart APIs remain #49) |
+ | Encode → §29 f32 | Rust | Rust | Same binary payloads | Offset-encoded; no JSON numbers |
+diff --git a/spec/design/graph-mark.md b/spec/design/graph-mark.md
+index 62cc0b8c8e8c59ba73dde94efe9a450fa0a3f980..de71fc52e1fdd2a2e3844bfaf21e6bade287f6e5 100644
+--- a/spec/design/graph-mark.md
++++ b/spec/design/graph-mark.md
+@@ -381,10 +381,17 @@ Every live graph layout retains a complete f64 source snapshot, including
+ circle/grid at Aggregate; Rust-derived render membership has separate indexing.
+ Its bounded four-node native/painter receipt proves initial and changed later
+ paint, UUID picks and pan through full view replacement. The additional
+-[1k rendered receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
+-preserves the ring/chord rung, seed and CoSE policy and records visible pixels
++[1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
++supersedes the frozen historical 1k runners with update-ACK draining, first-
++replacement camera inspection and directly observed selected native path/hash/ABI
++in fixture and bridge/force Workers. Origin is unknown unless explicitly declared;
++matching old bytes does not prove reuse or a pre-run rebuild history. The new
++capture preserves the ring/chord rung, seed and CoSE policy and records visible pixels
+ and GPU node-hit readiness under automatic ACKs. Only initial/final frames
+ were presented, so their single interval does not establish sustained cadence.
++The captures predate the Node Buffer numeric-copy repair and do not execute the
++integrated Node package tree; producer/artifact identity reuse is scoped in the
++[Node contract](graphforge-node-scheduling.md#evidence-and-remaining-boundary).
+ Trusted UUID/pan checks on the settled frame and deliberately held initial
+ inspection are separate from that interval. **Remaining for #35:**
+ render-based first-paint/interactivity measurements on the large-data ladder,
+diff --git a/spec/design/graphforge-node-scheduling.md b/spec/design/graphforge-node-scheduling.md
+index 2c4d3599a0892a0f945f7c619bb3a98624f43d06..2d17019b0740de17ba306859126fce681d8e234a 100644
+--- a/spec/design/graphforge-node-scheduling.md
++++ b/spec/design/graphforge-node-scheduling.md
+@@ -198,7 +198,18 @@ immutable: its phrase “render payloads ... are retained” was broader than it
+ actual final spec, counts, identities and position digests. Repair evidence
+ makes no milestone, S5, scale, release qualification or #108 acceptance claim.
+ 
+-The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
++The append-only [1k rendered receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
++contains the current runnable helpers and archived browser captures. The original
++1k receipt and parent-sync receipt remain immutable historical records; their
++runners are superseded. Their conventional-path hashes do not retroactively
++attest the native file actually selected by the loader. The current helper
++observes existing `nativeLibraryPath` / ABI exports in the fixture and inherited
++bridge/force Workers; the runner independently hashes and ABI-binds that exact
++selected path. Origin defaults to unknown, separately from known-parent byte
++identity. Held inspection drains each genuine update ACK with a bounded deadline
++and matching job/revision/step; camera reset is checked on the first replacement,
++which may be an update. Scripted ACK cases test this protocol only and are not
++native callbacks or presentation-cadence evidence. The real capture still
+ uses the historical ring/chord topology, seed 7, default CoSE options and
+ 10-tick chunks through the existing live controller. Its explicit 401-tick cap
+ matches that rung; the live default cap remains 300. Automatic ACKs follow
+@@ -212,6 +223,30 @@ initial trusted click/pan and viewport-reset inspection deliberately hold the
+ HTTP ACK in a separate run. The latter confirms replacement resets the panned
+ view to the next payload's ranges. No production behavior or limits changed.
+ 
++The [accepted-main sync receipt](../performance/graph-node-first-paint-1k-accepted-main-sync-2026-11-04/README.md)
++records the normal merge of accepted main `2fbbe5f0` into reviewed repair
++`562a2adf`. Within that parent sync, production sources, runnable proof helpers,
++raw browser captures and runtime artifact bytes were unchanged. It reused the
++recorded observations without a fresh browser, worker-loading or native-build
++claim. The parent now reports independent final approval and push of exact
++`7c581024`; earlier approval and resolution of both proof-runner findings covered
++`562a2adf`. Their immutable receipts retain the status observed when written.
++
++Those captures predate the Node Buffer numeric-copy repair in
++`graphforge-container.js` ([codec contract](graphforge-compositions.md#51-container)).
++The integrated `packages/xy-node` tree is therefore not source-identical to the
++capture tree. Reuse is limited to the individually checked producer, scheduler,
++Worker and painter sources and native/client artifact bytes recorded in the
++[Buffer finalization receipt](../performance/node-buffer-codec-finalization-2026-11-04/README.md).
++The native composition producer returns ordinary `Uint8Array` document bytes;
++the Buffer subclass defect is covered separately by the pure codec regressions.
++The captures are retained evidence at their recorded state, not new timings or
++an execution of the Buffer-fixed tree. Native byte identity still does not
++establish the historical artifact's origin or rebuild history. The combined
++Buffer sync candidate requires its own completed independent final review and
++actual sync CI before integration. Earlier `eb9ea4c` CI and skipped checks on a
++conflicted head do not qualify the new candidate.
++
+ This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
+ unheld initial trusted response, public browser progressive scheduling and
+ Python notebook/widget delivery/cancellation remain acceptance work. The
+diff --git a/spec/design/host-parity.md b/spec/design/host-parity.md
+index 749f683396b30ad0e7476321f8d74574f54b069c..05e0e978fa64c4fc655e6b60fe5c5129b61d0ed2 100644
+--- a/spec/design/host-parity.md
++++ b/spec/design/host-parity.md
+@@ -1960,11 +1960,20 @@ client must not grow a parallel “JS layout/LOD” product path.
+   `composeGraphForge` remains explicit metadata/static/batch composition
+   ([Node contract](graphforge-node-scheduling.md)). The issue's literal async
+   `composeGraphForge` wording still needs an explicit acceptance clarification.
+-  The bounded 1k [render receipt](../performance/graph-node-first-paint-1k-2026-11-04/README.md)
+-  records actual initial/final paint and GPU node-hit readiness, with trusted
++  The bounded 1k [render receipt](../performance/graph-node-first-paint-1k-review-repair-2026-11-04/README.md)
++  supersedes the frozen historical runners, directly observes the selected
++  native path/hash/ABI in fixture and bridge/force Workers, and separates byte
++  identity from unknown/declared origin. Earlier conventional-path hashes do
++  not retroactively attest selection. Held update ACKs are drained and reset
++  is checked on the first replacement. It records actual initial/final paint
++  and GPU node-hit readiness, with trusted
+   UUID/pan inspection separated from unheld presentation. Intermediate steps
+   coalesced away; one initial-to-final interval is not sustained progress
+-  cadence. Remaining for #35 are the rendered size ladder and unheld initial
++  cadence. These captures predate the Node Buffer numeric-copy repair; the
++  integrated Node package tree differs. Only individually verified producer
++  sources and artifact bytes are reused, as scoped in the
++  [Node contract](graphforge-node-scheduling.md#evidence-and-remaining-boundary).
++  Remaining for #35 are the rendered size ladder and unheld initial
+   trusted interaction, public browser progressive attachment/scheduling, and
+   Python widget/notebook progressive integration (#1015). Retained opcode 15
+   alone does not attach a public scheduler. The historical receipt is committed
+diff --git a/spec/releases/0.6.0-api-inventory.json b/spec/releases/0.6.0-api-inventory.json
+index 22ab71cf1985957018f3a3437cbff9ad7f76c15d..eeda726b7269162625a1bf68d690da1be5866b1a 100644
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@ -1195,7 +1195,7 @@
+  "releaseLine":"0.6.0",
+  "schema":"xyg.release-api-inventory/v1",
+  "sourceProvenance":{
+-  "baseCommit":"01f1072985b891d75015290999381f66d901d049",
++  "baseCommit":"44626a8a477649442c72d8b5e0e0ef98e8ee7baa",
+   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+  },
+  "sourceSha256":{
+@@ -1386,7 +1386,7 @@
+   "spec/api/export.md":"f995397a84c6433fea072a238592b67009777c83b49face361055c6642c1a597",
+   "spec/design/browser-wasm.md":"0a5469ed427bee4ad8854d0eee18eff1a2c61a435d0866262bc129fc90695563",
+   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
+-  "spec/design/host-parity.md":"81fcd7fee6ff643ef4d5a398010478d360f901760400136f1463645875266743",
++  "spec/design/host-parity.md":"b47a61eed34956fcf5073d0c1f4a2ed685f13594be3d62f20413ed5a3c64dd2a",
+   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",
+   "spec/process/production-readiness.md":"19a304efde415a7cf6d4dc60f8f82381058a591088b94939c2650077376ce4f7",
+   "spec/wasm/abi.json":"cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"

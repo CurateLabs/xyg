@@ -1,0 +1,69 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/crates/xyg-engine)
+error[E0433]: cannot find type `HighlightPlane` in this scope
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:329:25
+    |
+329 |                         HighlightPlane::Path,
+    |                         ^^^^^^^^^^^^^^ use of undeclared type `HighlightPlane`
+    |
+help: consider importing this enum
+    |
+  2 + use crate::graph_interaction_state::HighlightPlane;
+    |
+
+error[E0433]: cannot find type `HighlightPlane` in this scope
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:330:25
+    |
+330 |                         HighlightPlane::Community,
+    |                         ^^^^^^^^^^^^^^ use of undeclared type `HighlightPlane`
+    |
+help: consider importing this enum
+    |
+  2 + use crate::graph_interaction_state::HighlightPlane;
+    |
+
+error[E0433]: cannot find type `HighlightPlane` in this scope
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:331:25
+    |
+331 |                         HighlightPlane::External,
+    |                         ^^^^^^^^^^^^^^ use of undeclared type `HighlightPlane`
+    |
+help: consider importing this enum
+    |
+  2 + use crate::graph_interaction_state::HighlightPlane;
+    |
+
+error[E0433]: cannot find type `HighlightPlane` in this scope
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:371:25
+    |
+371 |                         HighlightPlane::Path,
+    |                         ^^^^^^^^^^^^^^ use of undeclared type `HighlightPlane`
+    |
+help: consider importing this enum
+    |
+  2 + use crate::graph_interaction_state::HighlightPlane;
+    |
+
+error[E0433]: cannot find type `HighlightPlane` in this scope
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:372:25
+    |
+372 |                         HighlightPlane::Community,
+    |                         ^^^^^^^^^^^^^^ use of undeclared type `HighlightPlane`
+    |
+help: consider importing this enum
+    |
+  2 + use crate::graph_interaction_state::HighlightPlane;
+    |
+
+error[E0433]: cannot find type `HighlightPlane` in this scope
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:373:25
+    |
+373 |                         HighlightPlane::External
+    |                         ^^^^^^^^^^^^^^ use of undeclared type `HighlightPlane`
+    |
+help: consider importing this enum
+    |
+  2 + use crate::graph_interaction_state::HighlightPlane;
+    |
+
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `xyg-engine` (lib test) due to 6 previous errors

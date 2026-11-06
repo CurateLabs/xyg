@@ -104,7 +104,7 @@ function wasmType(rustType) {
 
 // Size budget (browser-wasm.md, "Artifact size"): growth past it must be a
 // deliberate, recorded decision, not drift.
-const WASM_SIZE_BUDGET_BYTES = 1878 * 1024;
+const WASM_SIZE_BUDGET_BYTES = 1882 * 1024;
 // 1,504 KiB raw / 616 KiB gzip: the Scene v33 secondary-y decode/painter path
 // (#1006) is a recorded +32 KiB raw / +8 KiB gzip over the previous 1,472 / 608 KiB
 // (CI's pinned toolchain measures ~2.7 KiB gzip above a local build).
@@ -162,7 +162,16 @@ const WASM_SIZE_BUDGET_BYTES = 1878 * 1024;
 // See graph-property-default-package-2026-11-03/README.md for fresh shipping proof.
 // No compiler/profile/toolchain/optimizer/dependency/export/validation/runtime
 // change, performance claim, or automatic allowance for future growth.
-const WASM_GZIP_BUDGET_BYTES = 765 * 1024;
+// #36 actual picked-target/provenance/typed-Leave explicit parent decision
+// (2026-11-04), after completed m4_defaults_audit and s5a_final_review:
+// retain R2 inline Option<PickReceipt>, shared CSR projection and borrowed refs.
+// R2 measures 1,926,555 / 785,546: old 1,878/765 gates fail by 3,483/2,186.
+// Exactly 1,882/768 KiB leaves 613/886 bytes; 1,881/767 still fails by 411/138.
+// R2 reuse saves 1,022/380 over R1; rejected R3 Arc grows 1,768/55 over R2.
+// Growth over the 207 baseline is 3,832/2,365. No further size experiments or
+// automatic allowance. All guards, exports, toolchain and runtime caps stay fixed.
+// See graph-picked-target-r5-2026-11-04/README.md for fresh production proof.
+const WASM_GZIP_BUDGET_BYTES = 768 * 1024;
 const gzipBytes = gzipSync(bytes).length;
 if (gzipBytes > WASM_GZIP_BUDGET_BYTES) throw new Error(`xyg-wasm gzip is ${gzipBytes} bytes, over the ${WASM_GZIP_BUDGET_BYTES}-byte budget`);
 if (bytes.length > WASM_SIZE_BUDGET_BYTES) {

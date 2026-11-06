@@ -532,45 +532,85 @@ def test_scene_v17_native_boundary_accepts_two_bounded_text_frames_and_straight_
 
 
 @pytest.mark.parametrize(
-    "style",
+    "style,message",
     [
-        {"color": ""},
-        {"color": None},
-        {"opacity": None},
-        {"opacity": ""},
-        {"opacity": "opaque"},
-        {"width": None},
-        {"width": False},
+        ({"color": ""}, "Scene v12 annotation rule color must be a nonempty CSS color"),
+        ({"color": None}, "Scene v12 annotation rule color must be a nonempty CSS color"),
+        (
+            {"opacity": None},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule opacity must be numeric",
+        ),
+        (
+            {"opacity": ""},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule opacity must be numeric",
+        ),
+        (
+            {"opacity": "opaque"},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule opacity must be numeric",
+        ),
+        (
+            {"width": None},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule width must be numeric",
+        ),
+        (
+            {"width": False},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule width must be numeric",
+        ),
     ],
 )
 def test_scene_v10_annotation_style_falsey_values_do_not_become_defaults(
     style: dict[str, object],
+    message: str,
 ) -> None:
     figure = Figure().vline(1.0)
     figure.annotations[0]["style"] = style
-    with pytest.raises(ValueError, match="Scene v12"):
+    with pytest.raises(ValueError) as error:
         figure.to_scene()
+    assert str(error.value) == message
 
 
 @pytest.mark.parametrize(
-    "annotation",
+    "annotation,message",
     [
-        {"kind": "rule", "axis": "x", "value": None},
-        {"kind": "rule", "axis": "x", "value": ""},
-        {"kind": "rule", "axis": "x", "value": False},
-        {"kind": "band", "axis": "x", "start": " ", "end": 1.0},
-        {"kind": "marker", "x": "not-a-number", "y": 1.0},
-        {"kind": "marker", "x": 0.0, "y": 1.0, "size": None},
-        {"kind": "marker", "x": 0.0, "y": 1.0, "symbol": 2},
+        (
+            {"kind": "rule", "axis": "x", "value": None},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule value must be numeric",
+        ),
+        (
+            {"kind": "rule", "axis": "x", "value": ""},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule value must be numeric",
+        ),
+        (
+            {"kind": "rule", "axis": "x", "value": False},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule value must be numeric",
+        ),
+        (
+            {"kind": "band", "axis": "x", "start": " ", "end": 1.0},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: band start must be numeric",
+        ),
+        (
+            {"kind": "marker", "x": "not-a-number", "y": 1.0},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: marker x must be numeric",
+        ),
+        (
+            {"kind": "marker", "x": 0.0, "y": 1.0, "size": None},
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: marker size must be numeric",
+        ),
+        (
+            {"kind": "marker", "x": 0.0, "y": 1.0, "symbol": 2},
+            "Scene v12 annotation marker symbol must be a supported string name",
+        ),
     ],
 )
 def test_scene_v10_annotation_geometry_is_strict_across_hosts(
     annotation: dict[str, object],
+    message: str,
 ) -> None:
     figure = Figure()
     figure.annotations = [annotation]
-    with pytest.raises(ValueError, match="Scene v12"):
+    with pytest.raises(ValueError) as error:
         figure.to_scene()
+    assert str(error.value) == message
 
 
 def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:

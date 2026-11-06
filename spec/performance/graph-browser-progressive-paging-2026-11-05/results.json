@@ -1,0 +1,31 @@
+{
+  "source_parent": "a062d9c05000bc7c7181e99fc80089ebe1a7c8eb",
+  "source_sha256": {
+    "scripts/graph_session_controller_wasm_smoke.mjs": "40b72f5484297b96a0d7f4bb2d5e82546b5e5ec45d7c38a8b2615541d8d25d17",
+    "spec/design/graphforge-node-scheduling.md": "12cd11f7d7e938930559c74bd770c03076851e8a92508b8f51599d205647d14f"
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "sha256": "29b3b9cad48045b97916333514f1b4513a28d4c83e2dbb098bf49eae40eaadd3",
+      "bytes": 796904
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "632510de5fef2adc675294167e133e99d3a2377f5f047f3a79a04987ee724d3d",
+      "bytes": 1922723
+    }
+  },
+  "progressive_report_sha256": "95d3b8887663987bf2f14c5047cc427bf787fb1a38d9657d288e3954d852bd87",
+  "passed": {
+    "progressive_cases": 8,
+    "wire_gpu_tests": 13
+  },
+  "arena_bytes": 402653184,
+  "pending": [
+    "independent repair review",
+    "new-head CI"
+  ]
+}

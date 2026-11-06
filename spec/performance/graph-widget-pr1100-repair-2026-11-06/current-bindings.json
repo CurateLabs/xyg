@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "parents": {
+    "widget": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+    "acceptedMain": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8"
+  },
+  "sourceIdentity": "actual corrected working bytes; final producing source hashes, not precommit HEAD alone",
+  "sourceSha256": {
+    "scripts/gen_graphforge_rc7_result_fixtures.cjs": "14122498a63020f291e1f8428fb842d0cb153e9241fd3bad874812b87cfcded2",
+    "spec/api/graphforge-integration.md": "c931ea0e1bce2444f3b24d538539b680d57d915b079bca4907157f882bc221c0",
+    "spec/design/host-parity.md": "ce7d76d453add59863a35c634d365d90a5f32711ae4c86c7264154bdff566fe6",
+    "tests/test_graphforge_contract_corpus.py": "312d1dfc4167ce585218800308abfe8bc85a6b2c5abf6b9c8ae4d72ae3816e73",
+    ".gitattributes": "69f132b74c0a291ed34ffec59c0bf40004f963e9336e85ef6b4faaf0a3dee1ef",
+    ".github/workflows/ci.yml": "281b58be7f0bf65a2a03de177ebb622220e351e0118a0308262f8f2d56822cec",
+    "scripts/verify_ci_workflow.py": "0468f973bf1c5c58de99729f6e59fca6cbe1de8f267f2d808be4fb974d56f7d7",
+    "spec/performance/graph-widget-progressive-r3-2026-11-06/README.md": "24b9053e9c5ba418cbda455326bfca8db6896cdb8a44f0721549b1513c7a921c",
+    "python/xyg/_graph_widget.py": "f8801490ea3380510a53ac0194a274bb0f7251d9d99d1a658bd0226a5f8aeb68",
+    "tests/test_graph_widget.py": "63b6576bbf9549fc4fb0e15c735e11e9277fc21a72d969ddaebb43696c318505",
+    "js/src/66_graph_host.ts": "287f8e775bfd349538da3803625d92f7e410a190959af1735d4731253214973a",
+    "js/test/graph-host-transport.test.mjs": "9180d55118ef630d34fc77d9244d3055f19d47318228d24bf51e0a152a0ece0d",
+    "spec/design/graph-session-python-transport.md": "977afcf3acc8b627278a6e9e7670729bdf2c5ab6bcf291dd221c5aee63236dd6",
+    "spec/performance/graph-widget-review-repair-2026-11-06/README.md": "c0ad9f01568bb8d422efb5e41897ef7f970e0ba199579a3db10efccb5a2868e3",
+    "tests/test_graph_notebook_report.py": "adf9495113d278b76d4a5d2751afc66779ea389caf5ae76f0fbeec64d2856d5b",
+    "js/src/50_chartview.ts": "384c9c1724273f44674ca4b45ed0c3b33a869a024b7bcc67a67b91b306d9d148",
+    "spec/design/ownership-audit.json": "9328bf69c90f9316903cbeb4b5ac166c5e6f2d0b413daf64cd1798abd4bacd86",
+    "spec/design/ownership-audit.md": "862c0c57ead5f78f5c22609bd7987cfe13053a5472b95a1b07cb1d0fd58ad12d",
+    "scripts/graph_notebook_progressive_smoke.mjs": "b974ddd76953d8a81c26fe9381eb387e54dbfea1d8a8f2d61971fa356c668b9d",
+    "scripts/verify_graph_notebook_report.py": "92abda1ee44df8c484833816d8b8e5f1c80992e6bba7f20f98731dcd1a96ca09",
+    "tests/notebook_graph_progressive.ipynb": "b756d3d10bd446af0bd8e2b6b7be04840e06f8e5d082cdf3c206d23d94784e31",
+    "spec/performance/graph-widget-pr1100-repair-2026-11-06/README.md": "8502882466e46105892c00e493c348f1386ad0ca7722464d4244cd0318bb0094"
+  },
+  "historicalBindings": {
+    "spec/releases/core-rc7-compatibility-2026-11-06/checks.json": "7d03d70d0f62d9713aa4eb869eb9a4fdca04a1b3438fbdc0cf9aa703266424d3",
+    "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json": "935d1c13c39e316a8a6cbda1d184fb618cb488a1853f429a9456626c05fa7168",
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json": "bf9baaf0d5b0e3a3dd06c756e98f5032f8a091b3157a742b590d550acb53abcc",
+    "spec/performance/graph-widget-progressive-r3-2026-11-06/current-bindings.json": "bd50d6ce0d4ed6781a3f2933ef78b8523ab192a7c1e31737079cb518a7b0ebb8",
+    "spec/performance/graph-widget-review-repair-2026-11-06/current-bindings.json": "c200259d17dd02563bbcc8d29b043d4ea49b5130064b6c8a292a537246ae5bd1"
+  },
+  "manifestSha256": "b5a7e320205020debfa5b44df0e521f5b0edcf5038aecfdb5db0f3b38b305092",
+  "originalProducerSha256": "eff4f2a91531ae58cb9b1578ba40e128e14f5f55737a2141c0c2846a82e23d05",
+  "reviewedParent": "948ab7f26bae89ff21d1e816874b9428291df2c8"
+}

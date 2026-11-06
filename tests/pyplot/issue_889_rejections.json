@@ -1,0 +1,122 @@
+[
+  {
+    "path": "tests/pyplot/test_contour_gallery_colors.py",
+    "test": "test_contour_demo_cycles_listed_colors_per_level_through_renderers",
+    "reason": "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"
+  },
+  {
+    "path": "tests/pyplot/test_contour_label_placement.py",
+    "test": "test_contour_colorbar_inherits_extend_lines_and_colorbar_axes_state",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
+  },
+  {
+    "path": "tests/pyplot/test_contour_label_placement.py",
+    "test": "test_colorbar_add_lines_preserves_negative_contour_dashes",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
+  },
+  {
+    "path": "tests/pyplot/test_contour_label_placement.py",
+    "test": "test_second_automatic_colorbar_uses_explicit_axes_without_overwriting_first",
+    "reason": "XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE"
+  },
+  {
+    "path": "tests/pyplot/test_contour_label_placement.py",
+    "test": "test_line_contour_colorbar_is_unfilled_with_its_own_level_overlays",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
+  },
+  {
+    "path": "tests/pyplot/test_contour_label_placement.py",
+    "test": "test_listed_contour_colorbar_keeps_exact_bands_and_extension_colors",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
+  },
+  {
+    "path": "tests/pyplot/test_matplotlib_mismatch_regressions.py",
+    "test": "test_direct_bar_and_mesh_strokes_match_each_face_without_extra_color_data",
+    "reason": "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"
+  },
+  {
+    "path": "tests/pyplot/test_pdsh_gap_features.py",
+    "test": "test_labeled_minor_ticker_pair_is_promoted_when_majors_are_blank",
+    "reason": "pyplot panel 0: XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_pdsh_gap_features.py",
+    "test": "test_text_date_string_coordinates_on_a_date_axis",
+    "reason": "pyplot panel 0: XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_axes_layout.py",
+    "test": "test_tick_params_pad_moves_the_labels_further_from_the_spine",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_bughunt_authored_style_parity.py",
+    "test": "test_bar_error_container_public_semantics_and_default_legend_label",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_bughunt_authored_style_parity.py",
+    "test": "test_numeric_axis_label_rotation_reaches_both_rendered_axes",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_bughunt_authored_style_parity.py",
+    "test": "test_named_axis_label_rotation_and_explicit_none_reset",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_silent_drop_regressions.py",
+    "test": "test_text_visibility_and_alpha_reach_rendered_output",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_gallery_collection_cycle_compat.py",
+    "test": "test_broken_barh_uses_patch_facecolor_without_advancing_cycles",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_gallery_collection_cycle_compat.py",
+    "test": "test_hlines_vlines_use_lines_color_without_advancing_or_overriding_explicit_color",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "path": "tests/pyplot/test_rc_chrome_contracts.py",
+    "test": "test_title_and_label_weight_rc_overrides_reach_every_renderer",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
+  },
+  {
+    "path": "tests/pyplot/test_rc_chrome_contracts.py",
+    "test": "test_quoted_font_families_remain_well_formed_in_svg",
+    "reason": "XYG_STATIC_UNSUPPORTED_CUSTOM_FONT"
+  },
+  {
+    "path": "tests/pyplot/test_p3_option_contracts.py",
+    "test": "test_contourf_corner_mask_uses_exact_band_clipped_triangles",
+    "reason": "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"
+  },
+  {
+    "path": "tests/pyplot/test_pdsh_gap_features.py",
+    "test": "test_callout_arrows_reach_static_exports",
+    "reason": "pyplot panel 0: XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: callout unsupported keys gap_end,gap_start,head_size,head_style,label_clear,label_color,start_offset"
+  },
+  {
+    "path": "tests/pyplot/test_pie_annotation_grouped_repair.py",
+    "test": "test_svg_and_raster_keep_connector_outside_axes_when_target_is_inside",
+    "reason": "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys head_size"
+  },
+  {
+    "path": "tests/pyplot/test_launch_compat.py",
+    "test": "test_reversed_colormap_exact_ticks_and_fractional_annotations_export",
+    "reason": "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: rule unsupported keys span_end,span_start"
+  },
+  {
+    "path": "tests/pyplot/test_visual_parity_fixes.py",
+    "test": "test_legend_scatter_entry_renders_marker_glyph",
+    "reason": "XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE"
+  },
+  {
+    "path": "tests/pyplot/test_pdsh_gap_features.py",
+    "test": "test_text_string_coordinates_stay_categorical_on_category_axes",
+    "reason": "pyplot panel 0: XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric"
+  }
+]

@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: shipping R2 full native/WASM receipt bytes: Direct
+ok 1 - shipping R2 full native/WASM receipt bytes: Direct
+  ---
+  duration_ms: 74.550815
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: Aggregate-singletons
+ok 2 - shipping R2 full native/WASM receipt bytes: Aggregate-singletons
+  ---
+  duration_ms: 91.761338
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: EdgeSample
+ok 3 - shipping R2 full native/WASM receipt bytes: EdgeSample
+  ---
+  duration_ms: 118.240925
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: collapsed-representative-source-index-2
+ok 4 - shipping R2 full native/WASM receipt bytes: collapsed-representative-source-index-2
+  ---
+  duration_ms: 46.210762
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: parallel-loop-derived-0
+ok 5 - shipping R2 full native/WASM receipt bytes: parallel-loop-derived-0
+  ---
+  duration_ms: 109.227309
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: parallel-loop-derived-1
+ok 6 - shipping R2 full native/WASM receipt bytes: parallel-loop-derived-1
+  ---
+  duration_ms: 151.084976
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: parallel-loop-derived-2
+ok 7 - shipping R2 full native/WASM receipt bytes: parallel-loop-derived-2
+  ---
+  duration_ms: 139.158133
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: empty-miss-typed-leave
+ok 8 - shipping R2 full native/WASM receipt bytes: empty-miss-typed-leave
+  ---
+  duration_ms: 13.968022
+  type: 'test'
+  ...
+# Subtest: shipping R2 full native/WASM receipt bytes: full-selection-10000-existing-384MiB-max
+ok 9 - shipping R2 full native/WASM receipt bytes: full-selection-10000-existing-384MiB-max
+  ---
+  duration_ms: 784.436318
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2300.591101

@@ -1,0 +1,8 @@
+{
+  "run": 41788401132,
+  "job": 126439951835,
+  "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/pr1095-ci/job-126439951835.log",
+  "bytes": 27415,
+  "sha256": "d2be47cf7ac100ec9889b0b9cf8b0cca44d10959585c57d7b2eb9a7b4f2fa4ff",
+  "diagnosis": "Release surfaces reflects test=failure and wheels=skipped after the actual Clippy failure; other applicable producer/foundation/floor/conformance/Scene/matplotlib/sdist/install jobs succeeded. This is a cascade, not an aggregate/wheels/upload policy defect; all guards remain unchanged."
+}

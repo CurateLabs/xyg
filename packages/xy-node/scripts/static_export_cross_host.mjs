@@ -63,6 +63,16 @@ function baseFigure(name) {
 function edgeFigure(name) {
   const f = new Figure({ width: 320, height: 240 });
   switch (name) {
+    case "line_hidden_tick_labels":
+      fixedDomains(f).line([0, 1, 2], [1, 3, 2]);
+      f.setAxis("x", { tick_label_strategy: "off" });
+      f.setAxis("y", { tick_values: [], tick_label_strategy: "off", style: { tick_length: 0, grid_width: 0 }, minor_style: { tick_length: 0, grid_width: 0 } });
+      break;
+    case "scatter_hidden_tick_labels":
+      f.scatter([0, 1, 2], [1, 3, 2]);
+      f.setAxis("x", { tick_values: [], tick_label_strategy: "off", style: { tick_length: 0, grid_width: 0 }, minor_style: { tick_length: 0, grid_width: 0 } });
+      f.setAxis("y", { tick_label_strategy: "off" });
+      break;
     case "line_authored_style":
       fixedDomains(f).line([0, 1, 2], [1, 3, 2], { color: "#f97316", width: 3, style: { opacity: 0.7 } });
       break;
@@ -139,6 +149,14 @@ function failCloseFigure(name) {
   const f = new Figure({ width: 320, height: 240 });
   f.line([0, 1], [0, 1]);
   switch (name) {
+    case "annotation_text_x_nonfinite": fixedDomains(f); f.annotations = [{ kind: "text", x: Infinity, y: 0.5, text: "label" }]; break;
+    case "annotation_text_y_nonfinite": fixedDomains(f); f.annotations = [{ kind: "text", x: 0.5, y: Infinity, text: "label" }]; break;
+    case "annotation_text_x_nonnumeric": fixedDomains(f); f.annotations = [{ kind: "text", x: "category", y: 0.5, text: "label" }]; break;
+    case "annotation_text_y_nonnumeric": fixedDomains(f); f.annotations = [{ kind: "text", x: 0.5, y: "category", text: "label" }]; break;
+    case "annotation_callout_style": fixedDomains(f); f.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "label", style: { head_size: 8 } }]; break;
+    case "annotation_arrow_style": fixedDomains(f); f.annotations = [{ kind: "arrow", x0: 0, y0: 0, x1: 1, y1: 1, style: { head_size: 8 } }]; break;
+    case "annotation_rule_style": fixedDomains(f); f.annotations = [{ kind: "rule", axis: "y", value: 0.5, style: { span_start: 8 } }]; break;
+    case "annotation_text_style": fixedDomains(f); f.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "label", style: { width: 8 } }]; break;
     case "fluid_viewport": f.width = "100%"; break;
     case "browser_css": f.class_name = "browser-only"; break;
     case "custom_font": f.chrome_styles = { title: { "font-family": "Example Sans" } }; break;

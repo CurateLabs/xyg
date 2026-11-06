@@ -200,7 +200,6 @@ def test_pie_label_rotation_reaches_static_svg() -> None:
     assert 'transform="rotate(-315 ' in svg
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_text_accepts_matplotlib_style_alias_and_bbox_properties() -> None:
     fig, ax = plt.subplots(figsize=(6.4, 4.8), dpi=100)
     ax.set_xlim(0, 10)
@@ -225,8 +224,8 @@ def test_text_accepts_matplotlib_style_alias_and_bbox_properties() -> None:
     assert annotation.style["background"] == "rgba(255,0,0,0.5)"
     assert annotation.style["padding"] == "13.9px"
     svg = chart.figure().to_svg()
-    assert 'fill="rgba(255,0,0,0.5)"' in svg
-    assert 'stroke="rgba(0,0,0,0.5)"' in svg
+    assert 'fill="rgba(255,0,0,0.501961)"' in svg
+    assert 'stroke="rgba(0,0,0,0.501961)"' in svg
     assert 'font-style="italic"' in svg
     target = BytesIO()
     fig.savefig(target, format="png")

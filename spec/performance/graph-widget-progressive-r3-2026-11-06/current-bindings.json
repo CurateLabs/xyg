@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "parents": {
+    "widget": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+    "acceptedMain": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8"
+  },
+  "sourceIdentity": "actual combined working-tree bytes; capture HEAD is widget parent, not the producing merge tree",
+  "sourceSha256": {
+    "scripts/gen_graphforge_rc7_result_fixtures.cjs": "14122498a63020f291e1f8428fb842d0cb153e9241fd3bad874812b87cfcded2",
+    "spec/api/graphforge-integration.md": "c931ea0e1bce2444f3b24d538539b680d57d915b079bca4907157f882bc221c0",
+    "spec/design/host-parity.md": "ce7d76d453add59863a35c634d365d90a5f32711ae4c86c7264154bdff566fe6",
+    "tests/test_graphforge_contract_corpus.py": "91c6337acc4240414bb2d17e4e5a84ce3c52424edfd96c4cd7e5ceee7f213f8e",
+    ".gitattributes": "f3fa58d7eddefec27a8ef0c10955fc3c191758ac73ac975ddebdaee0385d3664",
+    ".github/workflows/ci.yml": "3788a47b4549276df284f74f93f61183aea7bacacb088aad8113a74096789659",
+    "scripts/verify_ci_workflow.py": "f6fdb2c156b733668ef24df09f33f1532c2454fe405cddc079675cb79268c875",
+    "spec/performance/graph-widget-progressive-r3-2026-11-06/README.md": "24b9053e9c5ba418cbda455326bfca8db6896cdb8a44f0721549b1513c7a921c"
+  },
+  "historicalBindings": {
+    "spec/releases/core-rc7-compatibility-2026-11-06/checks.json": "7d03d70d0f62d9713aa4eb869eb9a4fdca04a1b3438fbdc0cf9aa703266424d3",
+    "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json": "935d1c13c39e316a8a6cbda1d184fb618cb488a1853f429a9456626c05fa7168",
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json": "bf9baaf0d5b0e3a3dd06c756e98f5032f8a091b3157a742b590d550acb53abcc"
+  },
+  "manifestSha256": "b5a7e320205020debfa5b44df0e521f5b0edcf5038aecfdb5db0f3b38b305092",
+  "originalProducerSha256": "eff4f2a91531ae58cb9b1578ba40e128e14f5f55737a2141c0c2846a82e23d05"
+}
