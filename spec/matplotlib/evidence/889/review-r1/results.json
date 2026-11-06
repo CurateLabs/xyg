@@ -1,0 +1,61 @@
+{
+  "reviewed_candidate": "9487d791068cd1a51684f78f8eb469b0dcc5920b",
+  "reviewed_diff_sha256": "a86feadc2bdabd696f65aa6f861015264dd6dda69772ec9514cdc5edc76b76ac",
+  "source_sha256": {
+    "crates/xyg-engine/src/pdf.rs": "126c9dc2136c5de4b152b78f9c722fb86e9d34c6ac4364558a5b65ffe0419d4f",
+    "crates/xyg-engine/src/scene.rs": "c415cdba8e7bb63a3ce4a6fb2363c03fda106b968eba23f2973cb9dcce666a33",
+    "packages/xy-node/scripts/static_document_registry_cross_host.mjs": "ba07a5aac5f5e0a79798a3adf7cbbbfbeb822b0b7fa6bcc4add500c8ea6c64c4",
+    "tests/test_static_document_registry_cross_host.py": "3ed04a76363c2a270f7f1de1a91288ed9f16564d59aeb66cb6b98d8d850942d4",
+    "spec/design/scene-ir.md": "f38e1a9a8dc74ac55b55e782c8373cfdfe1c8e6266b7fd71848bd3cad75a96b5",
+    "spec/design/static-document.md": "80aa36a7531655ad49ffec8b97d9cb1050eedc48a94de73e8270ef275e25731a"
+  },
+  "native_sha256": "7d57a86ebc56443936364817fc24d598fd9986774bcac0787f4a25750141d06e",
+  "wasm_manifest": {
+    "schema_version": 1,
+    "artifact": "xyg-wasm.wasm",
+    "sha256": "632510de5fef2adc675294167e133e99d3a2377f5f047f3a79a04987ee724d3d",
+    "bytes": 1922723,
+    "abi_version": 35,
+    "scene_version": 34,
+    "painter_version": 17
+  },
+  "passed": {
+    "pdf_focused": 12,
+    "annulus_witness_and_cross_host": 2,
+    "pyplot": [
+      1184,
+      163,
+      26
+    ],
+    "polar_and_registry": [
+      236,
+      17
+    ],
+    "host_parity": 1097,
+    "rust_workspace_test_result_totals": [
+      67,
+      1828,
+      0,
+      0,
+      73,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      3,
+      0,
+      0,
+      0
+    ],
+    "clippy_workspace_all_targets_D_warnings": true,
+    "wasm_verify": true,
+    "mandatory_hooks_and_ruff": true
+  },
+  "limits_unchanged": true,
+  "pending": [
+    "new independent review"
+  ]
+}

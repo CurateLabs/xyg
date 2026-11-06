@@ -189,6 +189,20 @@ pub struct OpOutcome {
     pub positions: Vec<NodePosition>,
     pub relayout: Option<RelayoutReport>,
     pub disclosure: Option<DisclosureReport>,
+    /// Query-scoped fact captured from the pre-mutation publication (§2.1.2).
+    pub pick: Option<PickReceipt>,
+}
+
+/// Exact result of one point query, or a typed leave (no query).
+#[derive(Clone, Debug, PartialEq)]
+pub struct PickReceipt {
+    pub header: OpHeader,
+    pub operation: u32,
+    pub action: u32,
+    pub target: Option<PickTarget>,
+    pub member_count: u64,
+    /// Only source-backed targets have a canonical transport ref and index.
+    pub source: Option<(ElementIndex, ElementRef)>,
 }
 
 /// Transient hover emphasis; never part of the shared interaction state.

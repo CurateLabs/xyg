@@ -1,0 +1,18 @@
+node:fs:560
+  return binding.open(
+                 ^
+
+Error: ENOENT: no such file or directory, open 'python/xyg/static/wasm-inline-worker.js'
+    at Object.openSync (node:fs:560:18)
+    at Object.readFileSync (node:fs:444:35)
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/spec/performance/graph-picked-target-r5-2026-11-04/measure.mjs:10:250
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'python/xyg/static/wasm-inline-worker.js'
+}
+
+Node.js v22.23.4

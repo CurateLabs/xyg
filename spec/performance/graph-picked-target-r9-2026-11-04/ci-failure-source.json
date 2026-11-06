@@ -1,0 +1,9 @@
+{
+  "run": 41788401132,
+  "job": 126436313771,
+  "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/pr1095-ci/job-126436313771.log",
+  "bytes": 350509,
+  "sha256": "27f298b4d77662e769909ce2f671e272eb5a93975a5e8921c63a62de4a7bc726",
+  "reviewed_head": "8b231d70d03e53e380f7198b4f618c0f33ec9ddf",
+  "parent_supplied_status": "Rust workspace tests passed; exact workspace/all-targets Clippy fails two cloned_ref_to_slice_refs assertions; later missing-artifact uploads are cascades, no guard relaxation"
+}

@@ -1,0 +1,16 @@
+{
+  "focusedPassed": 160,
+  "coreReleasePassed": 177,
+  "browserPassed": 6,
+  "ownershipTrackedFiles": 515,
+  "notebookFrames": 39,
+  "finalPointer": {
+    "before": 1,
+    "after": 2,
+    "id": "01000000-0000-0000-0000-000000000001",
+    "expectedId": "01000000-0000-0000-0000-000000000001"
+  },
+  "pageErrors": [],
+  "priorHead": "948ab7f26bae89ff21d1e816874b9428291df2c8",
+  "sourceIdentity": "current-bindings identifies actual final working source; capture HEAD alone is precommit metadata"
+}

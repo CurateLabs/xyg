@@ -486,7 +486,7 @@ Runtime arenas remain 16 MiB default / 384 MiB maximum; conservative graph
 admission still prevents the required massive-graph ladder. This establishes no
 scale, speed, public host/controller/notebook, issue, M4 or #108 acceptance.
 
-**Current property-default functionality gates (parent decision 2026-11-03):
+**Historical property-default functionality gates (parent decision 2026-11-03):
 1,878 KiB raw / 765 KiB gzip6 (1,923,072 / 783,360 bytes).** After completed
 independent source review (`m4_defaults_audit`, approved `2ed544dc`) and package
 assessment, the parent explicitly retains zero-layer property presentation
@@ -575,7 +575,7 @@ and transport credit introduced in ABI 33 require an explicit budget decision:
 The initial gates were **1,310,720 raw bytes (1.25 MiB), plus 524,288 gzip
 bytes (512 KiB)**. They are historical and superseded by the linked-state and
 temporal-overview functionality decision below; the combined hierarchy/selected snapshot decision below supersedes them;
-packaging now enforces 1,878 KiB raw / 765 KiB gzip6 limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only, S4 session-functionality, S5a GPU/result-functionality, P1 selection/progressive-functionality and property-default shared-presentation decisions above). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
+packaging now enforces 1,882 KiB raw / 768 KiB gzip6 limits (including the recorded S1 hierarchy, S2 shared-functionality, S3 raw-only, S4 session-functionality, S5a GPU/result-functionality, P1 selection/progressive-functionality property-default shared-presentation and #36 picked-target functionality decisions). The Scene v33 secondary-y axis (#1006) raised them from 1,472 / 608 KiB to 1,504 / 616 KiB (measured 1,520,523 raw / 625,159 gzip6 bytes locally and 627,899 gzip6 on CI, previously 1,505,822 / 618,706). The #1006 straight-arrow vocabulary (Scene v34) then raised the gzip limit to 620 KiB (+5.0 KB raw / +2.4 KB gzip; raw stays 1,504 KiB). The static-export LOD tiers and their budget checks, layered/polar/mesh autorange admission, the `XYWA` exact polar wedge-arc encode/validate/SVG path, and the triangle-mesh overdraw bound (#1006, scene-ir.md "Public static LOD tiers" and "Polar wedge SVG arcs"; the SVG dense-fill rasterizer itself is behind the `raster` feature the WASM adapter disables) then raised only the gzip limit to 624 KiB: 1,538,122 raw / 635,040 gzip6 bytes against main's 1,527,867 / 630,943 after #1023, #1034 and #1037, measured with the same local toolchain (+10,255 raw / +4,097 gzip), which exceeds the 620 KiB gzip limit by 160 bytes and leaves 3,936 bytes of gzip headroom; the raw limit keeps 1,974 bytes of headroom. WASM compiles and decodes the same Rust Scene, so dropping the sidecar from WASM would break native/WASM Scene parity. The release compiler and pinned Binaryen 132 `-O3
 --all-features` profile remain unchanged; this decision admits functionality,
 not a compiler optimization or performance win.
 
@@ -1766,3 +1766,80 @@ replacement. Missing/malformed facts fail closed, including old same-ABI modules
 The shared GLHost resets sampler and texture state on units 0–2 so the graph
 reference texture cannot inherit a neighbor's LINEAR sampler. See the
 [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md).
+
+
+### Rust picked-target/typed-leave checkpoint (#36)
+
+The Rust-only query-scoped [receipt contract](graph-interaction.md#212-rust-only-query-receipt-checkpoint-not-integrated-hover)
+adds optional `pick.*` XYGR sections for Hover/SelectAt and action-1 Hover Leave
+with coordinates absent. No export/signature, ABI, GPU-v1 or TypeScript public
+interface changes. The current semantic decoder permits these additive named
+sections without projecting them into a public hover result. Browser scheduling,
+controller hover/events/tooltips and broader acceptance remain deferred. The
+unchanged production optimizer and explicitly adopted 1,882/768-KiB gates remain mandatory.
+
+R4 uses the existing explicit `XYG_SESSION_WASM` test override to replay the
+archived, rejected R2 module from a new `target/` diagnostic directory, against
+the exact R2 native core. No rejected bytes are copied into either shipping asset
+set. Passing the [diagnostic receipt](../performance/graph-picked-target-r4-2026-11-04/README.md)
+provides scoped correctness evidence only. The historical 1,878/765-KiB producer
+failure remains; R4 tests adopted no larger functionality allowance.
+
+
+**Current #36 functionality gates (explicit parent decision 2026-11-04):
+1,882 KiB raw / 768 KiB gzip6 (1,927,168 / 786,432 bytes).** Completed independent
+`m4_defaults_audit` assessment and `s5a_final_review` of the exact R4 patch
+`5383a32d4077dea01d8b9342068c1f20c0eaff6d5a7d7b5e4ef3580a637d3ef8`
+precede the separate parent decision. R2 inline actual-target receipts retain all
+five sections, source/group identity, provenance and no-query typed Leave.
+Measured R2 is 1,926,555 / 785,546 bytes: headroom 613 / 886; previous limits
+failed by 3,483 / 2,186 and 1,881/767 still fails by 411 / 138. R2 shared CSR and
+borrowed refs saved 1,022 / 380 over R1; R3 Arc was worse by 1,768 / 55 and is
+rejected. Growth over 207 is 3,832 / 2,365. No further optimization search or
+automatic allowance is authorized. Compiler/profile/optimizer/dependencies,
+exports, guards, tolerances and existing 16/384-MiB arenas remain unchanged.
+The [R5 decision and production receipt](../performance/graph-picked-target-r5-2026-11-04/README.md)
+records fresh normal shipping producers and remaining qualification. Historical
+failures and diagnostic-only proofs are not retroactive shipping passes.
+The controller still ignores additive receipt sections; no public hover API or
+browser scheduling change is included. #36/M4/#108 and the 685 preparation gaps
+remain open; baseline freeze remains UNACCEPTED. Independent final source and
+policy review remains required before integration.
+
+
+The [R6 current-golden and shipping qualification receipt](../performance/graph-picked-target-r6-2026-11-04/README.md)
+records a fresh actual shipping-browser capture after inheriting reviewed Node
+Buffer exact-span decoding from eb9ea4c7. It preserves all historical captures,
+the R5 25/1 failure, and all R1–R5 receipts. All 19 request bytes are unchanged;
+17 SelectAt replies add only the five versioned pick sections, with every
+pre-existing dtype/index/count/raw payload byte preserved. Open/Render remain
+full-byte exact. The existing full native/WASM replay defaults to this current
+browser golden; it does not ignore sections or expose a public hover result.
+Verified identical R5 producer inputs and all 15 relevant artifacts permit reuse
+of recorded production/CSP proof; fresh browser capture, shipping receipt parity
+and inline-file startup results are recorded separately. The exact 1,882/768-KiB
+gates and 613/886-byte measured headroom are unchanged. No additional allowance,
+optimizer search, arena/guard/validator change, integration or broad acceptance.
+685 preparation gaps and baseline freeze UNACCEPTED remain unchanged; independent
+final full-source and policy review precedes any PR/integration.
+
+
+The [2026-11-05 accepted-main integration receipt](../performance/graph-picked-target-main-integration-2026-11-05/README.md)
+records the normal merge of R10 `24ab6804` with accepted #889 main `5e00c6b9`
+(reviewed tree `2bb6a0c3`). The merge preserves the picked-target source and
+all inherited receipts, incorporates the accepted static-output fixes, and
+regenerates release inventory through its official generator. Both native and
+WASM require fresh producers because #889 changes shared Rust source. The
+existing 1882/768-KiB gates apply to the combined artifact; historical 1878/765
+main limits do not supersede the explicit picked-target decision above. No
+further size allowance, public hover integration, #36/M4/#108 acceptance or
+publication follows from this integration. The receipt records actual current
+results and any remaining blockers; independent final review and fresh remote
+CI remain parent-owned acceptance requirements.
+
+
+With `load.progressive: true`, this attachment now schedules retained opcode 15
+in the packaged Worker after initial paint, using the existing chunk/wall limits.
+See [the bounded continuation contract](graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation).
+This is a #35 slice; Python notebooks, the full rendered ladder and #108 acceptance
+remain open. Ordinary one-shot rendering and all admission limits are unchanged.

@@ -1,0 +1,86 @@
+{
+  "first_parent": "c318a0cb2a25bd18d21dc925eb234340b06ddbbb",
+  "accepted_main": "40c0cc5af2fead54684197c0ef90affbbff53519",
+  "accepted_main_tree_exact_reviewed_741954": true,
+  "exact_mode_and_blob_counts": {
+    "before-nonspec": 2569,
+    "before-history": 11130,
+    "incoming-history": 10472
+  },
+  "prior_R1_R9_receipt_files_SHA256_exact": 658,
+  "production_inputs_SHA256_exact": 285,
+  "qualified_artifacts_SHA256_exact": {
+    "packages/xy-client/dist/index.js": {
+      "expected": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+      "actual": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "expected": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+      "actual": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "expected": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "actual": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "expected": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+      "actual": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "expected": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96",
+      "actual": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "expected": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9",
+      "actual": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "expected": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd",
+      "actual": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd"
+    },
+    "python/xyg/static/index.js": {
+      "expected": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba",
+      "actual": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "python/xyg/static/standalone.js": {
+      "expected": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf",
+      "actual": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "expected": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "actual": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "expected": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96",
+      "actual": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "expected": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9",
+      "actual": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "expected": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd",
+      "actual": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd"
+    },
+    "target/release/libxyg_core.so": {
+      "expected": "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880",
+      "actual": "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "expected": "f66281328c0ffa9a53db8ab4728ab9ed3d88f2f3ca8b58ecc6ac3db212e08231",
+      "actual": "f66281328c0ffa9a53db8ab4728ab9ed3d88f2f3ca8b58ecc6ac3db212e08231"
+    }
+  },
+  "all_source_build_tests_CI_and_R7_guard_ownership_exact_c318": true,
+  "inventory_contracts_classifications_and_source_hashes_exact_c318": true,
+  "only_nonreceipt_changes": [
+    "spec/design/graphforge-node-scheduling.md",
+    "spec/releases/0.6.0-api-inventory.json"
+  ],
+  "preparation_gaps": 685,
+  "freeze": "UNACCEPTED",
+  "production_rebuild_or_browser_rerun": false,
+  "reused_R9_local_proof": "770 make check-ci, exact workspace/all-targets Clippy, 152 Rust tests; all relevant non-spec files remain exact",
+  "remote_CI": "Parent reports completed SUCCESS for pre-sync c318; R10 fresh main-based CI is still required",
+  "new_independent_final_combined_tip_review": "Required, parent owned; not inferred from prior approval"
+}

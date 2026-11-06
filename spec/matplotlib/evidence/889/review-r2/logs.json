@@ -1,0 +1,34 @@
+{
+  "clippy.log.gz": {
+    "raw_sha256": "3cddb6d424aeb7257d3d1e983728b2c0a3e5d8e9be01ed974a0ed12c8f2a7d86",
+    "archive_sha256": "9ba985d5077adc139ead8735121b255dbf2d8b8810cae49c58b90d57d2e375c9"
+  },
+  "host-parity-final.log.gz": {
+    "raw_sha256": "770718107a79585cf7fa60924c00cd3c59ae9b25c43cb428d9ee6a630a70cb0b",
+    "archive_sha256": "721b1675c0d8ac7b9cf088faf07ce1948a7cb22acda38d8856a22d51fee25587"
+  },
+  "host-parity.log.gz": {
+    "raw_sha256": "3fc89214fd81c6cbc755aa57567f730ba8b0d7d4df290fb293a145a881188090",
+    "archive_sha256": "62de278696b550addde001273449c1e0d2bcad53c6490e82df5a3c1219db6559"
+  },
+  "native-build-legacy-compatible.log.gz": {
+    "raw_sha256": "84c74566a9c90c18c188e1324fd503729b176198fbd9c516ef7ce4fbb0b8257e",
+    "archive_sha256": "4f112c90a6848d9ebeb9df051bafa877ad49d406c091896197c90876c6bb8434"
+  },
+  "pyplot-final.log.gz": {
+    "raw_sha256": "0ee82b091505142283de7fe706360f839ea885854ee286aaf0e5400dc152c2ee",
+    "archive_sha256": "00b0c818e750b271e41b2f0c35fc420cf2a1ba8cf5186dbf8035ad1efced2c7d"
+  },
+  "pyplot.log.gz": {
+    "raw_sha256": "48548a11942761f99cbb87eefb1f4bfeb0c1e8e4515a86b56486d3383a005642",
+    "archive_sha256": "e6c007958b00ca7bdc139b94aa4594258d2665ef9820332a586efacc7c7df70b"
+  },
+  "rust-tests.log.gz": {
+    "raw_sha256": "afbae75e2d76f0e0abc1bdd12916896a4ff24ab0aac7f7f37006c57d4b5ef9f5",
+    "archive_sha256": "60102f214ee9fef3e6ec389d467d57ce133e6bb4be5d052da14e8d358ee01535"
+  },
+  "typecheck.log.gz": {
+    "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "archive_sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+  }
+}

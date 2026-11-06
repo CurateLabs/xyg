@@ -146,11 +146,12 @@ area, errorbar, box (including whisker and median companions), violin, hexbin,
 segments, stem, error band, ribbon, triangle mesh, heatmap, and contour. It
 has separate vertical and horizontal violin rows. It
 compares canonical Scene, SVG, raster-command, and PNG bytes; separately checks
-decoded PNG dimensions/mode/pixel hashes; and exercises a bounded nine-row
+decoded PNG dimensions/mode/pixel hashes; and exercises a bounded registry-driven
 pairwise matrix across authored/autorange domains, empty/single/nonfinite data,
-categorical/time axes, styles, and linear/log scales. Rust pins those nine
+categorical/time axes, styles, linear/log scales, static LOD tiers, and (#889)
+hidden tick labels with empty authored tick lists. Rust pins those
 concerns and requires distinct shapes and axis-mode configurations for each
-concern pair. Nineteen unsupported
+concern pair. The registered unsupported
 families remain exact cross-host fail-closes: fluid viewport, browser CSS,
 custom font, title, legend, alternate axis, symbol, mark, violin orientation
 metadata, layered autorange,
@@ -228,3 +229,10 @@ cross-host fixture and browser foundation contract.
   signature change; never edit generated ABI declarations by hand.
 - Required checks per push: `abi_smoke`, push-scoped pytest, Node npm test.
 - Related: #24, #58, #59.
+
+The #889 completion candidate qualifies each of its eleven historical families
+by an active rendering contract or an exact documented fail-close; remaining
+#889 xfails describe future capability goals, not acceptance evidence by
+themselves. See `../matplotlib/issue-889-evidence.md` and its machine-readable
+original-program rejection inventories. Independent final review and the merge
+queue remain required; local acceptance does not authorize issue closure here.

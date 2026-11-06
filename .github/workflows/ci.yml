@@ -154,7 +154,7 @@ jobs:
         run: |
           python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
           import json
-          pin = json.load(open("tests/fixtures/graphforge/core/0.6.0-rc.5/provenance.json"))["commit"]
+          pin = json.load(open("tests/fixtures/graphforge/core/0.6.0-rc.7/provenance.json"))["commit"]
           assert len(pin) == 40 and all(c in "0123456789abcdef" for c in pin)
           print(f"commit={pin}")
           PYCODE
@@ -175,6 +175,7 @@ jobs:
         run: |
           python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts
           python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts --output tests/fixtures/graphforge/core/0.6.0-rc.5
+          python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/core-contracts --output tests/fixtures/graphforge/core/0.6.0-rc.7
 
       - name: Rust unit tests
         run: cargo test --workspace
@@ -216,10 +217,13 @@ jobs:
       # GraphForge compositions: the same XYGQ bytes through the native C
       # ABI and the real wasm32 artifact must yield byte-identical XYGF
       # documents and Scenes (spec/design/graphforge-compositions.md §6.3).
+      # Retained session replies and the current browser golden also compare
+      # complete bytes; migration preserves every old raw section (§2.1.2).
       - name: GraphForge native/WASM equivalence
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs
+          node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs
           node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs
           node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
           node scripts/gen_geo_hierarchy_node.mjs --check
@@ -312,6 +316,16 @@ jobs:
       - name: Install package + dev deps
         run: |
           uv sync --locked --group dev --group codspeed
+
+      - name: Progressive graph notebook journey
+        timeout-minutes: 4
+        run: |
+          uv pip install jupyterlab==4.6.5 ipykernel==7.4.0
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          export XYG_GRAPH_NOTEBOOK_REPORT="$RUNNER_TEMP/graph-notebook.json"
+          node --test js/test/graph-host-transport.test.mjs
+          node scripts/graph_notebook_progressive_smoke.mjs
+          .venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json"
 
       # Native tools own this coverage; spec/design/build-ci.md maps the
       # retired graph wrapper suite to the main CI job and local commands.

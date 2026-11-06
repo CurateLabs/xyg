@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: browser encoder retains exact bigint identities, negative camera scale and existing load framing
+ok 1 - browser encoder retains exact bigint identities, negative camera scale and existing load framing
+  ---
+  duration_ms: 5.293296
+  type: 'test'
+  ...
+# Subtest: SelectAt frames only two raw finite f64 CSS coordinates and existing selection modes
+ok 2 - SelectAt frames only two raw finite f64 CSS coordinates and existing selection modes
+  ---
+  duration_ms: 1.280122
+  type: 'test'
+  ...
+# Subtest: complete semantic decode preserves selection provenance and exact refs without equating projection with global selection
+ok 3 - complete semantic decode preserves selection provenance and exact refs without equating projection with global selection
+  ---
+  duration_ms: 4.113515
+  type: 'test'
+  ...
+# Subtest: refs distinguish absent IDs from empty IDs and reject malformed reserved, UTF8, pool and unused fields
+ok 4 - refs distinguish absent IDs from empty IDs and reject malformed reserved, UTF8, pool and unused fields
+  ---
+  duration_ms: 0.765096
+  type: 'test'
+  ...
+# Subtest: malformed semantic planes fail before an accepted picture can be replaced
+ok 5 - malformed semantic planes fail before an accepted picture can be replaced
+  ---
+  duration_ms: 8.855178
+  type: 'test'
+  ...
+# Subtest: actual default-arena WASM composition/session bytes decode through focus/select/toggle/clear and companion pages
+ok 6 - actual default-arena WASM composition/session bytes decode through focus/select/toggle/clear and companion pages
+  ---
+  duration_ms: 57.424166
+  type: 'test'
+  ...
+# Subtest: GPU-v1 retains original raw style, coordinate, state and reference buffers
+ok 7 - GPU-v1 retains original raw style, coordinate, state and reference buffers
+  ---
+  duration_ms: 2.586187
+  type: 'test'
+  ...
+# Subtest: empty publication retains all zero-length planes and checked counts refuse overflow
+ok 8 - empty publication retains all zero-length planes and checked counts refuse overflow
+  ---
+  duration_ms: 1.150958
+  type: 'test'
+  ...
+# Subtest: every one of the 33 planes is required with exact index, dtype and length
+ok 9 - every one of the 33 planes is required with exact index, dtype and length
+  ---
+  duration_ms: 21.887845
+  type: 'test'
+  ...
+# Subtest: header, published counts and each coordinate/attribute float fail closed
+ok 10 - header, published counts and each coordinate/attribute float fail closed
+  ---
+  duration_ms: 13.320701
+  type: 'test'
+  ...
+# Subtest: style fields, reserved bytes and independent simultaneous state bits validate
+ok 11 - style fields, reserved bytes and independent simultaneous state bits validate
+  ---
+  duration_ms: 9.333198
+  type: 'test'
+  ...
+# Subtest: piece/edge and frame/node references use their own bounded index spaces
+ok 12 - piece/edge and frame/node references use their own bounded index spaces
+  ---
+  duration_ms: 1.081528
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong ABI before publication
+ok 13 - packaging rejects wrong ABI before publication
+  ---
+  duration_ms: 626.344746
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong Scene before publication
+ok 14 - packaging rejects wrong Scene before publication
+  ---
+  duration_ms: 440.314384
+  type: 'test'
+  ...
+# Subtest: packaging rejects wrong u64 signature before publication
+ok 15 - packaging rejects wrong u64 signature before publication
+  ---
+  duration_ms: 602.468398
+  type: 'test'
+  ...
+# Subtest: packaging rejects start function before publication
+ok 16 - packaging rejects start function before publication
+  ---
+  duration_ms: 498.838318
+  type: 'test'
+  ...
+# Subtest: packaging is deterministic and emits matching version/hash manifests
+ok 17 - packaging is deterministic and emits matching version/hash manifests
+  ---
+  duration_ms: 1056.062462
+  type: 'test'
+  ...
+# Subtest: withheld producer inputs fail early naming the producer command
+ok 18 - withheld producer inputs fail early naming the producer command
+  ---
+  duration_ms: 646.750312
+  type: 'test'
+  ...
+# Subtest: a forbidden-API classic worker is rejected before the first write
+ok 19 - a forbidden-API classic worker is rejected before the first write
+  ---
+  duration_ms: 580.99682
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3049.13917

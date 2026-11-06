@@ -173,3 +173,15 @@ with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE`). See
 `tests/test_static_annotation_space_cross_host.py` with
 `packages/xy-node/scripts/static_annotation_space_cross_host.mjs` requires
 byte-identical XYAF bulk packs, SVG/PNG/PDF/JPEG/WebP and rejection reasons.
+
+### Stable Scene style rejections (#889)
+
+The canonical Scene style-admission query remains authoritative. Unknown or
+unadmitted keys report `XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: <kind>
+unsupported keys <sorted,comma-separated keys>` identically in Python and Node.
+The original style vocabulary is unchanged: callout head/gap/attachment extras,
+arrow `head_size`, and rule `span_start`/`span_end` remain deferred where the
+Scene admits no record. Axes-fraction text uses its existing admitted XYAW
+coordinate-space path; figure-fraction remains the explicit coordinate-space
+rejection. The active issue-889 tests exercise original pyplot journey bodies,
+and the Rust registry has per-kind cross-host rejection witnesses.

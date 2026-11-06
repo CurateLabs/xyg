@@ -1,0 +1,23 @@
+{
+  "base": "8b231d70d03e53e380f7198b4f618c0f33ec9ddf",
+  "CI_Clippy": {
+    "finding": "Two cloned_ref_to_slice_refs assertions",
+    "disposition": "Exactly two borrowed-slice comparisons; exact workspace/all-targets Clippy and 152 Rust interaction tests pass",
+    "original_failure_preserved": true
+  },
+  "Greptile_P2": {
+    "thread": "PRRT_kwDOTxX6Es6ze30I",
+    "comment": 4464570959,
+    "disposition": "Existing normal GraphForge equivalence step now runs strict session-wire plus golden migration; existing gate pins commands and producer order, with 13 negative regressions",
+    "remote_resolution": "Parent owned; not performed"
+  },
+  "Release_surfaces_failure": {
+    "disposition": "Verified test failure / skipped wheels cascade from Clippy, no aggregate/wheels/upload guard change",
+    "original_failure_preserved": true
+  },
+  "next_parent_sync": "74195403ccd18c760e3d20a18f024daab95d711a only after this repair commit",
+  "combined_tip_final_independent_review": "Required; not performed by implementer",
+  "remote_CI_repaired_head": "Not run or claimed by child",
+  "freeze": "UNACCEPTED",
+  "preparation_gaps": 685
+}

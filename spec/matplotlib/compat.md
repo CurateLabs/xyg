@@ -71,7 +71,7 @@ dependency-free `triangles=` shorthand into Matplotlib's equivalent
 | `legend()` | `loc`, columns, title/font size/colors, frame styling, `borderpad`, `labelspacing`, `borderaxespad`, `fancybox`, `framealpha`, and `shadow` are retained across browser and static output. `loc='best'` scores the measured displayed legend box in Matplotlib location-code order using path vertices/crossings, collection offsets, and bar-rectangle overlaps. It resolves before the wire; pyplot rejects misspelled Matplotlib locations without narrowing core `xyg.legend()`'s independent location vocabulary. Text-box scoring and bounded long-path sampling are documented in `spec/api/styling.md` § Legend placement |
 | `grid(True/False)` | toggles the grid via the theme |
 | `xlim` / `ylim`, `set_xmargin` / `set_ymargin`, axis scales, `invert_xaxis/yaxis` | linear/log are native; symlog/logit/asinh use dependency-free monotone data transforms with inverse limit/tick semantics. Automatic linear ticks include Matplotlib's 2.5 step and use uniform decimal padding across a tick set; locations refresh as data arrives. `axes.autolimit_mode="round_numbers"` expands automatic linear limits to the first and last AutoLocator ticks after applying the configured margins. Artist `get_data()` reflects the transformed space; logit masks values at/outside (0, 1) |
-| `set_major_locator` / `set_major_formatter`, `plt.NullLocator/FixedLocator/MultipleLocator/MaxNLocator/LinearLocator/LogLocator`, `plt.NullFormatter/FixedFormatter/FuncFormatter/FormatStrFormatter/StrMethodFormatter/ScalarFormatter` | xy-owned re-implementations resolved at build time against live data limits (Null/Fixed/Multiple/Linear are position-exact; MaxN/Auto port Matplotlib's `MaxNLocator._raw_ticks` — same step tables, edge extension, and offset handling — with `nbins="auto"` budgeted from the estimated plot rect like `Axis.get_tick_space()`; Log remains approximate). Third-party locator objects work if they implement `tick_values(vmin, vmax)`; minor locators/formatters are retained for round-tripping but minor ticks do not render, except that a labeled minor pair under a blanked major formatter (the centered date-label idiom) is promoted to the drawn tick set |
+| `set_major_locator` / `set_major_formatter`, `plt.NullLocator/FixedLocator/MultipleLocator/MaxNLocator/LinearLocator/LogLocator`, `plt.NullFormatter/FixedFormatter/FuncFormatter/FormatStrFormatter/StrMethodFormatter/ScalarFormatter` | xy-owned re-implementations resolved at build time against live data limits (Null/Fixed/Multiple/Linear are position-exact; MaxN/Auto port Matplotlib's `MaxNLocator._raw_ticks` — same step tables, edge extension, and offset handling — with `nbins="auto"` budgeted from the estimated plot rect like `Axis.get_tick_space()`; Log remains approximate). Third-party locator objects work if they implement `tick_values(vmin, vmax)`; minor locators resolve an independent unlabelled tick tier; a labeled minor pair under a blanked major formatter (the centered date-label idiom) is promoted to the labeled tier |
 | `plt.dates.MonthLocator/YearLocator/DayLocator/DateFormatter` | xy-owned equivalents of the `matplotlib.dates` classes gallery scripts use; they locate and format in the engine's canonical ms-since-epoch axis unit (not Matplotlib's day floats), and `interval` approximates rrule by epoch-anchored occurrence counting |
 | datetime, timedelta, and string coordinates | datetime inputs use the engine's automatic date ticks, timedeltas are bounded to elapsed seconds, and common strings use categorical ticks; the general Matplotlib units registry is intentionally out of scope. datetime artist `get_{x,y}data(orig=False)` returns ms-since-epoch floats, and pandas' period-ordinal tickers (`TimeSeries_Date*`) are accepted as no-ops. pandas 3.1's default `Series.plot` period-ordinal input path is not converted back to epoch timestamps; use explicit timestamp input for browser output. Native static date-axis export still fails closed with `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS` (the shared static-route gap tracked by #889). The optional pandas probes expose these gaps when pandas is installed; the Matplotlib-only reference lane does not qualify pandas interop |
 | `xticks(positions, labels, rotation=)` / `tick_params(labelrotation=)` | Exact positions and strings render in browser, PNG, and SVG |
@@ -208,3 +208,73 @@ python scripts/sync_matplotlib_compat.py
 
 Review the snapshot and generated matrix diff as an API change. Release-level
 changes are recorded in [the compatibility changelog](compat-changelog.md).
+
+### Issue 889 audit and raw-error repairs
+
+The current family-by-family qualification and remaining work are recorded in
+[the #889 acceptance audit](issue-889-evidence.md). This audit does not close the
+remaining static compatibility gaps.
+
+`NullFormatter` hides labels using the shared axis `tick_label_strategy="off"`
+while retaining locator positions and tick marks. An already hidden axis keeps
+`"none"`, which also suppresses decorations. `NullLocator` suppresses automatic
+major ticks/grid lines through zero tick length/grid width and labels off;
+empty major arrays retain the direct composition API's automatic-tick contract.
+Separately authored minor positions and style use the existing major slot with
+labels off when no majors exist, preventing coincident automatic majors from
+suppressing them. Hidden-axis `"none"` still takes precedence. Their combination
+exports through Rust Scene/XYST without empty strings in the tick-label table. Native annotation
+ingress in Python and Node requires finite numeric coordinates: unresolved categorical text
+coordinates fail closed with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE`
+(and the offending coordinate name), rather than a raw float-conversion error.
+Browser annotation conversion retains its existing category support.
+
+### Qualified deferred native journeys (#889)
+
+The native route remains Scene → Rust XYST → SVG/PNG/PDF/JPEG/WebP. The following
+are **scenario-specific existing rejections**, not declarations that the entire
+chart family is unsupported. The exact original pyplot programs and complete
+messages are pinned by
+[`issue_889_rejections.json`](../../tests/pyplot/issue_889_rejections.json),
+executed without xfail by `test_issue_889_rejections.py`. The corresponding
+future-rendering tests retain their #889 xfails. An unexpected successful export
+also fails the active rejection test and requires updating this contract.
+
+| Deferred native authoring shape | Stable reason |
+|---|---|
+| Direct contour level paints, per-face bar/mesh paints, and corner-mask contourf triangles whose unresolved color channel is still classified as a Scene gradient | `XYG_SCENE_UNSUPPORTED_GRADIENT` |
+| Direct line-contour colorbar, contour `add_lines` overlays, and the listed contour-band/extension program in the rejection fixture | `XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR` |
+| Second automatic colorbar's additional axes style in the fixture | `XYG_STATIC_UNSUPPORTED_PANEL_COLORBAR_STYLE` |
+| Direct composed figures with domain-shaping axis options and no authored domains: rotated labels, errorbar containers, collections, labeled minor/date tickers, and text annotations in the fixture | `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS` |
+| Callout `gap_start`, `gap_end`, `head_size`, `head_style`, `label_clear`, `label_color`, `start_offset`; arrow `head_size`; rule `span_start`/`span_end` | `XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE` plus kind and exact sorted keys |
+| An arrow `head_style` outside the admitted `none`/`triangle`/`v` vocabulary | `XYG_SCENE_UNSUPPORTED_ARROW_STYLE` |
+| Direct composed figure carrying pyplot rc chrome font-weight overrides | `XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT` |
+| Quoted custom font-family program in the fixture | `XYG_STATIC_UNSUPPORTED_CUSTOM_FONT` |
+| Non-circle scatter glyph in an explicitly requested native legend | `XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE` |
+| Unresolved categorical string annotation coordinate in native annotation ingress | `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE` |
+
+Axes-fraction text is admitted by the shared XYAW coordinate-space path and is
+qualified by `tests/test_static_annotation_space_cross_host.py`; figure-fraction
+text still rejects with `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE_SPACE`.
+Literal pyplot frames, public `savefig` tick padding, relabelled/frameless
+legends, and colormapped scatter face/edge alpha are admitted; their active tests
+inspect actual geometry, content, and paint rather than old SVG spellings.
+
+Rich polar native exports have an equivalent exact-program rejection inventory
+in [`issue_889_polar_rejections.json`](../../tests/fixtures/issue_889_polar_rejections.json),
+executed by `tests/test_issue_889_polar_rejections.py`. The listed advanced
+axis/domain/style combinations (authored tick strategies/angles, radial clipping,
+full-turn and variable-width wedges, point annotations, rounded/gradient wedges,
+reversed radial axes, zero-slice pie, and radial-label collision configurations)
+remain `XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS`. The all-NaN radar-area program is
+`XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES`. These diagnostics identify the
+actual first rejection; they do not claim that every polar combination has the
+same support status. Ordinary categorical radar labels, ordinary authored theta
+ticks, polar line/scatter/bar geometry, hole/sector PDF clips, and styled polar
+chrome retain active rendering coverage in `tests/test_polar_charts.py`.
+Secondary angular/radial axes already rejected at polar validation now name
+`XYG_POLAR_UNSUPPORTED_SECONDARY_AXIS`, including the exact offending axis ID.
+
+No new feature rejection, renderer fallback, or lower visual threshold was added
+by this qualification. The remaining xfailed rendering goals are future
+capability work; their exact fail-closed behavior is active #889 acceptance proof.

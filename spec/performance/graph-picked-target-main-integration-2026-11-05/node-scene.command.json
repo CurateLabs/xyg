@@ -1,0 +1,34 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "packages/xy-node/test/scene.test.mjs"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-05a35a31",
+  "started": "2026-11-05T18:48:21.787359+00:00",
+  "finished": "2026-11-05T18:48:23.199730+00:00",
+  "elapsed_seconds": 1.412371,
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.166.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg0FEf2J7:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-05a35a31/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_SESSION_REPORT": null,
+    "XYG_GRAPH_POINTER_CAPTURE": null,
+    "XYG_GRAPH_SESSION_SCREENSHOT": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_SESSION_WASM": null,
+    "XYG_PICK_CORPUS": null,
+    "XYG_PICK_REPORT": null,
+    "XYG_PICK_MIGRATION_REPORT": null,
+    "XYG_BROWSER_DIST": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "fd0df30ab6a0da0bd54e96173270269985cbffdc2b794439e9b6fb02fd9f275f"
+}

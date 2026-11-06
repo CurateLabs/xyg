@@ -1,0 +1,2 @@
+error: patch failed: spec/releases/0.6.0-api-inventory.json:1195
+error: spec/releases/0.6.0-api-inventory.json: patch does not apply

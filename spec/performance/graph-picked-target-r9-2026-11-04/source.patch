@@ -1,0 +1,229 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 5f7df43ccda161483950e63a6361e7b4a9100e9f..f69cf77cb25f210364403a88e188f798133d5ca0 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -216,10 +216,13 @@ jobs:
+       # GraphForge compositions: the same XYGQ bytes through the native C
+       # ABI and the real wasm32 artifact must yield byte-identical XYGF
+       # documents and Scenes (spec/design/graphforge-compositions.md §6.3).
++      # Retained session replies and the current browser golden also compare
++      # complete bytes; migration preserves every old raw section (§2.1.2).
+       - name: GraphForge native/WASM equivalence
+         run: |
+           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+           node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs
++          node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs
+           node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs
+           node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs
+           node scripts/gen_geo_hierarchy_node.mjs --check
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
+index 5fa3b950446448b3b857fd8a50373127250d63e8..7c25b22107eed790901a750f920ef7b35cc6e0d7 100644
+--- a/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
+@@ -26,7 +26,7 @@ fn query_receipt_exact_target_miss_leave_retry_and_strict_frames() {
+         let c = Container::decode(&reply, wire::RESULT_MAGIC).unwrap();
+         assert_eq!(c.get("pick.header.u32", 0).unwrap().as_u32("pick").unwrap(), [1, op, 0, rev, 1, 1, 0, 0]);
+         assert_eq!(c.get("pick.query.u64", 0).unwrap().as_u64("pick").unwrap(), [7, seq, 0, 1, 0]);
+-        assert_eq!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap(), [reference.clone()]);
++        assert_eq!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap().as_slice(), std::slice::from_ref(&reference));
+         assert_eq!(header_of(&reply)[0], rev);
+     }
+     let before = s.reply().to_vec();
+@@ -56,6 +56,6 @@ fn query_receipt_exact_target_miss_leave_retry_and_strict_frames() {
+         assert!(wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap().is_empty());
+         assert_eq!(c.get("outcome.u32", 0).unwrap().as_u32("outcome").unwrap()[1], changed);
+         assert!(s.session().hover.nodes.is_empty());
+-        assert_eq!(s.session().selection().unwrap(), [reference.clone()]);
++        assert_eq!(s.session().selection().unwrap().as_slice(), std::slice::from_ref(&reference));
+     }
+ }
+diff --git a/scripts/verify_ci_workflow.py b/scripts/verify_ci_workflow.py
+index 45578779135406010041a9bec1a0f0d54f7c1e1e..8e46490d78592ed3dfec3552e3565c0f7f5f579c 100644
+--- a/scripts/verify_ci_workflow.py
++++ b/scripts/verify_ci_workflow.py
+@@ -2085,6 +2085,31 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
+         'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+         "node --test packages/xy-node/test/xyts-conformance.test.mjs",
+     )
++    _require_step_runs_exactly(
++        errors,
++        jobs.get("test", ""),
++        "GraphForge native/WASM equivalence",
++        "complete graph equivalence and picked-target receipt compatibility commands",
++        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
++        "node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs",
++        "node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs",
++        "node --test packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
++        "node --test packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs",
++        "node scripts/gen_geo_hierarchy_node.mjs --check",
++        "node scripts/gen_geo_overview_hosts.mjs --check",
++        'XYG_GEO_OVERVIEW_WASM="$GITHUB_WORKSPACE/packages/xy-client/dist/xyg-wasm.wasm" node --test packages/xy-node/test/geo-hierarchy.test.mjs packages/xy-node/test/geo-overview-selected.test.mjs packages/xy-node/test/geo-selected-hierarchy.test.mjs packages/xy-node/test/geo-selected-state-nonce.test.mjs packages/xy-node/test/geo-overview-source.test.mjs packages/xy-node/test/geo-overview-recovery.test.mjs packages/xy-node/test/geo-overview-members.test.mjs packages/xy-node/test/geo-overview-members-recovery.test.mjs',
++        "cargo build -p xyg-wasm --bin geo_scene_conformance --bin geo_viewport_conformance --bin geo_layers_conformance",
++        "node --test packages/xy-node/test/geo-scene-wasm-parity.test.mjs packages/xy-node/test/geo-viewport-wasm-parity.test.mjs packages/xy-node/test/geo-catalog-wasm-parity.test.mjs",
++    )
++    graph_step = "GraphForge native/WASM equivalence"
++    step_order = list(test_steps)
++    for prerequisite in ("Build native core", "Build JS client", WASM_VERIFY_STEP):
++        if (
++            prerequisite not in step_order
++            or graph_step not in step_order
++            or step_order.index(prerequisite) >= step_order.index(graph_step)
++        ):
++            errors.append(f"CI {graph_step} must run after {prerequisite}")
+     _require_step_runs_exactly(
+         errors,
+         jobs.get("test", ""),
+diff --git a/spec/design/graph-interaction.md b/spec/design/graph-interaction.md
+index c69c5d58128c4db6a0dbc3899d395f7e4e6d052b..d3c4c80118a11f9885845c653a820cc8563ada27 100644
+--- a/spec/design/graph-interaction.md
++++ b/spec/design/graph-interaction.md
+@@ -288,6 +288,14 @@ The reviewed Node exact-span Buffer decoder repair is inherited from eb9ea4c7;
+ no Rust production or mapper behavior changes in this migration. Scoped proof
+ and explicit size policy do not constitute #36/M4/#108 or freeze acceptance.
+ 
++The existing CI `GraphForge native/WASM equivalence` step automatically runs
++`packages/xy-node/test/graph-session-wire.test.mjs` together with
++`js/test/graph-picked-golden-migration.test.mjs`, after native/client build and
++single-producer WASM asset verification. The workflow gate locks active commands
++and ordering; these are required automated compatibility checks, not manual-only
++receipt scripts. [CI contract and normal reproduction](../process/production-readiness.md#picked-target-receipt-compatibility-in-the-existing-test-job-36)
++retain exact full-byte comparisons without a new CI job or acceptance claim.
++
+ ### 2.2 Operations (`GraphInteractionEvent`)
+ ```
+ 0 Hover{x,y} 1 SelectAt{x,y,mode} 2 Brush{bounds,mode,policy} 3 Lasso{pts,mode,policy} 4 Clear
+diff --git a/spec/process/production-readiness.md b/spec/process/production-readiness.md
+index 2ea8271e6ffb1969d868eefaae8c68ef23a3b700..a3829537e0afb2d65aed44db121cda155a5cdb43 100644
+--- a/spec/process/production-readiness.md
++++ b/spec/process/production-readiness.md
+@@ -84,6 +84,29 @@ and `branches/main/protection`): ruleset `main merge queue` active on `refs/head
+ to the checked-in file; branch protection requires only `Release surfaces` (strict), no
+ approving reviews.
+ 
++### Picked-target receipt compatibility in the existing Test job (#36)
++
++The `GraphForge native/WASM equivalence` step runs after `Build native core`,
++`Build JS client`, and verification of downloaded single-producer WASM assets.
++It includes the normal automated command:
++
++```bash
++export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
++node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs
++```
++
++The current actual-browser golden and retained session replies compare complete
++native/WASM bytes. Migration validates unchanged old raw sections and only the
++five versioned picked-target additions. `make check-ci` requires the active
++command list and prerequisite order; removing either test, commenting/echoing or
++masking the command, skipping the step or making it advisory fails the existing
++workflow gate and its regressions. This adds no job/status/framework or second
++WASM producer. Merge-group triggers, concurrency, Release surfaces and artifact
++upload fail-closed behavior remain unchanged. The
++[R9 CI/review repair receipt](../performance/graph-picked-target-r9-2026-11-04/README.md)
++retains the failed Clippy run and review disposition. A local repair pass is not
++remote CI, broad #36/M4/#108 acceptance or an API freeze.
++
+ ### Hard and advisory boundary (#1008)
+ 
+ `Release surfaces` is the one required status. Its inventory lives in
+diff --git a/spec/releases/0.6.0-api-inventory.json b/spec/releases/0.6.0-api-inventory.json
+index eeda726b7269162625a1bf68d690da1be5866b1a..b788ca5dbc5e20c8fb2b37f154ec3f9f1a0c7ef4 100644
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@ -1195,7 +1195,7 @@
+  "releaseLine":"0.6.0",
+  "schema":"xyg.release-api-inventory/v1",
+  "sourceProvenance":{
+-  "baseCommit":"44626a8a477649442c72d8b5e0e0ef98e8ee7baa",
++  "baseCommit":"8b231d70d03e53e380f7198b4f618c0f33ec9ddf",
+   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+  },
+  "sourceSha256":{
+@@ -1388,7 +1388,7 @@
+   "spec/design/composition-api.md":"d9a53f0669a9b62ff160e7d65ab424ba782847b10413e2bed20e12a60acc3d19",
+   "spec/design/host-parity.md":"b47a61eed34956fcf5073d0c1f4a2ed685f13594be3d62f20413ed5a3c64dd2a",
+   "spec/matplotlib/compat.md":"4d1ae3d09d87db529e0d02c067180c1eae4c26a5fcb5187820fb9bc86cfaf17f",
+-  "spec/process/production-readiness.md":"19a304efde415a7cf6d4dc60f8f82381058a591088b94939c2650077376ce4f7",
++  "spec/process/production-readiness.md":"d94f73d548a4d907e93a20eb8c547dfc77bd488ee220d265955c7811eb5f4b1c",
+   "spec/wasm/abi.json":"cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+  }
+ }
+diff --git a/tests/test_verify_ci_workflow.py b/tests/test_verify_ci_workflow.py
+index 5d6b998d8d8528696b1b72461bf1408f2451aa17..3446df40b797239b9a2e538c9918a323116619f2 100644
+--- a/tests/test_verify_ci_workflow.py
++++ b/tests/test_verify_ci_workflow.py
+@@ -110,6 +110,74 @@ def test_ci_workflow_requires_active_graph_suite_commands(
+     assert any(gate in error for error in errors)
+ 
+ 
++@pytest.mark.parametrize(
++    "test_path",
++    [
++        "packages/xy-node/test/graph-session-wire.test.mjs",
++        "js/test/graph-picked-golden-migration.test.mjs",
++    ],
++)
++@pytest.mark.parametrize("replacement", ["remove", "comment", "echo", "mask"])
++def test_ci_requires_active_picked_target_receipt_compatibility(
++    tmp_path: Path, test_path: str, replacement: str
++) -> None:
++    workflow = Path(".github/workflows/ci.yml").read_text()
++    command = "node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs"
++    assert workflow.count(command) == 1
++    if replacement == "remove":
++        changed = workflow.replace(" " + test_path, "", 1)
++    else:
++        altered = {
++            "comment": "# " + command,
++            "echo": "echo " + command,
++            "mask": command + " || true",
++        }[replacement]
++        changed = workflow.replace(command, altered, 1)
++    target = tmp_path / "ci.yml"
++    target.write_text(changed)
++    assert any(
++        "receipt compatibility" in error
++        for error in verify_ci_workflow.validate_ci_workflow(target)
++    )
++
++
++@pytest.mark.parametrize("key", ["if: false", "continue-on-error: true"])
++def test_ci_receipt_compatibility_step_cannot_be_skipped_or_advisory(
++    tmp_path: Path, key: str
++) -> None:
++    workflow = Path(".github/workflows/ci.yml").read_text()
++    heading = "      - name: GraphForge native/WASM equivalence\n"
++    target = tmp_path / "ci.yml"
++    target.write_text(workflow.replace(heading, heading + "        " + key + "\n", 1))
++    assert any(
++        "receipt compatibility" in error
++        for error in verify_ci_workflow.validate_ci_workflow(target)
++    )
++
++
++@pytest.mark.parametrize(
++    "prerequisite", ["Build native core", "Build JS client", verify_ci_workflow.WASM_VERIFY_STEP]
++)
++def test_ci_receipt_compatibility_requires_ready_native_client_and_verified_wasm(
++    tmp_path: Path, prerequisite: str
++) -> None:
++    workflow = Path(".github/workflows/ci.yml").read_text()
++    job = verify_ci_workflow._job_blocks(workflow)["test"]
++    block = verify_ci_workflow._named_step_blocks(job)["GraphForge native/WASM equivalence"]
++    # Move the actual command block ahead of one required producer/verification step.
++    # The commands remain intact; their ordering alone must fail the gate.
++    body = job.replace(block, "", 1)
++    heading = "      - name: " + prerequisite
++    assert heading in body
++    changed = body.replace(heading, block + "\n" + heading, 1)
++    target = tmp_path / "ci.yml"
++    target.write_text(workflow.replace(job, changed, 1))
++    assert any(
++        f"must run after {prerequisite}" in error
++        for error in verify_ci_workflow.validate_ci_workflow(target)
++    )
++
++
+ def test_ci_workflow_rejects_missing_release_surface_aggregate(tmp_path: Path) -> None:
+     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+     path = tmp_path / "ci.yml"

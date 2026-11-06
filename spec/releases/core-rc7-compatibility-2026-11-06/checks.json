@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-06T03:48:51.314693+00:00",
+  "acceptedMain": "1bd2e11efedfc28f923b0da1ffa2aeb81089dc27",
+  "mergedBase": "f22e91eeb64a6ce62e54f7712907a27dc600dbbb",
+  "sourceIdentity": "working tree source bytes, not a claim that uncommitted work is HEAD",
+  "sourceSha256": {
+    ".gitattributes": "e0de6b5e1d8d6072a389ed95c5951a1bd96a1479259795ea60db726005de9f63",
+    ".github/workflows/ci.yml": "679635d4051c732e054f6d0e222018fa549a86d62f342abd16626a48025a61db",
+    "crates/xyg-engine/src/graphforge/ledger.rs": "b19dff6324c22096fcd978aec513d8f47b4bf285041e94d02092510be6042793",
+    "packages/xy-node/test/graphforge-wasm-parity.test.mjs": "f65269cd0c41dcf4b51877b2af2e36b06f9bbf9a139ffd7d28716f354c1dfe69",
+    "packages/xy-node/test/graphforge.test.mjs": "a2fb57cb7d49f759bf51f6f908e09860cea4e888389c7fb0e77f037d04979897",
+    "python/xyg/graphforge-compatibility.json": "ac29853d8082ba410b6889d3af10784225e611b94703f534c666832742d0e4e9",
+    "scripts/gen_graphforge_rc7_result_fixtures.cjs": "eff4f2a91531ae58cb9b1578ba40e128e14f5f55737a2141c0c2846a82e23d05",
+    "spec/design/graphforge-compositions.md": "6d62a2253391b9a6fb8edbdccf09ebc8c4f6278b921db7b833371424d97521c8",
+    "tests/test_graphforge.py": "5146615b3c12c198a9fc9ec5220274de9faa435315200c5fee0a685bccc625c1",
+    "tests/test_graphforge_contract_corpus.py": "98fd5402fcc1661b9e6e5929adfaa8fbb570f52352fd313137926b9df9d72b41",
+    "tests/test_verify_release_cohort.py": "48a52ad3b20eef208fcc474d4caa4e9bc84beee3f7a7adc6fe20f282e1553633",
+    "tests/fixtures/graphforge/core/0.6.0-rc.7/provenance.json": "e0133855acb5d8689b0b9e8bc404a0a220231668337cd829fc9130ed5a94bfed",
+    "tests/fixtures/graphforge/results-0.6.0-rc.7/generation.json": "00b99e74b131a2c01881791ddaf9367ced1a74ef15f56f6acd19954154254ade"
+  },
+  "artifactSha256": {
+    "target/release/libxyg_core.so": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "packages/xy-client/dist/xyg-wasm.wasm": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7",
+    "packages/xy-client/dist/index.js": "29b3b9cad48045b97916333514f1b4513a28d4c83e2dbb098bf49eae40eaadd3",
+    "target/core-compat-artifacts/curatelabs-graphforge-0.6.0-rc.7.tgz": "bc06bb2ec9b8003661700da365e0267a5312a5846733ddbd1385f123440fdb8b",
+    "target/core-compat-artifacts/curatelabs-graphforge-linux-x64-gnu-0.6.0-rc.7.tgz": "60752afac20eae0f3fc7d0c38e9fa858b999a1ecf32106b6c248a54bc966e27d"
+  },
+  "checks": [
+    {
+      "name": "native-build",
+      "command": "cargo build --release",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/native-build.log",
+      "sha256": "1ca0116d69d74303fc57dd84dc2411d234879e08d545bc92ac3ec487b72f874d"
+    },
+    {
+      "name": "rust",
+      "command": "cargo test -p xyg-engine graphforge::ledger::tests::pinned_core -- --nocapture",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/rust.log",
+      "sha256": "0b9a7e8b9cc788498a4ed757fd5978fa4077e49d98383fe22a532d08d8becad7"
+    },
+    {
+      "name": "corpus",
+      "command": "uv run python scripts/sync_graphforge_contract_corpus.py --core-repo target/core-compat-source --output tests/fixtures/graphforge/core/0.6.0-rc.7",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/corpus.log",
+      "sha256": "242f5c2e18a699d37a2246fa00c11dab1842d1ccae0c76910f1be7de9d186231"
+    },
+    {
+      "name": "python",
+      "command": "uv run pytest tests/test_graphforge.py -q",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/python.log",
+      "sha256": "e7d12c8e50ab4db397158edd99011558bc217f2a7e80997034f28bbd000433da"
+    },
+    {
+      "name": "node-wasm",
+      "command": "XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so node --test packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/node-wasm.log",
+      "sha256": "c4330443c929c9be6def14298988efa35a789a39d48d0d2a4832d9dafbfaa746"
+    },
+    {
+      "name": "contracts",
+      "command": "uv run --with dunamai pytest tests/test_graphforge_contract_corpus.py tests/test_release_version.py tests/test_check_release_version.py tests/test_verify_release_cohort.py -q",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/contracts.log",
+      "sha256": "aed3b3a6884cccaeb62dcf4245d2cd357a52ad9ba5eb37fc077e001ef23b39c0"
+    },
+    {
+      "name": "provenance-final",
+      "command": "uv run pytest tests/test_graphforge_contract_corpus.py -q",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/provenance-final.log",
+      "sha256": "a073d88c1b947ec34432fbe034bdc858d9ae3a3e36e10925ba62442f94fc64c7"
+    },
+    {
+      "name": "wasm-build",
+      "command": "npm run build:wasm",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/wasm-build.log",
+      "sha256": "821be48780d6c2dd7302dffebad8a6c0270104b6e69c27edef75c37fef4022f9"
+    },
+    {
+      "name": "abi",
+      "command": "uv run python scripts/abi_smoke.py",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/abi.log",
+      "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    {
+      "name": "assets",
+      "command": "uv run python scripts/verify_wasm_assets.py",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/assets.log",
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    {
+      "name": "ci",
+      "command": "make check-ci",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/ci.log",
+      "sha256": "acdaa9ba80c876351426fbccb63bed6fb1e850b2c16dc2492a3c9925c11da17e"
+    },
+    {
+      "name": "hooks",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/hooks.log",
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    {
+      "name": "ruff",
+      "command": "uv run ruff check .",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "name": "format",
+      "command": "uv run ruff format --check .",
+      "exitCode": 0,
+      "log": "spec/releases/core-rc7-compatibility-2026-11-06/format.log",
+      "sha256": "1c6ac5143b72ea5b8ad608126f1a8210d60454ee0a88f3107cbe6a9c3b0b633f"
+    }
+  ]
+}

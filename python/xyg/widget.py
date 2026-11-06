@@ -62,7 +62,7 @@ class FigureWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        figure: "Figure",
+        figure: "Figure | None",
         *,
         on_hover: Any = None,
         on_click: Any = None,
@@ -74,7 +74,7 @@ class FigureWidget(anywidget.AnyWidget):
         wasm_ticks: Any = None,
         **kwargs: Any,
     ) -> None:
-        self._figure = figure
+        self._figure: Any = figure
         self._callbacks = ChannelCallbacks(
             on_hover=on_hover,
             on_click=on_click,
@@ -84,7 +84,11 @@ class FigureWidget(anywidget.AnyWidget):
             on_animation_start=on_animation_start,
             on_animation_end=on_animation_end,
         )
-        spec, bufs = figure.build_payload_split()
+        if figure is None:
+            spec: dict[str, Any] = {"graph_host": True}
+            bufs = []
+        else:
+            spec, bufs = figure.build_payload_split()
         self._configure_transport(spec)
         if wasm_ticks is not None:
             from .export import resolve_wasm_tick_assets

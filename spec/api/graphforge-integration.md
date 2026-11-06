@@ -192,7 +192,7 @@ via #1015 remain open for #35:
 | `XYGF` composition semantics | 2 | `GRAPHFORGE_COMPOSITION_VERSION`, `composition.version` |
 | Container (`XYGQ`/`XYGF`) | 1 | header word |
 | Coverage ledger | 2 | `composition.ledgerVersion` |
-| GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5: 96 algorithms) |
+| GraphForge algorithm / search schema | 1 / 1 | ledger (Core 0.5.2: 94; 0.6.0-rc.5 and rc.7: 96 algorithms each) |
 
 ## 6. Error codes
 
@@ -280,3 +280,27 @@ XYG authority and retaining its existing `graphforgeLedger()` coverage test.
 Release acceptance still needs the qualified, published XYG/Core cohort
 (#108 and editor #95); this source change does not publish that cohort or
 justify merging the held editor #85 with its old dry-run artifacts.
+
+### Python notebook progressive layout
+
+`graphforge_chart(composition).widget()` and widget-mode `.show()` schedule graph
+layout and payload compilation off the kernel execution loop. A native initial
+checkpoint paints before terminal layout; later split-buffer updates use the
+existing notebook renderer and callbacks. Layered graphs, explicit theme/style,
+CSS dimensions, composition legends, annotations and axis controls use the same
+path and declarative compiler. Static/batch compilation remains unchanged.
+
+Hover/click callbacks retain their existing `id`, `edge_id` and provenance rows;
+`on_select` retains `Selection` and `Selection.rows()`. Programmatic view changes
+and geometric/row selections use the same channel as gestures. Commands issued
+before initial paint queue until that picture exists. `view_state()` returns
+empty ranges until the first native picture computes its domain, then uses the
+normal eventually consistent cache. The route does not yet
+add UUID-origin selection or full GraphSession kind/UUID/per-layer event refs.
+Instance, mount epoch and exact picture revision prevent cross-widget and stale
+snapshot application. See the [notebook transport contract](../design/graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
+for lifecycle, timeout, validation evidence and remaining #1015 requirements.
+
+`show(display="html")` and `to_html()` remain static/batch snapshots. Their
+browser output has no kernel return channel: selections do not invoke Python
+callbacks and native progressive work does not continue after export.
