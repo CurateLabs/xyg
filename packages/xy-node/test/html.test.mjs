@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { standaloneClientPath, toHtml } from "../src/html.js";
 
@@ -62,6 +62,37 @@ test("toHtml inlines the host-neutral standalone client", () => {
   assert.ok(doc.includes(client.slice(0, 80)));
   assert.ok(doc.includes("AQID")); // base64 of 0x01 0x02 0x03
   assert.ok(doc.includes("xyDecodeB64"));
+  assert.ok(doc.includes("xy.attachWasmTicks"));
+  assert.ok(doc.includes("workerOwnership: \"own\""));
+  assert.ok(doc.includes("'wasm-unsafe-eval'"));
+  assert.ok(doc.includes("connect-src 'none'"));
+  assert.ok(doc.includes(fs.readFileSync(path.join(path.dirname(clientPath), "xyg-wasm.wasm")).toString("base64")));
+});
+
+test("standalone HTML escapes hostile payload text and worker script boundaries", () => {
+  const title = '</script><script>globalThis.exportInjection=true</script>';
+  const doc = toHtml({ spec: { protocol: 13, title, traces: [], columns: [] }, buffers: new Uint8Array() });
+  assert.ok(!doc.includes(title));
+  assert.ok(doc.includes("\\u003c/script\\u003e"));
+  assert.ok(doc.includes("pagehide"));
+});
+
+test("an incomplete installed client fails before writing an HTML artifact", async () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "xy-html-assets-"));
+  try {
+    fs.mkdirSync(path.join(temporary, "src"));
+    fs.mkdirSync(path.join(temporary, "client"));
+    fs.writeFileSync(path.join(temporary, "package.json"), '{"type":"module"}');
+    fs.copyFileSync(path.join(root, "src/html.js"), path.join(temporary, "src/html.js"));
+    fs.writeFileSync(path.join(temporary, "client/standalone.js"), "var xy={};");
+    const { toHtml: installedToHtml } = await import(pathToFileURL(path.join(temporary, "src/html.js")));
+    const output = path.join(temporary, "export.html");
+    assert.throws(() => installedToHtml({ spec: {}, buffers: Buffer.alloc(0) }, output),
+      error => error.code === "XYG_HTML_ASSET_MISSING");
+    assert.ok(!fs.existsSync(output));
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
 });
 
 test("toHtml writes a destination path when given", () => {

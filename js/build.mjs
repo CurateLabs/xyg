@@ -175,9 +175,28 @@ async function buildInlineWasmWorker(outDir) {
   });
 }
 
+// file: documents have an opaque origin and cannot start a Blob module
+// Worker in Chromium. Reuse the full worker's bounded tick lane in a classic
+// bundle; nested module compilation is not used by standalone chart ticks.
+async function buildStandaloneWasmWorker(outDir) {
+  await build({
+    configFile: false, root: here, logLevel: "warn", clearScreen: false,
+    define: { "import.meta.url": "self.location.href" },
+    build: {
+      outDir, emptyOutDir: false, copyPublicDir: false, target: "es2022", minify: true,
+      reportCompressedSize: false,
+      rollupOptions: {
+        input: join(here, "src", "wasm_worker.ts"),
+        output: { format: "iife", entryFileNames: "wasm-standalone-worker.js", name: "xygStandaloneWorker" },
+      },
+    },
+  });
+}
+
 mkdirSync(clientDir, { recursive: true });
 await buildBundles(clientDir);
 await buildWasmWorker(clientDir);
+await buildStandaloneWasmWorker(clientDir);
 await buildInlineWasmWorker(clientDir);
 mkdirSync(staticDir, { recursive: true });
 for (const name of [...PYTHON_BUNDLES, ...PYTHON_WASM_TICK_ASSETS]) {
