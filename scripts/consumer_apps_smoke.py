@@ -159,7 +159,7 @@ def installed_consumers(
     if not counts["tests"] or any(counts[key] for key in ("failures", "errors", "skipped")):
         raise RuntimeError(f"required installed Streamlit AppTests did not all execute: {counts}")
 
-    version = "0.0.0-test.1063"  # local-only candidate; never published
+    version = "0.0.0-rc.1063"  # local-only candidate; never published
     platform_id = subprocess.check_output(
         ["node", "-p", "process.platform+'-'+process.arch"],
         text=True,

@@ -198,9 +198,13 @@ def test_unadmitted_arrow_style_values_fail_closed_with_one_stable_reason(name, 
 @pytest.mark.parametrize("name", KEY_REJECTED)
 def test_unadmitted_arrow_style_keys_fail_closed_on_both_hosts(name, node_results):
     node = node_results[name]
-    assert "Scene arrow style does not encode" in node.get("error", ""), node
-    with pytest.raises(ValueError, match="Scene arrow style does not encode"):
+    reason = "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys " + ",".join(
+        sorted(KEY_REJECTED[name])
+    )
+    assert node.get("error") == reason
+    with pytest.raises(ValueError) as error:
         _scene(KEY_REJECTED[name])
+    assert str(error.value) == reason
 
 
 @pytest.mark.parametrize("name", GEOMETRY_REJECTED)

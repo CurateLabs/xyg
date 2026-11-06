@@ -1247,15 +1247,20 @@ Where it must run, and what each environment denies us:
 `python/xyg/static/`; these generated bundles are not committed (§33). The
 direct-browser Rust/WASM surface additionally packages its Worker, optimized
 module, deterministic inline bootstrap and version/hash manifest. Current
-WASM functionality gates are **1,878 KiB raw / 765 KiB gzip6 (1,923,072 /
-783,360 bytes)**, explicitly adopted by the parent on 2026-11-03 after
-independent property-default source and package assessment. The reviewed
-1,922,561 / 783,148-byte module leaves 511 / 212 bytes. Shared native home/label
-policy is newly reachable on that path; exact component costs are unmeasured.
-The old P1 gate failure remains historical, not a retroactive package pass.
-The [property package decision receipt](performance/graph-property-default-package-2026-11-03/README.md)
-records fresh combined CSS/property production packaging, paired asset and
-manifest validation, full strict-CSP foundation and six unmasked image pairs.
+WASM functionality gates are **1,882 KiB raw / 768 KiB gzip6 (1,927,168 /
+786,432 bytes)**, explicitly adopted by the parent on 2026-11-04 after completed
+independent functionality/correctness reviews for #36 actual picked-target,
+source/group provenance and typed Leave. The best measured R2 inline candidate
+is 1,926,555 / 785,546 bytes, leaving 613 / 886 bytes. The former 1,878/765 gates
+failed it by 3,483 / 2,186 bytes; 1,881/767 still fails by 411 / 138. Growth over
+207 is 3,832 / 2,365. Shared CSR and borrowed refs save 1,022 / 380 over R1;
+rejected R3 Arc adds 1,768 / 55 over R2. Required receipt facts are retained.
+The [R5 functionality decision receipt](performance/graph-picked-target-r5-2026-11-04/README.md)
+separates this explicit decision from fresh production qualification. R1–R4
+measurements and failures remain immutable, including diagnostic-only R4 proof.
+The [R6 current-golden receipt](performance/graph-picked-target-r6-2026-11-04/README.md)
+records the separately authorized fresh actual shipping-browser capture and
+strict raw-section migration, preserving R5's failed historical-golden replay.
 Compiler/profile/toolchain/optimizer/dependencies/exports/validation and
 16-MiB default / 384-MiB maximum arenas are unchanged. No automatic allowance
 for later growth or performance/milestone/publication acceptance is granted.
@@ -2856,7 +2861,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   retains that failure, source/artifact hashes, unchanged historical evidence,
   and scoped preservation checks; parent integration and independent review
   remain required. No comparative performance or milestone completion claim.
-- **Current property-default functionality limits (parent decision 2026-11-03):**
+- **Historical property-default functionality limits (parent decision 2026-11-03):**
   1,878 KiB raw / 765 KiB gzip6 (1,923,072 / 783,360 bytes), after independent
   `m4_defaults_audit` source approval of `2ed544dc` and package assessment. The
   required shared home/label behavior is retained. The reviewed 1,922,561 /

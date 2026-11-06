@@ -2728,6 +2728,31 @@ export class ChartView {
     this._refreshReductionBadges();
   }
 
+  // A notebook replacement view restores renderer-owned legend controls from
+  // the exact trace identities retained by the native Figure.
+  _restoreGraphLegendVisibility(visibility) {
+    if (!Array.isArray(visibility)) return;
+    const previous = this._legendOffCats || new Map();
+    this._clearLegendHover();
+    this._legendOffTraces = new Set(); this._legendOffCats = new Map();
+    for (const state of visibility) {
+      const index = this.spec.traces.findIndex(trace => trace.id === state.trace);
+      if (index < 0) continue;
+      if (state.hidden) this._legendOffTraces.add(index);
+      if (state.categories.length) this._legendOffCats.set(index, new Set(state.categories));
+    }
+    for (const legend of this._legends || []) for (const { row, it } of legend._xyItemRows || []) {
+      if (!it.traces) continue;
+      it.off = it.cat != null ? !!this._legendOffCats.get(it.traces[0])?.has(it.cat) : it.traces.every(index => this._legendOffTraces.has(index));
+      this._syncLegendRow(row, it);
+    }
+    for (let i = 0; i < (this.gpuTraces || []).length; i++) {
+      this.gpuTraces[i]._legendHidden = this._legendOffTraces.has(i);
+      if (previous.has(i) || this._legendOffCats.has(i)) this._applyCategoryVisibility(i);
+    }
+    this._pickDirty = true; this._updatePickable(); this.draw();
+  }
+
   _buildLegend(root) {
     const s = this.spec;
     // A chrome rebuild replaces the row nodes mid-hover, so their pointerleave

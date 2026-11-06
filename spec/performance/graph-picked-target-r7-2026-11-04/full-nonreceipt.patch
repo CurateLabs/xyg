@@ -1,0 +1,227 @@
+diff --git a/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs
+index 7307dca98a7ad948a17c27ef68179e52f2c74c4b..4dc2b4d613d2ed8ba91d5e97034cb42fbcdfb744 100644
+--- a/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs
+@@ -1,3 +1,5 @@
++#![cfg(test)]
++
+ //! R4 actual-query correctness and replay corpus. Product remains exact R2.
+ use super::*;
+ use crate::graph::LodTier;
+diff --git a/scripts/check_release_inventory.py b/scripts/check_release_inventory.py
+index 9d532ebdf06b416cc1d8cfdf862eac99e99d15dc..a2e6b27885cd5587c074456941e77fe151689a04 100644
+--- a/scripts/check_release_inventory.py
++++ b/scripts/check_release_inventory.py
+@@ -460,15 +460,15 @@ def environment_inventory(root: Path, python: PythonInventory) -> list[dict[str,
+             )
+     for crate in ("xyg-engine", "xyg-core"):
+         for path in sorted((root / "crates" / crate / "src").rglob("*.rs")):
+-            # External Rust test modules are reached only through cfg(test),
+-            # just like inline test modules excluded below. Their fixture
+-            # selectors are not production operator configuration.
+-            if (
+-                "bin" in path.parts
+-                or "tests" in path.relative_to(root / "crates" / crate / "src").parts
+-            ):
++            if "bin" in path.parts:
++                continue
++            text = path.read_text()
++            # This exact leading inner attribute gates the entire module,
++            # even if its parent declares it unconditionally. A directory
++            # name, outer attribute or changed/missing guard proves nothing.
++            if text.startswith("#![cfg(test)]\n"):
+                 continue
+-            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", path.read_text(), maxsplit=1)[0]
++            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", text, maxsplit=1)[0]
+             for match in re.finditer(
+                 r'(?:std::)?env::var(?:_os)?\("((?:XYG?_[A-Z0-9_]+)|CODSPEED_ENV)"\)', text
+             ):
+diff --git a/spec/design/ownership-audit.json b/spec/design/ownership-audit.json
+index 148180297cf166b81696795ee9c781c4803fb4db..45ca4449826fa2fda8995511bf319e46f5d01b5a 100644
+--- a/spec/design/ownership-audit.json
++++ b/spec/design/ownership-audit.json
+@@ -4393,6 +4393,46 @@
+       "disposition": "keep-host",
+       "follow_up_issue": null,
+       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
++    },
++    {
++      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs",
++      "current_owner": "Rust safe engine",
++      "policy": "rust-engine",
++      "disposition": "keep-rust",
++      "follow_up_issue": null,
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+     }
+   ]
+ }
+diff --git a/spec/design/ownership-audit.md b/spec/design/ownership-audit.md
+index cad1619c691641699352d6e1e335f425973cfb2d..80eb91506d6332ddbf05de4ed886b683f889f3b2 100644
+--- a/spec/design/ownership-audit.md
++++ b/spec/design/ownership-audit.md
+@@ -41,7 +41,7 @@ injected native faults propagate before output, and a host-local fallback event
+ fails the verifier. Dynamic traces prove execution, not absence of every
+ possible duplicate algorithm, so the structural tripwires remain complementary.
+ 
+-The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
++The verifier inventories tracked source under its listed roots. Top-level tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are outside this ledger. Internal Rust test modules under `crates/*/src/` remain in scope and require exact file entries; a `tests` directory name does not waive ownership classification.
+ 
+ Migration status: Scene v25 now moves canonical viewport/plot bounds, numeric
+ axis transforms, chart/plot backgrounds, authored axis side and visibility,
+@@ -1360,6 +1360,12 @@ These additions use the existing ownership policies without adding a host policy
+ | `packages/xy-node/src/graphforge_layout.js` | Node host | `node-host` | `keep-host` | — |
+ | `packages/xy-node/src/graphforge_layout_worker.js` | Node host | `node-host` | `keep-host` | — |
+ 
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++| `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
++
+ ## Contributor rule
+ 
+ Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
+@@ -1464,3 +1470,9 @@ post-operation state snapshot. TypeScript validates this required fact and owns
+ synchronous keyboard default cancellation after local command admission. It does
+ not infer applicability from selection counts, projected refs, styles or DOM.
+ GLHost resets textures/samplers through unit 2 for shared-client isolation.
++
++
++The R7 inventory review disposition classifies the five R6 picked-target Rust
++test modules in the file ledger under the existing `rust-engine` policy, without
++a new policy or exclusion. They cover exact receipts, projection admission,
++retry/atomicity and diagnostic corpus generation for the shared Rust owner.
+diff --git a/spec/releases/0.6.0-api-inventory.json b/spec/releases/0.6.0-api-inventory.json
+index 606e633e8c16fddbaadad2bcdacb1f7b04a2affd..22ab71cf1985957018f3a3437cbff9ad7f76c15d 100644
+--- a/spec/releases/0.6.0-api-inventory.json
++++ b/spec/releases/0.6.0-api-inventory.json
+@@ -1195,7 +1195,7 @@
+  "releaseLine":"0.6.0",
+  "schema":"xyg.release-api-inventory/v1",
+  "sourceProvenance":{
+-  "baseCommit":"eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
++  "baseCommit":"01f1072985b891d75015290999381f66d901d049",
+   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
+  },
+  "sourceSha256":{
+@@ -1373,7 +1373,7 @@
+   "python/xyg/pyplot/_ticker.py":"94ab8ae124e14bcf5d3f75b53f34476f4e0e13849c21c36026263f2986b5ccd8",
+   "python/xyg/temporal_controller.py":"b2707a686ec1707378cac98c1eba70b39b75a3a26f4c8d10974140634806f6b0",
+   "python/xyg/temporal_graph.py":"f872b808275748032edd52502935928525cc32bd0663f7cf8b81c401ef5ac9b8",
+-  "scripts/check_release_inventory.py":"f4865f923f7b48b664a3fb3228974e6ad79ba3b8e194eae581a69098d12b7ed2",
++  "scripts/check_release_inventory.py":"0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
+   "scripts/check_release_version.py":"49fc49be846049e2200d897eb585a084d4359d2ff8d87d2391d8e3d14dc1382e",
+   "scripts/gen_abi_manifest.py":"66e426507717973dfdf463bb586e3082be909e995c54ec8e128a52147ad0ec1c",
+   "scripts/publish_node_packages.py":"9f6742a5969e0e19dacb837364b7a08a179d991be5e46daeeb4a83aed55e1c80",
+diff --git a/spec/releases/api-inventory.md b/spec/releases/api-inventory.md
+index 2680c7ae460c6970f33685efeb0988ce5c640afd..2d457510be4832c8640c7afc6529e7f52f02e152 100644
+--- a/spec/releases/api-inventory.md
++++ b/spec/releases/api-inventory.md
+@@ -36,6 +36,16 @@ A checkout without that compiler fails with the `npm ci` remedy.
+ | CLI and builds | `pyproject.toml` project scripts and Hatch hook mappings; documented repository operator scripts | Installed CLI entrypoints, hook source paths, and declared operator argument names/options/default expressions. The project currently declares no installed `[project.scripts]` CLI. Repository maintenance scripts are not silently advertised as installed product commands. |
+ | Environment configuration | Source environment lookups in shipped Python/Node/Rust code and `hatch_build.py` | Names, direct lookup defaults and source references; documented browser-discovery constants are included. `XYG_ABI_TRACE_*` diagnostics and `CODSPEED_ENV` benchmark controls remain internal; the Rust SIMD kill switch is included. Build/development/export controls retain their actual scope; a raw lookup default is not a claim about every downstream effective behavior. |
+ 
++Rust environment inspection does not infer test-only ownership from directory or
++module names. An external fixture is omitted only when its source starts with
++the exact module-wide inner attribute `#![cfg(test)]` followed by a newline.
++That actual guard excludes the entire module outside tests even under an
++unconditional parent declaration. Missing, changed, outer, commented or otherwise
++unrecognized guards are scanned conservatively; production modules under a
++`tests/` directory remain inventoried. Existing inline `#[cfg(test)] mod` handling
++is unchanged. The [R7 review disposition](../performance/graph-picked-target-r7-2026-11-04/README.md)
++records positive/negative regression proof and the preserved P2 reproduction.
++
+ Python typing remains source annotations plus `py.typed`; the inspector does not
+ manufacture stubs. Node declarations may be inferred JavaScript types or existing
+ `.d.ts` contracts; callable `any` positions are recorded as review gaps. Browser
+diff --git a/tests/test_release_inventory.py b/tests/test_release_inventory.py
+index 389cca2843602c21fe04461bbb3a591fbe54dc95..2e8dc5ccdac2b0a860d9c2675907d2e6cff73c34 100644
+--- a/tests/test_release_inventory.py
++++ b/tests/test_release_inventory.py
+@@ -230,12 +230,53 @@ def test_rust_runtime_switches_are_inventoried_but_test_fixtures_are_not(tmp_pat
+     )
+     external = source / "graphforge/interaction/tests/wire"
+     external.mkdir(parents=True)
+-    (external / "corpus.rs").write_text('fn fixture() { std::env::var("XYG_PICK_CORPUS"); }\n')
++    (external / "corpus.rs").write_text(
++        '#![cfg(test)]\nfn fixture() { std::env::var("XYG_PICK_CORPUS"); }\n'
++    )
+     result = inventory.environment_inventory(tmp_path, inventory.PythonInventory(tmp_path))
+     assert [item["name"] for item in result] == ["XYG_SIMD"]
+     assert 'v != "0"' in result[0]["lookups"][0]["expression"]
+ 
+ 
++@pytest.mark.parametrize(
++    ("guard", "production"),
++    [
++        ("", True),
++        ("#![cfg(not(test))]\n", True),
++        ("#[cfg(test)]\n", True),
++        ("// #![cfg(test)]\n", True),
++        ("\n#![cfg(test)]\n", True),  # Unrecognized placement scans conservatively.
++        ("#![cfg(test)]\n", False),
++    ],
++)
++def test_external_rust_modules_require_a_leading_module_wide_test_guard(
++    tmp_path: Path, guard: str, production: bool
++):
++    (tmp_path / "hatch_build.py").write_text("")
++    source = tmp_path / "crates/xyg-engine/src"
++    (source / "tests").mkdir(parents=True)
++    (source / "lib.rs").write_text("pub mod tests;\npub mod live;\n")
++    body = 'pub fn enabled() { std::env::var("XYG_PRODUCTION_UNDER_TESTS"); }\n'
++    fixture = source / "tests/mod.rs"
++    fixture.write_text(guard + body)
++    (source / "live.rs").write_text(body)
++
++    def lookups():
++        result = inventory.environment_inventory(tmp_path, inventory.PythonInventory(tmp_path))
++        assert [row["name"] for row in result] == ["XYG_PRODUCTION_UNDER_TESTS"]
++        assert result[0]["status"] == "unclassified"
++        return {row["source"] for row in result[0]["lookups"]}
++
++    expected = {"crates/xyg-engine/src/live.rs"}
++    if production:
++        expected.add("crates/xyg-engine/src/tests/mod.rs")
++    assert lookups() == expected
++    if not production:
++        # Removing the verified guard must reveal the same production lookup.
++        fixture.write_text(body)
++        assert lookups() == expected | {"crates/xyg-engine/src/tests/mod.rs"}
++
++
+ @pytest.mark.parametrize("typed", [False, True])
+ @pytest.mark.parametrize(
+     "declaration",

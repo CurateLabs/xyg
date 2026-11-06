@@ -1,0 +1,7 @@
+{
+  "crates/xyg-core/src/lib.rs": "bd141faacae70ee45382202f2f06e93a946935675505bc0f57a2e46f40be0d79",
+  "crates/xyg-wasm/src/lib.rs": "577dc34491d705fa67a0ea51827d490821a742bac64cf6a999c1180e2a01dc56",
+  "js/src/63_graph_session_wire.ts": "dbaef3a34adc4127dadc729875d103728d870ed808945d17fc63f907637bc005",
+  "spec/abi/xyg-abi.json": "8c8392feab94c798fad38eb7890269b6b2846598c9930e4315160cf990591298",
+  "spec/wasm/abi.json": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+}

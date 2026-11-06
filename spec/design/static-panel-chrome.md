@@ -90,3 +90,21 @@ HTML callers can retain their existing browser presentation route.
 Reproduce defaults, text-direction deltas, multiline/title/colorbar/table
 combination, measured-gutter reconciliation, bounds, and malformed-input
 coverage with `cargo test -p xyg-engine static_panel_chrome`.
+
+### Fixed pyplot panel frames (#889)
+
+A pyplot chart carries the final Rust-resolved panel gutters, including the
+outside title/top-axis/colorbar reservations, as literal margin facts. The
+Scene compile uses XYCF's existing authored-margin slot for those facts.
+Remeasuring default Scene labels would otherwise shrink dense frames, omit
+top-axis room, or reserve a colorbar twice. The panel placement and the Scene
+plot rectangle therefore use the same resolved frame. General public Figure
+padding retains its existing automatic text-room policy.
+
+Explicit user/notebook `_padding` pins retain their established **minimum**
+gutter contract and automatic text-room measurement. They are not forwarded as
+fixed frames: doing so would clip long tick labels under a narrow notebook pin.
+The fixed-frame fact applies only to the adapter's resolved subplot/axes frame.
+The rendered-versus-reported tests read emitted Scene clip rectangles, not a
+legacy measurement estimate. The registry's `document_authored_frame` witness
+pins the same XYCF authored-margin slot through both hosts and every consumer.

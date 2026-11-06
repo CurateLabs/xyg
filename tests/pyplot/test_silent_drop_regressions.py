@@ -306,7 +306,6 @@ def test_fill_betweenx_data_keys_resolve():
     assert len(ax._entries) == 1
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_savefig_svg_and_html_honor_facecolor_and_single_chart_suptitle():
     import io
 
@@ -316,7 +315,14 @@ def test_savefig_svg_and_html_honor_facecolor_and_single_chart_suptitle():
     svg = io.BytesIO()
     fig.savefig(svg, format="svg", facecolor="red")
     assert b"SoloTitle" in svg.getvalue()
-    assert b'<rect width="100%" height="100%" fill="red"/>' in svg.getvalue()
+    from xml.etree import ElementTree as ET
+
+    root = ET.fromstring(svg.getvalue())
+    background = root.find("{*}rect")
+    assert background is not None
+    assert float(background.attrib["width"]) == float(root.attrib["width"])
+    assert float(background.attrib["height"]) == float(root.attrib["height"])
+    assert background.attrib["fill"] == "#ff0000"
     html_out = io.BytesIO()
     fig.savefig(html_out, format="html", facecolor="red")
     # A head-level body override: the document body paints its own opaque
