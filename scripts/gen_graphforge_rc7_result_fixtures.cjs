@@ -14,7 +14,7 @@
  * `base-<graph>-edges.arrow` = `MATCH ()-[r]->() RETURN r`). GraphForge mints
  * fresh UUIDs per run, so results and bases must come from one run.
  *
- * Usage: node scripts/gen_graphforge_result_fixtures.cjs [path/to/node_modules/@curatelabs/graphforge] [output-directory]
+ * Usage: node scripts/gen_graphforge_rc7_result_fixtures.cjs [path/to/node_modules/@curatelabs/graphforge] [output-directory]
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -23,7 +23,7 @@ const modulePath = process.argv[2] ?? "@curatelabs/graphforge";
 const { GraphForge } = require(modulePath);
 const packageJson = require(path.join(path.dirname(require.resolve(modulePath)), "package.json"));
 
-const outDir = process.argv[3] ?? path.join(__dirname, "..", "tests", "fixtures", "graphforge", "results");
+const outDir = process.argv[3] ?? path.join(__dirname, "..", "tests", "fixtures", "graphforge", "results-0.6.0-rc.7");
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 

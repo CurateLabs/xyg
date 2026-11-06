@@ -139,6 +139,13 @@ def test_rc5_fixtures_record_the_actual_published_binding_and_generation() -> No
         (ROOT / "tests/fixtures/graphforge/core/0.6.0-rc.5/provenance.json").read_text()
     )
     assert generation["coreVersion"] == provenance["coreVersion"] == "0.6.0-rc.5"
+    # The original IPC producer is frozen; later CLI/default changes are bound
+    # separately so historical fixtures never claim a different producing source.
+    current = json.loads(
+        (ROOT / "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json").read_text()
+    )
+    for source, expected in current["sourceSha256"].items():
+        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == expected
     assert generation["coreSourceCommit"] == provenance["commit"]
     assert (
         generation["manifestSha256"]
@@ -163,11 +170,21 @@ def test_rc7_artifact_provenance_and_every_generated_ipc_are_bound() -> None:
     provenance = json.loads(
         (ROOT / "tests/fixtures/graphforge/core/0.6.0-rc.7/provenance.json").read_text()
     )
+    # The original IPC producer is frozen; later CLI/default changes are bound
+    # separately so historical fixtures never claim a different producing source.
+    current = json.loads(
+        (ROOT / "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json").read_text()
+    )
+    for source, expected in current["sourceSha256"].items():
+        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == expected
     assert generation["coreSourceCommit"] == provenance["commit"]
     assert generation["coreVersion"] == provenance["coreVersion"] == "0.6.0-rc.7"
     for key, path in [
         ("manifestSha256", results / "manifest.json"),
-        ("generatorSha256", ROOT / generation["generator"]),
+        (
+            "generatorSha256",
+            ROOT / "spec/releases/core-rc7-generator-default-2026-11-06/original-generator.cjs",
+        ),
     ]:
         assert generation[key] == hashlib.sha256(path.read_bytes()).hexdigest()
     assert generation["files"] == {
