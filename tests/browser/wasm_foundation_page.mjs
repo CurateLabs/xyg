@@ -3049,6 +3049,33 @@ async function run() {
   await peerWorker.dispose();
   scrubber.remove();
 
+  // Fixed arena admits the binding and hidden-edge frame, but rejects the
+  // all-visible output. This tests publication failure through the real Worker.
+  const retryNodes = new Uint8Array(4096 * 16), retryEdges = new Uint8Array(80 * 16);
+  const retrySources = new Uint8Array(80 * 16), retryTargets = new Uint8Array(80 * 16);
+  for (let i = 0; i < 4096; i++) new DataView(retryNodes.buffer).setUint32(i * 16, i + 1, true);
+  for (let i = 0; i < 80; i++) {
+    new DataView(retryEdges.buffer).setUint32(i * 16, i + 5000, true);
+    retrySources.set(retryNodes.subarray(0, 16), i * 16);
+    retryTargets.set(retryNodes.subarray(16, 32), i * 16);
+  }
+  const retryWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule, maxArenaBytes: 32 + 4096 * 16 + 80 * 57 });
+  const retryGraph = await XygWasmTemporalGraph.create(retryWorker, {
+    nodeIds: retryNodes, edgeIds: retryEdges, sourceIds: retrySources, targetIds: retryTargets,
+    edgeValidFrom: { values: new BigInt64Array(80).fill(10n), validity: new Uint8Array(80).fill(1) },
+  });
+  const retryOptions = { revision: 1n, cursor: 10n, range: [0n, 40n], budget: 100000n };
+  let outputRejected = false;
+  try { await retryGraph.frame(retryOptions); }
+  catch (error) { if (error.code !== "XYG_WASM_RESOURCE_LIMIT") throw error; outputRejected = true; }
+  if (!outputRejected) throw new Error("oversized temporal output unexpectedly fit");
+  const retriedFrame = await retryGraph.frame({ ...retryOptions, cursor: 0n });
+  if (retriedFrame.revision !== 1n || retriedFrame.visibleNodeIds.length !== 4096 * 16
+      || retriedFrame.visibleEdgeIds.length !== 0) throw new Error("same-revision output retry lost membership");
+  retryGraph.dispose();
+  await retryWorker.dispose();
+
   const temporalGraphWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,

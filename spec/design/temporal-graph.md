@@ -103,10 +103,32 @@ i64/u8/u64 buffers and opaque UUID bytes, never graph or temporal numbers
 through JSON. Rust emits visibility, visible UUID membership, and remapped
 visible topology; TypeScript does not filter graph rows.
 
-The browser `XygWasmTemporalGraph` coordinator cancels an active layout before
-submitting a newer frame, rejects any response that is no longer the latest
-requested revision, and only forwards progressive layout checkpoints for the
-current frame. Disposal cancels owned layout work and rejects late replies.
+The browser `XygWasmTemporalGraph` coordinator validates packed frame inputs
+before reserving a revision or cancelling active layout work. It tracks the
+highest submitted revision separately from the successfully returned frame
+revision. A rejected frame command releases only its own attempt reservation,
+allowing that same highest revision to be retried. Lower superseded revisions,
+duplicate in-flight requests, and successfully returned revisions remain stale.
+A late failure cannot lower the highest requested revision or release a newer
+attempt. Each submission has a distinct attempt identity, which gates frame
+responses and progressive layout callbacks even across same-revision retries.
+Disposal cancels owned layout work and rejects late replies.
+
+Rust output-admission rejection leaves its applied revision unchanged, so a
+same-revision retry with smaller visible membership can succeed under the same
+arena cap. A transport failure permits another submission but cannot establish
+whether Rust already committed before delivery failed. Rust remains the applied
+revision authority in that case. Once a valid frame returns, later layout
+encoding, scheduling, or execution failure leaves that frame revision consumed.
+`frameAndLayout` checks its narrower nonzero u32 revision width before submitting
+the frame. These transport guards do not filter topology or change Rust layout,
+identity, or work-budget policy.
+
+The [public retry receipt](../performance/temporal-browser-retry-2026-11-06/README.md)
+records failing-before and passing-after public coordinator journeys through the
+unchanged packaged WASM and real browser Worker, plus deterministic late-error,
+supersession, duplicate, input-validation, and disposal regressions. Existing
+browser frame/layout goldens remain part of the full foundation run.
 
 ## Frozen export provenance
 

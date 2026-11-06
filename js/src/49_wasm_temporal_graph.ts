@@ -41,8 +41,11 @@ export function encodeWasmTemporalGraphCreate(binding: XygWasmTemporalGraphBindi
 }
 
 export function encodeWasmTemporalGraphFrame(revision: bigint, cursor: bigint, range: readonly [bigint, bigint], budget: bigint): ArrayBuffer {
-  if (revision <= 0n || revision > 0xffffffffffffffffn || budget < 0n || budget > 0xffffffffffffffffn) throw new RangeError("revision and budget must fit u64");
+  if (typeof revision !== "bigint" || typeof budget !== "bigint" || revision <= 0n || revision > 0xffffffffffffffffn || budget < 0n || budget > 0xffffffffffffffffn) throw new RangeError("revision and budget must fit u64");
   if (!Array.isArray(range) || range.length !== 2 || cursor < range[0] || cursor >= range[1]) throw new RangeError("cursor must lie in a non-empty half-open range");
+  for (const value of [cursor, ...range]) {
+    if (typeof value !== "bigint" || value < -0x8000000000000000n || value > 0x7fffffffffffffffn) throw new RangeError("temporal graph time must fit i64");
+  }
   const view = header(2, FRAME_HEADER, FRAME_HEADER); view.setBigUint64(16, revision, true); view.setBigInt64(24, cursor, true); view.setBigInt64(32, range[0], true); view.setBigInt64(40, range[1], true); view.setBigUint64(48, budget, true); return view.buffer;
 }
 
@@ -57,10 +60,55 @@ export function decodeWasmTemporalGraphFrame(buffer: ArrayBuffer): XygWasmTempor
 
 /** Latest-wins temporal-before-layout coordinator; Rust owns both filtering and layout. */
 export class XygWasmTemporalGraph {
-  private layout: XygWasmTask<XygWasmGraphCheckpoint> | null = null; private disposed = false; private revision = 0n; private requestedRevision = 0n;
+  private layout: XygWasmTask<XygWasmGraphCheckpoint> | null = null;
+  private disposed = false;
+  private revision = 0n;
+  private requestedRevision = 0n;
+  private attempt: object | null = null;
   private constructor(private readonly worker: XygWasmWorker) {}
   static async create(worker: XygWasmWorker, binding: XygWasmTemporalGraphBinding) { await worker.temporalGraphCommand(encodeWasmTemporalGraphCreate(binding)); return new XygWasmTemporalGraph(worker); }
-  async frame(options: { revision: bigint; cursor: bigint; range: readonly [bigint, bigint]; budget: bigint }) { if (this.disposed) throw new Error("TemporalGraph is disposed"); if (options.revision <= this.requestedRevision) throw new RangeError("temporal graph revision must be newer"); this.requestedRevision = options.revision; this.layout?.cancel(); this.layout = null; const frame = decodeWasmTemporalGraphFrame(await this.worker.temporalGraphCommand(encodeWasmTemporalGraphFrame(options.revision, options.cursor, options.range, options.budget))); if (frame.revision !== options.revision || this.requestedRevision !== options.revision || this.disposed) throw new Error("Rust temporal graph returned a stale revision"); this.revision = frame.revision; return frame; }
-  async frameAndLayout(options: { revision: bigint; cursor: bigint; range: readonly [bigint, bigint]; budget: bigint; layout?: Omit<XygWasmGraphRequest, "sources" | "targets" | "nNodes">; onUpdate?: (checkpoint: XygWasmGraphCheckpoint) => void }) { const frame = await this.frame(options); const revision = Number(frame.revision); if (!Number.isSafeInteger(revision) || revision > 0xffffffff) throw new RangeError("layout revision must fit u32"); const task = layoutWasmCose(this.worker, { ...(options.layout ?? {}), sources: frame.sources, targets: frame.targets, nNodes: frame.visibleNodeIds.byteLength / 16 }, { revision, onUpdate: (checkpoint) => { if (this.requestedRevision === frame.revision && !this.disposed) options.onUpdate?.(checkpoint); } }); this.layout = task; try { const result = await task.result; if (this.requestedRevision !== frame.revision || this.disposed) throw new Error("temporal graph layout reply is stale"); return { frame, layout: result }; } finally { if (this.layout === task) this.layout = null; } }
+  async frame(options: { revision: bigint; cursor: bigint; range: readonly [bigint, bigint]; budget: bigint }) {
+    if (this.disposed) throw new Error("TemporalGraph is disposed");
+    // Validate before superseding valid work or reserving a revision.
+    const command = encodeWasmTemporalGraphFrame(options.revision, options.cursor, options.range, options.budget);
+    if (options.revision <= this.revision || options.revision < this.requestedRevision
+        || (options.revision === this.requestedRevision && this.attempt !== null)) {
+      throw new RangeError("temporal graph revision must be newer");
+    }
+    const attempt = {};
+    this.attempt = attempt;
+    this.requestedRevision = options.revision;
+    this.layout?.cancel();
+    this.layout = null;
+    try {
+      const frame = decodeWasmTemporalGraphFrame(await this.worker.temporalGraphCommand(command));
+      if (frame.revision !== options.revision || this.attempt !== attempt || this.disposed) {
+        throw new Error("Rust temporal graph returned a stale revision");
+      }
+      this.revision = frame.revision;
+      return frame;
+    } catch (error) {
+      // Retain the highest request watermark. An older rejection cannot reopen
+      // superseded work, and only this failed attempt can release its reservation.
+      if (this.attempt === attempt) this.attempt = null;
+      throw error;
+    }
+  }
+  async frameAndLayout(options: { revision: bigint; cursor: bigint; range: readonly [bigint, bigint]; budget: bigint; layout?: Omit<XygWasmGraphRequest, "sources" | "targets" | "nNodes">; onUpdate?: (checkpoint: XygWasmGraphCheckpoint) => void }) {
+    if (options.revision <= 0n || options.revision > 0xffffffffn) throw new RangeError("layout revision must fit u32");
+    const frame = await this.frame(options);
+    const attempt = this.attempt;
+    if (this.requestedRevision !== frame.revision || this.disposed) throw new Error("temporal graph layout reply is stale");
+    const task = layoutWasmCose(this.worker, { ...(options.layout ?? {}), sources: frame.sources, targets: frame.targets, nNodes: frame.visibleNodeIds.byteLength / 16 }, {
+      revision: Number(frame.revision),
+      onUpdate: (checkpoint) => { if (this.attempt === attempt && !this.disposed) options.onUpdate?.(checkpoint); },
+    });
+    this.layout = task;
+    try {
+      const result = await task.result;
+      if (this.attempt !== attempt || this.disposed) throw new Error("temporal graph layout reply is stale");
+      return { frame, layout: result };
+    } finally { if (this.layout === task) this.layout = null; }
+  }
   dispose() { if (this.disposed) return; this.disposed = true; this.layout?.cancel(); this.layout = null; }
 }
