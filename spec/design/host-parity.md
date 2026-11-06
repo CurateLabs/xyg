@@ -2114,8 +2114,9 @@ bound delivery to one pending picture. Static/batch routes remain synchronous.
 [The transport contract](graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
 records exact snapshot/epoch ownership, cross-loop dispatch, cancellation,
 selection-mask validity, preserved generic presentation and event semantics.
-The private GraphSession wrapper is unchanged; full GraphSession refs and UUID
-selection remain future integration work. The real five-node/two-widget notebook
+The private GraphSession wrapper is unchanged. The later notebook identity
+projection subsection below records the bounded UUID integration; full public
+GraphSession interaction remains future work. The real five-node/two-widget notebook
 smoke runs within the existing Release surfaces `test` job. It does not prove
 required rendered ladder budgets, every notebook frontend, UUID box/lasso/export
 parity, competitor leadership or #35/#36/#1015 closure. The R1 geometry-only
@@ -2130,3 +2131,16 @@ composition, and exact native/WASM document parity. The supported-Core
 declaration adds exact `0.6.0-rc.7`; it declares no interval or final `0.6.0`.
 This Linux x64 GNU qualification is not an installed XYG release cohort, complete
 platform matrix, or notebook/frontend acceptance. #936/#884/#108 remain open.
+
+
+### Python notebook identity projection (2026-11-06)
+
+The [bounded identity slice](graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06)
+adds Rust SelectRefs/SelectUuids projection to existing FigureWidget callbacks
+and binary row highlights. Exact typed callback records preserve kind, UUID and
+per-layer result_id/row without replacing the original graph renderer. The
+[receipt](../performance/graph-notebook-identity-2026-11-06/README.md) separates
+unit proofs for loops/parallel edges/layered provenance from actual small
+JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historical.
+Full notebook frontend, exact geometric UUID sets, export and rendered size
+ladder acceptance for #1015/#36/#35 remains open.

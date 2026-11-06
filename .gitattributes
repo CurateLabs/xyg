@@ -60,3 +60,14 @@ spec/performance/graph-widget-pr1100-repair-2026-11-06/*.json text eol=lf
 spec/performance/graph-widget-pr1100-repair-2026-11-06/*.md text eol=lf
 spec/performance/graph-widget-pr1100-repair-2026-11-06/*.gz -text
 spec/performance/graph-widget-pr1100-repair-2026-11-06/*.png -text
+
+# Notebook identity candidate source and append-only evidence bindings.
+python/xyg/_graph_widget_identity.py text eol=lf
+python/xyg/_graphforge.py text eol=lf
+python/xyg/components.py text eol=lf
+scripts/gen_capability_matrix.py text eol=lf
+spec/api/capability-matrix.md text eol=lf
+docs/styling/capabilities.md text eol=lf
+spec/performance/graph-notebook-identity-2026-11-06/** text eol=lf
+spec/performance/graph-notebook-identity-2026-11-06/*.gz -text
+spec/performance/graph-notebook-identity-2026-11-06/*.png -text

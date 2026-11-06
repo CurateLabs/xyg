@@ -97,6 +97,14 @@ def test_native_frames_callbacks_identity_and_two_widget_isolation():
                 if len(members) == 1:
                     message(a, "click", trace=edge, index=segment)
                     assert clicks[-1]["edge_id"] == data.edge_ids[int(members[0])]
+                    assert clicks[-1]["graphforge"] == [
+                        {
+                            "kind": "edge",
+                            "uuid": data.edge_ids[int(members[0])],
+                            "index": int(members[0]),
+                            "layers": [],
+                        }
+                    ]
                     seen_edges.add(int(members[0]))
             assert seen_edges == set(range(len(data.edge_ids)))
             assert data.sources[0] == data.sources[1] and data.targets[0] == data.targets[1]
@@ -438,6 +446,135 @@ def test_remount_keeps_hidden_traces_and_categories_before_first_paint():
             visibility = frames[-1]["spec"]["_graph_legend_visibility"]
             assert visibility[0]["hidden"] is True
             assert visibility[extra]["categories"] == [1]
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_typed_identity_uuid_roundtrip_layer_rows_and_retired_picture():
+    async def journey():
+        clicks, selections = [], []
+        composition = _compose("louvain")
+        chart = xyg.graphforge_chart(
+            composition, on_click=clicks.append, on_select=selections.append
+        )
+        w = chart.widget()
+        sent = []
+        w.send = lambda content, buffers=(): sent.append((content, buffers))
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            meta = w._figure._graph_meta[0]
+            node, edge = meta["node_trace"], meta["edge_trace"]
+            message(w, "click", trace=node, index=0)
+            source = meta["member_of"].index(0)
+            expected = composition.identify("node", source)
+            assert clicks[-1]["graphforge"] == [expected]
+            assert expected["layers"]  # result id and row, not just UUID
+            message(w, "select", x0=-1e9, x1=1e9, y0=-1e9, y1=1e9)
+            assert {
+                row["uuid"] for row in selections[-1].graphforge if row["kind"] == "node"
+            } == set(composition.nodes.uuid)
+            message(w, "graph_painted")
+            chosen = [composition.nodes.uuid[0], composition.edges.uuid[0]]
+            w.select(uuids=chosen)
+            assert sent[-1][0]["type"] == "selection_rows"
+            resolved = w._figure._notebook_graph_identity.select(chosen)
+            assert {(row["kind"], row["uuid"]) for row in resolved} == {
+                ("node", chosen[0]),
+                ("edge", chosen[1]),
+            }
+            rows = w._figure._notebook_graph_identity.render_rows(resolved)
+            assert rows[node].tolist() == [meta["member_of"][0]]
+            identity = w._figure._graph_edge_identity[edge]
+            assert rows[edge].tolist() == [
+                i
+                for i, r in enumerate(identity.render_edge_index)
+                if identity.members_of(int(r)).tolist() == [0]
+            ]
+            retained_session = w._figure._notebook_graph_identity.session
+            old = w._revision
+            await wait_for(lambda: w._revision > old)
+            before = len(clicks)
+            message(w, "click", revision=old, trace=node, index=0)
+            assert len(clicks) == before + 1  # retained displayed checkpoint
+            assert clicks[-1]["graphforge"] == [expected]
+            message(w, "graph_painted")
+            assert retained_session._handle is None
+            message(w, "click", revision=old, trace=node, index=0)
+            assert len(clicks) == before + 1  # retired after new paint
+            with pytest.raises(ValueError, match="cannot be combined"):
+                w.select(uuids=chosen, rows={node: [0]})
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_uuid_commands_and_typed_callbacks_remain_isolated_across_mounts():
+    async def journey():
+        clicks = []
+        chart, w = widget(on_click=clicks.append)
+        _, other = widget()
+        sent = []
+        w.send = lambda content, buffers=(): sent.append(content)
+        composition = chart._graphforge_composition
+        try:
+            w.select(uuids=[composition.nodes.uuid[0]])
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            node = w._figure._graph_meta[0]["node_trace"]
+            message(w, "graph_painted")
+            assert sent[-1]["type"] == "selection_rows"
+            message(w, "click", trace=node, index=0, graph_instance=other._instance)
+            assert not clicks
+            message(w, "legend_toggle", trace=node, hidden=True)
+            message(w, "graph_mount", epoch="replacement")
+            await wait_for(lambda: w._revision > 1)
+            assert w._figure.traces[node].hidden
+            before = len(sent)
+            w.select(uuids=[composition.nodes.uuid[1]])
+            assert len(sent) == before
+            message(w, "click", epoch="first", revision=1, trace=node, index=0)
+            assert not clicks
+            message(w, "graph_painted", epoch="replacement")
+            assert sent[-1]["type"] == "selection_rows"
+        finally:
+            w.close()
+            other.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_derived_edge_callback_uses_native_exact_result_reference():
+    async def journey():
+        composition = _compose("pagerank", "node_similarity")
+        w = xyg.graphforge_chart(composition).widget()
+        w.send = lambda *args, **kwargs: None
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            adapter = w._figure._notebook_graph_identity
+            edge = adapter.meta["edge_trace"]
+            identity = w._figure._graph_edge_identity[edge]
+            seen = set()
+            for segment, render in enumerate(identity.render_edge_index):
+                members = identity.members_of(int(render))
+                if len(members) == 1 and composition.edges.derived[int(members[0])]:
+                    source = int(members[0])
+                    expected = composition.identify("edge", source)
+                    actual = adapter.project({edge: [segment]})
+                    assert actual == [
+                        {key: expected[key] for key in ("kind", "uuid", "index", "layers")}
+                    ]
+                    seen.add(source)
+            assert seen == {
+                i for i in range(composition.edges.count) if composition.edges.derived[i]
+            }
         finally:
             w.close()
             await asyncio.sleep(0)

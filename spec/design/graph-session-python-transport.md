@@ -302,3 +302,43 @@ and row controls before its paint acknowledgement. Legend changes update saved
 widget snapshots as well, including changes after terminal layout. The bounded
 notebook proof requires a new exact kernel callback after the final pointer
 baseline; earlier keyboard or pointer callbacks cannot satisfy that check.
+
+
+### Notebook typed identity slice (2026-11-06)
+
+The ordinary Figure compiler and ChartView remain authoritative for painting.
+Each compiled checkpoint owns a private native GraphSession solely for identity
+projection. Creation and its preset-position publication run in the existing
+compile executor; the resulting session render buffers are unused. Its render
+revision is private and distinct from the displayed notebook envelope revision.
+No browser controller, layout algorithm, or retained-session renderer replaces
+the public renderer. The extra retained session is bounded by the existing
+384-MiB admission and 10,000-ref selection caps; this is not scale qualification.
+
+The adapter encodes canonical kind-qualified refs from the composition and the
+original compiler's Rust source/render membership planes. SelectRefs resolves
+callback identity and all per-layer rows in Rust; SelectUuids resolves Python
+UUID input in Rust. Python decodes selection refs, indices and provenance CSR
+without matching UUID strings or inferring result rows. Derived refs transport
+the exact canonical result id/layer/path/order. Non-graph traces project no
+GraphForge refs. The readout session's private selection is scratch resolution
+state, independent of the public view's ordinary selection masks.
+
+Callback dictionaries add a `graphforge` list; Selection objects add the same
+attribute. Each entry has kind, UUID (null for derived edges), composed index,
+and layer/result_id/row records. These four fields match the corresponding
+Node graphforgePick composition identity projection; Node's additional edge and
+compound detail fields are not promised by this callback projection. No public
+GraphForgeComposition API or ABI signature changes.
+
+The existing instance/epoch/displayed-revision guard runs before resolution.
+Displayed old checkpoints resolve against their own session until replacement
+paint ACK; that ACK closes retired sessions. Remount, dispose and close release
+sessions even when application callbacks retain old Figure/Selection objects.
+Late compiler completion is discarded and its session finalizer releases it.
+UUID masks use ordinary selection_rows and are non-durable across remount;
+exact aggregate/compound highlight routing, graph-specific box/lasso edge policy,
+all browser pointer journeys, accessibility and the full ladder remain open.
+
+Focused tests and the public notebook proof are recorded in the
+[identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).

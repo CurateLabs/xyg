@@ -295,8 +295,25 @@ Hover/click callbacks retain their existing `id`, `edge_id` and provenance rows;
 and geometric/row selections use the same channel as gestures. Commands issued
 before initial paint queue until that picture exists. `view_state()` returns
 empty ranges until the first native picture computes its domain, then uses the
-normal eventually consistent cache. The route does not yet
-add UUID-origin selection or full GraphSession kind/UUID/per-layer event refs.
+normal eventually consistent cache. Hover/click rows now add `graphforge`, a list
+of Rust-resolved `{kind, uuid, index, layers}` records; each layer carries
+`layer`, `result_id` (including absent versus empty), and exact `row`.
+`Selection.graphforge` carries the same records while `Selection.rows()` keeps
+its existing shape. Routed edges resolve through the compiler's Rust membership
+planes, including parallel edges and loops. Derived edges have a null UUID and
+retain per-layer provenance.
+
+`widget.select(uuids=[node_uuid, relationship_uuid])` resolves through Rust
+SelectUuids and sends the ordinary binary row masks. Unknown UUIDs are unmatched;
+a UUID shared by a node and relationship selects both. This form is exclusive
+with other selection arguments. Commands wait for their frame's paint ACK.
+Individual highlights require individually rendered source identities; Aggregate
+LOD and compound/merged render identities refuse rather than highlight unrelated
+entities. Row highlights retain the ordinary non-durable selection contract;
+resubmit UUIDs after remount. Generic box/lasso geometry still uses the ordinary
+selection policy: exact graph-specific edge-intersection/induced-edge policy is
+not established by this slice. See the
+[bounded notebook identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
 Instance, mount epoch and exact picture revision prevent cross-widget and stale
 snapshot application. See the [notebook transport contract](../design/graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
 for lifecycle, timeout, validation evidence and remaining #1015 requirements.

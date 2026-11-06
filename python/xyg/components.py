@@ -3903,6 +3903,7 @@ class Chart(Component):
         self._figure: Optional[Figure] = None
         self._widget: Any = None
         self._graphforge_mark: Mark | None = None
+        self._graphforge_composition: Any = None
         self._composition_legend: dict[str, Any] | None = None
         # Facet builds pre-seed a union category order here (per axis dim) so
         # shared categorical domains align across panels; see FacetChart.
