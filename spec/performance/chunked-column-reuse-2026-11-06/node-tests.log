@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: chunked columns matches exact oracle and Python provenance contract
+ok 1 - chunked columns matches exact oracle and Python provenance contract
+  ---
+  duration_ms: 7.669969
+  type: 'test'
+  ...
+# Subtest: chunked columns overview is bounded and preserves canonical row IDs
+ok 2 - chunked columns overview is bounded and preserves canonical row IDs
+  ---
+  duration_ms: 2.636229
+  type: 'test'
+  ...
+# Subtest: chunked columns pages apply pull backpressure and preserve exact order
+ok 3 - chunked columns pages apply pull backpressure and preserve exact order
+  ---
+  duration_ms: 0.981455
+  type: 'test'
+  ...
+# Subtest: chunked column pages expose budget and stale-generation diagnostics
+ok 4 - chunked column pages expose budget and stale-generation diagnostics
+  ---
+  duration_ms: 0.566591
+  type: 'test'
+  ...
+# Subtest: fetched detail corruption and stale empty reads fail closed
+ok 5 - fetched detail corruption and stale empty reads fail closed
+  ---
+  duration_ms: 2.614619
+  type: 'test'
+  ...
+# Subtest: resident overlap reuses native chunks across read modes
+ok 6 - resident overlap reuses native chunks across read modes
+  ---
+  duration_ms: 1.930832
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 191.897797
