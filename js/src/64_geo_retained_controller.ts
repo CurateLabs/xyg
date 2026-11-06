@@ -1,4 +1,5 @@
 /** Scheduling/paint adapter for one retained Rust geographic source. */
+import type { XygWasmTemporalController, XygTemporalState } from './49_wasm_temporal';
 import { XygWasmWorker } from './47_wasm';
 import { hydrateWasmPainter, type XygWasmSceneView } from './48_wasm_scene';
 import { decodeGeoScaleReply, driveGeoSession, driveGeoIndexSession, encodeGeoScaleRequest, prepareGeoSceneData, prepareGeoAuxData, parseGeoHitData, parseGeoMembershipData, parseGeoRowsData,
@@ -47,6 +48,7 @@ export class RetainedGeographicController {
   private frameProjectedBudget=0n;
   private initializationFailed=false;
   private view: XygWasmSceneView | null = null;
+  private temporalBinding?: { time: XygGeoScaleQuery['time']; revision: bigint; detach(): void };
   private disposed = false;
   private disposal: Promise<void> | null = null;
   private readonly paint = document.createElement('div');
@@ -118,7 +120,9 @@ export class RetainedGeographicController {
     const abort = new AbortController(), sequence = ++this.sequence;
     this.operationAbort = abort;
     // Freeze host-owned authoring fields while the serialized operation waits.
+    if(this.temporalBinding)query={...query,time:this.temporalBinding.time,timeRevision:this.temporalBinding.revision};
     const frozen = {...query,camera:{...query.camera},time:{...query.time},sourceDigest:query.sourceDigest.slice()};
+    this.options.query=frozen;
     const operation = this.chain.then(async()=>{
       await this.initialization;
       if(this.disposed||abort.signal.aborted)throw new DOMException('Geographic operation cancelled','AbortError');
@@ -163,6 +167,50 @@ export class RetainedGeographicController {
     });
     this.chain = operation.then(()=>{},()=>{});
     return operation;
+  }
+
+  /** Automatically forward exact Rust temporal snapshots through the retained
+   * source query. Mode selects an existing predicate; hosts never filter rows. */
+  async bindTemporal(controller: XygWasmTemporalController, mode: 'cursor' | 'range' = 'cursor') {
+    await this.ready;
+    if(this.disposed)throw new Error('Geographic chart disposed');
+    if(mode!=='cursor'&&mode!=='range')throw new TypeError('Temporal mode must be cursor or range');
+    if(controller.state.disposed)throw new Error('TemporalController is disposed');
+    this.temporalBinding?.detach();
+    let attached=true, initial=true, pending=false, running:Promise<void>=Promise.resolve(), pumping=false;
+    const binding={time:{...this.options.query.time},revision:this.options.query.timeRevision,detach:()=>{}};
+    const pump=()=>{
+      pending=true;
+      this.operationAbort?.abort();this.preparation?.cancel();
+      if(pumping)return;
+      pumping=true;
+      running=(async()=>{
+        try { while(pending&&attached&&!this.disposed){
+          pending=false;
+          try{await this.update(this.options.query);}catch(error){
+            if(attached&&!this.disposed&&!(error instanceof DOMException&&error.name==='AbortError'))this.report(error);
+          }
+        }}finally{pumping=false;}
+      })();
+    };
+    const accept=(state:XygTemporalState)=>{
+      if(!attached)return;
+      if(state.disposed){binding.detach();return;}
+      const time:XygGeoScaleQuery['time']=mode==='cursor'?{kind:1,instant:state.cursor}:{kind:2,start:state.rangeStart,end:state.rangeEnd};
+      const prior=binding.time;
+      if(!initial&&((time.kind===1&&prior.kind===1&&time.instant===prior.instant)||(time.kind===2&&prior.kind===2&&time.start===prior.start&&time.end===prior.end)))return;
+      initial=false;
+      if(binding.revision===0xffffffffffffffffn){binding.detach();this.report(new RangeError('Geographic time revision exhausted'));return;}
+      binding.time=time;binding.revision++;pump();
+    };
+    const unsubscribe=controller.subscribeState(accept);
+    binding.detach=()=>{
+      if(!attached)return;attached=false;pending=false;unsubscribe();
+      if(this.temporalBinding===binding){this.temporalBinding=undefined;this.operationAbort?.abort();this.preparation?.cancel();}
+    };
+    this.temporalBinding=binding;
+    accept(controller.state);
+    return {whenIdle:()=>running,dispose:()=>{binding.detach();return running;}};
   }
 
   private async prepareQuery(query:XygGeoScaleQuery,sequence:bigint,signal:AbortSignal){
@@ -303,6 +351,7 @@ export class RetainedGeographicController {
   /** Drop painter/packet consumers before acknowledging data/session disposal. */
   dispose():Promise<void> {
     if(this.disposal)return this.disposal;
+    this.temporalBinding?.detach();
     this.disposed = true; this.indexAbort?.abort(); this.sourceAbort.abort(); this.operationAbort?.abort();this.auxiliaryAbort?.abort(); this.preparation?.cancel();
     return this.disposal = (async()=>{
       await Promise.allSettled([this.initialization,this.chain]);
