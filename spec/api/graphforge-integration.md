@@ -343,3 +343,6 @@ Filtered, aggregate/compound and trace-specific behavior retains the generic
 contract and is outside this bounded proof. The
 [geometric notebook correction](../performance/graph-notebook-geometry-2026-11-06/README.md)
 records the real pointer journeys; wider notebook acceptance remains open.
+
+Final accepted-main source and rebuilt native artifact bindings are recorded in
+the [append-only main-sync receipt](../performance/graph-notebook-geometry-main-sync-2026-11-06/README.md).

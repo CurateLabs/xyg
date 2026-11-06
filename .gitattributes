@@ -102,3 +102,9 @@ spec/performance/graph-notebook-geometry-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-geometry-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-geometry-2026-11-06/*.gz -text
 spec/performance/graph-notebook-geometry-2026-11-06/*.png -text
+
+# Accepted-main correction for final notebook geometry proof.
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.gz -text
+spec/performance/graph-notebook-geometry-main-sync-2026-11-06/*.png -text

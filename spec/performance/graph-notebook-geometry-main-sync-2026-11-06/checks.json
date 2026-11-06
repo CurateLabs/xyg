@@ -1,0 +1,148 @@
+{
+  "sourceMerge": "7e93aa05b37916c69690f074d7fd7f2d60c92f0c",
+  "acceptedMain": "885330e228b6ada9bff54ef1b903e5da2f79b45c",
+  "rustTree": "3d0f16671ee903889cdf093a1dbf76d9ba986db3",
+  "nativeProducer": "local CARGO_BUILD_JOBS=2 cargo build --release at accepted-main merge 7e93aa05; current notebook runtime source hashes in current-bindings.json",
+  "currentBindingsSha256": "51ac8751c3da7c5b0f3d0a605fd768b6d85ba3f5aacb29eef88d4b53183a9232",
+  "artifactSha256": {
+    "target/release/libxyg_core.so": "d0047472bf6122e490ca18dc921c5c2e9b4333a1397482780bc55b0daa96fd8d",
+    "packages/xy-client/dist/index.js": "c70c767ca26cc043a4740886c8aedd0a96a4749dd282eccec3dd8c01712c232b",
+    "packages/xy-client/dist/standalone.js": "31edd8ec911962950c722f411fc5cde0504f67d159a1a929aabd892995fdcfae",
+    "packages/xy-client/dist/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+    "packages/xy-client/dist/wasm-inline-worker.js": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+    "python/xyg/static/index.js": "c70c767ca26cc043a4740886c8aedd0a96a4749dd282eccec3dd8c01712c232b",
+    "python/xyg/static/standalone.js": "31edd8ec911962950c722f411fc5cde0504f67d159a1a929aabd892995fdcfae",
+    "python/xyg/static/wasm-worker.js": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+  },
+  "browser": "156.0.8078.4",
+  "chromiumSha256": "377a9fc07b495c3b8d0ab8ec1fdfd153641759f9756fea34d8dfce4de82f5025",
+  "captures": {
+    "complete-box.png": "5142b95283af2181972ff311989411ae62ac52ced45f43ee445d419b0ae1f9a6",
+    "complete-lasso.png": "63ac604265aa8a92937c536006eaef016f92b1f1efd7eadf0e1e5ed82ed3e58a",
+    "final.png": "63ac604265aa8a92937c536006eaef016f92b1f1efd7eadf0e1e5ed82ed3e58a",
+    "initial.png": "9fa1d58f60e82adf599bcfc92a6abcff6d5cea4592c311296a7d734ca26e3568",
+    "progressive-box.png": "c11d17564f54e3078f24e4f4aaba1275ba4e50aed170115b0eff9aa1269852ca",
+    "progressive-lasso.png": "7387efd67385befa45f0e22b602eddfc7b688accbcca62a1585d62ede6ac57c6"
+  },
+  "notebookSourceSha256": "8eef2f9c28400f07fa370eebb4ec034eb3cb44a2ab2d04ee03291368dbf80957",
+  "notebookReportSha256": "e5fa2564b2fd3f80811d826ccbba8e79ee3927d92b176b3ad89b583c83b45b8f",
+  "nodeVersion": "v22.23.4",
+  "wasm": "No WASM binary executed by this native notebook; generated worker artifacts bound without WASM parity claim.",
+  "checks": {
+    "xyg-geometry-main-abi.log": {
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "archiveSha256": "aa3af828689b39e5cb48e96ed8fa99ca3d3a9326510eb29838bb24208e32deba"
+    },
+    "xyg-geometry-main-bindings.log": {
+      "rawSha256": "8f819b75940eb4b1dc61404cc16ea2a90c4db443899f846744ae5a24ffbdc6f6",
+      "archiveSha256": "ff3db70ad8a11eb653ff210cfa9d1f17dddb096fd4f845855c3263482247eef9"
+    },
+    "xyg-geometry-main-build-native.log": {
+      "rawSha256": "4ff7bd44a484d5311f86565e2f87baec2c492cd3f4eca1f1cc13e344ae9bacb6",
+      "archiveSha256": "43735005a7235cc79a29f048fbe4407f4ceac7a34b2c4979f8fe17c79d2b7f9e"
+    },
+    "xyg-geometry-main-build.log": {
+      "rawSha256": "a326558a932a2a67436a997ada30bbb04a637812287a7435cac205a7a51c6e71",
+      "archiveSha256": "04d8bec07eb872230bbd6e48b28baf6e16b5cec0aec38f2faa25b5e242bd2b5f"
+    },
+    "xyg-geometry-main-focused.log": {
+      "rawSha256": "506e1b36d7726c558492a45b424a1da77439d9821a356c3d3bef529c8e10a24c",
+      "archiveSha256": "ce8008f741479e0afcdf5d6fd017cf9035803a3537fe19aa588a90af13a54811"
+    },
+    "xyg-geometry-main-format.log": {
+      "rawSha256": "cc538e17af1940ec0a16ea7e360b3a394df9e1fd9caed2d2c4e109c351bbf919",
+      "archiveSha256": "dfc4ef8ea5a242a88f2a4d87df8eda65a629c2a5d068b530577649172a194ad9"
+    },
+    "xyg-geometry-main-hooks-before-proof.log": {
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "xyg-geometry-main-hooks.log": {
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "xyg-geometry-main-inventory.log": {
+      "rawSha256": "8361f487b98a086bb0e93039928b61981747250d6fdaa8c1b8647e7c616f0c14",
+      "archiveSha256": "91833b949856b615e4199e79945bb41ed2e7897484711f7a5d55a60e3eff8b7a"
+    },
+    "xyg-geometry-main-node-pinned.log": {
+      "rawSha256": "74fd8db4e1c736badc27bf87c687c744f8efc9bb063076ea2d4eac8752bc6465",
+      "archiveSha256": "da43dd87f412a28fe48f4f162104fd46951543289a1c19c641d44b884b9503c4"
+    },
+    "xyg-geometry-main-node.log": {
+      "rawSha256": "78dc741df04645482c3d98c902f1967e0fe3fdb17a9f32f83d7ab12bf9379072",
+      "archiveSha256": "771211856ef59dbe6aafaaaecbecfbdb936fa8e207ec3679799914aa7161ee5f"
+    },
+    "xyg-geometry-main-notebook.log": {
+      "rawSha256": "bde65dda701ccf1dc20f92625af2ea14bb22784d078f2c404d606a09a14b84d4",
+      "archiveSha256": "00814245cdff5c9e053e6cf51fdb9348a9ae20606ba55f3e5f8f430bf3eeaf7c"
+    },
+    "xyg-geometry-main-ownership.log": {
+      "rawSha256": "05bc4e08ec18b45b65e6d57b56638a446616e313033b4454dac2a20eb6881f92",
+      "archiveSha256": "71bf382df077eb558ae75bab053c531c4799d88dd28951e1e9f75242231d01f4"
+    },
+    "xyg-geometry-main-premerge-hooks.log": {
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "xyg-geometry-main-render.log": {
+      "rawSha256": "ad5d2219068dfc60b3ab02238ac10d10cfa033b897cb21f321bf5cbd0095d128",
+      "archiveSha256": "e3c54d1a75b9644b457e1206c4675385fe3362b5fe68a9c87cd84692abbf2a9a"
+    },
+    "xyg-geometry-main-report.log": {
+      "rawSha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754",
+      "archiveSha256": "1db736b9b3e393083ed8c8ce69f36dd8c773ce3eac3c8e1a9c32efccb85c1056"
+    },
+    "xyg-geometry-main-ruff.log": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd"
+    },
+    "xyg-geometry-main-ty.log": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd"
+    },
+    "stagedFullHooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    }
+  },
+  "priorReceiptSha256": "a7469bbc7551b51ac81571942001e6c8127831c1b6d9c266d65e37a33824a82d",
+  "validation": {
+    "freshFocusedNativeSeams": {
+      "tests": 119,
+      "exitCode": 0
+    },
+    "currentBindingsLFCRLF": {
+      "tests": 7,
+      "exitCode": 0
+    },
+    "abi": {
+      "checks": 673,
+      "exitCode": 0
+    },
+    "node22Transport": {
+      "tests": 6,
+      "exitCode": 0
+    },
+    "strictRealNotebook": {
+      "exitCode": 0
+    },
+    "genericBrowserRender": {
+      "exitCode": 0
+    },
+    "nativeReleaseBuildJobs2": {
+      "exitCode": 0
+    },
+    "typesOwnershipInventory": {
+      "exitCode": 0
+    },
+    "fullHooksRuff": {
+      "exitCode": 0
+    },
+    "earlierCiConfigurationGate": {
+      "tests": 770,
+      "scope": "pre-main configuration evidence, not rerun on merge"
+    }
+  }
+}

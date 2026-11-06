@@ -1,0 +1,3136 @@
+{
+  "geometry": [
+    {
+      "phase": "progressive",
+      "mode": "box",
+      "expected": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        }
+      ],
+      "startStep": 81,
+      "endStep": 89,
+      "path": [
+        [
+          448,
+          1162
+        ],
+        [
+          1256,
+          840
+        ]
+      ],
+      "event": {
+        "kind": "select",
+        "detail": {
+          "total": 12,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "89"
+      },
+      "pointer": [
+        {
+          "kind": "pointerdown",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 448,
+          "y": 1162,
+          "step": "81"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 650,
+          "y": 1081.5,
+          "step": "81"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 852,
+          "y": 1001,
+          "step": "89"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 1054,
+          "y": 920.5,
+          "step": "89"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 1256,
+          "y": 840,
+          "step": "89"
+        },
+        {
+          "kind": "pointerup",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 0,
+          "x": 1256,
+          "y": 840,
+          "step": "89"
+        }
+      ],
+      "picture": {
+        "edgeInk": 1960,
+        "colors": 1337,
+        "width": 824,
+        "height": 338,
+        "sha256": "c11d17564f54e3078f24e4f4aaba1275ba4e50aed170115b0eff9aa1269852ca",
+        "step": "169"
+      }
+    },
+    {
+      "phase": "progressive",
+      "mode": "lasso",
+      "expected": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        }
+      ],
+      "startStep": 225,
+      "endStep": 257,
+      "path": [
+        [
+          697,
+          934
+        ],
+        [
+          707,
+          934
+        ],
+        [
+          707,
+          944
+        ],
+        [
+          697,
+          944
+        ],
+        [
+          697,
+          934
+        ]
+      ],
+      "event": {
+        "kind": "select",
+        "detail": {
+          "total": 4,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "257"
+      },
+      "pointer": [
+        {
+          "kind": "pointerdown",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 934,
+          "step": "233"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 702,
+          "y": 934,
+          "step": "233"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 707,
+          "y": 934,
+          "step": "233"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 707,
+          "y": 939,
+          "step": "241"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 707,
+          "y": 944,
+          "step": "241"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 702,
+          "y": 944,
+          "step": "249"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 944,
+          "step": "249"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 939,
+          "step": "257"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 934,
+          "step": "257"
+        },
+        {
+          "kind": "pointerup",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 0,
+          "x": 697,
+          "y": 934,
+          "step": "257"
+        }
+      ],
+      "picture": {
+        "edgeInk": 0,
+        "colors": 1210,
+        "width": 824,
+        "height": 338,
+        "sha256": "7387efd67385befa45f0e22b602eddfc7b688accbcca62a1585d62ede6ac57c6",
+        "step": "289"
+      }
+    },
+    {
+      "phase": "complete",
+      "mode": "box",
+      "expected": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        }
+      ],
+      "startStep": 300,
+      "endStep": 300,
+      "path": [
+        [
+          448,
+          791
+        ],
+        [
+          1256,
+          469
+        ]
+      ],
+      "event": {
+        "kind": "select",
+        "detail": {
+          "total": 12,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "300"
+      },
+      "pointer": [
+        {
+          "kind": "pointerdown",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 448,
+          "y": 791,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 650,
+          "y": 710.5,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 852,
+          "y": 630,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 1054,
+          "y": 549.5,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 1256,
+          "y": 469,
+          "step": "300"
+        },
+        {
+          "kind": "pointerup",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 0,
+          "x": 1256,
+          "y": 469,
+          "step": "300"
+        }
+      ],
+      "picture": {
+        "edgeInk": 1960,
+        "colors": 1355,
+        "width": 824,
+        "height": 338,
+        "sha256": "5142b95283af2181972ff311989411ae62ac52ced45f43ee445d419b0ae1f9a6",
+        "step": "300"
+      }
+    },
+    {
+      "phase": "complete",
+      "mode": "lasso",
+      "expected": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        }
+      ],
+      "startStep": 300,
+      "endStep": 300,
+      "path": [
+        [
+          697,
+          563
+        ],
+        [
+          707,
+          563
+        ],
+        [
+          707,
+          573
+        ],
+        [
+          697,
+          573
+        ],
+        [
+          697,
+          563
+        ]
+      ],
+      "event": {
+        "kind": "select",
+        "detail": {
+          "total": 4,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "300"
+      },
+      "pointer": [
+        {
+          "kind": "pointerdown",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 563,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 702,
+          "y": 563,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 707,
+          "y": 563,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 707,
+          "y": 568,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 707,
+          "y": 573,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 702,
+          "y": 573,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 573,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 568,
+          "step": "300"
+        },
+        {
+          "kind": "pointermove",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 1,
+          "x": 697,
+          "y": 563,
+          "step": "300"
+        },
+        {
+          "kind": "pointerup",
+          "trusted": true,
+          "target": "CANVAS",
+          "buttons": 0,
+          "x": 697,
+          "y": 563,
+          "step": "300"
+        }
+      ],
+      "picture": {
+        "edgeInk": 0,
+        "colors": 1210,
+        "width": 824,
+        "height": 338,
+        "sha256": "63ac604265aa8a92937c536006eaef016f92b1f1efd7eadf0e1e5ed82ed3e58a",
+        "step": "300"
+      }
+    }
+  ],
+  "geometryCallbacks": [
+    {
+      "identities": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        }
+      ],
+      "rows": [
+        {
+          "trace": 0,
+          "index": 0,
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000001",
+          "provenance_row": 0,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 1,
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000002",
+          "provenance_row": 1,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 2,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 3,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 4,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 5,
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000003",
+          "edge_id": "02000000-0000-0000-0000-000000000004",
+          "provenance_row": 3,
+          "type": "WORKS_AT",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 6,
+          "source": "01000000-0000-0000-0000-000000000003",
+          "target": "01000000-0000-0000-0000-000000000004",
+          "edge_id": "02000000-0000-0000-0000-000000000005",
+          "provenance_row": 4,
+          "type": "OWNS",
+          "step": null
+        },
+        {
+          "trace": 1,
+          "index": 0,
+          "id": "01000000-0000-0000-0000-000000000001",
+          "provenance_row": 0,
+          "name": "ada",
+          "type": "Person"
+        },
+        {
+          "trace": 1,
+          "index": 1,
+          "id": "01000000-0000-0000-0000-000000000002",
+          "provenance_row": 1,
+          "name": "Prof",
+          "type": "Person"
+        },
+        {
+          "trace": 1,
+          "index": 2,
+          "id": "01000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "name": "Acme",
+          "type": "Company"
+        },
+        {
+          "trace": 1,
+          "index": 3,
+          "id": "01000000-0000-0000-0000-000000000004",
+          "provenance_row": 3,
+          "name": null,
+          "type": "Company"
+        },
+        {
+          "trace": 1,
+          "index": 4,
+          "id": "01000000-0000-0000-0000-000000000005",
+          "provenance_row": 4,
+          "name": null,
+          "type": null
+        }
+      ]
+    },
+    {
+      "identities": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        }
+      ],
+      "rows": [
+        {
+          "trace": 0,
+          "index": 2,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 3,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 4,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 1,
+          "index": 1,
+          "id": "01000000-0000-0000-0000-000000000002",
+          "provenance_row": 1,
+          "name": "Prof",
+          "type": "Person"
+        }
+      ]
+    },
+    {
+      "identities": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000001",
+          "index": 0,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000004",
+          "index": 3,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000005",
+          "index": 4,
+          "layers": []
+        }
+      ],
+      "rows": [
+        {
+          "trace": 0,
+          "index": 0,
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000001",
+          "provenance_row": 0,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 1,
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000002",
+          "provenance_row": 1,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 2,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 3,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 4,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 5,
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000003",
+          "edge_id": "02000000-0000-0000-0000-000000000004",
+          "provenance_row": 3,
+          "type": "WORKS_AT",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 6,
+          "source": "01000000-0000-0000-0000-000000000003",
+          "target": "01000000-0000-0000-0000-000000000004",
+          "edge_id": "02000000-0000-0000-0000-000000000005",
+          "provenance_row": 4,
+          "type": "OWNS",
+          "step": null
+        },
+        {
+          "trace": 1,
+          "index": 0,
+          "id": "01000000-0000-0000-0000-000000000001",
+          "provenance_row": 0,
+          "name": "ada",
+          "type": "Person"
+        },
+        {
+          "trace": 1,
+          "index": 1,
+          "id": "01000000-0000-0000-0000-000000000002",
+          "provenance_row": 1,
+          "name": "Prof",
+          "type": "Person"
+        },
+        {
+          "trace": 1,
+          "index": 2,
+          "id": "01000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "name": "Acme",
+          "type": "Company"
+        },
+        {
+          "trace": 1,
+          "index": 3,
+          "id": "01000000-0000-0000-0000-000000000004",
+          "provenance_row": 3,
+          "name": null,
+          "type": "Company"
+        },
+        {
+          "trace": 1,
+          "index": 4,
+          "id": "01000000-0000-0000-0000-000000000005",
+          "provenance_row": 4,
+          "name": null,
+          "type": null
+        }
+      ]
+    },
+    {
+      "identities": [
+        {
+          "kind": "node",
+          "uuid": "01000000-0000-0000-0000-000000000002",
+          "index": 1,
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "uuid": "02000000-0000-0000-0000-000000000003",
+          "index": 2,
+          "layers": []
+        }
+      ],
+      "rows": [
+        {
+          "trace": 0,
+          "index": 2,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 3,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 0,
+          "index": 4,
+          "source": "01000000-0000-0000-0000-000000000002",
+          "target": "01000000-0000-0000-0000-000000000002",
+          "edge_id": "02000000-0000-0000-0000-000000000003",
+          "provenance_row": 2,
+          "type": "KNOWS",
+          "step": null
+        },
+        {
+          "trace": 1,
+          "index": 1,
+          "id": "01000000-0000-0000-0000-000000000002",
+          "provenance_row": 1,
+          "name": "Prof",
+          "type": "Person"
+        }
+      ]
+    }
+  ],
+  "artifactDir": "/home/ubuntu/.t3/worktrees/xyg/t3-8a2872a8/target/xyg-graph-notebook-LRwI3U",
+  "presentation": "Layout complete\nProgressive property graph. 2 data series. X axis ranges from -120 to 120. Y axis ranges from -60 to 60. Graph: 5 nodes, 5 visible labels, 0 compound groups, 0 selected, 0 disabled.\nPoint 2 of 5. x: -40, y: 20\nProgressive property graph\nGraphForge result\nno label\nCompany\nPerson\ndirected relationship\n109%",
+  "kernel": {
+    "clicks": [
+      {
+        "trace": 1,
+        "index": 0,
+        "id": "01000000-0000-0000-0000-000000000001",
+        "provenance_row": 0,
+        "name": "ada",
+        "type": "Person",
+        "graphforge": [
+          {
+            "kind": "node",
+            "uuid": "01000000-0000-0000-0000-000000000001",
+            "index": 0,
+            "layers": []
+          }
+        ]
+      },
+      {
+        "trace": 1,
+        "index": 0,
+        "id": "01000000-0000-0000-0000-000000000001",
+        "provenance_row": 0,
+        "name": "ada",
+        "type": "Person",
+        "graphforge": [
+          {
+            "kind": "node",
+            "uuid": "01000000-0000-0000-0000-000000000001",
+            "index": 0,
+            "layers": []
+          }
+        ]
+      }
+    ],
+    "native": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-8a2872a8/target/release/libxyg_core.so",
+      "sha256": "d0047472bf6122e490ca18dc921c5c2e9b4333a1397482780bc55b0daa96fd8d",
+      "abi": 399
+    },
+    "otherClicks": 0,
+    "hovers": 3,
+    "views": 2,
+    "selections": 2
+  },
+  "uuidSelection": {
+    "requested": [
+      "01000000-0000-0000-0000-000000000001",
+      "02000000-0000-0000-0000-000000000001"
+    ],
+    "identities": [
+      {
+        "kind": "node",
+        "index": 0,
+        "uuid": "01000000-0000-0000-0000-000000000001",
+        "layers": []
+      },
+      {
+        "kind": "edge",
+        "index": 0,
+        "uuid": "02000000-0000-0000-0000-000000000001",
+        "layers": [],
+        "derived": false,
+        "type": "KNOWS",
+        "source": "01000000-0000-0000-0000-000000000001",
+        "target": "01000000-0000-0000-0000-000000000002"
+      }
+    ]
+  },
+  "finalPointer": {
+    "before": 2,
+    "after": 3,
+    "id": "01000000-0000-0000-0000-000000000001",
+    "expectedId": "01000000-0000-0000-0000-000000000001"
+  },
+  "finalPointerVerified": true,
+  "expectedNativeHash": "d0047472bf6122e490ca18dc921c5c2e9b4333a1397482780bc55b0daa96fd8d",
+  "initialPicture": {
+    "edgeInk": 1581,
+    "colors": 952,
+    "width": 824,
+    "height": 338,
+    "sha256": "9fa1d58f60e82adf599bcfc92a6abcff6d5cea4592c311296a7d734ca26e3568",
+    "step": "41"
+  },
+  "widgetCount": 2,
+  "events": {
+    "actions": [
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 547.5
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 1,
+        "x": 962,
+        "y": 547.5
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 547.5
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "Home",
+        "target": "CANVAS",
+        "step": "41"
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "Enter",
+        "target": "CANVAS",
+        "step": "41"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 577.3333129882812,
+        "y": 1057.3333740234375,
+        "step": "49"
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 577.3333129882812,
+        "y": 1057.3333740234375,
+        "step": "49"
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 577.3333129882812,
+        "y": 1057.3333740234375,
+        "step": "49"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 852,
+        "y": 1001,
+        "step": "57"
+      },
+      {
+        "kind": "wheel",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 852,
+        "y": 1001,
+        "step": "65"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 448,
+        "y": 1162,
+        "step": "81"
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "Shift",
+        "target": "CANVAS",
+        "step": "81"
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 448,
+        "y": 1162,
+        "step": "81"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 650,
+        "y": 1081.5,
+        "step": "81"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 852,
+        "y": 1001,
+        "step": "89"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 1054,
+        "y": 920.5,
+        "step": "89"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 1256,
+        "y": 840,
+        "step": "89"
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 1256,
+        "y": 840,
+        "step": "89"
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "Home",
+        "target": "CANVAS",
+        "step": "209"
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "ArrowRight",
+        "target": "CANVAS",
+        "step": "209"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 697,
+        "y": 934,
+        "step": "225"
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 934,
+        "step": "233"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 702,
+        "y": 934,
+        "step": "233"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 707,
+        "y": 934,
+        "step": "233"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 707,
+        "y": 939,
+        "step": "241"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 707,
+        "y": 944,
+        "step": "241"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 702,
+        "y": 944,
+        "step": "249"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 944,
+        "step": "249"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 939,
+        "step": "257"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 934,
+        "step": "257"
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 697,
+        "y": 934,
+        "step": "257"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 630.6799926757812
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 1,
+        "x": 962,
+        "y": 630.6799926757812
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 630.6799926757812
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 914.4000244140625
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 1,
+        "x": 962,
+        "y": 914.4000244140625
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 914.4000244140625
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 448,
+        "y": 791,
+        "step": "300"
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 448,
+        "y": 791,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 650,
+        "y": 710.5,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 852,
+        "y": 630,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 1054,
+        "y": 549.5,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 1256,
+        "y": 469,
+        "step": "300"
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 1256,
+        "y": 469,
+        "step": "300"
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "Home",
+        "target": "CANVAS",
+        "step": "300"
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "ArrowRight",
+        "target": "CANVAS",
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 697,
+        "y": 563,
+        "step": "300"
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 563,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 702,
+        "y": 563,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 707,
+        "y": 563,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 707,
+        "y": 568,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 707,
+        "y": 573,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 702,
+        "y": 573,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 573,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 568,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 697,
+        "y": 563,
+        "step": "300"
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 697,
+        "y": 563,
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 630.6199951171875
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 1,
+        "x": 962,
+        "y": 630.6199951171875
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 630.6199951171875
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 630
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 1,
+        "x": 962,
+        "y": 630
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "DIV",
+        "buttons": 0,
+        "x": 962,
+        "y": 630
+      },
+      {
+        "kind": "keydown",
+        "trusted": true,
+        "key": "Home",
+        "target": "CANVAS",
+        "step": "300"
+      },
+      {
+        "kind": "pointermove",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 577.3333129882812,
+        "y": 686.3333129882812,
+        "step": "300"
+      },
+      {
+        "kind": "pointerdown",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 1,
+        "x": 577.3333129882812,
+        "y": 686.3333129882812,
+        "step": "300"
+      },
+      {
+        "kind": "pointerup",
+        "trusted": true,
+        "target": "CANVAS",
+        "buttons": 0,
+        "x": 577.3333129882812,
+        "y": 686.3333129882812,
+        "step": "300"
+      }
+    ],
+    "events": [
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "view": {
+            "ranges": {
+              "x": [
+                -120,
+                120
+              ],
+              "y": [
+                -60,
+                60
+              ]
+            },
+            "x0": -120,
+            "x1": 120,
+            "y0": -60,
+            "y1": 60,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              199.33333333333326,
+              265.3333333333335
+            ],
+            "data": {
+              "x": -80.00000000000003,
+              "y": -20.000000000000043
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "x": -80,
+                "y": -20,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          577.3333333333333,
+          1057.3333333333335
+        ],
+        "step": "41"
+      },
+      {
+        "kind": "click",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "screen": {
+            "x": 137.33333333333326,
+            "y": 225.33333333333348
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "view": {
+            "ranges": {
+              "x": [
+                -120,
+                120
+              ],
+              "y": [
+                -60,
+                60
+              ]
+            },
+            "x0": -120,
+            "x1": 120,
+            "y0": -60,
+            "y1": 60,
+            "source": "click"
+          }
+        },
+        "client": null,
+        "step": "41"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person",
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float"
+          },
+          "trace": 1,
+          "index": 0,
+          "exact": true,
+          "view": {
+            "ranges": {
+              "x": [
+                -120,
+                120
+              ],
+              "y": [
+                -60,
+                60
+              ]
+            },
+            "x0": -120,
+            "x1": 120,
+            "y0": -60,
+            "y1": 60,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              199.33333333333326,
+              265.3333333333335
+            ],
+            "data": {
+              "x": -80.00000000000003,
+              "y": -20.000000000000043
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person",
+                "x": -80,
+                "y": -20,
+                "x_kind": "float",
+                "y_kind": "float"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          577.3333333333333,
+          1057.3333333333335
+        ],
+        "step": "41"
+      },
+      {
+        "kind": "click",
+        "detail": {
+          "x": -80.09708737864077,
+          "y": -19.881656804733723,
+          "view": {
+            "ranges": {
+              "x": [
+                -120,
+                120
+              ],
+              "y": [
+                -60,
+                60
+              ]
+            },
+            "x0": -120,
+            "x1": 120,
+            "y0": -60,
+            "y1": 60,
+            "source": "click"
+          },
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0
+        },
+        "client": null,
+        "step": "49"
+      },
+      {
+        "kind": "view_change",
+        "detail": {
+          "ranges": {
+            "x": [
+              -109.67913792997598,
+              109.67913792997598
+            ],
+            "y": [
+              -54.83956896498799,
+              54.83956896498799
+            ]
+          },
+          "x0": -109.67913792997598,
+          "x1": 109.67913792997598,
+          "y0": -54.83956896498799,
+          "y1": 54.83956896498799,
+          "source": "wheel_zoom",
+          "axes": [
+            "x",
+            "y"
+          ],
+          "phase": "update",
+          "interaction_id": 2
+        },
+        "client": null,
+        "step": "65"
+      },
+      {
+        "kind": "view_change",
+        "detail": {
+          "ranges": {
+            "x": [
+              -109.67913792997598,
+              109.67913792997598
+            ],
+            "y": [
+              -54.83956896498799,
+              54.83956896498799
+            ]
+          },
+          "x0": -109.67913792997598,
+          "x1": 109.67913792997598,
+          "y0": -54.83956896498799,
+          "y1": 54.83956896498799,
+          "source": "wheel_zoom",
+          "axes": [
+            "x",
+            "y"
+          ],
+          "phase": "end",
+          "interaction_id": 2
+        },
+        "client": null,
+        "step": "81"
+      },
+      {
+        "kind": "select",
+        "detail": {
+          "total": 12,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "89"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              173.48706178705447,
+              270.6343283470726
+            ],
+            "data": {
+              "x": -80,
+              "y": -20.000000000000014
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "x": -80,
+                "y": -20,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          551.4870617870545,
+          1062.6343283470726
+        ],
+        "step": "209"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 1,
+            "x": -40,
+            "y": 20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000002",
+            "provenance_row": 1,
+            "name": "Prof",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 1,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              323.74353089352724,
+              147.3656716529274
+            ],
+            "data": {
+              "x": -40,
+              "y": 20.000000000000007
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 1,
+              "row": {
+                "trace": 1,
+                "index": 1,
+                "x": -40,
+                "y": 20,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000002",
+                "provenance_row": 1,
+                "name": "Prof",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          701.7435308935272,
+          939.3656716529274
+        ],
+        "step": "209"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 1,
+            "id": "01000000-0000-0000-0000-000000000002",
+            "provenance_row": 1,
+            "name": "Prof",
+            "type": "Person",
+            "x": -40,
+            "y": 20,
+            "x_kind": "float",
+            "y_kind": "float"
+          },
+          "trace": 1,
+          "index": 1,
+          "exact": true,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              323.74353089352724,
+              147.3656716529274
+            ],
+            "data": {
+              "x": -40,
+              "y": 20.000000000000007
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 1,
+              "row": {
+                "trace": 1,
+                "index": 1,
+                "id": "01000000-0000-0000-0000-000000000002",
+                "provenance_row": 1,
+                "name": "Prof",
+                "type": "Person",
+                "x": -40,
+                "y": 20,
+                "x_kind": "float",
+                "y_kind": "float"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          701.7435308935272,
+          939.3656716529274
+        ],
+        "step": "209"
+      },
+      {
+        "kind": "select",
+        "detail": {
+          "total": 4,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "257"
+      },
+      {
+        "kind": "select",
+        "detail": {
+          "total": 2,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "300"
+      },
+      {
+        "kind": "select",
+        "detail": {
+          "total": 12,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "300"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              173.48706178705447,
+              270.6343283470726
+            ],
+            "data": {
+              "x": -80,
+              "y": -20.000000000000014
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "x": -80,
+                "y": -20,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          551.4870617870545,
+          691.6343283470726
+        ],
+        "step": "300"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 1,
+            "x": -40,
+            "y": 20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000002",
+            "provenance_row": 1,
+            "name": "Prof",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 1,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              323.74353089352724,
+              147.3656716529274
+            ],
+            "data": {
+              "x": -40,
+              "y": 20.000000000000007
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 1,
+              "row": {
+                "trace": 1,
+                "index": 1,
+                "x": -40,
+                "y": 20,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000002",
+                "provenance_row": 1,
+                "name": "Prof",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          701.7435308935272,
+          568.3656716529274
+        ],
+        "step": "300"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 1,
+            "id": "01000000-0000-0000-0000-000000000002",
+            "provenance_row": 1,
+            "name": "Prof",
+            "type": "Person",
+            "x": -40,
+            "y": 20,
+            "x_kind": "float",
+            "y_kind": "float"
+          },
+          "trace": 1,
+          "index": 1,
+          "exact": true,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              323.74353089352724,
+              147.3656716529274
+            ],
+            "data": {
+              "x": -40,
+              "y": 20.000000000000007
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 1,
+              "row": {
+                "trace": 1,
+                "index": 1,
+                "id": "01000000-0000-0000-0000-000000000002",
+                "provenance_row": 1,
+                "name": "Prof",
+                "type": "Person",
+                "x": -40,
+                "y": 20,
+                "x_kind": "float",
+                "y_kind": "float"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          701.7435308935272,
+          568.3656716529274
+        ],
+        "step": "300"
+      },
+      {
+        "kind": "select",
+        "detail": {
+          "total": 4,
+          "view": {
+            "ranges": {
+              "x": [
+                -109.67913792997598,
+                109.67913792997598
+              ],
+              "y": [
+                -54.83956896498799,
+                54.83956896498799
+              ]
+            },
+            "x0": -109.67913792997598,
+            "x1": 109.67913792997598,
+            "y0": -54.83956896498799,
+            "y1": 54.83956896498799,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "300"
+      },
+      {
+        "kind": "view_change",
+        "detail": {
+          "ranges": {
+            "x": [
+              -120,
+              120
+            ],
+            "y": [
+              -60,
+              60
+            ]
+          },
+          "x0": -120,
+          "x1": 120,
+          "y0": -60,
+          "y1": 60,
+          "source": "reset",
+          "axes": [
+            "x",
+            "y"
+          ],
+          "phase": "end",
+          "interaction_id": 3
+        },
+        "client": null,
+        "step": "300"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "view": {
+            "ranges": {
+              "x": [
+                -120,
+                120
+              ],
+              "y": [
+                -60,
+                60
+              ]
+            },
+            "x0": -120,
+            "x1": 120,
+            "y0": -60,
+            "y1": 60,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              199.33333333333326,
+              265.33333333333337
+            ],
+            "data": {
+              "x": -80.00000000000003,
+              "y": -20.000000000000014
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "x": -80,
+                "y": -20,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          577.3333333333333,
+          686.3333333333334
+        ],
+        "step": "300"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person",
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float"
+          },
+          "trace": 1,
+          "index": 0,
+          "exact": true,
+          "view": {
+            "ranges": {
+              "x": [
+                -120,
+                120
+              ],
+              "y": [
+                -60,
+                60
+              ]
+            },
+            "x0": -120,
+            "x1": 120,
+            "y0": -60,
+            "y1": 60,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              199.33333333333326,
+              265.33333333333337
+            ],
+            "data": {
+              "x": -80.00000000000003,
+              "y": -20.000000000000014
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person",
+                "x": -80,
+                "y": -20,
+                "x_kind": "float",
+                "y_kind": "float"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          577.3333333333333,
+          686.3333333333334
+        ],
+        "step": "300"
+      },
+      {
+        "kind": "click",
+        "detail": {
+          "x": -80.09708737864077,
+          "y": -19.881656804733723,
+          "view": {
+            "ranges": {
+              "x": [
+                -120,
+                120
+              ],
+              "y": [
+                -60,
+                60
+              ]
+            },
+            "x0": -120,
+            "x1": 120,
+            "y0": -60,
+            "y1": 60,
+            "source": "click"
+          },
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": -80,
+            "y": -20,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0
+        },
+        "client": null,
+        "step": "300"
+      }
+    ]
+  },
+  "frames": [
+    {
+      "step": "1",
+      "time": 4669,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "9",
+      "time": 5464.800000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "17",
+      "time": 5530,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "25",
+      "time": 5596.10000038147,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "33",
+      "time": 5659.10000038147,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "41",
+      "time": 5723.700000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "49",
+      "time": 5876.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "57",
+      "time": 6001.800000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "65",
+      "time": 6063.300000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "73",
+      "time": 6112,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "81",
+      "time": 6172.700000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "89",
+      "time": 6259.300000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "97",
+      "time": 6344.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "105",
+      "time": 6514.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "113",
+      "time": 6548.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "121",
+      "time": 6581.700000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "129",
+      "time": 6613.10000038147,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "137",
+      "time": 6645.200000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "145",
+      "time": 6677.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "153",
+      "time": 6710.700000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "161",
+      "time": 6743.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "169",
+      "time": 6776.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "177",
+      "time": 6817.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "185",
+      "time": 6844.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "193",
+      "time": 6877.10000038147,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "201",
+      "time": 6927.10000038147,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "209",
+      "time": 6963.200000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "217",
+      "time": 7012.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "225",
+      "time": 7045.300000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "233",
+      "time": 7080.10000038147,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "241",
+      "time": 7128.700000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "249",
+      "time": 7160.700000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "257",
+      "time": 7194.200000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "265",
+      "time": 7270.800000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "273",
+      "time": 7341.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "281",
+      "time": 7403.700000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "289",
+      "time": 7471.200000286102,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "297",
+      "time": 7555.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "300",
+      "time": 7640,
+      "width": 824,
+      "height": 338
+    }
+  ],
+  "kernelVerified": true,
+  "disposed": true,
+  "pageErrors": [],
+  "ok": true,
+  "journey": "actual JupyterLab/IPython/anywidget/native retained graph",
+  "firstSteps": "9",
+  "finalSteps": "300",
+  "dimensions": {
+    "edgeInk": 0,
+    "colors": 1210,
+    "width": 824,
+    "height": 338,
+    "sha256": "63ac604265aa8a92937c536006eaef016f92b1f1efd7eadf0e1e5ed82ed3e58a",
+    "step": "300"
+  },
+  "browser": "156.0.8078.4",
+  "external": [],
+  "errors": [
+    "[anywidget] Deprecation Warning for xyg._graph_widget.GraphWidget: Direct export of a 'render' will likely be deprecated in the future. To migrate ...\n\nRemove the 'export' keyword from 'render'\n-----------------------------------------\n\nexport function render({ model, el }) { ... }\n^^^^^^\n\nCreate a default export that returns an object with 'render'\n------------------------------------------------------------\n\nfunction render({ model, el }) { ... }\n         ^^^^^^\nexport default { render }\n                 ^^^^^^\n\nPin to anywidget>=0.9.0 in your pyproject.toml\n----------------------------------------------\n\ndependencies = [\"anywidget>=0.9.0\"]\n\nTo learn more, please see: https://github.com/manzt/anywidget/pull/395.\n",
+    "[anywidget] Deprecation Warning for xyg._graph_widget.GraphWidget: Direct export of a 'render' will likely be deprecated in the future. To migrate ...\n\nRemove the 'export' keyword from 'render'\n-----------------------------------------\n\nexport function render({ model, el }) { ... }\n^^^^^^\n\nCreate a default export that returns an object with 'render'\n------------------------------------------------------------\n\nfunction render({ model, el }) { ... }\n         ^^^^^^\nexport default { render }\n                 ^^^^^^\n\nPin to anywidget>=0.9.0 in your pyproject.toml\n----------------------------------------------\n\ndependencies = [\"anywidget>=0.9.0\"]\n\nTo learn more, please see: https://github.com/manzt/anywidget/pull/395.\n",
+    "[.WebGL-0x3cc043ebc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x3cc043ebc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x3cc043ebc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x3cc043ebc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ]
+}

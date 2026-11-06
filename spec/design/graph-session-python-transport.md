@@ -415,3 +415,7 @@ otherwise-unused scalar vertex input. It applies the ordinary selected and
 unselected opacity tokens without new geometry or policy. Scalar-LUT segment
 selection styling is unchanged. The notebook report additionally requires an
 independent route-ink pixel difference between all-edge and loop-only states.
+
+The final merged-source/native proof is the append-only
+[accepted-main correction](../performance/graph-notebook-geometry-main-sync-2026-11-06/README.md).
+It preserves the earlier capture and corrects its rejected ancestry claim.
