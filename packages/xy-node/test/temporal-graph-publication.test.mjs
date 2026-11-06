@@ -112,6 +112,38 @@ test("public coordinator retries rejected input and packaged WASM output at the 
   } finally { assert.equal(x.xyg_wasm_instance_dispose(handle), 0); }
 });
 
+test("submitted revision is immutable while actual WASM reply delivery is delayed", async () => {
+  const { instance: { exports: x } } = await WebAssembly.instantiate(fs.readFileSync(wasmPath), {});
+  const handle = x.xyg_wasm_instance_new(1024);
+  let release, hold = true;
+  const worker = { async temporalGraphCommand(command) {
+    const { status, output } = execute(x, handle, Buffer.from(command));
+    if (status) throw Object.assign(new Error(`WASM status ${status}`), { status });
+    const reply = Uint8Array.from(output).buffer;
+    if (hold && new DataView(command).getUint32(12, true) === 2) {
+      hold = false;
+      return new Promise(resolve => { release = () => resolve(reply); });
+    }
+    return reply;
+  } };
+  const graph = await XygWasmTemporalGraph.create(worker, {
+    nodeIds: ids(1, 2), edgeIds: ids(), sourceIds: ids(), targetIds: ids(),
+  });
+  try {
+    const options = { revision: 1n, cursor: 0n, range: [0n, 40n], budget: 1000n };
+    const pending = graph.frame(options);
+    options.revision = 2n;
+    assert.equal(typeof release, "function");
+    release();
+    assert.equal((await pending).revision, 1n);
+    await assert.rejects(graph.frame({ ...options, revision: 1n }), RangeError);
+    assert.equal((await graph.frame(options)).revision, 2n);
+    let reads = 0;
+    assert.equal((await graph.frame({ ...options, get revision() { reads++; return 3n; } })).revision, 3n);
+    assert.equal(reads, 1);
+  } finally { graph.dispose(); assert.equal(x.xyg_wasm_instance_dispose(handle), 0); }
+});
+
 function controlledWorker() {
   const pending = [], layouts = [];
   const worker = {

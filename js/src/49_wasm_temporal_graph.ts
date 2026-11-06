@@ -69,20 +69,21 @@ export class XygWasmTemporalGraph {
   static async create(worker: XygWasmWorker, binding: XygWasmTemporalGraphBinding) { await worker.temporalGraphCommand(encodeWasmTemporalGraphCreate(binding)); return new XygWasmTemporalGraph(worker); }
   async frame(options: { revision: bigint; cursor: bigint; range: readonly [bigint, bigint]; budget: bigint }) {
     if (this.disposed) throw new Error("TemporalGraph is disposed");
+    const revision = options.revision;
     // Validate before superseding valid work or reserving a revision.
-    const command = encodeWasmTemporalGraphFrame(options.revision, options.cursor, options.range, options.budget);
-    if (options.revision <= this.revision || options.revision < this.requestedRevision
-        || (options.revision === this.requestedRevision && this.attempt !== null)) {
+    const command = encodeWasmTemporalGraphFrame(revision, options.cursor, options.range, options.budget);
+    if (revision <= this.revision || revision < this.requestedRevision
+        || (revision === this.requestedRevision && this.attempt !== null)) {
       throw new RangeError("temporal graph revision must be newer");
     }
     const attempt = {};
     this.attempt = attempt;
-    this.requestedRevision = options.revision;
+    this.requestedRevision = revision;
     this.layout?.cancel();
     this.layout = null;
     try {
       const frame = decodeWasmTemporalGraphFrame(await this.worker.temporalGraphCommand(command));
-      if (frame.revision !== options.revision || this.attempt !== attempt || this.disposed) {
+      if (frame.revision !== revision || this.attempt !== attempt || this.disposed) {
         throw new Error("Rust temporal graph returned a stale revision");
       }
       this.revision = frame.revision;

@@ -104,8 +104,10 @@ through JSON. Rust emits visibility, visible UUID membership, and remapped
 visible topology; TypeScript does not filter graph rows.
 
 The browser `XygWasmTemporalGraph` coordinator validates packed frame inputs
-before reserving a revision or cancelling active layout work. It tracks the
-highest submitted revision separately from the successfully returned frame
+before reserving a revision or cancelling active layout work. It captures the
+submitted revision once; later caller option mutations cannot change the encoded
+request or its reply check. It tracks the highest submitted revision separately
+from the successfully returned frame
 revision. A rejected frame command releases only its own attempt reservation,
 allowing that same highest revision to be retried. Lower superseded revisions,
 duplicate in-flight requests, and successfully returned revisions remain stale.
