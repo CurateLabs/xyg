@@ -210,9 +210,11 @@ export class XygWasmTemporalController {
       const result = decode(await this.worker.temporalCommand(view.buffer));
       this.state = result.state;
       for (const observer of [...this.stateObservers]) {
-        try { observer(result.state); } catch (error) {
+        const report = (error: unknown) => {
           void Promise.resolve().then(() => this.onError?.(error)).catch(() => {});
-        }
+        };
+        try { void Promise.resolve(observer(result.state)).catch(report); }
+        catch (error) { report(error); }
       }
       if (result.state.disposed) this.stateObservers.clear();
       if (result.event) this.onEvent?.(result.event);

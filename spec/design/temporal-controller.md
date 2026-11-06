@@ -214,6 +214,8 @@ Browser consumers may use `subscribeState(observer)` to observe each complete,
 immutable Rust result after publication, including received coordination events
 and disposal. It emits no initial snapshot; consumers read `state` when binding.
 Unsubscribe removes only that observer. Disposing clears subscriptions after
-notifying them. Observer exceptions are contained and reported to `onError`.
+notifying them. Synchronous observer exceptions and rejected observer promises
+are contained and reported to `onError`. Observer promises are not awaited and
+cannot delay temporal commands; failures from `onError` are also contained.
 The first automatic geographic consumer is specified in
 [geo-retained-hosts.md](geo-retained-hosts.md#automatic-browser-temporal-binding-50-partial).

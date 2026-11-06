@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"195e2339e4783c17a2783067da9774053cc63ac7",
+  "baseCommit":"f4052f326c70bb0bb9abb36a5dbb093585621c06",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1226,7 +1226,7 @@
   "js/src/49_wasm_graph.ts":"d0d8349587754609e502ca3a5d521fbbaa380ce97638b7a15c7d4bfab6e2c2c7",
   "js/src/49_wasm_graphforge.ts":"665845feaee64ea8cf5bd56586c9baf2298ed45ad7e4bdf76e1075c5d57d8e06",
   "js/src/49_wasm_semantic_graph.ts":"aeb8c5d126d27a45f6800f623e6a04611d9ba68590c35ebf4cadb5615f4cd7ae",
-  "js/src/49_wasm_temporal.ts":"d8443d178e7951f2ac4d865aa589f2e488386e291ac0ab31e3e3df704742cf0f",
+  "js/src/49_wasm_temporal.ts":"5af6cd26451de05d76ab280d3305f234ba5299b77f34190e3af117479e1daaaf",
   "js/src/49_wasm_temporal_graph.ts":"afd5a95197837ca762f87a69035590baa6ba8f4400fe5620b0bea336c6e86916",
   "js/src/49_wasm_ticks.ts":"e71b83b58b04c23a272a6644e2d2c46772011459dff13ac2c64cfe941c85ded5",
   "js/src/50_chartview.ts":"384c9c1724273f44674ca4b45ed0c3b33a869a024b7bcc67a67b91b306d9d148",
