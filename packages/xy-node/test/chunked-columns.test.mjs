@@ -81,3 +81,19 @@ test("chunked column pages expose budget and stale-generation diagnostics", () =
   );
   columns.close(); rmSync(dir, { recursive: true });
 });
+
+
+test("fetched detail corruption and stale empty reads fail closed", () => {
+  const dir = mkdtempSync(join(tmpdir(), "xyg-corrupt-detail-")), path = join(dir, "ordered.xygc");
+  artifact(path);
+  const columns = new ChunkedColumns(path);
+  try {
+    columns.cancelBefore(3);
+    assert.throws(() => columns.read([20, 30], { generation: 2 }), /cancelled by newer viewport/);
+    const fd = openSync(path, "r+"), value = Buffer.alloc(8);
+    try { value.writeDoubleLE(99); writeSync(fd, value, 0, 8, 64 + 48 * 3 + 16 + 8); }
+    finally { closeSync(fd); }
+    assert.throws(() => columns.read([0, 11], { generation: 3 }), /corrupt artifact/);
+    assert.throws(() => Array.from(columns.pages([0, 11], { pageBytes: 64, generation: 3 })), /corrupt artifact/);
+  } finally { columns.close(); rmSync(dir, { recursive: true }); }
+});

@@ -248,3 +248,17 @@ passed, but neither the control nor 100M worker or their verifier pairs ran.
 Actual M4 acceleration, new 100M normal-RAF proof, comparative scale and massive
 canonical-row localization evidence remain open. No CI fixture allocates 100M
 or invents a 60-FPS acceptance gate.
+
+
+## Canonical range-read failure proof (#110)
+
+`chunked_columns` Rust tests and `tests/test_chunked_columns.py` /
+`packages/xy-node/test/chunked-columns.test.mjs` use 8–12 rows to mutate detail
+bytes while preserving length and valid open-time metadata. Both paged and
+nonpaged reads reject inconsistent extrema; Rust also checks an interior x
+ordering violation and changed minimum. Stale empty/x-pruned and y-pruned
+nonpaged selections return cancellation, and a deterministic callback cancels
+at the final publication checkpoint. Existing exact-oracle, page-backpressure,
+legacy-v1, overview and non-finite fixtures remain the regression net. These
+checks neither authenticate arbitrary corruption nor establish larger-than-RAM
+latency, remote reads, chunk-cache reuse or complete #110 acceptance.
