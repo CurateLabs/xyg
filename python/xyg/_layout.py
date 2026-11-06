@@ -1241,9 +1241,11 @@ def scene_layout_rooms(
 
 
 def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
-    """Concrete pixel dimensions + plot rect from a spec — shared by the SVG and
-    native-PNG exporters so their chrome/plot geometry stays identical.
+    """Compatibility measurement from a payload spec, used by pyplot layout.
 
+    Native exports consume Scene plot bounds, not this legacy estimate. Fixed
+    pyplot frames carry the resolved Rust panel gutters into Scene as literal
+    authored margins; inspect emitted clip rectangles to verify native frames.
     Hosts still iterate axes, format ticks, measure ABI 125 rooms, resolve CSS
     visibility, and decide polar legend reservation. Padding, title-band,
     colorbar extra, right-y, floors, and polar recut combination live in Rust

@@ -1,0 +1,24 @@
+{
+  "_rose": {
+    "public_png_sha256": "7126b2c5228c0e66b80596d6be38e98698f0e08d31c125224a2316b4afa8e2c4",
+    "scene_png_sha256": "9218a9686640dd2a04aefc7f91c0dc450c6b699508fb380ccaa7ece8f25718d0",
+    "xywa_count": 64,
+    "commands_identical": true,
+    "scene_png_identical": true,
+    "dimensions": [
+      900,
+      420
+    ]
+  },
+  "_polar_bar": {
+    "public_png_sha256": "28b91d25f740bd40c5b66cfc8e7935d380cab4fcd11f1870d080599ca60f5bd9",
+    "scene_png_sha256": "d61f13aea3554a0f2a5e7caca6b28c4c126558119e57865660a355094b7d0218",
+    "xywa_count": 4,
+    "commands_identical": true,
+    "scene_png_identical": true,
+    "dimensions": [
+      240,
+      240
+    ]
+  }
+}

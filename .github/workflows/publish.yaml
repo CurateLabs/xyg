@@ -338,7 +338,7 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/xyg-v* ]]; then
             version_args=(--tag "$GITHUB_REF_NAME")
           else
-            version_args=(--version "0.0.0-dryrun.${GITHUB_RUN_NUMBER}")
+            version_args=(--version "0.0.0-rc.${GITHUB_RUN_NUMBER}")
           fi
           python3 scripts/stage_browser_package.py \
             "${version_args[@]}" \
@@ -495,7 +495,7 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/xyg-v* ]]; then
             version_args=(--tag "$GITHUB_REF_NAME")
           else
-            version_args=(--version "0.0.0-dryrun.${GITHUB_RUN_NUMBER}")
+            version_args=(--version "0.0.0-rc.${GITHUB_RUN_NUMBER}")
           fi
           python3 scripts/stage_node_packages.py \
             "${version_args[@]}" \
@@ -534,7 +534,7 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/xyg-v* ]]; then
             version_args=(--tag "$GITHUB_REF_NAME")
           else
-            version_args=(--version "0.0.0-dryrun.${GITHUB_RUN_NUMBER}")
+            version_args=(--version "0.0.0-rc.${GITHUB_RUN_NUMBER}")
           fi
           python3 scripts/stage_node_packages.py \
             "${version_args[@]}" \

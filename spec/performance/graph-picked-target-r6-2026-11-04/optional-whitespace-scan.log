@@ -1,0 +1,139 @@
+packages/xy-node/test/graph-session-replay-helpers.mjs:50: new blank line at EOF.
+spec/performance/graph-picked-target-checkpoint-2026-11-04/client-build.log:5: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/client-build.log:18: trailing whitespace.
++ [38;5;240m   │[0m                                                    ─────┬─────  
+spec/performance/graph-picked-target-checkpoint-2026-11-04/client-build.log:20: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/client-build.log:24: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/client-build.log:33: trailing whitespace.
++ [38;5;240m   │[0m                                              ─────┬─────  
+spec/performance/graph-picked-target-checkpoint-2026-11-04/client-build.log:35: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/full-nonreceipt.patch:24: trailing whitespace.
++ 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/full-nonreceipt.patch:125: trailing whitespace.
++ 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/full-nonreceipt.patch:129: trailing whitespace.
++ 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/full-nonreceipt.patch:245: trailing whitespace.
++ 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/full-nonreceipt.patch:281: trailing whitespace.
++ 
+spec/performance/graph-picked-target-checkpoint-2026-11-04/initial-rust-137.log:207: new blank line at EOF.
+spec/performance/graph-picked-target-checkpoint-2026-11-04/restore-baseline.log:4: new blank line at EOF.
+spec/performance/graph-picked-target-checkpoint-2026-11-04/rust-focused.log:146: new blank line at EOF.
+spec/performance/graph-picked-target-r2-2026-11-04/client-build.log:5: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-r2-2026-11-04/client-build.log:18: trailing whitespace.
++ [38;5;240m   │[0m                                                    ─────┬─────  
+spec/performance/graph-picked-target-r2-2026-11-04/client-build.log:20: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-r2-2026-11-04/client-build.log:24: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-r2-2026-11-04/client-build.log:33: trailing whitespace.
++ [38;5;240m   │[0m                                              ─────┬─────  
+spec/performance/graph-picked-target-r2-2026-11-04/client-build.log:35: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-r2-2026-11-04/full-nonreceipt.patch:24: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r2-2026-11-04/full-nonreceipt.patch:125: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r2-2026-11-04/full-nonreceipt.patch:129: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r2-2026-11-04/full-nonreceipt.patch:266: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r2-2026-11-04/full-nonreceipt.patch:310: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r2-2026-11-04/restore-baseline.log:5: new blank line at EOF.
+spec/performance/graph-picked-target-r2-2026-11-04/rust-focused.log:146: new blank line at EOF.
+spec/performance/graph-picked-target-r2-2026-11-04/rust-reuse.log:11: new blank line at EOF.
+spec/performance/graph-picked-target-r3-2026-11-04/client-build.log:5: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-r3-2026-11-04/client-build.log:18: trailing whitespace.
++ [38;5;240m   │[0m                                                    ─────┬─────  
+spec/performance/graph-picked-target-r3-2026-11-04/client-build.log:20: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-r3-2026-11-04/client-build.log:24: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-r3-2026-11-04/client-build.log:33: trailing whitespace.
++ [38;5;240m   │[0m                                              ─────┬─────  
+spec/performance/graph-picked-target-r3-2026-11-04/client-build.log:35: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-r3-2026-11-04/full-nonreceipt.patch:24: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r3-2026-11-04/full-nonreceipt.patch:128: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r3-2026-11-04/full-nonreceipt.patch:133: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r3-2026-11-04/full-nonreceipt.patch:151: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r3-2026-11-04/full-nonreceipt.patch:153: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r3-2026-11-04/full-nonreceipt.patch:284: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r3-2026-11-04/full-nonreceipt.patch:328: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r3-2026-11-04/r2-transcript-capture-fixed.log:11: new blank line at EOF.
+spec/performance/graph-picked-target-r3-2026-11-04/r3-wire-comparison.log:11: new blank line at EOF.
+spec/performance/graph-picked-target-r3-2026-11-04/restore-baseline.log:6: new blank line at EOF.
+spec/performance/graph-picked-target-r3-2026-11-04/rust-checkpoint.log:161: new blank line at EOF.
+spec/performance/graph-picked-target-r4-2026-11-04/diagnostic-corpus-final.log:19: new blank line at EOF.
+spec/performance/graph-picked-target-r4-2026-11-04/diagnostic-corpus.log:19: new blank line at EOF.
+spec/performance/graph-picked-target-r4-2026-11-04/full-nonreceipt.patch:24: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r4-2026-11-04/full-nonreceipt.patch:143: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r4-2026-11-04/full-nonreceipt.patch:149: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r4-2026-11-04/full-nonreceipt.patch:293: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r4-2026-11-04/full-nonreceipt.patch:340: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r4-2026-11-04/full-nonreceipt.patch:346: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r4-2026-11-04/full-nonreceipt.patch:413: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r4-2026-11-04/restore-baseline.log:7: new blank line at EOF.
+spec/performance/graph-picked-target-r4-2026-11-04/rust-actual-separated-lanes.log:17: new blank line at EOF.
+spec/performance/graph-picked-target-r4-2026-11-04/rust-broader-cases.log:19: new blank line at EOF.
+spec/performance/graph-picked-target-r4-2026-11-04/rust-complete-cases.log:19: new blank line at EOF.
+spec/performance/graph-picked-target-r4-2026-11-04/rust-interaction-final.log:169: new blank line at EOF.
+spec/performance/graph-picked-target-r5-2026-11-04/actual-query-corpus.log:19: new blank line at EOF.
+spec/performance/graph-picked-target-r5-2026-11-04/client-build.log:5: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-r5-2026-11-04/client-build.log:18: trailing whitespace.
++ [38;5;240m   │[0m                                                    ─────┬─────  
+spec/performance/graph-picked-target-r5-2026-11-04/client-build.log:20: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-r5-2026-11-04/client-build.log:24: trailing whitespace.
++[plugin builtin:vite-reporter] 
+spec/performance/graph-picked-target-r5-2026-11-04/client-build.log:33: trailing whitespace.
++ [38;5;240m   │[0m                                              ─────┬─────  
+spec/performance/graph-picked-target-r5-2026-11-04/client-build.log:35: trailing whitespace.
++ [38;5;240m   │[0m 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:24: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:143: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:149: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:1813: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:1840: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:2119: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:2125: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:2225: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:2239: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/full-nonreceipt.patch:2290: trailing whitespace.
++ 
+spec/performance/graph-picked-target-r5-2026-11-04/python-host-audit.log:214: new blank line at EOF.
+spec/performance/graph-picked-target-r5-2026-11-04/rust-interaction.log:171: new blank line at EOF.
+spec/performance/graph-picked-target-r6-2026-11-04/python-host-audit.log:214: new blank line at EOF.
+spec/performance/graph-picked-target-r6-2026-11-04/rust-interaction.log:170: new blank line at EOF.

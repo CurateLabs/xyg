@@ -7195,7 +7195,13 @@ class Axes(PlotTypeMixin):
                 ticks = ticks[(ticks >= lo - pad) & (ticks <= hi + pad)]
             auto_log = is_log
         props["tick_values"] = list(map(float, _scale_values(ticks, spec)))
-        if formatter is not None:
+        if _is_null_formatter(formatter):
+            # Scene tick labels are nonempty strings. Hide labels through the
+            # shared axis policy while retaining locator positions (#889).
+            props.pop("tick_labels", None)
+            if props.get("tick_label_strategy") != "none":
+                props["tick_label_strategy"] = "off"
+        elif formatter is not None:
             props["tick_labels"] = _formatter_tick_labels(
                 formatter,
                 ticks,
@@ -7212,6 +7218,20 @@ class Axes(PlotTypeMixin):
             props["tick_labels"] = [f"{value:g}" for value in ticks]
         else:
             props.pop("tick_labels", None)
+        if _is_null_locator(locator) and not promoted_minor:
+            # The core's existing empty-list contract is automatic. Express a
+            # null major locator through authored chrome, preserving that
+            # contract and any separately authored minor tier.
+            props.pop("tick_labels", None)
+            if props.get("tick_label_strategy") != "none":
+                props["tick_label_strategy"] = "off"
+            props["style"] = {**(props.get("style") or {}), "tick_length": 0, "grid_width": 0}
+            if (minor_locator is None and not is_log) or _is_null_locator(minor_locator):
+                props["minor_style"] = {
+                    **(props.get("minor_style") or {}),
+                    "tick_length": 0,
+                    "grid_width": 0,
+                }
         if len(ticks):
             props["tick_count"] = len(ticks)
         else:
@@ -7246,6 +7266,20 @@ class Axes(PlotTypeMixin):
                 ~np.isclose(minor[:, None], ticks[None, :], rtol=1e-12, atol=0.0).any(axis=1)
             ]
         props["minor_tick_values"] = list(map(float, _scale_values(minor, spec)))
+        if _is_null_locator(locator) and not promoted_minor and len(minor):
+            # With no major locator, render the independent minor tier in the
+            # existing authored-major slot. Otherwise automatic majors would
+            # suppress coincident minors. Labels stay off; minor styling wins.
+            props["tick_values"] = props.pop("minor_tick_values")
+            props["style"] = {
+                **(props.get("style") or {}),
+                **(props.get("minor_style") or {}),
+            }
+            props["minor_style"] = {
+                **(props.get("minor_style") or {}),
+                "tick_length": 0,
+                "grid_width": 0,
+            }
 
     # -- materialization -----------------------------------------------------------
 
@@ -8492,6 +8526,19 @@ class Axes(PlotTypeMixin):
             coords=self._projection,
         )
         core_figure = self._chart.figure()
+        if chart_padding is not None and self._padding is None:
+            # These are the Rust-resolved panel gutters used by composition.
+            # Carry their literal final frame to XYCF's authored-margin slot;
+            # Scene must not measure another set of default tick/title rooms.
+            extra_top, extra_right, extra_bottom = self._outside_padding(width < 520)
+            top, right, bottom, left = map(float, chart_padding)
+            core_figure.__dict__["_pyplot_static_margins"] = (
+                left,
+                right + extra_right,
+                top + extra_top,
+                bottom + extra_bottom,
+            )
+
         named_sources = [
             entry.get("kwargs", {}).get("name")
             for entry in self._entries
@@ -9576,6 +9623,10 @@ _MATPLOTLIB_EPOCH = datetime(1970, 1, 1)
 
 def _is_foreign_matplotlib_date_object(value: Any) -> bool:
     return (type(value).__module__ or "").startswith("matplotlib.dates")
+
+
+def _is_null_locator(value: Any) -> bool:
+    return value is not None and type(value).__name__ == "NullLocator"
 
 
 def _is_null_formatter(value: Any) -> bool:

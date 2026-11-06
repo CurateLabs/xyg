@@ -160,11 +160,6 @@ def test_svg_draws_rings_spokes_and_one_outer_frame() -> None:
     assert doc.count('data-xy-frame="polar"') == 1
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_svg_clips_marks_to_the_disc_but_not_the_legend() -> None:
     """Two clip paths, deliberately.
 
@@ -172,10 +167,17 @@ def test_svg_clips_marks_to_the_disc_but_not_the_legend() -> None:
     made a legend sitting outside the circle vanish from the SVG while the
     raster still drew it.
     """
-    doc = _svg(_chart())
-    clips = re.findall(r"<clipPath[^>]*>(.*?)</clipPath>", doc, re.S)
-    assert any("<circle" in c for c in clips), "marks need a disc clip"
-    assert any("<rect" in c for c in clips), "the legend still needs a rect clip"
+    from xml.etree import ElementTree as ET
+
+    doc = _svg(_chart(children=[xyg.line(*_rose(), name="outside disc")]))
+    root = ET.fromstring(doc)
+    assert root.findall(".//{*}clipPath/{*}circle"), "marks need a disc clip"
+    legend = root.find(".//{*}g[@data-xy-static-legend]")
+    assert legend is not None and "outside disc" in "".join(legend.itertext())
+    # The document legend is outside the clipped Scene data group.
+    assert not any(
+        legend in list(node.iter())[1:] for node in root.iter() if "clip-path" in node.attrib
+    )
 
 
 def test_polar_legend_survives_the_disc_clip() -> None:
@@ -195,11 +197,6 @@ def test_svg_degree_labels_carry_the_degree_sign() -> None:
     assert "°" in doc
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_svg_line_geometry_matches_the_shared_projection() -> None:
     """The rendered path must be the projection's output, not a lookalike."""
     theta, r = _rose(16)
@@ -211,7 +208,7 @@ def test_svg_line_geometry_matches_the_shared_projection() -> None:
     want_x, want_y = project(theta, r)
 
     doc = _svg(chart)
-    path = re.search(r'<path d="M ([^"]+)"', doc)
+    path = re.search(r'<polyline points="([^"]+)"', doc)
     assert path is not None
     numbers = [float(v) for v in re.findall(r"-?\d+\.?\d*", path.group(1))]
     got_x, got_y = numbers[0], numbers[1]
@@ -220,11 +217,6 @@ def test_svg_line_geometry_matches_the_shared_projection() -> None:
     assert got_y == pytest.approx(float(want_y[0]), abs=0.05)
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_raster_and_svg_agree_on_where_the_data_lands() -> None:
     """Cross-renderer check: the PNG must have ink where the projection says,
     and none at the cartesian location the same columns would produce.
@@ -250,7 +242,7 @@ def test_raster_and_svg_agree_on_where_the_data_lands() -> None:
     project = _PolarProjection(spec["x_axis"], spec["y_axis"], plot)
     px, py = project(theta, r)
 
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     # scale=1 so PNG pixels are in the same units as the layout rect.
     pixels = _decode_rgba(fig.to_image(format="png", scale=1))
@@ -441,11 +433,6 @@ def test_wind_rose_band_labels_are_readable() -> None:
         assert len(value.split(".")[-1]) <= 3, f"unreadable band label {bar_mark.name!r}"
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_polar_bars_reach_the_raster_export() -> None:
     chart = xyg.polar_bar_chart(
         xyg.bar([0.0, math.pi], [1.0, 1.0], width=1.0, color="#000000"),
@@ -456,7 +443,7 @@ def test_polar_bars_reach_the_raster_export() -> None:
     spec, _ = fig.build_payload_split()
     _w, _h, _c, plot = layout(spec)
     project = _PolarProjection(spec["x_axis"], spec["y_axis"], plot)
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     pixels = _decode_rgba(fig.to_image(format="png", scale=1))
     height, width, _ = pixels.shape
@@ -486,11 +473,6 @@ def _styled(theta_style=None, r_style=None, **axis_kwargs):
     )
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_grid_colour_separates_rings_from_spokes() -> None:
     """The radial axis owns the rings, the angular axis owns the spokes.
 
@@ -502,18 +484,13 @@ def test_grid_colour_separates_rings_from_spokes() -> None:
     ring = re.search(r'<circle data-xy-grid="ring"[^/]*?stroke="([^"]+)"', doc)
     spoke = re.search(r'<line data-xy-grid="spoke"[^/]*?stroke="([^"]+)"', doc)
     assert ring is not None and spoke is not None
-    assert ring.group(1) == "#ff00ff"
-    assert spoke.group(1) == "#00ffff"
+    assert ring.group(1) == "rgba(255,0,255,1.000000)"
+    assert spoke.group(1) == "rgba(0,255,255,1.000000)"
 
 
 @pytest.mark.parametrize(
     ("which", "theta_fill", "r_fill"),
     [("theta", "#00000000", None), ("r", None, "#00000000")],
-)
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
 )
 def test_text_shorthand_hides_only_its_own_axis_labels(
     which: str, theta_fill: str | None, r_fill: str | None
@@ -528,39 +505,28 @@ def test_text_shorthand_hides_only_its_own_axis_labels(
     doc = chart.figure().to_image(format="svg").decode()
     theta = re.search(r'<text data-xy-tick="theta"[^>]*fill="([^"]*)"', doc)
     radial = re.search(r'<text data-xy-tick="r"[^>]*fill="([^"]*)"', doc)
-    assert theta is not None and radial is not None
     if theta_fill:
-        assert theta.group(1) == theta_fill
-        assert radial.group(1) != theta_fill
+        assert theta is None
+        assert radial is not None
     if r_fill:
-        assert radial.group(1) == r_fill
-        assert theta.group(1) != r_fill
+        assert radial is None
+        assert theta is not None
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_explicit_tick_label_colour_beats_the_chart_slot() -> None:
     doc = _styled(
         theta_style={"tick_label_color": "#ff0000"},
         r_style={"tick_label_color": "#00ff00"},
     )
     doc = doc.figure().to_image(format="svg").decode()
-    assert re.search(r'<text data-xy-tick="theta"[^>]*fill="#ff0000"', doc)
-    assert re.search(r'<text data-xy-tick="r"[^>]*fill="#00ff00"', doc)
+    assert re.search(r'<text data-xy-tick="theta"[^>]*fill="rgba\(255,0,0,1.000000\)"', doc)
+    assert re.search(r'<text data-xy-tick="r"[^>]*fill="rgba\(0,255,0,1.000000\)"', doc)
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_raster_honours_axis_styling_too() -> None:
     """The exporters share geometry but not text placement, so the raster path
     needs its own assertion — this is where styling has silently diverged."""
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     chart = _styled(
         theta_style={"tick_label_color": "#ff0000"},
@@ -576,16 +542,10 @@ def test_raster_honours_axis_styling_too() -> None:
     assert count((255, 0, 255)) > 0, "rings ignored the radial grid_color"
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_show_false_clears_the_outer_frame() -> None:
     doc = _styled(**{"theta": {"show": False}}).figure().to_image(format="svg").decode()
     frame = re.search(r'<circle data-xy-frame="polar"[^/]*/>', doc)
-    assert frame is not None
-    assert 'stroke-width="0"' in frame.group(0) or "#00000000" in frame.group(0)
+    assert frame is None or 'stroke-width="0"' in frame.group(0) or "#00000000" in frame.group(0)
 
 
 # -- audit round 2: chrome leaks, strategy off, angle, ceiling, pdf --------
@@ -677,11 +637,6 @@ def test_polar_pdf_export_round_trips() -> None:
     assert len(pdf) > 800
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_channel_styled_polar_scatter_stays_inside_the_disc() -> None:
     """A colormapped/sized polar scatter took a second Rust affine fast path
     that projected (theta, r) as cartesian (x, y): a diagonal line of points
@@ -697,7 +652,7 @@ def test_channel_styled_polar_scatter_stays_inside_the_disc() -> None:
     _w, _h, _c, plot = layout(spec)
     project = _PolarProjection(spec["x_axis"], spec["y_axis"], plot)
 
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     pixels = _decode_rgba(fig.to_image(format="png", scale=1))
     height, width, _ = pixels.shape
@@ -777,11 +732,6 @@ def test_radar_rejects_column_names_with_a_readable_error() -> None:
 # -- radial clipping semantics ---------------------------------------------
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_below_range_scatter_is_culled_not_mirrored() -> None:
     """A radius below an authored r_lo normalizes negative and mirrors through
     the centre to a position INSIDE the disc, where no clip can hide it. The
@@ -813,7 +763,7 @@ def test_below_range_scatter_is_culled_not_mirrored() -> None:
         "SVG dropped the in-range point too"
     )
 
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     pixels = _decode_rgba(fig.to_image(format="png", scale=1))
 
@@ -826,11 +776,6 @@ def test_below_range_scatter_is_culled_not_mirrored() -> None:
     assert darkest_near(kept_x, kept_y) < 128, "raster dropped the in-range point too"
 
 
-@pytest.mark.xfail(
-    reason="Rich polar configs are rejected by the public Scene predicate and the "
-    "compatibility polar renderer is retired; tracked in #889.",
-    strict=False,
-)
 def test_above_range_scatter_leaves_no_ink_beyond_the_ring() -> None:
     """The raster path has no disc clip, so an above-range point used to draw
     past the outer ring into the corner the disc does not cover."""
@@ -846,7 +791,7 @@ def test_above_range_scatter_leaves_no_ink_beyond_the_ring() -> None:
     project = _PolarProjection(spec["x_axis"], spec["y_axis"], plot)
     px, py = (float(v) for v in project(math.pi / 4, 1.3))
 
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     pixels = _decode_rgba(fig.to_image(format="png", scale=1))
     window = pixels[int(py) - 3 : int(py) + 4, int(px) - 3 : int(px) + 4, 0]
@@ -901,7 +846,7 @@ def test_full_turn_slice_draws_an_annulus_not_nothing() -> None:
     spec, _ = fig.build_payload_split()
     _w, _h, _c, plot = layout(spec)
     project = _PolarProjection(spec["x_axis"], spec["y_axis"], plot)
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     pixels = _decode_rgba(fig.to_image(format="png", scale=1))
     for degrees in (0.0, 90.0, 180.0, 270.0):
@@ -1135,7 +1080,7 @@ def test_raster_polar_wedge_honours_a_gradient_fill() -> None:
     """The gradient reached the SVG (`url(#g)`) and the browser but the raster
     branch painted flat, so the PNG disagreed with both.
     """
-    from test_png_export import _decode_rgba
+    from test_png_public_export import _decode_rgba
 
     chart = xyg.polar_chart(
         xyg.bar(
@@ -1217,9 +1162,7 @@ def test_reversed_radial_axis_keeps_wedges_in_static_exports() -> None:
 @pytest.mark.parametrize(
     ("label", "theta_kwargs", "r_kwargs"),
     [
-        pytest.param(
-            "hole", {}, {"hole": 0.3}, marks=pytest.mark.xfail(reason=_POLAR_889, strict=False)
-        ),
+        ("hole", {}, {"hole": 0.3}),
         ("sector", {"sector": (0.0, 90.0)}, {}),
         ("hole+sector", {"sector": (20.0, 160.0)}, {"hole": 0.4}),
     ],
@@ -1262,45 +1205,29 @@ def test_raster_polar_area_culls_vertices_outside_the_sector() -> None:
     position_mask) and the shader cull out-of-sector and NaN vertices. The PNG
     painted the full-turn polygon with chords across the sector boundary and
     let NaN reach the display list (§19)."""
-    from xyg import _raster
+    from test_png_public_export import _decode_rgba
 
-    captured: list[int] = []
-    original_fill = _raster._Cmd.fill
-    original_grad = _raster._Cmd.grad
-
-    def spy_fill(self, pts, color):
-        captured.append(len(pts))
-        return original_fill(self, pts, color)
-
-    def spy_grad(self, pts, g0, g1, stops):
-        captured.append(len(pts))
-        return original_grad(self, pts, g0, g1, stops)
-
-    _raster._Cmd.fill = spy_fill
-    _raster._Cmd.grad = spy_grad
-    try:
-        theta = np.linspace(0.0, 360.0, 40)
-        r = 1 + 0.3 * np.sin(np.radians(theta) * 3)
-        r_nan = r.copy()
-        r_nan[20] = np.nan
-        chart = xyg.polar_chart(
-            xyg.area(theta, r_nan),
-            xyg.theta_axis(unit="degrees", sector=(0.0, 90.0)),
-            xyg.r_axis(domain=(0.0, 1.5)),
-            width=320,
-            height=300,
-        )
-        chart.figure().to_image(format="png", scale=1)
-    finally:
-        _raster._Cmd.fill = original_fill
-        _raster._Cmd.grad = original_grad
-
-    in_sector = int(((theta >= 0.0) & (theta <= 90.0)).sum())
-    area_polys = [n for n in captured if n > 8]
-    assert area_polys, "the area fill vanished entirely"
-    # Every emitted polygon must be bounded by the visible-run size, not the
-    # full 2 * 40-vertex turn.
-    assert all(n <= 2 * in_sector for n in area_polys), (theta.size, area_polys)
+    theta = np.linspace(0.0, 360.0, 40)
+    radius = 1 + 0.3 * np.sin(np.radians(theta) * 3)
+    radius[20] = np.nan
+    figure = xyg.polar_chart(
+        xyg.area(theta, radius, color="#ff0000", opacity=1),
+        xyg.theta_axis(unit="degrees", sector=(0.0, 90.0)),
+        xyg.r_axis(domain=(0.0, 1.5)),
+        width=320,
+        height=300,
+    ).figure()
+    # Inspect the public Rust PNG, never the deleted compatibility command
+    # writer. The red data fill must exist only in the authored quadrant.
+    pixels = _decode_rgba(figure.to_image(format="png", scale=1))
+    red = (pixels[..., 0] > 200) & (pixels[..., 1] < 100) & (pixels[..., 2] < 100)
+    assert red.any(), "the area fill vanished entirely"
+    spec, _ = figure.build_payload_split()
+    projection = _PolarProjection(spec["x_axis"], spec["y_axis"], layout(spec)[3])
+    center_x, center_y = projection(0.0, 0.0)
+    rows, columns = np.where(red)
+    assert int(columns.min()) >= math.floor(float(center_x))
+    assert int(rows.max()) <= math.ceil(float(center_y))
 
 
 # -- pie_chart composition ---------------------------------------------------

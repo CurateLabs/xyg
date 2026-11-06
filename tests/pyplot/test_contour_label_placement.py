@@ -164,7 +164,6 @@ def test_clabel_uses_entry_identity_with_filled_and_multiple_line_contours() -> 
     assert b"<text" in output.getvalue()
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_matplotlib_style_extremes_are_shared_by_images_and_contours() -> None:
     class MatplotlibStyleCmap:
         name = "winter"
@@ -202,8 +201,8 @@ def test_matplotlib_style_extremes_are_shared_by_images_and_contours() -> None:
     output = io.BytesIO()
     fig.savefig(output, format="svg")
     svg = output.getvalue()
-    assert b"rgb(255,0,0)" in svg
-    assert b"rgb(0,0,255)" in svg
+    assert b"rgba(255,0,0,1.000000)" in svg
+    assert b"rgba(0,0,255,1.000000)" in svg
 
 
 @pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)

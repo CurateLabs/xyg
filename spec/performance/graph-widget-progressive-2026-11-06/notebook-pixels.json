@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "journey": "actual JupyterLab/IPython/anywidget/native retained graph",
+  "firstSteps": "41",
+  "finalSteps": "458",
+  "dimensions": {
+    "width": 900,
+    "height": 420,
+    "painted": 415
+  },
+  "browser": "156.0.8078.4",
+  "external": [],
+  "errors": [
+    "[anywidget] Deprecation Warning for xyg._graph_widget.GraphWidget: Direct export of a 'render' will likely be deprecated in the future. To migrate ...\n\nRemove the 'export' keyword from 'render'\n-----------------------------------------\n\nexport function render({ model, el }) { ... }\n^^^^^^\n\nCreate a default export that returns an object with 'render'\n------------------------------------------------------------\n\nfunction render({ model, el }) { ... }\n         ^^^^^^\nexport default { render }\n                 ^^^^^^\n\nPin to anywidget>=0.9.0 in your pyproject.toml\n----------------------------------------------\n\ndependencies = [\"anywidget>=0.9.0\"]\n\nTo learn more, please see: https://github.com/manzt/anywidget/pull/395.\n",
+    "[.WebGL-0x3cb403e07c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x3cb403e07c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x3cb403e07c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x3cb403e07c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ]
+}

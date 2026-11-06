@@ -731,6 +731,20 @@ reduced, retains canonical u64 row identity, and records available points, sourc
 rows, and zero detail rows read. Fully non-finite overview windows are omitted
 without rejecting an otherwise valid detail chunk.
 
+Fetched detail slabs are validated against their admitted finite x/y extrema
+and finite-x ordering before either read mode publishes rows. Structural mismatch
+returns the existing corrupt-artifact error (code 2), discarding the whole result
+or page, including any previously gathered chunks in that call. Validation uses
+constant scratch space beyond the existing bounded raw slab; it adds a linear
+pass over fetched bytes and performs no extra I/O. Non-finite canonical values
+keep their existing omission semantics. This detects inconsistent extrema and
+ordering, not arbitrary same-length edits that preserve those facts, and does
+not authenticate skipped chunks or overview/detail agreement. Local artifacts
+must remain immutable while open; concurrent mutation is unsupported. The
+nonpaged reader also checks generation before publication, including empty or
+fully y-pruned selections, matching the paged reader's cancellation contract.
+No ABI, file version, budget, tier or quantization policy changes.
+
 ABI v84 adds the versioned `xyg_scene_support_reason` authored-feature
 predicate. It returns Rust's stable ordered diagnostic verbatim, so Python and
 Node cannot silently diverge on polar, custom-font, browser-CSS, gradient, or

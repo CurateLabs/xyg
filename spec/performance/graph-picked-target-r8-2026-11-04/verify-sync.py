@@ -1,0 +1,104 @@
+"""Verify merged sources/history/artifacts without rebuilding qualified products."""
+
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+
+receipt = Path(__file__).resolve().parent
+local = json.loads((receipt / "local-tree-before.json").read_text())["files"]
+incoming = json.loads((receipt / "incoming-tree-before.json").read_text())["files"]
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def tracked_bytes(path, entry):
+    # Git stores a symlink's link text rather than its target file contents.
+    return (
+        str(Path(path).readlink()).encode()
+        if entry["mode"] == "120000"
+        else Path(path).read_bytes()
+    )
+
+
+def blob(data):
+    return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
+
+
+history = {}
+for parent, tree in (("local", local), ("incoming", incoming)):
+    for path, expected in tree.items():
+        if not path.startswith("spec/performance/"):
+            continue
+        current = tracked_bytes(path, expected)
+        assert blob(current) == expected["blob"], (parent, path)
+        if path in history:
+            history[path]["parents"].append(parent)
+        else:
+            history[path] = {
+                "parents": [parent],
+                "git_blob": expected["blob"],
+                "sha256": sha(current),
+                "bytes": len(current),
+            }
+production = {}
+for path, expected in local.items():
+    if path.startswith("spec/"):
+        continue
+    current = tracked_bytes(path, expected)
+    assert blob(current) == expected["blob"], path
+    production[path] = {"git_blob": expected["blob"], "sha256": sha(current)}
+node_docs = [
+    "spec/design/dual-host-parity-matrix.md",
+    "spec/design/graph-mark.md",
+    "spec/design/graphforge-node-scheduling.md",
+    "spec/design/host-parity.md",
+]
+for path in node_docs:
+    assert blob(tracked_bytes(path, incoming[path])) == incoming[path]["blob"], path
+for path, expected in local.items():
+    if not path.startswith("spec/") or path.startswith("spec/performance/"):
+        continue
+    if path in node_docs or path == "spec/releases/0.6.0-api-inventory.json":
+        continue
+    assert blob(tracked_bytes(path, expected)) == expected["blob"], path
+artifacts = json.loads((receipt / "artifacts-before.json").read_text())
+for path, expected in artifacts.items():
+    assert sha(Path(path).read_bytes()) == expected["expected"], path
+prior = json.loads((receipt / "prior-rust-receipts-before.json").read_text())
+assert all(sha(Path(path).read_bytes()) == expected for path, expected in prior.items())
+current_inventory = json.loads(Path("spec/releases/0.6.0-api-inventory.json").read_text())
+# Input parent snapshots are read from their committed blobs, never reconstructed.
+
+for ref in ("44626a8a477649442c72d8b5e0e0ef98e8ee7baa", "6e240f4bd3189640779fd684e97072923cbfb9c8"):
+    old = json.loads(
+        subprocess.check_output(["git", "show", ref + ":spec/releases/0.6.0-api-inventory.json"])
+    )
+    assert old["contracts"] == current_inventory["contracts"]
+    assert len(old["gaps"]) == len(current_inventory["gaps"]) == 685
+record = {
+    "local_parent": "44626a8a477649442c72d8b5e0e0ef98e8ee7baa",
+    "incoming_parent": "6e240f4bd3189640779fd684e97072923cbfb9c8",
+    "historical_performance_files_union": len(history),
+    "local_historical_performance_files": sum(
+        path.startswith("spec/performance/") for path in local
+    ),
+    "incoming_historical_performance_files": sum(
+        path.startswith("spec/performance/") for path in incoming
+    ),
+    "R1_R7_files_exact": len(prior),
+    "non_spec_tracked_files_exact_to_R7": len(production),
+    "incoming_current_Node_docs_exact": node_docs,
+    "all_other_local_specs_exact_except_official_inventory": True,
+    "15_artifacts_exact": artifacts,
+    "inventory_contracts_classifications_unchanged": True,
+    "preparation_gaps": 685,
+    "no_producer_or_browser_rebuild": True,
+    "qualification_reuse": "Exact R7 product/build/test inputs and qualified artifact bytes only; Node evidence retains inherited historical scope, no new runtime/Node first-paint claim",
+}
+(receipt / "history-identity.json").write_text(json.dumps(history, indent=2) + "\n")
+(receipt / "source-identity.json").write_text(json.dumps(production, indent=2) + "\n")
+(receipt / "sync-protection.json").write_text(json.dumps(record, indent=2) + "\n")
+print(json.dumps(record, indent=2))

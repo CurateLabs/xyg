@@ -1,0 +1,137 @@
+{
+  "parents": {
+    "widget": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+    "main": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8"
+  },
+  "sourceIdentity": "actual combined working-tree bytes, not a claim capture HEAD produced them",
+  "currentBindingsSha256": "bd50d6ce0d4ed6781a3f2933ef78b8523ab192a7c1e31737079cb518a7b0ebb8",
+  "checks": {
+    "core-release-verified.log": {
+      "command": "uv run --offline --with dunamai pytest -q tests/test_graphforge_contract_corpus.py tests/test_graphforge.py tests/test_release_version.py tests/test_check_release_version.py tests/test_verify_release_cohort.py",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/core-release-verified.log.gz",
+      "sha256": "4788ee75878b85305697305c977f36724a72bf13b19d48adfa7fe340539b9f0e",
+      "uncompressedSha256": "afba8fd283f858ec2cc8be104f95afc3f1a4ddd3aaa89f2bf807943ba9256767"
+    },
+    "notebook-seams.log": {
+      "command": "uv run pytest -q tests/test_graph_widget.py tests/test_widget.py tests/test_channel.py tests/test_view_state.py tests/test_graph_layout_controller.py tests/test_graph_notebook_report.py tests/test_release_surface_gate.py tests/test_verify_ci_workflow.py::test_ci_workflow_accepts_current_gates",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/notebook-seams.log.gz",
+      "sha256": "380099dd06c2ea268e87bce24dd44323095a5c3d8f70b303871dd7b8b9071b83",
+      "uncompressedSha256": "330cddcd210650bbe01383b600e701ab978680e39bd260a5c01d2fab2a8f9a9d"
+    },
+    "corpus.log": {
+      "command": "python3 scripts/sync_graphforge_contract_corpus.py --core-repo target/graph-r3/core-source.git [default, rc.5 output, rc.7 output; three exact commands in README]",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/corpus.log.gz",
+      "sha256": "b8caacde258c887846f93db5c3bd7ec6d72b5f51e4ebff0f12c67ebba7604c1d",
+      "uncompressedSha256": "ced891a8df63d04124e17fae327de47c4705cea9c2b00a3e33bfb441191245f5"
+    },
+    "core-source-fetch.log": {
+      "command": "git fetch --no-tags immutable Core pins into owned bare target/graph-r3/core-source.git",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/core-source-fetch.log.gz",
+      "sha256": "4f3b73c141d99035376ac489e08b3f4a60780b68a9a01097d44eab69e3ffe059",
+      "uncompressedSha256": "4d4ff53c4232b3fefaadcd771dcfd16d7b720bd61d4cdd7b0ff8c39f0d0780fa"
+    },
+    "rust-corpus.log": {
+      "command": "cargo test -p xyg-engine graphforge::ledger::tests::pinned_core -- --nocapture",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/rust-corpus.log.gz",
+      "sha256": "b3bca8b4da25a15b9b8a3efa3b2d40ddcac88d6de962cfe6e4bb1977e784829a",
+      "uncompressedSha256": "d982e8c5e978e04c8a9e7b398344b8f3b811f60afd170851f1a20405f24066ed"
+    },
+    "node-wasm.log": {
+      "command": "XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so node --test packages/xy-node/test/graphforge.test.mjs packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/node-wasm.log.gz",
+      "sha256": "e10739bf11ff1985315d8092071fb6b29658adbb364cb62639ede2e6191217ea",
+      "uncompressedSha256": "04c18286fa3cd1bb333d2ae78f77a1c09be426062482711c10e0da812b73d62e"
+    },
+    "wasm-assets.log": {
+      "command": "python3 scripts/verify_wasm_assets.py",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/wasm-assets.log.gz",
+      "sha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "uncompressedSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "abi.log": {
+      "command": "XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so .venv/bin/python scripts/abi_smoke.py",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/abi.log.gz",
+      "sha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "uncompressedSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "workflow.log": {
+      "command": "python3 scripts/verify_ci_workflow.py",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/workflow.log.gz",
+      "sha256": "5fd2a1e272c9c963bb7a6cda9ce2e7ac1a3c2a5a8adf6acc11ca70d18a97ac8a",
+      "uncompressedSha256": "a3fa522ab21dac04ff34f16142015da96d6dbc312b5f29e63bd08467bc19a05f"
+    },
+    "notebook.log": {
+      "command": "XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome XYG_GRAPH_NOTEBOOK_REPORT=target/graph-r3/notebook.json node scripts/graph_notebook_progressive_smoke.mjs",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/notebook.log.gz",
+      "sha256": "cbcd107d2f0f0bf574849f5b3eb46a5ce1a37e8d04a721a88fa0ea83d554874e",
+      "uncompressedSha256": "de53b0bd8ccb4ea82c36713ec245a2dee39e2cfaf8e037042551f181dc32fd6f"
+    },
+    "notebook-verifier.log": {
+      "command": ".venv/bin/python scripts/verify_graph_notebook_report.py target/graph-r3/notebook.json",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/notebook-verifier.log.gz",
+      "sha256": "1b5876660f05201ed95aa742feaad51ce4a9b40450a89c0c792fafeb04096d14",
+      "uncompressedSha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754"
+    },
+    "node-install.log": {
+      "command": "npm ci --prefix packages/xy-node",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/node-install.log.gz",
+      "sha256": "d71a9a15011a34099597d1d49d13bb8ded66b19d03cd24e9a3b23cd96502ddb0",
+      "uncompressedSha256": "d54caeaa608263f9744afe7cff6772ea07b5546c45c4f16b8ddfd6ad57731d2c"
+    },
+    "types.log": {
+      "command": "uv run ty check",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/types.log.gz",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "uncompressedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff.log": {
+      "command": "uv run ruff check .",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/ruff.log.gz",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "uncompressedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format.log": {
+      "command": "uv run ruff format --check .",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/format.log.gz",
+      "sha256": "493d9b26bab5d6b5c5a1a462d2d4c004cec84ca8897ef378d310f88e2a5f7e6d",
+      "uncompressedSha256": "1a43ffd21ff5af2e39e441aee8d73941d0559ee51dc536595e830a326ad86858"
+    },
+    "inherited-binding-failure.log": {
+      "exitCode": 1,
+      "classification": "development reproduction, superseded by fresh passing current bindings/source-object-store checks",
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/inherited-binding-failure.log.gz",
+      "sha256": "1ca19a400e3c866aa926a6e8a226881eb9aa5c23f60fe387c106d59bc6596a52",
+      "uncompressedSha256": "0540939e3d36ec9b5a41ff61f1978aff8d1279844a52d7ec62e4a014395abecc"
+    },
+    "corpus-missing-old-pin.log": {
+      "exitCode": 1,
+      "classification": "development reproduction, superseded by fresh passing current bindings/source-object-store checks",
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/corpus-missing-old-pin.log.gz",
+      "sha256": "5ba3cc84f7a3d3676b98daa05f26e80de4afe44cb223a34c4e495e0fa9440725",
+      "uncompressedSha256": "12b8cb35dbde1a2c71b43e82ef37104c0a19972a94047881d357238b32d70a32"
+    },
+    "pre-merge-hooks.log": {
+      "command": "uv run --with pre-commit pre-commit run --all-files && uv run ruff check . && uv run ruff format --check .",
+      "exitCode": 0,
+      "gzip": "spec/performance/graph-widget-progressive-r3-2026-11-06/pre-merge-hooks.log.gz",
+      "sha256": "ded9ea1d83292e90bd75bd2ff25884f70aba3893e000d38fa156e1d1bf9f5e77",
+      "uncompressedSha256": "735582b7082f081d1d49205c769686a0005eaaa0d6aa3e2fd72e5f3e6bc744ef"
+    }
+  },
+  "inheritedWhitespace": "Incoming accepted-main spec/releases/core-rc7-compatibility-2026-11-06/rust.log has an existing blank EOF line; retained byte-identical. Accepted-main-relative diff check is clean."
+}

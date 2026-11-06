@@ -1,0 +1,12 @@
+{
+  "recordedAt": "2026-11-06T06:05:14.637637+00:00",
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-56fb3ea2",
+  "native": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-56fb3ea2/target/release/libxyg_core.so",
+    "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "qualifiedBy": "spec/releases/core-rc7-compatibility-2026-11-06/checks.json"
+  },
+  "browser": "156.0.8078.4",
+  "python": "Python 3.12.15",
+  "sourceIdentity": "current-bindings identifies corrected working bytes; notebook-runtime snapshot identifies the normal-journey Python producer; precommit HEAD alone does not identify either"
+}
