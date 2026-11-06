@@ -15,6 +15,7 @@ def green():
         "presentation": "Progressive property graph GraphForge result Company Person",
         "widgetCount": 2,
         "finalPointerVerified": True,
+        "finalPointer": {"before": 2, "after": 3, "id": "node-0", "expectedId": "node-0"},
         "kernel": {
             "native": {"abi": 399, "sha256": "c" * 64},
             "otherClicks": 0,
@@ -89,3 +90,10 @@ def test_notebook_changes_select_release_surfaces_and_smoke_is_required(tmp_path
         "Progressive graph notebook journey" in error or "bounded real notebook" in error
         for error in validate_workflow(broken)
     )
+
+
+def test_earlier_clicks_cannot_satisfy_final_pointer_proof():
+    report = green()
+    report["kernel"]["clicks"] = [{}, {}, {}]
+    report["finalPointer"] = {"before": 3, "after": 3, "id": "node-0", "expectedId": "node-0"}
+    assert any("after baseline" in error for error in verify(report))

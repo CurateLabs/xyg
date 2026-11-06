@@ -27,6 +27,7 @@ class GraphWidget(FigureWidget):
         self._revision = 0
         self._figures = {}
         self._last_view_state = {"v": 1, "ranges": {}, "selection": None}
+        self._last_visibility = []
         self._closed = False
         self._failed = False
         self._task = None
@@ -80,6 +81,11 @@ class GraphWidget(FigureWidget):
                 shipped_sel=None,
                 drill_mode=False,
             )
+        for visibility in self._last_visibility:
+            trace = visibility["trace"]
+            figure.legend_toggle(trace, visibility["hidden"])
+            for category in visibility["categories"]:
+                figure.legend_toggle(trace, True, category)
         return figure, figure.build_payload_split()
 
     async def _run(self, epoch):
@@ -89,6 +95,8 @@ class GraphWidget(FigureWidget):
         self._controller = controller
 
         async def publish(checkpoint):
+            if self._figure is not None:
+                self._last_visibility = self._visibility(self._figure)
             self._building = True
             try:
                 figure, (spec, buffers) = await loop.run_in_executor(
@@ -116,6 +124,7 @@ class GraphWidget(FigureWidget):
                 for previous, current in zip(self._figure.traces, figure.traces, strict=True):
                     current.hidden = previous.hidden
                     current.hidden_categories = set(previous.hidden_categories)
+            spec["_graph_legend_visibility"] = self._visibility(figure)
             self._figure = figure
             self._revision += 1
             self._figures[self._revision] = figure
@@ -242,6 +251,7 @@ class GraphWidget(FigureWidget):
         msg, buffers = self._figure.append(trace_id, x, y, **kwargs)
         self._appended_traces[trace_id] = self._figure.traces[trace_id]
         self._configure_transport(msg["spec"])
+        msg["spec"]["_graph_legend_visibility"] = self._visibility(self._figure)
         snapshot = {
             **self.spec,
             "graph_snapshot": {**self.spec["graph_snapshot"], "spec": msg["spec"]},
@@ -251,6 +261,13 @@ class GraphWidget(FigureWidget):
         # The ordinary append message preserves the native canonical-column and
         # generic renderer contract; the wrapper envelope remains notebook state.
         self.send(msg, buffers=buffers)
+
+    @staticmethod
+    def _visibility(figure):
+        return [
+            {"trace": t.id, "hidden": t.hidden, "categories": sorted(t.hidden_categories)}
+            for t in figure.traces
+        ]
 
     @staticmethod
     def _state(figure):
@@ -303,6 +320,7 @@ class GraphWidget(FigureWidget):
             self._figure_versions.clear()
             if self._figure is not None:
                 self._last_view_state = self._figure.view_state()
+                self._last_visibility = self._visibility(self._figure)
             self._figure = None
             self._loop = asyncio.get_running_loop()
             self._task = self._loop.create_task(self._run(epoch))
@@ -348,6 +366,20 @@ class GraphWidget(FigureWidget):
                     else:
                         setattr(self._figure, "_view_state_" + field, copy.deepcopy(after[field]))
                     self._figure_versions[self._revision][field] = self._state_versions[field]
+            if content.get("type") == "legend_toggle":
+                self._last_visibility = self._visibility(self._figure)
+                snapshot = {
+                    **self.spec,
+                    "graph_snapshot": {
+                        **self.spec["graph_snapshot"],
+                        "spec": {
+                            **self.spec["graph_snapshot"]["spec"],
+                            "_graph_legend_visibility": self._last_visibility,
+                        },
+                    },
+                }
+                with self._lock_property(spec=json.loads(json.dumps(snapshot))):
+                    self.spec = snapshot
             if reply is not None:
                 msg, buffers = reply
                 self.send({**msg, "graph_revision": revision}, buffers=buffers)

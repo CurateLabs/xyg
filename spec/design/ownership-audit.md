@@ -903,6 +903,7 @@ Forbidden:
 | `js/src/57_viewstate.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/58_graph.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/60_entries.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `js/src/66_graph_host.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; notebook frame/ACK presentation and existing comm routing only | — |
 | `js/src/63_graph_controller.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; explicit S5b keyboard/DOM/ARIA/companion/lifetime only | — |
 | `js/src/63_graph_gpu.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; GPU-v1 validation/raw-buffer paint through GLHost | — |
 | `js/src/63_graph_session_wire.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; internal XYGI/XYGR framing, no graph policy | #59 |
@@ -1090,6 +1091,7 @@ Forbidden:
 | `python/xyg/styling/capabilities.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/temporal_controller.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/temporal_graph.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_graph_widget.py` | Python host | `python-host` | `keep-host`; native checkpoint scheduling and revisioned notebook transport only | — |
 | `python/xyg/widget.py` | Python host | `python-host` | `keep-host` | — |
 | `crates/xyg-engine/src/geo_layers.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_layers_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

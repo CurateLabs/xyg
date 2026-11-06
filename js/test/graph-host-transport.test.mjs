@@ -22,6 +22,7 @@ function fixture(saved) {
     }
     _applyAppend({ spec }) { this.spec = spec; this.swaps++; }
     _graphMetaArray() { return null; }
+    _restoreGraphLegendVisibility(state) { this.restoredVisibility = state; }
     _applySelectionBuffers(content) { this.mask = content.total; }
     draw() {}
     destroy() { this.unsubscribe(); this.destroyed = true; }
@@ -81,5 +82,62 @@ test("ordinary append retains the graph saved-state envelope and uses safe refre
   assert.equal(f.view.spec.title, "Appended");
   assert.equal(f.model.state.spec.graph_host, true);
   assert.equal(f.model.state.spec.graph_snapshot.spec.title, "Appended");
+  f.cleanup();
+});
+
+test("the actual legend renderer restores whole traces/categories before replacement paint", () => {
+  const source = readFileSync(new URL("../src/50_chartview.ts", import.meta.url), "utf8");
+  const start = source.indexOf("  _restoreGraphLegendVisibility(visibility) {");
+  const methods = source.slice(start, source.indexOf("  _legendBox(root, items, options)", start));
+  const View = vm.runInNewContext(`(class { ${methods} })`);
+  const view = new View();
+  view._clearLegendHover = () => {}; view._updatePickable = () => {}; view.draw = () => {};
+  view._applyCategoryVisibility = () => {}; view._syncLegendRow = () => {};
+  let rows;
+  view._legendBox = (_, items) => { rows = items; view._legends.push({ _xyItemRows: items.map(it => ({row: {}, it})) }); };
+  view.spec = { traces: [
+    { id: 4, kind: "scatter", name: "Whole", style: { color: "red" } },
+    { id: 9, kind: "scatter", color: { mode: "categorical", categories: ["a", "b"], palette: ["red", "blue"] } },
+  ] };
+  view.gpuTraces = [{}, {}];
+  view._buildLegend({});
+  view._restoreGraphLegendVisibility([
+    { trace: 4, hidden: true, categories: [] },
+    { trace: 9, hidden: false, categories: [1] },
+  ]);
+  assert.equal(view._legendOffTraces.has(0), true);
+  assert.equal(view._legendOffCats.get(1).has(1), true);
+  assert.equal(view.gpuTraces[0]._legendHidden, true);
+  assert.equal(rows.find(r => r.name === "Whole").off, true);
+  assert.equal(rows.find(r => r.name === "b").off, true);
+  view._buildLegend({});
+  assert.equal(rows.find(r => r.name === "b").off, true);
+  view._restoreGraphLegendVisibility([]);
+  assert.equal(view.gpuTraces[0]._legendHidden, false);
+});
+
+
+test("legend choices enter saved notebook state and the bootstrap replacement", () => {
+  const first = fixture(); first.frame(1); first.paint();
+  first.view.spec.traces = [{ id: 4 }, { id: 9 }];
+  first.view._legendOffTraces = new Set([0]);
+  first.view._legendOffCats = new Map([[1, new Set([1])]]);
+  first.view.comm.send({ type: "legend_toggle", trace: 9, category: 1, hidden: true });
+  const saved = first.model.state.spec.graph_snapshot;
+  const choices = [{ trace: 4, hidden: true, categories: [] }, { trace: 9, hidden: false, categories: [1] }];
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.spec._graph_legend_visibility)), choices);
+  const second = fixture(saved);
+  assert.deepEqual(JSON.parse(JSON.stringify(second.view.restoredVisibility)), choices);
+  first.cleanup(); second.cleanup();
+});
+
+
+test("replacement frame restores its native legend metadata before paint ACK", () => {
+  const f = fixture(), choices = [{ trace: 0, hidden: true, categories: [1] }];
+  f.frame(1, { spec: { traces: [], _graph_legend_visibility: choices } });
+  assert.deepEqual(f.view.restoredVisibility, choices);
+  assert.equal(f.model.sent.length, 1); // mount only; no paint ACK yet
+  f.paint();
+  assert.equal(f.model.sent.at(-1).type, "graph_painted");
   f.cleanup();
 });

@@ -50,3 +50,13 @@ spec/performance/graph-widget-review-repair-2026-11-06/*.gz -text
 spec/performance/graph-widget-review-repair-2026-11-06/*.png -text
 tests/test_graph_notebook_report.py text eol=lf
 spec/performance/graph-widget-review-repair-2026-11-06/*.py text eol=lf
+
+# PR1100 correction bindings and retained evidence.
+spec/design/ownership-audit.json text eol=lf
+spec/design/ownership-audit.md text eol=lf
+scripts/verify_graph_notebook_report.py text eol=lf
+tests/notebook_graph_progressive.ipynb text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.json text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.md text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.gz -text
+spec/performance/graph-widget-pr1100-repair-2026-11-06/*.png -text

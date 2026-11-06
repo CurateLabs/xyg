@@ -1,0 +1,26 @@
+{
+  "target/release/libxyg_core.so": {
+    "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "bytes": 6119880
+  },
+  "packages/xy-client/dist/index.js": {
+    "sha256": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "bytes": 801639
+  },
+  "python/xyg/static/index.js": {
+    "sha256": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "bytes": 801639
+  },
+  "packages/xy-client/dist/standalone.js": {
+    "sha256": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+    "bytes": 801666
+  },
+  "python/xyg/static/standalone.js": {
+    "sha256": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+    "bytes": 801666
+  },
+  "packages/xy-client/dist/xyg-wasm.wasm": {
+    "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7",
+    "bytes": 1926555
+  }
+}

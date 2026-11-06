@@ -54,8 +54,17 @@ def verify(report):
         for event in report.get("events", {}).get("events", [])
     ):
         errors.append("exactly one Python-origin selected row must reach the view")
-    if report.get("finalPointerVerified") is not True:
-        errors.append("stationary native pointer callback verification required")
+    pointer = report.get("finalPointer", {})
+    if (
+        report.get("finalPointerVerified") is not True
+        or type(pointer.get("before")) is not int
+        or type(pointer.get("after")) is not int
+        or pointer.get("before", -1) < 0
+        or pointer.get("after", 0) <= pointer.get("before", 0)
+        or not isinstance(pointer.get("id"), str)
+        or pointer.get("id") != pointer.get("expectedId")
+    ):
+        errors.append("new stationary exact kernel pointer callback after baseline required")
     native = kernel.get("native", {})
     if (
         native.get("abi") != 399

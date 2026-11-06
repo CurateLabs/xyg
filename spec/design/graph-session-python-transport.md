@@ -292,3 +292,13 @@ layout/identity implementation is added. Restored committed ranges and durable
 geometric selection are applied before the first remounted picture is ACKed;
 opaque row-selection markers are not reconstructed into a durable mask.
 The deterministic ordering regressions run in the existing notebook CI step.
+
+
+Remount also retains each trace's legend visibility and hidden categories, which
+are renderer controls outside the durable ranges/selection document. Native
+Figure visibility is restored before compiling the first replacement payload.
+The same exact trace IDs seed the replacement browser's legend maps, GPU state
+and row controls before its paint acknowledgement. Legend changes update saved
+widget snapshots as well, including changes after terminal layout. The bounded
+notebook proof requires a new exact kernel callback after the final pointer
+baseline; earlier keyboard or pointer callbacks cannot satisfy that check.

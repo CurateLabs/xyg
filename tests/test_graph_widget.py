@@ -413,3 +413,33 @@ def test_remount_cancels_commands_queued_for_the_old_mount(monkeypatch):
             await asyncio.sleep(0)
 
     asyncio.run(journey())
+
+
+def test_remount_keeps_hidden_traces_and_categories_before_first_paint():
+    async def journey():
+        chart, w = widget()
+        chart.children = (
+            *chart.children,
+            xyg.scatter([0.0, 1.0], [0.0, 1.0], color=["a", "b"], name="extra"),
+        )
+        frames = []
+        w.send = lambda content, buffers=(): frames.append(content)
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: w._revision == 1)
+            message(w, "graph_painted")
+            extra = w._figure.traces[-1].id
+            message(w, "legend_toggle", trace=0, hidden=True)
+            message(w, "legend_toggle", trace=extra, category=1, hidden=True)
+            message(w, "graph_mount", epoch="replacement")
+            await wait_for(lambda: w._epoch == "replacement" and w._revision > 1)
+            assert w._figure.traces[0].hidden
+            assert w._figure.traces[extra].hidden_categories == {1}
+            visibility = frames[-1]["spec"]["_graph_legend_visibility"]
+            assert visibility[0]["hidden"] is True
+            assert visibility[extra]["categories"] == [1]
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())

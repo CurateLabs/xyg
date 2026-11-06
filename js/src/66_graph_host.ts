@@ -23,6 +23,11 @@ export function renderGraphHost({ model, el, attachTicks }) {
     if (revision === 0 && !["graph_mount", "graph_dispose"].includes(content.type)) return;
     if (content.type === "select" || content.type === "select_polygon" || content.type === "select_clear") selections++;
     if (content.type === "pick") picks.add(`${revision}:${content.seq}`);
+    if (content.type === "legend_toggle" && view) {
+      const saved = model.get("spec");
+      const visibility = view.spec.traces.map((trace, i) => ({ trace: trace.id, hidden: !!view!._legendOffTraces?.has(i), categories: Array.from(view!._legendOffCats?.get(i) || []) }));
+      model.set({ spec: { ...saved, graph_snapshot: { ...saved.graph_snapshot, spec: { ...view.spec, _graph_legend_visibility: visibility } } } }, { silent: true });
+    }
     model.send({ ...content, graph_instance: instance, graph_epoch: epoch, graph_revision: revision }, {}, buffers);
   };
   const comm = {
@@ -85,6 +90,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
     else {
       refresh(spec, buffers);
     }
+    view._restoreGraphLegendVisibility(spec._graph_legend_visibility);
     if (content.restore_state) {
       for (const cb of listeners) cb({ type: "state_patch", state: content.restore_state, animate: false, history: false }, []);
     }
@@ -104,6 +110,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
     const saved = bootstrap.graph_snapshot;
     view = new ChartView(el, saved.spec, payloadBuffers(saved.spec, model.get("buffers")), comm);
     attachTicks(view, saved.spec);
+    view._restoreGraphLegendVisibility(saved.spec._graph_legend_visibility);
     if (saved.restore_state) for (const cb of listeners) cb({ type: "state_patch", state: saved.restore_state, animate: false, history: false }, []);
     el.dataset.graphSteps = String(saved.step);
     status.textContent = saved.phase === "complete" ? "Layout complete" : "Laying out graph";
