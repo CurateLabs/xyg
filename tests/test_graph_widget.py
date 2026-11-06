@@ -634,6 +634,86 @@ def test_uuid_commands_and_typed_callbacks_remain_isolated_across_mounts():
     asyncio.run(journey())
 
 
+@pytest.mark.parametrize("count", [999, 1000, 1001, 2100])
+def test_identity_batches_match_native_canonical_order_and_deduplicate(count, monkeypatch):
+    from xyg import _graph_widget_identity as identity_module
+
+    ids = [(i + 1).to_bytes(16, "big") for i in reversed(range(count))]
+    composition = xyg.compose_graphforge(
+        base={
+            "node_uuid": b"".join(ids),
+            "edge_uuid": ids[0] + ids[-1],
+            "edge_source_uuid": ids[0] + ids[0],
+            "edge_target_uuid": ids[1] + ids[-1],
+        }
+    )
+    selected = []
+    w = xyg.graphforge_chart(composition, on_select=selected.append).widget()
+    try:
+        figure, _ = w._compile(
+            SimpleNamespace(x=np.arange(count, dtype=float), y=np.zeros(count), step=1, alpha=1.0)
+        )
+        adapter = figure._notebook_graph_identity
+        traces = {
+            adapter.meta["node_trace"]: range(count),
+            adapter.meta["edge_trace"]: range(
+                len(figure._graph_edge_identity[adapter.meta["edge_trace"]].render_edge_index)
+            ),
+        }
+        w._identity_callbacks(figure).on_select(SimpleNamespace(per_trace=traces))
+        actual_callback = selected[-1].graphforge
+        uuids = [*composition.nodes.uuid, composition.nodes.uuid[0], composition.nodes.uuid[-1]]
+        actual_uuids = adapter.select(uuids)
+        monkeypatch.setattr(identity_module, "_BATCH_SIZE", 10_000)
+        expected_callback = adapter.project(traces)
+        expected_uuids = adapter.select(uuids)
+        assert actual_callback == expected_callback
+        assert actual_uuids == expected_uuids
+        assert len(actual_uuids) == count + 2
+    finally:
+        w.close()
+
+
+@pytest.mark.parametrize("first_id", ["z", None])
+def test_identity_batch_merge_preserves_native_derived_reference_keys(monkeypatch, first_id):
+    from test_graphforge import _arrow, _gen
+    from xyg import _graph_widget_identity as identity_module
+
+    composition = xyg.compose_graphforge(
+        base=_base("cyclic"),
+        layers=[
+            {
+                "result": _arrow(name),
+                "intent": "graph",
+                "generation": _gen("cyclic"),
+                "result_id": result_id,
+            }
+            for name, result_id in [("node_similarity", first_id), ("random_walk", "a")]
+        ],
+    )
+    w = xyg.graphforge_chart(composition).widget()
+    try:
+        count = composition.nodes.count
+        figure, _ = w._compile(
+            SimpleNamespace(x=np.arange(count, dtype=float), y=np.zeros(count), step=1, alpha=1.0)
+        )
+        adapter = figure._notebook_graph_identity
+        traces = {
+            adapter.meta["node_trace"]: range(count),
+            adapter.meta["edge_trace"]: range(
+                len(figure._graph_edge_identity[adapter.meta["edge_trace"]].render_edge_index)
+            ),
+        }
+        monkeypatch.setattr(identity_module, "_BATCH_SIZE", 1)
+        actual = adapter.project(traces)
+        monkeypatch.setattr(identity_module, "_BATCH_SIZE", 10_000)
+        expected = adapter.project(traces)
+        assert actual == expected
+        assert any(row["kind"] == "edge" and row["uuid"] is None for row in actual)
+    finally:
+        w.close()
+
+
 def test_derived_edge_callback_uses_native_exact_result_reference():
     async def journey():
         composition = _compose("pagerank", "node_similarity")

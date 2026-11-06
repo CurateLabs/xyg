@@ -168,10 +168,10 @@ view/row selection and event callbacks. The explicit WASM attachment in
 `63_graph_controller.ts` uses a separate GPU-v1/companion presentation contract;
 replacing ChartView with it would still lose authored notebook presentation.
 The notebook therefore reuses `GraphLayoutController`'s retained native
-`ForceState`, rather than introducing a second presentation stack or a
-GraphSession identity adapter. The private opaque GraphSession wrapper above
-remains unchanged and is not used by this route. Full retained GraphSession
-selection/ref projection is separate #36/#1015 work.
+`ForceState` and the ordinary presentation stack. The later typed identity slice
+below adds an optional GraphSession readout without replacing that renderer or
+layout owner. Full retained interaction and scale acceptance remain separate
+#36/#1015 work.
 
 ### Data and scheduling
 
@@ -339,8 +339,13 @@ state, independent of the public view's ordinary selection masks.
 Ref and UUID resolution uses at most 1,000 transport inputs per request, each
 replacing the scratch selection. Rust still enforces its original caps on each
 operation; the adapter never accumulates a native selection beyond them. The
-callback combines the complete ordered projection, while explicit UUID masks
-apply only after all batches succeed. Node source/render joins cache an inverse
+callback merges native-sorted runs using only Rust-returned binary reference
+keys and deduplicates repeated keys across batches. This preserves the single-
+request Rust order: node UUID bytes, persisted edge UUID bytes, then exact
+derived optional result-id bytes/layer/path/order. Per-reply string-pool offsets
+are never merge keys, and absent versus empty result IDs remain distinct.
+Python does not infer identities or provenance during this transport merge.
+Explicit UUID masks apply only after all batches succeed. Node source/render joins cache an inverse
 of the existing Rust member plane, preserving its one-to-one highlight refusal
 without rescanning all source rows for each selected element. Host projection
 and callback output memory is additional and is not qualified at scale here.

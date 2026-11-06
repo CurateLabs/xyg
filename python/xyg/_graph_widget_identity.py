@@ -6,6 +6,7 @@ Source/render joins below copy the original compiler's Rust membership planes.
 
 from __future__ import annotations
 
+import heapq
 import secrets
 import struct
 import uuid
@@ -95,23 +96,55 @@ class NotebookGraphIdentity:
         for i in range(count):
             start = 8 + 56 * i
             kind = struct.unpack_from("<I", refs, start)[0]
+            # Merge keys copy Rust's emitted ElementSet order, not source rows.
+            # Derived pool offsets are local to a reply: use their exact bytes.
+            if kind < 2:
+                key = (kind, refs[start + 8 : start + 24])
+            elif kind == 2:
+                offset, length = struct.unpack_from("<II", refs, start + 48)
+                pool = 8 + 56 * count
+                key = (
+                    kind,
+                    offset != 0xFFFFFFFF,
+                    refs[pool + offset : pool + offset + length] if offset != 0xFFFFFFFF else b"",
+                    struct.unpack_from("<I", refs, start + 24)[0],
+                    *struct.unpack_from("<QQ", refs, start + 32),
+                )
+            else:
+                raise GraphSessionError("unsupported notebook identity reference")
             out.append(
-                {
-                    "kind": "node" if kind == 0 else "edge",
-                    "uuid": str(uuid.UUID(bytes=refs[start + 8 : start + 24]))
-                    if kind < 2
-                    else None,
-                    "index": int(result["selection.indices.u64", 0][i]),
-                    "layers": [
-                        {
-                            "layer": int(layers[j]),
-                            "result_id": names[int(layers[j])] if valid[int(layers[j])] else None,
-                            "row": int(rows[j]),
-                        }
-                        for j in range(int(offsets[i]), int(offsets[i + 1]))
-                    ],
-                }
+                (
+                    key,
+                    {
+                        "kind": "node" if kind == 0 else "edge",
+                        "uuid": str(uuid.UUID(bytes=refs[start + 8 : start + 24]))
+                        if kind < 2
+                        else None,
+                        "index": int(result["selection.indices.u64", 0][i]),
+                        "layers": [
+                            {
+                                "layer": int(layers[j]),
+                                "result_id": names[int(layers[j])]
+                                if valid[int(layers[j])]
+                                else None,
+                                "row": int(rows[j]),
+                            }
+                            for j in range(int(offsets[i]), int(offsets[i + 1]))
+                        ],
+                    },
+                )
             )
+        return out
+
+    @staticmethod
+    def _merge(batches):
+        # Each reply is already canonically ordered by Rust. Merge transport
+        # runs and remove repeated references without re-resolving identities.
+        out, previous = [], None
+        for key, row in heapq.merge(*batches, key=lambda item: item[0]):
+            if key != previous:
+                out.append(row)
+                previous = key
         return out
 
     def select(self, uuids):
@@ -120,13 +153,13 @@ class NotebookGraphIdentity:
         if not values:
             return []
         session = self.prepare()
-        out = []
-        for start in range(0, max(1, len(values)), _BATCH_SIZE):
+        batches = []
+        for start in range(0, len(values), _BATCH_SIZE):
             data = b"".join(values[start : start + _BATCH_SIZE])
-            out.extend(
+            batches.append(
                 self._decode(session.interact(self._request(10, [("uuids.uuid", 0, D.UUID, data)])))
             )
-        return out
+        return self._merge(batches)
 
     def source_rows(self, trace, index):
         m = self.meta
@@ -169,10 +202,10 @@ class NotebookGraphIdentity:
         if not sources:
             return []
         session = self.prepare()
-        out = []
-        for start in range(0, max(1, len(sources)), _BATCH_SIZE):
-            out.extend(self._project_batch(session, sources[start : start + _BATCH_SIZE]))
-        return out
+        return self._merge(
+            self._project_batch(session, sources[start : start + _BATCH_SIZE])
+            for start in range(0, len(sources), _BATCH_SIZE)
+        )
 
     def _project_batch(self, session, sources):
         # Encode canonical refs; only Rust resolves identity and provenance.

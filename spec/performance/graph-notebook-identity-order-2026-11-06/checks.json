@@ -1,0 +1,67 @@
+{
+  "reviewedBefore": "cfd2da004ff14b1d8ce8039aeb0062d148b32b4d",
+  "focusedTests": 97,
+  "checks": {
+    "before": {
+      "exitCode": 1,
+      "rawSha256": "5b926ac293cce2a5c7794619494e28afb81de606f5b1a3f65b7ecd7d94e59ad0",
+      "archiveSha256": "2e2207b802b975e9974be004a1d9c99d558e332d8dd579c65394fd971b243ba1"
+    },
+    "after": {
+      "exitCode": 0,
+      "rawSha256": "f2842600decfcfd559c15d17d083d1d52e8336bb236ed4bb277014e72a5b709d",
+      "archiveSha256": "ecc1f7e237f70c503a4636614d9df3d8480f44d7b2a0ccb7520846bd0a6ec2ae"
+    },
+    "invalid-result-id-fixture": {
+      "exitCode": 1,
+      "rawSha256": "570ca0d12e6bed38c03e91d4aa66a1d07565efbf2dce0143af9b479f9b3afbbe",
+      "archiveSha256": "c99a7633b37c4509d3c4604fd586ee4c5c724afcd49bf80a1141c7d509e899c3"
+    },
+    "conflicting-channel-fixture": {
+      "exitCode": 1,
+      "rawSha256": "73262a10ca60799d97ce286382c6a7343cc729c614462fc17e6e4d1c9bbfdceb",
+      "archiveSha256": "ec2ef28bfe4dd89a6ece885e0f33ac3c60c9856e64a169db98f6d298f1d8a01a"
+    },
+    "untyped-path-fixture": {
+      "exitCode": 1,
+      "rawSha256": "41d91c26b6a36775260bad47b61005c95be6f89304214b9c301ad54fe86b9026",
+      "archiveSha256": "c76633b549898d58ef005d1a4fb7953d6c899b1bd80f649bb3e113617f622a4e"
+    },
+    "focused": {
+      "exitCode": 0,
+      "rawSha256": "9302f8a7a1c87f30df53cd179be278dad706f987226d3d71f32b38e3905deb9e",
+      "archiveSha256": "91edfc436c8fa4bbf940e17c716c5add3b255de940083b02de23d022bded96fc"
+    },
+    "types": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "hooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "exitCode": 0,
+      "rawSha256": "cc538e17af1940ec0a16ea7e360b3a394df9e1fd9caed2d2c4e109c351bbf919",
+      "archiveSha256": "2fcae89e25dc749f40d4412386be8a25a0aa586cb706f4e99c2e7391641c33b7"
+    }
+  },
+  "artifactSha256": {
+    "target/release/libxyg_core.so": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "packages/xy-client/dist/index.js": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "packages/xy-client/dist/standalone.js": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+    "python/xyg/static/index.js": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "python/xyg/static/standalone.js": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811"
+  },
+  "currentBindingsSha256": "bb5f99899f7ecd94b5cd4b27c7d555b666f1029a4013639d9947b39daa7a118c",
+  "previousChecksSha256": "27ce3bb68c71a24330b3c57cbf9a796765ebc1107c44eca866969660cc969f4a",
+  "retainedNotebookProducer": "prior cfd2 repair capture; no recapture for ordering-only delta",
+  "scope": "native-sorted binary transport merge/dedup; not full notebook/scale acceptance"
+}
