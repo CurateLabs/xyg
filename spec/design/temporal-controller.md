@@ -209,3 +209,11 @@ never as JSON numbers for temporal samples ([wire-protocol.md](wire-protocol.md)
 | −14 | StaleRevision |
 | −15 | SelfEcho |
 | −16 | SelectionTooLarge (graph selection over 10,000 identities; nothing changed) |
+
+Browser consumers may use `subscribeState(observer)` to observe each complete,
+immutable Rust result after publication, including received coordination events
+and disposal. It emits no initial snapshot; consumers read `state` when binding.
+Unsubscribe removes only that observer. Disposing clears subscriptions after
+notifying them. Observer exceptions are contained and reported to `onError`.
+The first automatic geographic consumer is specified in
+[geo-retained-hosts.md](geo-retained-hosts.md#automatic-browser-temporal-binding-50-partial).

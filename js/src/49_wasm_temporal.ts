@@ -159,6 +159,7 @@ export class XygWasmTemporalController {
   private scrubberAttributes: Map<string, string | null> | null = null;
   private readonly onEvent?: (event: XygTemporalEvent) => void;
   private readonly onError?: (error: unknown) => unknown;
+  private readonly stateObservers = new Set<(state: XygTemporalState) => void>();
   state: XygTemporalState;
 
   private constructor(
@@ -208,12 +209,27 @@ export class XygWasmTemporalController {
       if (this.state.disposed) throw new Error("TemporalController is disposed");
       const result = decode(await this.worker.temporalCommand(view.buffer));
       this.state = result.state;
+      for (const observer of [...this.stateObservers]) {
+        try { observer(result.state); } catch (error) {
+          void Promise.resolve().then(() => this.onError?.(error)).catch(() => {});
+        }
+      }
+      if (result.state.disposed) this.stateObservers.clear();
       if (result.event) this.onEvent?.(result.event);
       this.syncAccessibility();
       return result;
     };
     this.queue = this.queue.then(run, run);
     return this.queue;
+  }
+
+  /** Observe complete Rust snapshots, including received coordination events.
+   * Subscription does not emit an initial snapshot or own controller lifetime. */
+  subscribeState(observer: (state: XygTemporalState) => void): () => void {
+    if (this.state.disposed) throw new Error("TemporalController is disposed");
+    if (typeof observer !== "function") throw new TypeError("state observer required");
+    this.stateObservers.add(observer);
+    return () => { this.stateObservers.delete(observer); };
   }
 
   private scalar(op: number, value: bigint | number): Promise<XygTemporalResult> {
