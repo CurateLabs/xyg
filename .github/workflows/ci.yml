@@ -316,6 +316,15 @@ jobs:
         run: |
           uv sync --locked --group dev --group codspeed
 
+      - name: Progressive graph notebook journey
+        timeout-minutes: 4
+        run: |
+          uv pip install jupyterlab==4.6.5 ipykernel==7.4.0
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          export XYG_GRAPH_NOTEBOOK_REPORT="$RUNNER_TEMP/graph-notebook.json"
+          node scripts/graph_notebook_progressive_smoke.mjs
+          .venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json"
+
       # Native tools own this coverage; spec/design/build-ci.md maps the
       # retired graph wrapper suite to the main CI job and local commands.
       - name: Node host suite

@@ -281,18 +281,25 @@ Release acceptance still needs the qualified, published XYG/Core cohort
 (#108 and editor #95); this source change does not publish that cohort or
 justify merging the held editor #85 with its old dry-run artifacts.
 
-### Python notebook scheduling candidate
+### Python notebook progressive layout
 
-For an unlayered property graph with default presentation,
-`graphforge_chart(composition).widget()` / `.show()` now schedules retained
-native layout away from the kernel execution thread and paints progressive
-binary GPU publications. Width/height may be integral pixels. Other explicit
-options, layered compositions and CSS dimensions use the existing synchronous
-widget path. This candidate is a geometry-only progressive viewer: pointer,
-keyboard, selection callbacks, UUID selection and custom presentation still
-need the retained notebook return-channel adapter. It does not complete #1015.
-The exact boundary and local notebook proof are in
-[the native notebook transport contract](../design/graph-session-python-transport.md#bounded-default-property-notebook-scheduling-candidate-2026-11-06).
+`graphforge_chart(composition).widget()` and widget-mode `.show()` schedule graph
+layout and payload compilation off the kernel execution loop. A native initial
+checkpoint paints before terminal layout; later split-buffer updates use the
+existing notebook renderer and callbacks. Layered graphs, explicit theme/style,
+CSS dimensions, composition legends, annotations and axis controls use the same
+path and declarative compiler. Static/batch compilation remains unchanged.
+
+Hover/click callbacks retain their existing `id`, `edge_id` and provenance rows;
+`on_select` retains `Selection` and `Selection.rows()`. Programmatic view changes
+and geometric/row selections use the same channel as gestures. Commands issued
+before initial paint queue until that picture exists. `view_state()` returns
+empty ranges until the first native picture computes its domain, then uses the
+normal eventually consistent cache. The route does not yet
+add UUID-origin selection or full GraphSession kind/UUID/per-layer event refs.
+Instance, mount epoch and exact picture revision prevent cross-widget and stale
+snapshot application. See the [notebook transport contract](../design/graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
+for lifecycle, timeout, validation evidence and remaining #1015 requirements.
 
 `show(display="html")` and `to_html()` remain static/batch snapshots. Their
 browser output has no kernel return channel: selections do not invoke Python

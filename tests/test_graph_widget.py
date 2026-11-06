@@ -1,31 +1,18 @@
-"""Exercise the public default property graph widget and its native lifetime."""
+"""Public notebook path: existing composition, callback and native geometry seams."""
 
 import asyncio
 import threading
 
-import numpy as np
 import pytest
 
 import xyg
-from test_graphforge import _base
+from test_graphforge import _base, _compose
 from xyg._graph_widget import GraphWidget
-from xyg._graphforge_container import DTYPE as D
-from xyg._graphforge_container import decode_container, encode_container
 
 
-def widget():
-    return xyg.graphforge_chart(xyg.compose_graphforge(base=_base("property"))).widget()
-
-
-def request(w, seq, op, revision=0):
-    words = [revision, op, 0, 0, 0, 0, 0, 8 if op == 15 else 0, 0]
-    sections = [
-        ("header.u64", 0, D.U64, np.array([w._instance, 0, seq], dtype="<u8")),
-        ("header.u32", 0, D.U32, words),
-    ]
-    if op == 21:
-        sections.append(("camera.f64", 0, D.F64, [1, 1, 450, 210, 900, 420, 1]))
-    return encode_container("XYGI", sections)
+def widget(**props):
+    chart = xyg.graphforge_chart(xyg.compose_graphforge(base=_base("property")), **props)
+    return chart, chart.widget()
 
 
 async def wait_for(predicate):
@@ -34,80 +21,259 @@ async def wait_for(predicate):
             await asyncio.sleep(0.005)
 
 
-def test_public_widget_defers_layout_and_static_path_stays_batch(monkeypatch):
-    from xyg import _graph
+def message(w, kind, epoch="first", revision=None, **fields):
+    w._on_custom_msg(
+        w,
+        {
+            "type": kind,
+            "graph_instance": w._instance,
+            "graph_epoch": epoch,
+            "graph_revision": w._revision if revision is None else revision,
+            **fields,
+        },
+        [],
+    )
 
-    monkeypatch.setattr(_graph, "run_layout", lambda *a, **kw: pytest.fail("kernel layout"))
-    w = widget()
+
+@pytest.mark.parametrize(
+    "props",
+    [
+        {},
+        {"theme": "dark", "title": "Authored", "style": {"background": "#123456"}},
+        {"width": "100%"},
+    ],
+)
+def test_public_widget_defers_compile_and_preserves_presentation(props, monkeypatch):
+    chart, w = widget(**props)
     assert isinstance(w, GraphWidget)
-    assert w._session is None
+    assert chart._figure is None and w._figure is None
+    assert w.view_state() == {"v": 1, "ranges": {}, "selection": None}
     w.close()
 
 
-def test_native_progress_stale_refusal_and_two_widget_isolation():
+def test_native_frames_callbacks_identity_and_two_widget_isolation():
     async def journey():
-        a, b = widget(), widget()
+        clicks, hovers, selections, views = [], [], [], []
+        chart, a = widget(
+            on_click=clicks.append,
+            on_hover=hovers.append,
+            on_select=selections.append,
+            on_view_change=views.append,
+            theme="dark",
+            title="Authored",
+            style={"background": "#123456"},
+        )
+        layered = _compose("louvain")
+        b = xyg.graphforge_chart(layered).widget()
         messages = {a: [], b: []}
         for w in (a, b):
             w.send = lambda content, buffers=(), w=w: messages[w].append((content, buffers))
         try:
             for w in (a, b):
-                w._message(w, {"operation": "mount", "epoch": "first"}, [])
+                message(w, "graph_mount")
             await wait_for(lambda: all(messages.values()))
-            assert a._instance != b._instance
-            for w in (a, b):
-                w._message(w, {"operation": "render", "epoch": "first"}, [request(w, 2, 21)])
-            await wait_for(lambda: all(len(v) == 2 for v in messages.values()))
-            initial = decode_container(messages[a][-1][1][0], "XYGR")
-            assert initial["relayout.steps.u64", 0][0] == 1
-            assert initial["relayout.done.u8", 0][0] == 0
-            revision = int(initial["header.u32", 0][0])
-            a._message(a, {"operation": "step", "epoch": "first"}, [request(a, 3, 15, revision)])
-            await wait_for(lambda: len(messages[a]) == 3)
-            progress = decode_container(messages[a][-1][1][0], "XYGR")
-            assert progress["relayout.steps.u64", 0][0] == 9
-            assert len(messages[b]) == 2
-            a._message(a, {"operation": "step", "epoch": "stale"}, [request(a, 4, 15)])
-            await asyncio.sleep(0.02)
-            assert len(messages[a]) == 3
-            a._message(a, {"operation": "step", "epoch": "first"}, [request(b, 4, 15)])
-            await wait_for(lambda: len(messages[a]) == 4)
-            assert messages[a][-1][0]["code"] == "XYG_GRAPH_WORKER_FAILED"
-            assert len(messages[b]) == 2
+            first = messages[a][0][0]
+            assert first["type"] == "graph_frame" and first["step"] == 1
+            assert first["spec"]["title"] == "Authored"
+            assert first["spec"]["legend"] == chart.figure().build_payload_split()[0]["legend"]
+            assert a._figure.style["background"] == "#123456"
+            meta = a._figure._graph_meta[0]
+            node, edge = meta["node_trace"], meta["edge_trace"]
+            for kind in ("pick", "click"):
+                message(a, kind, trace=node, index=0)
+            assert (
+                hovers
+                and clicks
+                and clicks[0]["id"] == chart._graphforge_mark.props["nodes"].ids[0]
+            )
+            # Every routed segment, including loops/parallel edges, resolves via
+            # the original Rust route -> membership -> source UUID plane.
+            data = chart._graphforge_mark.props["nodes"]
+            identity = a._figure._graph_edge_identity[edge]
+            assert len(data.edge_ids) > 0
+            seen_edges = set()
+            for segment, render in enumerate(identity.render_edge_index):
+                members = identity.members_of(int(render))
+                if len(members) == 1:
+                    message(a, "click", trace=edge, index=segment)
+                    assert clicks[-1]["edge_id"] == data.edge_ids[int(members[0])]
+                    seen_edges.add(int(members[0]))
+            assert seen_edges == set(range(len(data.edge_ids)))
+            assert data.sources[0] == data.sources[1] and data.targets[0] == data.targets[1]
+            assert data.sources[2] == data.targets[2]
+            message(a, "select", x0=-1e9, x1=1e9, y0=-1e9, y1=1e9)
+            assert selections and len(selections[-1])
+            a.select(rows={node: [0]})
+            assert messages[a][-1][0]["type"] == "selection_rows"
+            a.set_view({"x": [-10, 10]}, animate=False)
+            assert messages[a][-1][0]["type"] == "state_patch"
+            message(a, "view_change", ranges={"x": [-10, 10], "y": [-10, 10]})
+            assert views
+            old = a._revision
+            message(a, "graph_painted")
+            await wait_for(lambda: a._revision > old)
+            assert [m[0]["step"] for m in messages[a] if m[0]["type"] == "graph_frame"] == [1, 9]
+            n = len(clicks)
+            message(a, "graph_painted")
+            message(a, "click", revision=old, trace=node, index=0)
+            assert len(clicks) == n
+            assert b._revision == 1  # independent ACK/backpressure/lifetime
+            message(a, "graph_dispose")
+            message(a, "graph_mount", epoch="second")
+            await wait_for(lambda: a._epoch == "second" and a._revision > old + 1)
+            message(a, "click", epoch="first", trace=node, index=0)
+            assert len(clicks) == n
         finally:
             a.close()
             b.close()
+            await asyncio.sleep(0)
 
     asyncio.run(journey())
 
 
-def test_kernel_responsive_and_rerender_rejects_inflight_reply(monkeypatch):
+def test_kernel_responsive_during_compile_and_stable_worker_failure(monkeypatch):
     async def journey():
-        w = widget()
+        _, w = widget()
         entered, release = threading.Event(), threading.Event()
-        original = w._execute
         seen = []
         w.send = lambda content, buffers=(): seen.append(content)
 
-        def blocked(operation, packet):
+        def blocked(checkpoint):
             entered.set()
             assert release.wait(5)
-            return original(operation, packet)
+            raise RuntimeError("private worker details")
 
-        monkeypatch.setattr(w, "_execute", blocked)
+        monkeypatch.setattr(w, "_compile", blocked)
         try:
-            w._message(w, {"operation": "mount", "epoch": "old"}, [])
+            message(w, "graph_mount")
             await wait_for(entered.is_set)
-            # Kernel loop executes while the native worker is occupied.
-            heartbeat = asyncio.create_task(asyncio.sleep(0))
-            await heartbeat
-            w._message(w, {"operation": "dispose", "epoch": "old"}, [])
-            w._message(w, {"operation": "mount", "epoch": "new"}, [])
+            await asyncio.sleep(0)  # loop executes while native/payload worker is occupied
             release.set()
             await wait_for(lambda: bool(seen))
-            assert [m["epoch"] for m in seen] == ["new"]
+            assert seen == [{"type": "graph_failed", "code": "XYG_GRAPH_WORKER_FAILED"}]
         finally:
             release.set()
             w.close()
+
+    asyncio.run(journey())
+
+
+def test_comm_on_another_notebook_loop_dispatches_callbacks_on_owner():
+    async def journey():
+        owner = threading.get_ident()
+        callbacks = []
+        _, w = widget(on_click=lambda row: callbacks.append(threading.get_ident()))
+        frames = []
+        w.send = lambda content, buffers=(): frames.append(content)
+        try:
+            w.select(rows={1: [0]})
+            message(w, "graph_mount")
+            await wait_for(lambda: bool(frames))
+            node = w._figure._graph_meta[0]["node_trace"]
+
+            def another_loop():
+                async def comm():
+                    message(w, "click", trace=node, index=0)
+                    message(w, "graph_painted")
+
+                asyncio.run(comm())
+
+            await asyncio.get_running_loop().run_in_executor(None, another_loop)
+            await wait_for(lambda: w._revision == 2)
+            assert callbacks == [owner]
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_final_native_checkpoint_matches_batch_and_preserves_cached_view():
+    async def journey():
+        chart, w = widget()
+        final = asyncio.Event()
+        frames = []
+
+        def receive(content, buffers=()):
+            if content["type"] != "graph_frame":
+                return
+            frames.append(content["step"])
+            if content["step"] == 1:
+                message(w, "view_change", ranges={"x": [-20, 20], "y": [-20, 20]})
+            if content["phase"] == "complete":
+                final.set()
+            message(w, "graph_painted")
+
+        w.send = receive
+        try:
+            message(w, "graph_mount")
+            await asyncio.wait_for(final.wait(), 10)
+            assert frames[0] == 1 and frames[-1] == 300
+            assert w.view_state()["ranges"]["x"] == [-20.0, 20.0]
+            batch = chart.figure()
+            import numpy as np
+
+            node = w._figure._graph_meta[0]["node_trace"]
+            np.testing.assert_array_equal(
+                w._figure.traces[node].x.values, batch.traces[node].x.values
+            )
+            np.testing.assert_array_equal(
+                w._figure.traces[node].y.values, batch.traces[node].y.values
+            )
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_saved_widget_state_keeps_latest_picture_without_duplicate_buffer_sync():
+    async def journey():
+        _, w = widget()
+        states, frames = [], []
+        w.send_state = lambda key=None: states.append(key)
+        w.send = lambda content, buffers=(): frames.append((content, buffers))
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: bool(frames))
+            assert w.spec["graph_snapshot"]["step"] == 1
+            assert w.spec["graph_snapshot"]["spec"] == frames[0][0]["spec"]
+            assert w.buffers is frames[0][1]
+            assert not states  # actual ipywidgets property lock, no duplicate trait payload
+        finally:
+            w.close()
+            await asyncio.sleep(0)
+
+    asyncio.run(journey())
+
+
+def test_axes_and_css_dimensions_use_the_same_declarative_compiler():
+    async def journey():
+        chart = xyg.graphforge_chart(
+            xyg.compose_graphforge(base=_base("property")),
+            theme="dark",
+            title="Styled graph",
+            width="100%",
+            style={"background": "#123456"},
+        )
+        chart.children = (
+            *chart.children,
+            xyg.x_axis(label="Authored X", show=True, domain=(-20, 20)),
+        )
+        w = chart.widget()
+        frames = []
+        w.send = lambda content, buffers=(): frames.append(content)
+        try:
+            message(w, "graph_mount")
+            await wait_for(lambda: bool(frames))
+            spec = frames[0]["spec"]
+            assert spec["width"] == "100%" and spec["title"] == "Styled graph"
+            assert spec["x_axis"]["label"] == "Authored X"
+            assert spec["x_axis"]["range"] == [-20.0, 20.0]
+            assert w._figure.style["background"] == "#123456"
+            assert w._figure._graph_meta[0]["style_contract"]["theme"] == "dark"
+        finally:
+            w.close()
+            await asyncio.sleep(0)
 
     asyncio.run(journey())

@@ -1297,3 +1297,20 @@ lack a report. Absent/false retains legacy semantics. See
 [the controller contract](../design/graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation)
 for scheduling, limits, failure and disposal. No new method or ABI is added.
 This does not close #35/#1015/#36 or waive any #108 publication acceptance.
+
+### Public Python notebook scheduling (R2, 2026-11-06)
+
+GraphForge graph `.widget()` / widget-mode `.show()` use the existing retained
+native force controller and compile each checkpoint through this same mark's
+preset-position path on a worker. Default force options and 300-step terminal
+positions remain bitwise equal to explicit batch composition. The browser keeps
+the original ChartView presentation/interaction channel and receives raw split
+buffers; themes, layers, composition legend and authored controls share the path.
+Instance/epoch/revision ownership retains only the displayed and pending picture,
+and a paint ACK bounds progress delivery. No layout, identity, geometry or
+selection policy is added in the scheduling adapter. Full details, including
+exact callback snapshots, mask invalidation, cross-loop dispatch and the
+five-node proof's scale/UX limits, are in the
+[notebook transport contract](graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06).
+Historical remaining-work statements above still apply to the full rendered
+ladder and #1015 acceptance; this bounded route is not closure evidence.

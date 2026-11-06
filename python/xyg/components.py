@@ -3902,6 +3902,8 @@ class Chart(Component):
         self.coords = _validate.coords(coords, "coords")
         self._figure: Optional[Figure] = None
         self._widget: Any = None
+        self._graphforge_mark: Mark | None = None
+        self._composition_legend: dict[str, Any] | None = None
         # Facet builds pre-seed a union category order here (per axis dim) so
         # shared categorical domains align across panels; see FacetChart.
         self._facet_axis_categories: dict[str, list[Any]] = {}
@@ -4262,7 +4264,7 @@ class Chart(Component):
             # Rust home view: nothing drawn around a node is clipped (#910).
             _graph_static.apply_home_view(fig)
         fig._validate_interaction()
-        if hasattr(self, "_composition_legend"):
+        if self._composition_legend is not None:
             fig.legend_options = {**fig.legend_options, **self._composition_legend}
         self._figure = fig
         return fig
@@ -4296,12 +4298,6 @@ class Chart(Component):
         the chart are wired onto it. ``wasm_ticks`` is an explicit
         ``worker_url`` / ``wasm`` pair for hosted Rust/WASM ticks.
         """
-        if self._widget is None and wasm_ticks is None and hasattr(self, "_native_graph_document"):
-            from ._graph_widget import GraphWidget
-
-            self._widget = GraphWidget(
-                self._native_graph_document, width=self.width, height=self.height
-            )
         if self._widget is None:
             from .widget import FigureWidget
 
@@ -4347,7 +4343,12 @@ class Chart(Component):
                 widget_kwargs["on_animation_end"] = on_animation_end
             if wasm_ticks is not None:
                 widget_kwargs["wasm_ticks"] = wasm_ticks
-            self._widget = FigureWidget(self.figure(), **widget_kwargs)
+            if self._graphforge_mark is not None:
+                from ._graph_widget import GraphWidget
+
+                self._widget = GraphWidget(self, **widget_kwargs)
+            else:
+                self._widget = FigureWidget(self.figure(), **widget_kwargs)
         return self._widget
 
     def show(self, display: Optional[str] = None) -> Any:

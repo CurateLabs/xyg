@@ -2104,14 +2104,19 @@ coordinate name, for nonnumeric/nonfinite values. Four registry rejection cases
 check exact x/y messages across both hosts. This changes no ABI struct,
 signature or wire format.
 
-### Default property notebook scheduling candidate (2026-11-06)
+### Python public notebook progressive scheduling (R2, 2026-11-06)
 
-A bounded Python consumer now connects the public default property-graph widget
-route to retained native GraphSession work on a per-widget executor, using the
-existing XYGR/GPU-v1 decoder/painter and frame-paced binary comm backpressure.
-It is geometry-only and applies to the default unlayered light presentation;
-configured/layered widgets retain the legacy synchronous route. Exact scope,
-missing return-channel/presentation prerequisites and limitations are recorded
-in [the Python transport contract](graph-session-python-transport.md#bounded-default-property-notebook-scheduling-candidate-2026-11-06).
-This does not supersede the remaining #35/#36/#1015 acceptance above, establish
-competitor performance leadership, or update the capability matrix as complete.
+All public GraphForge graph widgets now feed retained native force checkpoints
+through the original Figure compiler, ChartView and widget channel. Layered and
+configured graphs share that route; there is no theme/style routing fork. The
+initial native checkpoint precedes terminal layout, and paint acknowledgements
+bound delivery to one pending picture. Static/batch routes remain synchronous.
+[The transport contract](graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
+records exact snapshot/epoch ownership, cross-loop dispatch, cancellation,
+selection-mask validity, preserved generic presentation and event semantics.
+The private GraphSession wrapper is unchanged; full GraphSession refs and UUID
+selection remain future integration work. The real five-node/two-widget notebook
+smoke runs within the existing Release surfaces `test` job. It does not prove
+required rendered ladder budgets, every notebook frontend, UUID box/lasso/export
+parity, competitor leadership or #35/#36/#1015 closure. The R1 geometry-only
+candidate is superseded; its receipt remains historical evidence.

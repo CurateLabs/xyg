@@ -1,50 +1,105 @@
-/** Default property-graph notebook transport. Rust owns layout and GPU buffers. */
-import { createGraphGpuPainter, decodeGraphGpu } from "./63_graph_gpu";
-import { decodeGraphSessionResult, encodeGraphSessionRequest, type GraphSessionCamera } from "./63_graph_session_wire";
-import { XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS } from "./wasm_abi_generated";
+/** Native force checkpoints use the ordinary notebook painter and channel. */
+import { payloadBuffers } from "./00_header";
+import { ChartView } from "./50_chartview";
 
-export function renderGraphHost({ model, el }) {
-  const spec = model.get("spec"), epoch = crypto.randomUUID(), instanceId = BigInt(spec.instance);
-  const surface = document.createElement("div"), status = document.createElement("div");
-  surface.style.width = `${spec.width}px`; surface.style.height = `${spec.height}px`;
-  status.setAttribute("aria-live", "polite"); status.textContent = "Laying out graph";
-  el.append(surface, status);
-  const painter = createGraphGpuPainter(surface);
-  const camera: GraphSessionCamera = [1, 1, spec.width / 2, spec.height / 2, spec.width, spec.height, devicePixelRatio || 1];
-  let disposed = false, sequence = 2n, revision = 0, frame: number | null = null;
-  const send = (operation: string, bytes?: Uint8Array) => model.send({ operation, epoch }, {}, bytes ? [bytes] : []);
-  function stop() {
-    if (disposed) return;
-    disposed = true;
-    if (frame !== null) cancelAnimationFrame(frame);
-    clearTimeout(deadline); send("dispose"); model.off("msg:custom", message);
-  }
-  function fail() { status.textContent = "XYG_GRAPH_WORKER_FAILED"; stop(); }
+export function renderGraphHost({ model, el, attachTicks }) {
+  const bootstrap = model.get("spec"), instance = bootstrap.instance;
+  const epoch = Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, "0")).join("");
+  el.dataset.graphInstance = instance;
+  const status = document.createElement("div"); status.setAttribute("aria-live", "polite");
+  status.textContent = "Laying out graph"; el.append(status);
+  let revision = 0, disposed = false, view: ChartView | null = null, frame: number | null = null;
+  let selection: { content: any; buffers: any } | null = null;
+  const rowSpace = () => (view?._graphs || []).flatMap(g => [g.ids, g.source_edge_ids,
+    ...["member_of", "render_edge_index"].map(key => view!._graphMetaArray(g, key))]);
+  const sameRows = (a, b) => a.length === b.length && a.every((values, i) =>
+    values == null ? b[i] == null : b[i] != null && values.length === b[i].length && values.every((v, j) => v === b[i][j]));
+  let selectedRows: any[] = [];
+  const picks = new Set<string>();
+  let selections = 0;
+  let pendingFrame: { content: any; buffers: any } | null = null;
+  const listeners = new Set<(content: any, buffers: any) => void>();
+  const send = (content, buffers = []) => {
+    if (revision === 0 && !["graph_mount", "graph_dispose"].includes(content.type)) return;
+    if (content.type === "select" || content.type === "select_polygon") selections++;
+    if (content.type === "pick") picks.add(`${revision}:${content.seq}`);
+    model.send({ ...content, graph_instance: instance, graph_epoch: epoch, graph_revision: revision }, {}, buffers);
+  };
+  const comm = {
+    send,
+    wantsViewChange: () => view?.spec?.interaction?._transport_view_change === true,
+    onMessage: cb => { listeners.add(cb); return () => listeners.delete(cb); },
+  };
   function message(content, buffers) {
-    if (disposed || content.epoch !== epoch) return;
-    if (content.type === "graph_failed") { fail(); return; }
-    if (content.type !== "graph_reply") return;
-    try {
-      if (!buffers.length) {
-        send("render", encodeGraphSessionRequest({ instanceId, opSeq: sequence++, revision, operation: 21, camera }));
-        return;
+    if (disposed || content.graph_instance !== instance || content.graph_epoch !== epoch) return;
+    if (content.type === "graph_failed") { status.textContent = "XYG_GRAPH_WORKER_FAILED"; return; }
+    if (content.type !== "graph_frame") {
+      if (content.graph_revision === revision) {
+        if (content.type === "selection" || content.type === "selection_rows") {
+          selection = { content, buffers }; selectedRows = rowSpace();
+        }
+        if (content.type === "state_patch" && content.state?.selection === null) selection = null;
+        for (const cb of listeners) cb(content, buffers);
+        if (content.type === "selection") selections = Math.max(0, selections - 1);
+        if (content.type === "pick_result") picks.delete(`${revision}:${content.seq}`);
+        if (!picks.size && !selections && pendingFrame) { const next = pendingFrame; pendingFrame = null; message(next.content, next.buffers); }
       }
-      const buffer = buffers[0], bytes = buffer instanceof DataView ? new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength) : new Uint8Array(buffer);
-      const result = decodeGraphSessionResult(bytes);
-      if (result.revision < revision) return;
-      painter.paint(decodeGraphGpu(result.sections), camera); revision = result.revision;
-      surface.dataset.graphRevision = String(revision);
-      surface.dataset.graphSteps = String(result.relayout?.steps ?? 0);
-      status.textContent = result.relayout?.done ? "Layout complete" : "Laying out graph";
-      if (result.relayout?.done) { clearTimeout(deadline); return; }
-      // One request per presented frame: no queue of position publications.
-      frame = requestAnimationFrame(() => {
-        frame = null;
-        if (!disposed) send("step", encodeGraphSessionRequest({ instanceId, opSeq: sequence++, revision, operation: 15, steps: XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS }));
-      });
-    } catch { fail(); }
+      return;
+    }
+    if (!Number.isSafeInteger(content.graph_revision) || content.graph_revision <= revision) return;
+    // Keep the displayed revision until its in-flight exact readout returns.
+    // This is bounded transport backpressure, not an inspection hold.
+    if (picks.size || selections) { pendingFrame = { content, buffers }; return; }
+    try {
+    const spec = content.spec, payload = payloadBuffers(spec, buffers);
+    revision = content.graph_revision;
+    if (!view) { view = new ChartView(el, spec, payload, comm); attachTicks(view, spec); }
+    else {
+      const previousRows = rowSpace(), hover = view._hoverTarget;
+      // The generic refresh replaces GPU trace objects. Release transient
+      // handles before it draws; retain an index only when Rust's ordered
+      // row space survives, then bind it to the new GPU object.
+      view._hoverTarget = null; view._graphNbrKey = null; view._graphNbrGpu = null;
+      view._applyAppend({ spec, affected: spec.traces.map(t => t.id) }, buffers);
+      if (!sameRows(previousRows, rowSpace())) {
+        view._hoverId = null; view._a11yPointIndex = -1; view._hideTooltip?.();
+      } else if (hover) {
+        const next = view.gpuTraces.find(g => g.trace.id === hover.trace);
+        if (next && hover.index >= 0 && hover.index < next.n && !next._legendHidden) {
+          view._hoverTarget = { ...hover, g: next }; view._drawKeepPick();
+        }
+      }
+      // Same generic canonical trace-row contract as selection_rows; the
+      // native compiler emits the routing/membership planes for every frame.
+      // Revoke a cached mask if Rust emitted a different ordered row space.
+      // This compares native planes; it never guesses or remaps identities.
+      if (selection && !sameRows(selectedRows, rowSpace())) selection = null;
+      if (selection) { view._applySelectionBuffers(selection.content, selection.buffers); view.draw(); }
+    }
+    // Saved notebook/embed state uses the same accepted picture, with no
+    // second wire transfer or save_changes echo to the kernel.
+    model.set({ spec: { graph_host: true, instance, graph_snapshot: { spec, step: content.step, phase: content.phase } }, buffers }, { silent: true });
+    el.dataset.graphRevision = String(revision); el.dataset.graphSteps = String(content.step);
+    status.textContent = content.phase === "complete" ? "Layout complete" : "Laying out graph";
+    // A presented frame releases exactly one subsequent native checkpoint.
+    frame = requestAnimationFrame(() => { frame = null; if (!disposed) send({ type: "graph_painted" }); });
+    } catch {
+      status.textContent = "XYG_GRAPH_WORKER_FAILED";
+      send({ type: "graph_dispose" });
+    }
   }
-  const deadline = setTimeout(fail, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS);
-  model.on("msg:custom", message); send("mount");
-  return () => { stop(); painter.dispose(); surface.remove(); status.remove(); };
+  if (bootstrap.graph_snapshot) {
+    const saved = bootstrap.graph_snapshot;
+    view = new ChartView(el, saved.spec, payloadBuffers(saved.spec, model.get("buffers")), comm);
+    attachTicks(view, saved.spec);
+    el.dataset.graphSteps = String(saved.step);
+    status.textContent = saved.phase === "complete" ? "Layout complete" : "Laying out graph";
+  }
+  model.on("msg:custom", message); send({ type: "graph_mount" });
+  return () => {
+    if (disposed) return;
+    send({ type: "graph_dispose" }); disposed = true;
+    if (frame !== null) cancelAnimationFrame(frame);
+    model.off("msg:custom", message); listeners.clear(); picks.clear(); pendingFrame = null; selection = null; view?.destroy(); status.remove();
+  };
 }

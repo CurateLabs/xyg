@@ -3,8 +3,8 @@
 Status: **P0 internal S6 foundation for #1015 / #36 only**. This does not
 establish acceptance for #108, M4, a public Python session wrapper, notebooks,
 or the browser painter. The authoritative protocol remains
-[graph-interaction.md §3](graph-interaction.md#3-abi--wasm); native ABI
-398 and its generated declarations are unchanged.
+[graph-interaction.md §3](graph-interaction.md#3-abi--wasm); the original foundation used native ABI 398. Accepted main now requires ABI
+399; the R2 notebook consumer changes no ABI export or generated declaration.
 
 ## Boundary and ownership
 
@@ -149,49 +149,125 @@ selection projection, or publication readiness; it changes no capability or
 competitor acceptance claim, ABI/WASM/source policy, package gate, workflow,
 dependency, generated API inventory, or public API.
 
-## Bounded default property notebook scheduling candidate (2026-11-06)
+## Public notebook scheduling through the existing Figure channel (R2, 2026-11-06)
 
-The private wrapper above remains opaque and unchanged. `_graph_widget.py`
-adds a host consumer: `graphforge_chart(composition).widget()` uses a retained
-native session for an unlayered property graph with default light presentation
-and integral dimensions. Explicit chart options (other than width/height),
-layered graphs and CSS dimensions retain the existing FigureWidget route. This
-is deliberately partial #35/#1015 work, not host-wide acceptance.
+R1's geometry-only default renderer is superseded. Its immutable
+[historical receipt](../performance/graph-widget-progressive-2026-11-06/README.md)
+records the rejected regression; it is not acceptance. The current
+`graphforge_chart(composition).widget()` / widget-mode `.show()` route uses
+`GraphWidget`, a `FigureWidget` consumer, for **every graph composition**, including
+layers, explicit themes/styles, CSS dimensions, legends, annotations and axis
+controls. Non-graph GraphForge charts retain their existing hosts.
 
-Construction does not compile a Figure or run force iterations. Composition
-legend installation is deferred until `Chart.figure()` so static/batch callers
-retain their authored presentation without eager layout during chart creation.
-The default notebook renderer mounts a native GraphSession on a dedicated
-single-thread executor. Rust creates the one-tick progressive seed and owns
-all subsequent opcode-15 layout, identity, revision, admission, geometry, GPU
-buffers and completion decisions. Python schedules opaque byte commands;
-TypeScript uses the existing XYGR decoder and GPU-v1 painter. There is no WASM
-layout or Python force fallback on this path and no ABI/resource-limit change.
+### Why this seam
 
-Each widget has an explicit random unsigned-u64 instance and each browser mount
-has an epoch. Requests are single-flight; the next eight-tick request is sent
-from the next animation opportunity after presentation. Thus no intermediate
-position queue accumulates: frame requests coalesce under comm backpressure.
-Rust validates instance/revision/sequence; both ends reject old mount replies.
-Rerender retires the previous session on the worker before opening another;
-disposal invalidates delivery immediately and queues native destruction after
-the bounded in-flight transaction. Close does not wait on the kernel thread.
-Independent widget workers retain separate native sessions, but the private
-wrapper's global transaction lock still serializes native calls. No parallel
-native throughput claim is made. Browser scheduling stops at the existing
-30-second deadline; stable failure is `XYG_GRAPH_WORKER_FAILED`, with no layout
-fallback. Cleanup is cooperative at transaction boundaries, not thread killing.
+The existing notebook contract is the declarative Figure compiler plus
+`ChartView` and `channel.handle_message`: it already owns all accepted generic
+presentation, hover/click, pan/zoom, keyboard readout, selection, programmatic
+view/row selection and event callbacks. The explicit WASM attachment in
+`63_graph_controller.ts` uses a separate GPU-v1/companion presentation contract;
+replacing ChartView with it would still lose authored notebook presentation.
+The notebook therefore reuses `GraphLayoutController`'s retained native
+`ForceState`, rather than introducing a second presentation stack or a
+GraphSession identity adapter. The private opaque GraphSession wrapper above
+remains unchanged and is not used by this route. Full retained GraphSession
+selection/ref projection is separate #36/#1015 work.
 
-Remaining prerequisite for extending this route to layered/custom charts is a
-native notebook presentation/return-channel adapter that preserves authored
-chart chrome, legends, annotations and callbacks while dispatching retained
-session interactions. The current narrow renderer presents graph GPU geometry
-only. It has no pointer/keyboard/pan/selection adapter, UUID callback or UUID
-selection API. Those are explicit remaining #36/#1015 work; existing generic
-FigureWidget callbacks remain available on the legacy configured route. This
-candidate does not establish feature parity of the default live widget with the
-previous generic renderer. Parent review must decide that boundary before
-integration. The notebook fixture proves only JupyterLab on one small graph;
-Notebook 7, VS Code, export parity, required size ladder, trusted interactions,
-unheld cadence and Release surfaces notebook-smoke wiring remain unproven.
-Evidence: [local receipt](../performance/graph-widget-progressive-2026-11-06/README.md).
+### Data and scheduling
+
+`_graphforge._graph_chart` attaches the original declarative mark and defers
+composition legend installation until explicit Figure compilation. `Chart.widget`
+passes its ordinary callbacks and optional WASM tick configuration to GraphWidget
+without calling `Chart.figure()`. Mount starts the existing native layout
+controller on its dedicated worker, using the mark's algorithm, seed, iteration
+count, CoSE options and pins unchanged (default force, 300 iterations).
+
+Rust returns immutable complete source-f64 checkpoints: one tick initially,
+then existing eight-tick chunks, with the original completion/wall-budget rules.
+The asynchronous progress observer is awaited. A separate single-worker executor
+compiles the **same** declarative chart from a copied mark/data descriptor with
+those source positions and `layout="preset"`; this performs no second force run.
+The existing Rust graph render/LOD, multigraph routing, style, labels, membership
+and offset-f32/u8 payload kernels remain the only product implementation.
+Theme/style, composition legend and all other children use the existing compiler.
+The original chart and static Figure cache are not mutated. The latest accepted
+picture is mirrored into ordinary saved-widget spec/buffer state without a
+second buffer transfer: Python uses the widget property lock and the browser
+updates its local model silently. Reloaded outputs can paint that snapshot
+while a fresh mount establishes ownership. Checkpoint metadata
+records the actual algorithm, scheduled native ticks and native alpha. Step
+numbers retain the existing controller's requested-tick counter; this route does
+not expose opcode-15 exact completed-step reports for empty/settled states.
+
+The kernel loop only publishes the complete spec and raw split buffers. The
+browser uses the existing ChartView mount and full affected-trace append refresh,
+which retains view navigation, keyboard/modebar, legend state and callbacks.
+Cached selection masks are reused only while the ordered native identity and
+membership planes compare equal; changed row spaces revoke the old mask rather
+than guessing new identities. Complete source selection persistence through a
+changing Aggregate row space is not established by this bounded slice.
+
+Only one frame publication is outstanding: its paint ACK releases the next
+native chunk. An in-flight exact readout or geometric selection may retain that one pending frame until
+the matching reply returns; there is no inspection hold or accumulating position
+queue. The existing 30-second native job budget includes host delivery waits;
+the paint wait also refuses after 30 seconds. Slow/hidden frontends may therefore
+fail explicitly rather than continue unbounded work. No budget is increased.
+
+### Ownership, callbacks and lifetime
+
+Each widget has an explicit random instance token; each frontend mount has a
+fresh epoch; each publication has a monotonically increasing revision. Every
+control, generic request and reply carries these stamps. A displayed Figure and
+one pending Figure are retained at most. An event resolves against its exact
+compiled snapshot until the replacement's ACK retires that snapshot. Afterwards
+its revision is rejected. The browser rejects foreign epochs/instances/replies,
+and never applies an older reply to a newer picture. Replacing GPU traces clears
+the old hover/neighborhood handles before drawing and rebinds the target only
+when the ordered native row space is unchanged; no freed GPU handle survives
+a refresh. Routed segment identity
+uses the existing Rust route and source-edge membership planes; callbacks retain
+the existing `id`, `edge_id`, provenance and `Selection.rows()` contracts. No
+Python/JS UUID matching or inferred per-layer identity policy is added.
+
+Jupyter comm/cell execution can enter different event loops. Mount records the
+owning loop; subsequent messages, cancellation and Python-origin mutations are
+marshaled with `call_soon_threadsafe`. This matters for asyncio Event wakeup,
+not just locking: R2 reproduced an ACK recorded by another loop that only woke
+the layout observer at the old timeout. Callback execution now stays on the
+owner loop. Programmatic mutations before the first picture queue until it is
+published. View-state reads remain eventually consistent: before the first
+computed picture they return the version-1 state with empty ranges, and during
+a remount they retain the prior committed cache. They do not run layout merely
+to guess an initial domain. Once a picture exists the ordinary Figure view-state
+cache is used.
+
+Rerender invalidates the old epoch, cancels its controller/task and starts a
+fresh native lifetime. Disposal cancels before first paint as well as during
+progress; closure rejects further host work and shuts down the build executor.
+Native work is cooperatively retired at bounded chunk boundaries. Failure emits
+only `XYG_GRAPH_WORKER_FAILED`, retains the last picture and uses no layout
+fallback. Two widgets have separate controllers, native state, builders,
+revisions, callbacks and caches. This establishes isolation, not a throughput
+leadership or unlimited concurrency claim.
+
+### Proof and remaining acceptance
+
+[The append-only R2 receipt](../performance/graph-widget-progressive-r2-2026-11-06/README.md)
+records real JupyterLab/IPython/anywidget/Chromium evidence: two public widgets,
+nonterminal screenshots, trusted keyboard/pointer/navigation input while native
+steps continue, exact kernel node callbacks, Python-origin row selection and
+closure. Native tests cover every source edge including loops/parallel edges,
+layered/custom presentation, final batch parity, stale/foreign ownership,
+rerender, cancellation, failure and the cross-loop regression. The bounded smoke
+and receipt verifier run in the existing CI `test` job under Release surfaces;
+no new required status is added.
+
+This does not close #1015/#35/#36/#108. Full kind/UUID/per-layer result-id/row
+GraphSession callback projection, UUID-origin selection, exact box/lasso UUID
+sets, selected/annotated export parity, Notebook 7 and VS Code qualification,
+trusted routed-edge notebook pointer coverage and the required 1k/10k/100k/1M
+rendered ladder remain. The five-node property fixture and current composition
+ceilings do not establish any ladder rung, first-paint budget, scale win or
+competitor lead. Static `.figure()` / `.to_html()` and HTML-mode `.show()` remain
+explicit synchronous batch snapshots; HTML has no kernel return channel.
