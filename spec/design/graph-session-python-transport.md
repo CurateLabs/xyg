@@ -263,9 +263,10 @@ rerender, cancellation, failure and the cross-loop regression. The bounded smoke
 and receipt verifier run in the existing CI `test` job under Release surfaces;
 no new required status is added.
 
-This does not close #1015/#35/#36/#108. Full kind/UUID/per-layer result-id/row
-GraphSession callback projection, UUID-origin selection, exact box/lasso UUID
-sets, selected/annotated export parity, Notebook 7 and VS Code qualification,
+This does not close #1015/#35/#36/#108. Full-scale kind/UUID/per-layer result-id/row
+GraphSession callback projection, full-scale UUID-origin selection, geometric
+sets beyond the bounded unfiltered direct correction below, selected/annotated
+export parity, Notebook 7 and VS Code qualification,
 trusted routed-edge notebook pointer coverage and the required 1k/10k/100k/1M
 rendered ladder remain. The five-node property fixture and current composition
 ceilings do not establish any ladder rung, first-paint budget, scale win or
@@ -363,19 +364,54 @@ paint ACK; that ACK closes retired sessions. Remount, dispose and close release
 sessions even when application callbacks retain old Figure/Selection objects.
 Late compiler completion is discarded and its session finalizer releases it.
 UUID masks use ordinary selection_rows and are non-durable across remount;
-exact aggregate/compound highlight routing, graph-specific box/lasso edge policy,
-all browser pointer journeys, accessibility and the full ladder remain open.
+exact aggregate/compound highlight routing, filtered/aggregate/compound box/lasso
+policy, routed point-click journeys, accessibility and the full ladder remain
+open. The bounded unfiltered direct geometric correction below adds four real
+box/lasso pointer journeys.
 
 Focused tests and the public notebook proof are recorded in the
 [identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
 
 ### Notebook identity report contract
 
-The bounded typed-identity notebook proof records its node/edge UUID request
+The typed-identity notebook proof records its node/edge UUID request
 and Rust composition identity records as `uuidSelection`. The report verifier
 requires that distinct canonical pair and exactly two delivered browser rows.
-Historical row-only reports retain their original one-row requirement; typed
-callback reports without request metadata cannot satisfy the new proof. This
-checks request identity and delivery cardinality, not complete geometric UUID
-sets or scale/frontend/export acceptance. The append-only correction and fresh
-capture are in [the report receipt](../performance/graph-notebook-identity-report-2026-11-06/README.md).
+Typed callback reports without request metadata cannot satisfy this requirement.
+The earlier [report receipt](../performance/graph-notebook-identity-report-2026-11-06/README.md)
+checked request identity and delivery cardinality only. Current verification also
+requires the complete geometric proof below; historical row-only captures remain
+immutable and cannot satisfy that added gate. Scale/frontend/export acceptance
+remains separate.
+
+### Bounded notebook geometric identity correction
+
+The unfiltered direct, individually rendered notebook graph now transports the
+canonical Figure box/lasso polygon to the existing Rust GraphSession Lasso
+operation with `NodesAndInducedEdges`. A camera-free private publication retains
+canonical f64 centers. Rust selects nodes by center and includes every edge whose
+endpoints are selected, including loops and parallel persisted edges. The
+private publication never replaces Figure/ChartView. Returned refs use the
+existing membership-plane joins and ordinary binary selection masks/callbacks.
+Hidden/category-filtered, aggregate/compound and trace-specific selection retain
+their previous generic behavior and remain outside this bounded policy proof.
+Native resource refusal retains ordinary rows and reports the typed resource
+limit signal; limits and native identity batching are unchanged.
+
+The normal-CI real JupyterLab journey now requires four complete trusted pointer
+paths: box and lasso during native progressive layout and after completion.
+The verifier compares complete canonical kind/UUID/index/provenance records to
+an authored topology oracle, rejects duplicate/missing/wrong identities even
+at equal cardinality, and requires selected-state screenshots. Historical
+reports remain immutable and cannot satisfy this added geometric proof.
+Layered provenance and lifecycle/isolation are additionally exercised by source
+controls. See [the appended correction receipt](../performance/graph-notebook-geometry-2026-11-06/README.md).
+This supersedes the earlier geometric-set limitation only for this bounded
+JupyterLab direct policy; wider #1015/#35/#36/M4 acceptance remains open.
+
+The existing segment painter consumes the same binary selection mask for
+uniform/RGBA segments, including semantic layers and arrowheads, through the
+otherwise-unused scalar vertex input. It applies the ordinary selected and
+unselected opacity tokens without new geometry or policy. Scalar-LUT segment
+selection styling is unchanged. The notebook report additionally requires an
+independent route-ink pixel difference between all-edge and loop-only states.

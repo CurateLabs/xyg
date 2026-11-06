@@ -1,0 +1,79 @@
+{
+  "source": "scripts/gen_graphforge_ipc_fixtures.py property_graph explicit UUIDs and endpoints; no product selection output",
+  "box": [
+    {
+      "kind": "node",
+      "uuid": "01000000-0000-0000-0000-000000000001",
+      "index": 0,
+      "layers": []
+    },
+    {
+      "kind": "node",
+      "uuid": "01000000-0000-0000-0000-000000000002",
+      "index": 1,
+      "layers": []
+    },
+    {
+      "kind": "node",
+      "uuid": "01000000-0000-0000-0000-000000000003",
+      "index": 2,
+      "layers": []
+    },
+    {
+      "kind": "node",
+      "uuid": "01000000-0000-0000-0000-000000000004",
+      "index": 3,
+      "layers": []
+    },
+    {
+      "kind": "node",
+      "uuid": "01000000-0000-0000-0000-000000000005",
+      "index": 4,
+      "layers": []
+    },
+    {
+      "kind": "edge",
+      "uuid": "02000000-0000-0000-0000-000000000001",
+      "index": 0,
+      "layers": []
+    },
+    {
+      "kind": "edge",
+      "uuid": "02000000-0000-0000-0000-000000000002",
+      "index": 1,
+      "layers": []
+    },
+    {
+      "kind": "edge",
+      "uuid": "02000000-0000-0000-0000-000000000003",
+      "index": 2,
+      "layers": []
+    },
+    {
+      "kind": "edge",
+      "uuid": "02000000-0000-0000-0000-000000000004",
+      "index": 3,
+      "layers": []
+    },
+    {
+      "kind": "edge",
+      "uuid": "02000000-0000-0000-0000-000000000005",
+      "index": 4,
+      "layers": []
+    }
+  ],
+  "lasso": [
+    {
+      "kind": "node",
+      "uuid": "01000000-0000-0000-0000-000000000002",
+      "index": 1,
+      "layers": []
+    },
+    {
+      "kind": "edge",
+      "uuid": "02000000-0000-0000-0000-000000000003",
+      "index": 2,
+      "layers": []
+    }
+  ]
+}

@@ -283,6 +283,8 @@ class GraphWidget(FigureWidget):
 
         def selection_callback(selection):
             selection.graphforge, error = project(selection.per_trace)
+            error = error or getattr(figure._notebook_graph_identity, "_geometry_error", None)
+            figure._notebook_graph_identity._geometry_error = None
             if error:
                 selection.graphforge_error = error
             callback = self._callbacks.on_select

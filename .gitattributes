@@ -93,3 +93,12 @@ spec/performance/graph-notebook-identity-limits-2026-11-06/*.png -text
 spec/performance/graph-notebook-identity-order-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.gz -text
+
+# Exact notebook geometry source/oracle and appended correction bindings.
+python/xyg/_figure_runtime.py text eol=lf
+spec/design/graph-interaction.md text eol=lf
+tests/fixtures/graphforge/notebook_geometry.json text eol=lf
+spec/performance/graph-notebook-geometry-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-geometry-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-geometry-2026-11-06/*.gz -text
+spec/performance/graph-notebook-geometry-2026-11-06/*.png -text
