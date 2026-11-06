@@ -2103,3 +2103,15 @@ same `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE` diagnostic, including the
 coordinate name, for nonnumeric/nonfinite values. Four registry rejection cases
 check exact x/y messages across both hosts. This changes no ABI struct,
 signature or wire format.
+
+### Default property notebook scheduling candidate (2026-11-06)
+
+A bounded Python consumer now connects the public default property-graph widget
+route to retained native GraphSession work on a per-widget executor, using the
+existing XYGR/GPU-v1 decoder/painter and frame-paced binary comm backpressure.
+It is geometry-only and applies to the default unlayered light presentation;
+configured/layered widgets retain the legacy synchronous route. Exact scope,
+missing return-channel/presentation prerequisites and limitations are recorded
+in [the Python transport contract](graph-session-python-transport.md#bounded-default-property-notebook-scheduling-candidate-2026-11-06).
+This does not supersede the remaining #35/#36/#1015 acceptance above, establish
+competitor performance leadership, or update the capability matrix as complete.

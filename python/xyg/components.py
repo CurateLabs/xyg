@@ -4262,6 +4262,8 @@ class Chart(Component):
             # Rust home view: nothing drawn around a node is clipped (#910).
             _graph_static.apply_home_view(fig)
         fig._validate_interaction()
+        if hasattr(self, "_composition_legend"):
+            fig.legend_options = {**fig.legend_options, **self._composition_legend}
         self._figure = fig
         return fig
 
@@ -4294,6 +4296,12 @@ class Chart(Component):
         the chart are wired onto it. ``wasm_ticks`` is an explicit
         ``worker_url`` / ``wasm`` pair for hosted Rust/WASM ticks.
         """
+        if self._widget is None and wasm_ticks is None and hasattr(self, "_native_graph_document"):
+            from ._graph_widget import GraphWidget
+
+            self._widget = GraphWidget(
+                self._native_graph_document, width=self.width, height=self.height
+            )
         if self._widget is None:
             from .widget import FigureWidget
 

@@ -148,3 +148,50 @@ foundation does not prove performance leadership, chart breadth, complete
 selection projection, or publication readiness; it changes no capability or
 competitor acceptance claim, ABI/WASM/source policy, package gate, workflow,
 dependency, generated API inventory, or public API.
+
+## Bounded default property notebook scheduling candidate (2026-11-06)
+
+The private wrapper above remains opaque and unchanged. `_graph_widget.py`
+adds a host consumer: `graphforge_chart(composition).widget()` uses a retained
+native session for an unlayered property graph with default light presentation
+and integral dimensions. Explicit chart options (other than width/height),
+layered graphs and CSS dimensions retain the existing FigureWidget route. This
+is deliberately partial #35/#1015 work, not host-wide acceptance.
+
+Construction does not compile a Figure or run force iterations. Composition
+legend installation is deferred until `Chart.figure()` so static/batch callers
+retain their authored presentation without eager layout during chart creation.
+The default notebook renderer mounts a native GraphSession on a dedicated
+single-thread executor. Rust creates the one-tick progressive seed and owns
+all subsequent opcode-15 layout, identity, revision, admission, geometry, GPU
+buffers and completion decisions. Python schedules opaque byte commands;
+TypeScript uses the existing XYGR decoder and GPU-v1 painter. There is no WASM
+layout or Python force fallback on this path and no ABI/resource-limit change.
+
+Each widget has an explicit random unsigned-u64 instance and each browser mount
+has an epoch. Requests are single-flight; the next eight-tick request is sent
+from the next animation opportunity after presentation. Thus no intermediate
+position queue accumulates: frame requests coalesce under comm backpressure.
+Rust validates instance/revision/sequence; both ends reject old mount replies.
+Rerender retires the previous session on the worker before opening another;
+disposal invalidates delivery immediately and queues native destruction after
+the bounded in-flight transaction. Close does not wait on the kernel thread.
+Independent widget workers retain separate native sessions, but the private
+wrapper's global transaction lock still serializes native calls. No parallel
+native throughput claim is made. Browser scheduling stops at the existing
+30-second deadline; stable failure is `XYG_GRAPH_WORKER_FAILED`, with no layout
+fallback. Cleanup is cooperative at transaction boundaries, not thread killing.
+
+Remaining prerequisite for extending this route to layered/custom charts is a
+native notebook presentation/return-channel adapter that preserves authored
+chart chrome, legends, annotations and callbacks while dispatching retained
+session interactions. The current narrow renderer presents graph GPU geometry
+only. It has no pointer/keyboard/pan/selection adapter, UUID callback or UUID
+selection API. Those are explicit remaining #36/#1015 work; existing generic
+FigureWidget callbacks remain available on the legacy configured route. This
+candidate does not establish feature parity of the default live widget with the
+previous generic renderer. Parent review must decide that boundary before
+integration. The notebook fixture proves only JupyterLab on one small graph;
+Notebook 7, VS Code, export parity, required size ladder, trusted interactions,
+unheld cadence and Release surfaces notebook-smoke wiring remain unproven.
+Evidence: [local receipt](../performance/graph-widget-progressive-2026-11-06/README.md).

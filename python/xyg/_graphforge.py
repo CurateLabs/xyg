@@ -710,6 +710,7 @@ def _legend_items(composition: GraphForgeComposition, theme: str) -> list[dict[s
 def _graph_chart(composition: GraphForgeComposition, props: dict[str, Any]) -> Any:
     from . import components as c
 
+    native_widget = not composition.layers and not props.keys() - {"width", "height"}
     theme = props.pop("theme", "light")
     nodes, edges = composition.nodes, composition.edges
     assert nodes is not None and edges is not None
@@ -737,15 +738,11 @@ def _graph_chart(composition: GraphForgeComposition, props: dict[str, Any]) -> A
     if not composition.layers:
         props["style"] = {**_native.graph_semantic_chrome(theme), **(props.get("style") or {})}
     chart = c.graph_chart(mark, **props)
+    if native_widget and isinstance(chart.width, int) and isinstance(chart.height, int):
+        chart._native_graph_document = composition.bytes
     items = _legend_items(composition, theme)
     if items:
-        # The composition's Rust legend (layer-specific text), as Node passes it.
-        fig = chart.figure()
-        fig.legend_options = {
-            "title": composition.legend["title"],
-            **fig.legend_options,
-            "items": items,
-        }
+        chart._composition_legend = {"title": composition.legend["title"], "items": items}
     return chart
 
 

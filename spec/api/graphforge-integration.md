@@ -280,3 +280,20 @@ XYG authority and retaining its existing `graphforgeLedger()` coverage test.
 Release acceptance still needs the qualified, published XYG/Core cohort
 (#108 and editor #95); this source change does not publish that cohort or
 justify merging the held editor #85 with its old dry-run artifacts.
+
+### Python notebook scheduling candidate
+
+For an unlayered property graph with default presentation,
+`graphforge_chart(composition).widget()` / `.show()` now schedules retained
+native layout away from the kernel execution thread and paints progressive
+binary GPU publications. Width/height may be integral pixels. Other explicit
+options, layered compositions and CSS dimensions use the existing synchronous
+widget path. This candidate is a geometry-only progressive viewer: pointer,
+keyboard, selection callbacks, UUID selection and custom presentation still
+need the retained notebook return-channel adapter. It does not complete #1015.
+The exact boundary and local notebook proof are in
+[the native notebook transport contract](../design/graph-session-python-transport.md#bounded-default-property-notebook-scheduling-candidate-2026-11-06).
+
+`show(display="html")` and `to_html()` remain static/batch snapshots. Their
+browser output has no kernel return channel: selections do not invoke Python
+callbacks and native progressive work does not continue after export.
