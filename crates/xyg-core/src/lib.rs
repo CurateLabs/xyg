@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 401;
+pub const ABI_VERSION: u32 = 403;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -33195,4 +33195,60 @@ mod chunked_chart_publication_tests {
         drop(store);
         std::fs::remove_file(path).unwrap();
     }
+}
+
+mod temporal_graph_frozen_ffi;
+
+/// Render/recover frozen temporal graphs. Format 0 SVG, 1 PNG, 2 HTML,
+/// 3 canonical Scene, 4 XYPB; 5 recovers exact XYFG from an artifact.
+/// Output capacity failure writes no bytes and reports the required size.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_frozen_export(
+    data: *const u8,
+    len: u64,
+    format: u32,
+    scale: f64,
+    focus_rgba: u32,
+    budget: u64,
+    out: *mut u8,
+    out_cap: u64,
+    out_len: *mut u64,
+) -> i32 {
+    use xyg_engine::temporal::TemporalError as E;
+    ffi_guard(E::InvalidArgument as i32, || {
+        if out_len.is_null() {
+            return E::InvalidArgument as i32;
+        }
+        *out_len = 0;
+        if budget > 384 * 1024 * 1024 || len > 384 * 1024 * 1024 || len > isize::MAX as u64 || (len != 0 && data.is_null()) {
+            return E::InvalidArgument as i32;
+        }
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(data, len as usize)
+        };
+        let result = if format == 5 {
+            xyg_engine::temporal_graph_export::recover(bytes, budget as usize)
+        } else {
+            xyg_engine::temporal_graph_export::export(
+                bytes,
+                format,
+                scale,
+                focus_rgba.to_le_bytes(),
+                budget as usize,
+            )
+        };
+        match result {
+            Err(e) => e as i32,
+            Ok(bytes) => {
+                *out_len = bytes.len() as u64;
+                if out_cap < bytes.len() as u64 || out.is_null() {
+                    return E::OutputCapacity as i32;
+                }
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
+                0
+            }
+        }
+    })
 }

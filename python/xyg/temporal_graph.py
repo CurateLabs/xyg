@@ -151,6 +151,34 @@ class TemporalGraph:
         """Return the last complete frame without recomputing it."""
         return _native.temporal_graph_snapshot(self._open_handle())
 
+    def freeze(
+        self,
+        *,
+        revision: int,
+        timezone: str,
+        window: tuple[int, int] | None = None,
+        session: Any = None,
+        render_revision: int = 0,
+        budget_bytes: int = 384 * 1024 * 1024,
+    ):
+        """Acquire immutable native provenance from the accepted revision.
+
+        ``window`` is explicit half-open UTC microseconds or None. ``timezone``
+        is a display tag, never a conversion or inferred temporal-column binding.
+        An optional retained session captures its exact accepted publication.
+        """
+        from ._temporal_graph_frozen import freeze
+
+        return freeze(
+            self,
+            revision=revision,
+            timezone=timezone,
+            window=window,
+            session=session,
+            render_revision=render_revision,
+            budget_bytes=budget_bytes,
+        )
+
     def cancel(self) -> None:
         """Cooperatively cancel an in-flight frame from another thread."""
         _native.temporal_graph_cancel(self._open_handle())

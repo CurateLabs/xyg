@@ -119,31 +119,37 @@ fn rgba_at(plane: &[u8], index: usize) -> [u8; 4] {
 }
 
 #[derive(Default)]
-struct Columns {
-    kinds: Vec<u8>,
-    stable_ids: Vec<u64>,
-    style_refs: Vec<u32>,
-    fill: Vec<u8>,
-    stroke: Vec<u8>,
-    stroke_width: Vec<f64>,
-    diameter: Vec<f64>,
-    symbols: Vec<u8>,
-    x0: Vec<f64>,
-    y0: Vec<f64>,
-    x1: Vec<f64>,
-    y1: Vec<f64>,
-    styles: HashMap<([u8; 4], [u8; 4], u64, bool), u32>,
-    style_count: u32,
+pub(crate) struct Columns {
+    pub(crate) kinds: Vec<u8>,
+    pub(crate) stable_ids: Vec<u64>,
+    pub(crate) style_refs: Vec<u32>,
+    pub(crate) fill: Vec<u8>,
+    pub(crate) stroke: Vec<u8>,
+    pub(crate) stroke_width: Vec<f64>,
+    pub(crate) diameter: Vec<f64>,
+    pub(crate) symbols: Vec<u8>,
+    pub(crate) x0: Vec<f64>,
+    pub(crate) y0: Vec<f64>,
+    pub(crate) x1: Vec<f64>,
+    pub(crate) y1: Vec<f64>,
+    pub(crate) styles: HashMap<([u8; 4], [u8; 4], u64, bool), u32>,
+    pub(crate) style_count: u32,
     /// Styles stroked with butt caps (dash pieces).
-    butt_styles: Vec<u32>,
+    pub(crate) butt_styles: Vec<u32>,
 }
 
 impl Columns {
-    fn style(&mut self, fill: [u8; 4], stroke: [u8; 4], width: f64) -> u32 {
+    pub(crate) fn style(&mut self, fill: [u8; 4], stroke: [u8; 4], width: f64) -> u32 {
         self.capped_style(fill, stroke, width, false)
     }
 
-    fn capped_style(&mut self, fill: [u8; 4], stroke: [u8; 4], width: f64, butt: bool) -> u32 {
+    pub(crate) fn capped_style(
+        &mut self,
+        fill: [u8; 4],
+        stroke: [u8; 4],
+        width: f64,
+        butt: bool,
+    ) -> u32 {
         let key = (fill, stroke, width.to_bits(), butt);
         if let Some(&index) = self.styles.get(&key) {
             return index;
@@ -161,7 +167,7 @@ impl Columns {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn row(
+    pub(crate) fn row(
         &mut self,
         kind: SceneRecordKind,
         stable_id: u64,

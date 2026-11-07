@@ -232,7 +232,7 @@ impl TemporalColumn {
     }
 }
 
-fn validate_timezone(timezone: &str) -> Result<(), TemporalError> {
+pub(crate) fn validate_timezone(timezone: &str) -> Result<(), TemporalError> {
     if timezone.is_empty() || timezone.len() > 128 || timezone.bytes().any(|b| b == 0) {
         return Err(TemporalError::TimezoneRequired);
     }

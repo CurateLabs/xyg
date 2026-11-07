@@ -42,6 +42,10 @@ also uses the existing painter/pick/layout and preserves UUID state in bounded
 browser tests. Aggregate, export, accessibility, scale and comparative
 performance acceptance remain open; this does not close #45.
 
+Native Python/Node `TemporalGraph.freeze` now acquires an immutable [canonical snapshot](../design/temporal-graph-frozen.md)
+with exact frame UUID state and optional retained publication/camera bytes. This is
+a programmatic acquisition checkpoint; rendered HTML/PNG/SVG and WASM attachment remain open.
+
 Python notebooks expose a bounded [typed graph identity/UUID highlight slice](../design/graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06).
 Its focused Rust provenance and small JupyterLab journey evidence does not
 qualify all frontends, exact geometric UUID sets, exports or scale budgets.

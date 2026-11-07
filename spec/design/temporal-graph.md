@@ -277,3 +277,14 @@ including GPU, membership and interaction state, for the same fixture. Evidence:
 This bounded direct-tier proof does not close aggregate membership, exports,
 large/massive playback, full accessibility, timezone presentation, supported
 host parity or competitor comparison acceptance.
+
+## Native immutable acquisition checkpoint (2026-11-07)
+
+Python and Node `TemporalGraph.freeze` now acquire immutable Rust-owned canonical
+XYFG snapshots from the accepted native frame, with independent lifetime and
+optional exact retained GraphSession publication/camera capture. The
+[codec and ownership contract](temporal-graph-frozen.md) defines explicit
+window/timezone ingress, frame-versus-publication state, limits and refusal rules.
+This is a functional programmatic checkpoint; the rendered HTML/PNG/SVG adapters
+and browser/WASM freeze attachment described above remain open. It does not
+close #45, milestones 4–7, or the original complete frozen-export task.

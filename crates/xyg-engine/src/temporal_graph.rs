@@ -245,6 +245,8 @@ impl TemporalGraph {
         })
     }
 
+    pub(crate) fn instance_token(&self) -> u64 { self.graph_token }
+
     /// Revision of the last published frame (`0` before the first).
     pub fn applied_revision(&self) -> u64 {
         self.applied_revision

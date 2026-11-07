@@ -103,7 +103,7 @@ impl Builder {
         }
     }
 
-    fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
+    pub(crate) fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
         debug_assert!(valid_name(name), "section name {name}");
         self.sections.push(Pending {
             name: name.to_owned(),

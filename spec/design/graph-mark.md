@@ -1314,3 +1314,12 @@ five-node proof's scale/UX limits, are in the
 [notebook transport contract](graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06).
 Historical remaining-work statements above still apply to the full rendered
 ladder and #1015 acceptance; this bounded route is not closure evidence.
+
+### Native frozen temporal acquisition checkpoint
+
+The [XYFG snapshot route](temporal-graph-frozen.md) can acquire an existing
+bound native session's accepted publication, camera and source identity without
+running layout/routing/style again. This stores exact geometry and provenance;
+it does not yet turn retained temporal publications into rendered HTML/PNG/SVG.
+The normal composed fixed-graph export route above remains unchanged. Temporal
+Scene lowering and embedded rendered-format recovery remain next-checkpoint work.

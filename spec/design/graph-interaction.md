@@ -1460,3 +1460,12 @@ Its new browser harness qualifies a 10k primary with a 1k peer at explicit
 completion remains unqualified at the unchanged wall limit. The receipt records
 historical failures, exact full-reply native/WASM replay, memory scope and remaining
 ladder/host acceptance; this does not close #35/#36/#1015 or M4.
+### Native frozen-publication borrowing
+
+The [native immutable temporal checkpoint](temporal-graph-frozen.md) borrows a
+WireSession's actual latest complete publication while holding the existing
+session lock. It checks the exact bound owner, accepted frame/render revisions,
+explicit camera and source token before the temporal acquisition gate. Existing
+XYGI/XYGR packet bytes and command behavior are unchanged. Snapshot acquisition
+adds the session's retained memory charge to its own peak admission. This is an
+export input seam, not a second publisher, renderer, layout or identity resolver.
