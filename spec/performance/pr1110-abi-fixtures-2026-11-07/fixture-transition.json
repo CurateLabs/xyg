@@ -1,0 +1,163 @@
+{
+  "tests/fixtures/animation_emit_cross_host.json": {
+    "predecessorSha256": "1e7755be5c68dbb36303108a85fae3fecdaf6b66307f9fd81c105f952a1894c9",
+    "currentSha256": "b8cf3ce28d486bf159e0e442519f77c8dd9667cef6f11b3351f4ff5b8b8d3990",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/animation_emit_cross_host.mjs"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/default_styled_emit_cross_host.json": {
+    "predecessorSha256": "2c8622bffcabe796c494d1b0e22bd2127b61547c9b4ffacb2fdf079feb21b651",
+    "currentSha256": "437a39fc0087ca68dcbe70a69a288964f0225a430034c2e738c2ade3cce78adb",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/default_styled_emit_cross_host.mjs"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/density_emit_cross_host.json": {
+    "predecessorSha256": "9fa1a2d106c0a371b17a7646c7160d2f97e63d49cac15ff218dfbad9e0b5f783",
+    "currentSha256": "0b8592a9d8cdb4e329d88499a2d34e7b8d6455a9c3c51c6c62730134669b52b8",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/density_emit_cross_host.mjs"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/force_emit_cross_host.json": {
+    "predecessorSha256": "e4297e0b01131a786e7621626909d43720235a96cfcf332fbc8c76a474872efc",
+    "currentSha256": "5f2620fd04d3de42b5f68c7dc1e293d1f5d2b6368e695f5354afc1bfdd7ed954",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/force_emit_cross_host.mjs"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/geo_cross_host.json": {
+    "predecessorSha256": "841fa912b6cf881b41f9a41f26dbeaf0bbffd4b83321cc972f7fb7b73aad2993",
+    "currentSha256": "18c6708f6cd7cb980e2e34589129e6d9a4a8f84be90bc1627739b5461dcfad8f",
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/payload_attach_cross_host.json": {
+    "predecessorSha256": "a86524b7bb5ed4a5fffd6f480913bbafffee6df332e31bfdf4a4e83bb3b1c075",
+    "currentSha256": "b90ea2bdaa044dc35629c78667637f42902650db1236c0306f8225531eca6bf3",
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/payload_chrome_cross_host.json": {
+    "predecessorSha256": "c5f340ff42c774eaf964a9e2e8fb0568f40baa44a6e21c3c33159006016ca7b2",
+    "currentSha256": "779d841502d908c91db9b55dfe9e5dc6debaf929091022c5cf1adc46d6aaedd2",
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/payload_cross_host.json": {
+    "predecessorSha256": "610d9412c6eb4ae81f5e590b7fb6bd5ddfab10398b57dd617e5f7c653335612d",
+    "currentSha256": "998b9b14eb1afbdf581df476ce7f5adf10b1083ad4c61d7f39c2c01123210f1a",
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/series_palette_cross_host.json": {
+    "predecessorSha256": "1dec112503086d0c1c0dd0fccc20d819f44b47ec17cbe8c0596e4fc12bc846ba",
+    "currentSha256": "623e59b9601fe2d09a9161a7c4843b5909be7e4bc091566ec980b9863394b751",
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "tests/test_series_palette_cross_host.py",
+      "--write"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  },
+  "tests/fixtures/tooltip_len_emit_cross_host.json": {
+    "predecessorSha256": "ff5012b67f7e89bc021b9a4753696a14354172abf12d65573c68e3cfa3f314bd",
+    "currentSha256": "c831b4015169f1368103a7b7b1d81a3be4746c5b5ac675eaefbbc1dd6106c851",
+    "command": [
+      "node",
+      "packages/xy-node/scripts/tooltip_len_emit_cross_host.mjs"
+    ],
+    "changedFields": [
+      {
+        "path": "/abi_version",
+        "before": 399,
+        "after": 401
+      }
+    ],
+    "productPacketChanges": []
+  }
+}

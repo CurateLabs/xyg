@@ -1,0 +1,9 @@
+{
+  "parents": [
+    "44f9f06cda17f4e4ec76de001ad8dc5771940ae6",
+    "fc096e61f3069496c6cae5719e361ec4336180e8"
+  ],
+  "verified": true,
+  "rule": "fc contracts plus exact GPU dashboard declarations from first parent",
+  "contractSha256": "25f086c3dd073959c5378466f2b5363a42a0d440e92fa0e043388b0d5c7c6d7a"
+}

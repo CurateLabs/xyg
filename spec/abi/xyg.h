@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 399
-#define XYG_ABI_SIGNATURE_SHA256 "7f47f1219fe2c0df0402f0bdd7646ad07543c99c5b396c20ec97752359982bab"
+#define XYG_ABI_VERSION 401
+#define XYG_ABI_SIGNATURE_SHA256 "351e51d44ed0a3c4c3525d48a6aee277667a9963685a67fa689559b944c86295"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +47,8 @@ int32_t xyg_category_label_kinds_from_probes(const uint8_t * probes, size_t n, u
 size_t xyg_category_labels_packed(const uint8_t * kinds, const uint32_t * in_lens, const uint8_t * in_texts, size_t in_texts_len, size_t n, uint32_t * out_lens, uint8_t * out_texts, size_t out_texts_cap);
 uint64_t xyg_category_palette_rows(uint64_t n_categories);
 int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation);
+size_t xyg_chunked_columns_chart(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint64_t page_bytes, uint64_t * out_rows, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
+size_t xyg_chunked_columns_chart_overview(uint64_t store, size_t max_points, uint64_t generation, uint64_t * out_rows, double * out_x, double * out_y, uint64_t * out_stats);
 int32_t xyg_chunked_columns_free(uint64_t store);
 uint64_t xyg_chunked_columns_open(const uint8_t * path, size_t path_len);
 size_t xyg_chunked_columns_overview(uint64_t store, size_t max_points, uint64_t * out_rows, double * out_x, double * out_y, uint64_t * out_stats);

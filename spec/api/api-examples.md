@@ -787,3 +787,31 @@ Completion means visual publication and retirement acknowledgment. A hierarchy
 frame supports static mounting; its live update rejects until an explicit
 hierarchy route is available. See [native live hosts](../design/geo-live-host.md)
 and the reproducible notebook, VS Code and browser journey fixtures.
+
+### Local ordered-file chart snapshots
+
+For an existing checked local XYGC artifact, retain the source while navigating
+programmatically, then close it. These snapshots use the ordinary scatter
+composition and export APIs:
+
+```python
+from xyg import ChunkedColumns
+
+with ChunkedColumns("ordered.xygc") as source:
+    overview = source.chart()  # bounded stored overview; no detail reads
+    detail = source.chart(
+        (100.0, 200.0), generation=1,
+        budget_bytes=4 << 20, page_bytes=1 << 20,
+    )
+    detail.to_html("detail.html")
+    canonical_ids = detail.source_row_ids
+    read_provenance = detail.source_provenance
+```
+
+Node exposes the same native contract via `source.chart([100, 200],
+{generation: 1, budgetBytes: 4 << 20, pageBytes: 1 << 20})`; close the source in
+`finally`. Its chart carries `sourceRowIds` and `sourceProvenance`. Both return
+independent snapshots, with exact viewport admission failures rather than silent
+truncation. Automatic browser gestures do not request a new snapshot. See the
+[bounded contract](../design/tier3-phase4-roadmap.md#bounded-local-chart-snapshots-110-continuation)
+for memory accounting and remaining #110 requirements.
