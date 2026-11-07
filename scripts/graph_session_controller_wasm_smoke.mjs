@@ -133,6 +133,44 @@ try {
       const result=await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime,r={snapshot:p.handle.snapshot(),tail:p.publications.slice(p.mark).map(x=>x.temporal.cursor),operations:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(c=>c.operation),failures:p.failures};await p.controller.dispose();await p.handle.dispose();await p.clockWorker.dispose();await p.worker.dispose();return r;});
       assert.equal(result.snapshot.temporal.cursor,20n);assert.deepEqual(Array.from(result.snapshot.temporal.nodeVisibility),[1,0,1]);assert.ok(result.tail.length>0&&result.tail.every(x=>x===20n));assert.ok(result.operations.includes(15));assert.deepEqual(result.failures,[]);return result;
     });
+    for (const pending of [false,true]) for (const fault of ['error','messageerror']) {
+      await run(`retained-temporal-${pending?'superseded':'idle'}-worker-${fault}-preserves-first-cause`,async()=>{
+        await page.evaluate(async pending=>{
+          const s=window.__graphSession;await s.temporalFixture(false);
+          if(pending){s.hold=true;await s.retainedTime.controller.setCursor(20n);}
+        },pending);
+        if(pending) await page.waitForFunction(()=>window.__graphSession.held.length>0);
+        const result=await page.evaluate(async ({pending,fault})=>{
+          const s=window.__graphSession,p=s.retainedTime;
+          if(pending) await p.controller.setCursor(30n);
+          const before=p.handle.snapshot(), mark=p.publications.length;
+          const expected=fault==='error'?'XYG_WASM_WORKER_TRAP':'XYG_WASM_MESSAGE_ERROR';
+          if(fault==='error') p.worker.worker.onerror({message:'first idle-or-superseded trap'});
+          else p.worker.worker.onmessageerror({});
+          const settle=()=>Promise.race([
+            p.handle.whenIdle().then(()=>({resolved:true}),e=>({code:e.code,message:e.message})),
+            new Promise(r=>setTimeout(()=>r({hung:true}),2000))
+          ]);
+          const first=await settle();
+          // A later lifetime signal must never replace the accepted first cause.
+          p.worker.worker.onerror({message:'later replacement cause'});
+          const second=await settle(), count=s.commands.length;
+          await p.controller.setCursor(40n);s.release();await new Promise(r=>setTimeout(r,0));
+          const graphCommands=s.commands.slice(count).filter(c=>c.owner===p.worker.worker.__graphOwner).length;
+          const after=p.handle.snapshot(), newPublications=p.publications.length-mark;
+          const failures=p.failures.slice();
+          await p.handle.dispose();await p.controller.dispose();await p.clockWorker.dispose();await p.worker.dispose();
+          return {expected,first,second,graphCommands,newPublications,beforeRevision:before.revision,afterRevision:after.revision,failures};
+        },{pending,fault});
+        assert.equal(result.first.hung,undefined,'Worker lifetime failure must settle idle without another command');
+        assert.equal(result.first.code,result.expected,'first Worker cause must survive supersession');
+        assert.deepEqual(result.second,result.first,'later errors must preserve the first cause');
+        if(fault==='error')assert.equal(result.first.message,'first idle-or-superseded trap');
+        assert.equal(result.graphCommands,0);assert.equal(result.newPublications,0);
+        assert.equal(result.afterRevision,result.beforeRevision);
+        return result;
+      });
+    }
     await run('retained-temporal-worker-failure-settles-pending-idle',async()=>{
       await page.evaluate(async()=>{const s=window.__graphSession;await s.temporalFixture(false);s.hold=true;const p=s.retainedTime;p.refresh=p.handle.refreshRender().catch(e=>e.code);});
       await page.waitForFunction(()=>window.__graphSession.held.length>0);

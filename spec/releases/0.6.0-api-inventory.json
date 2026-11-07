@@ -1196,7 +1196,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"76aee55e9d64b0fd4fee2540c4f97a8b04501a87",
+  "baseCommit":"c5522197ddb2fa131a5f67c9471d15d0df75c6e3",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1214,7 +1214,7 @@
   "js/src/42_glhost.ts":"87235678e180769af8b84925ea9c2face266cd47ffdd941e7770949181b04fda",
   "js/src/43_external_gl.ts":"06ed8e024e47fd792a97f0cd9bad6d0cc806fbfee8d142df35776c69ee74fbd2",
   "js/src/45_lod.ts":"8bbde3d6b5e38aaa9214e404bd53e13e5a1ec5d424a90e287ab95e896772b498",
-  "js/src/47_wasm.ts":"8ab9ba2be24809b3301865aebbd12952e199f47489398876d26969e7f7571128",
+  "js/src/47_wasm.ts":"93b3ab20a9d684105bc82d7c0a94b64e989106afe2ad2b38dd1b9fcac34adaab",
   "js/src/48_wasm_scene.ts":"73b216838264cbaabf702e0ee92317a66bc5be550257234cbe9428d78bbf1f04",
   "js/src/49_wasm_aggregate.ts":"067f93834bc4a5a4f5197851b45d49afe74c28a84a26ccd2fbc2d7c84aaa4b09",
   "js/src/49_wasm_chart.ts":"ee69d10d5f502632e7cdf164128ec8d99049a0358b2ac546d4ca3db533159b0f",
@@ -1244,7 +1244,7 @@
   "js/src/61_geo_catalog.ts":"4bdefad88ea4f03ee248e8f74be223b47de36c149b4c90f1f682859f5550e412",
   "js/src/62_geographic_controller.ts":"7ca5120bdf72d08409ed36673367ccb407379103d716100da21aad97d5fc8a6f",
   "js/src/63_geo_source.ts":"18c9241c630189f89960fd70804b0f72c73703f44b34d3b663a56a754d1c2f97",
-  "js/src/63_graph_controller.ts":"0668d5880c058c89e970c57a113c3df3b33bd58cbe2206d526ede215ab1088b7",
+  "js/src/63_graph_controller.ts":"e373d73de39c5eaae0f6dcf8eb6f4ce01cff23500ca988ebc8937086cde3a238",
   "js/src/63_graph_gpu.ts":"a6c0df5ba0584524c18e78a5f490816e8ad9f7e21fe56554918d430a059478f8",
   "js/src/63_graph_session_wire.ts":"2cbbc8471322040377e0e56f16641edd075c20766f1d5f0e93c16dfa21e1c693",
   "js/src/64_geo_retained_controller.ts":"3be21ad483015b40d220e21279ee9bf3565e3f561554ea4be9388504e9cf4c3d",

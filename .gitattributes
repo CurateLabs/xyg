@@ -104,3 +104,9 @@ spec/performance/temporal-retained-terminal-idle-2026-11-07/*.json text eol=lf
 spec/performance/temporal-retained-terminal-idle-2026-11-07/*.md text eol=lf
 spec/performance/temporal-retained-terminal-idle-2026-11-07/*.gz -text
 spec/performance/temporal-retained-terminal-idle-2026-11-07/*.png -text
+
+# Independent retained graph Worker-lifetime correction evidence.
+spec/performance/temporal-worker-lifetime-2026-11-07/*.json text eol=lf
+spec/performance/temporal-worker-lifetime-2026-11-07/*.md text eol=lf
+spec/performance/temporal-worker-lifetime-2026-11-07/*.gz -text
+spec/performance/temporal-worker-lifetime-2026-11-07/*.png -text

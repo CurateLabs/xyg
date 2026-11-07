@@ -68,7 +68,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     return Object.freeze([...camera]) as unknown as XygWasmGraphCamera;
   };
   let camera = cameraCopy(options.camera);
-  const lane = claimGraphWorker(options.worker), doc = options.el.ownerDocument;
+  const lane = claimGraphWorker(options.worker, report), doc = options.el.ownerDocument;
   let disposed = false, terminal = false, busy = true, needsRefresh = false, sequence = 2n, output: GraphSessionResult | null = null;
   let continuation = progressive, frame: number | null = null, deadline: ReturnType<typeof setTimeout> | null = null;
   let disposal: Promise<void> | null = null, page = 0;
@@ -103,7 +103,8 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     if (disposed) return;
     stopContinuation();
     if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) {
-      terminal = true; terminalFailure ??= error;
+      if (terminalFailure) return;
+      terminal = true; terminalFailure = error;
       intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null;
       for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
     }
@@ -243,7 +244,11 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
         while (pendingTime && !disposed && !terminal) {
           const current = intent;
           try { const value = await applyTime(); if (value && !disposed) dispatch("render", value); }
-          catch (error) { if (!disposed && current === intent) { timeKey = null; report(error); } }
+          catch (error) {
+            // Transport lifetime failure outranks time-intent supersession.
+            if (!disposed && error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) report(error);
+            else if (!disposed && current === intent) { timeKey = null; report(error); }
+          }
         }
       } finally { temporalPumping = false; setBusy(false); }
     })();

@@ -1099,6 +1099,8 @@ export class XygWasmWorker {
   }
 
   private failAll(error: XygWasmError) {
+    // Lifetime faults must reach an attached presenter even between commands.
+    graphWorkerAttachments.get(this)?.fail(error);
     geographicWorkerOrigins.get(this)?.mutations.clear();
     for (const pending of this.pending.values()) pending.reject(error);
     this.pending.clear();
@@ -1174,6 +1176,7 @@ export function createXygWasmWorker(options: XygWasmWorkerOptions | XygInlineWas
 type GraphSessionExport = "open" | "update" | "render" | "interact";
 type GraphTemporalExport = "temporal-create" | "temporal-frame";
 interface GraphWorkerAttachment {
+  fail(error: XygWasmError): void;
   temporalCreate(request: Uint8Array): Promise<ArrayBuffer>;
   temporalFrame(request: Uint8Array): Promise<ArrayBuffer>;
   execute(operation: GraphSessionExport, request: Uint8Array): Promise<ArrayBuffer>;
@@ -1181,7 +1184,7 @@ interface GraphWorkerAttachment {
 }
 const graphWorkerAttachments = new WeakMap<XygWasmWorker, GraphWorkerAttachment>();
 let nextGraphLifetime = 1;
-export function claimGraphWorker(worker: XygWasmWorker): GraphWorkerAttachment {
+export function claimGraphWorker(worker: XygWasmWorker, onFailure: (error: XygWasmError) => void): GraphWorkerAttachment {
   if (!(worker instanceof XygWasmWorker)) throw new TypeError("A packaged WASM Worker is required");
   const origin = geographicOrigin(worker);
   if (worker["inline"] || worker["disposed"] || worker["geoTransportAdmission"] || graphWorkerAttachments.has(worker)) {
@@ -1191,16 +1194,17 @@ export function claimGraphWorker(worker: XygWasmWorker): GraphWorkerAttachment {
   if (!Number.isSafeInteger(lifetime)) throw new RangeError("Graph attachment lifetime exhausted");
   let chain: Promise<unknown> = Promise.resolve(), closing = false, opened = false, closePromise: Promise<void> | null = null;
   let queued = 0, bytesHeld = 0;
+  let failure: XygWasmError | null = null;
   const live = () => {
     if (origin.terminal || worker["disposed"] || graphWorkerAttachments.get(worker) !== attachment) {
-      throw new XygWasmError("XYG_WASM_DISPOSED", "Graph Worker lifetime ended");
+      throw failure ?? new XygWasmError("XYG_WASM_DISPOSED", "Graph Worker lifetime ended");
     }
   };
   const terminal = (cause: unknown) => {
     const error = cause instanceof XygWasmError ? cause : new XygWasmError("XYG_WASM_WORKER_ERROR", String(cause));
     origin.terminal = true; worker["disposed"] = true;
     origin.terminate(); geographicDispatch.failAll.call(worker, error);
-    return error;
+    return failure ?? error;
   };
   const send = async (operation: GraphSessionExport | GraphTemporalExport | "close", retained?: Uint8Array): Promise<ArrayBuffer> => {
     await origin.ready; live();
@@ -1244,6 +1248,11 @@ export function claimGraphWorker(worker: XygWasmWorker): GraphWorkerAttachment {
       return result.finally(() => { queued--; bytesHeld -= retained.byteLength; });
   }
   const attachment: GraphWorkerAttachment = Object.freeze({
+    fail(error: XygWasmError) {
+      if (failure) return;
+      failure = error;
+      try { onFailure(error); } catch { /* isolate presenter notification */ }
+    },
     execute: enqueue,
     temporalCreate: (request: Uint8Array) => enqueue("temporal-create", request),
     temporalFrame: (request: Uint8Array) => enqueue("temporal-frame", request),
