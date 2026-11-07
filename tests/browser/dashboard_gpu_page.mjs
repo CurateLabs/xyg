@@ -173,7 +173,9 @@
   const presented=changed._ctxSnapshot || changed.canvas;
   const retained=Array.from(presented.getContext('2d').getImageData(0,0,presented.width,presented.height).data).join(',');
   assert(changed._glLost && retained===savedPicture,'larger append retains last picture through refused rebuild: '+JSON.stringify({lost:changed._glLost,snapshot:!!changed._ctxSnapshot,visibility:changed.canvas.style.visibility,savedLength:savedPicture.length,retainedLength:retained.length,savedInk:savedPicture.split(',').filter(v=>v!=='0').length,retainedInk:retained.split(',').filter(v=>v!=='0').length,canvasInk:picture(changed).split(',').filter(v=>v!=='0').length}));
-  assert(changed.canvas.style.visibility==='hidden' && changed._ctxSnapshot?.isConnected,'saved picture stays visible until complete replacement');
+  assert(changed.canvas.style.visibility!=='hidden' && changed._ctxSnapshot?.isConnected,'saved picture retains the visible input surface until complete replacement');
+  changed.canvas.focus();
+  assert(document.activeElement===changed.canvas,'suspended chart retains keyboard focus');
   const fresh=changed.watchDashboardResourceBudget(worker,totalBudget*4n);
   await fresh.settled;await new Promise(r=>setTimeout(r,100));await fresh.settled;
   assert(!changed._glLost && !changed._ctxSnapshot && changed.gpuTraces[0].n===count,'larger canonical payload paints after fresh admission');

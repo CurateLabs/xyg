@@ -1887,8 +1887,9 @@ export class ChartView {
       if (context) {
         context.drawImage(this.canvas, 0, 0);
         this._ctxSnapshot = snapshot;
-        this.canvas.before(snapshot);
-        this.canvas.style.visibility = "hidden";
+        // Keep the input surface focusable. The pointer-transparent stand-in
+        // stays above an unpublished clear, including opaque canvas CSS.
+        this.canvas.after(snapshot);
       }
     }
     clearTimeout(this._glHostRecoveryTimer);

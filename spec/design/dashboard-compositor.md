@@ -80,7 +80,11 @@ view and accessible DOM. The Canvas2D picture remains until a complete fresh
 paint. Shared views preserve a Canvas2D stand-in before eviction or context
 loss, and only a successful full rebuild retires it; a larger append whose
 first reservation is insufficient keeps that last accepted picture throughout
-failed readmission attempts. Suspended charts cannot return stale picks. Active
+failed readmission attempts. The original shared Canvas2D surface remains
+visible and keyboard-focusable below the pointer-transparent stand-in. This
+preserves the saved picture even if custom CSS gives the input canvas an opaque
+background, without removing the chart's input target. Suspended
+charts cannot return stale picks. Active
 use updates Rust's recency input even while suspended, including retained-graph
 paint requests before the host checks their current admission. Retention reuses the existing restore
 lifecycle and schedules the current view again. Desired capacity is a
