@@ -19,5 +19,18 @@ export declare class GeoHostAdapter {
  close():void;
  realmDestroyed():Promise<void>;
 }
+export interface GeoMountedTemporalBinding {
+ /** Last operation error. The accepted picture stays authoritative on failure. */
+ readonly error:Error|undefined;
+ whenIdle():Promise<void>;
+ /** Detach and drain the exact active transaction; the mounted picture survives. */
+ dispose():Promise<void>;
+}
+export interface GeoWebviewHost {
+ readonly mounted:boolean;
+ bindTemporal(handle:bigint,mode?:'cursor'|'range'):GeoMountedTemporalBinding;
+ reload(html:string):Promise<void>;
+ dispose():Promise<void>;
+}
 /** Caller supplies resource-local CSP HTML and an actual VS Code panel. */
-export declare function attachGeoWebview(panel:unknown,adapter:GeoHostAdapter):unknown;
+export declare function attachGeoWebview(panel:unknown,adapter:GeoHostAdapter):GeoWebviewHost;

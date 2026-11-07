@@ -63,7 +63,7 @@ under strict CSP and reject every unexpected request.
 | Authenticated retained point/MultiPoint | XYGK/XYGI, signed-i64 half-open filters, source/session leases | Actual 1k/100k/1M/10M/100M ingest/query; 1B planner-only |
 | Automatic cluster/density and exact membership | Rust LOD counts, immutable rendered keys, opaque paged source-row cursor | 100M max observed RSS below44MiB; first Scene72.09s/pan45.54s remains a latency gap |
 | Native retained host presentation | Canonical/indexed points, one mount, exact binary frame/pick/membership, explicit buffer ACK | Actual JupyterLab, production Reflex reconnect and VS Code remount/dispose; native staged camera/time updates retain accepted paint until exact retirement ACK |
-| Automatic browser temporal input | Public retained-source binding copies Rust cursor/range snapshots into existing time-first queries; cancels superseded work and preserves latest viewport intent | Bounded direct/aggregate identity, membership, received-event and read-failure/race controls in retained strict-CSP smoke; native-host/mixed-tile automatic binding and massive linked-view evidence remain open |
+| Automatic browser temporal input | Public retained-source binding copies Rust cursor/range snapshots into existing time-first queries; cancels superseded work and preserves latest viewport intent | Bounded direct/aggregate identity, membership, received-event and read-failure/race controls in retained strict-CSP smoke; canonical mounted native-host binding is specified in [mounted temporal hosts](geo-mounted-temporal-hosts.md); mixed-tile automatic binding and massive linked-view evidence remain open |
 | Retained browser ownership | ABI33 Worker, trusted frame preparation, admitted FIFO/framing credit | Actual five charts in one WebGL2 context, full-u64 pick, cancellation/read ACK, strict-CSP offline, context recovery |
 | Explicit immutable point sidecar index | Rust XYIX/XYIP cross-chunk leaves, bounded canonical-order merge, authenticated import, explicit full-scan fallback | Exact canonical Scene parity through 1M; native/WASM frame+rows+frozen parity; browser corrupt-leaf recovery; 100M narrow grid16 0.79–1.23s, grid32 192–316ms under uncontrolled load; world flat-index latency remains a gap; the separate hierarchy evidence below covers bounded directory queries |
 | Original source-row companion | Rust-issued continuation, all original rows, explicit temporal/null eligibility | Native/WASM byte parity; Python/Node paging after frame disposal; strict-CSP browser offscreen keyboard focus and failed-read recovery |
@@ -127,3 +127,8 @@ proves ordinary/mixed full intent and exact visible-count preservation after
 source disposal. The [selected snapshot contract](geo-selected-snapshot.md)
 distinguishes trusted freezing from imported structural consistency; this
 small proof does not establish live linked hosts or massive export latency.
+
+Canonical mounted notebook and Node/VS Code temporal replacement uses native
+XYGH preparation and the original painter, with bounded direct/aggregate and
+selected identity proof in [the mounted receipt](../performance/geo-mounted-temporal-2026-11-07/README.md).
+Indexed/hierarchy/overview/mixed-tile automation and whole M6 acceptance remain open.

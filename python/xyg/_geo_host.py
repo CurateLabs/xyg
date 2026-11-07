@@ -7,6 +7,7 @@ separate (spec/design/geographic-hosts.md).
 
 from __future__ import annotations
 
+import asyncio
 import struct
 import threading
 import weakref
@@ -512,6 +513,7 @@ class GeoHostAdapter:
                                 or self._aux is not None
                                 or self._live_candidate.frame is not None
                                 or self._live_candidate.cleanup_frame is not None
+                                or self._live_candidate.cleanup_canonical is not None
                                 or self._live_candidate.cleanup_operation is not None
                                 or self._live_candidate.cleanup_state is not None
                                 or self._live_candidate.cleanup_allocation is not None
@@ -564,16 +566,17 @@ class GeoHostAdapter:
                                 aux.data["packet"].obj,
                             ]
                 return reply, outgoing
-            except Exception as error:
+            except (Exception, asyncio.CancelledError) as error:
                 return {
                     **reply,
-                    "error": str(error),
+                    "error": str(error) or "geographic reader cancelled",
                     **(
                         {"prepareAbsent": True}
                         if locals().get("version") == 2
                         and locals().get("op") == 6
                         and self._live_candidate.frame is None
                         and self._live_candidate.cleanup_frame is None
+                        and self._live_candidate.cleanup_canonical is None
                         and self._live_candidate.cleanup_operation is None
                         and self._live_candidate.cleanup_state is None
                         and self._live_candidate.cleanup_allocation is None

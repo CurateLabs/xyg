@@ -1,0 +1,570 @@
+{
+  "ok": true,
+  "host": "packaged strict-CSP browser + attachGeoWebview + Node22 native ABI401",
+  "browser": "156.0.8078.4",
+  "coloredPixels": 47,
+  "exactPick": true,
+  "heldPrepareSuperseded": true,
+  "orderedCamera": {
+    "crs": 4326,
+    "worldWrap": true,
+    "centerX": 28.125,
+    "centerY": 0,
+    "zoom": 0.5,
+    "width": 800,
+    "height": 600,
+    "bearing": 0,
+    "pitch": 0
+  },
+  "initialCentroid": 400,
+  "movedCentroid": 343.66037735849056,
+  "trustedPointer": true,
+  "remount": true,
+  "range": true,
+  "detachRetry": true,
+  "closeDuringRead": false,
+  "closeDuringPreparedReply": true,
+  "selectedFullIdentity": true,
+  "aggregateMembership": false,
+  "exactI64Endpoint": true,
+  "lastGoodOnFailure": true,
+  "independentCaller": true,
+  "rebind": true,
+  "releaseACK": true,
+  "allNativeOwnersClosed": true,
+  "currentPublicationPreserved": true,
+  "controllerCloseDuringPublication": true,
+  "corruptMembershipRejected": false,
+  "receipts": [
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:1",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_ready",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:2",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:3",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:4",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:1",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:5",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:6",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:7",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "fixture:min",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:8",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:9",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:10",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:11",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:2",
+      "status": "superseded",
+      "drained": true,
+      "error": "Superseded geographic update"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:12",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:13",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:14",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:15",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:16",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:17",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:3",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:18",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:19",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:20",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:21",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:22",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:23",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:24",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:25",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:26",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:4",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:27",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:28",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:29",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:30",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:31",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:32",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:5",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:33",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:34",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:35",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:6",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:36",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:37",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:38",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:7",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:39",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:8",
+      "status": "failed",
+      "drained": true,
+      "error": "injected storage failure"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:40",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:41",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:42",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:9",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:43",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:44",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:45",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:10",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:46",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:47",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:48",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:11",
+      "status": "failed",
+      "drained": false,
+      "error": "lost abort ACK"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:49",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:11",
+      "status": "superseded",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:50",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:51",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:52",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:12",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:53",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:54",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9",
+      "request": "temporal:13",
+      "status": "superseded",
+      "drained": true,
+      "error": "Superseded geographic update"
+    },
+    {
+      "type": "geo_host",
+      "request": "e5868dd5-c9d7-4582-91f7-3803925a19d9:55",
+      "mount": "e5868dd5-c9d7-4582-91f7-3803925a19d9"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:1",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host_ready",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:2",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:3",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:4",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5",
+      "request": "temporal:14",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:5",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:6",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:7",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5",
+      "request": "temporal:15",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:8",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:9",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:10",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5",
+      "request": "temporal:16",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:11",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:12",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:13",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5",
+      "request": "temporal:17",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:14",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:15",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5",
+      "request": "temporal:18",
+      "status": "superseded",
+      "drained": true,
+      "error": "Superseded geographic update"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:16",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:17",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:18",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    },
+    {
+      "type": "geo_host_temporal_done",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5",
+      "request": "temporal:19",
+      "status": "accepted",
+      "drained": true
+    },
+    {
+      "type": "geo_host",
+      "request": "ecd9e004-af2c-4c97-ade3-93735cb784e5:19",
+      "mount": "ecd9e004-af2c-4c97-ade3-93735cb784e5"
+    }
+  ]
+}

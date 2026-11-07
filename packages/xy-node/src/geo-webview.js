@@ -1,3 +1,4 @@
+import {MountedGeoTemporalBinding} from './geo-temporal.js';
 /** Native one-mount geographic host facade. No browser imports or source serialization. */
 import {hierarchyLaneAuthority,isHierarchyFrame} from './geo-hierarchy.js';
 import {retainOverviewFrame,closeOverviewOwner,getOverviewFrameData,overviewFrameAuthority,overviewIndexAuthority,updateOverviewIndex,isNativeOverviewIndex} from './geo-overview-source.js';
@@ -119,14 +120,14 @@ export class GeoHostAdapter {
      if(op===5){if(request.byteLength!==32||!this.aux||this.aux.handle!==owner)throw new Error('unowned auxiliary release');const aux=this.aux;this.aux=undefined;await aux.dispose();}
      else{
       if(owner!==this.frame.handle)throw new Error('unowned geographic frame');
-      if(op===4){if(request.byteLength!==32||this.aux||this.liveCandidate.frame||this.liveCandidate.cleanupFrame||this.liveCandidate.cleanupOperation||this.liveCandidate.cleanupState||this.liveCandidate.cleanupAllocation)throw new Error('release auxiliary/candidate packets first');await this.release();}
+      if(op===4){if(request.byteLength!==32||this.aux||this.liveCandidate.frame||this.liveCandidate.cleanupFrame||this.liveCandidate.cleanupCanonical||this.liveCandidate.cleanupOperation||this.liveCandidate.cleanupState||this.liveCandidate.cleanupAllocation)throw new Error('release auxiliary/candidate packets first');await this.release();}
       else if(this.#overviewMode)throw Error('Overview has domain counts, not source feature picking/membership');
       else if(op===2){if(request.byteLength!==64||this.aux)throw new Error('invalid or concurrent pick');this.aux=await this.frame.pick({style:this.frame._style,x:v.getFloat64(32,true),y:v.getFloat64(40,true),tolerance:v.getFloat64(48,true),mode:v.getUint32(56,true),maxHits:v.getUint32(60,true)});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
       else{if(![48,256].includes(request.byteLength)||this.aux||v.getUint32(36,true)!==Number(request.byteLength===256))throw new Error('invalid or concurrent membership');if(v.getBigUint64(40,true)>new DataView(this.frame._queryPacket).getBigUint64(224,true))throw new Error("membership exceeds committed frame work bound");this.aux=await this.frame.membership(v.getUint32(32,true),{maxProjectedVertices:v.getBigUint64(40,true),cursor:request.byteLength===256?new Uint8Array(request.slice(48)):undefined});out=[tag(op,this.aux.handle,sequence),this.aux.data.packet];}
      }
     }
     return [reply,out];
-   }catch(error){return [{...reply,error:error.message,...(new DataView(request).getUint32(4,true)===2&&new DataView(request).getUint32(8,true)===6&&!this.liveCandidate.frame&&!this.liveCandidate.cleanupFrame&&!this.liveCandidate.cleanupOperation&&!this.liveCandidate.cleanupState&&!this.liveCandidate.cleanupAllocation?{prepareAbsent:true}:{})},[]];}
+   }catch(error){return [{...reply,error:error.message,...(new DataView(request).getUint32(4,true)===2&&new DataView(request).getUint32(8,true)===6&&!this.liveCandidate.frame&&!this.liveCandidate.cleanupFrame&&!this.liveCandidate.cleanupCanonical&&!this.liveCandidate.cleanupOperation&&!this.liveCandidate.cleanupState&&!this.liveCandidate.cleanupAllocation?{prepareAbsent:true}:{})},[]];}
    finally{request=undefined;}
   });
   this.chain=operation.then(()=>{},()=>{}).finally(()=>{this.queued--;});return operation;
@@ -141,9 +142,16 @@ export class GeoHostAdapter {
 
 /** Extension-host helper. Caller supplies CSP/resource-local HTML; VS Code >=1.57. */
 export function attachGeoWebview(panel,adapter){
- let stopped=false,releaseWaiters=[],transport=Promise.resolve(),queued=0;
+ let stopped=false,releaseWaiters=[],transport=Promise.resolve(),queued=0,binding,realmCleanup;
+ const host={adapter,mount:undefined,serial:0,async send(message,buffers){if(stopped)throw Error('geographic webview disposed');const posted=await panel.webview.postMessage({message,buffers});if(posted===false)throw Error('geographic webview rejected message');}};
+ function released(mount){if(host.mount===mount)host.mount=undefined;binding?.released(mount);for(const waiter of releaseWaiters)waiter.resolve();releaseWaiters=[];}
+
  const receive=panel.webview.onDidReceiveMessage(envelope=>{
-  if(stopped||envelope?.message?.type!=="geo_host")return;
+  if(stopped)return;
+  const message=envelope?.message;
+  if(message?.type==='geo_host_ready'){if(message.mount===adapter.mount){host.mount=message.mount;binding?.schedule();}return;}
+  if(message?.type==='geo_host_temporal_done'){binding?.message(message);return;}
+  if(message?.type!=="geo_host")return;
   if(queued>=16){void panel.webview.postMessage({message:{type:"geo_host",request:envelope.message.request,error:"geographic webview queue is full"},buffers:[]});return;}
   try{if(envelope.buffers?.length!==1||buffer(envelope.buffers[0]).byteLength>256)throw Error("invalid geographic request attachment");}
   catch(error){void panel.webview.postMessage({message:{type:"geo_host",request:envelope.message.request,error:error.message},buffers:[]});return;}
@@ -151,13 +159,16 @@ export function attachGeoWebview(panel,adapter){
   const operation=transport.then(async()=>{
    let reply;
    try{
-    reply=await adapter.handle(envelope.message,envelope.buffers);envelope=undefined;
-    if(reply){await panel.webview.postMessage({message:reply[0],buffers:reply[1]});reply=undefined;if(!adapter.mounted){for(const resolve of releaseWaiters)resolve();releaseWaiters=[];}}
+    const mount=envelope.message.mount;reply=await adapter.handle(envelope.message,envelope.buffers);envelope=undefined;
+    if(reply){await panel.webview.postMessage({message:reply[0],buffers:reply[1]});reply=undefined;if(!adapter.mounted)released(mount);}
    }finally{reply=envelope=undefined;}
   });
   transport=operation.then(()=>{},()=>{}).finally(()=>{queued--;});
  });
- const disposed=panel.onDidDispose(()=>{stopped=true;receive.dispose();disposed.dispose();void transport.then(()=>adapter.realmDestroyed());for(const resolve of releaseWaiters)resolve();releaseWaiters=[];});
- async function release(){if(!adapter.mounted)return;const wait=new Promise(resolve=>releaseWaiters.push(resolve));await panel.webview.postMessage({message:{type:'geo_host_close'},buffers:[]});await wait;}
- return {async reload(html){await release();panel.webview.html=html;},async dispose(){await release();panel.dispose();},get mounted(){return adapter.mounted;}};
+ function destroyRealm(){return realmCleanup??=transport.then(()=>adapter.realmDestroyed()).then(()=>{released(host.mount);return binding?.dispose();}).catch(error=>{realmCleanup=undefined;binding?.failed(error);for(const waiter of releaseWaiters)waiter.reject(error);releaseWaiters=[];throw error;});}
+ const disposed=panel.onDidDispose(()=>{
+  stopped=true;binding?.detach();receive.dispose();disposed.dispose();void destroyRealm().catch(()=>{});
+ });
+ async function release(){if(!adapter.mounted)return;let resolve,reject;const wait=new Promise((a,b)=>{resolve=a;reject=b;});const waiter={resolve,reject};releaseWaiters.push(waiter);try{await host.send({type:'geo_host_close'},[]);}catch(error){releaseWaiters=releaseWaiters.filter(r=>r!==waiter);throw error;}await wait;}
+ return {bindTemporal(handle,mode='cursor'){if(stopped)throw Error('geographic webview disposed');binding=new MountedGeoTemporalBinding(adapter.source,handle,host,mode);return binding;},async reload(html){await release();panel.webview.html=html;},async dispose(){if(stopped)return destroyRealm();await binding?.dispose();await release();panel.dispose();await destroyRealm();},get mounted(){return adapter.mounted;}};
 }

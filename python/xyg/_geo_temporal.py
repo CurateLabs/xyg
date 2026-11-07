@@ -282,3 +282,215 @@ class GeoTemporalBinding:
             self._lock.release()
         if interrupted:
             raise asyncio.CancelledError
+
+
+class MountedGeoTemporalBinding:
+    """One active XYGH transaction and one latest native temporal intent."""
+
+    def __init__(self, widget, controller, mode="cursor"):
+        from ._geo_retained import RetainedGeoSource
+
+        if mode not in ("cursor", "range"):
+            raise ValueError("mode must be cursor or range")
+        self._loop = asyncio.get_running_loop()
+        self._source = widget._adapter._source
+        if type(self._source) is not RetainedGeoSource:
+            raise ValueError("mounted binding requires a canonical retained source")
+        if widget._close_requested or controller.state["disposed"]:
+            raise RuntimeError("widget or controller disposed")
+        if self._source in _BINDINGS:
+            raise RuntimeError("source already has a temporal binding")
+        self._widget, self._mode = widget, mode
+        self._closed = self._scheduled = self._blocked = False
+        self._generation, self._sent = 0, -1
+        self._time = self._active = None
+        self._changed = asyncio.Event()
+        self._closing = None
+        self.error = None
+        self._unsubscribe = lambda: None
+        _BINDINGS[self._source] = self
+        try:
+            widget._enable_geo_executor(self._loop)
+            self._unsubscribe = controller.subscribe_state(self._accept)
+            self._accept(controller.state)
+        except BaseException:
+            self._unsubscribe()
+            del _BINDINGS[self._source]
+            raise
+
+    def _accept(self, state):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop is not self._loop:
+            if not self._loop.is_closed():
+                self._loop.call_soon_threadsafe(self._accept, deepcopy(state))
+            return
+        if self._closed:
+            return
+        if state["disposed"]:
+            self._detach()
+            self._closing = self._loop.create_task(self._finish())
+            self._closing.add_done_callback(
+                lambda task: None if task.cancelled() else task.exception()
+            )
+            return
+        time = (
+            (1, state["cursor"], 0)
+            if self._mode == "cursor"
+            else (2, state["range_start"], state["range_end"])
+        )
+        if time != self._time:
+            self._time = time
+            self._generation += 1
+            self._schedule()
+
+    def _schedule(self):
+        self._changed.set()
+        if not self._scheduled:
+            self._scheduled = True
+            self._loop.call_soon(self._pump)
+
+    def _send(self, operation):
+        import struct
+
+        active = self._active
+        assert active is not None
+        if operation in (1, 2):
+            assert self._time is not None
+            start, end = self._time[1:]
+        else:
+            start = end = 0
+        self._widget.send(
+            dict(type="geo_host_temporal", mount=active["mount"], request=active["request"]),
+            buffers=[
+                struct.pack(
+                    "<4sIIIqq3Q",
+                    b"XYHT",
+                    1,
+                    operation,
+                    0,
+                    start,
+                    end,
+                    self._source._sequence if operation in (1, 2) else 0,
+                    self._widget._adapter._live_candidate.time_floor if operation in (1, 2) else 0,
+                    self._widget._adapter._live_candidate.camera_floor
+                    if operation in (1, 2)
+                    else 0,
+                )
+            ],
+        )
+
+    def _invalidate(self):
+        if self._active is not None and not self._active["invalidated"]:
+            self._send(3)
+            self._active["invalidated"] = True
+
+    def _pump(self):
+        self._scheduled = False
+        try:
+            if self._active is not None:
+                if self._closed or self._active["generation"] != self._generation:
+                    self._invalidate()
+                return
+            if (
+                self._closed
+                or self._widget._geo_mount is None
+                or self._sent == self._generation
+                or self._time is None
+            ):
+                return
+            self._widget._geo_update_serial += 1
+            self._active = dict(
+                mount=self._widget._geo_mount,
+                request=f"temporal:{self._widget._geo_update_serial}",
+                generation=self._generation,
+                invalidated=False,
+            )
+            self._send(self._time[0])
+            self._sent = self._generation
+        except Exception as error:
+            # Delivery is uncertain. Retain the exact active correlation and
+            # source claim for an explicit drain retry or native release ACK.
+            self.error = error.with_traceback(None)
+            self._blocked = self._active is not None
+        finally:
+            self._changed.set()
+
+    def _message(self, message):
+        active = self._active
+        if active is None or any(message.get(key) != active[key] for key in ("mount", "request")):
+            return
+        if message.get("status") not in ("accepted", "superseded", "failed"):
+            return
+        if message.get("drained") is not True:
+            self._blocked = True
+            self.error = RuntimeError(message.get("error", "geographic drain unconfirmed"))
+        else:
+            self._active = None
+            self._blocked = False
+            self.error = (
+                RuntimeError(message.get("error", "geographic update failed"))
+                if message["status"] == "failed"
+                else None
+            )
+            self._schedule()
+        self._changed.set()
+
+    def _released(self, mount):
+        if self._active is not None and self._active["mount"] == mount:
+            self._active = None
+            self._blocked = False
+        self._sent = -1
+        self._schedule()
+
+    async def when_idle(self):
+        """Wait for latest intent; error retains the exact last accepted picture."""
+        while True:
+            self._changed.clear()
+            if self._blocked:
+                return
+            if (
+                self._active is None
+                and not self._scheduled
+                and (
+                    self._closed
+                    or (self._widget._geo_mount is not None and self._sent == self._generation)
+                )
+            ):
+                return
+            await self._changed.wait()
+
+    def _detach(self):
+        if not self._closed:
+            self._closed = True
+            self._unsubscribe()
+            self._schedule()
+
+    def _close_from_host(self):
+        self._detach()
+        if self._closing is None or self._closing.done():
+            self._closing = self._loop.create_task(self._finish())
+            self._closing.add_done_callback(
+                lambda task: None if task.cancelled() else task.exception()
+            )
+
+    async def _finish(self, retry=False):
+        if retry and self._blocked:
+            self._blocked = False
+            self._send(4)
+        await self.when_idle()
+        if self._blocked:
+            raise RuntimeError(str(self.error))
+        if _BINDINGS.get(self._source) is self:
+            del _BINDINGS[self._source]
+
+    async def aclose(self):
+        """Drain actual browser ownership before releasing the source claim."""
+        self._detach()
+        if self._closing is None or self._closing.done():
+            self._closing = self._loop.create_task(self._finish(retry=self._blocked))
+        _, interrupted = await _settle(self._closing)
+        if interrupted:
+            raise asyncio.CancelledError

@@ -542,3 +542,20 @@ spec/performance/public10k-native-main-integration-2026-11-07/*.json text eol=lf
 spec/performance/public10k-native-main-integration-2026-11-07/README.md text eol=lf
 spec/performance/public10k-native-main-integration-2026-11-07/*.gz -text
 spec/performance/public10k-native-main-integration-2026-11-07/*.png -text
+# Mounted native temporal successor evidence and exact framing fixture.
+spec/design/geo-mounted-temporal-hosts.md text eol=lf
+tests/fixtures/geo_mounted_temporal.json text eol=lf
+tests/notebook_geo_mounted_temporal.ipynb text eol=lf
+spec/performance/geo-mounted-temporal-2026-11-07/*.md text eol=lf
+spec/performance/geo-mounted-temporal-2026-11-07/*.json text eol=lf
+spec/performance/geo-mounted-temporal-2026-11-07/*.gz -text
+spec/performance/geo-mounted-temporal-2026-11-07/*.png -text
+tests/vscode_geo_mounted_temporal/*.cjs text eol=lf
+tests/vscode_geo_mounted_temporal/*.json text eol=lf
+python/xyg/_geo_temporal.py text eol=lf
+python/xyg/_geo_live_host.py text eol=lf
+python/xyg/_geo_host.py text eol=lf
+python/xyg/widget.py text eol=lf
+scripts/geo_vscode_mounted_temporal_smoke.py text eol=lf
+tests/test_geo_mounted_temporal.py text eol=lf
+tests/test_geo_live_host.py text eol=lf

@@ -65,12 +65,70 @@ export class XygGeoHostView {
     this.gestureChain=this.gestureChain.then(async()=>{
       await this.chain;
       if(this.closing)return;
-      const i=this.identity;this.gestureSequence=(this.gestureSequence>i.sequence?this.gestureSequence:i.sequence)+1n;this.gestureCameraRevision=(this.gestureCameraRevision>i.cameraRevision?this.gestureCameraRevision:i.cameraRevision)+1n;
-      await this.update({operation,args:operation===4?[i.camera.zoom+args[0]]:args,sequence:this.gestureSequence,cameraRevision:this.gestureCameraRevision,timeRevision:i.timeRevision,stateRevision:i.stateRevision,time:i.time as XygGeoHostUpdate['time']});
+      const i=this.identity;const sequenceFloor=this.temporalSequence>this.gestureSequence?this.temporalSequence:this.gestureSequence;this.gestureSequence=(sequenceFloor>i.sequence?sequenceFloor:i.sequence)+1n;this.gestureCameraRevision=(this.gestureCameraRevision>i.cameraRevision?this.gestureCameraRevision:i.cameraRevision)+1n;
+      const timeFloor=this.temporalRevision>this.authoredTimeRevision?this.temporalRevision:this.authoredTimeRevision;
+      const timeRevision=timeFloor>i.timeRevision?timeFloor+1n:i.timeRevision;
+      await this.update({operation,args:operation===4?[i.camera.zoom+args[0]]:args,sequence:this.gestureSequence,cameraRevision:this.gestureCameraRevision,timeRevision,stateRevision:i.stateRevision,time:i.time as XygGeoHostUpdate['time']});
     }).catch(error=>{if(!this.closing)this.gestureError(error);}).finally(()=>{this.gestureQueued--;});
   }
   private gestureAlert?:HTMLElement;
   private gestureError(error:unknown){if(!this.gestureAlert?.isConnected){this.gestureAlert=document.createElement('p');this.gestureAlert.setAttribute('role','alert');this.el.append(this.gestureAlert);}this.gestureAlert.textContent=error instanceof Error?error.message:String(error);}
+  private temporal?:{request:string;cancelled:boolean;running:boolean};
+  private temporalSequence=0n;
+  private temporalRevision=0n;
+  private authoredTimeRevision=0n;
+  private temporalReply(request:string,status:'accepted'|'superseded'|'failed',drained:boolean,error?:unknown){
+    this.comm.send({type:'geo_host_temporal_done',mount:this.mount,request,status,drained,...error?{error:(error instanceof Error?error.message:String(error)).slice(0,4096)}:{}});
+  }
+  private temporalMessage(message:any,buffers:any[]){
+    if(message.mount!==this.mount||typeof message.request!=='string'||message.request.length<1||message.request.length>96)return;
+    const request=message.request;
+    try{
+      if(buffers.length!==1)throw TypeError('one temporal attachment required');
+      const raw=ownedBuffer(buffers[0]),v=new DataView(raw);
+      if(raw.byteLength!==56||v.getUint32(0,true)!==0x54485958||v.getUint32(4,true)!==1||v.getUint32(12,true))throw TypeError('invalid XYHT framing');
+      const operation=v.getUint32(8,true),start=v.getBigInt64(16,true),end=v.getBigInt64(24,true);
+      const floor=v.getBigUint64(32,true),timeFloor=v.getBigUint64(40,true),cameraFloor=v.getBigUint64(48,true);
+      if(![1,2,3,4].includes(operation)||(operation>=3&&(start||end||floor||timeFloor||cameraFloor))||(operation===1&&end))throw TypeError('invalid XYHT operation');
+      if(operation>=3){
+        const token=this.temporal;
+        if(!token){if(operation===4)void this.enqueue(async()=>{try{await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();this.temporalReply(request,'superseded',true);}catch(error){this.temporalReply(request,'failed',false,error);}}).catch(error=>this.temporalReply(request,'failed',false,error));return;}
+        if(token.request!==request)return;
+        token.cancelled=true;
+        if(operation===4&&!token.running){token.running=true;void this.enqueue(async()=>{
+          try{await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();this.temporal=undefined;this.temporalReply(request,'superseded',true);}
+          catch(error){this.temporalReply(request,'failed',false,error);}finally{token.running=false;}
+        }).catch(error=>{token.running=false;this.temporalReply(request,'failed',false,error);});}
+        return;
+      }
+      if(this.temporal)throw Error('temporal transaction already active');
+      const token={request,cancelled:false,running:true};this.temporal=token;
+      const time:XygGeoHostUpdate['time']=operation===1?{kind:1,instant:start}:{kind:2,start,end};
+      if(floor>this.temporalSequence)this.temporalSequence=floor;
+      if(timeFloor>this.temporalRevision)this.temporalRevision=timeFloor;
+      const gestures=this.gestureChain;
+      void (async()=>{
+        await this.ready;await gestures;
+        await this.enqueue(async()=>{
+          let status:'accepted'|'superseded'|'failed'='accepted',failure:unknown,drained=true;
+          try{
+            this.live();const i=this.identity;
+            const sequence=(this.temporalSequence>this.gestureSequence?this.temporalSequence:this.gestureSequence)>i.sequence?(this.temporalSequence>this.gestureSequence?this.temporalSequence:this.gestureSequence)+1n:i.sequence+1n;
+            const timeFloor=this.temporalRevision>this.authoredTimeRevision?this.temporalRevision:this.authoredTimeRevision;
+            const revision=(timeFloor>i.timeRevision?timeFloor:i.timeRevision)+1n;
+            if(sequence>0xffffffffffffffffn||revision>0xffffffffffffffffn||cameraFloor>i.cameraRevision&&cameraFloor===0xffffffffffffffffn)throw RangeError('geographic revision exhausted');
+            this.temporalSequence=sequence;this.temporalRevision=revision;
+            await this.replace({operation:0,args:[],sequence,cameraRevision:cameraFloor>i.cameraRevision?cameraFloor+1n:i.cameraRevision,timeRevision:revision,stateRevision:i.stateRevision,time},()=>token.cancelled);
+          }catch(error){
+            failure=error;status=error instanceof DOMException&&error.name==='AbortError'?'superseded':'failed';
+            try{await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();}catch(cleanup){drained=false;failure=cleanup;status='failed';}
+          }
+          token.running=false;if(drained)this.temporal=undefined;
+          this.temporalReply(request,status,drained,failure);
+        });
+      })().catch(error=>{token.running=false;this.temporalReply(request,'failed',false,error);});
+    }catch(error){this.temporalReply(request,'failed',!this.temporal,error);}
+  }
   private liveNonce=0n;
   private updating=false;
   private activeOperation?:number;
@@ -132,6 +190,7 @@ export class XygGeoHostView {
     this.previousTouchAction=el.style.touchAction;el.style.touchAction='none';
     for(const type of this.gestureEvents)el.addEventListener(type,this.freezeGesture,{capture:true,passive:false});
     try{this.unsubscribe = comm.onMessage((message, buffers) => {
+      if(message?.type === 'geo_host_temporal'){this.temporalMessage(message,buffers);return;}
       if(message?.type === 'geo_host_update'){
         const request=message.request;if(typeof request!=='string'||request.length<1||request.length>96)return;
         try{
@@ -172,7 +231,7 @@ export class XygGeoHostView {
         throw error;
       } finally { buffers=undefined; data=undefined; }
     });
-    this.ready.catch(()=>{});
+    this.ready.then(()=>comm.send({type:'geo_host_ready',mount:this.mount}),()=>{});
   }
   private rpc(buffer:ArrayBuffer):Promise<any[]> {
     const request = `${this.mount}:${++this.serial}`;
@@ -211,6 +270,7 @@ export class XygGeoHostView {
     if(input.sequence>this.gestureSequence)this.gestureSequence=input.sequence;if(input.cameraRevision>this.gestureCameraRevision)this.gestureCameraRevision=input.cameraRevision;
     for(const key of Object.keys(input.time))if(!(['kind',...(input.time.kind===1?['instant']:input.time.kind===2?['start','end']:[])]).includes(key))throw TypeError('unsupported signed time field');
     for(const n of input.time.kind===1?[input.time.instant]:input.time.kind===2?[input.time.start,input.time.end]:[])if(typeof n!=='bigint'||n< -0x8000000000000000n||n>0x7fffffffffffffffn)throw TypeError('exact signed i64 time required');
+    if(input.timeRevision>this.authoredTimeRevision)this.authoredTimeRevision=input.timeRevision;
     const snapshot={...input,args:[...input.args],time:{...input.time}};
     const result=new Promise<void>((resolve,reject)=>{
       this.desired?.reject(new DOMException('Superseded geographic update','AbortError'));
@@ -252,9 +312,12 @@ export class XygGeoHostView {
   }
   private async abortCandidate(){if(this.aborted){await this.rpc(this.aborted);this.aborted=undefined;}}
   private async retire(){if(this.retirement){await this.rpc(this.retirement);this.retirement=undefined;}}
-  private async replace(input:XygGeoHostUpdate){
+  private async replace(input:XygGeoHostUpdate,cancelled:()=>boolean=()=>false){
     await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();this.live();const baseline=this.identity,old=this.owner,oldSequence=this.sequence,nonce=++this.liveNonce;
+    if(cancelled())throw new DOMException('Superseded temporal intent','AbortError');
     if(nonce>0xffffffffffffffffn)throw RangeError('geographic candidate nonce exhausted');
+    if(input.timeRevision>this.authoredTimeRevision)this.authoredTimeRevision=input.timeRevision;
+    if(input.cameraRevision>this.gestureCameraRevision)this.gestureCameraRevision=input.cameraRevision;
     const request=header(6,old,oldSequence,224),v=new DataView(request);v.setUint32(4,2,true);
     [nonce,input.sequence,input.cameraRevision,input.timeRevision,input.stateRevision].forEach((n,i)=>v.setBigUint64(32+i*8,n,true));
     v.setUint32(72,input.time.kind,true);v.setBigInt64(80,input.time.kind===1?input.time.instant!:input.time.kind===2?input.time.start!:0n,true);v.setBigInt64(88,input.time.kind===2?input.time.end!:0n,true);
@@ -267,7 +330,7 @@ export class XygGeoHostView {
       if(i.sequence!==input.sequence||i.cameraRevision!==input.cameraRevision||i.timeRevision!==input.timeRevision||i.stateRevision!==input.stateRevision||i.generation!==baseline.generation||i.layerId!==baseline.layerId||i.layerRevision!==baseline.layerRevision||i.styleRevision!==baseline.styleRevision||i.sourceRows!==baseline.sourceRows||i.sourceCrs!==baseline.sourceCrs||i.geometry!==baseline.geometry||i.sourceDigest.some((x,n)=>x!==baseline.sourceDigest[n])||i.time.kind!==input.time.kind||i.time.kind===1&&i.time.instant!==input.time.instant||i.time.kind===2&&(i.time.start!==input.time.start||i.time.end!==input.time.end))throw TypeError('candidate snapshot differs from authoring');
       this.assertSelected(data);
       const holder=document.createElement('div');candidate=hydrateWasmPainter(holder,{painter:ownedBuffer(buffers[2]),memoryBytes:0} as XygWasmScenePaint);candidate.draw();
-      if(this.closing||this.desired&&this.desired.input.operation===input.operation)throw new DOMException('Superseded geographic update','AbortError');
+      if(this.closing||cancelled()||this.desired&&this.desired.input.operation===input.operation)throw new DOMException('Superseded geographic update','AbortError');
       this.appendCounts(holder,data);this.pendingCommit={tag,holder,view:candidate,data};candidate=undefined;data=undefined;buffers=undefined;
       await this.recoverCommit();committed=true;
 
@@ -288,13 +351,20 @@ export class XygGeoHostView {
     v.setUint32(32,cell,true);v.setUint32(36,cursor?1:0,true);if(typeof input.maxProjectedVertices!=="bigint"||input.maxProjectedVertices<0n||input.maxProjectedVertices>0xffffffffffffffffn)throw new TypeError("invalid membership work bound");v.setBigUint64(40,input.maxProjectedVertices,true);if(cursor)new Uint8Array(buffer).set(cursor,48);
     return this.aux(buffer,3,parseGeoMembershipData);
   }
+  private membershipKey(){
+    const data=this.data!;if(overviewData(data))throw Error('Overview has no feature membership');
+    const raw=new Uint8Array(data.packet),key=new Uint8Array(160),v=new DataView(key.buffer);
+    for(const [target,start,end] of [[0,144,160],[16,232,240],[24,244,248],[28,240,244],[32,160,168],[40,192,208],[56,80,144],[120,208,216],[128,216,232],[148,64,72]])key.set(raw.subarray(start,end),target);
+    v.setUint32(144,Number(!data.aggregate),true);return key;
+  }
   private aux(buffer:ArrayBuffer,op:number,parse:typeof parseGeoHitData|typeof parseGeoMembershipData) {
+    const expectedKey=op===3?this.membershipKey():undefined;
     return this.enqueue(async()=>{
       let buffers:any[]|undefined, parsed:ReturnType<typeof parse>|undefined, owner=0n;
       try {
         buffers=await this.rpc(buffer);if(buffers.length!==2)throw new TypeError("invalid auxiliary attachments");
         const h=replyHeader(buffers[0],op);owner=h.owner;if(!owner||h.sequence!==this.sequence)throw new TypeError("stale auxiliary reply");
-        parsed=parse(ownedBuffer(buffers[1]));if(parsed.owner!==this.owner||parsed.sequence!==this.sequence)throw new TypeError("unowned auxiliary reply");
+        parsed=parse(ownedBuffer(buffers[1]));if((op===3?parsed.key.some((n,i)=>n!==expectedKey![i]):parsed.owner!==this.owner)||parsed.sequence!==this.sequence)throw new TypeError("unowned auxiliary reply");
         const records=Array.from({length:parsed.length},(_,i)=>parsed!.record(i));
         const cursor="cursor" in parsed?parsed.cursor?.slice():undefined;
         return {records,cursor};
@@ -302,7 +372,7 @@ export class XygGeoHostView {
     });
   }
   dispose():Promise<void> {
-    if(this.disposal)return this.disposal;this.closing=true;this.releasePointer();this.desired?.reject(new Error('geographic view disposed'));this.desired=undefined;
+    if(this.disposal)return this.disposal;if(this.temporal)this.temporal.cancelled=true;this.closing=true;this.releasePointer();this.desired?.reject(new Error('geographic view disposed'));this.desired=undefined;
     return this.disposal=this.chain.then(async()=>{
       await this.gestureChain;
       await this.recoverPrepare();await this.recoverCommit();await this.abortCandidate();await this.retire();
