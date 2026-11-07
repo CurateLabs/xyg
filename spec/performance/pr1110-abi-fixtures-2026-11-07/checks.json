@@ -1,0 +1,172 @@
+{
+  "environment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+    "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/target/task-tmp/abi-repair/tmp",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/target/release/libxyg_core.so",
+    "XYG_SKIP_CARGO": "1",
+    "XYG_SKIP_NODE": "1"
+  },
+  "python": "Python 3.11.17",
+  "node": "v22.23.4",
+  "checks": [
+    {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_animation_emit_cross_host.py",
+        "tests/test_default_styled_emit_cross_host.py",
+        "tests/test_density_emit_cross_host.py",
+        "tests/test_force_emit_cross_host.py",
+        "tests/test_geo_cross_host.py",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_payload_attach_cross_host.py",
+        "tests/test_payload_chrome_cross_host.py",
+        "tests/test_payload_cross_host.py",
+        "tests/test_series_palette_cross_host.py",
+        "tests/test_tooltip_len_emit_cross_host.py",
+        "tests/test_capability_registry.py",
+        "tests/test_cross_host_abi_transition.py",
+        "tests/test_abi_parity.py",
+        "tests/test_release_surface_gate.py",
+        "tests/test_release_inventory.py",
+        "tests/test_xyg_package_identity.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_generated_abi_trace.py",
+        "tests/test_verify_ci_workflow.py",
+        "-q"
+      ],
+      "exit": 0,
+      "log": "final-python.log.gz",
+      "uncompressedSha256": "6c4ca7686d2a213858f9b5d7e3dde49818ac2d5132e6eb550fd86f4dcafc518d"
+    },
+    {
+      "command": [
+        "python3",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/target/task-tmp/abi-repair/run-node.py"
+      ],
+      "exit": 0,
+      "log": "final-node.log.gz",
+      "uncompressedSha256": "23ab8db647a985dc419d4faec0173e0f610d8bfaa7154ec4f173b018ddf806d6"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0,
+      "log": "abi-generator.log.gz",
+      "uncompressedSha256": "b291311f1f3b01cb293dccb8c2cceb076dfc02d46c04bb59207615a1672807c4"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_abi_parity.py"
+      ],
+      "exit": 0,
+      "log": "abi-parity.log.gz",
+      "uncompressedSha256": "867275cc9eb5c2aa3222f84d7614af941d2b41f2275188db8fab27e3aac520cc"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_capability_matrix.py",
+        "--check"
+      ],
+      "exit": 0,
+      "log": "capabilities.log.gz",
+      "uncompressedSha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "log": "hooks.log.gz",
+      "uncompressedSha256": "15dfc2c2a3ab113cf11fd7a3992bc02e30efcaa328c4e059e1ef2bc0e103309e"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "log": "ruff-check.log.gz",
+      "uncompressedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "log": "ruff-format.log.gz",
+      "uncompressedSha256": "a36db4b65ebb65eae3421e27e0165b35f14b0f0a2331509733b518869c1b5219"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_verify_wheel.py",
+        "tests/test_verify_sdist.py",
+        "-q"
+      ],
+      "exit": 0,
+      "log": "metadata.log.gz",
+      "uncompressedSha256": "ea2a9c5b77ccabc3862d3b1876f4c067e295afb786ceed82ebf11a08e7c9363e"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_cross_host_abi_transition.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "-q"
+      ],
+      "exit": 0,
+      "log": "last-transition.log.gz",
+      "uncompressedSha256": "256957e7087ad2c14abad21e21b75c70a69e69b2707e52f8f761686fe2b22b5b"
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/native-path.test.mjs"
+      ],
+      "exit": 0,
+      "log": "native-negative.log.gz",
+      "uncompressedSha256": "472db0fba9c88e9ba1f452635b8b9095fc8a97598700ff92b20ec4a7bf3e858a"
+    }
+  ],
+  "notes": [
+    "An earlier duplicate provenance/workflow batch was terminated and superseded by the completed final-python batch; no pass is claimed for the terminated run.",
+    "Final-python collected before the additional packet-bit control; last-transition verifies that control and current Core bindings on final bytes.",
+    "No full-suite or hosted CI rerun. Four Python skips require Python 3.12 buffer callbacks; the exact Node batch retains its existing skip."
+  ],
+  "artifactSha256": {
+    "native": "7a513d1f98212a39e50132ba3b24dc83a76af0d9192635eab248fa3816fc898b",
+    "shippingWasmVerifiedInSourceDist": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+  }
+}
